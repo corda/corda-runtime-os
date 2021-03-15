@@ -40,7 +40,6 @@ lib/quasar.jar
 .idea/dictionaries
 
 
-
 # Include the -parameters compiler option by default in IntelliJ required for serialization.
 !.idea/codeStyleSettings.xml
 
