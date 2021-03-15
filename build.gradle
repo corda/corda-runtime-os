@@ -1,0 +1,70 @@
+
+buildscript {
+    repositories {
+        maven {
+            url = "$artifactoryContextUrl/corda-releases"
+        }
+    }
+}
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.plugin.allopen' apply false
+    id 'org.jetbrains.kotlin.plugin.noarg' apply false
+    id 'idea'
+    id 'application'
+}
+
+wrapper {
+    gradleVersion = '6.8.1'
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+
+subprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'org.jetbrains.kotlin.jvm'
+    apply plugin: 'idea'
+    apply plugin: 'kotlin-allopen'
+    apply plugin: 'kotlin-noarg'
+}
+
+allprojects {
+    repositories {
+        maven {
+            url = "$artifactoryContextUrl/corda-dependencies-dev"
+        }
+        maven {
+            url = "$artifactoryContextUrl/corda-releases"
+        }
+        maven {
+            url = "$artifactoryContextUrl/corda-dependencies"
+        }
+        maven {
+            url = "$artifactoryContextUrl/corda-dev"
+        }
+        mavenCentral()
+        jcenter()
+        maven {
+            url = "https://kotlin.bintray.com/kotlinx"
+        }
+        maven {
+            url = "https://repo.gradle.org/gradle/libs-releases-local/"
+        }
+        maven {
+            url = "https://dl.bintray.com/palantir/releases/"
+        }
+        maven {
+            // For Apache ServiceMix.
+            url = 'https://repository.mulesoft.org/nexus/content/repositories/public'
+            content {
+                // The repo contains this artifact but without its jar.
+                excludeGroup 'com.github.detro'
+            }
+        }
+        maven {
+            url = "$artifactoryContextUrl/${System.getenv('CORDA_CONSUME_REPOSITORY_KEY') ?: 'corda-os-maven'}"
+        }
+        mavenLocal()
+    }
+}
