@@ -25,6 +25,8 @@ pluginManagement {
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.noarg' version kotlinVersion
         id 'net.corda.plugins.quasar-utils' version gradlePluginsVersion
+        id 'com.jfrog.artifactory' version jfrogArtifactoryPluginVersion
+        id 'biz.aQute.bnd.builder' version bndVersion // used to create OSGi bundles
     }
 }
 

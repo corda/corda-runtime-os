@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import static org.gradle.api.JavaVersion.VERSION_11
 
 buildscript {
     repositories {
@@ -13,6 +15,8 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.noarg' apply false
     id 'idea'
     id 'application'
+    id 'com.jfrog.artifactory'
+    id 'maven-publish'
 }
 
 wrapper {
@@ -30,6 +34,25 @@ subprojects {
 }
 
 allprojects {
+    version flowworker_version
+
+    tasks.withType(JavaCompile) {
+        sourceCompatibility = VERSION_11
+        targetCompatibility = VERSION_11
+        options.encoding = 'UTF-8'
+        options.compilerArgs += '-XDenableSunApiLintControl'
+    }
+
+    tasks.withType(KotlinCompile) {
+        kotlinOptions {
+            languageVersion = '1.4'
+            apiVersion = '1.4'
+            jvmTarget = VERSION_11
+            javaParameters = true   // Useful for reflection.
+            freeCompilerArgs = ['-Xjvm-default=all']
+        }
+    }
+
     repositories {
         maven {
             url = "$artifactoryContextUrl/corda-dependencies-dev"

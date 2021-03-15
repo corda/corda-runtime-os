@@ -1,3 +1,16 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+}
+
+apply from: "$rootDir/gradle/publish.gradle"
+
 description 'Goodbye World Library'
 
 
+tasks.named('jar', Jar) {
+    archiveBaseName = 'goodbye-world'
+    bnd """\
+Bundle-Name: Goodbye world
+Bundle-SymbolicName: \${project.group}.goodbye
+"""
+}
