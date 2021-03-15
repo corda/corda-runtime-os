@@ -67,4 +67,9 @@ allprojects {
         }
         mavenLocal()
     }
+
+    dependencies {
+        implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+        implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    }
 }
