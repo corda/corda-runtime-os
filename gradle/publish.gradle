@@ -12,14 +12,12 @@ publishing {
             }
             afterEvaluate {
                 version tasks.jar.archiveVersion.get()
-                if (project.path.startsWith(":legacy")) {
-                    artifactId "legacy-${tasks.jar.archiveBaseName.get()}"
-                } else {
-                    artifactId tasks.jar.archiveBaseName.get()
-                }
+
                 if (project.hasProperty('artifact')) {
                     artifact project.ext.artifact
                     artifactId project.ext.artifact.archiveBaseName.get()
+                } else {
+                    artifactId tasks.jar.archiveBaseName.get()
                 }
             }
             from components.kotlin

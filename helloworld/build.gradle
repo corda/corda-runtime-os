@@ -6,13 +6,6 @@ apply from: "$rootDir/gradle/publish.gradle"
 
 description 'Hello World Library'
 
-dependencies {
-    implementation "net.corda:corda-base:1.0.0-SNAPSHOT"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
-    implementation "org.slf4j:slf4j-simple:$slf4jVersion"
-}
-
-
 tasks.named('jar', Jar) {
     archiveBaseName = 'hello-world'
     bnd """
