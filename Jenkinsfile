@@ -40,14 +40,14 @@ pipeline {
         stage('Detekt') {
             steps {
                 //sh "./gradlew detekt"
-                sh "print \"Detekt step\""
+                sh "echo 'Detekt step'"
             }
         }
 
         stage('Tests') {
             steps {
                 //sh "./gradlew clean test --info"
-                sh "print \"Test step\""
+                sh "echo 'Test step'"
             }
         }
 
