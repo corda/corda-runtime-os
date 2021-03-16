@@ -9,11 +9,11 @@ boolean isReleaseBranch = (env.BRANCH_NAME =~ /^release\/.*/)
 boolean isRelease = (env.TAG_NAME =~ /^release_.*/)
 
 pipeline {
-    agent {
-        dockerfile {
-            filename '.ci/Dockerfile'
-        }
-    }
+//     agent {
+//         dockerfile {
+//             filename '.ci/Dockerfile'
+//         }
+//     }
 
     parameters {
         booleanParam defaultValue: (isReleaseBranch || isRelease), description: 'Publish artifacts to Artifactory?', name: 'DO_PUBLISH'
