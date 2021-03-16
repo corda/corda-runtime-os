@@ -30,9 +30,6 @@ pipeline {
 
     environment {
         EXECUTOR_NUMBER = "${env.EXECUTOR_NUMBER}"
-        ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
-        CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
-        CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
         ARTIFACTORY_BUILD_NAME = "Flow worker/Jenkins/${!isRelease?"snapshot/":""}${env.BRANCH_NAME}".replaceAll("/", " :: ")
     }
 
