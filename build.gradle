@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import static org.gradle.api.JavaVersion.VERSION_11
+import io.gitlab.arturbosch.detekt.DetektPlugin
 
 buildscript {
     repositories {
@@ -13,6 +14,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'org.jetbrains.kotlin.plugin.allopen' apply false
     id 'org.jetbrains.kotlin.plugin.noarg' apply false
+    id 'io.gitlab.arturbosch.detekt' apply false
     id 'idea'
     id 'application'
     id 'com.jfrog.artifactory'
@@ -24,16 +26,7 @@ wrapper {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-
-subprojects {
-    apply plugin: 'java-library'
-    apply plugin: 'org.jetbrains.kotlin.jvm'
-    apply plugin: 'idea'
-    apply plugin: 'kotlin-allopen'
-    apply plugin: 'kotlin-noarg'
-}
-
-
+def rootProjectDir = rootDir
 def revision = {
     if (System.getenv("CORDA_REVISION")) {
         return System.getenv("CORDA_REVISION")
@@ -63,6 +56,37 @@ artifactory {
 
             properties = ['release.type': releaseType, 'source.revision': revision]
         }
+    }
+}
+
+subprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'org.jetbrains.kotlin.jvm'
+    apply plugin: 'idea'
+    apply plugin: 'kotlin-allopen'
+    apply plugin: 'kotlin-noarg'
+    apply plugin: DetektPlugin
+
+    detekt {
+        baseline = file("$projectDir/detekt-baseline.xml")
+        config.setFrom(files("$rootProjectDir/detekt-config.yml"))
+        parallel = true
+        reports {
+            xml {
+                enabled = true
+                destination = file("$projectDir/build/detekt-report.xml")
+            }
+            html {
+                enabled = false
+            }
+            txt {
+                enabled = false
+            }
+        }
+    }
+
+    dependencies {
+        detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
     }
 }
 
