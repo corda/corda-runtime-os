@@ -9,6 +9,9 @@ boolean isReleaseBranch = (env.BRANCH_NAME =~ /^release\/.*/)
 boolean isRelease = (env.TAG_NAME =~ /^release_.*/)
 
 pipeline {
+    agent {
+        label "docker"
+    }
 //     agent {
 //         dockerfile {
 //             filename '.ci/Dockerfile'
