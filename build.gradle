@@ -86,11 +86,16 @@ subprojects {
 
     dependencies {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
+
+        api "org.osgi:osgi.annotation:$osgiVersion"
+        api "org.osgi:osgi.cmpn:$osgiVersion"
+        api "org.osgi:osgi.core:$osgiVersion"
+
     }
 }
 
 allprojects {
-    version flowworker_version
+    version flowWorkerVersion
 
     tasks.withType(JavaCompile) {
         sourceCompatibility = VERSION_11
@@ -105,7 +110,12 @@ allprojects {
             apiVersion = '1.4'
             jvmTarget = VERSION_11
             javaParameters = true   // Useful for reflection.
-            freeCompilerArgs = ['-Xjvm-default=all']
+            freeCompilerArgs += [
+                    '-Xjvm-default=all',
+                    // Prevent Kotlin from warning about kotlin.* classes inside the OSGi bundle.
+                    "-Xskip-runtime-version-check",
+                    "-java-parameters"
+            ]
         }
     }
 

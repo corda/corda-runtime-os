@@ -1,5 +1,7 @@
 package net.corda.sample.goodbye
 
+import net.corda.sample.hello.HelloWorld
+
 fun main() {
-    println("goodbye world")
+    HelloWorld.sayHello()
 }

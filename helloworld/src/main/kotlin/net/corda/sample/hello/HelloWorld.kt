@@ -1,7 +1,11 @@
 package net.corda.sample.hello
 
 
-fun main() {
-    println("Hello world!")
+class HelloWorld {
+    companion object {
+        fun sayHello() {
+            println("Hello world!")
+        }
+    }
 }
 
