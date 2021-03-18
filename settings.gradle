@@ -1,0 +1,42 @@
+pluginManagement {
+    repositories {
+        maven {
+            url "$artifactoryContextUrl/corda-dev"
+            content {
+                includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
+            }
+        }
+        maven {
+            url "$artifactoryContextUrl/corda-releases"
+            content {
+                includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
+            }
+        }
+        maven {
+            url "$artifactoryContextUrl/${System.getenv('CORDA_CONSUME_REPOSITORY_KEY') ?: 'corda-os-maven'}"
+            content {
+                includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
+            }
+        }
+        gradlePluginPortal()
+    }
+    plugins {
+        id 'org.jetbrains.kotlin.jvm' version kotlinVersion
+        id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
+        id 'org.jetbrains.kotlin.plugin.noarg' version kotlinVersion
+        id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
+        id 'com.jfrog.artifactory' version jfrogArtifactoryPluginVersion
+        id 'biz.aQute.bnd.builder' version bndVersion
+        id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'flow-worker'
+include 'helloworld'
+include 'goodbyeworld'

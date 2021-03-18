@@ -1,0 +1,15 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+}
+
+apply from: "$rootDir/gradle/publish.gradle"
+
+description 'Hello World Library'
+
+tasks.named('jar', Jar) {
+    archiveBaseName = 'hello-world'
+    bnd """
+Bundle-Name: Hello world
+Bundle-SymbolicName: \${project.group}.hello
+"""
+}
