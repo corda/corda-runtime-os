@@ -7,6 +7,15 @@ killAllExistingBuildsForJob(env.JOB_NAME, env.BUILD_NUMBER.toInteger())
  */
 boolean isReleaseBranch = (env.BRANCH_NAME =~ /^release\/.*/)
 boolean isRelease = (env.TAG_NAME =~ /^release_.*/)
+def nexusDefaultIqStage = "build"
+def nexusIqStageChoices = [nexusDefaultIqStage].plus(
+                [
+                        'develop',
+                        'build',
+                        'stage-release',
+                        'release',
+                        'operate'
+                ].minus([nexusDefaultIqStage]))
 
 pipeline {
     agent {
@@ -20,6 +29,7 @@ pipeline {
 
     parameters {
         booleanParam defaultValue: (isReleaseBranch || isRelease), description: 'Publish artifacts to Artifactory?', name: 'DO_PUBLISH'
+        choice choices: nexusIqStageChoices, description: 'NexusIQ stage for code evaluation', name: 'nexusIqStage'
     }
 
     options {
@@ -48,6 +58,25 @@ pipeline {
                 sh "./gradlew clean test --info"
             }
         }
+
+        stage('Sonatype Check') {
+                    steps {
+                        script {
+                            sh "./gradlew --no-daemon properties | grep -E '^(version|group):' >version-properties"
+                            /* every build related to Corda X.Y (GA, RC, HC, patch or snapshot) uses the same NexusIQ application */
+                            def version = sh (returnStdout: true, script: "grep ^version: version-properties | sed -e 's/^version: \\([0-9]\\+\\(\\.[0-9]\\+\\)\\+\\).*\$/\\1/'").trim()
+                            //def groupId = sh (returnStdout: true, script: "grep ^group: version-properties | sed -e 's/^group: //'").trim()
+                            def artifactId = 'flow-worker'
+                            nexusAppId = "${artifactId}-${version}"
+                        }
+                        nexusPolicyEvaluation (
+                                failBuildOnNetworkError: false,
+                                iqApplication: selectedApplication(nexusAppId), // application *has* to exist before a build starts!
+                                iqScanPatterns: [[scanPattern: 'build/libs/flow-worker*.jar']],
+                                iqStage: params.nexusIqStage
+                        )
+                    }
+                }
 
         stage('Publish to Artifactory') {
             when {
