@@ -125,6 +125,8 @@ allprojects {
             url = "$artifactoryContextUrl/corda-dependencies"
         }
         mavenCentral()
+        //TODO remove this when we can as its only needed for kotlinx-html-jvm
+        jcenter()
     }
 
     dependencies {
