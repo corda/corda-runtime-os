@@ -124,10 +124,9 @@ allprojects {
         maven {
             url = "$artifactoryContextUrl/corda-dependencies"
         }
-        maven {
-            url = "https://kotlin.bintray.com/kotlinx"
-        }
         mavenCentral()
+        //needed for kotlinx-html-jvm
+        jcenter()
     }
 
     dependencies {
