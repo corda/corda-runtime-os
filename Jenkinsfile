@@ -66,8 +66,7 @@ pipeline {
                             /* every build related to Corda X.Y (GA, RC, HC, patch or snapshot) uses the same NexusIQ application */
                             def version = sh (returnStdout: true, script: "grep ^version: version-properties | sed -e 's/^version: \\([0-9]\\+\\(\\.[0-9]\\+\\)\\+\\).*\$/\\1/'").trim()
                             //def groupId = sh (returnStdout: true, script: "grep ^group: version-properties | sed -e 's/^group: //'").trim()
-                            def artifactId = 'flow-worker'
-                            nexusAppId = "${artifactId}-${version}"
+                            nexusAppId = "flow-worker-${version}"
                         }
                         nexusPolicyEvaluation (
                                 failBuildOnNetworkError: false,
