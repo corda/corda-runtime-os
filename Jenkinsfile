@@ -36,13 +36,13 @@ pipeline {
     stages {
         stage('Detekt') {
             steps {
-                sh "./gradlew detekt"
+                sh "gradlew detekt"
             }
         }
 
         stage('Tests') {
             steps {
-                sh "./gradlew clean test --info"
+                sh "gradlew clean test --info"
             }
         }
 
