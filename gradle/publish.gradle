@@ -11,8 +11,6 @@ scmVersion {
         directory = project.rootProject.file('./') // repository location
         remote = 'origin'
 
-        // Tmp Authorization key for testing
-        customKey = '24262a779d634f9cb9421e37b0538c06cd4b99ce'
     }
 
     ignoreUncommittedChanges = true // should uncommitted changes force version bump
