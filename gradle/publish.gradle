@@ -12,7 +12,7 @@ scmVersion {
         prefix = getBranchName()
     }
 
-    versionCreator { version, position -> version }
+    versionCreator { version, position -> getBranchName() + "-" + version }
 }
 
 
