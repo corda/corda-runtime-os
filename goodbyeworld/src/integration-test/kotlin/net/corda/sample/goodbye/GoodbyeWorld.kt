@@ -1,6 +1,6 @@
 package net.corda.sample.goodbye
 
-import net.corda.sample.impl.hello.HelloWorld
+import net.corda.sample.api.hello.HelloWorld
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService

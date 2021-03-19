@@ -1,4 +1,4 @@
-package net.corda.sample.impl.hello
+package net.corda.sample.api.hello
 
 interface HelloWorld {
     fun sayHello()
