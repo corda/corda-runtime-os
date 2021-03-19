@@ -15,7 +15,8 @@ scmVersion {
         customKey = '24262a779d634f9cb9421e37b0538c06cd4b99ce'
     }
 
-    ignoreUncommittedChanges = false // should uncommitted changes force version bump
+    ignoreUncommittedChanges = true // should uncommitted changes force version bump
+
 
     tag {
         prefix = getBranchName()
