@@ -20,26 +20,18 @@ plugins {
     id 'application'
     id 'com.jfrog.artifactory'
     id 'maven-publish'
+    id 'org.ajoberstar.grgit' version '1.6.0'
+    id 'pl.allegro.tech.build.axion-release' version '1.5.0'
 }
+
+
 
 wrapper {
     gradleVersion = '6.8.1'
     distributionType = Wrapper.DistributionType.BIN
 }
 
-def revision = {
-    if (System.getenv("CORDA_REVISION")) {
-        return System.getenv("CORDA_REVISION")
-    }
-    try {
-        return "git rev-parse HEAD".execute().text.trim()
-    } catch (Exception error) {
-        logger.warn("git is unavailable in build environment", error)
-        "unknown"
-    }
-}()
 
-def releaseType = System.getenv('RELEASE_TYPE') ?: "SNAPSHOT"
 artifactory {
     publish {
         contextUrl = artifactoryContextUrl
@@ -53,8 +45,6 @@ artifactory {
             publishPom = true
             publishArtifacts = true
             publishBuildInfo = true
-
-            properties = ['release.type': releaseType, 'source.revision': revision]
         }
     }
 }
@@ -85,6 +75,7 @@ subprojects {
         }
     }
 
+
     dependencies {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
 
@@ -94,8 +85,13 @@ subprojects {
     }
 }
 
+
+
 allprojects {
-    version flowWorkerVersion
+    group 'net.corda'
+
+    project.version = scmVersion.version
+
 
     tasks.withType(JavaCompile) {
         sourceCompatibility = VERSION_11
