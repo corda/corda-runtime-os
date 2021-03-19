@@ -14,9 +14,7 @@
     org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
 
 -runrequires: \
-    bnd.identity;id='net.corda.sample.api.hello',\
-    bnd.identity;id='net.corda.sample.impl.hello',\
-    bnd.identity;id='org.apache.felix.configadmin',\
+    bnd.identity;id='flow-worker.hello',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
