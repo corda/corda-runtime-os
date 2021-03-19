@@ -1,0 +1,21 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+}
+
+apply from: "$rootDir/gradle/publish.gradle"
+
+def bundleName = "hello-world-impl"
+description 'Hello World Implementation'
+
+dependencies {
+    // We don't want projects yet!  Once we're publishing we'll fix this
+    api project(":helloworld")
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = bundleName
+    bnd """
+Bundle-Name: Hello world imple
+Bundle-SymbolicName: ${project.group}.${bundleName}
+"""
+}

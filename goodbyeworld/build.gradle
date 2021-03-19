@@ -6,6 +6,9 @@ apply from: "$rootDir/gradle/publish.gradle"
 
 dependencies {
     api project(":helloworld")
+    api "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+
+    testImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
 }
 
 description 'Goodbye World Library'
