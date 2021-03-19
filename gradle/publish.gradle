@@ -1,25 +1,27 @@
 apply plugin: 'com.jfrog.artifactory'
 apply plugin: 'maven-publish'
+apply plugin: 'pl.allegro.tech.build.axion-release'
+apply plugin: 'org.ajoberstar.grgit'
+
+
+scmVersion {
+
+    ignoreUncommittedChanges = false // should uncommitted changes force version bump
+
+    tag {
+        prefix = getBranchName()
+    }
+
+    versionCreator { version, position -> version }
+}
+
 
 publishing {
     publications {
         maven(MavenPublication) {
             groupId project.group
-            versionMapping {
-                usage('java-runtime') {
-                    fromResolutionResult()
-                }
-            }
-            afterEvaluate {
-                version tasks.jar.archiveVersion.get()
-
-                if (project.hasProperty('artifact')) {
-                    artifact project.ext.artifact
-                    artifactId project.ext.artifact.archiveBaseName.get()
-                } else {
-                    artifactId tasks.jar.archiveBaseName.get()
-                }
-            }
+            artifactId project.name
+            version scmVersion.version
             from components.kotlin
         }
     }
@@ -31,4 +33,17 @@ afterEvaluate {
 
 artifactoryPublish {
     publications('maven')
+}
+
+def getBranchName() {
+    return grgit.branch.getCurrent().name
+}
+
+def getVersionNumber(version, position) {
+    def time = new Date().time
+    if (getBranchName().contains("release")) {
+        return time + "-rc"
+    } else {
+        return position.shortRevision + "-alpha"
+    }
 }
