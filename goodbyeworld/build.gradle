@@ -25,7 +25,6 @@ dependencies {
     testImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-//    testRuntimeOnly "org.junit.platform:junit-platform-launcher:$junit5Version"
 
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
@@ -77,22 +76,6 @@ def testingBundle = tasks.register('testingBundle', Bundle) {
 Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
 Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
 """
-}
-
-def resolve = tasks.register('resolve', Resolve) {
-    dependsOn jar, testingBundle
-    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
-    bndrun = 'test.bndrun'
-}
-
-def testOSGi = tasks.register('testOSGi', TestOSGi) {
-    dependsOn resolve
-    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
-    bndrun = 'test.bndrun'
-}
-
-tasks.named('check') {
-    dependsOn testOSGi
 }
 
 artifacts {
