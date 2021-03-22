@@ -56,7 +56,7 @@ dependencies {
 tasks.named('jar', Jar) {
     archiveBaseName = bundleName
     bnd """
-Bundle-Name: Hello world imple
+Bundle-Name: Hello world impl
 Bundle-SymbolicName: ${project.group}.${bundleName}
 """
 }
