@@ -1,4 +1,4 @@
-package net.corda.sample.goodbye
+package net.corda.sample.hello.test
 
 import net.corda.sample.api.hello.HelloWorld
 import org.junit.jupiter.api.Test
@@ -6,19 +6,15 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
-fun main() {
-    GoodbyeWorldTest().callHelloWorld()
-}
-
 @ExtendWith(ServiceExtension::class)
-class GoodbyeWorldTest {
+class HelloWorldTest {
 
-    @InjectService(timeout = 1000, filter = "(component.name=helloworld)")
-    private var helloWorld: HelloWorld? = null
+    @InjectService(timeout = 1000)
+    lateinit var helloWorld: HelloWorld
 
     @Test
     fun callHelloWorld() {
-        helloWorld?.sayHello()
+        helloWorld.sayHello()
     }
 
 }

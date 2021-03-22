@@ -1,4 +1,4 @@
-package net.corda.sample.impl.hello
+package net.corda.sample.hello.impl
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

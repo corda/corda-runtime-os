@@ -1,4 +1,4 @@
-package net.corda.sample.impl.hello
+package net.corda.sample.hello.impl
 
 import net.corda.sample.api.hello.HelloWorld
 import org.osgi.service.component.annotations.Component
