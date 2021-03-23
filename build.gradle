@@ -20,7 +20,7 @@ plugins {
     id 'com.jfrog.artifactory'
     id 'maven-publish'
     id 'org.ajoberstar.grgit' version '1.6.0'
-    id 'pl.allegro.tech.build.axion-release' version '1.5.0'
+    id 'pl.allegro.tech.build.axion-release' version '1.10.0'
 }
 
 
@@ -55,6 +55,8 @@ subprojects {
     apply plugin: 'kotlin-allopen'
     apply plugin: 'kotlin-noarg'
     apply plugin: DetektPlugin
+    apply plugin: 'pl.allegro.tech.build.axion-release'
+
 
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")
@@ -75,6 +77,37 @@ subprojects {
     }
 
 
+    scmVersion {
+
+        /*monorepos {
+            projectDirs = project.rootProject.subprojects.collect({p -> p.name})
+        }*/
+
+        checks {
+            uncommittedChanges = false
+            aheadOfRemote = false
+            snapshotDependencies = false
+        }
+
+        repository {
+            type = 'git'
+            directory = project.rootProject.file('./') // repository location
+            remote = 'privaterepo'
+        }
+
+        tag {
+            prefix = getTagName(project.name)
+        }
+
+        //versionCreator { version, position -> version }
+        branchVersionCreator = [ // use different creator per branch
+                                 'release/.*': 'simple',
+                                 '.*': 'versionWithBranch'
+        ]
+    }
+
+    project.version = scmVersion.version
+
     dependencies {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
 
@@ -88,9 +121,6 @@ subprojects {
 
 allprojects {
     group 'net.corda'
-
-    project.version = scmVersion.version
-
 
     tasks.withType(JavaCompile) {
         sourceCompatibility = VERSION_11
@@ -122,6 +152,7 @@ allprojects {
         mavenCentral()
         //TODO remove this when we can as its only needed for kotlinx-html-jvm
         jcenter()
+        mavenLocal()
     }
 
     dependencies {
@@ -129,3 +160,29 @@ allprojects {
         implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
     }
 }
+
+def getTagName(projectName) {
+    def branch = getBranchName()
+
+    if (!branch.contains("release/")) {
+        return branch + "-" + projectName
+    }
+
+    return projectName
+}
+
+def getBranchName() {
+    return  "working-example"
+  //  return grgit.branch.getCurrent().name
+}
+
+/*
+def getVersionNumber(version, position) {
+    def time = new Date().time
+    if (getBranchName().contains("release")) {
+        return time + "-rc"
+    } else {
+        return position.shortRevision + "-alpha"
+    }
+}
+*/
