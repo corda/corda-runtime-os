@@ -8,7 +8,8 @@ publishing {
             groupId project.group
             artifactId project.name
             afterEvaluate {
-                version scmVersion.version
+                //not evaluated until scmVersion plugin has executed on subproject
+                version project.version
             }
             from components.kotlin
         }

@@ -21,10 +21,9 @@ plugins {
     id 'com.jfrog.artifactory'
     id 'maven-publish'
     id 'org.ajoberstar.grgit' version '1.6.0'
+    //don't move to 1.11 or higher just yet. Some further changes required to scmVersion config.
     id 'pl.allegro.tech.build.axion-release' version '1.10.0'
 }
-
-
 
 wrapper {
     gradleVersion = '6.8.1'
@@ -80,27 +79,24 @@ subprojects {
 
     scmVersion {
 
-        /*monorepos {
-            projectDirs = project.rootProject.subprojects.collect({p -> p.name})
-        }*/
-
+        //These checks are turned off while this is still being developed
+        //TODO - turn these back on
         checks {
             uncommittedChanges = false
             aheadOfRemote = false
             snapshotDependencies = false
         }
 
+        //TODO - add authentication to allow git tags to be pushed to remote
         repository {
             type = 'git'
             directory = project.rootProject.file('./') // repository location
-            remote = 'privaterepo'
         }
 
         tag {
             prefix = getTagName(project.name)
         }
 
-        //versionCreator { version, position -> version }
         branchVersionCreator = [ // use different creator per branch
                                  'release/.*': 'simple',
                                  '.*': 'versionWithBranch'
@@ -199,17 +195,5 @@ def getTagName(projectName) {
 }
 
 def getBranchName() {
-    return  "working-example"
-  //  return grgit.branch.getCurrent().name
+    return grgit.branch.getCurrent().getName()
 }
-
-/*
-def getVersionNumber(version, position) {
-    def time = new Date().time
-    if (getBranchName().contains("release")) {
-        return time + "-rc"
-    } else {
-        return position.shortRevision + "-alpha"
-    }
-}
-*/
