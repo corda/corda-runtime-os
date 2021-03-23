@@ -287,10 +287,6 @@ tasks.register("run", JavaExec) {
 }
 
 
-artifacts {
-    archives buildCordaJar
-    runtimeArtifacts buildCordaJar
-}
 
 test {
     dependsOn(buildOsgiBundles)
