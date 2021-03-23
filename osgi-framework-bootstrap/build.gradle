@@ -267,6 +267,14 @@ tasks.register("buildCordaJar", Jar) {
     exclude 'META-INF/*.DSA'
 }
 
+compileKotlin {
+    kotlinOptions.jvmTarget = jvmTarget
+}
+
+compileTestKotlin {
+    kotlinOptions.jvmTarget = jvmTarget
+}
+
 jar {
     manifest {
         attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'

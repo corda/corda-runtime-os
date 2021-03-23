@@ -107,7 +107,7 @@ allprojects {
             jvmTarget = VERSION_11
             javaParameters = true   // Useful for reflection.
             freeCompilerArgs += [
-                    // "-Xjvm-default=all", is only supported since JVM target 1.8.
+                    '-Xjvm-default=all',
                     // Prevent Kotlin from warning about kotlin.* classes inside the OSGi bundle.
                     "-Xskip-runtime-version-check",
                     "-java-parameters"
@@ -153,11 +153,5 @@ allprojects {
     dependencies {
         implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
         implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
-        implementation "org.slf4j:slf4j-api:$slf4jVersion"
-
-        // Test utilities
-        testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-        testImplementation "org.assertj:assertj-core:$assertjVersion"
-        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     }
 }
