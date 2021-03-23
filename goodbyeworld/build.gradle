@@ -6,7 +6,6 @@ apply from: "$rootDir/gradle/publish.gradle"
 
 dependencies {
     api project(":helloworld")
-    //api "net.corda:helloworld:0.1.0-test5"
 }
 
 description 'Goodbye World Library'
