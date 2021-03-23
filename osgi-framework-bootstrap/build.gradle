@@ -1,0 +1,219 @@
+import java.util.jar.JarFile
+
+description("OSGi Framework Bootstrap")
+
+group = 'net.corda'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+
+    // KNOW_HOW
+    // Use `osgiBundle` configuration to define dependencies the OSGi framework must install and activate as OSGI bundles.
+    osgiBundle {
+
+        // NOTE
+        // The functionalities of `osgi.core` and `osgi.cmpn` are provided by the OSGi framework itself.
+        // The `osgi.core` and `osgi.cmpn` bundles must not be included as dependencies else the OSGi framework stops,
+        // They can be expressed as `compileOnly` in dependencies of the modules needing to access OSGI framework classes.
+        // As precaution the `osgi.core` and `osgi.cmpn` are excluded from building.
+        exclude group: "org.osgi", module: "osgi.core"
+        exclude group: "org.osgi", module: "osgi.cmpn"
+
+    }
+
+    runtimeArtifacts {
+
+    }
+
+    // NOTE
+    // The modules excluded from this configuration will be exposed to the OSGi framework from the bootstrapper classpath.
+    systemPackages {
+        transitive = false
+    }
+
+    integrationTestRuntimeClasspath {
+        extendsFrom(systemPackages)
+    }
+
+    cordaJarRuntimeClasspath {
+        extendsFrom(runtimeClasspath)
+        extendsFrom(systemPackages)
+        canBeResolved = true
+        transitive = true
+    }
+}
+
+dependencies {
+
+    implementation project("framework-api")
+    implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "org.slf4j:log4j-over-slf4j:$slf4jVersion"
+
+    osgiBundle "org.postgresql:postgresql:$postgresVersion"
+
+    testImplementation "com.google.jimfs:jimfs:$jimsVersion"
+    testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
+}
+
+/**
+ * Scan the OSGi bundles of the Corda project to bundle them in the `build/resource/main/bundles` directory of the project,
+ * list the bundles in the `build/resource/main/system_bundles` files to allow classloader to load them from IDE (file system)
+ * or packed in the executable fat jar.
+ */
+Provider<Copy> buildCordaJar = tasks.register("buildOsgiBundles", Copy) {
+    final def bundlesDir = new File(project.buildDir, "resources/main/bundles")
+    final def systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
+
+    into bundlesDir
+    from configurations.osgiBundle
+    doLast {
+        final Set<String> systemBundleSet = new TreeSet<>()
+        bundlesDir.listFiles({ File dir, String name -> name.endsWith(".jar") } as FilenameFilter)
+                .grep { File file ->
+                    new JarFile(file).manifest.mainAttributes.getValue("Bundle-SymbolicName")
+                }.each { file ->
+            systemBundleSet.add("bundles/${file.name}")
+        }
+        systemBundlesFile.withWriter { writer ->
+            systemBundleSet.each { line ->
+                writer.writeLine(line)
+            }
+        }
+    }
+}
+
+/**
+ * Scan the OSGi bundles defined in 'systemPackages' and 'quasar' configuration,
+ * scan the packages declared in the and `systemPackagesExtra` array of this `build.gradle`
+ * and export them through the `system_packages_extra` property of the OSGI framework.
+ */
+class BuildSystemPackageExtra extends DefaultTask {
+
+    BuildSystemPackageExtra() {
+        sourceConfigurations = project.objects.listProperty(String.class)
+        jdkExtraPackages = project.objects.listProperty(String.class)
+        systemPackagesExtraFile = project.objects.fileProperty()
+    }
+
+    @Input
+    final ListProperty<String> sourceConfigurations
+
+    @Input
+    final ListProperty<String> jdkExtraPackages
+
+    @InputFiles
+    FileCollection getInputFiles() {
+        FileCollection result = project.objects.fileCollection()
+        sourceConfigurations.map { list ->
+            list.forEach { configurationName ->
+                result.add(project.configurations[configurationName])
+            }
+        }
+        return result
+    }
+
+    @OutputFile
+    final RegularFileProperty systemPackagesExtraFile
+
+    @TaskAction
+    def run() {
+        final Set<String> exportSet = new TreeSet<>()
+        sourceConfigurations.get().each { configurationName ->
+            project.configurations[configurationName].incoming.each { resolvableDependency ->
+                resolvableDependency.artifacts.each { resolvedArtifact ->
+                    final def jarFile = new JarFile(resolvedArtifact.file)
+                    if (jarFile.manifest.mainAttributes.getValue("Bundle-SymbolicName") != null) {
+                        jarFile.manifest.mainAttributes.getValue("Export-Package")?.with { exportPackage ->
+                            OSGiHeader.parseHeader(exportPackage).entrySet().each { exportEntry ->
+                                final def export = exportEntry.key + ";" + exportEntry.value.toString()
+                                exportSet.add(export)
+                            }
+                        }
+                    } else {
+                        jarFile.entries().each { jarEntry ->
+                            if (jarEntry.name.endsWith(".class")) {
+                                final def list = jarEntry.name.replace('\\', '/').split('/').toList()
+                                final def export = list.subList(0, list.size() - 1).join('.')
+                                exportSet.add(export)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        jdkExtraPackages.get().each { export -> exportSet.add(export) }
+        systemPackagesExtraFile.getAsFile().get().withWriter { writer ->
+            exportSet.each { export -> writer.writeLine(export) }
+        }
+    }
+}
+
+Provider<BuildSystemPackageExtra> buildSystemPackagesExtra = tasks.register("buildSystemPackagesExtra", BuildSystemPackageExtra) {
+    sourceConfigurations = ['systemPackages']
+    jdkExtraPackages = [
+            "net.corda.osgi.framework.api",
+            "sun.security.x509",
+            "sun.security.ssl"
+    ]
+    systemPackagesExtraFile = project.layout.buildDirectory.file("resources/main/system_packages_extra")
+}
+
+tasks.named("processResources") {
+    inputs.files(buildSystemPackagesExtra, buildOsgiBundles)
+}
+
+tasks.register("buildCordaJar", Jar) {
+    archiveBaseName = rootProject.name
+    archiveVersion = version
+    ["compileJava", "compileKotlin", "processResources"].each { taskName ->
+        inputs.files(tasks.named(taskName))
+    }
+    manifest {
+        attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
+        attributes 'Launcher-Agent-Class': 'net.corda.osgi.framework.QuasarAgentWrapper'
+        attributes 'Can-Redefine-Classes': true
+        attributes 'Can-Retransform-Classes': true
+    }
+    from(sourceSets.main.output.files)
+    ['cordaJarRuntimeClasspath'].each { configurationName ->
+        from { configurations[configurationName].collect { it.isDirectory() ? it : zipTree(it) } }
+    }
+    exclude 'META-INF/*.RSA'
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = jvmTarget
+}
+
+compileTestKotlin {
+    kotlinOptions.jvmTarget = jvmTarget
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
+    }
+}
+
+tasks.register("run", JavaExec) {
+    mainClass = 'net.corda.osgi.framework.OSGiFrameworkMain'
+    classpath(sourceSets.main.output)
+    classpath(project.configurations.named('cordaJarRuntimeClasspath'))
+}
+
+
+
+test {
+    useJUnitPlatform()
+}
