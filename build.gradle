@@ -4,8 +4,9 @@ import io.gitlab.arturbosch.detekt.DetektPlugin
 
 buildscript {
     repositories {
+        mavenLocal()
         maven {
-            url = "$artifactoryContextUrl/corda-releases"
+            url "$artifactoryContextUrl/corda-releases"
         }
     }
 }
@@ -145,15 +146,41 @@ allprojects {
         maven {
             url = "$artifactoryContextUrl/corda-dependencies"
         }
+        maven {
+            url = "https://kotlin.bintray.com/kotlinx"
+        }
         mavenCentral()
         //TODO remove this when we can as its only needed for kotlinx-html-jvm
         jcenter()
         mavenLocal()
     }
 
+    sourceSets {
+        integrationTest {
+            kotlin {
+                srcDirs = [ 'src/integration-test/kotlin' ]
+            }
+            resources {
+                srcDirs = [ 'src/integration-test/resources' ]
+            }
+        }
+    }
+
+    configurations {
+        integrationTestApi.extendsFrom testApi
+        integrationTestCompileOnly.extendsFrom testCompileOnly
+        integrationTestImplementation.extendsFrom testImplementation
+    }
+
     dependencies {
         implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
         implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+        implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+        // Test utilities
+        testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+        testImplementation "org.assertj:assertj-core:$assertjVersion"
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     }
 }
 
