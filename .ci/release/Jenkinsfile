@@ -1,0 +1,74 @@
+@Library('existing-build-control')
+import static com.r3.build.BuildControl.killAllExistingBuildsForJob
+killAllExistingBuildsForJob(env.JOB_NAME, env.BUILD_NUMBER.toInteger())
+
+/**
+ * Sense environment
+ */
+
+pipeline {
+    agent {
+        label 'docker'
+    }
+
+//cordaPipeline nexusAppId: 'corda-5'
+    options {
+        ansiColor('xterm')
+        timestamps()
+        timeout(3*60) // 3 hours
+    }
+
+    environment {
+        EXECUTOR_NUMBER = "${env.EXECUTOR_NUMBER}"
+        ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
+        CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
+        CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
+        ARTIFACTORY_BUILD_NAME = "Flow worker/Jenkins/${env.BRANCH_NAME}".replaceAll("/", " :: ")
+    }
+
+    stages {
+        stage('Create JARs') {
+            steps {
+                sh "./gradlew helloworld:release -Prelease.localOnly"
+                sh "./gradlew helloworld-impl:release -Prelease.localOnly"
+                sh "./gradlew goodbyeworld:release -Prelease.localOnly"
+            }
+        }
+
+        stage('Publish to Artifactory') {
+            steps {
+                rtServer(
+                        id: 'R3-Artifactory',
+                        url: 'https://software.r3.com/artifactory',
+                        credentialsId: 'artifactory-credentials'
+                )
+                rtGradleDeployer(
+                        id: 'deployer',
+                        serverId: 'R3-Artifactory',
+                        repo: 'r3-corda-dev'
+                )
+                rtGradleRun(
+                        usesPlugin: true,
+                        useWrapper: true,
+                        switches: '-s --info',
+                        tasks: 'artifactoryPublish',
+                        deployerId: 'deployer',
+                        buildName: env.ARTIFACTORY_BUILD_NAME
+                )
+                rtPublishBuildInfo(
+                        serverId: 'R3-Artifactory',
+                        buildName: env.ARTIFACTORY_BUILD_NAME
+                )
+            }
+        }
+    }
+
+    post {
+        always {
+            junit testResults: '**/build/test-results/**/*.xml', allowEmptyResults: true
+        }
+        cleanup {
+            deleteDir() /* clean up our workspace */
+        }
+    }
+}
