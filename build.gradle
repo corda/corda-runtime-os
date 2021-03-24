@@ -6,7 +6,7 @@ buildscript {
     repositories {
         mavenLocal()
         maven {
-            url "$artifactoryContextUrl/corda-releases"
+            url = "$artifactoryContextUrl/corda-releases"
         }
     }
 }
@@ -138,11 +138,6 @@ allprojects {
                 srcDirs = [ 'src/integration-test/resources' ]
             }
         }
-    }
-
-    // Added to support junit5 tests
-    tasks.named('test').configure {
-        useJUnitPlatform()
     }
 
     configurations {
