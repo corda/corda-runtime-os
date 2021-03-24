@@ -39,4 +39,5 @@ dependencyResolutionManagement {
 
 rootProject.name = 'flow-worker'
 include 'helloworld'
+include 'helloworld-impl'
 include 'goodbyeworld'
