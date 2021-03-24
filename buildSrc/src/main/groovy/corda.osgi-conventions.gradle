@@ -1,0 +1,70 @@
+import aQute.bnd.gradle.Bundle
+import aQute.bnd.gradle.Resolve
+import aQute.bnd.gradle.TestOSGi
+
+plugins {
+    id 'biz.aQute.bnd.builder'
+}
+
+configurations {
+    integrationTestApi.extendsFrom testApi
+    integrationTestCompileOnly.extendsFrom testCompileOnly
+    integrationTestImplementation.extendsFrom testImplementation
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    integrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
+    integrationTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+}
+
+def testingBundle = tasks.register('testingBundle', Bundle) {
+    archiveClassifier = 'tests'
+    from sourceSets.integrationTest.output
+    sourceSet = sourceSets.integrationTest
+
+    bnd """\
+Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
+Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
+"""
+}
+
+def resolve = tasks.register('resolve', Resolve) {
+    dependsOn jar, testingBundle
+    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
+    bndrun = 'test.bndrun'
+    //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
+    System.setProperty("bnd.home.dir", "$rootDir/bnd/")
+}
+
+def testOSGi = tasks.register('testOSGi', TestOSGi) {
+    description = "Runs OSGi integration tests."
+    group = "verification"
+    dependsOn resolve
+    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
+    bndrun = 'test.bndrun'
+}
+
+tasks.named('check') {
+    dependsOn testOSGi
+}
+
+tasks.register('integrationTest', Test) {
+    description = "Runs integration tests."
+    group = "verification"
+    dependsOn testOSGi
+
+    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
+    classpath = project.sourceSets["integrationTest"].runtimeClasspath
+}
+
+artifacts {
+    archives testingBundle
+}
+

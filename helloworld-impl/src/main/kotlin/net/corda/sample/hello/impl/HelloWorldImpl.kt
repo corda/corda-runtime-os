@@ -5,8 +5,10 @@ import org.osgi.service.component.annotations.Component
 
 @Component
 class HelloWorldImpl: HelloWorld {
-    override fun sayHello() {
-        println("Hello world!")
+    override fun sayHello(): String {
+        val hi = "Hello world!"
+        println(hi)
+        return hi
     }
 }
 

@@ -102,5 +102,8 @@ TODO
 # gradle-dependx plugin
 .dependx/
 
+# Directory generated during Resolve and TestOSGi gradle tasks
+bnd/
+
 # Ignore Gradle build output directory
 build

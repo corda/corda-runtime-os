@@ -6,6 +6,6 @@ import org.junit.jupiter.api.Test
 internal class HelloWorldImplTest {
     @Test
     fun `prints HelloWorld`() {
-        assertThat(HelloWorldImpl().sayHello()).isEqualTo("Hello World!")
+        assertThat(HelloWorldImpl().sayHello()).isEqualTo("Hello world!")
     }
 }
