@@ -247,6 +247,7 @@ tasks.named("processResources") {
 }
 
 tasks.register("buildCordaJar", Jar) {
+    inputs.files(project("framework-api").jar)
     archiveBaseName = project.name
     archiveVersion = version
     ["compileJava", "compileKotlin", "processResources"].each { taskName ->
@@ -271,7 +272,6 @@ jar {
         attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
     }
 }
-
 
 tasks.register("run", JavaExec) {
     mainClass = 'net.corda.osgi.framework.OSGiFrameworkMain'
