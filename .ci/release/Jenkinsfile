@@ -11,7 +11,6 @@ pipeline {
         label 'docker'
     }
 
-//cordaPipeline nexusAppId: 'corda-5'
     options {
         ansiColor('xterm')
         timestamps()
@@ -29,9 +28,9 @@ pipeline {
     stages {
         stage('Create JARs') {
             steps {
-                sh "./gradlew helloworld:release -Prelease.localOnly"
-                sh "./gradlew helloworld-impl:release -Prelease.localOnly"
-                sh "./gradlew goodbyeworld:release -Prelease.localOnly"
+                sh "./gradlew helloworld:jar"
+//                 sh "./gradlew helloworld-impl:jar"
+//                 sh "./gradlew goodbyeworld:jar"
             }
         }
 
@@ -64,9 +63,6 @@ pipeline {
     }
 
     post {
-        always {
-            junit testResults: '**/build/test-results/**/*.xml', allowEmptyResults: true
-        }
         cleanup {
             deleteDir() /* clean up our workspace */
         }
