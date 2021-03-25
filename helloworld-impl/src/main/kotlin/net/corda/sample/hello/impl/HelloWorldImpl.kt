@@ -9,4 +9,3 @@ class HelloWorldImpl: HelloWorld {
         println("Hello world!")
     }
 }
-
