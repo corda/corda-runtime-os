@@ -7,5 +7,7 @@ import org.osgi.service.component.annotations.Component
 class HelloWorldImpl: HelloWorld {
     override fun sayHello() {
         println("Hello world!")
+        println("Hello world!")
     }
 }
+
