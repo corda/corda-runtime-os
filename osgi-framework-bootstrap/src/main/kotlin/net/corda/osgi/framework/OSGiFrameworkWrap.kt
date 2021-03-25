@@ -17,11 +17,13 @@ TODO
  * Some techniques to investigate produced logs is what expected.
  * I prefer to throw exception and break execution than just log error, it simplifies tests.
  * I prefer to catch exception above and log and stop the framework.
+ * Implement a service to let code in OSGi bundles to ask this OSGI wrapper to shutdown gracefully.
+ * Define those parameters - like log directory and osgi cache directory - should be configured as CLi args.
  */
 
 class OSGiFrameworkWrap(
-    private val uuid: UUID,
-    private val framework: Framework,
+    private val uuid: UUID,             // Used to distinguish different objects in parallel tests.
+    internal val framework: Framework,  // Defined `internal` to handle it from unit tests.
 ) : AutoCloseable {
 
     companion object {

@@ -2,6 +2,7 @@ package net.corda.osgi.framework
 
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
+import net.corda.osgi.framework.api.ArgsService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -77,6 +78,25 @@ internal class OSGiFrameworkWrapTest {
     @Test
     fun install_list() {
 
+    }
+
+    @Test
+    fun setArguments() {
+        val args = arrayOf(
+            "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta",
+            "iota", "kappa", "lambda", "mi", "ni", "xi", "omicron", "pi",
+            "rho", "sigma", "tau", "upsilon", "phi", "chi", "psi"
+        )
+        OSGiFrameworkWrap(
+            UUID.randomUUID(),
+            OSGiFrameworkWrap.getFrameworkFrom(OSGiFrameworkFactoryMock::class.java.canonicalName, frameworkStorageDir)
+        ).use { osgiFrameworkWrap ->
+            osgiFrameworkWrap.setArguments(args)
+            val bundleContext = osgiFrameworkWrap.framework.bundleContext
+            val serviceReference = bundleContext.getServiceReference(ArgsService::class.java)
+            val argsService = bundleContext.getService(serviceReference)
+            assertEquals(args, argsService.getArgs())
+        }
     }
 
     @Test
