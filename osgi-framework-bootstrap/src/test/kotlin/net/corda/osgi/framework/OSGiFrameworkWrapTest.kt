@@ -28,6 +28,7 @@ internal class OSGiFrameworkWrapTest {
         private const val TEMP_DIR = "/foo"
     }
 
+
     private lateinit var frameworkStorageDir: Path
 
     @BeforeEach

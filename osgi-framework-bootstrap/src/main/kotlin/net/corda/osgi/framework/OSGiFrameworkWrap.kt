@@ -87,7 +87,6 @@ class OSGiFrameworkWrap(
 
     }
 
-    @Suppress("MaxLineLength")
     @Throws(
         BundleException::class
     )
@@ -95,7 +94,11 @@ class OSGiFrameworkWrap(
         val sortedBundles = bundleMap.values.sortedBy { it.symbolicName }
         sortedBundles.forEach { bundle: Bundle ->
             if (isFragment(bundle)) {
-                logger.info("OSGi bundle ${bundle.location} ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"} ${bundle.version} ${bundleStateMap[bundle.state]} fragment.")
+                logger.info(
+                    "OSGi bundle ${bundle.location}" +
+                            " ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"}" +
+                            " ${bundle.version} ${bundleStateMap[bundle.state]} fragment."
+                )
             } else {
                 bundle.start()
             }
@@ -193,7 +196,6 @@ class OSGiFrameworkWrap(
         return this
     }
 
-    @Suppress("MaxLineLength")
     @Throws(
         BundleException::class,
         IllegalStateException::class,
@@ -205,7 +207,9 @@ class OSGiFrameworkWrap(
             framework.start()
             framework.bundleContext.addBundleListener { bundleEvent ->
                 val bundle = bundleEvent.bundle
-                logger.info("OSGi bundle ${bundle.location} ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"} ${bundle.version} ${bundleStateMap[bundle.state]}.")
+                logger.info("OSGi bundle ${bundle.location}" +
+                        " ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"}" +
+                        " ${bundle.version} ${bundleStateMap[bundle.state]}.")
             }
             logger.info("OSGi framework ${framework::class.java.canonicalName} ${framework.version} started.")
         } else {
@@ -261,6 +265,5 @@ class OSGiFrameworkWrap(
     override fun close() {
         stop()
     }
-
 
 }

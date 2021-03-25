@@ -123,7 +123,7 @@ dependencies {
 
     osgiBundle "org.postgresql:postgresql:$postgresVersion"
 
-    testImplementation "com.google.jimfs:jimfs:$jimsVersion"
+    testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
