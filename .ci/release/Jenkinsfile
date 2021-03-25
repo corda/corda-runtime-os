@@ -35,12 +35,14 @@ pipeline {
     }
 
     stages {
-        stage('Create JARs') {
+        stage('Release modules') {
             steps {
                 sh "./gradlew helloworld:release -Prelease.localOnly"
+            }
+        }
+        stage('Create JARs') {
+            steps {
                 sh "./gradlew helloworld:jar"
-//                 sh "./gradlew helloworld-impl:jar"
-//                 sh "./gradlew goodbyeworld:jar"
             }
         }
 
@@ -54,13 +56,13 @@ pipeline {
                 rtGradleDeployer(
                         id: 'deployer',
                         serverId: 'R3-Artifactory',
-                        repo: 'r3-corda-dev'
+                        repo: 'r3-corda-releases'
                 )
                 rtGradleRun(
                         usesPlugin: true,
                         useWrapper: true,
                         switches: '-s --info',
-                        tasks: 'artifactoryPublish',
+                        tasks: 'helloworld:artifactoryPublish',
                         deployerId: 'deployer',
                         buildName: env.ARTIFACTORY_BUILD_NAME
                 )
