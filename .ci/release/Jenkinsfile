@@ -38,11 +38,13 @@ pipeline {
         stage('Release modules') {
             steps {
                 sh "./gradlew helloworld:release -Prelease.localOnly"
+                sh "./gradlew helloworld-impl:release -Prelease.localOnly"
+                sh "./gradlew goodbyeworld:release -Prelease.localOnly"
             }
         }
         stage('Create JARs') {
             steps {
-                sh "./gradlew helloworld:jar"
+                sh "./gradlew jar"
             }
         }
 
@@ -62,7 +64,7 @@ pipeline {
                         usesPlugin: true,
                         useWrapper: true,
                         switches: '-s --info',
-                        tasks: 'helloworld:artifactoryPublish',
+                        tasks: 'artifactoryPublish',
                         deployerId: 'deployer',
                         buildName: env.ARTIFACTORY_BUILD_NAME
                 )
