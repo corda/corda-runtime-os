@@ -94,3 +94,4 @@ artifacts {
     archives testingBundle
     testArtifacts testingBundle
 }
+
