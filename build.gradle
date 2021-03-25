@@ -146,8 +146,6 @@ subprojects {
     }
 }
 
-
-
 allprojects {
     group 'net.corda'
 
@@ -184,7 +182,6 @@ allprojects {
         mavenCentral()
         //TODO remove this when we can as its only needed for kotlinx-html-jvm
         jcenter()
-        mavenLocal()
     }
 
     sourceSets {

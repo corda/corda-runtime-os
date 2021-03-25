@@ -23,4 +23,3 @@ afterEvaluate {
 artifactoryPublish {
     publications('maven')
 }
-
