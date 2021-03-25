@@ -74,6 +74,11 @@ pipeline {
                 )
             }
         }
+        stage('Update version') {
+            steps {
+                sh "git add -U"
+            }
+        }
     }
 
     post {
