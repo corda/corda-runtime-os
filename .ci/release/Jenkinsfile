@@ -28,6 +28,7 @@ pipeline {
     stages {
         stage('Create JARs') {
             steps {
+                sh "./gradlew helloworld:release -Prelease.localOnly"
                 sh "./gradlew helloworld:jar"
 //                 sh "./gradlew helloworld-impl:jar"
 //                 sh "./gradlew goodbyeworld:jar"
