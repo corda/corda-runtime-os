@@ -4,10 +4,14 @@ import io.gitlab.arturbosch.detekt.DetektPlugin
 
 buildscript {
     repositories {
-        mavenLocal()
         maven {
             url "$artifactoryContextUrl/corda-releases"
         }
+    }
+
+    //TODO: change this to an official release when possible.
+    dependencies {
+        classpath "pl.allegro.tech.build:axion-release-plugin:1.12.1-subproject-version"
     }
 }
 
@@ -20,16 +24,50 @@ plugins {
     id 'application'
     id 'com.jfrog.artifactory'
     id 'maven-publish'
-    id 'org.ajoberstar.grgit' version '4.1.0'
-    //don't move to 1.11 or higher just yet. Some further changes required to scmVersion config.
-    id 'pl.allegro.tech.build.axion-release' version '1.10.0'
+    id 'org.ajoberstar.grgit' version '4.0.2'
 }
+
+apply plugin: "pl.allegro.tech.build.axion-release"
+
 
 wrapper {
     gradleVersion = '6.8.1'
     distributionType = Wrapper.DistributionType.BIN
 }
 
+scmVersion {
+
+    localOnly = true
+
+    repository {
+        type = 'git'
+        directory = project.rootProject.file('./') // repository location
+        remote = 'privaterepo'
+    }
+
+    monorepos {
+        projectDirs = rootProject.subprojects.collect({p -> p.name})
+    }
+
+    //These checks are turned off while this is still being developed
+    //TODO - turn these back on
+    checks {
+        uncommittedChanges = false
+        aheadOfRemote = false
+        snapshotDependencies = false
+    }
+
+    tag {
+        prefix = getTagName(project.name)
+        versionSeparator  = "_"
+    }
+
+    branchVersionCreator = [ // use different creator per branch
+                             'release/.*': 'simple',
+                             '.*': 'versionWithBranch'
+    ]
+}
+project.version = scmVersion.version
 
 artifactory {
     publish {
@@ -57,6 +95,27 @@ subprojects {
     apply plugin: DetektPlugin
     apply plugin: 'pl.allegro.tech.build.axion-release'
 
+    scmVersion {
+        localOnly = true
+
+        //These checks are turned off while this is still being developed
+        //TODO - turn these back on
+        checks {
+            uncommittedChanges = false
+            aheadOfRemote = false
+            snapshotDependencies = false
+        }
+
+        tag {
+            prefix = getTagName(project.name)
+            versionSeparator = "_"
+        }
+
+        branchVersionCreator = [ // use different creator per branch
+                                 'release/.*': 'simple',
+                                 '.*': 'versionWithBranch'
+        ]
+    }
 
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")
@@ -74,33 +133,6 @@ subprojects {
                 enabled = false
             }
         }
-    }
-
-
-    scmVersion {
-
-        //These checks are turned off while this is still being developed
-        //TODO - turn these back on
-        checks {
-            uncommittedChanges = false
-            aheadOfRemote = false
-            snapshotDependencies = false
-        }
-
-        //TODO - add authentication to allow git tags to be pushed to remote
-        repository {
-            type = 'git'
-            directory = project.rootProject.file('./') // repository location
-        }
-
-        tag {
-            prefix = getTagName(project.name)
-        }
-
-        branchVersionCreator = [ // use different creator per branch
-                                 'release/.*': 'simple',
-                                 '.*': 'versionWithBranch'
-        ]
     }
 
     project.version = scmVersion.version
@@ -195,5 +227,5 @@ def getTagName(projectName) {
 }
 
 def getBranchName() {
-    return grgit.branch.getCurrent().getName()
+    return grgit.branch.current().getName()
 }

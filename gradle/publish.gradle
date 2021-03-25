@@ -1,6 +1,5 @@
 apply plugin: 'com.jfrog.artifactory'
 apply plugin: 'maven-publish'
-apply plugin: 'org.ajoberstar.grgit'
 
 publishing {
     publications {
