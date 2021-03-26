@@ -37,9 +37,9 @@ pipeline {
     stages {
         stage('Release modules') {
             steps {
-                sh "./gradlew helloworld:release "
-                sh "./gradlew helloworld-impl:release "
-                sh "./gradlew goodbyeworld:release "
+                sh "./gradlew helloworld:release -Prelease.customUsername=\"LWogan\" -Prelease.customPassword=\"cb3d93f2771bdac74cfcfac527f330596cc97aac\" "
+                sh "./gradlew helloworld-impl:release -Prelease.customUsername=\"LWogan\" -Prelease.customPassword=\"cb3d93f2771bdac74cfcfac527f330596cc97aac\" "
+                sh "./gradlew goodbyeworld:release -Prelease.customUsername=\"LWogan\" -Prelease.customPassword=\"cb3d93f2771bdac74cfcfac527f330596cc97aac\" "
             }
         }
         stage('Create JARs') {

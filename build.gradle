@@ -37,12 +37,9 @@ wrapper {
 
 scmVersion {
 
-    /*repository {
-        type = 'git'
-        directory = project.rootProject.file('./') // repository location
-        remote = 'remote'
-    }*/
-
+    repository {
+        pushTagsOnly = true
+    }
 
     monorepos {
         projectDirs = rootProject.subprojects.collect({p -> p.name})
@@ -52,6 +49,7 @@ scmVersion {
     //TODO - turn these back on
     checks {
         uncommittedChanges = false
+        aheadOfRemote = false
         snapshotDependencies = false
     }
 
@@ -95,16 +93,15 @@ subprojects {
 
     scmVersion {
 
-        /*repository {
-            type = 'git'
-            directory = project.rootProject.file('./') // repository location
-            remote = 'remote'
-        }*/
+        repository {
+            pushTagsOnly = true
+        }
 
         //These checks are turned off while this is still being developed
         //TODO - turn these back on
         checks {
             uncommittedChanges = false
+            aheadOfRemote = false
             snapshotDependencies = false
         }
 

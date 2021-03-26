@@ -34,7 +34,6 @@ dependencies {
     testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion"
 }
 
-
 description 'Goodbye World Library'
 
 tasks.named('jar', Jar) {
