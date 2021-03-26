@@ -52,7 +52,6 @@ scmVersion {
     //TODO - turn these back on
     checks {
         uncommittedChanges = false
-        aheadOfRemote = false
         snapshotDependencies = false
     }
 
@@ -106,7 +105,6 @@ subprojects {
         //TODO - turn these back on
         checks {
             uncommittedChanges = false
-            aheadOfRemote = false
             snapshotDependencies = false
         }
 

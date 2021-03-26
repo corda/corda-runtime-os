@@ -37,9 +37,9 @@ pipeline {
     stages {
         stage('Release modules') {
             steps {
-                sh "./gradlew helloworld:release -Prelease.localOnly -Prelease.forceVersion=5.0.${env.BUILD_NUMBER}"
-                sh "./gradlew helloworld-impl:release -Prelease.localOnly -Prelease.forceVersion=5.0.${env.BUILD_NUMBER}"
-                sh "./gradlew goodbyeworld:release -Prelease.localOnly -Prelease.forceVersion=5.0.${env.BUILD_NUMBER}"
+                sh "./gradlew helloworld:release "
+                sh "./gradlew helloworld-impl:release "
+                sh "./gradlew goodbyeworld:release "
             }
         }
         stage('Create JARs') {
@@ -72,11 +72,6 @@ pipeline {
                         serverId: 'R3-Artifactory',
                         buildName: env.ARTIFACTORY_BUILD_NAME
                 )
-            }
-        }
-        stage('Push tags') {
-            steps {
-                sh "git push --tags"
             }
         }
     }
