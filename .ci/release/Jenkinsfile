@@ -74,6 +74,11 @@ pipeline {
                 )
             }
         }
+        stage('Push tags') {
+            steps {
+                sh "git push --tags"
+            }
+        }
     }
 
     post {
