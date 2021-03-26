@@ -31,6 +31,12 @@ pluginManagement {
     }
 }
 
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+}
+
 rootProject.name = 'flow-worker'
 include 'helloworld'
 include 'helloworld-impl'
