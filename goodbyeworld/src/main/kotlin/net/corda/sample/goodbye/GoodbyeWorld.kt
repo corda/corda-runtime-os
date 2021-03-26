@@ -11,9 +11,6 @@ fun main() {
 
 class GoodbyeWorld {
 
-
-
-
     @Reference
     var helloWorld: HelloWorld? = null
 
