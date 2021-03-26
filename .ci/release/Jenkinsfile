@@ -40,7 +40,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                scmvars = checkout([
+                checkout([
                     $class                           : 'GitSCM',
                     branches                         : scm.branches,
                     doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
