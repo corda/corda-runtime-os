@@ -23,6 +23,7 @@ pipeline {
         ansiColor('xterm')
         timestamps()
         timeout(3*60) // 3 hours
+        skipDefaultCheckout(true)
     }
 
     environment {
@@ -35,6 +36,20 @@ pipeline {
     }
 
     stages {
+
+
+        stage('Checkout') {
+          retry(3) {
+            scmvars = checkout([
+              $class                           : 'GitSCM',
+              branches                         : scm.branches,
+              doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+              extensions                       : scm.extensions,
+              userRemoteConfigs                : scm.userRemoteConfigs
+            ])
+          }
+        }
+
         stage('Release modules') {
             steps {
                 sh "./gradlew helloworld:release -Prelease.customUsername=\"LWogan\" -Prelease.customPassword=\"cb3d93f2771bdac74cfcfac527f330596cc97aac\" "
