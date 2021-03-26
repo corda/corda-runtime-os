@@ -23,7 +23,7 @@ pipeline {
         ansiColor('xterm')
         timestamps()
         timeout(3*60) // 3 hours
-        skipDefaultCheckout(true)
+    //    skipDefaultCheckout(true)
     }
 
     environment {
@@ -37,7 +37,7 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
+        /* stage('Checkout') {
             steps {
                 checkout([
                     $class                           : 'GitSCM',
@@ -47,7 +47,7 @@ pipeline {
                     userRemoteConfigs                : scm.userRemoteConfigs
                 ])
             }
-        }
+        } */
 
         stage('Release modules') {
             steps {
