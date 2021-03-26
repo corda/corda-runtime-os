@@ -21,21 +21,23 @@ class OSGiFrameworkMock(
     private val version: Version = Version(0, 0, 0, "mock")
 ) : Framework {
 
-    private val bundleContext = MockOsgi.newBundleContext()
+    private val bundleContextAtomic = AtomicReference<BundleContext>()
 
-    private val bundle = MockBundle(bundleContext)
+    private val bundleAtomic = AtomicReference<MockBundle>()
 
-    private val listenersAtomic = AtomicReference(listOf<FrameworkListener>())
+    private val frameworkListenersAtomic = AtomicReference(listOf<FrameworkListener>())
 
     private val stateAtomic = AtomicInteger(Bundle.INSTALLED)
 
     private val versionAtomic = AtomicReference(version)
 
+    private val uuidAtomic = AtomicReference<UUID>()
+
     private fun setState(state: Int) {
         synchronized(stateAtomic) {
             stateAtomic.set(state)
             val frameworkEvent = FrameworkEvent(state, this, null)
-            for (listener in listenersAtomic.get()) {
+            for (listener in frameworkListenersAtomic.get()) {
                 listener.frameworkEvent(frameworkEvent)
             }
         }
@@ -92,23 +94,23 @@ class OSGiFrameworkMock(
     }
 
     override fun update() {
-        bundle.update()
+        bundleAtomic.get().update()
     }
 
     override fun update(`in`: InputStream?) {
-        bundle.update(`in`)
+        bundleAtomic.get().update(`in`)
     }
 
     override fun uninstall() {
-        bundle.uninstall()
+        bundleAtomic.get().uninstall()
     }
 
     override fun getHeaders(): Dictionary<String, String> {
-        return bundle.headers
+        return bundleAtomic.get().headers
     }
 
     override fun getHeaders(locale: String?): Dictionary<String, String> {
-        return bundle.getHeaders(locale)
+        return bundleAtomic.get().getHeaders(locale)
     }
 
     override fun getBundleId(): Long {
@@ -120,19 +122,19 @@ class OSGiFrameworkMock(
     }
 
     override fun getRegisteredServices(): Array<ServiceReference<*>> {
-        return bundle.registeredServices
+        return bundleAtomic.get().registeredServices
     }
 
     override fun getServicesInUse(): Array<ServiceReference<*>> {
-        return bundle.servicesInUse
+        return bundleAtomic.get().servicesInUse
     }
 
     override fun hasPermission(permission: Any?): Boolean {
-        return bundle.hasPermission(permission)
+        return bundleAtomic.get().hasPermission(permission)
     }
 
     override fun getResource(name: String?): URL {
-        return bundle.getResource(name)
+        return bundleAtomic.get().getResource(name)
     }
 
     override fun getSymbolicName(): String {
@@ -140,35 +142,35 @@ class OSGiFrameworkMock(
     }
 
     override fun loadClass(name: String?): Class<*> {
-        return bundle.loadClass(name)
+        return bundleAtomic.get().loadClass(name)
     }
 
     override fun getResources(name: String?): Enumeration<URL> {
-        return bundle.getResources(name)
+        return bundleAtomic.get().getResources(name)
     }
 
     override fun getEntryPaths(path: String?): Enumeration<String> {
-        return bundle.getEntryPaths(path)
+        return bundleAtomic.get().getEntryPaths(path)
     }
 
     override fun getEntry(path: String?): URL {
-        return bundle.getEntry(path)
+        return bundleAtomic.get().getEntry(path)
     }
 
     override fun getLastModified(): Long {
-        return bundle.lastModified
+        return bundleAtomic.get().lastModified
     }
 
     override fun findEntries(path: String?, filePattern: String?, recurse: Boolean): Enumeration<URL> {
-        return bundle.findEntries(path, filePattern, recurse)
+        return bundleAtomic.get().findEntries(path, filePattern, recurse)
     }
 
     override fun getBundleContext(): BundleContext {
-        return bundle.bundleContext
+        return bundleAtomic.get().bundleContext
     }
 
     override fun getSignerCertificates(signersType: Int): MutableMap<X509Certificate, MutableList<X509Certificate>> {
-        return bundle.getSignerCertificates(signersType)
+        return bundleAtomic.get().getSignerCertificates(signersType)
     }
 
     override fun getVersion(): Version {
@@ -176,18 +178,24 @@ class OSGiFrameworkMock(
     }
 
     override fun <A : Any?> adapt(type: Class<A>): A {
-        return bundle.adapt(type)
+        return bundleAtomic.get().adapt(type)
     }
 
     override fun getDataFile(filename: String): File {
-        return bundle.getDataFile(filename)
+        return bundleAtomic.get().getDataFile(filename)
     }
 
     override fun init() {
     }
 
+    @Synchronized
     override fun init(vararg listeners: FrameworkListener) {
-        listenersAtomic.set(listeners.toList())
+        uuidAtomic.set(UUID.randomUUID())
+        stateAtomic.set(Bundle.STARTING)
+        val bundleContext = MockOsgi.newBundleContext()
+        bundleContextAtomic.set(bundleContext)
+        bundleAtomic.set(MockBundle(bundleContext))
+
     }
 
     override fun waitForStop(timeout: Long): FrameworkEvent {

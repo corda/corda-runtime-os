@@ -107,8 +107,8 @@ allprojects {
             jvmTarget = VERSION_11
             javaParameters = true   // Useful for reflection.
             freeCompilerArgs += [
-                    // Prevent Kotlin from warning about kotlin.* classes inside the OSGi bundle.
                     "-Xjvm-default=all",
+                    // Prevent Kotlin from warning about kotlin.* classes inside the OSGi bundle.
                     "-Xskip-runtime-version-check",
                     "-java-parameters"
             ]

@@ -142,7 +142,7 @@ internal class OSGiFrameworkWrapTest {
     @Test
     fun stop() {
         val startupStateAtomic = AtomicInteger(0)
-        val bootstrapLatch = CountDownLatch(1);
+        val bootstrapLatch = CountDownLatch(1)
         val framework = OSGiFrameworkMock(mutableMapOf(), 100L)
         framework.init(FrameworkListener { frameworkEvent ->
             assertTrue(startupStateAtomic.get() < frameworkEvent.bundle.state)
@@ -156,7 +156,7 @@ internal class OSGiFrameworkWrapTest {
             frameworkWrap.start()
             assertTrue(bootstrapLatch.await(100L, TimeUnit.SECONDS))
             assertEquals(Bundle.ACTIVE, framework.state)
-            val shutdownLatch = CountDownLatch(1);
+            val shutdownLatch = CountDownLatch(1)
             val shutdownStateAtomic = AtomicInteger(framework.state)
             framework.init(FrameworkListener { frameworkEvent ->
                 assertTrue { shutdownStateAtomic.get() > frameworkEvent.bundle.state }
@@ -186,7 +186,7 @@ internal class OSGiFrameworkWrapTest {
     @Test
     fun waitForStop() {
         val frameworkStateAtomic = AtomicInteger(0)
-        val bootstrapLatch = CountDownLatch(1);
+        val bootstrapLatch = CountDownLatch(1)
         val framework = OSGiFrameworkMock(mutableMapOf(), 100L)
         framework.init(FrameworkListener { frameworkEvent ->
             assertTrue(frameworkStateAtomic.get() < frameworkEvent.bundle.state)

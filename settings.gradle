@@ -35,7 +35,5 @@ rootProject.name = 'flow-worker'
 include 'helloworld'
 include 'helloworld-impl'
 include 'goodbyeworld'
-
-// osgi-framework-bootstrap
 include 'osgi-framework-bootstrap'
 include 'osgi-framework-bootstrap:framework-api'

@@ -12,15 +12,6 @@ import java.io.IOException
 import java.nio.file.Path
 import java.util.*
 
-/*
-TODO
- * Some techniques to investigate produced logs is what expected.
- * I prefer to throw exception and break execution than just log error, it simplifies tests.
- * I prefer to catch exception above and log and stop the framework.
- * Implement a service to let code in OSGi bundles to ask this OSGI wrapper to shutdown gracefully.
- * Define those parameters - like log directory and osgi cache directory - should be configured as CLi args.
- */
-
 class OSGiFrameworkWrap(
     private val uuid: UUID,             // Used to distinguish different objects in parallel tests.
     internal val framework: Framework,  // Defined `internal` to handle it from unit tests.
@@ -218,7 +209,6 @@ class OSGiFrameworkWrap(
         return this
     }
 
-    @Suppress("ForbiddenComment")
     @Throws(
         BundleException::class,
         ClassNotFoundException::class,
@@ -228,7 +218,6 @@ class OSGiFrameworkWrap(
     fun stop(): OSGiFrameworkWrap {
         if (isStoppable(framework.state)) {
             logger.debug("OSGi framework stop...")
-            // todo: investigate stop sequence: is it better to enforce according the activation order?
             framework.stop()
             logger.info("OSGi framework ${framework::class.java.canonicalName} ${framework.version} stop.")
         } else {

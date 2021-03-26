@@ -54,7 +54,7 @@ class OSGiFrameworkMain {
                         .setArguments(args)
                         .install(SYSTEM_BUNDLES)
                         .activate()
-                        .waitForStop(NO_TIMEOUT);
+                        .waitForStop(NO_TIMEOUT)
                 } catch (e: Exception) {
                     logger.error("Error: ${e.message}!", e)
                 } finally {
