@@ -87,10 +87,6 @@ subprojects {
 
     dependencies {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
-
-        api "org.osgi:osgi.annotation:$osgiVersion"
-        api "org.osgi:osgi.cmpn:$osgiVersion"
-        api "org.osgi:osgi.core:$osgiVersion"
     }
 }
 
@@ -141,6 +137,11 @@ allprojects {
                 srcDirs = [ 'src/integration-test/resources' ]
             }
         }
+    }
+
+    // Added to support junit5 tests
+    tasks.named('test').configure {
+        useJUnitPlatform()
     }
 
     configurations {
