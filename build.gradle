@@ -37,13 +37,12 @@ wrapper {
 
 scmVersion {
 
-    localOnly = true
-
     repository {
         type = 'git'
         directory = project.rootProject.file('./') // repository location
-        remote = 'privaterepo'
+        remote = 'remote'
     }
+
 
     monorepos {
         projectDirs = rootProject.subprojects.collect({p -> p.name})
@@ -96,7 +95,12 @@ subprojects {
     apply plugin: 'pl.allegro.tech.build.axion-release'
 
     scmVersion {
-        localOnly = true
+
+        repository {
+            type = 'git'
+            directory = project.rootProject.file('./') // repository location
+            remote = 'remote'
+        }
 
         //These checks are turned off while this is still being developed
         //TODO - turn these back on
