@@ -1,4 +1,14 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "biz.aQute.bnd:biz.aQute.bndlib:$bndVersion"
+    }
+}
+
 import java.util.jar.JarFile
+import aQute.bnd.header.OSGiHeader
 
 description("OSGi Framework Bootstrap")
 
@@ -11,7 +21,7 @@ repositories {
 
 configurations {
 
-    runtimeArtifacts
+    runtimeArtifacts {}
 
     // KNOW_HOW
     // Use `osgiBundle` configuration to define dependencies the OSGi framework must install and activate as OSGI bundles.
@@ -74,6 +84,7 @@ configurations {
             substitute module('org.jetbrains.kotlin:kotlin-stdlib') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
             substitute module('org.jetbrains.kotlin:kotlin-reflect') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
 
+        }
     }
 
     //The modules excluded from this configuration will be exposed to the OSGi framework from the bootstrapper classpath
