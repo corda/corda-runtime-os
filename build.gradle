@@ -215,7 +215,7 @@ allprojects {
 def getTagName(projectName) {
     def branch = getBranchName()
 
-    if (!branch.contains("release/")) {
+    if (!branch.contains("release/") && !branch.contains("HEAD")) {
         return branch + "-" + projectName
     }
 
