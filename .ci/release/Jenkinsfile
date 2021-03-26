@@ -37,7 +37,7 @@ pipeline {
 
     stages {
 
-         stage('Checkout') {
+         stage('Checkout Custom') {
             steps {
                 checkout([
                 	$class: 'GitSCM',
