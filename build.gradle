@@ -37,11 +37,11 @@ wrapper {
 
 scmVersion {
 
-    repository {
+    /*repository {
         type = 'git'
         directory = project.rootProject.file('./') // repository location
         remote = 'remote'
-    }
+    }*/
 
 
     monorepos {
@@ -95,11 +95,11 @@ subprojects {
 
     scmVersion {
 
-        repository {
+        /*repository {
             type = 'git'
             directory = project.rootProject.file('./') // repository location
             remote = 'remote'
-        }
+        }*/
 
         //These checks are turned off while this is still being developed
         //TODO - turn these back on
