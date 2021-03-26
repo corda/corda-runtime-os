@@ -222,6 +222,8 @@ def getTagName(projectName) {
     return projectName
 }
 
+
+
 def getBranchName() {
     return grgit.branch.current().getName()
 }
