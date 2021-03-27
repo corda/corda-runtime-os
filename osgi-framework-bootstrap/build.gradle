@@ -12,9 +12,6 @@ import aQute.bnd.header.OSGiHeader
 
 description("OSGi Framework Bootstrap")
 
-group = 'net.corda'
-version = '1.0-SNAPSHOT'
-
 repositories {
     mavenCentral()
 }
