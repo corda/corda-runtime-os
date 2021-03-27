@@ -87,8 +87,6 @@ subprojects {
 
     dependencies {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
-
-
     }
 }
 

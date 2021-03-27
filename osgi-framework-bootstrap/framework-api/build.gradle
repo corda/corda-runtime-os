@@ -3,9 +3,6 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
 }
 
-group 'net.corda'
-version '1.0-SNAPSHOT'
-
 repositories {
     mavenCentral()
 }

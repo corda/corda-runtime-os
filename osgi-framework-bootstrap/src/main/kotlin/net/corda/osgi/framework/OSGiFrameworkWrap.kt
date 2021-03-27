@@ -13,8 +13,8 @@ import java.nio.file.Path
 import java.util.*
 
 class OSGiFrameworkWrap(
-    private val uuid: UUID,             // Used to distinguish different objects in parallel tests.
-    internal val framework: Framework,  // Defined `internal` to handle it from unit tests.
+    val uuid: UUID,             // Used to distinguish different objects in parallel tests.
+    private val framework: Framework,  // Defined `internal` to handle it from unit tests.
 ) : AutoCloseable {
 
     companion object {
@@ -41,13 +41,12 @@ class OSGiFrameworkWrap(
          */
         private const val JAR_EXTENSION = ".jar"
 
-
-        fun isStartable(status: Int): Boolean {
+        private fun isStartable(status: Int): Boolean {
             val state = status and 0xff
             return state > Bundle.UNINSTALLED && state < Bundle.STOPPING
         }
 
-        fun isStoppable(status: Int): Boolean {
+        private fun isStoppable(status: Int): Boolean {
             val state = status and 0xff
             return state > Bundle.STARTING && state <= Bundle.ACTIVE
         }
@@ -82,8 +81,7 @@ class OSGiFrameworkWrap(
         BundleException::class
     )
     fun activate(): OSGiFrameworkWrap {
-        val sortedBundles = bundleMap.values.sortedBy { it.symbolicName }
-        sortedBundles.forEach { bundle: Bundle ->
+        bundleMap.values.forEach { bundle: Bundle ->
             if (isFragment(bundle)) {
                 logger.info(
                     "OSGi bundle ${bundle.location}" +
@@ -99,15 +97,11 @@ class OSGiFrameworkWrap(
 
     /**
      * Map of the bundle installed.
-     * Synchronized.
+     * Access to this property should be synchronized.
      * @see [activate]
      * @see [install]
      */
     private val bundleMap = mutableMapOf<Long, Bundle>()
-
-    fun getUUID(): UUID {
-        return uuid
-    }
 
     /**
      * Return 'true' if the 'bundle' is an
