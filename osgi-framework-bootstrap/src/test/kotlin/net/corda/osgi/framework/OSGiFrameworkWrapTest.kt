@@ -67,7 +67,7 @@ internal class OSGiFrameworkWrapTest {
                 frameworkStorageDir
             )
         ).use { osgiFrameworkWrap ->
-            assertEquals(uuid, osgiFrameworkWrap.getUUID())
+            assertEquals(uuid, osgiFrameworkWrap.uuid)
         }
     }
 
@@ -88,12 +88,16 @@ internal class OSGiFrameworkWrapTest {
             "iota", "kappa", "lambda", "mi", "ni", "xi", "omicron", "pi",
             "rho", "sigma", "tau", "upsilon", "phi", "chi", "psi"
         )
+        val framework = OSGiFrameworkWrap.getFrameworkFrom(
+            OSGiFrameworkFactoryMock::class.java.canonicalName,
+            frameworkStorageDir
+        )
         OSGiFrameworkWrap(
             UUID.randomUUID(),
-            OSGiFrameworkWrap.getFrameworkFrom(OSGiFrameworkFactoryMock::class.java.canonicalName, frameworkStorageDir)
+            framework
         ).use { osgiFrameworkWrap ->
             osgiFrameworkWrap.setArguments(args)
-            val bundleContext = osgiFrameworkWrap.framework.bundleContext
+            val bundleContext = framework.bundleContext
             val serviceReference = bundleContext.getServiceReference(ArgsService::class.java)
             val argsService = bundleContext.getService(serviceReference)
             assertEquals(args, argsService.getArgs())

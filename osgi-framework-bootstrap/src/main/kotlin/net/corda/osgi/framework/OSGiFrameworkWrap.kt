@@ -41,12 +41,12 @@ class OSGiFrameworkWrap(
          */
         private const val JAR_EXTENSION = ".jar"
 
-        private fun isStartable(status: Int): Boolean {
+        internal fun isStartable(status: Int): Boolean {
             val state = status and 0xff
             return state > Bundle.UNINSTALLED && state < Bundle.STOPPING
         }
 
-        private fun isStoppable(status: Int): Boolean {
+        internal fun isStoppable(status: Int): Boolean {
             val state = status and 0xff
             return state > Bundle.STARTING && state <= Bundle.ACTIVE
         }
