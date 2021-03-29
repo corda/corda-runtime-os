@@ -41,6 +41,7 @@ pipeline {
             steps {
                 checkout([
                 	$class: 'GitSCM',
+                	allowSecondFetch: true,
                 	branches: scm.branches,
                 	doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
                 	extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, depth: 0, honorRefspec: false]],
