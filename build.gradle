@@ -154,8 +154,9 @@ allprojects {
         testImplementation "org.assertj:assertj-core:$assertjVersion"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     }
+
+    tasks.named("test", Test).configure {
+        useJUnitPlatform()
+    }
 }
 
-test {
-    useJUnitPlatform()
-}
