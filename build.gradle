@@ -107,7 +107,6 @@ allprojects {
             jvmTarget = VERSION_11
             javaParameters = true   // Useful for reflection.
             freeCompilerArgs += [
-                    '-Xjvm-default=all',
                     // Prevent Kotlin from warning about kotlin.* classes inside the OSGi bundle.
                     "-Xskip-runtime-version-check",
                     "-java-parameters"
@@ -139,11 +138,6 @@ allprojects {
         }
     }
 
-    // Added to support junit5 tests
-    tasks.named('test').configure {
-        useJUnitPlatform()
-    }
-
     configurations {
         integrationTestApi.extendsFrom testApi
         integrationTestCompileOnly.extendsFrom testCompileOnly
@@ -160,4 +154,9 @@ allprojects {
         testImplementation "org.assertj:assertj-core:$assertjVersion"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     }
+
+    tasks.named("test", Test).configure {
+        useJUnitPlatform()
+    }
 }
+
