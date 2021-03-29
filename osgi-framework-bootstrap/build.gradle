@@ -283,8 +283,3 @@ tasks.register("run", JavaExec) {
     classpath(project.configurations.named('cordaJarRuntimeClasspath'))
 }
 
-
-
-test {
-    useJUnitPlatform()
-}

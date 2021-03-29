@@ -155,3 +155,7 @@ allprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     }
 }
+
+test {
+    useJUnitPlatform()
+}

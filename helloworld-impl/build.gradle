@@ -30,3 +30,4 @@ Bundle-Name: Hello world impl
 Bundle-SymbolicName: ${project.group}.${bundleName}
 """
 }
+
