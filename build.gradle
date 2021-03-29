@@ -37,10 +37,6 @@ wrapper {
 
 scmVersion {
 
-    hooks {
-        pre 'commit'
-    }
-
     repository {
         pushTagsOnly = true
     }
@@ -97,10 +93,6 @@ subprojects {
     apply plugin: 'pl.allegro.tech.build.axion-release'
 
     scmVersion {
-
-        hooks {
-            pre 'commit'
-        }
 
         repository {
             pushTagsOnly = true
