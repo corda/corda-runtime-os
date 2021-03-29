@@ -39,6 +39,8 @@ def buildTime = System.currentTimeMillis()
 
 scmVersion {
 
+    localOnly = true
+
     repository {
         pushTagsOnly = true
     }
@@ -96,6 +98,8 @@ subprojects {
     apply plugin: 'pl.allegro.tech.build.axion-release'
 
     scmVersion {
+
+        localOnly = true
 
         repository {
             pushTagsOnly = true
