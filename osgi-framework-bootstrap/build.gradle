@@ -286,5 +286,5 @@ tasks.register("run", JavaExec) {
 
 
 test {
-    dependsOn(buildOsgiBundles)
+    useJUnitPlatform()
 }

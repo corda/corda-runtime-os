@@ -14,7 +14,7 @@ import java.util.*
 
 class OSGiFrameworkWrap(
     val uuid: UUID,             // Used to distinguish different objects in parallel tests.
-    private val framework: Framework,  // Defined `internal` to handle it from unit tests.
+    private val framework: Framework,
 ) : AutoCloseable {
 
     companion object {
@@ -41,12 +41,12 @@ class OSGiFrameworkWrap(
          */
         private const val JAR_EXTENSION = ".jar"
 
-        internal fun isStartable(status: Int): Boolean {
+        fun isStartable(status: Int): Boolean {
             val state = status and 0xff
             return state > Bundle.UNINSTALLED && state < Bundle.STOPPING
         }
 
-        internal fun isStoppable(status: Int): Boolean {
+        fun isStoppable(status: Int): Boolean {
             val state = status and 0xff
             return state > Bundle.STARTING && state <= Bundle.ACTIVE
         }
