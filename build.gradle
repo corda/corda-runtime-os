@@ -35,11 +35,7 @@ wrapper {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-def buildTime = System.currentTimeMillis()
-
 scmVersion {
-
-    localOnly = true
 
     repository {
         pushTagsOnly = true
@@ -63,12 +59,10 @@ scmVersion {
     }
 
     branchVersionCreator = [ // use different creator per branch
-                             'release/.*': { v,p  -> v + ".$buildTime" },
+                             'release/.*': 'simple',
                              '.*': 'versionWithBranch'
     ]
 }
-
-
 project.version = scmVersion.version
 
 artifactory {
@@ -99,8 +93,6 @@ subprojects {
 
     scmVersion {
 
-        localOnly = true
-
         repository {
             pushTagsOnly = true
         }
@@ -119,10 +111,13 @@ subprojects {
         }
 
         branchVersionCreator = [ // use different creator per branch
-                                 'release/.*': { v,p  -> v + ".$buildTime" },
+                                 'release/.*': 'simple',
                                  '.*': 'versionWithBranch'
         ]
     }
+
+    project.version = scmVersion.version
+
 
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")
@@ -141,8 +136,6 @@ subprojects {
             }
         }
     }
-
-    project.version = scmVersion.version
 
     dependencies {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
