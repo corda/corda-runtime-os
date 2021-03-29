@@ -1,32 +1,11 @@
 plugins {
-    id 'corda.osgi-conventions'
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+    id 'corda.publish'
 }
 
-apply from: "$rootDir/gradle/publish.gradle"
-
-def bundleName = "hello-world-impl"
 description 'Hello World Implementation'
 
-configurations {
-    testArtifacts
-    testCompileOnly.extendsFrom compileOnly
-}
-
 dependencies {
-    api project(":helloworld")
-    api "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-
-    testImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
-
-    testImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-}
-
-tasks.named('jar', Jar) {
-    archiveBaseName = bundleName
-    bnd """
-Bundle-Name: Hello world impl
-Bundle-SymbolicName: ${project.group}.${bundleName}
-"""
+    implementation project(":helloworld")
 }

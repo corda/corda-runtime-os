@@ -1,5 +1,6 @@
 plugins {
     id 'biz.aQute.bnd.builder'
+    id 'corda.publish'
 }
 
 dependencies {
@@ -8,12 +9,10 @@ dependencies {
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 }
 
-apply from: "$rootDir/gradle/publish.gradle"
-
 dependencies {
-    api project(":helloworld")
+    implementation project(":helloworld")
 
-    api "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
 }
 
 description 'Goodbye World Library'
