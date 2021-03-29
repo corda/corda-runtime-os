@@ -39,15 +39,12 @@ pipeline {
 
          stage('Checkout Custom') {
             steps {
-                checkout([
-                	$class: 'GitSCM',
-                	allowSecondFetch: true,
+                $class: 'GitSCM',
                 	branches: scm.branches,
                 	doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
-                	extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, depth: 0, honorRefspec: false]],
+                	extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, reference: '', shallow: true]],
                 	submoduleCfg: [],
                 	userRemoteConfigs: scm.userRemoteConfigs
-                ])
             }
         }
 
