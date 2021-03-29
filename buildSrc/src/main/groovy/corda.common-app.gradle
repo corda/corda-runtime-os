@@ -1,5 +1,3 @@
-import java.util.jar.JarFile
-
 plugins {
     id 'java'
     id 'corda.publish'
@@ -8,8 +6,54 @@ plugins {
 
 configurations {
 
-    bootstrap project(":osgi-framework-bootstrap")
+    runtimeArtifacts {}
 
+    // KNOW_HOW
+    // Use `osgiBundle` configuration to define dependencies the OSGi framework must install and activate as OSGI bundles.
+    // NOTE
+    // The functionalities of `osgi.core` and `osgi.cmpn` are provided by the OSGi framework itself.
+    // The `osgi.core` and `osgi.cmpn` bundles must not be included as dependencies else the OSGi framework stops,
+    // They can be expressed as `compileOnly` in dependencies of the modules needing to access OSGI framework classes.
+    // As precaution the `osgi.core` and `osgi.cmpn` are excluded frm building.
+    osgiBundle {
+        // The `osgi.core` and `osgi.cmpn` should be declared as `compileOnly` dependencies
+        // but many osgi packages include them as transitive dependencies unfortunately
+        exclude group: "org.osgi", module: "osgi.core"
+        exclude group: "org.osgi", module: "osgi.cmpn"
+
+        exclude group: "net.corda.kotlin", module: "kotlin-stdlib-jdk8-osgi"
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-osgi-bundle"
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8"
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-common"
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-reflect"
+
+        resolutionStrategy.dependencySubstitution {
+            //Replace Kotlin stdlib
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') with module("net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') with module("net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-reflect') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+        }
+    }
+
+    //The modules excluded from this configuration will be exposed to the OSGi framework from the bootstrapper classpath
+    systemPackages {
+        transitive = false
+    }
+
+    integrationTestRuntimeClasspath {
+        extendsFrom(systemPackages)
+    }
+
+    appJarRuntimeClasspath {
+        extendsFrom(runtimeClasspath)
+        extendsFrom(systemPackages)
+        canBeResolved = true
+        transitive = true
+    }
 }
 
 compileKotlin {
@@ -20,197 +64,30 @@ compileTestKotlin {
     kotlinOptions.jvmTarget = jvmTarget
 }
 
-//def buildAppJar = tasks.register("buildAppJar", Jar) {
-//    inputs.files(project(":osgi-framework-bootstrap:framework-api").jar)
-//    archiveBaseName = project.name
-//    archiveVersion = version
-//    ["compileJava", "compileKotlin", "processResources"].each { taskName ->
-//        inputs.files(tasks.named(taskName))
-//    }
-//    manifest {
-//        attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
-//        attributes 'Can-Redefine-Classes': true
-//        attributes 'Can-Retransform-Classes': true
-//    }
-//    from(sourceSets.main.output.files)
-//    ['appJarRuntimeClasspath'].each { configurationName ->
-//        from { configurations[configurationName].collect { it.isDirectory() ? it : zipTree(it) } }
-//    }
-//}
-//build.dependsOn(buildAppJar)
-
-//tasks.register("run", JavaExec) {
-//    mainClass = 'net.corda.osgi.framework.OSGiFrameworkMain'
-//    classpath(sourceSets.main.output)
-//    classpath(project.configurations.named('appJarRuntimeClasspath'))
-//}
-
-///**
-// * Scan the OSGi bundles of the Corda project to bundle them in the `build/resource/main/bundles` directory of the project,
-// * list the bundles in the `build/resource/main/system_bundles` files to allow classloader to load them from IDE (file system)
-// * or packed in the executable fat jar.
-// */
-//Provider<Copy> buildOsgiBundles = tasks.register("buildOsgiBundles", Copy) {
-//    final def bundlesDir = new File(project.buildDir, "resources/main/bundles")
-//    final def systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
-//
-//    into bundlesDir
-//    from configurations.osgiBundle
-//    doLast {
-//        final Set<String> systemBundleSet = new TreeSet<>()
-//        bundlesDir.listFiles({ File dir, String name -> name.endsWith(".jar") } as FilenameFilter)
-//                .grep { File file ->
-//                    new JarFile(file).manifest.mainAttributes.getValue("Bundle-SymbolicName")
-//                }.each { file ->
-//            systemBundleSet.add("bundles/${file.name}")
-//        }
-//        systemBundlesFile.withWriter { writer ->
-//            systemBundleSet.each { line ->
-//                writer.writeLine(line)
-//            }
-//        }
-//    }
-//}
-
-
-///**
-// * Scan the OSGi bundles defined in 'systemPackages' and 'quasar' configuration,
-// * scan the packages declared in the and `systemPackagesExtra` array of this `build.gradle`
-// * and export them through the `system_packages_extra` property of the OSGI framework.
-// */
-//class BuildSystemPackageExtra extends DefaultTask {
-//
-//    BuildSystemPackageExtra() {
-//        sourceConfigurations = project.objects.listProperty(String.class)
-//        jdkExtraPackages = project.objects.listProperty(String.class)
-//        systemPackagesExtraFile = project.objects.fileProperty()
-//    }
-//
-//    @Input
-//    final ListProperty<String> sourceConfigurations
-//
-//    @Input
-//    final ListProperty<String> jdkExtraPackages
-//
-//    @InputFiles
-//    FileCollection getInputFiles() {
-//        FileCollection result = project.objects.fileCollection()
-//        sourceConfigurations.map { list ->
-//            list.forEach { configurationName ->
-//                result.add(project.configurations[configurationName])
-//            }
-//        }
-//        return result
-//    }
-//
-//    @OutputFile
-//    final RegularFileProperty systemPackagesExtraFile
-//
-//    @TaskAction
-//    def run() {
-//        final Set<String> exportSet = new TreeSet<>()
-//        sourceConfigurations.get().each { configurationName ->
-//            project.configurations[configurationName].incoming.each { resolvableDependency ->
-//                resolvableDependency.artifacts.each { resolvedArtifact ->
-//                    final def jarFile = new JarFile(resolvedArtifact.file)
-//                    if (jarFile.manifest.mainAttributes.getValue("Bundle-SymbolicName") != null) {
-//                        jarFile.manifest.mainAttributes.getValue("Export-Package")?.with { exportPackage ->
-//                            OSGiHeader.parseHeader(exportPackage).entrySet().each { exportEntry ->
-//                                final def export = exportEntry.key + ";" + exportEntry.value.toString()
-//                                exportSet.add(export)
-//                            }
-//                        }
-//                    } else {
-//                        jarFile.entries().each { jarEntry ->
-//                            if (jarEntry.name.endsWith(".class")) {
-//                                final def list = jarEntry.name.replace('\\', '/').split('/').toList()
-//                                final def export = list.subList(0, list.size() - 1).join('.')
-//                                exportSet.add(export)
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        jdkExtraPackages.get().each { export -> exportSet.add(export) }
-//        systemPackagesExtraFile.getAsFile().get().withWriter { writer ->
-//            exportSet.each { export -> writer.writeLine(export) }
-//        }
-//    }
-//}
-
-//Provider<BuildSystemPackageExtra> buildSystemPackagesExtra = tasks.register("buildSystemPackagesExtra", BuildSystemPackageExtra) {
-//    sourceConfigurations = ['systemPackages']
-//    jdkExtraPackages = [
-//    ]
-//    systemPackagesExtraFile = project.layout.buildDirectory.file("resources/main/system_packages_extra")
-//}
-
-
-
-Provider<Copy> bundleOSGiDependencies = tasks.register("bundleOSGiDependencies", Copy) {
-
-    // EXECUTION PRIORITY DEFINITION
-    // The *Java* and *Java Library* `classes` task runs after `compileJava` and `processResources`
-    // providing the `runtimeClasspath` configuration populated with the dependencies
-    // declared by in the `dependencies` block.
-    // See https://docs.gradle.org/current/userguide/java_plugin.html
-    // See https://docs.gradle.org/current/userguide/java_library_plugin.html
-    dependsOn([tasks.classes, tasks.processResources])
-    // This task runs after the `classes` task and before the `jar` task to select the OSGi bundles needed by the
-    // `runtimeClasspath` configuration.
-
-    println "TASK buildOsgiBundles start..."
-    // COPY TASK EXTENSION
-    // Copies artifacts solved as needed dependencies from the `runtimeClasspath` configuration
-    // into the directory `resources/main/bundles` part of the *Java* plugin file topology.
-    final def bundlesDir = new File(project.buildDir, "resources/main/bundles")
-    // Java plugin task `processResources` skips if it doesn't any resource in the `src/main`,
-    // hence force the creation of the expected structure of directories if `bundles` dir doesn't exist.
-    if (!bundlesDir.exists()) {
-        assert bundlesDir.mkdirs()
+tasks.register("buildAppJar", Jar) {
+    inputs.files(project("framework-api").jar)
+    archiveBaseName = project.name
+    archiveVersion = version
+    ["compileJava", "compileKotlin", "processResources"].each { taskName ->
+        inputs.files(tasks.named(taskName))
     }
-    final def runtimeClasspath = configurations.getByName("runtimeClasspath")
-    final def systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
-    from runtimeClasspath
-    into bundlesDir
-
-    // SYSTEM BUNDLE CATALOG
-    // Artifacts solved as dependencies in the `runtimeClasspath` classpath are scanned to check if those are
-    // OSGi bundle.
-    final Set<String> systemBundleSet = new TreeSet<>()
-    runtimeClasspath.incoming.each { resolvableDependency ->
-        resolvableDependency.artifacts.each { resolvedArtifact ->
-            final def file = resolvedArtifact.file
-            // OSGi bundles must be `.jar` files.
-            if (file.name.endsWith(".jar")) {
-                final def jarFile = new JarFile(file)
-                // OSGi bundles must be have `Bundle-SymbolicName` metadata in jar's manifest..
-                if (jarFile.manifest.mainAttributes.getValue("Bundle-SymbolicName") != null) {
-                    // Describe the OSGi bundle as resource from the root of the classpath, this stratagem allows
-                    // JVM to load it indifferently if the resources are loaded by the file system directly,
-                    // or if resources are included in a fat jar.
-                    systemBundleSet.add("bundles/${file.name}")
-                    println "OSGI Bundle $file.name included as resource."
-                }
-            }
-        }
+    manifest {
+        attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
+        attributes 'Can-Redefine-Classes': true
+        attributes 'Can-Retransform-Classes': true
     }
-    // Write the `system_bundles` catalog as resource.
-    systemBundlesFile.withWriter { writer ->
-        systemBundleSet.each { line ->
-            writer.writeLine(line)
-        }
+    from(sourceSets.main.output.files)
+    ['appJarRuntimeClasspath'].each { configurationName ->
+        from { configurations[configurationName].collect { it.isDirectory() ? it : zipTree(it) } }
     }
-    final def size = systemBundleSet.size()
-    println "TASK buildOsgiBundles included $size OSGi bundles in $systemBundlesFile resource."
-
+    exclude 'META-INF/*.RSA'
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
 }
 
-jar {
-    dependsOn bundleOSGiDependencies
-//    manifest {
-//        attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
-//    }
+tasks.register("run", JavaExec) {
+    mainClass = 'net.corda.osgi.framework.OSGiFrameworkMain'
+    classpath(sourceSets.main.output)
+    classpath(project.configurations.named('appJarRuntimeClasspath'))
 }
 
