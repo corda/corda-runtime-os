@@ -9,6 +9,5 @@ class HelloWorldImpl: HelloWorld {
         println("Hello world!")
         println("Hello world!")
     }
-
 }
 

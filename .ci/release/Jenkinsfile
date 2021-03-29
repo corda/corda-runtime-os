@@ -23,7 +23,6 @@ pipeline {
         ansiColor('xterm')
         timestamps()
         timeout(3*60) // 3 hours
-    //    skipDefaultCheckout(true)
     }
 
     environment {
@@ -36,21 +35,6 @@ pipeline {
     }
 
     stages {
-/*
-
-         stage('Checkout Custom') {
-            steps {
-                $class: 'GitSCM',
-                	branches: scm.branches,
-                	doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
-                	extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, reference: '', shallow: true]],
-                	submoduleCfg: [],
-                	userRemoteConfigs: scm.userRemoteConfigs
-            }
-        }
-
- */
-
         stage('Release modules') {
             steps {
                 sh "./gradlew helloworld:release -Prelease.customUsername=\"LWogan\" -Prelease.customPassword=\"cb3d93f2771bdac74cfcfac527f330596cc97aac\" "
@@ -74,7 +58,7 @@ pipeline {
                 rtGradleDeployer(
                         id: 'deployer',
                         serverId: 'R3-Artifactory',
-                        repo: 'corda-releases'
+                        repo: 'corda-dev'
                 )
                 rtGradleRun(
                         usesPlugin: true,
