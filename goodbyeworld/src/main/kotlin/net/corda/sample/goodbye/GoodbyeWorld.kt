@@ -18,4 +18,3 @@ class GoodbyeWorld {
         helloWorld?.sayHello() ?: println("We couldn't find hello world!!!")
     }
 }
-
