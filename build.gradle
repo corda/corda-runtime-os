@@ -67,6 +67,7 @@ scmVersion {
                              '.*': 'versionWithBranch'
     ]
 }
+
 project.version = scmVersion.version
 
 artifactory {
