@@ -43,7 +43,7 @@ pipeline {
                 	$class: 'GitSCM',
                 	branches: scm.branches,
                 	doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
-                	extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, reference: '', shallow: true, allowSecondFetch: true]],
+                	extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, depth: 0, honorRefspec: false]],
                 	submoduleCfg: [],
                 	userRemoteConfigs: scm.userRemoteConfigs
                 ])
