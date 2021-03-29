@@ -86,7 +86,6 @@ dependencies {
     systemPackages "org.slf4j:jcl-over-slf4j:$slf4jVersion"
     systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
 
-    // NOTE: Used to test bootstrap functionalities only.
     osgiBundle "org.postgresql:postgresql:$postgresVersion"
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
@@ -195,6 +194,16 @@ class BuildSystemPackageExtra extends DefaultTask {
 Provider<BuildSystemPackageExtra> buildSystemPackagesExtra = tasks.register("buildSystemPackagesExtra", BuildSystemPackageExtra) {
     sourceConfigurations = ['systemPackages']
     jdkExtraPackages = [
+            "net.corda.osgi.framework.api",
+            "sun.net.www.protocol.jar",
+            "sun.nio.ch",
+            "sun.security.x509",
+            "sun.security.ssl",
+            "javax.servlet",
+            "javax.transaction.xa;version=1.1.0",
+            "javax.xml.stream;version=1.0",
+            "javax.xml.stream.events;version=1.0",
+            "javax.xml.stream.util;version=1.0",
     ]
     systemPackagesExtraFile = project.layout.buildDirectory.file("resources/main/system_packages_extra")
 }
