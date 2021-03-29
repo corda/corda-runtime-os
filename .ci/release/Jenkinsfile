@@ -23,7 +23,7 @@ pipeline {
         ansiColor('xterm')
         timestamps()
         timeout(3*60) // 3 hours
-        skipDefaultCheckout(true)
+    //    skipDefaultCheckout(true)
     }
 
     environment {
@@ -36,6 +36,7 @@ pipeline {
     }
 
     stages {
+/*
 
          stage('Checkout Custom') {
             steps {
@@ -48,6 +49,7 @@ pipeline {
             }
         }
 
+ */
 
         stage('Release modules') {
             steps {
