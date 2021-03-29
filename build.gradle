@@ -35,6 +35,8 @@ wrapper {
     distributionType = Wrapper.DistributionType.BIN
 }
 
+def buildTime = System.currentTimeMillis()
+
 scmVersion {
 
     repository {
@@ -59,10 +61,11 @@ scmVersion {
     }
 
     branchVersionCreator = [ // use different creator per branch
-                             'release/.*': 'simple',
+                             'release/.*': { v,p  -> v + ".$buildTime" },
                              '.*': 'versionWithBranch'
     ]
 }
+
 
 project.version = scmVersion.version
 
@@ -112,7 +115,7 @@ subprojects {
         }
 
         branchVersionCreator = [ // use different creator per branch
-                                 'release/.*': 'simple',
+                                 'release/.*': { v,p  -> v + ".$buildTime" },
                                  '.*': 'versionWithBranch'
         ]
     }
