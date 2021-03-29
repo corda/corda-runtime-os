@@ -74,7 +74,7 @@ pipeline {
                 rtGradleDeployer(
                         id: 'deployer',
                         serverId: 'R3-Artifactory',
-                        repo: 'corda-os-maven-dev'
+                        repo: 'r3-corda-releases'
                 )
                 rtGradleRun(
                         usesPlugin: true,
