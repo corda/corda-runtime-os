@@ -31,7 +31,6 @@ def releaseType = System.getenv("RELEASE_TYPE") ?: "SNAPSHOT"
 def gitHeadCommitHash = grgit.head().id
 def gitBuildId = "${grgit.head().dateTime.toInstant().toEpochMilli()}-${grgit.head().abbreviatedId}"
 
-
 // If we are not given an explicit build type, we assume a "snapshot" development build. The
 // snapshotLabel property can be used to allow developers to distinctly tag their own builds,
 // which may be useful for retrieval from Artifactory.
