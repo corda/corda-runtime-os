@@ -38,7 +38,6 @@ def flowworkerVersion
 def artifactoryRepo
 
 logger.lifecycle("Release type: {}", releaseType)
-logger.lifecycle("Tag type: {}", System.getenv("TAG_NAME"))
 
 switch (releaseType) {
     case "SNAPSHOT":
