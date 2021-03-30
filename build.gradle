@@ -8,11 +8,6 @@ buildscript {
             url "$artifactoryContextUrl/corda-releases"
         }
     }
-
-    //TODO: change this to an official release when possible.
-    dependencies {
-        classpath "pl.allegro.tech.build:axion-release-plugin:1.12.1-subproject-version"
-    }
 }
 
 plugins {
@@ -27,57 +22,84 @@ plugins {
     id 'org.ajoberstar.grgit' version '4.0.2'
 }
 
-apply plugin: "pl.allegro.tech.build.axion-release"
-
-
 wrapper {
     gradleVersion = '6.8.1'
     distributionType = Wrapper.DistributionType.BIN
 }
 
-scmVersion {
+def releaseType = System.getenv("RELEASE_TYPE") ?: "SNAPSHOT"
+def gitHeadCommitHash = grgit.head().id
+def gitBuildId = "${grgit.head().dateTime.format("yyyyMMdd_HHmmss")}-${grgit.head().abbreviatedId}"
 
-    repository {
-        pushTagsOnly = true
-    }
+// If we are not given an explicit build type, we assume a "snapshot" development build. The
+// snapshotLabel property can be used to allow developers to distinctly tag their own builds,
+// which may be useful for retrieval from Artifactory.
+def flowworkerVersion
+def artifactoryRepo
 
-    monorepos {
-        projectDirs = rootProject.subprojects.collect({p -> p.name})
-    }
+switch (releaseType) {
+    case "SNAPSHOT":
+        // Snapshot build.  The snapshotLabel property can be used to allow developers to
+        // distinctly tag their own builds, which may be useful for retrieval from Artifactory.
+        flowworkerVersion = project.hasProperty("snapshotLabel") ?
+                "$flowworkerMajorMinorVersion.0-${project.property("snapshotLabel")}-SNAPSHOT" :
+                "$flowworkerMajorMinorVersion.0-SNAPSHOT"
+        artifactoryRepo = "corda-ent-maven-dev"
+        break
+    case "ALPHA":
+        // CI builds of development branches
+        flowworkerVersion = "$flowworkerMajorMinorVersion.$gitBuildId-alpha"
+        artifactoryRepo = "corda-ent-maven-unstable"
+        break
+    case "BETA":
+        // CI builds of PRs
+        flowworkerVersion = "$flowworkerMajorMinorVersion.$gitBuildId-beta"
+        artifactoryRepo = "corda-ent-maven-unstable"
+        break
+    case "CD-RELEASE":
+        // Continuous delivery release builds.
+        if (grgit.branch.current().name != "main") {
+            throw new InvalidUserDataException(
+                    "Continuous delivery release builds must be against the master branch")
+        }
 
-    //These checks are turned off while this is still being developed
-    //TODO - turn these back on
-    checks {
-        uncommittedChanges = false
-        aheadOfRemote = false
-        snapshotDependencies = false
-    }
-
-    tag {
-        prefix = getTagName(project.name)
-        versionSeparator  = "_"
-    }
-
-    branchVersionCreator = [ // use different creator per branch
-                             'release/.*': 'simple',
-                             '.*': 'versionWithBranch'
-    ]
+        flowworkerVersion = "$flowworkerMajorMinorVersion.$gitBuildId"
+        // CD release build start out as unstable, and are moved to stable using build promotion
+        // via Jenkins
+        artifactoryRepo = "corda-ent-maven-unstable"
+        break
+    default:
+        throw new InvalidUserDataException("Invalid build type provided. Must be one of " +
+                "SNAPSHOT, ALPHA, BETA or CD-RELEASE.")
 }
-project.version = scmVersion.version
+
+logger.lifecycle("Building Flowworker version: {}", flowworkerVersion)
+logger.lifecycle("Release type: {}", releaseType)
+
+// You can define this property in ~/.gradle/gradle.properties on your dev box.
+if (! project.hasProperty('cordaArtifactoryUsername') || ext.cordaArtifactoryUsername != null) {
+    ext.cordaArtifactoryUsername = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+            ?: System.getProperty('corda.artifactory.username')
+}
+
+// You can define this property in ~/.gradle/gradle.properties on your dev box.
+if (! project.hasProperty('cordaArtifactoryPassword') || ext.cordaArtifactoryPassword == null) {
+    ext.cordaArtifactoryPassword = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+            ?: System.getProperty('corda.artifactory.password')
+}
 
 artifactory {
     publish {
         contextUrl = artifactoryContextUrl
         repository {
-            repoKey = System.getenv('FLOWWORKER_PUBLISH_REPOSITORY_KEY') ?: 'corda-os-maven-dev'
-            username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
-            password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+            repoKey = artifactoryRepo
+            username = cordaArtifactoryUsername
+            password = cordaArtifactoryPassword
             maven = true
         }
         defaults {
-            publishPom = true
-            publishArtifacts = true
-            publishBuildInfo = true
+            publications(project.name)
+            properties = ['release.type': releaseType, 'source.revision': gitHeadCommitHash]
         }
     }
 }
@@ -89,35 +111,6 @@ subprojects {
     apply plugin: 'kotlin-allopen'
     apply plugin: 'kotlin-noarg'
     apply plugin: DetektPlugin
-    apply plugin: 'pl.allegro.tech.build.axion-release'
-
-    scmVersion {
-
-        repository {
-            pushTagsOnly = true
-        }
-
-        //These checks are turned off while this is still being developed
-        //TODO - turn these back on
-        checks {
-            uncommittedChanges = false
-            aheadOfRemote = false
-            snapshotDependencies = false
-        }
-
-        tag {
-            prefix = getTagName(project.name)
-            versionSeparator = "_"
-        }
-
-        branchVersionCreator = [ // use different creator per branch
-                                 'release/.*': 'simple',
-                                 '.*': 'versionWithBranch'
-        ]
-    }
-
-    project.version = scmVersion.version
-
 
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")
@@ -148,6 +141,8 @@ subprojects {
 
 allprojects {
     group 'net.corda'
+
+    version flowworkerVersion
 
     tasks.withType(JavaCompile) {
         sourceCompatibility = VERSION_11
@@ -211,18 +206,4 @@ allprojects {
         testImplementation "org.assertj:assertj-core:$assertjVersion"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     }
-}
-
-def getTagName(projectName) {
-    def branch = getBranchName()
-
-    if (!branch.contains("release/") && !branch.contains("HEAD")) {
-        return branch + "-" + projectName
-    }
-
-    return projectName
-}
-
-def getBranchName() {
-    return grgit.branch.current().getName()
 }
