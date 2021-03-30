@@ -38,6 +38,8 @@ def gitBuildId = "${grgit.head().dateTime.toInstant().toEpochMilli()}-${grgit.he
 def flowworkerVersion
 def artifactoryRepo
 
+logger.lifecycle("Release type: {}", releaseType)
+
 switch (releaseType) {
     case "SNAPSHOT":
         // Snapshot build.  The snapshotLabel property can be used to allow developers to
@@ -75,7 +77,6 @@ switch (releaseType) {
 }
 
 logger.lifecycle("Building Flowworker version: {}", flowworkerVersion)
-logger.lifecycle("Release type: {}", releaseType)
 
 // You can define this property in ~/.gradle/gradle.properties on your dev box.
 if (! project.hasProperty('cordaArtifactoryUsername') || ext.cordaArtifactoryUsername != null) {
