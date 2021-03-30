@@ -60,6 +60,7 @@ switch (releaseType) {
         break
     case "CD-RELEASE":
         // Continuous delivery release builds.
+        logger.lifecycle("branch: {}" + grgit.branch.current().name)
         if (!grgit.branch.current().name.contains("release/")) {
             throw new InvalidUserDataException(
                     "Continuous delivery release builds must be against the master branch")
