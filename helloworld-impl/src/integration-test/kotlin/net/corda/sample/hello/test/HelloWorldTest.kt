@@ -1,6 +1,7 @@
 package net.corda.sample.hello.test
 
 import net.corda.sample.api.hello.HelloWorld
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
@@ -14,7 +15,7 @@ class HelloWorldTest {
 
     @Test
     fun callHelloWorld() {
-        helloWorld.sayHello()
+        assertThat(helloWorld.sayHello()).isEqualTo("Hello world!")
     }
 
 }

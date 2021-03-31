@@ -1,0 +1,285 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "biz.aQute.bnd:biz.aQute.bndlib:$bndVersion"
+    }
+}
+
+import java.util.jar.JarFile
+import aQute.bnd.header.OSGiHeader
+
+description("OSGi Framework Bootstrap")
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+
+    runtimeArtifacts {}
+
+    // KNOW_HOW
+    // Use `osgiBundle` configuration to define dependencies the OSGi framework must install and activate as OSGI bundles.
+    // NOTE
+    // The functionalities of `osgi.core` and `osgi.cmpn` are provided by the OSGi framework itself.
+    // The `osgi.core` and `osgi.cmpn` bundles must not be included as dependencies else the OSGi framework stops,
+    // They can be expressed as `compileOnly` in dependencies of the modules needing to access OSGI framework classes.
+    // As precaution the `osgi.core` and `osgi.cmpn` are excluded frm building.
+    osgiBundle {
+        // The `osgi.core` and `osgi.cmpn` should be declared as `compileOnly` dependencies
+        // but many osgi packages include them as transitive dependencies unfortunately
+        exclude group: "org.osgi", module: "osgi.core"
+        exclude group: "org.osgi", module: "osgi.cmpn"
+
+        // We bundle "sshd-osgi" (below) instead of "sshd-core" and "sshd-pam".
+        exclude group: "org.apache.sshd", module: "sshd-core"
+        exclude group: "org.apache.sshd", module: "sshd-pam"
+
+        // We exclude all Shiro bundles except "shiro-core" to avoid split-package issues.
+        exclude group: "org.apache.shiro", module: "shiro-cache"
+        exclude group: "org.apache.shiro", module: "shiro-config-core"
+        exclude group: "org.apache.shiro", module: "shiro-config-ogdl"
+        exclude group: "org.apache.shiro", module: "shiro-crypto-cipher"
+        exclude group: "org.apache.shiro", module: "shiro-crypto-core"
+        exclude group: "org.apache.shiro", module: "shiro-crypto-hash"
+        exclude group: "org.apache.shiro", module: "shiro-event"
+        exclude group: "org.apache.shiro", module: "shiro-lang"
+
+        // Remove artemis jars already included inside artemis-server-osgi
+        exclude group: "org.apache.activemq", module: "artemis-server"
+        exclude group: "org.apache.activemq", module: "artemis-core-client"
+        exclude group: "org.apache.activemq", module: "artemis-commons"
+        exclude group: "org.apache.activemq", module: "artemis-jdbc-store"
+        exclude group: "org.apache.activemq", module: "artemis-jms-client"
+        exclude group: "org.apache.activemq", module: "artemis-jms-server"
+        exclude group: "org.apache.activemq", module: "artemis-service-extensions"
+        exclude group: "org.apache.activemq", module: "artemis-selector"
+        exclude group: "org.apache.activemq", module: "artemis-journal"
+
+        exclude group: "net.corda.kotlin", module: "kotlin-stdlib-jdk8-osgi"
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-osgi-bundle"
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8"
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-common"
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-reflect"
+
+        exclude group: "org.slf4j", module: "slf4j-api"
+        exclude group: "org.apache.logging.log4j", module: "log4j-core"
+
+        exclude group: "org.jboss.logmanager", module: "jboss-logmanager"
+        exclude group: "com.esotericsoftware", module: "reflectasm"
+
+        resolutionStrategy.dependencySubstitution {
+
+            //Replace Kotlin stdlib
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') with module("net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') with module("net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-reflect') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+
+        }
+    }
+
+    //The modules excluded from this configuration will be exposed to the OSGi framework from the bootstrapper classpath
+    systemPackages {
+        transitive = false
+    }
+
+    integrationTestRuntimeClasspath {
+        extendsFrom(systemPackages)
+    }
+
+    cordaJarRuntimeClasspath {
+        extendsFrom(runtimeClasspath)
+        extendsFrom(systemPackages)
+        canBeResolved = true
+        transitive = true
+    }
+}
+
+dependencies {
+
+    implementation project("framework-api")
+    implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "org.slf4j:log4j-over-slf4j:$slf4jVersion"
+
+    systemPackages "net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion"
+    systemPackages "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    systemPackages "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    systemPackages "org.slf4j:log4j-over-slf4j:$slf4jVersion"
+    systemPackages "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+    systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
+
+    osgiBundle "org.postgresql:postgresql:$postgresVersion"
+
+    testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
+    testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
+}
+
+
+/**
+ * Scan the OSGi bundles of the Corda project to bundle them in the `build/resource/main/bundles` directory of the project,
+ * list the bundles in the `build/resource/main/system_bundles` files to allow classloader to load them from IDE (file system)
+ * or packed in the executable fat jar.
+ */
+Provider<Copy> buildOsgiBundles = tasks.register("buildOsgiBundles", Copy) {
+    final def bundlesDir = new File(project.buildDir, "resources/main/bundles")
+    final def systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
+
+    into bundlesDir
+    from configurations.osgiBundle
+    doLast {
+        final Set<String> systemBundleSet = new TreeSet<>()
+        bundlesDir.listFiles({ File dir, String name -> name.endsWith(".jar") } as FilenameFilter)
+                .grep { File file ->
+                    new JarFile(file).manifest.mainAttributes.getValue("Bundle-SymbolicName")
+                }.each { file ->
+            systemBundleSet.add("bundles/${file.name}")
+        }
+        systemBundlesFile.withWriter { writer ->
+            systemBundleSet.each { line ->
+                writer.writeLine(line)
+            }
+        }
+    }
+}
+
+
+/**
+ * Scan the OSGi bundles defined in 'systemPackages' and 'quasar' configuration,
+ * scan the packages declared in the and `systemPackagesExtra` array of this `build.gradle`
+ * and export them through the `system_packages_extra` property of the OSGI framework.
+ */
+class BuildSystemPackageExtra extends DefaultTask {
+
+    BuildSystemPackageExtra() {
+        sourceConfigurations = project.objects.listProperty(String.class)
+        jdkExtraPackages = project.objects.listProperty(String.class)
+        systemPackagesExtraFile = project.objects.fileProperty()
+    }
+
+    @Input
+    final ListProperty<String> sourceConfigurations
+
+    @Input
+    final ListProperty<String> jdkExtraPackages
+
+    @InputFiles
+    FileCollection getInputFiles() {
+        FileCollection result = project.objects.fileCollection()
+        sourceConfigurations.map { list ->
+            list.forEach { configurationName ->
+                result.add(project.configurations[configurationName])
+            }
+        }
+        return result
+    }
+
+    @OutputFile
+    final RegularFileProperty systemPackagesExtraFile
+
+    @TaskAction
+    def run() {
+        final Set<String> exportSet = new TreeSet<>()
+        sourceConfigurations.get().each { configurationName ->
+            project.configurations[configurationName].incoming.each { resolvableDependency ->
+                resolvableDependency.artifacts.each { resolvedArtifact ->
+                    final def jarFile = new JarFile(resolvedArtifact.file)
+                    if (jarFile.manifest.mainAttributes.getValue("Bundle-SymbolicName") != null) {
+                        jarFile.manifest.mainAttributes.getValue("Export-Package")?.with { exportPackage ->
+                            OSGiHeader.parseHeader(exportPackage).entrySet().each { exportEntry ->
+                                final def export = exportEntry.key + ";" + exportEntry.value.toString()
+                                exportSet.add(export)
+                            }
+                        }
+                    } else {
+                        jarFile.entries().each { jarEntry ->
+                            if (jarEntry.name.endsWith(".class")) {
+                                final def list = jarEntry.name.replace('\\', '/').split('/').toList()
+                                final def export = list.subList(0, list.size() - 1).join('.')
+                                exportSet.add(export)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        jdkExtraPackages.get().each { export -> exportSet.add(export) }
+        systemPackagesExtraFile.getAsFile().get().withWriter { writer ->
+            exportSet.each { export -> writer.writeLine(export) }
+        }
+    }
+}
+
+Provider<BuildSystemPackageExtra> buildSystemPackagesExtra = tasks.register("buildSystemPackagesExtra", BuildSystemPackageExtra) {
+    sourceConfigurations = ['systemPackages']
+    jdkExtraPackages = [
+            "net.corda.osgi.framework.api",
+            "sun.net.www.protocol.jar",
+            "sun.nio.ch",
+            "sun.security.x509",
+            "sun.security.ssl",
+            "javax.servlet",
+            "javax.transaction.xa;version=1.1.0",
+            "javax.xml.stream;version=1.0",
+            "javax.xml.stream.events;version=1.0",
+            "javax.xml.stream.util;version=1.0",
+    ]
+    systemPackagesExtraFile = project.layout.buildDirectory.file("resources/main/system_packages_extra")
+}
+
+tasks.named("processResources") {
+    inputs.files(buildSystemPackagesExtra, buildOsgiBundles)
+}
+
+tasks.register("buildCordaJar", Jar) {
+    inputs.files(project("framework-api").jar)
+    archiveBaseName = project.name
+    archiveVersion = version
+    ["compileJava", "compileKotlin", "processResources"].each { taskName ->
+        inputs.files(tasks.named(taskName))
+    }
+    manifest {
+        attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
+        attributes 'Can-Redefine-Classes': true
+        attributes 'Can-Retransform-Classes': true
+    }
+    from(sourceSets.main.output.files)
+    ['cordaJarRuntimeClasspath'].each { configurationName ->
+        from { configurations[configurationName].collect { it.isDirectory() ? it : zipTree(it) } }
+    }
+    exclude 'META-INF/*.RSA'
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = jvmTarget
+}
+
+compileTestKotlin {
+    kotlinOptions.jvmTarget = jvmTarget
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
+    }
+}
+
+tasks.register("run", JavaExec) {
+    mainClass = 'net.corda.osgi.framework.OSGiFrameworkMain'
+    classpath(sourceSets.main.output)
+    classpath(project.configurations.named('cordaJarRuntimeClasspath'))
+}
+

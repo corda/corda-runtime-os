@@ -2,36 +2,19 @@ plugins {
     id 'biz.aQute.bnd.builder'
 }
 
-apply from: "$rootDir/gradle/publish.gradle"
-
-configurations {
-    testArtifacts
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
 }
+
+apply from: "$rootDir/gradle/publish.gradle"
 
 dependencies {
     api project(":helloworld")
     //api "net.corda:helloworld:0.1.0-test5"
 
     api "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-
-    testImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
-
-    testImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-
-    testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
-    testRuntimeOnly "org.apache.felix:org.apache.felix.metatype:$felixMetatypeVersion"
-    testRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-    testRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-
-    // OSGi Logging Service, implemented by Felix and consumed by Logback.
-    testRuntimeOnly "org.osgi:org.osgi.util.pushstream:$osgiUtilPushstreamVersion"
-    testRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigadminVersion"
-    testRuntimeOnly "org.apache.felix:org.apache.felix.log:$felixLogVersion"
-    testRuntimeOnly "org.apache.felix:org.apache.felix.logback:$felixLogbackVersion"
-    testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion"
 }
 
 description 'Goodbye World Library'

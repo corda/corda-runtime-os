@@ -127,10 +127,6 @@ subprojects {
 
     dependencies {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
-
-        api "org.osgi:osgi.annotation:$osgiVersion"
-        api "org.osgi:osgi.cmpn:$osgiVersion"
-        api "org.osgi:osgi.core:$osgiVersion"
     }
 }
 
@@ -153,7 +149,6 @@ allprojects {
             jvmTarget = VERSION_11
             javaParameters = true   // Useful for reflection.
             freeCompilerArgs += [
-                    '-Xjvm-default=all',
                     // Prevent Kotlin from warning about kotlin.* classes inside the OSGi bundle.
                     "-Xskip-runtime-version-check",
                     "-java-parameters"
@@ -200,5 +195,9 @@ allprojects {
         testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
         testImplementation "org.assertj:assertj-core:$assertjVersion"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+    }
+
+    tasks.named("test", Test).configure {
+        useJUnitPlatform()
     }
 }
