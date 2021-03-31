@@ -27,112 +27,52 @@ wrapper {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-def releaseType = System.getenv("RELEASE_TYPE") ?: "SNAPSHOT"
-def gitHeadCommitHash = grgit.head().id
-def gitBuildId = "${grgit.head().dateTime.toInstant().toEpochMilli()}-${grgit.head().abbreviatedId}"
 
-// If we are not given an explicit build type, we assume a "snapshot" development build. The
-// snapshotLabel property can be used to allow developers to distinctly tag their own builds,
-// which may be useful for retrieval from Artifactory.
+
+if (!project.hasProperty('cordaArtifactoryUsername')) {
+    ext.cordaArtifactoryUsername = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+}
+
+if (! project.hasProperty('cordaArtifactoryPassword')) {
+    ext.cordaArtifactoryPassword = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+}
+
 def flowworkerVersion
-def artifactoryRepo
+def releaseType = System.getenv("RELEASE_TYPE") ?: "SNAPSHOT"
+def versionSuffix = System.getenv("VERSION_SUFFIX")
+def artifactoryPublishRepo = System.getenv("CORDA_PUBLISH_REPOSITORY_KEY") ?: "corda-ent-maven-dev"
 
 switch (releaseType) {
     case "SNAPSHOT":
-        // Snapshot build.  The snapshotLabel property can be used to allow developers to
-        // distinctly tag their own builds, which may be useful for retrieval from Artifactory.
         flowworkerVersion = project.hasProperty("snapshotLabel") ?
                 "$flowworkerMajorMinorVersion.0-${project.property("snapshotLabel")}-SNAPSHOT" :
                 "$flowworkerMajorMinorVersion.0-SNAPSHOT"
-        artifactoryRepo = "corda-ent-maven-dev"
-        break
-    case "ALPHA":
-        // CI builds of development branches
-        flowworkerVersion = "$flowworkerMajorMinorVersion.$gitBuildId-alpha"
-        artifactoryRepo = "corda-ent-maven-unstable"
-        break
-    case "BETA":
-        // CI builds of PRs
-        flowworkerVersion = "$flowworkerMajorMinorVersion.$gitBuildId-beta"
-        artifactoryRepo = "corda-ent-maven-unstable"
-        break
-    case "CD-RELEASE":
-        // Continuous delivery release builds.
-        flowworkerVersion = "$flowworkerMajorMinorVersion.$gitBuildId"
-        // CD release build start out as unstable, and are moved to stable using build promotion
-        // via Jenkins
-        artifactoryRepo = "corda-ent-maven-unstable"
         break
     default:
-        throw new InvalidUserDataException("Invalid build type provided. Must be one of " +
-                "SNAPSHOT, ALPHA, BETA or CD-RELEASE.")
-}
-
-logger.lifecycle("Release type: {}", releaseType)
-logger.lifecycle("Building Flowworker version: {}", flowworkerVersion)
-
-// You can define this property in ~/.gradle/gradle.properties on your dev box.
-if (! project.hasProperty('cordaArtifactoryUsername') || ext.cordaArtifactoryUsername != null) {
-    ext.cordaArtifactoryUsername = System.getenv('CORDA_ARTIFACTORY_USERNAME')
-            ?: System.getProperty('corda.artifactory.username')
-}
-
-// You can define this property in ~/.gradle/gradle.properties on your dev box.
-if (! project.hasProperty('cordaArtifactoryPassword') || ext.cordaArtifactoryPassword == null) {
-    ext.cordaArtifactoryPassword = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
-            ?: System.getProperty('corda.artifactory.password')
+        flowworkerVersion = "$flowworkerMajorMinorVersion.$versionSuffix"
 }
 
 artifactory {
     publish {
         contextUrl = artifactoryContextUrl
         repository {
-            repoKey = artifactoryRepo
+            repoKey = artifactoryPublishRepo
             username = cordaArtifactoryUsername
             password = cordaArtifactoryPassword
             maven = true
         }
         defaults {
             publications(project.name)
-            properties = ['release.type': releaseType, 'source.revision': gitHeadCommitHash]
+            properties = ['release.type': releaseType, 'source.revision': grgit.head().id]
         }
     }
 }
 
-subprojects {
-    apply plugin: 'java-library'
-    apply plugin: 'org.jetbrains.kotlin.jvm'
-    apply plugin: 'idea'
-    apply plugin: 'kotlin-allopen'
-    apply plugin: 'kotlin-noarg'
-    apply plugin: DetektPlugin
-
-    detekt {
-        baseline = file("$projectDir/detekt-baseline.xml")
-        config.setFrom(files("$rootDir/detekt-config.yml"))
-        parallel = true
-        reports {
-            xml {
-                enabled = true
-                destination = file("$projectDir/build/detekt-report.xml")
-            }
-            html {
-                enabled = false
-            }
-            txt {
-                enabled = false
-            }
-        }
-    }
-
-    dependencies {
-        detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
-    }
-}
 
 allprojects {
-    group 'net.corda'
+    apply plugin: 'org.jetbrains.kotlin.jvm'
 
+    group 'net.corda'
     version flowworkerVersion
 
     tasks.withType(JavaCompile) {
@@ -157,12 +97,25 @@ allprojects {
     }
 
     repositories {
+        //repo for CI builds,
+        maven {
+            url = "$artifactoryContextUrl/corda-ent-maven-unstable"
+            credentials {
+                username = cordaArtifactoryUsername
+                password = cordaArtifactoryPassword
+            }
+        }
+        //repo for dev builds
+        maven {
+            url = "$artifactoryContextUrl/corda-ent-maven-dev"
+            credentials {
+                username = cordaArtifactoryUsername
+                password = cordaArtifactoryPassword
+            }
+        }
         //needed for kotlin osgi bundles generated by us
         maven {
             url = "$artifactoryContextUrl/corda-dependencies"
-        }
-        maven {
-            url = "https://kotlin.bintray.com/kotlinx"
         }
         mavenCentral()
         //TODO remove this when we can as its only needed for kotlinx-html-jvm
@@ -201,3 +154,35 @@ allprojects {
         useJUnitPlatform()
     }
 }
+
+
+subprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'idea'
+    apply plugin: 'kotlin-allopen'
+    apply plugin: 'kotlin-noarg'
+    apply plugin: DetektPlugin
+
+    detekt {
+        baseline = file("$projectDir/detekt-baseline.xml")
+        config.setFrom(files("$rootDir/detekt-config.yml"))
+        parallel = true
+        reports {
+            xml {
+                enabled = true
+                destination = file("$projectDir/build/detekt-report.xml")
+            }
+            html {
+                enabled = false
+            }
+            txt {
+                enabled = false
+            }
+        }
+    }
+
+    dependencies {
+        detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
+    }
+}
+

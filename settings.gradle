@@ -13,7 +13,7 @@ pluginManagement {
             }
         }
         maven {
-            url "$artifactoryContextUrl/${System.getenv('CORDA_CONSUME_REPOSITORY_KEY') ?: 'corda-os-maven'}"
+            url "$artifactoryContextUrl/corda-os-maven"
             content {
                 includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
             }
