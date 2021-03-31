@@ -22,3 +22,4 @@ class HelloWorldActivator {
         logger.info("Stopping!")
     }
 }
+
