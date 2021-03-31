@@ -1,6 +1,5 @@
 package net.corda.sample.hello.impl
 
-import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -14,12 +13,12 @@ class HelloWorldActivator {
     }
 
     @Activate
-    fun start(context: BundleContext) {
+    fun start() {
         logger.info("Starting!")
     }
 
     @Deactivate
-    fun stop(context: BundleContext) {
+    fun stop() {
         logger.info("Stopping!")
     }
 }
