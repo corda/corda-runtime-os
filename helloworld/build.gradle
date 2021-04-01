@@ -1,21 +1,6 @@
 plugins {
-    id 'biz.aQute.bnd.builder'
+    id 'corda.common-library'
+    id 'corda.publish'
 }
-
-dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-}
-
-apply from: "$rootDir/gradle/publish.gradle"
 
 description 'Hello World Library'
-
-tasks.named('jar', Jar) {
-    archiveBaseName = 'hello-world'
-    bnd """
-Bundle-Name: Hello world
-Bundle-SymbolicName: \${project.group}.hello
-"""
-}
