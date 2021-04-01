@@ -9,23 +9,49 @@ import java.io.InputStream
 import java.net.URL
 import java.security.cert.X509Certificate
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
 
-class OSGiBundleMock: Bundle {
+class OSGiBundleMock(
+    private val id: Long,
+    private val location: String
+): Bundle {
 
-    override fun compareTo(other: Bundle?): Int {
-        TODO("Not yet implemented")
-    }
+    //: Bundle
 
+    private val stateAtomic = AtomicInteger(Bundle.INSTALLED)
+
+    /**
+     * See [Bundle.getState].
+     *
+     * @return An element of [Bundle.UNINSTALLED], [Bundle.INSTALLED], [Bundle.RESOLVED], [Bundle.STARTING],
+     *                       [Bundle.STOPPING], [Bundle.ACTIVE].
+     */
     override fun getState(): Int {
-        TODO("Not yet implemented")
+        return stateAtomic.get()
     }
 
-    override fun start(options: Int) {
-        TODO("Not yet implemented")
+    //: Comparable
+
+    /**
+     * See [Comparable.compareTo]
+     *
+     * @param other bundle to compare.
+     * @return a negative integer, zero, or a positive integer as this object is
+     *         less than, equal to, or greater than the specified object.
+     */
+    override fun compareTo(other: Bundle): Int {
+        val thisId = this.bundleId
+        val thatId = other.bundleId
+        return if (thisId < thatId) -1 else if (thisId == thatId) 0 else 1
+    }
+
+
+    override fun start(ignored: Int) {
+        start()
     }
 
     override fun start() {
-        TODO("Not yet implemented")
+        stateAtomic.set(Bundle.ACTIVE)
     }
 
     override fun stop(options: Int) {
@@ -49,19 +75,19 @@ class OSGiBundleMock: Bundle {
     }
 
     override fun getHeaders(): Dictionary<String, String> {
-        TODO("Not yet implemented")
+        return Hashtable()
     }
 
-    override fun getHeaders(locale: String?): Dictionary<String, String> {
-        TODO("Not yet implemented")
+    override fun getHeaders(ignored: String?): Dictionary<String, String> {
+        return getHeaders()
     }
 
     override fun getBundleId(): Long {
-        TODO("Not yet implemented")
+        return id
     }
 
     override fun getLocation(): String {
-        TODO("Not yet implemented")
+        return location
     }
 
     override fun getRegisteredServices(): Array<ServiceReference<*>> {
@@ -81,7 +107,7 @@ class OSGiBundleMock: Bundle {
     }
 
     override fun getSymbolicName(): String {
-        TODO("Not yet implemented")
+        return "mock-symbolic-name"
     }
 
     override fun loadClass(name: String?): Class<*> {
@@ -117,7 +143,7 @@ class OSGiBundleMock: Bundle {
     }
 
     override fun getVersion(): Version {
-        TODO("Not yet implemented")
+        return Version(0, 0, 0, "mock")
     }
 
     override fun <A : Any?> adapt(type: Class<A>?): A {

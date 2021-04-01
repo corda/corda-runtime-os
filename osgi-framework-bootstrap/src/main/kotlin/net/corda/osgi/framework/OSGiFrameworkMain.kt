@@ -40,7 +40,6 @@ class OSGiFrameworkMain {
                 val frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX)
                 frameworkStorageDir.toFile().deleteOnExit()
                 val osgiFrameworkWrap = OSGiFrameworkWrap(
-                    UUID.randomUUID(),
                     OSGiFrameworkWrap.getFrameworkFrom(FRAMEWORK_FACTORY_FQN, frameworkStorageDir)
                 )
                 try {

@@ -1,101 +1,137 @@
 package net.corda.osgi.framework
 
-import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
 import net.corda.osgi.framework.api.ArgsService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.osgi.framework.Bundle
-import org.osgi.framework.FrameworkEvent
-import org.osgi.framework.FrameworkListener
-import java.io.File
-import java.nio.file.Files
-import java.nio.file.Path
-import java.util.*
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ArgumentsSource
+import org.osgi.framework.*
+import java.io.IOException
+import java.nio.file.*
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 
-internal class OSGiFrameworkWrapTest {
+internal class OSGiFrameworkWrapTest() {
 
     companion object {
-        private const val TEMP_DIR = "/foo"
-    }
 
+        private const val TEMP_DIR = "unit_test"
+
+        private fun deletePath(path: Path) {
+            if (Files.exists(path)) {
+                Files.walkFileTree(path,
+                    object : SimpleFileVisitor<Path>() {
+                        @Throws(IOException::class)
+                        override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
+                            Files.delete(dir)
+                            return FileVisitResult.CONTINUE
+                        }
+
+                        @Throws(IOException::class)
+                        override fun visitFile(file: Path, attrs: BasicFileAttributes?): FileVisitResult {
+                            Files.delete(file)
+                            return FileVisitResult.CONTINUE
+                        }
+                    })
+            }
+        }
+
+        private fun readTextLines(resource: String): List<String> {
+            val classLoader = Thread.currentThread().contextClassLoader
+            classLoader.getResourceAsStream(resource).use { inputStream ->
+                if (inputStream != null) {
+                    inputStream.bufferedReader().useLines { lines ->
+                        return lines.map { line -> line.substringBefore('#') }
+                            .map(String::trim)
+                            .filter(String::isNotEmpty)
+                            .toList()
+                    }
+                } else {
+                    throw IOException("Resource $resource not found")
+                }
+            }
+        }
+
+    } //~ companion object
 
     private lateinit var frameworkStorageDir: Path
 
+    private lateinit var fileSystem: FileSystem
+
     @BeforeEach
     fun setUp() {
-        val fileSystem = Jimfs.newFileSystem(Configuration.unix())
+        fileSystem = Jimfs.newFileSystem()
         frameworkStorageDir = Files.createDirectory(fileSystem.getPath(TEMP_DIR))
         assertTrue { Files.exists(frameworkStorageDir) }
     }
 
-
-    @Test
-    fun getFrameworkFrom() {
-        val framework = OSGiFrameworkWrap.getFrameworkFrom(
-            OSGiFrameworkFactoryMock::class.java.canonicalName,
-            frameworkStorageDir
-        )
-        assertTrue { framework is OSGiFrameworkMock }
-    }
-
-    @Test
-    fun getFrameworkFrom_ClassNotFoundException() {
-        //assertThrows<ClassNotFoundException> { OSGiFrameworkWrap.getFrameworkFrom("no_class", frameworkStorageDir) }
-    }
-
-    @Test
-    fun getFrameworkFrom_SecurityException() {
-    }
-
-    @Test
-    fun getUUID() {
-        val uuid = UUID.randomUUID()
-        OSGiFrameworkWrap(
-            uuid,
-            OSGiFrameworkWrap.getFrameworkFrom(
-                OSGiFrameworkFactoryMock::class.java.canonicalName,
-                frameworkStorageDir
-            )
-        ).use { osgiFrameworkWrap ->
-            assertEquals(uuid, osgiFrameworkWrap.uuid)
+    @ParameterizedTest
+    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
+    fun activate(frameworkFactoryFQN: String) {
+        val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
+        OSGiFrameworkWrap(framework).use { frameworkWrap ->
+            frameworkWrap.start()
+            frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
+            frameworkWrap.activate()
+            framework.bundleContext.bundles.forEach { bundle ->
+                if (!OSGiFrameworkWrap.isFragment(bundle)) {
+                    assertEquals(Bundle.ACTIVE, bundle.state)
+                }
+            }
         }
     }
 
-    @Test
-    fun install_jar() {
-
+    @ParameterizedTest
+    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
+    fun getFrameworkFrom(frameworkFactoryFQN: String) {
+        val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
+        assertNotNull(framework)
     }
 
-    @Test
-    fun install_list() {
-
+    @ParameterizedTest
+    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
+    fun getFrameworkFrom_ClassNotFoundException(frameworkFactoryFQN: String) {
+        assertThrows<ClassNotFoundException> {
+            OSGiFrameworkWrap.getFrameworkFrom("no_class", frameworkStorageDir)
+        }
     }
 
-    @Test
-    fun setArguments() {
+    @ParameterizedTest
+    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
+    fun install(frameworkFactoryFQN: String) {
+        val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
+        OSGiFrameworkWrap(framework).use { frameworkWrap ->
+            frameworkWrap.start()
+            frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
+            val bundleLocationList = readTextLines(OSGiFrameworkMain.SYSTEM_BUNDLES)
+            assertEquals(bundleLocationList.size, framework.bundleContext.bundles.size - 1)
+            bundleLocationList.forEach { location ->
+                assertNotNull(framework.bundleContext.getBundle(location))
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
+    fun setArguments(frameworkFactoryFQN: String) {
         val args = arrayOf(
             "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta",
             "iota", "kappa", "lambda", "mi", "ni", "xi", "omicron", "pi",
             "rho", "sigma", "tau", "upsilon", "phi", "chi", "psi"
         )
-        val framework = OSGiFrameworkWrap.getFrameworkFrom(
-            OSGiFrameworkFactoryMock::class.java.canonicalName,
-            frameworkStorageDir
-        )
-        OSGiFrameworkWrap(
-            UUID.randomUUID(),
-            framework
-        ).use { osgiFrameworkWrap ->
+        val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
+        OSGiFrameworkWrap(framework).use { osgiFrameworkWrap ->
+            framework.start()
             osgiFrameworkWrap.setArguments(args)
             val bundleContext = framework.bundleContext
             val serviceReference = bundleContext.getServiceReference(ArgsService::class.java)
@@ -104,113 +140,52 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Test
-    fun start() {
+    @ParameterizedTest
+    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
+    fun start(frameworkFactoryFQN: String) {
         val startupStateAtomic = AtomicInteger(0)
-        val framework = OSGiFrameworkMock(mutableMapOf(), 100L)
+        val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
         framework.init(FrameworkListener { frameworkEvent ->
             assertTrue(startupStateAtomic.get() < frameworkEvent.bundle.state)
             assertTrue(startupStateAtomic.compareAndSet(startupStateAtomic.get(), frameworkEvent.bundle.state))
         })
-        OSGiFrameworkWrap(UUID.randomUUID(), framework).use { frameworkWrap ->
-            frameworkWrap.start()
-        }
-    }
-
-    @Test
-    fun start_concurrent() {
-        val startupStateAtomic = AtomicInteger(0)
-        val framework = OSGiFrameworkMock(mutableMapOf(), 100L)
-        framework.init(FrameworkListener { frameworkEvent ->
-            assertTrue(startupStateAtomic.get() < frameworkEvent.bundle.state)
-            assertTrue(startupStateAtomic.compareAndSet(startupStateAtomic.get(), frameworkEvent.bundle.state))
-
-        })
-        OSGiFrameworkWrap(UUID.randomUUID(), framework).use { frameworkWrap ->
-            val executorService = Executors.newFixedThreadPool(2)
-            executorService.submit { frameworkWrap.start() }
-            executorService.submit { frameworkWrap.start() }
-            executorService.shutdown()
-        }
-    }
-
-    @Test
-    fun start_bundleException() {
-    }
-
-
-    @Test
-    fun start_SecurityException() {
-    }
-
-    @Test
-    fun stop() {
-        val startupStateAtomic = AtomicInteger(0)
-        val bootstrapLatch = CountDownLatch(1)
-        val framework = OSGiFrameworkMock(mutableMapOf(), 100L)
-        framework.init(FrameworkListener { frameworkEvent ->
-            assertTrue(startupStateAtomic.get() < frameworkEvent.bundle.state)
-            assertTrue(startupStateAtomic.compareAndSet(startupStateAtomic.get(), frameworkEvent.bundle.state))
-            if (frameworkEvent.bundle.state == Bundle.ACTIVE) {
-                bootstrapLatch.countDown()
+        OSGiFrameworkWrap(framework).use { frameworkWrap ->
+            framework.bundleContext.addBundleListener { bundleEvent ->
+                assertTrue(bundleEvent.type >= BundleEvent.STARTED)
+                assertEquals(framework, bundleEvent.bundle)
             }
-
-        })
-        OSGiFrameworkWrap(UUID.randomUUID(), framework).use { frameworkWrap ->
             frameworkWrap.start()
-            assertTrue(bootstrapLatch.await(100L, TimeUnit.SECONDS))
-            assertEquals(Bundle.ACTIVE, framework.state)
-            val shutdownLatch = CountDownLatch(1)
-            val shutdownStateAtomic = AtomicInteger(framework.state)
-            framework.init(FrameworkListener { frameworkEvent ->
-                assertTrue { shutdownStateAtomic.get() > frameworkEvent.bundle.state }
-                assertTrue(shutdownStateAtomic.compareAndSet(shutdownStateAtomic.get(), frameworkEvent.bundle.state))
-                if (frameworkEvent.bundle.state == Bundle.UNINSTALLED) {
-                    shutdownLatch.countDown()
-                }
-            })
-            frameworkWrap.stop()
-            assertTrue(shutdownLatch.await(100L, TimeUnit.SECONDS))
-            assertEquals(Bundle.UNINSTALLED, framework.state)
         }
     }
 
-    @Test
-    fun stop_bundleException() {
-    }
-
-    @Test
-    fun stop_ClassNotFoundException() {
-    }
-
-    @Test
-    fun stop_SecurityException() {
-    }
-
-    @Test
-    fun waitForStop() {
-        val frameworkStateAtomic = AtomicInteger(0)
-        val bootstrapLatch = CountDownLatch(1)
-        val framework = OSGiFrameworkMock(mutableMapOf(), 100L)
-        framework.init(FrameworkListener { frameworkEvent ->
-            assertTrue(frameworkStateAtomic.get() < frameworkEvent.bundle.state)
-            assertTrue(frameworkStateAtomic.compareAndSet(frameworkStateAtomic.get(), frameworkEvent.bundle.state))
-            if (frameworkEvent.bundle.state == Bundle.ACTIVE) {
-                bootstrapLatch.countDown()
+    @ParameterizedTest
+    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
+    fun stop(frameworkFactoryFQN: String) {
+        val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
+        OSGiFrameworkWrap(framework).use { frameworkWrap ->
+            frameworkWrap.start()
+            assertEquals(Bundle.ACTIVE, framework.state)
+            framework.bundleContext.addBundleListener { bundleEvent ->
+                assertEquals(BundleEvent.STOPPING, bundleEvent.type)
+                assertEquals(framework, bundleEvent.bundle)
             }
-
-        })
-        val frameworkWrap = OSGiFrameworkWrap(UUID.randomUUID(), framework).use { frameworkWrap ->
-            frameworkWrap.start()
-            assertTrue(bootstrapLatch.await(100L, TimeUnit.SECONDS))
-            assertEquals(Bundle.ACTIVE, framework.state)
             frameworkWrap.stop()
+            //frameworkWrap.waitForStop(10000L)
+            assertEquals(FrameworkEvent.STOPPED, frameworkWrap.waitForStop(10000L).type)
         }
-        assertEquals(FrameworkEvent.STOPPED, frameworkWrap.waitForStop(10000L).type)
+        assertEquals(Bundle.RESOLVED, framework.state)
     }
 
     @AfterEach
     fun tearDown() {
-        assertTrue { Files.deleteIfExists(frameworkStorageDir) }
+        deletePath(frameworkStorageDir)
+        assertTrue { Files.notExists(frameworkStorageDir) }
+        val fallBackStorageDir = FileSystems.getDefault().getPath(frameworkStorageDir.toString())
+        if (Files.exists(fallBackStorageDir)) {
+            deletePath(fallBackStorageDir)
+        }
+        assertTrue { Files.notExists(fallBackStorageDir) }
+        fileSystem.close()
     }
+
 }
