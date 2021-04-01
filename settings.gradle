@@ -26,7 +26,6 @@ pluginManagement {
         id 'org.jetbrains.kotlin.plugin.noarg' version kotlinVersion
         id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
         id 'com.jfrog.artifactory' version jfrogArtifactoryPluginVersion
-        id 'org.ajoberstar.grgit' version grgitPluginVersion
         id 'biz.aQute.bnd.builder' version bndVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
     }
