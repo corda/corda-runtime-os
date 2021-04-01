@@ -37,6 +37,7 @@ switch (releaseType) {
                 "$flowworkerMajorVersion.$flowworkerMinorVersion.0-SNAPSHOT"
         break
     default:
+        //default case is builds made on jenkins where versionSuffix is calculated for us by the corda-shared-build-pipeline
         ext.flowworkerVersion = "$flowworkerMajorVersion.$flowworkerMinorVersion.$versionSuffix"
 }
 
