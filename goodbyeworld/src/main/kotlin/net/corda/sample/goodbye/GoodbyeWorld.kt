@@ -17,5 +17,5 @@ class GoodbyeWorld {
     fun callHelloWorld() {
         helloWorld?.sayHello() ?: println("We couldn't find hello world!!!")
     }
-
 }
+
