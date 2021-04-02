@@ -159,4 +159,3 @@ subprojects {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
     }
 }
-
