@@ -2,16 +2,16 @@ package api.samples.producerconsumer.processor
 
 import api.samples.producerconsumer.records.EventRecord
 
-interface Processor {
+interface Processor<T> {
     /**
      * process a record
      */
-    fun onNext(eventRecord: EventRecord)
+    fun onNext(eventRecord: EventRecord<T>)
 
     /**
      * After successful completion by processor, may be unnecessary
      */
-    fun onSuccess(eventRecord: EventRecord)
+    fun onSuccess(eventRecord: EventRecord<T>)
 
     /**
      * When subscription is cancelled,may be unnecessary
@@ -31,5 +31,5 @@ interface Processor {
     /**
      * When error occurs processing a record. May be unnecessary
      */
-    fun onError(eventRecord: EventRecord, e: Exception)
+    fun onError(eventRecord: EventRecord<T>, e: Exception)
 }

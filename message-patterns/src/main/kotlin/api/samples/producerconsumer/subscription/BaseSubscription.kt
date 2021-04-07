@@ -9,7 +9,7 @@ import api.samples.producerconsumer.processor.Processor
  * - spawn threads that have processor read from durable queue to execute independent entries
  * - some back pressure logic when durable concurrent queue is full to pause consumption
  */
-abstract class BaseSubscription (val eventSource: String, val processor: Processor) {
+abstract class BaseSubscription<T> (val eventSource: String, val processor: Processor<T>) {
     abstract fun start()
     abstract fun pause()
     abstract fun play()

@@ -3,9 +3,8 @@ package api.samples.producerconsumer.subscription
 import api.samples.producerconsumer.processor.Processor
 import java.util.concurrent.ExecutorService
 
-class SimpleSubscriptionWithExecutor(eventSource: String, processor: Processor,
+class SimpleSubscriptionWithExecutor(eventSource: String, processor: Processor<String>,
                                      private val executorService: ExecutorService) : SimpleSubscription(eventSource, processor) {
-
 
     override fun runProcessLoop() {
         while (!cancelled) {

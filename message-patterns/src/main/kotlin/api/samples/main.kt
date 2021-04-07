@@ -7,9 +7,9 @@ import api.samples.producerconsumer.subscription.SimpleSubscriptionWithExecutor
 import java.util.concurrent.Executors
 
 fun main() {
-    //DurableQueueExample().start()
+    DurableQueueExample().start()
     PubSubExample().start()
-    //ActorModeExample().start()
+    ActorModeExample().start()
 }
 
 class PubSubExample {

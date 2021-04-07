@@ -10,14 +10,14 @@ import java.util.concurrent.BlockingQueue
 /**
  * simple impl to illustrate
  */
-open class SimpleSubscription(eventSource: String, processor: Processor) : BaseSubscription(eventSource, processor) {
+open class SimpleSubscription(eventSource: String, processor: Processor<String>) : BaseSubscription<String>(eventSource, processor) {
     @Volatile
     internal var cancelled = false
     @Volatile
     internal var running = true
     lateinit var consumeLoopThread: Thread
     lateinit var processLoopThread: Thread
-    var blockingQueue: BlockingQueue<EventRecord> = LinkedBlockingDeque()
+    var blockingQueue: BlockingQueue<EventRecord<String>> = LinkedBlockingDeque()
 
     override fun start() {
         println("Running processor on $eventSource")
@@ -56,7 +56,7 @@ open class SimpleSubscription(eventSource: String, processor: Processor) : BaseS
         }
     }
 
-    private fun getEventRecord(eventSource: String): EventRecord {
+    private fun getEventRecord(eventSource: String): EventRecord<String> {
         return EventRecord(eventSource, "key", "value")
     }
 
