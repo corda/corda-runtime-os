@@ -1,16 +1,16 @@
 plugins {
     id 'biz.aQute.bnd.builder'
     id 'corda.publish'
+    id 'corda.common-app'
 }
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
-}
 
-dependencies {
-    implementation project(":helloworld")
+    compileOnly project(":helloworld")
+    osgiBundle project(":helloworld")
 
     //take in corda base to prove binaries from C5 work
     implementation "net.corda:corda-base:$cordaVersion"
@@ -19,11 +19,3 @@ dependencies {
 }
 
 description 'Goodbye World Library'
-
-tasks.named('jar', Jar) {
-    archiveBaseName = 'good-bye-world'
-    bnd """\
-Bundle-Name: Goodbye world
-Bundle-SymbolicName: \${project.group}.goodbye
-"""
-}
