@@ -121,13 +121,6 @@ allprojects {
     tasks.named("test", Test).configure {
         useJUnitPlatform()
     }
-
-    tasks.register('rebuild') {
-        group "build"
-        clean.outputs.upToDateWhen { false }
-        clean.finalizedBy(build)
-        dependsOn clean
-    }
 }
 
 
