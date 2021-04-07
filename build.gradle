@@ -34,7 +34,7 @@ allprojects {
 
     group 'net.corda'
     version flowworkerVersion
-    
+
     def cordaArtifactoryUsername = System.getenv('CORDA_ARTIFACTORY_USERNAME')
     def cordaArtifactoryPassword = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
 
