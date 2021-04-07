@@ -125,7 +125,8 @@ allprojects {
     tasks.register('rebuild') {
         group "build"
         clean.outputs.upToDateWhen { false }
-        dependsOn clean, build
+        clean.finalizedBy(build)
+        dependsOn clean
     }
 }
 
