@@ -1,14 +1,14 @@
 package api.samples.producerconsumer.subscription
 
 import api.samples.producerconsumer.processor.ActorProcessor
-import api.samples.producerconsumer.processor.Processor
 import api.samples.producerconsumer.records.EventRecord
 import api.samples.producerconsumer.records.StateRecord
 import java.io.IOException
 import kotlin.concurrent.thread
 
 
-open class ActorSubscription(private val eventTopic: String, private val stateTopic: String, private val processor: ActorProcessor<String, String, String>) : LifeCycle {
+open class ActorSubscription(private val eventTopic: String, private val stateTopic: String,
+                             private val processor: ActorProcessor<String, String, String>) : LifeCycle {
     @Volatile
     internal var cancelled = false
     @Volatile
