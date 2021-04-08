@@ -3,9 +3,8 @@ package api.samples.producerconsumer.processor
 import api.samples.producerconsumer.records.EventRecord
 import api.samples.producerconsumer.records.StateRecord
 
-interface ActorProcessor<K, SV, EV> {
+interface ActorProcessor<K, S, E> {
+    fun onNext(state: StateRecord<K, S>, event: EventRecord<K, E>): Pair<StateRecord<K, S>,List<EventRecord<K, E>>>
 
-    fun onNext(state: StateRecord<K, SV>, event: EventRecord<K, EV>): Pair<StateRecord<K, SV>,List<EventRecord<K, EV>>>
-
-    fun onError(state: StateRecord<K, SV>, event: EventRecord<K, EV>, e: Exception)
+    fun onError(state: StateRecord<K, S>, event: EventRecord<K, E>, e: Exception)
 }

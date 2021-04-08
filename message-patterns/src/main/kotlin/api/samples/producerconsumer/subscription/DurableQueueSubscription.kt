@@ -1,7 +1,7 @@
 package api.samples.producerconsumer.subscription
 
 import api.samples.producerconsumer.processor.Processor
-import api.samples.producerconsumer.records.EventRecord
+import api.samples.producerconsumer.records.event.EventRecord
 import java.io.IOException
 import kotlin.concurrent.thread
 

@@ -1,4 +1,4 @@
-package api.samples.producerconsumer.publisher
+package api.samples.producerconsumer.publisher.event
 
 import api.samples.producerconsumer.records.StateRecord
 
