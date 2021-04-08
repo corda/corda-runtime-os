@@ -8,7 +8,8 @@ import kotlin.concurrent.thread
 
 
 open class ActorSubscription(private val eventTopic: String, private val stateTopic: String,
-                             private val processor: ActorProcessor<String, String, String>) : LifeCycle {
+                             private val processor: ActorProcessor<String, String, String>,
+                                private val properties: Map<String, String>) : LifeCycle {
     @Volatile
     internal var cancelled = false
     @Volatile

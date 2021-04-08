@@ -12,7 +12,8 @@ import java.util.concurrent.ExecutorService
  * simple impl to illustrate
  */
 open class PubSubSubscription(private val eventTopic: String, private val processor: Processor<String, String>,
-                              private val executorService: ExecutorService) : LifeCycle {
+                              private val executorService: ExecutorService,
+                              private val properties: Map<String, String>) : LifeCycle {
     @Volatile
     internal var cancelled = false
     @Volatile
@@ -75,18 +76,12 @@ open class PubSubSubscription(private val eventTopic: String, private val proces
         println("PubSubSubscription: Processing entry from queue for $eventTopic")
         val record = blockingQueue.take()
 
-        var errorOccurred = false
         try {
             //process it
-            val recordsProduced = processor.onNext(record)
+            processor.onNext(record)
 
         } catch (e: IOException) {
-            errorOccurred = true
             processor.onError(record, e)
-        }
-
-        if (!errorOccurred) {
-
         }
     }
 

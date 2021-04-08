@@ -6,7 +6,8 @@ import java.io.IOException
 import kotlin.concurrent.thread
 
 
-open class DurableQueueSubscription(private val eventTopic: String, private val processor: Processor<String, String>) : LifeCycle {
+open class DurableQueueSubscription(private val eventTopic: String, private val processor: Processor<String, String>,
+                                    private val properties: Map<String, String>) : LifeCycle {
     @Volatile
     internal var cancelled = false
     @Volatile

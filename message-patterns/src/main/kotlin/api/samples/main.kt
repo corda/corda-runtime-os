@@ -16,9 +16,9 @@ fun main() {
 class PubSubExample {
     fun start() {
         val executorService = Executors.newFixedThreadPool(1)
-
+        val properties = mapOf<String, String>()
         val processor = SimpleProcessor()
-        val subscription =  PubSubSubscription("TOPIC_1", processor, executorService)
+        val subscription =  PubSubSubscription("TOPIC_1", processor, executorService, properties)
 
         subscription.start()
         Thread.sleep(10)
@@ -33,8 +33,9 @@ class PubSubExample {
 
 class DurableQueueExample {
     fun start() {
+        val properties = mapOf<String, String>()
         val processor = SimpleProcessor()
-        val subscription =  DurableQueueSubscription("TOPIC_1", processor)
+        val subscription =  DurableQueueSubscription("TOPIC_1", processor, properties)
 
         subscription.start()
         Thread.sleep(10)
@@ -49,8 +50,9 @@ class DurableQueueExample {
 
 class ActorModeExample {
     fun start() {
+        val properties = mapOf<String, String>()
         val processor = SimpleActorProcessor()
-        val subscription =  ActorSubscription("TOPIC_1_EVENT","TOPIC_1_STATE", processor)
+        val subscription =  ActorSubscription("TOPIC_1_EVENT","TOPIC_1_STATE", processor, properties)
 
         subscription.start()
         Thread.sleep(10)
