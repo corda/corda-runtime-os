@@ -86,8 +86,7 @@ open class PubSubSubscription(private val eventTopic: String, private val proces
         }
 
         if (!errorOccurred) {
-            //some logic to set offsets to mark as consumed on the topic
-            //send off recordsProduced
+
         }
     }
 
