@@ -2,8 +2,9 @@ package api.samples
 
 import api.samples.producerconsumer.processor.impl.SimpleProcessor
 import api.samples.producerconsumer.processor.impl.SimpleActorProcessor
-import api.samples.producerconsumer.subscription.SimpleSubscription
-import api.samples.producerconsumer.subscription.SimpleSubscriptionWithExecutor
+import api.samples.producerconsumer.subscription.ActorSubscription
+import api.samples.producerconsumer.subscription.DurableQueueSubscription
+import api.samples.producerconsumer.subscription.PubSubSubscription
 import java.util.concurrent.Executors
 
 fun main() {
@@ -17,7 +18,7 @@ class PubSubExample {
         val executorService = Executors.newFixedThreadPool(1)
 
         val processor = SimpleProcessor()
-        val subscription =  SimpleSubscriptionWithExecutor("TOPIC_1", processor, executorService)
+        val subscription =  PubSubSubscription("TOPIC_1", processor, executorService)
 
         subscription.start()
         Thread.sleep(10)
@@ -33,7 +34,7 @@ class PubSubExample {
 class DurableQueueExample {
     fun start() {
         val processor = SimpleProcessor()
-        val subscription =  SimpleSubscription("TOPIC_1", processor)
+        val subscription =  DurableQueueSubscription("TOPIC_1", processor)
 
         subscription.start()
         Thread.sleep(10)
@@ -49,7 +50,7 @@ class DurableQueueExample {
 class ActorModeExample {
     fun start() {
         val processor = SimpleActorProcessor()
-        val subscription =  SimpleSubscription("TOPIC_1A", processor)
+        val subscription =  ActorSubscription("TOPIC_1_EVENT","TOPIC_1_STATE", processor)
 
         subscription.start()
         Thread.sleep(10)

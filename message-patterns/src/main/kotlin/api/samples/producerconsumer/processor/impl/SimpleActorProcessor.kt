@@ -4,52 +4,23 @@ import api.samples.producerconsumer.processor.ActorProcessor
 import api.samples.producerconsumer.records.EventRecord
 import api.samples.producerconsumer.records.StateRecord
 
-class SimpleActorProcessor: ActorProcessor<String> {
-    override fun onNext(eventRecord: EventRecord<String>) {
-        println("ActorModelProcessor: I'm processing my next record ${eventRecord.key} from eventSource ${eventRecord.eventSource}")
+class SimpleActorProcessor: ActorProcessor<String, String, String> {
 
-        //get state
-        val state = getStateForEvent(eventRecord)
+    override fun onNext(state: StateRecord<String, String>,  event: EventRecord<String, String>
+    ): Pair<StateRecord<String, String>, List<EventRecord<String, String>>> {
+        println("SimpleActorProcessor: I'm processing my next record ${event.key} from eventTopic ${event.eventTopic} and " +
+                "stateTopic ${state.stateTopic}")
 
-        //processing logic
-        state.value = "new value"
+        //logic to produce new state + events
+        val newState = StateRecord("stateTopic", event.key, "some event value")
+        val newEvents = mutableListOf(EventRecord("source", "key", "value"))
 
-        //update state
-        updateState(state)
-
+        return Pair(newState,newEvents)
     }
 
-    override fun getStateForEvent(eventRecord: EventRecord<String>) : StateRecord<String> {
-        println("ActorModelProcessor: Getting the state for event ${eventRecord.key}")
-
-        //some impl specific lib/configService call to get state for event goes here
-        val stateRecord = StateRecord("stateSource", eventRecord.key, "some event value")
-
-        return stateRecord
+    override fun onError(state: StateRecord<String, String>, event: EventRecord<String, String>, e: Exception) {
+        println("SimpleActorProcessor: There was an error on ${event.eventTopic} for key ${event.key}...")
     }
 
-    override fun updateState(stateRecord: StateRecord<String>)  {
-        println("ActorModelProcessor: Getting the state for event id ${stateRecord.key}  and value ${stateRecord.value}")
-    }
 
-    override fun onSuccess(eventRecord: EventRecord<String>) {
-        println("ActorModelProcessor: No events currently available to process")
-        println("SimpleProcessor: Finished processing this ${eventRecord.key}")
-    }
-
-    override fun onCancel() {
-        println("ActorModelProcessor: I've been cancelled... doing some clean up")
-    }
-
-    override fun onPause() {
-        println("ActorModelProcessor: I've been paused....")
-    }
-
-    override fun onPlay() {
-        println("ActorModelProcessor: I've playing again after having been paused...")
-    }
-
-    override fun onError(eventRecord: EventRecord<String>, e: Exception) {
-        println("ActorModelProcessor: There was an error on ${eventRecord.eventSource} for key ${eventRecord.key}...")
-    }
 }

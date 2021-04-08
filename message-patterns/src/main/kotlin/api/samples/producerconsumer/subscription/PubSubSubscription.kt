@@ -6,21 +6,23 @@ import java.io.IOException
 import kotlin.concurrent.thread
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.ExecutorService
 
 /**
  * simple impl to illustrate
  */
-open class SimpleSubscription(eventSource: String, processor: Processor<String>) : BaseSubscription<String>(eventSource, processor) {
+open class PubSubSubscription(private val eventTopic: String, private val processor: Processor<String, String>,
+                              private val executorService: ExecutorService) : LifeCycle {
     @Volatile
     internal var cancelled = false
     @Volatile
     internal var running = true
     lateinit var consumeLoopThread: Thread
     lateinit var processLoopThread: Thread
-    var blockingQueue: BlockingQueue<EventRecord<String>> = LinkedBlockingDeque()
+    var blockingQueue: BlockingQueue<EventRecord<String, String>> = LinkedBlockingDeque()
 
     override fun start() {
-        println("Running processor on $eventSource")
+        println("Running processor on $eventTopic")
 
         consumeLoopThread =  thread(
             start = true,
@@ -42,66 +44,62 @@ open class SimpleSubscription(eventSource: String, processor: Processor<String>)
         )
     }
 
-    fun runConsumeLoop() {
+    private fun runProcessLoop() {
         while (!cancelled) {
             if (running) {
+                //Some logic to use executor to process from queue in multi-threaded fashion
+                executorService.execute(::process)
+            }
+        }
+    }
+
+    private fun runConsumeLoop() {
+        while (!cancelled) {
+            if (running) {
+                //set up connection to sources
+
                 //logic to consume an event
-                println("Subscription: Consuming entry from event source $eventSource")
-                val eventRecord = getEventRecord(eventSource)
+                println("PubSubSubscription: Consuming entry from event source $eventTopic")
+                val eventRecord = EventRecord(eventTopic, "key", "value")
 
-                //add some back pressure logic if queue is full
-
+                //could add some back pressure logic if queue is full
                 blockingQueue.offer(eventRecord)
             }
         }
     }
 
-    private fun getEventRecord(eventSource: String): EventRecord<String> {
-        return EventRecord(eventSource, "key", "value")
-    }
-
-    open fun runProcessLoop() {
-        while (!cancelled) {
-            if (running) {
-                process()
-            }
-        }
-    }
 
     fun process() {
+
         //logic to get an event
-        println("Subscription: Processing entry from queue for $eventSource")
+        println("PubSubSubscription: Processing entry from queue for $eventTopic")
         val record = blockingQueue.take()
 
         var errorOccurred = false
         try {
             //process it
-            processor.onNext(record)
+            val recordsProduced = processor.onNext(record)
 
-            //detekt complained about Exception being too generic
         } catch (e: IOException) {
             errorOccurred = true
             processor.onError(record, e)
-            blockingQueue.offer(record)
         }
 
-        if(!errorOccurred) {
-            processor.onSuccess(record)
-            //some logic to mark as consumed on the topic
+        if (!errorOccurred) {
+            //some logic to set offsets to mark as consumed on the topic
+            //send off recordsProduced
         }
-    }
-
-    override fun pause() {
-        println("Subscription: Pausing entry from topic $eventSource ....")
-        running = false
-        processor.onPause()
     }
 
     override fun cancel() {
-        println("Subscription: cancelling subscription $eventSource ....")
+        println("PubSubSubscription: cancelling subscription $eventTopic ....")
         cancelled = true
         running = false
-        processor.onCancel()
+    }
+
+    override fun pause() {
+        println("PubSubSubscription: Pausing entry from topic $eventTopic ....")
+        running = false
     }
 
     override fun play() {
@@ -109,7 +107,7 @@ open class SimpleSubscription(eventSource: String, processor: Processor<String>)
             println("Can't play. This is cancelled. Create a new subscription")
         } else {
             running = true
-            println("Subscription: Playing subscription $eventSource ....")
+            println("PubSubSubscription: Playing subscription $eventTopic ....")
         }
     }
 }
