@@ -1,7 +1,7 @@
 package api.samples.producerconsumer.processor.impl
 
 import api.samples.producerconsumer.processor.Processor
-import api.samples.producerconsumer.records.EventRecord
+import api.samples.producerconsumer.records.event.EventRecord
 
 class SimpleProcessor : Processor<String, String> {
     override fun onNext(eventRecord: EventRecord<String, String>) : List<EventRecord<String, String>> {

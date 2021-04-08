@@ -1,8 +1,8 @@
 package api.samples.producerconsumer.processor.impl
 
 import api.samples.producerconsumer.processor.ActorProcessor
-import api.samples.producerconsumer.records.EventRecord
-import api.samples.producerconsumer.records.StateRecord
+import api.samples.producerconsumer.records.event.EventRecord
+import api.samples.producerconsumer.records.state.StateRecord
 
 class SimpleActorProcessor: ActorProcessor<String, String, String> {
 
