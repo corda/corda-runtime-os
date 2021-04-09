@@ -10,6 +10,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ArgumentsSource
 import org.osgi.framework.*
 import java.io.IOException
+import java.lang.IllegalStateException
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.concurrent.CountDownLatch
@@ -24,6 +25,10 @@ import kotlin.test.assertTrue
 internal class OSGiFrameworkWrapTest {
 
     companion object {
+
+        private const val NO_SYSTEM_BUNDLES = "no_system_bundles"
+
+        private const val SICK_SYSTEM_BUNDLES = "sick_system_bundles"
 
         private const val TEMP_DIR = "unit_test"
 
@@ -117,6 +122,53 @@ internal class OSGiFrameworkWrapTest {
             assertEquals(bundleLocationList.size, framework.bundleContext.bundles.size - 1)
             bundleLocationList.forEach { location ->
                 assertNotNull(framework.bundleContext.getBundle(location))
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
+    fun install_IllegalStateException(frameworkFactoryFQN: String) {
+        assertThrows<IllegalStateException> {
+            val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
+            OSGiFrameworkWrap(framework).use { frameworkWrap ->
+                frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
+    fun install_IOException(frameworkFactoryFQN: String) {
+        assertThrows<IOException> {
+            val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
+            OSGiFrameworkWrap(framework).use { frameworkWrap ->
+                frameworkWrap.start()
+                frameworkWrap.install(NO_SYSTEM_BUNDLES)
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
+    fun installBundleJar_IOException(frameworkFactoryFQN: String) {
+        assertThrows<IOException> {
+            val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
+            OSGiFrameworkWrap(framework).use { frameworkWrap ->
+                frameworkWrap.start()
+                frameworkWrap.install(SICK_SYSTEM_BUNDLES)
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
+    fun installBundleList_IOException(frameworkFactoryFQN: String) {
+        assertThrows<IOException> {
+            val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
+            OSGiFrameworkWrap(framework).use { frameworkWrap ->
+                frameworkWrap.start()
+                frameworkWrap.install(NO_SYSTEM_BUNDLES)
             }
         }
     }

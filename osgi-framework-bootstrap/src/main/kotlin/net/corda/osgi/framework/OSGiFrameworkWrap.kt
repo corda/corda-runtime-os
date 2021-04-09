@@ -309,7 +309,7 @@ class OSGiFrameworkWrap(
         SecurityException::class
     )
     private fun installBundleList(resource: String, classLoader: ClassLoader) {
-        classLoader.getResourceAsStream(resource)?.use { inputStream ->
+        (classLoader.getResourceAsStream(resource)?.use { inputStream ->
             logger.info("OSGi bundle list at $resource loading...")
             inputStream.bufferedReader().useLines { lines ->
                 lines.map { line -> line.substringBefore('#') }
@@ -319,7 +319,7 @@ class OSGiFrameworkWrap(
                     .forEach(::install)
             }
             logger.info("OSGi bundle list at $resource loaded.")
-        }
+        } ?: throw IOException("OSGi bundle list at $resource not found"))
     }
 
     /**
