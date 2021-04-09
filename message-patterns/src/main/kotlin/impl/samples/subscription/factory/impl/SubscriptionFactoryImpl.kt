@@ -6,9 +6,9 @@ import api.samples.processor.DurableProcessor
 import api.samples.processor.PubSubProcessor
 import api.samples.subscription.LifeCycle
 import api.samples.subscription.factory.SubscriptionFactory
-import impl.samples.subscription.subscriptions.ActorSubscription
-import impl.samples.subscription.subscriptions.DurableQueueSubscription
-import impl.samples.subscription.subscriptions.PubSubSubscription
+import impl.samples.subscription.subscriptions.StateAndEventSubscriptionImpl
+import impl.samples.subscription.subscriptions.DurableQueueSubscriptionImpl
+import impl.samples.subscription.subscriptions.PubSubSubscriptionImpl
 import java.util.concurrent.ExecutorService
 
 class SubscriptionFactoryImpl : SubscriptionFactory {
@@ -21,7 +21,7 @@ class SubscriptionFactoryImpl : SubscriptionFactory {
         processor: ActorProcessor<K, S, E>,
         properties: Map<String, String>
     ): LifeCycle {
-        return ActorSubscription(groupName, instanceId, eventTopic, stateTopic, processor, properties)
+        return StateAndEventSubscriptionImpl(groupName, instanceId, eventTopic, stateTopic, processor, properties)
     }
 
     override fun <K, V> createPubSubSubscription(
@@ -32,7 +32,7 @@ class SubscriptionFactoryImpl : SubscriptionFactory {
         executor: ExecutorService,
         properties: Map<String, String>
     ): LifeCycle {
-        return PubSubSubscription(groupName, instanceId, eventTopic, pubsubProcessor, executor, properties)
+        return PubSubSubscriptionImpl(groupName, instanceId, eventTopic, pubsubProcessor, executor, properties)
     }
 
     override fun <K, V> createDurableSubscription(
@@ -42,7 +42,7 @@ class SubscriptionFactoryImpl : SubscriptionFactory {
         durableProcessor: DurableProcessor<K, V>,
         properties: Map<String, String>
     ): LifeCycle {
-        return DurableQueueSubscription(groupName, instanceId, eventTopic, durableProcessor, properties)
+        return DurableQueueSubscriptionImpl(groupName, instanceId, eventTopic, durableProcessor, properties)
     }
 
 

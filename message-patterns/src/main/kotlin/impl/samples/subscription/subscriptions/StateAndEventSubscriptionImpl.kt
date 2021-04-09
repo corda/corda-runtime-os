@@ -3,18 +3,17 @@ package impl.samples.subscription.subscriptions
 import api.samples.processor.ActorProcessor
 import api.samples.records.Record
 import api.samples.subscription.LifeCycle
-import api.samples.subscription.Subscription
-import java.io.IOException
+import api.samples.subscription.StateAndEventSubscription
 import java.lang.Exception
 import kotlin.concurrent.thread
 
-class ActorSubscription<K, S, E> (
+class StateAndEventSubscriptionImpl<K, S, E> (
     private val groupName: String,
     private val instanceId: Int,
     private val eventTopic: String,
     private val stateTopic: String,
     private val processor: ActorProcessor<K, S, E>,
-    private val properties: Map<String, String>) : LifeCycle {
+    private val properties: Map<String, String>) : StateAndEventSubscription<K, S, E> {
 
     @Volatile
     internal var stopped = false

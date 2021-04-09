@@ -13,13 +13,13 @@ import java.util.concurrent.ExecutorService
 /**
  * simple impl to illustrate
  */
-class PubSubSubscription<K, V> constructor(
+class PubSubSubscriptionImpl<K, V> constructor(
     private val groupName: String,
     private val instanceId: Int,
     private val eventTopic: String,
     private val processor: PubSubProcessor<K, V>,
     private val executor: ExecutorService,
-    private val properties: Map<String, String>) : LifeCycle {
+    private val properties: Map<String, String>) : Subscription<K, V> {
 
     @Volatile
     internal var cancelled = false

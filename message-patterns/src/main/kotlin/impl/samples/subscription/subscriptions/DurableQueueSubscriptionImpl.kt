@@ -3,16 +3,17 @@ package impl.samples.subscription.subscriptions
 import api.samples.processor.DurableProcessor
 import api.samples.records.Record
 import api.samples.subscription.LifeCycle
+import api.samples.subscription.Subscription
 import java.io.File
 import java.lang.Exception
 import kotlin.concurrent.thread
 
-class DurableQueueSubscription<K,V> constructor(
+class DurableQueueSubscriptionImpl<K,V> constructor(
     private val groupName: String,
     private val instanceId: Int,
     private val eventTopic: String,
     private val processor: DurableProcessor<K, V>,
-    private val properties: Map<String, String>) : LifeCycle {
+    private val properties: Map<String, String>) : Subscription<K, V> {
 
     @Volatile
     internal var cancelled = false
