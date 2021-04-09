@@ -4,7 +4,8 @@ package impl.samples.subscription.factory.impl
 import api.samples.processor.StateAndEventProcessor
 import api.samples.processor.DurableProcessor
 import api.samples.processor.PubSubProcessor
-import api.samples.subscription.LifeCycle
+import api.samples.subscription.StateAndEventSubscription
+import api.samples.subscription.Subscription
 import api.samples.subscription.factory.SubscriptionFactory
 import impl.samples.subscription.subscriptions.StateAndEventSubscriptionImpl
 import impl.samples.subscription.subscriptions.DurableQueueSubscriptionImpl
@@ -20,7 +21,7 @@ class SubscriptionFactoryImpl : SubscriptionFactory {
         stateTopic: String,
         processor: StateAndEventProcessor<K, S, E>,
         properties: Map<String, String>
-    ): LifeCycle {
+    ): StateAndEventSubscription<K, S, E> {
         return StateAndEventSubscriptionImpl(groupName, instanceId, eventTopic, stateTopic, processor, properties)
     }
 
@@ -31,7 +32,7 @@ class SubscriptionFactoryImpl : SubscriptionFactory {
         pubsubProcessor: PubSubProcessor<K, V>,
         executor: ExecutorService,
         properties: Map<String, String>
-    ): LifeCycle {
+    ): Subscription<K, V> {
         return PubSubSubscriptionImpl(groupName, instanceId, eventTopic, pubsubProcessor, executor, properties)
     }
 
@@ -41,7 +42,7 @@ class SubscriptionFactoryImpl : SubscriptionFactory {
         eventTopic: String,
         durableProcessor: DurableProcessor<K, V>,
         properties: Map<String, String>
-    ): LifeCycle {
+    ): Subscription<K, V> {
         return DurableQueueSubscriptionImpl(groupName, instanceId, eventTopic, durableProcessor, properties)
     }
 

@@ -40,14 +40,14 @@ class DurableQueueExample {
 
         val factory = SubscriptionFactoryImpl()
 
-        val subscription =  factory.createDurableSubscription("groupName",
+        val subscription =  factory.createDurableSubscription("groupName1",
             1,
             "",
             processorStrings,
             properties)
 
-        val subscription2 =  factory.createDurableSubscription("groupName",
-            1,
+        val subscription2 =  factory.createDurableSubscription("groupName6",
+            6,
             "",
             processorLongs,
             properties)
