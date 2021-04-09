@@ -1,8 +1,7 @@
 package impl.samples.subscription.subscriptions
 
-import api.samples.processor.ActorProcessor
+import api.samples.processor.StateAndEventProcessor
 import api.samples.records.Record
-import api.samples.subscription.LifeCycle
 import api.samples.subscription.StateAndEventSubscription
 import java.lang.Exception
 import kotlin.concurrent.thread
@@ -12,7 +11,7 @@ class StateAndEventSubscriptionImpl<K, S, E> (
     private val instanceId: Int,
     private val eventTopic: String,
     private val stateTopic: String,
-    private val processor: ActorProcessor<K, S, E>,
+    private val processor: StateAndEventProcessor<K, S, E>,
     private val properties: Map<String, String>) : StateAndEventSubscription<K, S, E> {
 
     @Volatile
@@ -57,15 +56,16 @@ class StateAndEventSubscriptionImpl<K, S, E> (
     }
 
     private fun getState(keyClazz: Class<K>, value: Class<S> ): Record<K, S> {
-        var key = keyClazz.newInstance()
-        var value = value.newInstance()
+        var key = keyClazz.cast("EVENT_KEY1")
+        var value = value.cast("STATE_VALUE2")
+
         return Record("topic", key, value)
     }
 
 
     private fun getEvent(keyClazz: Class<K>, value: Class<E> ): Record<K, E> {
-        var key = keyClazz.newInstance()
-        var value = value.newInstance()
+        var key = keyClazz.cast("KEY1")
+        var value = value.cast("EVENT_VALUE2")
         return Record("topic", key, value)
     }
 

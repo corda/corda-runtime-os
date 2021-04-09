@@ -1,6 +1,6 @@
 package impl.samples
 
-import impl.samples.processor.impl.ActorProcessorStrings
+import impl.samples.processor.impl.StateAndEventProcessorStrings
 import impl.samples.processor.impl.DurableProcessorLongs
 import impl.samples.processor.impl.DurableProcessorStrings
 import impl.samples.processor.impl.PubSubProcessorStrings
@@ -63,7 +63,7 @@ class DurableQueueExample {
 class ActorModeExample {
     fun start() {
         val properties = mapOf<String, String>()
-        val processor = ActorProcessorStrings()
+        val processor = StateAndEventProcessorStrings()
         val factory =  SubscriptionFactoryImpl()
         val subscription =  factory.createActorSubscription("groupName",
             1,

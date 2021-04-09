@@ -2,7 +2,7 @@ package api.samples.processor
 
 import api.samples.records.Record
 
-interface ActorProcessor<K, S, E> {
+interface StateAndEventProcessor<K, S, E> {
     val keyClass: Class<K>
     val stateValueClass: Class<S>
     val eventValueClass: Class<E>

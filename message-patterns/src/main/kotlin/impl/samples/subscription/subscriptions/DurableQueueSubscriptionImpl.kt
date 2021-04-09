@@ -57,8 +57,8 @@ class DurableQueueSubscriptionImpl<K,V> constructor(
     }
 
     private fun getEvent(keyClazz: Class<K>, value: Class<V> ): Record<K, V> {
-        var key = keyClazz.newInstance()
-        var value = value.newInstance()
+        var key = keyClazz.cast("EVENT_KEY1")
+        var value = value.cast("EVENT_VALUE2")
         return Record("topic", key, value)
     }
 

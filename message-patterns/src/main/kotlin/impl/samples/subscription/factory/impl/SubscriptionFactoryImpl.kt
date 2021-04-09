@@ -1,7 +1,7 @@
 package impl.samples.subscription.factory.impl
 
 
-import api.samples.processor.ActorProcessor
+import api.samples.processor.StateAndEventProcessor
 import api.samples.processor.DurableProcessor
 import api.samples.processor.PubSubProcessor
 import api.samples.subscription.LifeCycle
@@ -18,7 +18,7 @@ class SubscriptionFactoryImpl : SubscriptionFactory {
         instanceId: Int,
         eventTopic: String,
         stateTopic: String,
-        processor: ActorProcessor<K, S, E>,
+        processor: StateAndEventProcessor<K, S, E>,
         properties: Map<String, String>
     ): LifeCycle {
         return StateAndEventSubscriptionImpl(groupName, instanceId, eventTopic, stateTopic, processor, properties)

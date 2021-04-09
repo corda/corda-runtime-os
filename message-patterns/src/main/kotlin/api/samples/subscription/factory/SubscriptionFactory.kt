@@ -1,10 +1,9 @@
 package api.samples.subscription.factory
 
-import api.samples.processor.ActorProcessor
+import api.samples.processor.StateAndEventProcessor
 import api.samples.processor.DurableProcessor
 import api.samples.processor.PubSubProcessor
 import api.samples.subscription.LifeCycle
-import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 
 interface SubscriptionFactory {
@@ -28,9 +27,9 @@ interface SubscriptionFactory {
                                         properties: Map<String, String>) : LifeCycle
 
    fun <K, S, E> createActorSubscription(groupName:String,
-                               instanceId:Int,
-                               eventTopic:String,
-                               checkpointTopic:String,
-                               processor: ActorProcessor<K, S, E>,
-                               properties: Map<String, String>) : LifeCycle
+                                         instanceId:Int,
+                                         eventTopic:String,
+                                         checkpointTopic:String,
+                                         processor: StateAndEventProcessor<K, S, E>,
+                                         properties: Map<String, String>) : LifeCycle
 }

@@ -1,9 +1,9 @@
 package impl.samples.processor.impl
 
-import api.samples.processor.ActorProcessor
+import api.samples.processor.StateAndEventProcessor
 import api.samples.records.Record
 
-class ActorProcessorStrings: ActorProcessor<String, String, String> {
+class StateAndEventProcessorStrings: StateAndEventProcessor<String, String, String> {
 
     override fun onNext(state: Record<String, String>, event: Record<String, String>): Pair<Record<String, String>, List<Record<*, *>>> {
 
