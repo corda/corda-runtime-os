@@ -17,8 +17,7 @@ class DurableQueueSubscriptionImpl<K,V> constructor(
 
     @Volatile
     internal var cancelled = false
-    @Volatile
-    internal var running = true
+
     lateinit var consumeLoopThread: Thread
 
     override fun start() {
@@ -35,12 +34,10 @@ class DurableQueueSubscriptionImpl<K,V> constructor(
 
     private fun runConsumeAndProcessLoop() {
         while (!cancelled) {
-            if (running) {
-                try {
-                    process()
-                } catch (e: Exception) {
-                    //
-                }
+            try {
+                process()
+            } catch (e: Exception) {
+                //
             }
         }
     }
@@ -56,15 +53,14 @@ class DurableQueueSubscriptionImpl<K,V> constructor(
 
     }
 
-    private fun getEvent(keyClazz: Class<K>, value: Class<V> ): Record<K, V> {
+    private fun getEvent(keyClazz: Class<K>, valueClass: Class<V> ): Record<K, V> {
         var key = keyClazz.cast("EVENT_KEY1")
-        var value = value.cast("EVENT_VALUE2")
+        var value = valueClass.cast("EVENT_VALUE2")
         return Record("topic", key, value)
     }
 
     override fun stop() {
         cancelled = true
-        running = false
     }
 
 }

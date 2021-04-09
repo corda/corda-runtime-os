@@ -23,8 +23,7 @@ class PubSubSubscriptionImpl<K, V> constructor(
 
     @Volatile
     internal var cancelled = false
-    @Volatile
-    internal var running = true
+
     lateinit var consumeLoopThread: Thread
     lateinit var processLoopThread: Thread
     var blockingQueue: BlockingQueue<Record<K, V>> = LinkedBlockingDeque()
@@ -52,24 +51,20 @@ class PubSubSubscriptionImpl<K, V> constructor(
 
     private fun runProcessLoop() {
         while (!cancelled) {
-            if (running) {
-                //Some logic to use executor to process from queue in multi-threaded fashion
-                executor.execute(::process)
-            }
+            //Some logic to use executor to process from queue in multi-threaded fashion
+            executor.execute(::process)
         }
     }
 
     private fun runConsumeLoop() {
         while (!cancelled) {
-            if (running) {
-                //set up connection to sources
+            //set up connection to sources
 
-                //logic to consume an event
-                val eventRecord = getEvent(processor.keyClass, processor.valueClass)
+            //logic to consume an event
+            val eventRecord = getEvent(processor.keyClass, processor.valueClass)
 
-                //could add some back pressure logic if queue is full
-                blockingQueue.offer(eventRecord)
-            }
+            //could add some back pressure logic if queue is full
+            blockingQueue.offer(eventRecord)
         }
     }
 
@@ -91,7 +86,6 @@ class PubSubSubscriptionImpl<K, V> constructor(
 
     override fun stop() {
         cancelled = true
-        running = false
         executor.shutdown()
     }
 
