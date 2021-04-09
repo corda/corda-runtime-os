@@ -2,12 +2,8 @@ package net.corda.osgi.framework
 
 import org.apache.sling.testing.mock.osgi.MockOsgi
 import org.osgi.framework.*
-import java.io.File
-
 import java.io.InputStream
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.jvm.Throws
 
 class OSGiBundleContextMock(
     private val framework: OSGiFrameworkMock,

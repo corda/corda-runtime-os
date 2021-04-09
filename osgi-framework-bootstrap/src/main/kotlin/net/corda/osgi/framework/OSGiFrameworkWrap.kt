@@ -282,7 +282,6 @@ class OSGiFrameworkWrap(
                 throw IOException("OSGi bundle at $resource not found")
             }
         }
-
     }
 
     /**
@@ -322,7 +321,6 @@ class OSGiFrameworkWrap(
             logger.info("OSGi bundle list at $resource loaded.")
         }
     }
-
 
     /**
      * Register the [args] in the [ArgsService] OSGi service to expose [args] to the active bundles.

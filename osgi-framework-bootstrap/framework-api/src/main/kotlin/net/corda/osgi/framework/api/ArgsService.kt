@@ -3,9 +3,6 @@ package net.corda.osgi.framework.api
 /**
  * The interface provides the service to export `main(args: Array<String>)` parameters to the bundles wrapped by
  * [net.corda.osgi.framework.OSGiFrameworkWrap].
- *
- *
- *
  */
 fun interface ArgsService {
 
