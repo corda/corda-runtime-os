@@ -8,8 +8,8 @@ import impl.samples.subscription.factory.impl.SubscriptionFactoryImpl
 import java.util.concurrent.Executors
 
 fun main() {
-    DurableQueueExample().start()
-    PubSubExample().start()
+   // DurableQueueExample().start()
+ //   PubSubExample().start()
     ActorModeExample().start()
 }
 

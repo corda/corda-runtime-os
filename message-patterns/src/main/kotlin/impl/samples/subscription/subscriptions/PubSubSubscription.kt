@@ -65,7 +65,7 @@ class PubSubSubscription<K, V> constructor(
                 //set up connection to sources
 
                 //logic to consume an event
-                val eventRecord = getEvent()
+                val eventRecord = getEvent(processor.keyClass, processor.valueClass)
 
                 //could add some back pressure logic if queue is full
                 blockingQueue.offer(eventRecord)
@@ -73,8 +73,10 @@ class PubSubSubscription<K, V> constructor(
         }
     }
 
-    private fun getEvent(): Record<K, V> {
-        TODO("Not yet implemented")
+    private fun getEvent(keyClazz: Class<K>, value: Class<V> ): Record<K, V> {
+        var key = keyClazz.newInstance()
+        var value = value.newInstance()
+        return Record("topic", key, value)
     }
 
 
@@ -90,6 +92,7 @@ class PubSubSubscription<K, V> constructor(
     override fun stop() {
         cancelled = true
         running = false
+        executor.shutdown()
     }
 
 }

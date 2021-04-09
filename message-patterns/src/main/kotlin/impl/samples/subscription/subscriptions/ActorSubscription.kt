@@ -47,8 +47,8 @@ class ActorSubscription<K, S, E> (
     private fun process() {
         //logic to get an event/state
         println("ActorSubscription: Polling entry from queue for $eventTopic & $stateTopic)")
-        val state = getState()
-        val event = getEvent()
+        val state = getState(processor.keyClass, processor.stateValueClass)
+        val event = getEvent(processor.keyClass, processor.eventValueClass)
 
         var recordsProduced : Pair<Record<K, S>, List<Record<*, *>>> = processor.onNext(state, event)
 
@@ -57,12 +57,17 @@ class ActorSubscription<K, S, E> (
 
     }
 
-    private fun getState(): Record<K, S> {
-        TODO("Not yet implemented")
+    private fun getState(keyClazz: Class<K>, value: Class<S> ): Record<K, S> {
+        var key = keyClazz.newInstance()
+        var value = value.newInstance()
+        return Record("topic", key, value)
     }
 
-    private fun getEvent(): Record<K, E> {
-        TODO("Not yet implemented")
+
+    private fun getEvent(keyClazz: Class<K>, value: Class<E> ): Record<K, E> {
+        var key = keyClazz.newInstance()
+        var value = value.newInstance()
+        return Record("topic", key, value)
     }
 
     override fun stop() {

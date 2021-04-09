@@ -3,8 +3,7 @@ package impl.samples.subscription.subscriptions
 import api.samples.processor.DurableProcessor
 import api.samples.records.Record
 import api.samples.subscription.LifeCycle
-import api.samples.subscription.Subscription
-import java.io.IOException
+import java.io.File
 import java.lang.Exception
 import kotlin.concurrent.thread
 
@@ -47,7 +46,7 @@ class DurableQueueSubscription<K,V> constructor(
 
     private fun process() {
         //logic to get an event/state
-        val state = getState()
+        val state = getEvent(processor.keyClass, processor.valueClass)
 
         var recordsProduced : List<Record<*, *>> = processor.onNext(state)
 
@@ -56,8 +55,10 @@ class DurableQueueSubscription<K,V> constructor(
 
     }
 
-    private fun getState(): Record<K, V> {
-            TODO("Not yet implemented")
+    private fun getEvent(keyClazz: Class<K>, value: Class<V> ): Record<K, V> {
+        var key = keyClazz.newInstance()
+        var value = value.newInstance()
+        return Record("topic", key, value)
     }
 
     override fun stop() {
