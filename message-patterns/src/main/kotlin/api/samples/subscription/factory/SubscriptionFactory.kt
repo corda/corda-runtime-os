@@ -10,9 +10,8 @@ import java.util.concurrent.ExecutorService
 interface SubscriptionFactory {
 
     /**
-     * Config Service can be injected so no need to pass as a param
-     * properties map is additional properties not from the config service,
-     * Group name, instance Id could just be in the properties map?
+     * Config Service can be injected so no need to pass as a param.
+     * Properties map is additional properties not from the config service,
      */
 
     fun <K,V> createPubSubSubscription(groupName:String,
