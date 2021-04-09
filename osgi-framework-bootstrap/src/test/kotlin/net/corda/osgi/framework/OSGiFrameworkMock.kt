@@ -129,14 +129,18 @@ class OSGiFrameworkMock(
      * This Framework will not actually be started until [start] is called,
      * but if [start] is called before this method, [start] calls [init].
      *
+     * The method is effective if bundle state is [Bundle.INSTALLED] or [Bundle.RESOLVED] or [Bundle.UNINSTALLED].
+     *
      * @param listeners Zero or more listeners to be notified when framework events occur
      * only while initializing the framework.
+     *
      * @throws BundleException if this Framework could not be initialized.
      */
     @Throws(
         BundleException::class
     )
     override fun init(vararg listeners: FrameworkListener) {
+        // Effective only when this Framework is in Bundle.INSTALLED or Bundle.RESOLVED or Bundle.UNINSTALLED.
         when (startLevelAtomic.get()) {
             // This method does nothing if called when this Framework is
             // in the `Bundle.STARTING`, `Bundle.ACTIVE` or `Bundle.STOPPING` states.

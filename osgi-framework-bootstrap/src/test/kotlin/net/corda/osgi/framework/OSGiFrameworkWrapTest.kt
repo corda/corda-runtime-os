@@ -170,7 +170,6 @@ internal class OSGiFrameworkWrapTest {
                 assertEquals(framework, bundleEvent.bundle)
             }
             frameworkWrap.stop()
-            //frameworkWrap.waitForStop(10000L)
             assertEquals(FrameworkEvent.STOPPED, frameworkWrap.waitForStop(10000L).type)
         }
         assertEquals(Bundle.RESOLVED, framework.state)

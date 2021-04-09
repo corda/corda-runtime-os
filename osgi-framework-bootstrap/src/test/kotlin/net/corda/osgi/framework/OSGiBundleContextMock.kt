@@ -12,12 +12,7 @@ import kotlin.jvm.Throws
 class OSGiBundleContextMock(
     private val framework: OSGiFrameworkMock,
     private val bundle: Bundle
-) : BundleContext {
-
-    /**
-     * Temporary delegation to Apache Sling mock context.
-     */
-    private val slingContext = MockOsgi.newBundleContext()
+) : BundleContext by MockOsgi.newBundleContext() {
 
     /**
      * Set of [BundleListener] to notify when bundle
@@ -44,50 +39,6 @@ class OSGiBundleContextMock(
 
     //: BundleContext
 
-    /**
-     * See [BundleContext.addBundleListener].
-     *
-     * @param listener to be added.
-     */
-    override fun addBundleListener(listener: BundleListener) {
-        slingContext.addBundleListener(listener)
-    }
-
-    /**
-     * See [BundleContext.addBundleListener].
-     */
-    override fun addFrameworkListener(listener: FrameworkListener?) {
-        slingContext.addFrameworkListener(listener)
-    }
-
-
-    /**
-     * See [BundleContext.addBundleListener].
-     */
-    override fun addServiceListener(listener: ServiceListener?) {
-        TODO("Not yet implemented")
-    }
-
-    /**
-     * See [BundleContext.addServiceListener].
-     */
-    override fun addServiceListener(listener: ServiceListener?, filter: String?) {
-        slingContext.addServiceListener(listener, filter)
-    }
-
-    /**
-     * See [BundleContext.createFilter].
-     */
-    override fun createFilter(filter: String?): Filter {
-        return slingContext.createFilter(filter)
-    }
-
-    /**
-     * See [BundleContext.getAllServiceReferences].
-     */
-    override fun getAllServiceReferences(clazz: String?, filter: String?): Array<ServiceReference<*>> {
-        return slingContext.getAllServiceReferences(clazz, filter)
-    }
 
     /**
      * See [BundleContext.getBundle].
@@ -124,66 +75,6 @@ class OSGiBundleContextMock(
     }
 
     /**
-     * See [BundleContext.getDataFile]
-     */
-    override fun getDataFile(filename: String?): File {
-        return slingContext.getDataFile(filename)
-    }
-
-    /**
-     * No mock implementation, simulate that no property is found and return `null`.
-     *
-     * @return `null`.
-     */
-    override fun getProperty(key: String?): String {
-        return slingContext.getProperty(key)
-    }
-
-    /**
-     * See [BundleContext.getService].
-     */
-    override fun <S : Any?> getService(reference: ServiceReference<S>?): S {
-        return slingContext.getService(reference)
-    }
-
-    /**
-     * See [BundleContext.getServiceObjects].
-     */
-    override fun <S : Any?> getServiceObjects(reference: ServiceReference<S>?): ServiceObjects<S> {
-        return slingContext.getServiceObjects(reference)
-    }
-
-    /**
-     * See [BundleContext.getServiceReference].
-     */
-    override fun getServiceReference(clazz: String?): ServiceReference<*> {
-        return slingContext.getServiceReference(clazz)
-    }
-
-    /**
-     * See [BundleContext.getServiceReference].
-     */
-    override fun <S : Any?> getServiceReference(clazz: Class<S>?): ServiceReference<S> {
-        return slingContext.getServiceReference(clazz)
-    }
-
-    /**
-     * See [BundleContext.getServiceReferences]
-     */
-    override fun <S : Any?> getServiceReferences(
-        clazz: Class<S>?, filter: String?
-    ): MutableCollection<ServiceReference<S>> {
-        return slingContext.getServiceReferences(clazz, filter)
-    }
-
-    /**
-     * See [BundleContext.getServiceReferences].
-     */
-    override fun getServiceReferences(clazz: String?, filter: String?): Array<ServiceReference<*>> {
-        return slingContext.getServiceReferences(clazz, filter)
-    }
-
-    /**
      * See [BundleContext.installBundle].
      */
     override fun installBundle(location: String): Bundle {
@@ -210,91 +101,20 @@ class OSGiBundleContextMock(
 
         // The following steps are required to install a bundle.
         // If a bundle containing the same location identifier is already
-        // installed, the {@code Bundle} object for that bundle is returned.
+        // installed, the `Bundle` object for that bundle is returned.
         var bundle = framework.getBundle(location)
         if (bundle == null) {
             // The bundle's associated resources are allocated. The associated
             // resources minimally consist of a unique identifier and a persistent
             // storage area if the platform has file system support. If this step fails,
             // a `BundleException` is thrown.
-            // The bundle's state is set to {@code INSTALLED}.
+            // The bundle's state is set to `Bundle.INSTALLED`.
             bundle = framework.installBundle(location)
-            // A bundle event of type {@link BundleEvent#INSTALLED} is fired.</li>
+            // A bundle event of type `BundleEvent.INSTALLED` is fired.
             notifyToListeners(BundleEvent(BundleEvent.INSTALLED, bundle))
             // The `Bundle` object for the newly or previously installed bundle is returned.
         }
         return bundle
     }
 
-    /**
-     * See [BundleContext.registerService].
-     */
-    override fun registerService(
-        clazzes: Array<out String>?,
-        service: Any?,
-        properties: Dictionary<String, *>?
-    ): ServiceRegistration<*> {
-        return slingContext.registerService(clazzes, service, properties)
-    }
-
-    /**
-     * See [BundleContext.registerService].
-     */
-    override fun registerService(
-        clazz: String?,
-        service: Any?,
-        properties: Dictionary<String, *>?
-    ): ServiceRegistration<*> {
-        return slingContext.registerService(clazz, service, properties)
-    }
-
-    /**
-     * See [BundleContext.registerService].
-     */
-    override fun <S : Any?> registerService(
-        clazz: Class<S>?,
-        service: S,
-        properties: Dictionary<String, *>?
-    ): ServiceRegistration<S> {
-        return slingContext.registerService(clazz, service, properties)
-    }
-
-    /**
-     * See [BundleContext.registerService].
-     */
-    override fun <S : Any?> registerService(
-        clazz: Class<S>?,
-        factory: ServiceFactory<S>?,
-        properties: Dictionary<String, *>?
-    ): ServiceRegistration<S> {
-        return slingContext.registerService(clazz, factory, properties)
-    }
-
-    /**
-     * See [BundleContext.removeBundleListener].
-     */
-    override fun removeBundleListener(listener: BundleListener) {
-        slingContext.removeBundleListener(listener)
-    }
-
-    /**
-     * See [BundleContext.removeFrameworkListener].
-     */
-    override fun removeFrameworkListener(listener: FrameworkListener?) {
-        slingContext.removeFrameworkListener(listener)
-    }
-
-    /**
-     * See [BundleContext.removeServiceListener].
-     */
-    override fun removeServiceListener(listener: ServiceListener?) {
-        slingContext.removeServiceListener(listener)
-    }
-
-    /**
-     * See [BundleContext.ungetService].
-     */
-    override fun ungetService(reference: ServiceReference<*>?): Boolean {
-        return slingContext.ungetService(reference)
-    }
 }

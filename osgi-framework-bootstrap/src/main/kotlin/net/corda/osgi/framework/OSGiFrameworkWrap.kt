@@ -363,23 +363,23 @@ class OSGiFrameworkWrap(
         SecurityException::class
     )
     fun start(): OSGiFrameworkWrap {
-            if (isStartable(framework.state)) {
-                framework.start()
-                framework.bundleContext.addBundleListener { bundleEvent ->
-                    val bundle = bundleEvent.bundle
-                    logger.info(
-                        "OSGi bundle ${bundle.location}" +
-                                " ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"}" +
-                                " ${bundle.version} ${bundleStateMap[bundle.state]}."
-                    )
-                }
-                logger.info("OSGi framework ${framework::class.java.canonicalName} ${framework.version} started.")
-            } else {
-                logger.warn(
-                    "OSGi framework ${framework::class.java.canonicalName} start attempted: state is " +
-                            "${bundleStateMap[framework.state]}!"
+        if (isStartable(framework.state)) {
+            framework.start()
+            framework.bundleContext.addBundleListener { bundleEvent ->
+                val bundle = bundleEvent.bundle
+                logger.info(
+                    "OSGi bundle ${bundle.location}" +
+                            " ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"}" +
+                            " ${bundle.version} ${bundleStateMap[bundle.state]}."
                 )
             }
+            logger.info("OSGi framework ${framework::class.java.canonicalName} ${framework.version} started.")
+        } else {
+            logger.warn(
+                "OSGi framework ${framework::class.java.canonicalName} start attempted: state is " +
+                        "${bundleStateMap[framework.state]}!"
+            )
+        }
         return this
     }
 
