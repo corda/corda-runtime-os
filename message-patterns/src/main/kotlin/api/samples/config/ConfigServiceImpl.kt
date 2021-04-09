@@ -1,5 +1,6 @@
-package api.samples.config.impl
+package api.samples.config
 
+import api.samples.config.ConfigCache
 import api.samples.config.ConfigService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

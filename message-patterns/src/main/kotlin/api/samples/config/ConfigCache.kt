@@ -1,4 +1,4 @@
-package api.samples.config.impl
+package api.samples.config
 
 
 /**
