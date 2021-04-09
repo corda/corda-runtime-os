@@ -21,7 +21,6 @@ class OSGiBundleContextMock(
 
     /**
      * Set of [BundleListener] to notify when bundle
-     * Access to this property must be synchronized.
      */
     private val bundleListenerSet = ConcurrentHashMap.newKeySet<BundleListener>()
 
@@ -37,9 +36,7 @@ class OSGiBundleContextMock(
     internal fun notifyToListeners(bundleEvent: BundleEvent) {
         // Get a snapshot of listeners.
         val bundleListenerSet: Set<BundleListener>
-        synchronized(this.bundleListenerSet) {
-            bundleListenerSet = this.bundleListenerSet.toSet()
-        }
+        bundleListenerSet = this.bundleListenerSet.toSet()
         bundleListenerSet.forEach { bundleListener ->
             bundleListener.bundleChanged(bundleEvent)
         }
@@ -173,7 +170,8 @@ class OSGiBundleContextMock(
     /**
      * See [BundleContext.getServiceReferences]
      */
-    override fun <S : Any?> getServiceReferences(clazz: Class<S>?, filter: String?
+    override fun <S : Any?> getServiceReferences(
+        clazz: Class<S>?, filter: String?
     ): MutableCollection<ServiceReference<S>> {
         return slingContext.getServiceReferences(clazz, filter)
     }

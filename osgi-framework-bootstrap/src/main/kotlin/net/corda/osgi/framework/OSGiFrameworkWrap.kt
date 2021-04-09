@@ -310,20 +310,16 @@ class OSGiFrameworkWrap(
         SecurityException::class
     )
     private fun installBundleList(resource: String, classLoader: ClassLoader) {
-        classLoader.getResourceAsStream(resource).use { inputStream ->
-            if (inputStream != null) {
-                logger.info("OSGi bundle list at $resource loading...")
-                inputStream.bufferedReader().useLines { lines ->
-                    lines.map { line -> line.substringBefore('#') }
-                        .map(String::trim)
-                        .filter(String::isNotEmpty)
-                        .toList()
-                        .forEach(::install)
-                }
-                logger.info("OSGi bundle list at $resource loaded.")
-            } else {
-                throw IOException("OSGi bundle list at $resource not found")
+        classLoader.getResourceAsStream(resource)?.use { inputStream ->
+            logger.info("OSGi bundle list at $resource loading...")
+            inputStream.bufferedReader().useLines { lines ->
+                lines.map { line -> line.substringBefore('#') }
+                    .map(String::trim)
+                    .filter(String::isNotEmpty)
+                    .toList()
+                    .forEach(::install)
             }
+            logger.info("OSGi bundle list at $resource loaded.")
         }
     }
 
@@ -367,7 +363,6 @@ class OSGiFrameworkWrap(
         SecurityException::class
     )
     fun start(): OSGiFrameworkWrap {
-        synchronized(this) {
             if (isStartable(framework.state)) {
                 framework.start()
                 framework.bundleContext.addBundleListener { bundleEvent ->
@@ -385,7 +380,6 @@ class OSGiFrameworkWrap(
                             "${bundleStateMap[framework.state]}!"
                 )
             }
-        }
         return this
     }
 
@@ -406,7 +400,6 @@ class OSGiFrameworkWrap(
         BundleException::class,
         SecurityException::class
     )
-    @Synchronized
     fun stop(): OSGiFrameworkWrap {
         if (isStoppable(framework.state)) {
             logger.debug("OSGi framework stop...")

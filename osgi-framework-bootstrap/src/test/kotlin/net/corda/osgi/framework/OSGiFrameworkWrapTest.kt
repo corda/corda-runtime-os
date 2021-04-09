@@ -21,7 +21,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 
-internal class OSGiFrameworkWrapTest() {
+internal class OSGiFrameworkWrapTest {
 
     companion object {
 
@@ -100,7 +100,7 @@ internal class OSGiFrameworkWrapTest() {
 
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
-    fun getFrameworkFrom_ClassNotFoundException(frameworkFactoryFQN: String) {
+    fun getFrameworkFrom_ClassNotFoundException() {
         assertThrows<ClassNotFoundException> {
             OSGiFrameworkWrap.getFrameworkFrom("no_class", frameworkStorageDir)
         }
