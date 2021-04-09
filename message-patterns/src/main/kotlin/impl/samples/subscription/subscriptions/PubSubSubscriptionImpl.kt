@@ -68,9 +68,9 @@ class PubSubSubscriptionImpl<K, V> constructor(
         }
     }
 
-    private fun getEvent(keyClazz: Class<K>, value: Class<V> ): Record<K, V> {
-        var key = keyClazz.cast("EVENT_KEY1")
-        var value = value.cast("EVENT_VALUE2")
+    private fun getEvent(keyClass: Class<K>, valueClass: Class<V> ): Record<K, V> {
+        var key = keyClass.cast("EVENT_KEY1")
+        var value = valueClass.cast("EVENT_VALUE2")
         return Record("topic", key, value)
     }
 

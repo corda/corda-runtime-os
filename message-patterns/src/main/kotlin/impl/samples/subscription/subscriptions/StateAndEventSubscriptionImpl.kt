@@ -55,17 +55,17 @@ class StateAndEventSubscriptionImpl<K, S, E> (
 
     }
 
-    private fun getState(keyClazz: Class<K>, value: Class<S> ): Record<K, S> {
-        var key = keyClazz.cast("EVENT_KEY1")
-        var value = value.cast("STATE_VALUE2")
+    private fun getState(keyClass: Class<K>, valueClass: Class<S> ): Record<K, S> {
+        var key = keyClass.cast("EVENT_KEY1")
+        var value = valueClass.cast("STATE_VALUE2")
 
         return Record("topic", key, value)
     }
 
 
-    private fun getEvent(keyClazz: Class<K>, value: Class<E> ): Record<K, E> {
-        var key = keyClazz.cast("KEY1")
-        var value = value.cast("EVENT_VALUE2")
+    private fun getEvent(keyClass: Class<K>, valueClass: Class<E> ): Record<K, E> {
+        var key = keyClass.cast("KEY1")
+        var value = valueClass.cast("EVENT_VALUE2")
         return Record("topic", key, value)
     }
 
