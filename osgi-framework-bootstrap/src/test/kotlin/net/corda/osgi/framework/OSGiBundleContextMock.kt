@@ -39,7 +39,6 @@ class OSGiBundleContextMock(
 
     //: BundleContext
 
-
     /**
      * See [BundleContext.getBundle].
      *
@@ -94,27 +93,23 @@ class OSGiBundleContextMock(
     @Throws(
         BundleException::class
     )
-    override fun installBundle(location: String, input: InputStream?): Bundle {
-        // If the specified `InputStream` is `null`, the Framework must
-        // create the `InputStream` from which to read the bundle by
-        // interpreting, in an implementation dependent manner, the specified `location`.
+    override fun installBundle(location: String, input: InputStream?): Bundle =
+    // If the specified `InputStream` is `null`, the Framework must
+    // create the `InputStream` from which to read the bundle by
+    // interpreting, in an implementation dependent manner, the specified `location`.
 
-        // The following steps are required to install a bundle.
-        // If a bundle containing the same location identifier is already
-        // installed, the `Bundle` object for that bundle is returned.
-        var bundle = framework.getBundle(location)
-        if (bundle == null) {
-            // The bundle's associated resources are allocated. The associated
-            // resources minimally consist of a unique identifier and a persistent
-            // storage area if the platform has file system support. If this step fails,
-            // a `BundleException` is thrown.
-            // The bundle's state is set to `Bundle.INSTALLED`.
-            bundle = framework.installBundle(location)
-            // A bundle event of type `BundleEvent.INSTALLED` is fired.
-            notifyToListeners(BundleEvent(BundleEvent.INSTALLED, bundle))
-            // The `Bundle` object for the newly or previously installed bundle is returned.
-        }
-        return bundle
-    }
+    // The following steps are required to install a bundle.
+    // If a bundle containing the same location identifier is already
+    // installed, the `Bundle` object for that bundle is returned.
+        framework.getBundle(location) ?: framework.installBundle(location)
+            .also {
+                // The bundle's associated resources are allocated. The associated
+                // resources minimally consist of a unique identifier and a persistent
+                // storage area if the platform has file system support. If this step fails,
+                // a `BundleException` is thrown.
+                // The bundle's state is set to `Bundle.INSTALLED`.
+                notifyToListeners(BundleEvent(BundleEvent.INSTALLED, bundle))
+                // The `Bundle` object for the newly or previously installed bundle is returned.
+            }
 
 }
