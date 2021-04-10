@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>LongParameterList:PubSubSubscriptionImpl.kt$PubSubSubscriptionImpl$( private val groupName: String, private val instanceId: Int, private val eventTopic: String, private val processor: net.cordax.flowworker.api.processor.PubSubProcessor&lt;K, V&gt;, private val executor: ExecutorService, private val properties: Map&lt;String, String&gt;)</ID>
+    <ID>LongParameterList:StateAndEventSubscriptionImpl.kt$StateAndEventSubscriptionImpl$( private val groupName: String, private val instanceId: Int, private val eventTopic: String, private val stateTopic: String, private val processor: net.cordax.flowworker.api.processor.StateAndEventProcessor&lt;K, S, E&gt;, private val properties: Map&lt;String, String&gt;)</ID>
+    <ID>MaxLineLength:DurableProcessorLongs.kt$DurableProcessorLongs$override</ID>
+    <ID>MaxLineLength:DurableProcessorStrings.kt$DurableProcessorStrings$override</ID>
+    <ID>MaxLineLength:StateAndEventProcessorStrings.kt$StateAndEventProcessorStrings$override</ID>
+    <ID>MaxLineLength:StateAndEventSubscriptionImpl.kt$StateAndEventSubscriptionImpl$var recordsProduced : Pair&lt;net.cordax.flowworker.api.records.Record&lt;K, S&gt;, List&lt;net.cordax.flowworker.api.records.Record&lt;*, *&gt;&gt;&gt; = processor.onNext(state, event)</ID>
+    <ID>TooGenericExceptionCaught:DurableQueueSubscriptionImpl.kt$DurableQueueSubscriptionImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:StateAndEventSubscriptionImpl.kt$StateAndEventSubscriptionImpl$e: Exception</ID>
+    <ID>UnusedImports:DurableQueueSubscriptionImpl.kt$import java.io.File</ID>
+    <ID>UnusedImports:DurableQueueSubscriptionImpl.kt$import net.cordax.flowworker.api.subscription.LifeCycle</ID>
+    <ID>UnusedImports:PubSubSubscriptionImpl.kt$import java.io.IOException</ID>
+    <ID>UnusedImports:PubSubSubscriptionImpl.kt$import net.cordax.flowworker.api.subscription.LifeCycle</ID>
+  </CurrentIssues>
+</SmellBaseline>
