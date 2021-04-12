@@ -1,4 +1,6 @@
-package net.cordax.flowworker.api.publisher
+package net.cordax.flowworker.api.publisher.factory
+
+import net.cordax.flowworker.api.publisher.Publisher
 
 
 interface PublisherFactory {
