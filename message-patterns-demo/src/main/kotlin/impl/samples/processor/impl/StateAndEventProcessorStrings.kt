@@ -1,11 +1,11 @@
 package impl.samples.processor.impl
 
-import net.cordax.flowworker.api.processor.StateAndEventProcessor
-import net.cordax.flowworker.api.records.Record
-import net.cordax.flowworker.api.records.StateAndEvent
+import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.records.StateAndEvent
 
 class StateAndEventProcessorStrings:
-    net.cordax.flowworker.api.processor.StateAndEventProcessor<String, String, String> {
+    StateAndEventProcessor<String, String, String> {
 
     override fun onNext(stateAndEvent: StateAndEvent<String, String, String>): Pair<Record<String, String>, List<Record<*, *>>> {
 

@@ -1,7 +1,7 @@
-package net.cordax.flowworker.api.processor
+package net.corda.messaging.api.processor
 
-import net.cordax.flowworker.api.records.Record
-import net.cordax.flowworker.api.records.StateAndEvent
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.records.StateAndEvent
 
 interface StateAndEventProcessor<K, S, E> {
     val keyClass: Class<K>

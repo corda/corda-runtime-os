@@ -7,7 +7,7 @@ dependencies {
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 
-    implementation project(":flowworker-api")
+    implementation project(":messaging-api")
 }
 
 description 'Message PatternLibrary'

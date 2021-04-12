@@ -11,12 +11,4 @@ dependencies {
     implementation "net.corda:corda-base:1.0.1617266069749-rc"
 }
 
-description 'Flowworker API'
-
-tasks.named('jar', Jar) {
-    archiveBaseName = 'flowworker-api'
-    bnd """\
-Bundle-Name: Goodbye world
-Bundle-SymbolicName: \${project.group}.goodbye
-"""
-}
+description 'Messaging API'

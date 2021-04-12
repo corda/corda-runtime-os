@@ -1,8 +1,9 @@
 package impl.samples.subscription.subscriptions
 
-import net.cordax.flowworker.api.processor.StateAndEventProcessor
-import net.cordax.flowworker.api.records.Record
-import net.cordax.flowworker.api.subscription.StateAndEventSubscription
+import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.records.StateAndEvent
+import net.corda.messaging.api.subscription.StateAndEventSubscription
 import java.lang.Exception
 import kotlin.concurrent.thread
 
@@ -48,7 +49,8 @@ class StateAndEventSubscriptionImpl<K, S, E> (
         val state = getState(processor.keyClass, processor.stateValueClass)
         val event = getEvent(processor.keyClass, processor.eventValueClass)
 
-        var recordsProduced : Pair<Record<K, S>, List<Record<*, *>>> = processor.onNext(state, event)
+        val stateAndEvent = StateAndEvent<K, S, E>(state, event)
+        var recordsProduced : Pair<Record<K, S>, List<Record<*, *>>> = processor.onNext(stateAndEvent)
 
         //send off recordsProduced
         //some logic to set offsets to mark as consumed on the topic

@@ -1,8 +1,0 @@
-<?xml version="1.0" ?>
-<SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
-  <CurrentIssues>
-    <ID>LongParameterList:SubscriptionFactory.kt$SubscriptionFactory$(groupName:String, instanceId:Int, eventTopic:String, checkpointTopic:String, processor: StateAndEventProcessor&lt;K, S, E&gt;, properties: Map&lt;String, String&gt;)</ID>
-    <ID>LongParameterList:SubscriptionFactory.kt$SubscriptionFactory$(groupName:String, instanceId:Int, eventTopic:String, durableProcessor: PubSubProcessor&lt;K, V&gt;, executor: ExecutorService, properties: Map&lt;String, String&gt;)</ID>
-  </CurrentIssues>
-</SmellBaseline>

@@ -38,8 +38,8 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'flow-worker'
-include 'flowworker-api'
-include 'message-patterns'
+include 'messaging-api'
+include 'message-patterns-demo'
 include 'helloworld'
 include 'helloworld-impl'
 include 'goodbyeworld'

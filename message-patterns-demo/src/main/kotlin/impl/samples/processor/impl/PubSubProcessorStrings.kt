@@ -1,7 +1,7 @@
 package impl.samples.processor.impl
 
-import net.cordax.flowworker.api.processor.PubSubProcessor
-import net.cordax.flowworker.api.records.Record
+import net.corda.messaging.api.processor.PubSubProcessor
+import net.corda.messaging.api.records.Record
 
 class PubSubProcessorStrings : PubSubProcessor<String, String> {
     override fun onNext(eventRecord: Record<String, String>) {

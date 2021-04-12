@@ -1,4 +1,4 @@
-package net.cordax.flowworker.api.config
+package net.corda.messaging.api.config
 
 
 /**

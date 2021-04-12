@@ -1,10 +1,10 @@
 package impl.samples.processor.impl
 
-import net.cordax.flowworker.api.processor.DurableProcessor
-import net.cordax.flowworker.api.records.Record
+import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.records.Record
 
-class DurableProcessorLongs : net.cordax.flowworker.api.processor.DurableProcessor<Long, Long> {
-    override fun onNext(event: net.cordax.flowworker.api.records.Record<Long, Long>) : List<net.cordax.flowworker.api.records.Record<Long, Long>> {
+class DurableProcessorLongs : DurableProcessor<Long, Long> {
+    override fun onNext(event: Record<Long, Long>) : List<Record<Long, Long>> {
         println("DurableProcessorLongs: I'm processing my next record ${event.key} from eventTopic ${event.topic}")
 
         return mutableListOf()

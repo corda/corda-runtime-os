@@ -1,12 +1,12 @@
 package impl.samples.subscription.factory.impl
 
 
-import net.cordax.flowworker.api.processor.StateAndEventProcessor
-import net.cordax.flowworker.api.processor.DurableProcessor
-import net.cordax.flowworker.api.processor.PubSubProcessor
-import net.cordax.flowworker.api.subscription.StateAndEventSubscription
-import net.cordax.flowworker.api.subscription.Subscription
-import net.cordax.flowworker.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.processor.PubSubProcessor
+import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import impl.samples.subscription.subscriptions.StateAndEventSubscriptionImpl
 import impl.samples.subscription.subscriptions.DurableQueueSubscriptionImpl
 import impl.samples.subscription.subscriptions.PubSubSubscriptionImpl
@@ -29,21 +29,21 @@ class SubscriptionFactoryImpl : SubscriptionFactory {
         groupName: String,
         instanceId: Int,
         eventTopic: String,
-        pubsubProcessor: PubSubProcessor<K, V>,
+        processor: PubSubProcessor<K, V>,
         executor: ExecutorService,
         properties: Map<String, String>
     ): Subscription<K, V> {
-        return PubSubSubscriptionImpl(groupName, instanceId, eventTopic, pubsubProcessor, executor, properties)
+        return PubSubSubscriptionImpl(groupName, instanceId, eventTopic, processor, executor, properties)
     }
 
     override fun <K, V> createDurableSubscription(
         groupName: String,
         instanceId: Int,
         eventTopic: String,
-        durableProcessor: DurableProcessor<K, V>,
+        processor: DurableProcessor<K, V>,
         properties: Map<String, String>
     ): Subscription<K, V> {
-        return DurableQueueSubscriptionImpl(groupName, instanceId, eventTopic, durableProcessor, properties)
+        return DurableQueueSubscriptionImpl(groupName, instanceId, eventTopic, processor, properties)
     }
 
 

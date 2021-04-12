@@ -1,10 +1,8 @@
 package impl.samples.subscription.subscriptions
 
-import net.cordax.flowworker.api.processor.PubSubProcessor
-import net.cordax.flowworker.api.records.Record
-import net.cordax.flowworker.api.subscription.LifeCycle
-import net.cordax.flowworker.api.subscription.Subscription
-import java.io.IOException
+import net.corda.messaging.api.processor.PubSubProcessor
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.Subscription
 import kotlin.concurrent.thread
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.BlockingQueue

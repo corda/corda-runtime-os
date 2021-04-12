@@ -1,7 +1,7 @@
-package net.cordax.flowworker.api.publisher
+package net.corda.messaging.api.publisher
 
 import net.corda.v5.base.concurrent.CordaFuture
-import net.cordax.flowworker.api.records.Record
+import net.corda.messaging.api.records.Record
 
 interface Publisher<K, V> {
 

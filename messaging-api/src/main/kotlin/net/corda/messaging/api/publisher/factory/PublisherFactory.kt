@@ -1,6 +1,6 @@
-package net.cordax.flowworker.api.publisher.factory
+package net.corda.messaging.api.publisher.factory
 
-import net.cordax.flowworker.api.publisher.Publisher
+import net.corda.messaging.api.publisher.Publisher
 
 
 interface PublisherFactory {

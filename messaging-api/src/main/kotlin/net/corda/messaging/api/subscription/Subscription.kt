@@ -1,4 +1,4 @@
-package net.cordax.flowworker.api.subscription
+package net.corda.messaging.api.subscription
 
 
 interface Subscription<K, V> : LifeCycle

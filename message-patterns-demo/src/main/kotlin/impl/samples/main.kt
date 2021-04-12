@@ -8,9 +8,9 @@ import impl.samples.subscription.factory.impl.SubscriptionFactoryImpl
 import java.util.concurrent.Executors
 
 fun main() {
+    PubSubExample().start()
     DurableQueueExample().start()
- //   PubSubExample().start()
-   // ActorModeExample().start()
+    ActorModeExample().start()
 }
 
 class PubSubExample {
@@ -27,7 +27,7 @@ class PubSubExample {
             properties)
 
         subscription.start()
-        Thread.sleep(10)
+        Thread.sleep(2)
         subscription.stop()
     }
 }
