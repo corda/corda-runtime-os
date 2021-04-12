@@ -2,14 +2,17 @@ package impl.samples.processor.impl
 
 import net.cordax.flowworker.api.processor.StateAndEventProcessor
 import net.cordax.flowworker.api.records.Record
+import net.cordax.flowworker.api.records.StateAndEvent
 
 class StateAndEventProcessorStrings:
     net.cordax.flowworker.api.processor.StateAndEventProcessor<String, String, String> {
 
-    override fun onNext(state: Record<String, String>, event: Record<String, String>): Pair<Record<String, String>, List<Record<*, *>>> {
+    override fun onNext(stateAndEvent: StateAndEvent<String, String, String>): Pair<Record<String, String>, List<Record<*, *>>> {
 
+        val state = stateAndEvent.state
+        val event = stateAndEvent.event
         println("ActorProcessorStrings: I'm processing my next record ${event.key} from eventTopic ${event.topic} and " +
-                "stateTopic ${state.topic}")
+                "stateTopic ${state?.topic}")
 
         //logic to produce new state + events
         val newState = Record("stateTopic", event.key, "some event value")
