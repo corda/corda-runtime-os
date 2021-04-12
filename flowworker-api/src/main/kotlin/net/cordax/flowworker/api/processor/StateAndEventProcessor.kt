@@ -7,5 +7,5 @@ interface StateAndEventProcessor<K, S, E> {
     val stateValueClass: Class<S>
     val eventValueClass: Class<E>
 
-    fun onNext(state: Record<K, S>, event: Record<K, E>): Pair<Record<K, S>,List<Record<*, *>>>
+    fun onNext(state: Record<K, S>?, event: Record<K, E>): Pair<Record<K, S>,List<Record<*, *>>>
 }
