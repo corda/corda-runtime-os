@@ -33,31 +33,6 @@ configurations {
         exclude group: "org.osgi", module: "osgi.core"
         exclude group: "org.osgi", module: "osgi.cmpn"
 
-        // We bundle "sshd-osgi" (below) instead of "sshd-core" and "sshd-pam".
-        exclude group: "org.apache.sshd", module: "sshd-core"
-        exclude group: "org.apache.sshd", module: "sshd-pam"
-
-        // We exclude all Shiro bundles except "shiro-core" to avoid split-package issues.
-        exclude group: "org.apache.shiro", module: "shiro-cache"
-        exclude group: "org.apache.shiro", module: "shiro-config-core"
-        exclude group: "org.apache.shiro", module: "shiro-config-ogdl"
-        exclude group: "org.apache.shiro", module: "shiro-crypto-cipher"
-        exclude group: "org.apache.shiro", module: "shiro-crypto-core"
-        exclude group: "org.apache.shiro", module: "shiro-crypto-hash"
-        exclude group: "org.apache.shiro", module: "shiro-event"
-        exclude group: "org.apache.shiro", module: "shiro-lang"
-
-        // Remove artemis jars already included inside artemis-server-osgi
-        exclude group: "org.apache.activemq", module: "artemis-server"
-        exclude group: "org.apache.activemq", module: "artemis-core-client"
-        exclude group: "org.apache.activemq", module: "artemis-commons"
-        exclude group: "org.apache.activemq", module: "artemis-jdbc-store"
-        exclude group: "org.apache.activemq", module: "artemis-jms-client"
-        exclude group: "org.apache.activemq", module: "artemis-jms-server"
-        exclude group: "org.apache.activemq", module: "artemis-service-extensions"
-        exclude group: "org.apache.activemq", module: "artemis-selector"
-        exclude group: "org.apache.activemq", module: "artemis-journal"
-
         exclude group: "net.corda.kotlin", module: "kotlin-stdlib-jdk8-osgi"
         exclude group: "org.jetbrains.kotlin", module: "kotlin-osgi-bundle"
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8"
@@ -65,12 +40,6 @@ configurations {
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-common"
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
         exclude group: "org.jetbrains.kotlin", module: "kotlin-reflect"
-
-        exclude group: "org.slf4j", module: "slf4j-api"
-        exclude group: "org.apache.logging.log4j", module: "log4j-core"
-
-        exclude group: "org.jboss.logmanager", module: "jboss-logmanager"
-        exclude group: "com.esotericsoftware", module: "reflectasm"
 
         resolutionStrategy.dependencySubstitution {
 
@@ -117,12 +86,14 @@ dependencies {
     systemPackages "org.slf4j:jcl-over-slf4j:$slf4jVersion"
     systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
 
+    // NOTE: Used to test bootstrap functionalities only.
     osgiBundle "org.postgresql:postgresql:$postgresVersion"
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$jupiterVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
 }
 
@@ -224,16 +195,6 @@ class BuildSystemPackageExtra extends DefaultTask {
 Provider<BuildSystemPackageExtra> buildSystemPackagesExtra = tasks.register("buildSystemPackagesExtra", BuildSystemPackageExtra) {
     sourceConfigurations = ['systemPackages']
     jdkExtraPackages = [
-            "net.corda.osgi.framework.api",
-            "sun.net.www.protocol.jar",
-            "sun.nio.ch",
-            "sun.security.x509",
-            "sun.security.ssl",
-            "javax.servlet",
-            "javax.transaction.xa;version=1.1.0",
-            "javax.xml.stream;version=1.0",
-            "javax.xml.stream.events;version=1.0",
-            "javax.xml.stream.util;version=1.0",
     ]
     systemPackagesExtraFile = project.layout.buildDirectory.file("resources/main/system_packages_extra")
 }
@@ -242,7 +203,7 @@ tasks.named("processResources") {
     inputs.files(buildSystemPackagesExtra, buildOsgiBundles)
 }
 
-tasks.register("buildCordaJar", Jar) {
+tasks.register("buildExecutableJar", Jar) {
     inputs.files(project("framework-api").jar)
     archiveBaseName = project.name
     archiveVersion = version
