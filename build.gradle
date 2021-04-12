@@ -29,11 +29,15 @@ wrapper {
 }
 
 
+
 allprojects {
     apply plugin: 'org.jetbrains.kotlin.jvm'
 
     group 'net.corda'
     version flowworkerVersion
+
+    def cordaArtifactoryUsername = "luca.debiasi@r3.com"
+    def cordaArtifactoryPassword = "AKCp5fUYXrW7z5565WVskcQqR1fa9CEzb7RKG7kx4NHFUS5RoxHeJ6tE9giVViAaxdCziWd1Y"
 
     tasks.withType(JavaCompile) {
         sourceCompatibility = VERSION_11
