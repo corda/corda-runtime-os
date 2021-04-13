@@ -2,12 +2,12 @@ package impl.samples.processor.impl
 
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.records.StateAndEvent
+import net.corda.messaging.api.records.StateAndEventRecord
 
 class StateAndEventProcessorStrings:
     StateAndEventProcessor<String, String, String> {
 
-    override fun onNext(stateAndEvent: StateAndEvent<String, String, String>): Pair<Record<String, String>, List<Record<*, *>>> {
+    override fun onNext(stateAndEvent: StateAndEventRecord<String, String, String>): Pair<Record<String, String>, List<Record<*, *>>> {
 
         val state = stateAndEvent.state
         val event = stateAndEvent.event

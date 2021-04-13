@@ -5,6 +5,8 @@ import impl.samples.processor.impl.DurableProcessorLongs
 import impl.samples.processor.impl.DurableProcessorStrings
 import impl.samples.processor.impl.PubSubProcessorStrings
 import impl.samples.subscription.factory.impl.SubscriptionFactoryImpl
+import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import java.util.concurrent.Executors
 
 fun main() {
@@ -19,9 +21,10 @@ class PubSubExample {
         val properties = mapOf<String, String>()
         val processor = PubSubProcessorStrings()
         val factory =  SubscriptionFactoryImpl()
-        val subscription =  factory.createPubSubSubscription("groupName",
+        val subscription =  factory.createPubSubSubscription(
+            SubscriptionConfig("groupName",
             1,
-            "",
+            ""),
             processor,
             executorService,
             properties)
@@ -40,15 +43,17 @@ class DurableQueueExample {
 
         val factory = SubscriptionFactoryImpl()
 
-        val subscription =  factory.createDurableSubscription("groupName1",
+        val subscription =  factory.createDurableSubscription(
+            SubscriptionConfig("groupName1",
             1,
-            "",
+            ""),
             processorStrings,
             properties)
 
-        val subscription2 =  factory.createDurableSubscription("groupName6",
+        val subscription2 =  factory.createDurableSubscription(
+            SubscriptionConfig("groupName6",
             6,
-            "",
+            ""),
             processorLongs,
             properties)
 
@@ -65,10 +70,11 @@ class ActorModeExample {
         val properties = mapOf<String, String>()
         val processor = StateAndEventProcessorStrings()
         val factory =  SubscriptionFactoryImpl()
-        val subscription =  factory.createActorSubscription("groupName",
+        val subscription =  factory.createStateAndEventSubscription(
+            StateAndEventSubscriptionConfig("groupName",
             1,
             "event",
-            "state",
+            "state"),
             processor,
             properties)
 

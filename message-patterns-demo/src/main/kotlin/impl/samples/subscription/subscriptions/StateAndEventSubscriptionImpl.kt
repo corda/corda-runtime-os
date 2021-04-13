@@ -2,7 +2,7 @@ package impl.samples.subscription.subscriptions
 
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.records.StateAndEvent
+import net.corda.messaging.api.records.StateAndEventRecord
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import java.lang.Exception
 import kotlin.concurrent.thread
@@ -49,7 +49,7 @@ class StateAndEventSubscriptionImpl<K, S, E> (
         val state = getState(processor.keyClass, processor.stateValueClass)
         val event = getEvent(processor.keyClass, processor.eventValueClass)
 
-        val stateAndEvent = StateAndEvent<K, S, E>(state, event)
+        val stateAndEvent = StateAndEventRecord<K, S, E>(state, event)
         var recordsProduced : Pair<Record<K, S>, List<Record<*, *>>> = processor.onNext(stateAndEvent)
 
         //send off recordsProduced

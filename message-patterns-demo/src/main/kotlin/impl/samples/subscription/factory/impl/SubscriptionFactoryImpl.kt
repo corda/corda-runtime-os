@@ -10,40 +10,37 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import impl.samples.subscription.subscriptions.StateAndEventSubscriptionImpl
 import impl.samples.subscription.subscriptions.DurableQueueSubscriptionImpl
 import impl.samples.subscription.subscriptions.PubSubSubscriptionImpl
+import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import java.util.concurrent.ExecutorService
 
 class SubscriptionFactoryImpl : SubscriptionFactory {
 
-    override fun <K, S, E> createActorSubscription(
-        groupName: String,
-        instanceId: Int,
-        eventTopic: String,
-        stateTopic: String,
+    override fun <K, S, E> createStateAndEventSubscription(config: StateAndEventSubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
         properties: Map<String, String>
     ): StateAndEventSubscription<K, S, E> {
-        return StateAndEventSubscriptionImpl(groupName, instanceId, eventTopic, stateTopic, processor, properties)
+        return StateAndEventSubscriptionImpl(config.groupName, config.instanceId, config.eventTopic,
+            config.stateTopic, processor, properties)
     }
 
     override fun <K, V> createPubSubSubscription(
-        groupName: String,
-        instanceId: Int,
-        eventTopic: String,
+        config: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService,
         properties: Map<String, String>
     ): Subscription<K, V> {
-        return PubSubSubscriptionImpl(groupName, instanceId, eventTopic, processor, executor, properties)
+        return PubSubSubscriptionImpl(config.groupName, config.instanceId, config.eventTopic,
+            processor, executor, properties)
     }
 
     override fun <K, V> createDurableSubscription(
-        groupName: String,
-        instanceId: Int,
-        eventTopic: String,
+        config: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
         properties: Map<String, String>
     ): Subscription<K, V> {
-        return DurableQueueSubscriptionImpl(groupName, instanceId, eventTopic, processor, properties)
+        return DurableQueueSubscriptionImpl(config.groupName, config.instanceId, config.eventTopic,
+            processor, properties)
     }
 
 
