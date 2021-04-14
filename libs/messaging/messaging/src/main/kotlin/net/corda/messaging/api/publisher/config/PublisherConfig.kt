@@ -8,4 +8,4 @@ package net.corda.messaging.api.publisher.config
  */
 data class PublisherConfig (val clientId: String,
                             val instanceId: Int,
-                            val eventTopic: String)
+                            val topic: String)

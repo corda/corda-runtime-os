@@ -6,4 +6,4 @@ package net.corda.messaging.api.records
  * [key] is the unique per topic key for a record
  * [value] the value of the record
  */
-class Record<K, V>(val topic: String, val key: K, val value: V)
+class Record<K, V>(val topic: String, val key: K, val value: V?)
