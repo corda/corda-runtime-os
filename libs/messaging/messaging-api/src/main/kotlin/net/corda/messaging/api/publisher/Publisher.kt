@@ -9,8 +9,8 @@ import net.corda.messaging.api.records.Record
 interface Publisher<K, V> {
 
     /**
-     * Publish a [record]
+     * Publish a list of [records]
      * @return a corda future indicating where the publish to a topic was successful.
      */
-    fun publish(record: Record<K, V>) : CordaFuture<Boolean>
+    fun publish(records: List<Record<K, V>>) : CordaFuture<Boolean>
 }
