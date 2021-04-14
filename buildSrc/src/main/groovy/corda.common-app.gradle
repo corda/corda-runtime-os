@@ -8,6 +8,8 @@ plugins {
 
 configurations {
 
+    bootstrap project(":osgi-framework-bootstrap")
+
 }
 
 compileKotlin {
@@ -144,9 +146,7 @@ compileTestKotlin {
 //    systemPackagesExtraFile = project.layout.buildDirectory.file("resources/main/system_packages_extra")
 //}
 
-//tasks.named("processResources") {
-//    inputs.files(buildSystemPackagesExtra, buildOsgiBundles)
-//}
+
 
 Provider<Copy> bundleOSGiDependencies = tasks.register("bundleOSGiDependencies", Copy) {
 
