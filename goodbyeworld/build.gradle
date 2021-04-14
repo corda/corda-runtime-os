@@ -1,3 +1,5 @@
+import java.util.jar.JarFile
+
 plugins {
     id 'biz.aQute.bnd.builder'
     id 'corda.publish'
@@ -9,8 +11,9 @@ dependencies {
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 
-    compileOnly project(":helloworld")
-    osgiBundle project(":helloworld")
+    //compileOnly project(":helloworld")
+    //osgiBundle project(":helloworld")
+    implementation project(":helloworld")
 
     //take in corda base to prove binaries from C5 work
     implementation "net.corda:corda-base:$cordaVersion"
