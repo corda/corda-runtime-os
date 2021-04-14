@@ -1,6 +1,7 @@
 package net.corda.messaging.api.publisher.factory
 
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
 
 /**
  * Interface for creating publishers
@@ -8,13 +9,11 @@ import net.corda.messaging.api.publisher.Publisher
 interface PublisherFactory {
 
     /**
-     * Create a publisher which publishes to a [topic] with a given set of connection [properties].
-     * Records published to the [topic] will contain the [clientId] as meta-data to identify the source.
+     * Create a publisher which publishes to a topic with a given [config] and map of [properties].
      * @return a publisher
      */
     fun <K, V> createPublisher(
-        clientId: String,
-        topic: String,
+        config: PublisherConfig,
         properties: Map<String, String>
     ): Publisher<K, V>
 }
