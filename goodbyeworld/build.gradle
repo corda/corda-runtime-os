@@ -13,7 +13,7 @@ dependencies {
     implementation project(":helloworld")
 
     //take in corda base to prove binaries from C5 work
-    implementation "net.corda:corda-base:1.0.1617266069749-rc"
+    implementation "net.corda:corda-base:$cordaVersion"
 
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
 }

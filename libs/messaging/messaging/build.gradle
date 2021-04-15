@@ -8,7 +8,7 @@ dependencies {
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 
-    implementation "net.corda:corda-base:1.0.1617266069749-rc"
+    implementation "net.corda:corda-base:$cordaVersion"
 }
 
 description 'Messaging API'
