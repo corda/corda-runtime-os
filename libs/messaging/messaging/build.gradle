@@ -1,0 +1,14 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+    id 'corda.publish'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    implementation "net.corda:corda-base:$cordaVersion"
+}
+
+description 'Messaging API'
