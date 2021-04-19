@@ -1,0 +1,22 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+    id 'corda.publish'
+}
+
+description 'Kafka Messaging API Impl'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    implementation project(":libs:messaging:messaging")
+
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "org.apache.kafka:kafka-clients:$kafkaVersion"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+}
+

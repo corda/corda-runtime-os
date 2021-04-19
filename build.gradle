@@ -115,6 +115,10 @@ allprojects {
         // Test utilities
         testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
         testImplementation "org.assertj:assertj-core:$assertjVersion"
+        testImplementation "org.mockito:mockito-core:$mockitoVersion"
+        testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
+            exclude group: 'mockito-core'
+        }
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     }
 

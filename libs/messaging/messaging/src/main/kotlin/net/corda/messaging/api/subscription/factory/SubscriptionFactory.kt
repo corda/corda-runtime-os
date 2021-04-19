@@ -22,12 +22,13 @@ interface SubscriptionFactory {
      * @param processor Processor of events. Processor does not return any new records to be sent back to the topic.
      * @param config Define the mandatory params for creating a subscription.
      * @param properties Map of properties to override the default settings for the connection to the source of events
-     * @param executor This will allow for the threading model to be controlled by the subscriber.
+     * @param executor This will allow for the threading model to be controlled by the subscriber. If null processor will
+     * execute on the same thread as the consumer.
      * @return A subscription to manage lifecycle.
      */
     fun <K,V> createPubSubSubscription(config: SubscriptionConfig,
                                        processor: PubSubProcessor<K, V>,
-                                       executor: ExecutorService,
+                                       executor: ExecutorService?,
                                        properties: Map<String, String>): Subscription<K, V>
 
     /**
