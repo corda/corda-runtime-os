@@ -10,7 +10,7 @@ import org.apache.kafka.common.serialization.StringSerializer
 import java.util.*
 
 /**
- * Builder a Kafka Publisher.
+ * Builder for a Kafka Publisher.
  */
 class KafkaPublisherBuilder : PublisherBuilder {
 

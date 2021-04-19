@@ -11,7 +11,7 @@ import org.apache.kafka.clients.producer.Producer
 
 /**
  * Kafka publisher will create a new KafkaProducer instance for each publish.
- * Records are sent translationally. Order is guaranteed. Producer will automatically attempt resends using exactly once semantics
+ * Records are sent transactionally. Order is guaranteed. Producer will automatically attempt resends using exactly once semantics
  * to ensure no more than 1 message is delivered.
  */
 class KafkaPublisher<K, V>(
