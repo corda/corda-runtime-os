@@ -16,30 +16,34 @@ compileTestKotlin {
 }
 
 configurations {
-
     bootstrapClasspath {
         transitive = true
     }
-
     systemPackages {
         transitive = false
     }
-
 }
 
 dependencies {
-
-    //bootstrapClasspath project(":osgi-framework-bootstrap:framework-api")
     bootstrapClasspath "org.apache.felix:org.apache.felix.framework:$felixVersion"
     bootstrapClasspath "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     bootstrapClasspath "org.apache.logging.log4j:log4j-api:$log4jVersion"
     bootstrapClasspath "org.apache.logging.log4j:log4j-core:$log4jVersion"
     bootstrapClasspath "org.slf4j:slf4j-api:$slf4jVersion"
     bootstrapClasspath project(":osgi-framework-bootstrap")
-
+    bootstrapClasspath project(":osgi-framework-bootstrap:framework-api")
 }
 
-def bundleOSGiDependencies = tasks.register("bundleOSGiDependencies") {
+jar {
+    archiveBaseName = project.name
+    bnd """
+Bundle-Name: $project.description
+Bundle-SymbolicName: ${project.group}.${project.name}
+-fixupmessages 'Classes found in the wrong directory'; restrict:=error; is:=warning
+"""
+}
+
+def buildOSGiBundles = tasks.register("buildOSGiBundles") {
 
     // EXECUTION PRIORITY DEFINITION
     // The *Java* and *Java Library* `classes` task runs after `compileJava` and `processResources`
@@ -47,9 +51,9 @@ def bundleOSGiDependencies = tasks.register("bundleOSGiDependencies") {
     // declared by in the `dependencies` block.
     // See https://docs.gradle.org/current/userguide/java_plugin.html
     // See https://docs.gradle.org/current/userguide/java_library_plugin.html
-    dependsOn classes, processResources
-    // This task runs after the `classes` task and before the `jar` task to select the OSGi bundles needed by the
-    // `runtimeClasspath` configuration.
+    // The `jar` task runs after the `classes` task.
+    // See https://docs.gradle.org/current/dsl/org.gradle.api.tasks.bundling.Jar.html
+    dependsOn jar
 
     doLast {
         println "TASK buildOsgiBundles start..."
@@ -90,6 +94,20 @@ def bundleOSGiDependencies = tasks.register("bundleOSGiDependencies") {
                 }
             }
         }
+        // OSGi artifacts built by `jar` task in this module are included as well.
+        final def libsDir = new File(project.buildDir, "libs").listFiles().each { file ->
+            if (file.name.endsWith(".jar")) {
+                final def jarFile = new JarFile(file)
+                if (jarFile.manifest.mainAttributes.getValue("Bundle-SymbolicName") != null) {
+                    final def targetPath = new File(bundlesDir, file.name).toPath()
+                    Files.deleteIfExists(targetPath)
+                    Files.copy(file.toPath(), targetPath)
+                    systemBundleSet.add("bundles/${file.name}")
+                    println "OSGI Bundle $file.name included as resource."
+                }
+            }
+        }
+
         // Write the `system_bundles` catalog as resource.
         systemBundlesFile.withWriter { writer ->
             systemBundleSet.each { line ->
@@ -99,17 +117,26 @@ def bundleOSGiDependencies = tasks.register("bundleOSGiDependencies") {
         final def size = systemBundleSet.size()
         println "TASK buildOsgiBundles included $size OSGi bundles in $systemBundlesFile resource."
     }
+
 }
 
-jar {
-    dependsOn bundleOSGiDependencies
-    from {
-        configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
+// Build a self-sufficient bootable jar with Apache Felix and `bootstrapClasspath` embedded.
+// The dependencies built as OSGi bundles are zipped in the `bundles` directory,
+// The OSGi dependencies are listed in the `system_bundles` file zipped in bootable jar.
+// NOTE
+// The bootable jar is built in the `project.buildDir + "boot"` directory.
+
+def buildBootJar = tasks.register("buildBootJar", Jar) {
+    dependsOn buildOSGiBundles
+    archivesBaseName = project.name + ".boot"
+    destinationDirectory = new File(project.buildDir, "boot")
+    from(
+            configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) },
+            new File(project.buildDir, "resources/main")
+    )
     manifest {
         attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
-        bnd '''
--fixupmessages "Classes found in the wrong directory"; restrict:=error; is:=warning
-'''
     }
 }
+
+
