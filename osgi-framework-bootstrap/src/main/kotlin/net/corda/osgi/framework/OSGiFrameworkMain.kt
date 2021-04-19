@@ -50,7 +50,7 @@ class OSGiFrameworkMain {
                     })
                     osgiFrameworkWrap
                         .start()
-                        .setArguments(args)
+                        //.setArguments(args)
                         .install(SYSTEM_BUNDLES)
                         .activate()
                         .waitForStop(NO_TIMEOUT)
