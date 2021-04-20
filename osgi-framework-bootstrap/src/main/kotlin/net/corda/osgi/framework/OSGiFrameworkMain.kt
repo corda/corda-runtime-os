@@ -1,9 +1,7 @@
 package net.corda.osgi.framework
 
 import org.slf4j.LoggerFactory
-import java.lang.IllegalArgumentException
 import java.nio.file.Files
-import java.util.*
 
 class OSGiFrameworkMain {
 
@@ -28,6 +26,14 @@ class OSGiFrameworkMain {
         const val SYSTEM_BUNDLES = "system_bundles"
 
         /**
+         * Location of the file listing the extra system packages exposed from the JDK to the framework
+         * The location is relative to run time class path:
+         * * `build/resources/main` in a gradle project;
+         * * the root of the fat executable `.jar`.
+         */
+        const val SYSTEM_BUNDLES_EXTRA = "system_bundles_extra"
+
+        /**
          * Wait for stop of the OSGi framework, without timeout.
          */
         private const val NO_TIMEOUT = 0L
@@ -40,7 +46,7 @@ class OSGiFrameworkMain {
                 val frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX)
                 frameworkStorageDir.toFile().deleteOnExit()
                 val osgiFrameworkWrap = OSGiFrameworkWrap(
-                    OSGiFrameworkWrap.getFrameworkFrom(FRAMEWORK_FACTORY_FQN, frameworkStorageDir)
+                    OSGiFrameworkWrap.getFrameworkFrom(FRAMEWORK_FACTORY_FQN, frameworkStorageDir, SYSTEM_BUNDLES_EXTRA)
                 )
                 try {
                     Runtime.getRuntime().addShutdownHook(object : Thread() {
@@ -50,7 +56,7 @@ class OSGiFrameworkMain {
                     })
                     osgiFrameworkWrap
                         .start()
-                        //.setArguments(args)
+                        .setArguments(args)
                         .install(SYSTEM_BUNDLES)
                         .activate()
                         .waitForStop(NO_TIMEOUT)

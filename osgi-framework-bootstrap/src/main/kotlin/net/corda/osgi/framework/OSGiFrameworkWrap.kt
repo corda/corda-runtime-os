@@ -1,6 +1,8 @@
 package net.corda.osgi.framework
 
+import net.corda.osgi.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
 import net.corda.osgi.framework.api.ArgsService
+import org.apache.logging.log4j.util.Strings
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants
@@ -9,7 +11,6 @@ import org.osgi.framework.launch.Framework
 import org.osgi.framework.launch.FrameworkFactory
 import org.slf4j.LoggerFactory
 import java.io.IOException
-import java.lang.IllegalArgumentException
 import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -81,6 +82,7 @@ class OSGiFrameworkWrap(
          *
          * @param frameworkFactoryFQN Full Qualified Name of the [FrameworkFactory] making the [Framework] to return.
          * @param frameworkStorageDir path to the directory the [Framework] uses as bundles' cache.
+         * @param SystemPackagesExtra
          *
          * @return A new configured [Framework] loaded from the classpath and having [frameworkFactoryFQN] as
          *         Full Qualified Name of the [FrameworkFactory].
@@ -95,7 +97,8 @@ class OSGiFrameworkWrap(
         )
         fun getFrameworkFrom(
             frameworkFactoryFQN: String,
-            frameworkStorageDir: Path
+            frameworkStorageDir: Path,
+            systemPackagesExtra: String = ""
         ): Framework {
             logger.debug("OSGi framework factory = $frameworkFactoryFQN.")
             val frameworkFactory = Class.forName(
@@ -103,14 +106,37 @@ class OSGiFrameworkWrap(
                 true,
                 OSGiFrameworkWrap::class.java.classLoader
             ).getDeclaredConstructor().newInstance() as FrameworkFactory
-            val configurationMap = mapOf(
+            val configurationMap = mutableMapOf(
                 Constants.FRAMEWORK_STORAGE to frameworkStorageDir.toString(),
                 Constants.FRAMEWORK_STORAGE_CLEAN to Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT,
             )
+            if (Strings.isNotBlank(systemPackagesExtra)) {
+                configurationMap[Constants.FRAMEWORK_STORAGE_CLEAN] = systemPackagesExtra
+            }
             if (logger.isDebugEnabled) {
                 configurationMap.forEach { (key, value) -> logger.debug("OSGi property $key = $value.") }
             }
             return frameworkFactory.newFramework(configurationMap)
+        }
+
+        /**
+         * Return the [resource] as a comma separated list to be used as a property to configure the the OSGi framework.
+         * Ignore anything in a line after `#`.
+         *
+         * @param resource in the classpath from where to read the list.
+         * @return the list loaded from [resource] as a comma separated text value.
+         * @throws IOException If the [resource] can't be accessed.
+         */
+        fun getFrameworkPropertyFrom(resource: String): String {
+            val resourceUrl = OSGiFrameworkMain::class.java.classLoader.getResource(resource)
+                ?: throw IOException("OSGi property resource $resource not found in this classpath/jar.")
+            val propertyValueList = resourceUrl.openStream().bufferedReader().useLines { lines ->
+                lines.map { line -> line.substringBefore('#') }
+                    .map(String::trim)
+                    .filter(String::isNotEmpty)
+                    .toList()
+            }
+            return propertyValueList.joinToString(",")
         }
 
         /**

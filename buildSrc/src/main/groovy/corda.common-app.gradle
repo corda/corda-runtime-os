@@ -1,3 +1,11 @@
+buildscript {
+    dependencies {
+        classpath "biz.aQute.bnd:biz.aQute.bndlib:5.3.0" // Cant' get bndVersion?
+        classpath "org.osgi:osgi.core:7.0.0" // Can't get osgiVersion?
+    }
+}
+
+
 import java.nio.file.Files
 import java.util.jar.JarFile
 
@@ -20,18 +28,19 @@ configurations {
         transitive = true
     }
     systemPackages {
-        transitive = false
+        transitive = true
     }
 }
 
 dependencies {
     bootstrapClasspath "org.apache.felix:org.apache.felix.framework:$felixVersion"
     bootstrapClasspath "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    bootstrapClasspath "org.apache.logging.log4j:log4j-api:$log4jVersion"
-    bootstrapClasspath "org.apache.logging.log4j:log4j-core:$log4jVersion"
-    bootstrapClasspath "org.slf4j:slf4j-api:$slf4jVersion"
     bootstrapClasspath project(":osgi-framework-bootstrap")
-    bootstrapClasspath project(":osgi-framework-bootstrap:framework-api")
+
+    systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
+    systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
+    systemPackages project(":osgi-framework-bootstrap:framework-api")
 }
 
 jar {
@@ -107,7 +116,6 @@ def buildOSGiBundles = tasks.register("buildOSGiBundles") {
                 }
             }
         }
-
         // Write the `system_bundles` catalog as resource.
         systemBundlesFile.withWriter { writer ->
             systemBundleSet.each { line ->
@@ -120,18 +128,58 @@ def buildOSGiBundles = tasks.register("buildOSGiBundles") {
 
 }
 
+def buildSystemPackagesExtra = tasks.register("buildSystemPackagesExtra") {
+    dependsOn jar
+    doLast {
+        final Set<String> exportSet = new TreeSet<>()
+        configurations.getByName("systemPackages").incoming.each { resolvableDependency ->
+            resolvableDependency.artifacts.each { resolvedArtifact ->
+                new JarFile(resolvedArtifact.file, true, JarFile.OPEN_READ, JarFile.runtimeVersion()).withCloseable { jarFile ->
+                    if (jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME) != null) {
+                        jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.EXPORT_PACKAGE)?.with { exportPackage ->
+                            aQute.bnd.header.OSGiHeader.parseHeader(exportPackage).entrySet().each { exportEntry ->
+                                final def export = exportEntry.key + ";" + exportEntry.value.toString()
+                                exportSet.add(export)
+                                println "OSGI $export included as extra system package."
+                            }
+                        }
+                    } else {
+                        jarFile.versionedStream().filter { jarEntry ->
+                            jarEntry.name.endsWith(".class")
+                        }.each { jarEntry ->
+                            String entryName = jarEntry.name
+                            int end = entryName.lastIndexOf('/')
+                            if (end > 0) {
+                                final def export = entryName.substring(0, end).replace('/', '.')
+                                exportSet.add(export)
+                                println "OSGI $export included as extra system package."
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        final systemPackagesExtraFile = new File(project.buildDir, "resources/main/system_packages_extra")
+        Files.deleteIfExists(systemPackagesExtraFile.toPath())
+        systemPackagesExtraFile.withWriter { writer ->
+            exportSet.each { export -> writer.writeLine(export) }
+        }
+        println "OSGI extra system packages list $systemPackagesExtraFile included as resource."
+    }
+}
+
 // Build a self-sufficient bootable jar with Apache Felix and `bootstrapClasspath` embedded.
 // The dependencies built as OSGi bundles are zipped in the `bundles` directory,
 // The OSGi dependencies are listed in the `system_bundles` file zipped in bootable jar.
 // NOTE
 // The bootable jar is built in the `project.buildDir + "boot"` directory.
-
 def buildBootJar = tasks.register("buildBootJar", Jar) {
-    dependsOn buildOSGiBundles
+    dependsOn buildOSGiBundles, buildSystemPackagesExtra
     archivesBaseName = project.name + ".boot"
     destinationDirectory = new File(project.buildDir, "boot")
     from(
             configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) },
+            configurations.systemPackages.collect { it.isDirectory() ? it : zipTree(it) },
             new File(project.buildDir, "resources/main")
     )
     manifest {
