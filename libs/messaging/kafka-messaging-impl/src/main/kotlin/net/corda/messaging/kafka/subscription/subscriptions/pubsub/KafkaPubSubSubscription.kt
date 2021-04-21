@@ -17,6 +17,8 @@ import java.lang.IllegalStateException
 import java.time.Duration
 import kotlin.concurrent.thread
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * Kafka implementation of a PubSubSubscription.
@@ -39,36 +41,49 @@ class KafkaPubSubSubscription<K, V>(
 ) : Subscription<K, V> {
 
     companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java)
+        const val STOP_TIMEOUT = 30000L
+        private val log: Logger = LoggerFactory.getLogger(this::class.java)
         //TODO - this needs to be set to a value long enough to allow the processor to complete between pol
         //otherwise there is risk of records being processed twice
         val CONSUMER_POLL: Duration = Duration.ofMillis(1000L)
     }
 
     @Volatile
-    var cancelled = false
-    lateinit var consumeLoopThread: Thread
+    private var cancelled = false
+    private val lock = ReentrantLock()
+    private var consumeLoopThread: Thread? = null
 
     /**
      * Begin consuming events from the configured topic and process them
      * with the given [processor].
      */
     override fun start() {
-        consumeLoopThread =  thread(
-            start = true,
-            isDaemon = false,
-            contextClassLoader = null,
-            name = "consumer",
-            priority = -1,
-            ::runConsumeLoop
-        )
+        lock.withLock {
+            if (consumeLoopThread == null) {
+                cancelled = false
+                consumeLoopThread = thread(
+                    true,
+                    true,
+                    null,
+                    "pubsub processing thread ${config.eventTopic}-${config.instanceId}",
+                    -1,
+                    ::runConsumeLoop
+                )
+            }
+        }
     }
 
     /**
      * Stop the subscription.
      */
     override fun stop() {
-        cancelled = true
+        val thread = lock.withLock {
+            cancelled = true
+            val threadTmp = consumeLoopThread
+            consumeLoopThread = null
+            threadTmp
+        }
+        thread?.join(STOP_TIMEOUT)
         executor?.shutdown()
     }
 
@@ -79,6 +94,7 @@ class KafkaPubSubSubscription<K, V>(
      * If an error occurs while processing reset the consumers position on the topic to the last committed position.
      * Execute the processor using the given [executor] if it is not null, otherwise execute on the current thread.
      */
+    @Suppress("TooGenericExceptionCaught")
     private fun runConsumeLoop() {
         val topic = config.eventTopic
         val groupName = config.groupName
@@ -88,21 +104,7 @@ class KafkaPubSubSubscription<K, V>(
             try {
                 val consumer = consumerBuilder.createConsumer(config, properties)
                 consumer.subscribe(listOf(topic))
-
-                //keep trying to process records
-                try {
-                    while (!cancelled) {
-                        val records = consumer.poll(CONSUMER_POLL)
-                        processRecords(records, executor, consumer)
-                    }
-                } catch (ex: Exception) {
-                    // The consumer fetch position needs to be restored to the last committed offset
-                    // before the transaction started.
-                    // If there is no offset for this consumer then reset to the latest position on the topic
-                    log.error("PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
-                            "Resetting to last committed offset.")
-                    consumer.resetToLastCommittedPositions(OffsetResetStrategy.LATEST)
-                }
+                pollAndProcessRecords(consumer)
             } catch(ex: IllegalStateException) {
                 log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                         "Consumer is already subscribed to this topic.", ex)
@@ -116,10 +118,36 @@ class KafkaPubSubSubscription<K, V>(
     }
 
     /**
+     * Poll records with the [consumer] and process them.
+     * Catch all possible Exceptions and log them.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    private fun pollAndProcessRecords(consumer: Consumer<K, V>) {
+        val topic = config.eventTopic
+        val groupName = config.groupName
+
+        try {
+            while (!cancelled) {
+                val records = consumer.poll(CONSUMER_POLL)
+                processPubSubRecords(records, consumer)
+            }
+        } catch (ex: Exception) {
+            // The consumer fetch position needs to be restored to the last committed offset
+            // before the transaction started.
+            // If there is no offset for this consumer then reset to the latest position on the topic
+            log.error(
+                "PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
+                        "Resetting to last committed offset."
+            )
+            consumer.resetToLastCommittedPositions(OffsetResetStrategy.LATEST)
+        }
+    }
+
+    /**
      * Sorts polled [record]s by their timestamp. Process them using an [executor] if it not null or on the same
      * thread otherwise. Commit the offset for each record back to the topic after processing them synchronously.
      */
-    private fun processRecords(records: ConsumerRecords<K, V>, executor: ExecutorService?, consumer: Consumer<K, V>) {
+    private fun processPubSubRecords(records: ConsumerRecords<K, V>, consumer: Consumer<K, V>) {
         val sortedRecords = records.sortedBy { it.timestamp() }
         for (kafkaRecord in sortedRecords) {
             val event = kafkaRecord.toRecord()

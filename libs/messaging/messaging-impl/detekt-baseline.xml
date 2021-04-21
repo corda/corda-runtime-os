@@ -1,8 +1,0 @@
-<?xml version="1.0" ?>
-<SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
-  <CurrentIssues>
-    <ID>NestedBlockDepth:KafkaPubSubSubscription.kt$KafkaPubSubSubscription$ private fun runConsumeLoop()</ID>
-    <ID>TooGenericExceptionCaught:KafkaPubSubSubscription.kt$KafkaPubSubSubscription$ex: Exception</ID>
-  </CurrentIssues>
-</SmellBaseline>

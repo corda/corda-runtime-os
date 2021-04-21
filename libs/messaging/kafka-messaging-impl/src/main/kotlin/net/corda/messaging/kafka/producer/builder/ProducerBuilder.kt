@@ -1,11 +1,11 @@
-package net.corda.messaging.kafka.publisher.builder
+package net.corda.messaging.kafka.producer.builder
 
 import org.apache.kafka.clients.producer.Producer
 
 /**
- * Publisher Builder Interface for creating Producers.
+ * Producer Builder Interface for creating Producers.
  */
-interface PublisherBuilder {
+interface ProducerBuilder<K, V> {
 
     /**
     * Generate publisher with given properties.
@@ -15,7 +15,7 @@ interface PublisherBuilder {
     * It is used serverside to identify the same producer instance across process restarts as part of exactly once delivery.
     * @return Producer capable of publishing records to a topic.
     */
-    fun <K, V> createPublisher(
+    fun createProducer(
         clientId: String,
         instanceId: Int,
         topic: String,

@@ -10,11 +10,13 @@ import net.corda.messaging.kafka.subscription.subscriptions.pubsub.KafkaPubSubSu
 import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.subscription.consumer.impl.PubSubConsumerBuilder
+import org.osgi.service.component.annotations.Component
 import java.util.concurrent.ExecutorService
 
 /**
  * Kafka implementation of the Subscription Factory.
  */
+@Component
 class KafkaSubscriptionFactory : SubscriptionFactory {
 
     override fun <K, V> createPubSubSubscription(

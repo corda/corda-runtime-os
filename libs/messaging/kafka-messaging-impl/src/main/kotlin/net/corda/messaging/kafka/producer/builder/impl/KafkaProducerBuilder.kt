@@ -1,6 +1,6 @@
-package net.corda.messaging.kafka.publisher.builder.impl
+package net.corda.messaging.kafka.producer.builder.impl
 
-import net.corda.messaging.kafka.publisher.builder.PublisherBuilder
+import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.utils.setKafkaProperties
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.Producer
@@ -10,11 +10,11 @@ import org.apache.kafka.common.serialization.StringSerializer
 import java.util.*
 
 /**
- * Builder for a Kafka Publisher.
+ * Builder for a Kafka Producer.
  */
-class KafkaPublisherBuilder : PublisherBuilder {
+class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
 
-    override fun <K, V> createPublisher(clientId: String, instanceId: Int, topic: String, properties: Map<String, String>): Producer<K, V> {
+    override fun createProducer(clientId: String, instanceId: Int, topic: String, properties: Map<String, String>): Producer<K, V> {
         val producerProps = getProducerProperties(clientId, topic, instanceId, properties)
         return KafkaProducer(producerProps)
     }
@@ -35,16 +35,10 @@ class KafkaPublisherBuilder : PublisherBuilder {
         producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] =
             "publishing-producer-$clientId-$topic-$instanceId"
         setKafkaProperties(producerProps, properties, ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9093")
-        setKafkaProperties(
-            producerProps,
-            properties,
-            ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+        setKafkaProperties(producerProps, properties, ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
             StringSerializer::class.java.name
         )
-        setKafkaProperties(
-            producerProps,
-            properties,
-            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+        setKafkaProperties(producerProps, properties, ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
             ByteArraySerializer::class.java.name
         )
         setKafkaProperties(producerProps, properties, ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true)
