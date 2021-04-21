@@ -9,18 +9,6 @@ buildscript {
 
 description("OSGi Framework Bootstrap")
 
-compileKotlin {
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_11
-}
-
-compileTestKotlin {
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_11
-}
-
-repositories {
-    mavenCentral()
-}
-
 dependencies {
 
     implementation project("framework-api")

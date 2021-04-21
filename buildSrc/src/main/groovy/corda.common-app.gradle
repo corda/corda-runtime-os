@@ -5,7 +5,6 @@ buildscript {
     }
 }
 
-
 import java.nio.file.Files
 import java.util.jar.JarFile
 
@@ -15,20 +14,12 @@ plugins {
     id 'biz.aQute.bnd.builder'
 }
 
-compileKotlin {
-    kotlinOptions.jvmTarget = jvmTarget
-}
-
-compileTestKotlin {
-    kotlinOptions.jvmTarget = jvmTarget
-}
-
 configurations {
     bootstrapClasspath {
         transitive = true
     }
     systemPackages {
-        transitive = true
+        transitive = false
     }
 }
 
@@ -37,7 +28,10 @@ dependencies {
     bootstrapClasspath "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     bootstrapClasspath project(":osgi-framework-bootstrap")
 
+    systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
+    systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
     systemPackages project(":osgi-framework-bootstrap:framework-api")
 }
 
