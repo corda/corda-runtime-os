@@ -1,6 +1,5 @@
 package net.corda.messaging.kafka.subscription.subscriptions.pubsub
 
-import com.typesafe.config.Config
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -17,6 +16,7 @@ import org.slf4j.LoggerFactory
 import java.lang.Exception
 import java.lang.IllegalStateException
 import java.time.Duration
+import java.util.Properties
 import kotlin.concurrent.thread
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.locks.ReentrantLock
@@ -24,12 +24,11 @@ import kotlin.concurrent.withLock
 
 /**
  * Kafka implementation of a PubSubSubscription.
- * Subscription will continuously try connect to Kafka based on the [subscriptionConfig] and [properties].
+ * Subscription will continuously try connect to Kafka based on the [subscriptionConfig] and [consumerProperties].
  * After connection is successful subscription will attempt to poll and process records until subscription is stopped.
  * Records are processed using the [executor] if it is not null. Otherwise they are processed on the same thread.
  * @property subscriptionConfig Describes what topic to poll from and what the consumer group name should be.
- * @property defaultConfig default properties used in building a kafka consumer.
- * @property properties properties to override defaultConfig used in building a kafka consumer.
+ * @property consumerProperties properties used to build a kafka consumer.
  * @property consumerBuilder builder to generate a kafka consumer.
  * @property processor processes records from kafka topic. Does not produce any outputs.
  * @property executor if not null, processor is executed using the executor synchronously.
@@ -37,8 +36,7 @@ import kotlin.concurrent.withLock
  */
 class KafkaPubSubSubscription<K, V>(
     private val subscriptionConfig: SubscriptionConfig,
-    private val defaultConfig: Config,
-    private val properties: Map<String, String>,
+    private val consumerProperties: Properties,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val processor: PubSubProcessor<K, V>,
     private val executor: ExecutorService?
@@ -53,7 +51,7 @@ class KafkaPubSubSubscription<K, V>(
         val CONSUMER_POLL: Duration = Duration.ofMillis(1000L)
     }
 
-
+    private val maxRetries = consumerProperties[MAX_RETIES_CONFIG] as Int
     @Volatile
     private var cancelled = false
     private val lock = ReentrantLock()
@@ -94,7 +92,7 @@ class KafkaPubSubSubscription<K, V>(
     }
 
     /**
-     * Create a Consumer for the given [subscriptionConfig] and [properties] and subscribe to the topic.
+     * Create a Consumer for the given [subscriptionConfig] and [consumerProperties] and subscribe to the topic.
      * Attempt to create this connection until it is successful while subscription is active.
      * After connection is made begin to process records indefinitely. Mark each record and committed after processing.
      * If an error occurs while processing reset the consumers position on the topic to the last committed position.
@@ -108,7 +106,7 @@ class KafkaPubSubSubscription<K, V>(
         while (!cancelled) {
             try {
                 retries++
-                val consumer = consumerBuilder.createConsumer(defaultConfig, properties)
+                val consumer = consumerBuilder.createConsumer(consumerProperties)
                 consumer.subscribe(listOf(topic))
                 pollAndProcessRecords(consumer)
             } catch(ex: IllegalStateException) {
@@ -120,7 +118,7 @@ class KafkaPubSubSubscription<K, V>(
                         "Illegal args provided.", ex)
                 stop()
             } catch (ex: KafkaException) {
-                if (retries < defaultConfig.getInt(MAX_RETIES_CONFIG)) {
+                if (retries < maxRetries) {
                     log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                             "retrying.", ex)
                 } else {

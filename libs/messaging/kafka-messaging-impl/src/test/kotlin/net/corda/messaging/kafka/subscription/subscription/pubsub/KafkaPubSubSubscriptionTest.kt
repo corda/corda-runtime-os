@@ -15,6 +15,7 @@ import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -27,7 +28,7 @@ class KafkaPubSubSubscriptionTest {
     private lateinit var kafkaPubSubSubscription: KafkaPubSubSubscription<String, ByteArray>
     private lateinit var subscriptionConfig: SubscriptionConfig
     private lateinit var config: Config
-    private lateinit var properies: Map<String, String>
+    private lateinit var properties: Properties
     private lateinit var consumerBuilder: ConsumerBuilder<String, ByteArray>
     private lateinit var processor: PubSubProcessor<String, ByteArray>
     private lateinit var mockConsumer: MockConsumer<String, ByteArray>
@@ -39,13 +40,14 @@ class KafkaPubSubSubscriptionTest {
     fun setup() {
         config = mock()
         subscriptionConfig = SubscriptionConfig("group1", 1, TOPIC)
-        properies = mutableMapOf()
+        properties = Properties()
+        properties["kafka.consumer.create.retries"] = 10
         consumerBuilder = mock()
         processor = mock()
         val (consumer, partition) = createMockConsumerAndAddRecords(TOPIC, NUMBER_OF_RECORDS, OffsetResetStrategy.LATEST)
         mockConsumer = consumer
         mockPartition = partition
-        doReturn(mockConsumer).whenever(consumerBuilder).createConsumer(config, properies)
+        doReturn(mockConsumer).whenever(consumerBuilder).createConsumer(properties)
 
     }
 
@@ -54,7 +56,7 @@ class KafkaPubSubSubscriptionTest {
      */
     @Test
     fun testPubSubConsumer() {
-        kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, properies, consumerBuilder, processor, executorService)
+        kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, properties, consumerBuilder, processor, executorService)
 
         kafkaPubSubSubscription.start()
 
@@ -76,7 +78,7 @@ class KafkaPubSubSubscriptionTest {
     @Test
     fun testPubSubConsumerWithExecutor() {
         executorService = Executors.newFixedThreadPool(1)
-        kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, properies, consumerBuilder, processor, executorService)
+        kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, properties, consumerBuilder, processor, executorService)
 
         kafkaPubSubSubscription.start()
         val position = mockConsumer.position(mockPartition)
@@ -95,9 +97,9 @@ class KafkaPubSubSubscriptionTest {
      */
     @Test
     fun testKafkaExceptionResetOffset() {
-        doThrow(KafkaException()).whenever(consumerBuilder).createConsumer(any(), any())
+        doThrow(KafkaException()).whenever(consumerBuilder).createConsumer(any())
 
-        kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, properies, consumerBuilder, processor, executorService)
+        kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, properties, consumerBuilder, processor, executorService)
 
         kafkaPubSubSubscription.start()
         Thread.sleep(500)
