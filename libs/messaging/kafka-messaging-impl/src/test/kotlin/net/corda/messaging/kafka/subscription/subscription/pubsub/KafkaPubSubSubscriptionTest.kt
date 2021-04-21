@@ -41,7 +41,7 @@ class KafkaPubSubSubscriptionTest {
         config = mock()
         subscriptionConfig = SubscriptionConfig("group1", 1, TOPIC)
         properties = Properties()
-        properties["kafka.consumer.create.retries"] = 10
+        properties["kafka.subscription.consumer.create.retries"] = 10
         consumerBuilder = mock()
         processor = mock()
         val (consumer, partition) = createMockConsumerAndAddRecords(TOPIC, NUMBER_OF_RECORDS, OffsetResetStrategy.LATEST)
