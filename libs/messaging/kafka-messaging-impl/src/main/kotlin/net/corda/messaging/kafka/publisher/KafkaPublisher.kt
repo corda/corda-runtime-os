@@ -11,7 +11,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * Kafka publisher will create a new KafkaProducer instance for each publish.
+ * Kafka publisher will create a new KafkaProducer instance of KafkaPublisher.
  * Records are sent transactionally. Order is guaranteed. Producer will automatically attempt resends using exactly once semantics
  * to ensure no more than 1 message is delivered.
  */
