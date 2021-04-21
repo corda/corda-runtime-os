@@ -1,6 +1,6 @@
 package net.corda.messaging.kafka.subscription.consumer
 
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import com.typesafe.config.Config
 import org.apache.kafka.clients.consumer.Consumer
 
 /**
@@ -9,7 +9,7 @@ import org.apache.kafka.clients.consumer.Consumer
 interface ConsumerBuilder<K, V> {
 
     /**
-     * Generate a Kafka Consumer using the given [config] and applying any given [properties].
+     * Generate a Kafka Consumer using the  [defaultConfig] overriden by any [overrideProperties].
      */
-    fun createConsumer(config: SubscriptionConfig, properties: Map<String, String>): Consumer<K, V>
+    fun createConsumer(defaultConfig: Config, overrideProperties: Map<String, String>): Consumer<K, V>
 }

@@ -1,5 +1,6 @@
 package net.corda.messaging.kafka.subscription.factory
 
+import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
@@ -25,7 +26,9 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
         executor: ExecutorService?,
         properties: Map<String, String>
     ): Subscription<K, V> {
-        return KafkaPubSubSubscription(config, properties, PubSubConsumerBuilder(), processor, executor)
+        //TODO - replace with call to OSGiConfigService
+        val defaultConfig = ConfigFactory.load()
+        return KafkaPubSubSubscription(config, defaultConfig, properties, PubSubConsumerBuilder(), processor, executor)
     }
 
     override fun <K, V> createDurableSubscription(

@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription.subscription.pubsub
 
 import com.nhaarman.mockito_kotlin.*
+import com.typesafe.config.Config
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
@@ -24,7 +25,8 @@ class KafkaPubSubSubscriptionTest {
     }
 
     private lateinit var kafkaPubSubSubscription: KafkaPubSubSubscription<String, ByteArray>
-    private lateinit var config: SubscriptionConfig
+    private lateinit var subscriptionConfig: SubscriptionConfig
+    private lateinit var config: Config
     private lateinit var properies: Map<String, String>
     private lateinit var consumerBuilder: ConsumerBuilder<String, ByteArray>
     private lateinit var processor: PubSubProcessor<String, ByteArray>
@@ -35,12 +37,11 @@ class KafkaPubSubSubscriptionTest {
 
     @BeforeEach
     fun setup() {
-        config = SubscriptionConfig("group1", 1, TOPIC)
+        config = mock()
+        subscriptionConfig = SubscriptionConfig("group1", 1, TOPIC)
         properies = mutableMapOf()
-
         consumerBuilder = mock()
         processor = mock()
-
         val (consumer, partition) = createMockConsumerAndAddRecords(TOPIC, NUMBER_OF_RECORDS, OffsetResetStrategy.LATEST)
         mockConsumer = consumer
         mockPartition = partition
@@ -53,7 +54,7 @@ class KafkaPubSubSubscriptionTest {
      */
     @Test
     fun testPubSubConsumer() {
-        kafkaPubSubSubscription = KafkaPubSubSubscription(config, properies, consumerBuilder, processor, executorService)
+        kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, properies, consumerBuilder, processor, executorService)
 
         kafkaPubSubSubscription.start()
 
@@ -75,7 +76,7 @@ class KafkaPubSubSubscriptionTest {
     @Test
     fun testPubSubConsumerWithExecutor() {
         executorService = Executors.newFixedThreadPool(1)
-        kafkaPubSubSubscription = KafkaPubSubSubscription(config, properies, consumerBuilder, processor, executorService)
+        kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, properies, consumerBuilder, processor, executorService)
 
         kafkaPubSubSubscription.start()
         val position = mockConsumer.position(mockPartition)
@@ -96,7 +97,7 @@ class KafkaPubSubSubscriptionTest {
     fun testKafkaExceptionResetOffset() {
         doThrow(KafkaException()).whenever(consumerBuilder).createConsumer(any(), any())
 
-        kafkaPubSubSubscription = KafkaPubSubSubscription(config, properies, consumerBuilder, processor, executorService)
+        kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, properies, consumerBuilder, processor, executorService)
 
         kafkaPubSubSubscription.start()
         Thread.sleep(500)

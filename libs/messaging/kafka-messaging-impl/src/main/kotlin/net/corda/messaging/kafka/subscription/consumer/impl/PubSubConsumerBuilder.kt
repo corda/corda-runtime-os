@@ -1,50 +1,47 @@
 package net.corda.messaging.kafka.subscription.consumer.impl
 
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import net.corda.messaging.kafka.subscription.consumer.ConsumerBuilder
-import net.corda.messaging.kafka.utils.setKafkaProperties
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
-import org.apache.kafka.common.serialization.ByteArrayDeserializer
-import org.apache.kafka.common.serialization.StringDeserializer
 import java.util.*
+
 
 /**
  * Generate a Kafka PubSub Consumer Builder.
  */
 class PubSubConsumerBuilder<K, V> : ConsumerBuilder<K, V> {
 
-    override fun createConsumer(config: SubscriptionConfig, properties: Map<String, String>): Consumer<K, V> {
-        val consumerProps = getConsumerProps(config, properties)
+    override fun createConsumer(defaultConfig: Config, overrideProperties: Map<String, String>): Consumer<K, V> {
+        val consumerProps = getConsumerProps(defaultConfig, overrideProperties)
         return KafkaConsumer(consumerProps)
     }
 
     /**
-     * Generate consumer properties with default values unless overridden by the given [config] and [properties]
+     * Generate consumer properties with default values from [defaultConfig] unless overridden by the given [overrideProperties].
+     * @return Kafka Consumer properties
      */
-    private fun getConsumerProps(config: SubscriptionConfig, properties: Map<String, String>): Properties {
-        //TODO - get config values from a configService which will be initialized on startup from a compacted log topic
+    private fun getConsumerProps(defaultConfig: Config, overrideProperties: Map<String, String>): Properties {
+        val properties = Properties()
+        properties.putAll(overrideProperties)
+        val conf: Config = ConfigFactory.parseProperties(properties).withFallback(defaultConfig)
         val consumerProps = Properties()
-        consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = config.groupName
-        setKafkaProperties(
-            consumerProps,
-            properties,
-            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-            StringDeserializer::class.java.name
-        )
-        setKafkaProperties(
-            consumerProps,
-            properties,
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-            ByteArrayDeserializer::class.java.name
-        )
-        setKafkaProperties(consumerProps, properties, ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,"localhost:9093")
-        setKafkaProperties(consumerProps, properties, ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest")
-        setKafkaProperties(consumerProps, properties, ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed")
-        setKafkaProperties(consumerProps, properties, ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 100)
-        setKafkaProperties(consumerProps, properties, ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, "15000")
-        setKafkaProperties(consumerProps, properties, ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false")
+
+        //Could do something smarter here like
+        //Store all kafka consumer props in typesafeConf as "kafka.consumer.props"
+        //read all values from conf with a prefix of "kafka.consumer.props"
+        //or store all consumer defaults in their own typesafeconfig
+        consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = conf.getString(ConsumerConfig.GROUP_ID_CONFIG)
+        consumerProps[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = conf.getString(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)
+        consumerProps[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = conf.getString(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)
+        consumerProps[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = conf.getString(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG)
+        consumerProps[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = conf.getString(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG)
+        consumerProps[ConsumerConfig.ISOLATION_LEVEL_CONFIG] = conf.getString(ConsumerConfig.ISOLATION_LEVEL_CONFIG)
+        consumerProps[ConsumerConfig.MAX_POLL_RECORDS_CONFIG] = conf.getString(ConsumerConfig.MAX_POLL_RECORDS_CONFIG)
+        consumerProps[ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG] = conf.getString(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG)
+        consumerProps[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = conf.getString(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG)
         return consumerProps
     }
 }

@@ -1,5 +1,6 @@
 package net.corda.messaging.kafka.subscription.subscriptions.pubsub
 
+import com.typesafe.config.Config
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -10,6 +11,7 @@ import net.corda.messaging.kafka.utils.toRecord
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
+import org.apache.kafka.common.KafkaException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.Exception
@@ -22,18 +24,20 @@ import kotlin.concurrent.withLock
 
 /**
  * Kafka implementation of a PubSubSubscription.
- * Subscription will continuously try connect to Kafka based on the [config] and [properties].
+ * Subscription will continuously try connect to Kafka based on the [subscriptionConfig] and [properties].
  * After connection is successful subscription will attempt to poll and process records until subscription is stopped.
  * Records are processed using the [executor] if it is not null. Otherwise they are processed on the same thread.
- * @property config Describes what topic to poll from and what the consumer group name should be.
- * @property properties properties used in building a kafka consumer.
+ * @property subscriptionConfig Describes what topic to poll from and what the consumer group name should be.
+ * @property defaultConfig default properties used in building a kafka consumer.
+ * @property properties properties to override defaultConfig used in building a kafka consumer.
  * @property consumerBuilder builder to generate a kafka consumer.
  * @property processor processes records from kafka topic. Does not produce any outputs.
  * @property executor if not null, processor is executed using the executor synchronously.
  *                    If executor is null processor executed on the same thread as the consumer.
  */
 class KafkaPubSubSubscription<K, V>(
-    private val config: SubscriptionConfig,
+    private val subscriptionConfig: SubscriptionConfig,
+    private val defaultConfig: Config,
     private val properties: Map<String, String>,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val processor: PubSubProcessor<K, V>,
@@ -65,7 +69,7 @@ class KafkaPubSubSubscription<K, V>(
                     true,
                     true,
                     null,
-                    "pubsub processing thread ${config.eventTopic}-${config.instanceId}",
+                    "pubsub processing thread ${subscriptionConfig.eventTopic}-${subscriptionConfig.instanceId}",
                     -1,
                     ::runConsumeLoop
                 )
@@ -88,31 +92,33 @@ class KafkaPubSubSubscription<K, V>(
     }
 
     /**
-     * Create a Consumer for the given [config] and [properties] and subscribe to the topic.
+     * Create a Consumer for the given [subscriptionConfig] and [properties] and subscribe to the topic.
      * Attempt to create this connection until it is successful while subscription is active.
      * After connection is made begin to process records indefinitely. Mark each record and committed after processing.
      * If an error occurs while processing reset the consumers position on the topic to the last committed position.
      * Execute the processor using the given [executor] if it is not null, otherwise execute on the current thread.
      */
-    @Suppress("TooGenericExceptionCaught")
     private fun runConsumeLoop() {
-        val topic = config.eventTopic
-        val groupName = config.groupName
+        val topic = subscriptionConfig.eventTopic
+        val groupName = subscriptionConfig.groupName
 
         //keep trying to establish connection
         while (!cancelled) {
             try {
-                val consumer = consumerBuilder.createConsumer(config, properties)
+                val consumer = consumerBuilder.createConsumer(defaultConfig, properties)
                 consumer.subscribe(listOf(topic))
                 pollAndProcessRecords(consumer)
             } catch(ex: IllegalStateException) {
                 log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                         "Consumer is already subscribed to this topic.", ex)
+                stop()
             } catch (ex: IllegalArgumentException) {
                 log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                         "Illegal args provided.", ex)
-            } catch (ex: Exception) {
-                log.error("PubSubConsumer failed to create a consumer for group $groupName on topic $topic.", ex)
+                stop()
+            } catch (ex: KafkaException) {
+                log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
+                        "retrying.", ex)
             }
         }
     }
@@ -123,8 +129,8 @@ class KafkaPubSubSubscription<K, V>(
      */
     @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: Consumer<K, V>) {
-        val topic = config.eventTopic
-        val groupName = config.groupName
+        val topic = subscriptionConfig.eventTopic
+        val groupName = subscriptionConfig.groupName
 
         try {
             while (!cancelled) {
