@@ -26,6 +26,7 @@ class KafkaPublisher<K, V>(
         producer.initTransactions()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun publish(record: Record<K, V>): CordaFuture<Boolean> {
         val fut = openFuture<Boolean>()
 
