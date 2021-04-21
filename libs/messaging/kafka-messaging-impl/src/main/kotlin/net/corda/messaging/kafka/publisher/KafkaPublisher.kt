@@ -22,22 +22,31 @@ class KafkaPublisher<K, V>(
 
     private var producer: Producer<K, V> = producerBuilder.createProducer(clientId, instanceId, topic, properties)
 
-    override fun publish(record: Record<K, V>): CordaFuture<Boolean> {
+    init {
         producer.initTransactions()
-        producer.beginTransaction()
+    }
+
+    override fun publish(record: Record<K, V>): CordaFuture<Boolean> {
         val fut = openFuture<Boolean>()
 
-        producer.send(record.toProducerRecord()) { it, ex ->
-            if (ex == null) {
-                fut.set(true)
-            } else {
-                fut.setException(ex)
+        try {
+            producer.beginTransaction()
+
+            producer.send(record.toProducerRecord()) { it, ex ->
+                if (ex == null) {
+                    fut.set(true)
+                } else {
+                    fut.setException(ex)
+                }
             }
+            producer.commitTransaction()
+        } catch (ex : Exception) {
+            producer.close()
         }
-        producer.commitTransaction()
-        producer.close()
         return fut
     }
 }
+
+
 
 
