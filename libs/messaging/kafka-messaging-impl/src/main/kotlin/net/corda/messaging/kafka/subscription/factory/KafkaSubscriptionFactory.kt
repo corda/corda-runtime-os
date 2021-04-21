@@ -25,6 +25,7 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
 
     companion object {
         private const val CONSUMER_CONF_PREFIX = "kafka.consumer."
+        private const val MAX_RETIES_CONFIG = "kafka.subscription.consumer.create.retries"
         private const val ISOLATION_LEVEL_READ_COMMITTED = "read_committed"
         private const val AUTO_OFFSET_RESET_LATEST = "latest"
         private const val FALSE = "false"
@@ -79,6 +80,7 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
         //read all values from conf with a prefix of "kafka.consumer.props"
         //or store all consumer defaults in their own typesafeconfig
         consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = subscriptionConfig.groupName
+        consumerProps[MAX_RETIES_CONFIG] = conf.getInt(MAX_RETIES_CONFIG)
         consumerProps[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] =
             conf.getString(Companion.CONSUMER_CONF_PREFIX + ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)
         consumerProps[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] =
