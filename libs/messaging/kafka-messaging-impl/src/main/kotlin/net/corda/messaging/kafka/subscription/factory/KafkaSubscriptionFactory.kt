@@ -23,18 +23,28 @@ import java.util.concurrent.ExecutorService
 @Component
 class KafkaSubscriptionFactory : SubscriptionFactory {
 
+    companion object {
+        private const val CONSUMER_CONF_PREFIX = "kafka.consumer."
+        private const val ISOLATION_LEVEL_READ_COMMITTED = "read_committed"
+        private const val AUTO_OFFSET_RESET_LATEST = "latest"
+        private const val FALSE = "false"
+    }
+
     override fun <K, V> createPubSubSubscription(
-        config: SubscriptionConfig,
+        subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
         properties: Map<String, String>
     ): Subscription<K, V> {
+        val overrideProperties = properties.toMutableMap()
+        overrideProperties[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = FALSE
+        overrideProperties[ConsumerConfig.ISOLATION_LEVEL_CONFIG] = ISOLATION_LEVEL_READ_COMMITTED
+        overrideProperties[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = AUTO_OFFSET_RESET_LATEST
+
         //TODO - replace this with a  call to OSGi ConfigService
-        val defaultConfig = ConfigFactory.load()
-
-        val consumerProperties = getConsumerProps(defaultConfig, properties)
-
-        return KafkaPubSubSubscription(config, consumerProperties, PubSubConsumerBuilder(), processor, executor)
+        val defaultConfig = ConfigFactory.load("tmpKafkaDefaults")
+        val consumerProperties = getConsumerProps(subscriptionConfig, defaultConfig, properties)
+        return KafkaPubSubSubscription(subscriptionConfig, consumerProperties, PubSubConsumerBuilder(), processor, executor)
     }
 
     override fun <K, V> createDurableSubscription(
@@ -57,25 +67,28 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
      * Generate consumer properties with default values from [defaultConfig] unless overridden by the given [overrideProperties].
      * @return Kafka Consumer properties
      */
-    private fun getConsumerProps(defaultConfig: Config, overrideProperties: Map<String, String>): Properties {
+    private fun getConsumerProps(subscriptionConfig: SubscriptionConfig, defaultConfig: Config,
+                                 overrideProperties: Map<String, String>): Properties {
         val properties = Properties()
         properties.putAll(overrideProperties)
         val conf: Config = ConfigFactory.parseProperties(properties).withFallback(defaultConfig)
         val consumerProps = Properties()
-
+        
         //Could do something smarter here like
         //Store all kafka consumer props in typesafeConf as "kafka.consumer.props"
         //read all values from conf with a prefix of "kafka.consumer.props"
         //or store all consumer defaults in their own typesafeconfig
-        consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = conf.getString(ConsumerConfig.GROUP_ID_CONFIG)
-        consumerProps[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = conf.getString(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)
-        consumerProps[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = conf.getString(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)
-        consumerProps[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = conf.getString(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG)
-        consumerProps[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = conf.getString(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG)
-        consumerProps[ConsumerConfig.ISOLATION_LEVEL_CONFIG] = conf.getString(ConsumerConfig.ISOLATION_LEVEL_CONFIG)
-        consumerProps[ConsumerConfig.MAX_POLL_RECORDS_CONFIG] = conf.getString(ConsumerConfig.MAX_POLL_RECORDS_CONFIG)
-        consumerProps[ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG] = conf.getString(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG)
-        consumerProps[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = conf.getString(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG)
+        consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = subscriptionConfig.groupName
+        consumerProps[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] =
+            conf.getString(Companion.CONSUMER_CONF_PREFIX + ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)
+        consumerProps[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] =
+            conf.getString(Companion.CONSUMER_CONF_PREFIX + ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)
+        consumerProps[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] =
+            conf.getString(Companion.CONSUMER_CONF_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG)
+        consumerProps[ConsumerConfig.MAX_POLL_RECORDS_CONFIG] =
+            conf.getString(Companion.CONSUMER_CONF_PREFIX + ConsumerConfig.MAX_POLL_RECORDS_CONFIG)
+        consumerProps[ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG] =
+            conf.getString(Companion.CONSUMER_CONF_PREFIX + ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG)
         return consumerProps
     }
 }

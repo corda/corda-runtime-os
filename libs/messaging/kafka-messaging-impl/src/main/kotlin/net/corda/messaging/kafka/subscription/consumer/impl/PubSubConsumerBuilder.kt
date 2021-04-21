@@ -3,8 +3,7 @@ package net.corda.messaging.kafka.subscription.consumer.impl
 import net.corda.messaging.kafka.subscription.consumer.ConsumerBuilder
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.KafkaConsumer
-import java.util.*
-
+import java.util.Properties
 
 /**
  * Generate a Kafka PubSub Consumer Builder.

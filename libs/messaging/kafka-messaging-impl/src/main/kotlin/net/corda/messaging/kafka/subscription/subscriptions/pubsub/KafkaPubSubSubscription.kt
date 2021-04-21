@@ -43,7 +43,7 @@ class KafkaPubSubSubscription<K, V>(
 ) : Subscription<K, V> {
 
     companion object {
-        const val MAX_RETIES_CONFIG = "kafka.consumer.create.retries"
+        const val MAX_RETIES_CONFIG = "kafka.subscription.consumer.create.retries"
         const val STOP_TIMEOUT = 30000L
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
         //TODO - this needs to be set to a value long enough to allow the processor to complete between pol
@@ -125,7 +125,6 @@ class KafkaPubSubSubscription<K, V>(
                     log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                             "Max retries exceeded. No longer attempting.", ex)
                 }
-
             }
         }
     }
