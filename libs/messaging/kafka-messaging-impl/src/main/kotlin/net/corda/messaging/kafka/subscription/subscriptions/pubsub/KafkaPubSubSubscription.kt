@@ -45,12 +45,14 @@ class KafkaPubSubSubscription<K, V>(
 ) : Subscription<K, V> {
 
     companion object {
+        const val MAX_RETIES_CONFIG = "kafka.consumer.create.retries"
         const val STOP_TIMEOUT = 30000L
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
         //TODO - this needs to be set to a value long enough to allow the processor to complete between pol
         //otherwise there is risk of records being processed twice
         val CONSUMER_POLL: Duration = Duration.ofMillis(1000L)
     }
+
 
     @Volatile
     private var cancelled = false
@@ -101,10 +103,11 @@ class KafkaPubSubSubscription<K, V>(
     private fun runConsumeLoop() {
         val topic = subscriptionConfig.eventTopic
         val groupName = subscriptionConfig.groupName
+        var retries = 0
 
-        //keep trying to establish connection
         while (!cancelled) {
             try {
+                retries++
                 val consumer = consumerBuilder.createConsumer(defaultConfig, properties)
                 consumer.subscribe(listOf(topic))
                 pollAndProcessRecords(consumer)
@@ -117,8 +120,14 @@ class KafkaPubSubSubscription<K, V>(
                         "Illegal args provided.", ex)
                 stop()
             } catch (ex: KafkaException) {
-                log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
-                        "retrying.", ex)
+                if (retries < defaultConfig.getInt(MAX_RETIES_CONFIG)) {
+                    log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
+                            "retrying.", ex)
+                } else {
+                    log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
+                            "Max retries exceeded. No longer attempting.", ex)
+                }
+
             }
         }
     }
