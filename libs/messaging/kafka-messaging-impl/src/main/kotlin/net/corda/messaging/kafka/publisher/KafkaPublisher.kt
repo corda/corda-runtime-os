@@ -7,6 +7,8 @@ import net.corda.messaging.kafka.utils.toProducerRecord
 import net.corda.v5.base.concurrent.CordaFuture
 import net.corda.v5.base.internal.concurrent.openFuture
 import org.apache.kafka.clients.producer.Producer
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * Kafka publisher will create a new KafkaProducer instance for each publish.
@@ -14,13 +16,17 @@ import org.apache.kafka.clients.producer.Producer
  * to ensure no more than 1 message is delivered.
  */
 class KafkaPublisher<K, V>(
-    clientId: String,
-    topic: String,
-    instanceId: Int,
+    private val clientId: String,
+    private val topic: String,
+    private val instanceId: Int,
     producerBuilder: ProducerBuilder<K, V>,
     properties: Map<String, String>) : Publisher<K, V> {
 
     private var producer: Producer<K, V> = producerBuilder.createProducer(clientId, instanceId, topic, properties)
+
+    private companion object {
+        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+    }
 
     init {
         producer.initTransactions()
@@ -43,7 +49,9 @@ class KafkaPublisher<K, V>(
             producer.commitTransaction()
         } catch (ex : Exception) {
             producer.close()
+            log.error("Kafka producer clientId $clientId, instanceId $instanceId, for topic $topic failed to send. Closing producer", ex)
         }
+
         return fut
     }
 }
