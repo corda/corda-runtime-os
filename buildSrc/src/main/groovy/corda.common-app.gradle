@@ -37,9 +37,7 @@ dependencies {
     bootstrapClasspath "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     bootstrapClasspath project(":osgi-framework-bootstrap")
 
-    systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
-    systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
-    systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
+    systemPackages "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     systemPackages project(":osgi-framework-bootstrap:framework-api")
 }
 

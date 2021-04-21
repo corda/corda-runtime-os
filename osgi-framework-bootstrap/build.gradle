@@ -26,10 +26,6 @@ dependencies {
     implementation project("framework-api")
     implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
 
-    implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
-    implementation "org.slf4j:log4j-over-slf4j:$slf4jVersion"
-
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
