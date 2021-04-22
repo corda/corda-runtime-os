@@ -12,6 +12,8 @@ import net.corda.messaging.kafka.subscription.subscriptions.pubsub.KafkaPubSubSu
 import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CONF_PREFIX
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MAX_RETIES_CONFIG
 import net.corda.messaging.kafka.subscription.consumer.impl.PubSubConsumerBuilder
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -79,12 +81,16 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
         val conf: Config = ConfigFactory.parseProperties(properties).withFallback(defaultKafkaConfig)
         val consumerProps = Properties()
         
+
+        consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = subscriptionConfig.groupName
+        consumerProps[MAX_RETIES_CONFIG] = conf.getInt(MAX_RETIES_CONFIG)
+        consumerProps[CONSUMER_POLL_TIMEOUT] = conf.getLong(CONSUMER_POLL_TIMEOUT)
+        consumerProps[CONSUMER_THREAD_STOP_TIMEOUT] = conf.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
+
         //Could do something smarter here like
         //Store all kafka consumer props in typesafeConf as "kafka.consumer.props."
         //read all values from conf with a prefix of "kafka.consumer.props"
         //or store all consumer defaults in their own typesafeconfig
-        consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = subscriptionConfig.groupName
-        consumerProps[MAX_RETIES_CONFIG] = conf.getInt(MAX_RETIES_CONFIG)
         consumerProps[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] =
             conf.getString(CONSUMER_CONF_PREFIX + ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)
         consumerProps[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] =

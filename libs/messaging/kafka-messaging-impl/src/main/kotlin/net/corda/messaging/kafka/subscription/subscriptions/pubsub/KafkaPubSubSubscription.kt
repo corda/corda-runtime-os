@@ -3,6 +3,8 @@ package net.corda.messaging.kafka.subscription.subscriptions.pubsub
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MAX_RETIES_CONFIG
 import net.corda.messaging.kafka.subscription.consumer.ConsumerBuilder
 import net.corda.messaging.kafka.utils.commitSyncOffsets
@@ -44,13 +46,10 @@ class KafkaPubSubSubscription<K, V>(
 ) : Subscription<K, V> {
 
     companion object {
-        const val STOP_TIMEOUT = 30000L
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
-        //TODO - this needs to be set to a value long enough to allow the processor to complete between pol
-        //otherwise there is risk of records being processed twice
-        val CONSUMER_POLL: Duration = Duration.ofMillis(1000L)
     }
-
+    private val consumerPollTimeout = Duration.ofMillis(consumerProperties[CONSUMER_POLL_TIMEOUT] as Long)
+    private val consumerThreadStopTimeout = consumerProperties[CONSUMER_THREAD_STOP_TIMEOUT] as Long
     private val maxRetries = consumerProperties[MAX_RETIES_CONFIG] as Int
     @Volatile
     private var cancelled = false
@@ -88,7 +87,7 @@ class KafkaPubSubSubscription<K, V>(
                 consumeLoopThread = null
                 threadTmp
             }
-            thread?.join(STOP_TIMEOUT)
+            thread?.join(consumerThreadStopTimeout)
             executor?.shutdown()
         }
     }
@@ -147,7 +146,7 @@ class KafkaPubSubSubscription<K, V>(
 
         try {
             while (!cancelled) {
-                val records = consumer.poll(CONSUMER_POLL)
+                val records = consumer.poll(consumerPollTimeout)
                 processPubSubRecords(records, consumer)
             }
         } catch (ex: Exception) {
