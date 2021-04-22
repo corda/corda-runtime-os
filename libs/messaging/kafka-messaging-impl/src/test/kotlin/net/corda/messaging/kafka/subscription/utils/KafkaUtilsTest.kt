@@ -5,7 +5,6 @@ import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
 import net.corda.messaging.kafka.utils.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.util.*
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
@@ -13,30 +12,6 @@ import org.apache.kafka.common.TopicPartition
 import java.time.Duration
 
 class KafkaUtilsTest {
-
-    @Test
-    fun testSetPropertiesDefault() {
-        val props = Properties()
-        val map = mutableMapOf<String, String>()
-        val configName = "configName"
-        val default = "default"
-        setKafkaProperties(props, map, configName, default)
-
-        assertThat(props[configName]).isEqualTo(default)
-    }
-
-    @Test
-    fun testSetProperties() {
-        val props = Properties()
-        val map = mutableMapOf<String, String>()
-        val configName = "configName"
-        map[configName] = "value"
-        val default = "default"
-        setKafkaProperties(props, map, configName, default)
-
-        assertThat(props[configName]).isEqualTo("value")
-    }
-
 
     @Test
     fun testToConsumerRecord() {

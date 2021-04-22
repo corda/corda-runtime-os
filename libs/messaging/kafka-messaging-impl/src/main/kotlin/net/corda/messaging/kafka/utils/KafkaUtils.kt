@@ -7,19 +7,6 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.TopicPartition
-import java.util.Properties
-
-/**
- * Set [kafkaProperties] with the given key [configName] with values from [configurationProperties]. If no value found in
- * [configurationProperties] then set the value using [default].
- */
-fun setKafkaProperties(kafkaProperties: Properties, configurationProperties: Map<String, String>, configName: String, default: Any) {
-    if (configurationProperties[configName] != null) {
-        kafkaProperties[configName] = configurationProperties[configName]
-    } else {
-        kafkaProperties[configName] = default
-    }
-}
 
 /**
  * Convert a Kafka ConsumerRecord to a generic Record.

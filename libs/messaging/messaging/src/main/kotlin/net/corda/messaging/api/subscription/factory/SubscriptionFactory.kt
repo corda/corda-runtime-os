@@ -20,13 +20,13 @@ interface SubscriptionFactory {
      * Events will be processed at most once. In the case of node failures messages consumed but not processed will be lost.
      * Events are consumed and synchronously committed back to the source.
      * @param processor Processor of events. Processor does not return any new records to be sent back to the topic.
-     * @param config Define the mandatory params for creating a subscription.
+     * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param properties Map of properties to override the default settings for the connection to the source of events
      * @param executor This will allow for the threading model to be controlled by the subscriber. If null processor will
      * execute on the same thread as the consumer.
      * @return A subscription to manage lifecycle.
      */
-    fun <K,V> createPubSubSubscription(config: SubscriptionConfig,
+    fun <K,V> createPubSubSubscription(subscriptionConfig: SubscriptionConfig,
                                        processor: PubSubProcessor<K, V>,
                                        executor: ExecutorService?,
                                        properties: Map<String, String>): Subscription<K, V>
@@ -37,11 +37,11 @@ interface SubscriptionFactory {
      * any new records have been committed back to the topic.
      * @param processor will pick up all events published to the event source that have not been previously processed. Each record will
      * be given the processor once.
-     * @param config Define the mandatory params for creating a subscription.
+     * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param properties Map of properties to override the default settings for the connection to the source of events
      * @return A subscription to manage lifecycle.
      */
-   fun <K, V> createDurableSubscription(config: SubscriptionConfig,
+   fun <K, V> createDurableSubscription(subscriptionConfig: SubscriptionConfig,
                                         processor: DurableProcessor<K, V>,
                                         properties: Map<String, String>) : Subscription<K, V>
 
@@ -51,11 +51,11 @@ interface SubscriptionFactory {
      * from different topics using the same key. State may be null for a given event.
      * Events will be processed exactly once. Consumer will marked records as consumed after they have been processed and
      * any new records have been committed back to the topic.
-     * @param config Define the mandatory params for creating a subscription.
+     * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param properties Map of properties to override the default settings for the connection to the source of events
      * @return A subscription to manage lifecycle.
      */
-   fun <K, S, E> createStateAndEventSubscription(config: StateAndEventSubscriptionConfig,
+   fun <K, S, E> createStateAndEventSubscription(subscriptionConfig: StateAndEventSubscriptionConfig,
                                                  processor: StateAndEventProcessor<K, S, E>,
                                                  properties: Map<String, String>) : StateAndEventSubscription<K, S, E>
 }

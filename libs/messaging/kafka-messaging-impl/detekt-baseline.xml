@@ -2,5 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
+    <ID>ThrowsCount:KafkaPubSubSubscription.kt$KafkaPubSubSubscription$ private fun runConsumeLoop()</ID>
   </CurrentIssues>
 </SmellBaseline>

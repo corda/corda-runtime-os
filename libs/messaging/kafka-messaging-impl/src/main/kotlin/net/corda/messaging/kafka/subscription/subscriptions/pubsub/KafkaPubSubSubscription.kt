@@ -1,11 +1,12 @@
 package net.corda.messaging.kafka.subscription.subscriptions.pubsub
 
+import net.corda.messaging.api.exception.CordaMessageAPIException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MAX_RETIES_CONFIG
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MAX_RETRIES_CONFIG
 import net.corda.messaging.kafka.subscription.consumer.ConsumerBuilder
 import net.corda.messaging.kafka.utils.commitSyncOffsets
 import net.corda.messaging.kafka.utils.resetToLastCommittedPositions
@@ -50,7 +51,7 @@ class KafkaPubSubSubscription<K, V>(
     }
     private val consumerPollTimeout = Duration.ofMillis(consumerProperties[CONSUMER_POLL_TIMEOUT] as Long)
     private val consumerThreadStopTimeout = consumerProperties[CONSUMER_THREAD_STOP_TIMEOUT] as Long
-    private val maxRetries = consumerProperties[MAX_RETIES_CONFIG] as Int
+    private val maxRetries = consumerProperties[MAX_RETRIES_CONFIG] as Int
     @Volatile
     private var cancelled = false
     private val lock = ReentrantLock()
@@ -59,6 +60,7 @@ class KafkaPubSubSubscription<K, V>(
     /**
      * Begin consuming events from the configured topic and process them
      * with the given [processor].
+     * @throws CordaMessageAPIException exception thrown during the consume, process or produce stage of a subscription.
      */
     override fun start() {
         lock.withLock {
@@ -68,7 +70,7 @@ class KafkaPubSubSubscription<K, V>(
                     true,
                     true,
                     null,
-                    "pubsub processing thread ${subscriptionConfig.eventTopic}-${subscriptionConfig.instanceId}",
+                    "pubsub processing thread ${subscriptionConfig.groupName}-${subscriptionConfig.eventTopic}",
                     -1,
                     ::runConsumeLoop
                 )
@@ -112,24 +114,27 @@ class KafkaPubSubSubscription<K, V>(
                 pollAndProcessRecords(consumer)
                 retries = 0
             } catch(ex: IllegalStateException) {
-                log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
-                        "Consumer is already subscribed to this topic.", ex)
+                val message = "PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
+                        "Consumer is already subscribed to this topic. Closing subscription."
+                log.error(message, ex)
                 stop()
-                throw ex
+                throw CordaMessageAPIException(message, ex)
             } catch (ex: IllegalArgumentException) {
-                log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
-                        "Illegal args provided.", ex)
+                val message = "PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
+                        "Illegal args provided. Closing subscription."
+                log.error(message, ex)
                 stop()
-                throw ex
+                throw CordaMessageAPIException(message, ex)
             } catch (ex: KafkaException) {
                 if (retries <= maxRetries) {
                     log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                             "retrying.", ex)
                 } else {
-                    log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
-                            "Max retries exceeded. No longer attempting.", ex)
+                    val message = "PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
+                            "Max retries exceeded. Closing subscription."
+                    log.error(message, ex)
                     stop()
-                    throw ex
+                    throw CordaMessageAPIException(message, ex)
                 }
             }
         }

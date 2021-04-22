@@ -1,5 +1,5 @@
 plugins {
-    id 'corda.publish'
+    id 'corda.common-library'
 }
 
 description 'Kafka Messaging API Impl'
@@ -15,14 +15,9 @@ dependencies {
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
     }
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-
 }
-

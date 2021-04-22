@@ -6,7 +6,7 @@ import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MAX_RETIES_CONFIG
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MAX_RETRIES_CONFIG
 import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
 import net.corda.messaging.kafka.subscription.consumer.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.subscriptions.pubsub.KafkaPubSubSubscription
@@ -44,7 +44,7 @@ class KafkaPubSubSubscriptionTest {
         config = mock()
         subscriptionConfig = SubscriptionConfig("group1", 1, TOPIC)
         properties = Properties()
-        properties[MAX_RETIES_CONFIG] = 10
+        properties[MAX_RETRIES_CONFIG] = 10
         properties[CONSUMER_POLL_TIMEOUT] = 10L
         properties[CONSUMER_THREAD_STOP_TIMEOUT] = 10L
         consumerBuilder = mock()

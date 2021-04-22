@@ -21,18 +21,11 @@ class KafkaPublisherFactory : PublisherFactory {
     override fun <K, V> createPublisher(
         publisherConfig: PublisherConfig,
         properties: Map<String, String>
-    ): Publisher<K, V>? {
+    ): Publisher<K, V> {
         //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required
         val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
-
         val producerProperties = getProducerProps(publisherConfig, defaultKafkaConfig, properties)
-
-        //perhaps this and the publisher API should return a cordaFuture
-        //to pass exceptions from the builder up to API level?
-        //e.g CordaFuture<Publisher<K, V>> and CordaFuture<Producer<K, V>>
-        val producer =
-            KafkaProducerBuilder<K, V>().createProducer(defaultKafkaConfig, producerProperties, publisherConfig)
-                ?: return null
+        val producer = KafkaProducerBuilder<K, V>().createProducer(defaultKafkaConfig, producerProperties, publisherConfig)
 
         return KafkaPublisher(publisherConfig, producer)
     }
@@ -56,8 +49,7 @@ class KafkaPublisherFactory : PublisherFactory {
         //read all values from conf with a prefix of "kafka.producer.props"
         //or store all producer defaults in their own typesafeconfig
         producerProps[ProducerConfig.CLIENT_ID_CONFIG] = publisherConfig.clientId
-        producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] =
-            "publishing-producer-${publisherConfig.clientId}-${publisherConfig.topic}-${publisherConfig.instanceId}"
+
         producerProps[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] =
             conf.getString(PRODUCER_CONF_PREFIX + ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG)
         producerProps[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] =
@@ -66,6 +58,11 @@ class KafkaPublisherFactory : PublisherFactory {
             conf.getString(PRODUCER_CONF_PREFIX + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
         producerProps[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] =
             conf.getString(PRODUCER_CONF_PREFIX + ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG)
+
+        if (publisherConfig.instanceId != null) {
+            producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] =
+                "publishing-producer-${publisherConfig.clientId}-${publisherConfig.topic}-${publisherConfig.instanceId}"
+        }
 
         return producerProps
     }

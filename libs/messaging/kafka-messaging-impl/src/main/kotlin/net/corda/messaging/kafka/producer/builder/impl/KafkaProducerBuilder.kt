@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.producer.builder.impl
 
 import com.typesafe.config.Config
+import net.corda.messaging.api.exception.CordaMessageAPIException
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CLOSE_TIMEOUT
@@ -18,7 +19,7 @@ import java.util.Properties
 
 /**
  * Builder for a Kafka Producer. Initialises producer for transactions.
- * If exceptions are thrown in the construction of a KafKaProducer then it is closed and returned as null and exception is logged.
+ * If exceptions are thrown in the construction of a KafKaProducer then it is closed and exception is thrown as [CordaMessageAPIException].
  */
 class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
 
@@ -26,62 +27,103 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
     
-    override fun createProducer(defaultKafkaConfig: Config,
-                                producerProperties: Properties,
-                                publisherConfig: PublisherConfig): Producer<K, V>? {
+    override fun createProducer(config: Config,
+                                properties: Properties,
+                                publisherConfig: PublisherConfig): Producer<K, V> {
         var producer: Producer<K, V>? = null
-        var producerInitialized = false
-        val timeout = defaultKafkaConfig.getLong(KAFKA_CLOSE_TIMEOUT)
+        val timeout = config.getLong(KAFKA_CLOSE_TIMEOUT)
         try {
-            producer = KafkaProducer(producerProperties)
-            producerInitialized = true
+            producer = KafkaProducer(properties)
         } catch (ex: KafkaException) {
             log.error("Failed to create kafka producer clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
                     "topic ${publisherConfig.topic}.", ex)
+            safeClose(producer!!, timeout)
+            throw CordaMessageAPIException(
+                "Failed to create kafka producer.",
+                ex
+            )
         }
 
-        if (producerInitialized) {
+        if (publisherConfig.instanceId != null) {
             try {
-                producer?.initTransactions()
-            } catch (ex: IllegalStateException ) {
-                log.error("Failed to initialize kafka producer. No transactional.id has been configured. " +
-                        "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                        "topic ${publisherConfig.topic}.", ex)
-                producer!!.close(Duration.ofMillis(timeout))
-                producer = null
+                producer.initTransactions()
+            } catch (ex: IllegalStateException) {
+                log.error(
+                    "Failed to initialize kafka producer. No transactional.id has been configured. " +
+                            "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
+                            "topic ${publisherConfig.topic}.", ex
+                )
+                safeClose(producer, timeout)
+                throw CordaMessageAPIException(
+                    "Failed to initialize kafka producer. No transactional.id has been configured.",
+                    ex
+                )
             } catch (ex: UnsupportedVersionException) {
-                log.error("Failed to initialize kafka producer. Broker does not support transactions. " +
-                        "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                        "topic ${publisherConfig.topic}.", ex)
-                producer!!.close(Duration.ofMillis(timeout))
-                producer = null
+                log.error(
+                    "Failed to initialize kafka producer. Broker does not support transactions. " +
+                            "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
+                            "topic ${publisherConfig.topic}.", ex
+                )
+                safeClose(producer, timeout)
+                throw CordaMessageAPIException(
+                    "Failed to initialize kafka producer. Broker does not support transactions.",
+                    ex
+                )
             } catch (ex: AuthorizationException) {
-                log.error("Failed to initialize kafka producer. Configured transactional.id is not authorized. " +
-                        "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                        "topic ${publisherConfig.topic}.", ex)
-                producer!!.close(Duration.ofMillis(timeout))
-                producer = null
+                log.error(
+                    "Failed to initialize kafka producer. Configured transactional.id is not authorized. " +
+                            "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
+                            "topic ${publisherConfig.topic}.", ex
+                )
+                safeClose(producer, timeout)
+                throw CordaMessageAPIException(
+                    "Failed to initialize kafka producer. Configured transactional.id is not authorized.",
+                    ex
+                )
             } catch (ex: KafkaException) {
-                log.error("Failed to initialize kafka producer. Fatal error encountered. " +
-                        "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                        "topic ${publisherConfig.topic}.", ex)
-                producer!!.close(Duration.ofMillis(timeout))
-                producer = null
+                log.error(
+                    "Failed to initialize kafka producer. Fatal error encountered. " +
+                            "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
+                            "topic ${publisherConfig.topic}.", ex
+                )
+                safeClose(producer, timeout)
+                throw CordaMessageAPIException("Failed to initialize kafka producer. Fatal error encountered.", ex)
             } catch (ex: TimeoutException) {
-                log.error("Failed to initialize kafka producer. Timeout. " +
-                        "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                        "topic ${publisherConfig.topic}.", ex)
-                producer!!.close(Duration.ofMillis(timeout))
-                producer = null
+                log.error(
+                    "Failed to initialize kafka producer. Timeout. " +
+                            "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
+                            "topic ${publisherConfig.topic}.", ex
+                )
+                safeClose(producer, timeout)
+                throw CordaMessageAPIException("Failed to initialize kafka producer. Timeout.", ex)
             } catch (ex: InterruptException) {
-                log.error("Failed to initialize kafka producer. Thread is interrupted while blocked. " +
-                        "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                        "topic ${publisherConfig.topic}.", ex)
-                producer!!.close(Duration.ofMillis(timeout))
-                producer = null
+                log.error(
+                    "Failed to initialize kafka producer. Thread is interrupted while blocked. " +
+                            "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
+                            "topic ${publisherConfig.topic}.", ex
+                )
+                safeClose(producer, timeout)
+                throw CordaMessageAPIException(
+                    "Failed to initialize kafka producer. Thread is interrupted while blocked.",
+                    ex
+                )
             }
         }
 
         return producer
+    }
+
+    /**
+     * Safely close [producer] and swallow any exceptions thrown.
+     * @param producer kafka producer.
+     * @param timeoutMillis time to wait for close to finish.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    private fun safeClose(producer: Producer<K, V>, timeoutMillis: Long) {
+        try {
+            producer.close(Duration.ofMillis(timeoutMillis))
+        } catch (ex: Exception) {
+            log.error("Failed to close producer safely.", ex)
+        }
     }
 }

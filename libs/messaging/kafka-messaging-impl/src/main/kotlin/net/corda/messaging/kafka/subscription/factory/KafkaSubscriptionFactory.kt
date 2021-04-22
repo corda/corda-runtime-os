@@ -14,7 +14,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CONF_PREFIX
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MAX_RETIES_CONFIG
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MAX_RETRIES_CONFIG
 import net.corda.messaging.kafka.subscription.consumer.impl.PubSubConsumerBuilder
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.osgi.service.component.annotations.Component
@@ -54,7 +54,7 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
     }
 
     override fun <K, V> createDurableSubscription(
-        config: SubscriptionConfig,
+        subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
         properties: Map<String, String>
     ): Subscription<K, V> {
@@ -62,7 +62,7 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
     }
 
     override fun <K, S, E> createStateAndEventSubscription(
-        config: StateAndEventSubscriptionConfig,
+        subscriptionConfig: StateAndEventSubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
         properties: Map<String, String>
     ): StateAndEventSubscription<K, S, E> {
@@ -83,7 +83,7 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
         
 
         consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = subscriptionConfig.groupName
-        consumerProps[MAX_RETIES_CONFIG] = conf.getInt(MAX_RETIES_CONFIG)
+        consumerProps[MAX_RETRIES_CONFIG] = conf.getInt(MAX_RETRIES_CONFIG)
         consumerProps[CONSUMER_POLL_TIMEOUT] = conf.getLong(CONSUMER_POLL_TIMEOUT)
         consumerProps[CONSUMER_THREAD_STOP_TIMEOUT] = conf.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
 
