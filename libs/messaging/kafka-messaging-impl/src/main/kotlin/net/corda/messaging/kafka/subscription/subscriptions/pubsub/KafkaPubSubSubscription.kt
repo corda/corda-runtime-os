@@ -116,10 +116,12 @@ class KafkaPubSubSubscription<K, V>(
                 log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                         "Consumer is already subscribed to this topic.", ex)
                 stop()
+                throw ex
             } catch (ex: IllegalArgumentException) {
                 log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                         "Illegal args provided.", ex)
                 stop()
+                throw ex
             } catch (ex: KafkaException) {
                 if (retries <= maxRetries) {
                     log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
@@ -128,6 +130,7 @@ class KafkaPubSubSubscription<K, V>(
                     log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                             "Max retries exceeded. No longer attempting.", ex)
                     stop()
+                    throw ex
                 }
             }
         }
