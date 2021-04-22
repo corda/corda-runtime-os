@@ -31,7 +31,6 @@ dependencies {
     systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
     systemPackages project(":osgi-framework-bootstrap:framework-api")
 }
 
@@ -75,7 +74,9 @@ def buildOSGiBundles = tasks.register("buildOSGiBundles") {
         // Artifacts solved as dependencies in the `runtimeClasspath` classpath are scanned to check if those are
         // OSGi bundle.
         final Set<String> systemBundleSet = new TreeSet<>()
-        runtimeClasspath.incoming.each { resolvableDependency ->
+        runtimeClasspath.incoming.findAll { dependency ->
+            !configurations.systemPackages.contains(dependency)
+        }.each { resolvableDependency ->
             resolvableDependency.artifacts.each { resolvedArtifact ->
                 final def file = resolvedArtifact.file
                 // OSGi bundles must be `.jar` files.
@@ -121,7 +122,7 @@ def buildOSGiBundles = tasks.register("buildOSGiBundles") {
 }
 
 def buildSystemPackagesExtra = tasks.register("buildSystemPackagesExtra") {
-    dependsOn jar
+    dependsOn jar, project(":osgi-framework-bootstrap:framework-api").tasks.jar
     doLast {
         final Set<String> exportSet = new TreeSet<>()
         configurations.getByName("systemPackages").incoming.each { resolvableDependency ->
@@ -166,7 +167,7 @@ def buildSystemPackagesExtra = tasks.register("buildSystemPackagesExtra") {
 // NOTE
 // The bootable jar is built in the `project.buildDir + "boot"` directory.
 def buildBootJar = tasks.register("buildBootJar", Jar) {
-    dependsOn buildOSGiBundles, buildSystemPackagesExtra
+    dependsOn buildOSGiBundles, buildSystemPackagesExtra, project(":osgi-framework-bootstrap").tasks.jar
     archivesBaseName = project.name + ".boot"
     destinationDirectory = new File(project.buildDir, "boot")
     from(
