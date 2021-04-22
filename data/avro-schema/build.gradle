@@ -1,4 +1,6 @@
 import com.github.davidmc24.gradle.plugin.avro.GenerateAvroJavaTask
+import groovy.io.FileType
+import groovy.text.SimpleTemplateEngine
 
 plugins {
     id 'corda.publish'
@@ -15,22 +17,21 @@ description 'Data Model Definitions'
 
 def generatedPackageInfoDir = "src/main/java"
 
+sourceSets.main.java.srcDirs generatedPackageInfoDir
+
 def generateAvro = tasks.register("generateAvro", GenerateAvroJavaTask) {
     group = "codeGeneration"
     source("src/main/resources/avro")
     outputDir = file(generatedPackageInfoDir)
 }
-build.dependsOn generateAvro
+assemble.dependsOn generateAvro
 
 // region Generate package-info.java
 // The following code ensures that we have a `package-info.java` for every package that we
 // generate through Avro
-import groovy.io.FileType
-import groovy.text.SimpleTemplateEngine
 
-sourceSets.main.java.srcDirs generatedPackageInfoDir
-
-def generatePackageInfo = task generatePackageInfo {
+def generateOSGiPackageInfo = tasks.register("generateOSGiPackageInfo", Task) {
+    group = "codeGeneration"
     def packages = [] as Set
     file(generatedPackageInfoDir).eachFileRecurse(FileType.FILES) {
         if (!it.name.contains("package-info") && it.name.endsWith('.java')) {
@@ -44,9 +45,9 @@ def generatePackageInfo = task generatePackageInfo {
         outputFile << applyPackageInfoTemplate(it)
         outputFile.close()
     }
+    dependsOn(generateAvro)
 }
-build.dependsOn generatePackageInfo
-generatePackageInfo.dependsOn(generateAvro)
+assemble.dependsOn generateOSGiPackageInfo
 
 private static String applyPackageInfoTemplate(packageName) {
     def engine = new SimpleTemplateEngine()
