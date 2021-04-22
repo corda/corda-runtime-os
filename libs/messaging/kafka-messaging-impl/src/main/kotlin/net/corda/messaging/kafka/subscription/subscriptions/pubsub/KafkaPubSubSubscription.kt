@@ -81,14 +81,16 @@ class KafkaPubSubSubscription<K, V>(
      * Stop the subscription.
      */
     override fun stop() {
-        val thread = lock.withLock {
-            cancelled = true
-            val threadTmp = consumeLoopThread
-            consumeLoopThread = null
-            threadTmp
+        if (!cancelled) {
+            val thread = lock.withLock {
+                cancelled = true
+                val threadTmp = consumeLoopThread
+                consumeLoopThread = null
+                threadTmp
+            }
+            thread?.join(STOP_TIMEOUT)
+            executor?.shutdown()
         }
-        thread?.join(STOP_TIMEOUT)
-        executor?.shutdown()
     }
 
     /**
