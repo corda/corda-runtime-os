@@ -7,6 +7,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.kafka.publisher.KafkaPublisher
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilder
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CONF_PREFIX
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.osgi.service.component.annotations.Component
 import java.util.Properties
@@ -17,34 +18,37 @@ import java.util.Properties
 @Component
 class KafkaPublisherFactory : PublisherFactory {
 
-    companion object {
-        private const val PRODUCER_CONF_PREFIX = "kafka.producer."
-    }
-
     override fun <K, V> createPublisher(
         publisherConfig: PublisherConfig,
         properties: Map<String, String>
-    ): Publisher<K, V> {
-        //TODO - replace this with a  call to OSGi ConfigService
-        val defaultConfig = ConfigFactory.load("tmpKafkaDefaults")
+    ): Publisher<K, V>? {
+        //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required
+        val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
 
-        val producerProperties = getProducerProps(publisherConfig, defaultConfig, properties)
+        val producerProperties = getProducerProps(publisherConfig, defaultKafkaConfig, properties)
 
-        return KafkaPublisher(publisherConfig, producerProperties, KafkaProducerBuilder())
+        //perhaps this and the publisher API should return a cordaFuture
+        //to pass exceptions from the builder up to API level?
+        //e.g CordaFuture<Publisher<K, V>> and CordaFuture<Producer<K, V>>
+        val producer =
+            KafkaProducerBuilder<K, V>().createProducer(defaultKafkaConfig, producerProperties, publisherConfig)
+                ?: return null
+
+        return KafkaPublisher(publisherConfig, producer)
     }
 
     /**
-     * Generate producer properties with default values from [defaultConfig] unless overridden by the given [overrideProperties].
+     * Generate producer properties with default values from [defaultKafkaConfig] unless overridden by the given [overrideProperties].
      * @param publisherConfig Publisher config
-     * @param defaultConfig Default Producer config
+     * @param defaultKafkaConfig Default Producer config
      * @param overrideProperties Properties to override default config.
      * @return Kafka Producer properties.
      */
-    private fun getProducerProps(publisherConfig: PublisherConfig, defaultConfig: Config,
+    private fun getProducerProps(publisherConfig: PublisherConfig, defaultKafkaConfig: Config,
                                  overrideProperties: Map<String, String>): Properties {
         val properties = Properties()
         properties.putAll(overrideProperties)
-        val conf: Config = ConfigFactory.parseProperties(properties).withFallback(defaultConfig)
+        val conf: Config = ConfigFactory.parseProperties(properties).withFallback(defaultKafkaConfig)
         val producerProps = Properties()
 
         //Could do something smarter here like

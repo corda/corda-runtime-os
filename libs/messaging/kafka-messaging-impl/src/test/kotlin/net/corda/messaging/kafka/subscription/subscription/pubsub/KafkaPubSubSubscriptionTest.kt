@@ -4,6 +4,7 @@ import com.nhaarman.mockito_kotlin.*
 import com.typesafe.config.Config
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MAX_RETIES_CONFIG
 import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
 import net.corda.messaging.kafka.subscription.consumer.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.subscriptions.pubsub.KafkaPubSubSubscription
@@ -41,7 +42,7 @@ class KafkaPubSubSubscriptionTest {
         config = mock()
         subscriptionConfig = SubscriptionConfig("group1", 1, TOPIC)
         properties = Properties()
-        properties["kafka.subscription.consumer.create.retries"] = 10
+        properties[MAX_RETIES_CONFIG] = 10
         consumerBuilder = mock()
         processor = mock()
         val (consumer, partition) = createMockConsumerAndAddRecords(TOPIC, NUMBER_OF_RECORDS, OffsetResetStrategy.LATEST)

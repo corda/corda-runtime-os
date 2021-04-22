@@ -11,10 +11,10 @@ interface PublisherFactory {
 
     /**
      * Create a publisher which publishes to a topic with a given [config] and map of [properties].
-     * @return a publisher of events
+     * @return A publisher of events. Null if failed to construct a publisher.
      */
     fun <K, V> createPublisher(
-        config: PublisherConfig,
+        publisherConfig: PublisherConfig,
         properties: Map<String, String>
-    ): Publisher<K, V>
+    ): Publisher<K, V>?
 }

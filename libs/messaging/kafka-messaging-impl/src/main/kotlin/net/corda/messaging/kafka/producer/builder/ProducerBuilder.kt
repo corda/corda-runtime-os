@@ -1,5 +1,7 @@
 package net.corda.messaging.kafka.producer.builder
 
+import com.typesafe.config.Config
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import org.apache.kafka.clients.producer.Producer
 import java.util.Properties
 
@@ -9,9 +11,11 @@ import java.util.Properties
 interface ProducerBuilder<K, V> {
 
     /**
-    * Generate producer with given properties.
-    * @param properties properties to assign to producer.
-    * @return Kafka Producer capable of publishing records to a topic.
+    * Generate kafka producer with given properties. Initialises the producer for transactions.
+    * @param config config.
+    * @param properties kafka properties to assign to producer.
+    * @param publisherConfig config used to build a producer.
+    * @return Kafka Producer capable of publishing records to a topic. Returns Null if failed to build producer or initialise transactions.
     */
-    fun createProducer(properties: Properties): Producer<K, V>
+    fun createProducer(config: Config, properties: Properties, publisherConfig: PublisherConfig): Producer<K, V>?
 }
