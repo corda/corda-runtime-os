@@ -73,7 +73,6 @@ internal class OSGiFrameworkWrapTest {
         assertTrue { Files.exists(frameworkStorageDir) }
     }
 
-    @Disabled
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun activate(frameworkFactoryFQN: String) {
@@ -90,7 +89,6 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun getFrameworkFrom(frameworkFactoryFQN: String) {
@@ -98,7 +96,6 @@ internal class OSGiFrameworkWrapTest {
         assertNotNull(framework)
     }
 
-    @Disabled
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun getFrameworkFrom_ClassNotFoundException() {
@@ -107,7 +104,6 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun install(frameworkFactoryFQN: String) {
@@ -123,7 +119,6 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun install_IllegalStateException(frameworkFactoryFQN: String) {
@@ -135,7 +130,6 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun install_IOException(frameworkFactoryFQN: String) {
@@ -148,7 +142,6 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun installBundleJar_IOException(frameworkFactoryFQN: String) {
@@ -161,7 +154,6 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun installBundleList_IOException(frameworkFactoryFQN: String) {
@@ -174,7 +166,6 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun setArguments(frameworkFactoryFQN: String) {
@@ -194,7 +185,6 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun start(frameworkFactoryFQN: String) {
@@ -213,7 +203,6 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun stop(frameworkFactoryFQN: String) {

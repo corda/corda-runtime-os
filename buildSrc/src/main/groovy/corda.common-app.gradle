@@ -35,6 +35,7 @@ dependencies {
 }
 
 jar {
+    println "JAR!"
     archiveBaseName = project.name
     bnd """
 Bundle-Name: $project.description
@@ -177,6 +178,30 @@ def buildBootJar = tasks.register("buildBootJar", Jar) {
     )
     manifest {
         attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
+    }
+}
+
+
+
+tasks.register('osgiBootJar', Jar) {
+    dependsOn(":jar")
+    project.subprojects.findAll { subproject ->
+        subproject.tasks.jar && project != subproject
+    }.each { subproject ->
+        dependsOn subproject.tasks.jar
+        mustRunAfter subproject.tasks.jar
+        from subproject.buildDir
+    }
+    final def systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
+    into systemBundlesFile
+    doLast {
+        configurations.runtimeClasspath.incoming.findAll { resolvableDependencies ->
+            !configurations.systemPackages.contains(resolvableDependencies)
+        }.each { resolvableDependency ->
+            resolvableDependency.artifacts.each { resolvedArtifact ->
+                println resolvedArtifact
+            }
+        }
     }
 }
 
