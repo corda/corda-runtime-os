@@ -104,7 +104,6 @@ class KafkaPublisher<K, V>(
         if (exception == null) {
             future.set(true)
         } else {
-            future.set(false)
             future.setException(exception)
         }
     }
@@ -115,7 +114,6 @@ class KafkaPublisher<K, V>(
      */
     private fun logErrorAndSetFuture(message: String, exception: Exception, future: OpenFuture<Boolean>, fatal: Boolean) {
         log.error(message, exception, future)
-        future.set(false)
         if (fatal) {
             future.setException(CordaMessageAPIFatalException(message, exception))
             safeClose()
