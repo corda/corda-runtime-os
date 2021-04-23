@@ -73,9 +73,6 @@ class KafkaPublisher<K, V>(
             logErrorAndSetFuture("Kafka producer clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
                     "for topic ${publisherConfig.topic} failed to send. Producer is not authorized to write to this topic." +
                     "Closing producer", ex, fut, true)
-        } catch (ex: AuthenticationException) {
-            logErrorAndSetFuture("Kafka producer clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                    "for topic ${publisherConfig.topic} failed to send. Authentication Failed. Closing producer.", ex, fut, true)
         } catch (ex: InterruptException) {
             val message ="Kafka producer clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
                     "for topic ${publisherConfig.topic} failed to send. Thread interrupted."
@@ -84,10 +81,6 @@ class KafkaPublisher<K, V>(
             val message = "Kafka producer clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
                     "for topic ${publisherConfig.topic} failed to send. Timeout"
             logErrorSetFutureAndAbortTransaction(message, ex, fut)
-        } catch (ex: SerializationException) {
-            logErrorAndSetFuture("Kafka producer clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                    "for topic ${publisherConfig.topic} failed to send. " +
-                    "Key or value are not valid objects given the configured serializers. Closing producer.", ex, fut, true)
         } catch (ex: KafkaException) {
             val message = "Kafka producer clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
                     "for topic ${publisherConfig.topic} failed to send. Unknown error. Closing producer."
@@ -104,6 +97,8 @@ class KafkaPublisher<K, V>(
         if (exception == null) {
             future.set(true)
         } else {
+            log.error("Kafka producer clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
+                    "for topic ${publisherConfig.topic} failed to send.", exception)
             future.setException(exception)
         }
     }
