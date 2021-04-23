@@ -40,6 +40,7 @@ dependencyResolutionManagement {
 rootProject.name = 'flow-worker'
 include 'libs:messaging:messaging'
 include 'libs:messaging:kafka-messaging-impl'
+include 'data:avro-schema'
 include 'helloworld'
 include 'helloworld-impl'
 include 'goodbyeworld'
