@@ -12,8 +12,8 @@ interface Publisher<K, V> {
     /**
      * Publish a list of [record].
      * @return A corda future indicating whether the publish to a topic was successful. If fatal error occurs
-     * then exception will be of type [CordaMessageAPIFatalException] and publisher will be closed. If error is temporary and can be retied then
-     * exception will be of type [CordaMessageAPIIntermittentException].
+     * then exception will be of type [CordaMessageAPIFatalException] and publisher will be closed.
+     * If error is temporary and can be retied then exception will be of type [CordaMessageAPIIntermittentException].
      */
     fun publish(record: Record<K, V>) : CordaFuture<Boolean>
 
