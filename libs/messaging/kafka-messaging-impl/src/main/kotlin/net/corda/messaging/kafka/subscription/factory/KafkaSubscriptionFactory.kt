@@ -14,7 +14,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CONF_PREFIX
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MAX_RETRIES_CONFIG
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CREATE_MAX_RETRIES
 import net.corda.messaging.kafka.subscription.consumer.impl.PubSubConsumerBuilder
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.osgi.service.component.annotations.Component
@@ -83,7 +83,7 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
         
 
         consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = subscriptionConfig.groupName
-        consumerProps[MAX_RETRIES_CONFIG] = conf.getInt(MAX_RETRIES_CONFIG)
+        consumerProps[CONSUMER_CREATE_MAX_RETRIES] = conf.getInt(CONSUMER_CREATE_MAX_RETRIES)
         consumerProps[CONSUMER_POLL_TIMEOUT] = conf.getLong(CONSUMER_POLL_TIMEOUT)
         consumerProps[CONSUMER_THREAD_STOP_TIMEOUT] = conf.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
 

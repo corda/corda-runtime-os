@@ -6,7 +6,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MAX_RETRIES_CONFIG
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CREATE_MAX_RETRIES
 import net.corda.messaging.kafka.subscription.consumer.ConsumerBuilder
 import net.corda.messaging.kafka.utils.commitSyncOffsets
 import net.corda.messaging.kafka.utils.resetToLastCommittedPositions
@@ -54,7 +54,7 @@ class KafkaPubSubSubscription<K, V>(
     }
     private val consumerPollTimeout = Duration.ofMillis(consumerProperties[CONSUMER_POLL_TIMEOUT] as Long)
     private val consumerThreadStopTimeout = consumerProperties[CONSUMER_THREAD_STOP_TIMEOUT] as Long
-    private val maxRetries = consumerProperties[MAX_RETRIES_CONFIG] as Int
+    private val maxRetries = consumerProperties[CONSUMER_CREATE_MAX_RETRIES] as Int
     @Volatile
     private var cancelled = false
     private val lock = ReentrantLock()
@@ -107,7 +107,7 @@ class KafkaPubSubSubscription<K, V>(
     private fun runConsumeLoop() {
         val topic = subscriptionConfig.eventTopic
         val groupName = subscriptionConfig.groupName
-        var retries = 0
+        var retries = -1
 
         while (!cancelled) {
             try {
@@ -125,7 +125,7 @@ class KafkaPubSubSubscription<K, V>(
 
                 consumer.subscribe(listOf(topic), listener)
                 pollAndProcessRecords(consumer)
-                retries = 0
+                retries = -1
             } catch(ex: IllegalStateException) {
                 val message = "PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                         "Consumer is already subscribed to this topic. Closing subscription."
