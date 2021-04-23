@@ -1,7 +1,7 @@
 package net.corda.messaging.kafka.producer.builder.impl
 
 import com.typesafe.config.Config
-import net.corda.messaging.api.exception.CordaMessageAPIException
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CLOSE_TIMEOUT
@@ -19,7 +19,8 @@ import java.util.Properties
 
 /**
  * Builder for a Kafka Producer. Initialises producer for transactions.
- * If exceptions are thrown in the construction of a KafKaProducer then it is closed and exception is thrown as [CordaMessageAPIException].
+ * If fatal exception is thrown in the construction of a KafKaProducer
+ * then it is closed and exception is thrown as [CordaMessageAPIFatalException].
  */
 class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
 
@@ -38,7 +39,7 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
             log.error("Failed to create kafka producer clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
                     "topic ${publisherConfig.topic}.", ex)
             safeClose(producer!!, timeout)
-            throw CordaMessageAPIException(
+            throw CordaMessageAPIFatalException(
                 "Failed to create kafka producer.",
                 ex
             )
@@ -48,69 +49,49 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
             try {
                 producer.initTransactions()
             } catch (ex: IllegalStateException) {
-                log.error(
-                    "Failed to initialize kafka producer. No transactional.id has been configured. " +
-                            "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                            "topic ${publisherConfig.topic}.", ex
-                )
-                safeClose(producer, timeout)
-                throw CordaMessageAPIException(
-                    "Failed to initialize kafka producer. No transactional.id has been configured.",
-                    ex
-                )
+                val message = "Failed to initialize kafka producer. No transactional.id has been configured. " +
+                        "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
+                        "topic ${publisherConfig.topic}."
+                logErrorAndCloseProducer(message, ex, producer, timeout)
             } catch (ex: UnsupportedVersionException) {
-                log.error(
-                    "Failed to initialize kafka producer. Broker does not support transactions. " +
+                val message = "Failed to initialize kafka producer. Broker does not support transactions. " +
                             "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                            "topic ${publisherConfig.topic}.", ex
-                )
-                safeClose(producer, timeout)
-                throw CordaMessageAPIException(
-                    "Failed to initialize kafka producer. Broker does not support transactions.",
-                    ex
-                )
+                            "topic ${publisherConfig.topic}."
+                logErrorAndCloseProducer(message, ex, producer, timeout)
             } catch (ex: AuthorizationException) {
-                log.error(
-                    "Failed to initialize kafka producer. Configured transactional.id is not authorized. " +
+                val message = "Failed to initialize kafka producer. Configured transactional.id is not authorized. " +
                             "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                            "topic ${publisherConfig.topic}.", ex
-                )
-                safeClose(producer, timeout)
-                throw CordaMessageAPIException(
-                    "Failed to initialize kafka producer. Configured transactional.id is not authorized.",
-                    ex
-                )
+                            "topic ${publisherConfig.topic}."
+                logErrorAndCloseProducer(message, ex, producer, timeout)
             } catch (ex: KafkaException) {
-                log.error(
-                    "Failed to initialize kafka producer. Fatal error encountered. " +
+                val message = "Failed to initialize kafka producer. Fatal error encountered. " +
                             "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                            "topic ${publisherConfig.topic}.", ex
-                )
-                safeClose(producer, timeout)
-                throw CordaMessageAPIException("Failed to initialize kafka producer. Fatal error encountered.", ex)
+                            "topic ${publisherConfig.topic}."
+                logErrorAndCloseProducer(message, ex, producer, timeout)
             } catch (ex: TimeoutException) {
-                log.error(
-                    "Failed to initialize kafka producer. Timeout. " +
+                val message = "Failed to initialize kafka producer. Timeout. " +
                             "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                            "topic ${publisherConfig.topic}.", ex
-                )
-                safeClose(producer, timeout)
-                throw CordaMessageAPIException("Failed to initialize kafka producer. Timeout.", ex)
+                            "topic ${publisherConfig.topic}."
+                logErrorAndCloseProducer(message, ex, producer, timeout)
             } catch (ex: InterruptException) {
-                log.error(
-                    "Failed to initialize kafka producer. Thread is interrupted while blocked. " +
+                val message = "Failed to initialize kafka producer. Thread is interrupted while blocked. " +
                             "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                            "topic ${publisherConfig.topic}.", ex
-                )
-                safeClose(producer, timeout)
-                throw CordaMessageAPIException(
-                    "Failed to initialize kafka producer. Thread is interrupted while blocked.",
-                    ex
-                )
+                            "topic ${publisherConfig.topic}."
+                logErrorAndCloseProducer(message, ex, producer, timeout)
             }
         }
 
         return producer
+    }
+
+    /**
+     * Log an error [message] and throw an [exception] as a [CordaMessageAPIFatalException].
+     * Close [producer] with the set [timeout].
+     */
+    private fun logErrorAndCloseProducer(message: String, exception: Exception, producer: KafkaProducer<K, V>, timeout: Long) {
+        log.error(message)
+        safeClose(producer, timeout)
+        throw CordaMessageAPIFatalException(message,exception)
     }
 
     /**

@@ -1,6 +1,6 @@
 package net.corda.messaging.api.subscription
 
-import net.corda.messaging.api.exception.CordaMessageAPIException
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 
 /**
  * A subscription that can be used to manage the life cycle of consumption of event records from a topic.
@@ -13,7 +13,7 @@ interface Subscription<K, V> : LifeCycle {
 
     /**
      * Start a subscription.
-     * @throws CordaMessageAPIException exception thrown during the consume, process or produce stage of a subscription.
+     * @throws CordaMessageAPIFatalException exception thrown during the consume, process or produce stage of a subscription.
      */
     override fun start()
 }

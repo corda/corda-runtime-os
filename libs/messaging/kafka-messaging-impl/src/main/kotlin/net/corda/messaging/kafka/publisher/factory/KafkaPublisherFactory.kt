@@ -27,7 +27,7 @@ class KafkaPublisherFactory : PublisherFactory {
         val producerProperties = getProducerProps(publisherConfig, defaultKafkaConfig, properties)
         val producer = KafkaProducerBuilder<K, V>().createProducer(defaultKafkaConfig, producerProperties, publisherConfig)
 
-        return KafkaPublisher(publisherConfig, producer)
+        return KafkaPublisher(publisherConfig, defaultKafkaConfig, producer)
     }
 
     /**

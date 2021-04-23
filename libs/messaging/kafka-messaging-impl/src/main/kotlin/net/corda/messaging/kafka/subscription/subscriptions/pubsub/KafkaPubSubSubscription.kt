@@ -1,6 +1,6 @@
 package net.corda.messaging.kafka.subscription.subscriptions.pubsub
 
-import net.corda.messaging.api.exception.CordaMessageAPIException
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -37,6 +37,7 @@ import kotlin.concurrent.withLock
  * @property processor processes records from kafka topic. Does not produce any outputs.
  * @property executor if not null, processor is executed using the executor synchronously.
  *                    If executor is null processor executed on the same thread as the consumer.
+ *
  */
 class KafkaPubSubSubscription<K, V>(
     private val subscriptionConfig: SubscriptionConfig,
@@ -60,7 +61,7 @@ class KafkaPubSubSubscription<K, V>(
     /**
      * Begin consuming events from the configured topic and process them
      * with the given [processor].
-     * @throws CordaMessageAPIException exception thrown during the consume, process or produce stage of a subscription.
+     * @throws CordaMessageAPIFatalException fatal exception thrown during the consume, process or produce stage of a subscription.
      */
     override fun start() {
         lock.withLock {
@@ -118,13 +119,13 @@ class KafkaPubSubSubscription<K, V>(
                         "Consumer is already subscribed to this topic. Closing subscription."
                 log.error(message, ex)
                 stop()
-                throw CordaMessageAPIException(message, ex)
+                throw CordaMessageAPIFatalException(message, ex)
             } catch (ex: IllegalArgumentException) {
                 val message = "PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                         "Illegal args provided. Closing subscription."
                 log.error(message, ex)
                 stop()
-                throw CordaMessageAPIException(message, ex)
+                throw CordaMessageAPIFatalException(message, ex)
             } catch (ex: KafkaException) {
                 if (retries <= maxRetries) {
                     log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
@@ -134,7 +135,7 @@ class KafkaPubSubSubscription<K, V>(
                             "Max retries exceeded. Closing subscription."
                     log.error(message, ex)
                     stop()
-                    throw CordaMessageAPIException(message, ex)
+                    throw CordaMessageAPIFatalException(message, ex)
                 }
             }
         }
