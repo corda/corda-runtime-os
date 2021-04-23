@@ -39,7 +39,6 @@ jar {
     bnd """
 Bundle-Name: $project.description
 Bundle-SymbolicName: ${project.group}.${project.name}
--fixupmessages 'Classes found in the wrong directory'; restrict:=error; is:=warning
 """
 }
 
@@ -47,7 +46,7 @@ private boolean isBundle(JarFile jarFile) {
     return jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME) != null
 }
 
-private boolean isJar(final File file) {
+private static boolean isJar(final File file) {
     return file.name.endsWith(".jar")
 }
 
@@ -134,7 +133,10 @@ private def osgiAssembleSystemPackagesExtra(
 }
 
 tasks.register('osgiBootJar', Jar) {
-    dependsOn jar, project(":osgi-framework-bootstrap").tasks.jar, project(":osgi-framework-bootstrap:framework-api").tasks.jar
+    dependsOn jar,
+            configurations.runtimeClasspath,
+            project(":osgi-framework-bootstrap").tasks.jar,
+            project(":osgi-framework-bootstrap:framework-api").tasks.jar
     doFirst {
         final bundlesDir = new File(project.buildDir, "resources/main/bundles")
         if (!bundlesDir.exists()) {

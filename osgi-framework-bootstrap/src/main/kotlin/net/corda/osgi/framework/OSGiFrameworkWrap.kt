@@ -2,7 +2,6 @@ package net.corda.osgi.framework
 
 import net.corda.osgi.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
 import net.corda.osgi.framework.api.ArgsService
-import org.apache.logging.log4j.util.Strings
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants
@@ -81,8 +80,13 @@ class OSGiFrameworkWrap(
          * The [FrameworkFactory] must be in the classpath.
          *
          * @param frameworkFactoryFQN Full Qualified Name of the [FrameworkFactory] making the [Framework] to return.
-         * @param frameworkStorageDir path to the directory the [Framework] uses as bundles' cache.
-         * @param SystemPackagesExtra
+         * @param frameworkStorageDir Path to the directory the [Framework] uses as bundles' cache.
+         * @param systemPackagesExtra Packages specified in this property are added to
+         * the `org.osgi.framework.system.packages` property.
+         * This allows the configurator to only define the additional packages and leave the standard execution
+         * environment packages to be defined by the framework.
+         * See [OSGi Core Release 7 - 4.2.2 Launching Properties](http://docs.osgi.org/specification/osgi.core/7.0.0/framework.lifecycle.html#framework.lifecycle.launchingproperties)
+         * See [getFrameworkPropertyFrom] to load properties from resources.
          *
          * @return A new configured [Framework] loaded from the classpath and having [frameworkFactoryFQN] as
          *         Full Qualified Name of the [FrameworkFactory].
@@ -91,6 +95,7 @@ class OSGiFrameworkWrap(
          *                                isn't in the classpath.
          * @throws SecurityException If a [SecurityManager] is installed and the caller hasn't [RuntimePermission].
          */
+        @Suppress("MaxLineLength")
         @Throws(
             ClassNotFoundException::class,
             SecurityException::class
@@ -106,13 +111,11 @@ class OSGiFrameworkWrap(
                 true,
                 OSGiFrameworkWrap::class.java.classLoader
             ).getDeclaredConstructor().newInstance() as FrameworkFactory
-            val configurationMap = mutableMapOf(
+            val configurationMap = mapOf(
                 Constants.FRAMEWORK_STORAGE to frameworkStorageDir.toString(),
                 Constants.FRAMEWORK_STORAGE_CLEAN to Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT,
+                Constants.FRAMEWORK_SYSTEMCAPABILITIES_EXTRA to systemPackagesExtra
             )
-            if (Strings.isNotBlank(systemPackagesExtra)) {
-                configurationMap[Constants.FRAMEWORK_STORAGE_CLEAN] = systemPackagesExtra
-            }
             if (logger.isDebugEnabled) {
                 configurationMap.forEach { (key, value) -> logger.debug("OSGi property $key = $value.") }
             }
