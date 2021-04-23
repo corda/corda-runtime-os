@@ -12,9 +12,11 @@ import net.corda.messaging.kafka.utils.commitSyncOffsets
 import net.corda.messaging.kafka.utils.resetToLastCommittedPositions
 import net.corda.messaging.kafka.utils.toRecord
 import org.apache.kafka.clients.consumer.Consumer
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.KafkaException
+import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.Exception
@@ -111,7 +113,17 @@ class KafkaPubSubSubscription<K, V>(
             try {
                 retries++
                 val consumer = consumerBuilder.createConsumer(consumerProperties)
-                consumer.subscribe(listOf(topic))
+                val listener = object : ConsumerRebalanceListener {
+                    override fun onPartitionsAssigned(partitions: MutableCollection<TopicPartition>) {
+                        onPartitionsAssigned(consumer, partitions)
+                    }
+
+                    override fun onPartitionsRevoked(partitions: MutableCollection<TopicPartition>) {
+                        onPartitionsRevoked(consumer, partitions)
+                    }
+                }
+
+                consumer.subscribe(listOf(topic), listener)
                 pollAndProcessRecords(consumer)
                 retries = 0
             } catch(ex: IllegalStateException) {
@@ -182,5 +194,18 @@ class KafkaPubSubSubscription<K, V>(
             }
             consumer.commitSyncOffsets(kafkaRecord)
         }
+    }
+
+    /**
+     * When a [consumer] is assigned [partitions] set the offset to the end of the partition.
+     * The consumer will not read any messages produced to the topic between the last poll and latest subscription or rebalance.
+     */
+    fun onPartitionsAssigned(consumer: Consumer<K, V>, partitions: MutableCollection<TopicPartition>) {
+        log.info("partition assigned $partitions")
+        consumer.seekToEnd(partitions)
+    }
+
+    fun onPartitionsRevoked(consumer: Consumer<K, V>, partitions: MutableCollection<TopicPartition>) {
+        log.info("partition revoked $partitions")
     }
 }

@@ -42,7 +42,7 @@ class KafkaPubSubSubscriptionTest {
     @BeforeEach
     fun setup() {
         config = mock()
-        subscriptionConfig = SubscriptionConfig("group1", 1, TOPIC)
+        subscriptionConfig = SubscriptionConfig("group1",  TOPIC, 1)
         properties = Properties()
         properties[MAX_RETRIES_CONFIG] = 10
         properties[CONSUMER_POLL_TIMEOUT] = 10L
