@@ -35,7 +35,6 @@ dependencies {
 }
 
 jar {
-    println "JAR!"
     archiveBaseName = project.name
     bnd """
 Bundle-Name: $project.description
@@ -44,133 +43,132 @@ Bundle-SymbolicName: ${project.group}.${project.name}
 """
 }
 
-def buildOSGiBundles = tasks.register("buildOSGiBundles") {
+private boolean isBundle(JarFile jarFile) {
+    return jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME) != null
+}
 
-    // EXECUTION PRIORITY DEFINITION
-    // The *Java* and *Java Library* `classes` task runs after `compileJava` and `processResources`
-    // providing the `runtimeClasspath` configuration populated with the dependencies
-    // declared by in the `dependencies` block.
-    // See https://docs.gradle.org/current/userguide/java_plugin.html
-    // See https://docs.gradle.org/current/userguide/java_library_plugin.html
-    // The `jar` task runs after the `classes` task.
-    // See https://docs.gradle.org/current/dsl/org.gradle.api.tasks.bundling.Jar.html
-    dependsOn jar
+private boolean isJar(final File file) {
+    return file.name.endsWith(".jar")
+}
 
-    doLast {
-        println "TASK buildOsgiBundles start..."
+private Set<String> osgiAssembleBundleInResources(
+        final File source,
+        final File target,
+        final Set<String> systemBundleSet) {
+    Files.deleteIfExists(target.toPath())
+    Files.copy(source.toPath(), target.toPath())
+    systemBundleSet.add("bundles/${source.name}")
+    println "OSGI Bundle $source.name included as resource."
+    return systemBundleSet
+}
 
-        // BUILD RESOURCES
-        // Copies artifacts solved as needed dependencies from the `runtimeClasspath` configuration
-        // into the directory `resources/main/bundles` part of the *Java* plugin file topology.
-        final def bundlesDir = new File(project.buildDir, "resources/main/bundles")
-        // Java plugin task `processResources` skips if it doesn't any resource in the `src/main`,
-        // hence force the creation of the expected structure of directories if `bundles` dir doesn't exist.
-        if (!bundlesDir.exists()) {
-            assert bundlesDir.mkdirs()
+private Set<String> osgiAssembleBundlesInResources(
+        final ArtifactCollection artifacts,
+        final File bundlesDir,
+        final Set<String> systemBundleSet) {
+    if (!bundlesDir.exists()) {
+        assert bundlesDir.mkdirs()
+    }
+    artifacts.each { resolvedArtifact ->
+        final def file = resolvedArtifact.file
+        if (isJar(file)) {
+            final def jarFile = new JarFile(file)
+            if (isBundle(jarFile)) {
+                osgiAssembleBundleInResources(file, new File(bundlesDir, file.name), systemBundleSet)
+            }
         }
-        final def runtimeClasspath = configurations.getByName("runtimeClasspath")
-        final def systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
+    }
+    return systemBundleSet
+}
 
-        // SYSTEM BUNDLE CATALOG
-        // Artifacts solved as dependencies in the `runtimeClasspath` classpath are scanned to check if those are
-        // OSGi bundle.
-        final Set<String> systemBundleSet = new TreeSet<>()
-        runtimeClasspath.incoming.findAll { dependency ->
-            !configurations.systemPackages.contains(dependency)
-        }.each { resolvableDependency ->
-            resolvableDependency.artifacts.each { resolvedArtifact ->
-                final def file = resolvedArtifact.file
-                // OSGi bundles must be `.jar` files.
-                if (file.name.endsWith(".jar")) {
-                    final def jarFile = new JarFile(file)
-                    // OSGi bundles must be have `Bundle-SymbolicName` metadata in jar's manifest..
-                    if (jarFile.manifest.mainAttributes.getValue("Bundle-SymbolicName") != null) {
-                        final def targetPath = new File(bundlesDir, file.name).toPath()
-                        Files.deleteIfExists(targetPath)
-                        Files.copy(file.toPath(), targetPath)
-                        // Describe the OSGi bundle as resource from the root of the classpath, this stratagem allows
-                        // JVM to load it indifferently if the resources are loaded by the file system directly,
-                        // or if resources are included in a fat jar.
-                        systemBundleSet.add("bundles/${file.name}")
-                        println "OSGI Bundle $file.name included as resource."
+private Set<String> osgiAssembleBundlesInResources(
+        final File[] files,
+        final File bundlesDir,
+        final Set<String> systemBundleSet) {
+    files.each { file ->
+        final def jarFile = new JarFile(file)
+        if (isBundle(jarFile)) {
+            osgiAssembleBundleInResources(file, new File(bundlesDir, file.name), systemBundleSet)
+        }
+    }
+    return systemBundleSet
+}
+
+private def osgiAssembleSystemPackagesExtra(
+        final ArtifactCollection artifacts,
+        final Set<String> systemBundleExtraSet
+) {
+    artifacts.each {resolvedArtifact ->
+        final file = resolvedArtifact.file
+        if (isJar(file)) {
+            new JarFile(
+                    resolvedArtifact.file,
+                    true, JarFile.OPEN_READ,
+                    JarFile.runtimeVersion()
+            ).withCloseable { jarFile ->
+                if (isBundle(jarFile)) {
+                    jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.EXPORT_PACKAGE)?.with { exportPackage ->
+                        aQute.bnd.header.OSGiHeader.parseHeader(exportPackage).entrySet().each { exportEntry ->
+                            final def export = exportEntry.key + ";" + exportEntry.value.toString()
+                            systemBundleExtraSet.add(export)
+                            println "OSGI $export included as system package extra."
+                        }
+                    }
+                } else {
+                    jarFile.versionedStream().filter { jarEntry ->
+                        jarEntry.name.endsWith(".class")
+                    }.each { jarEntry ->
+                        String entryName = jarEntry.name
+                        int end = entryName.lastIndexOf('/')
+                        if (end > 0) {
+                            final def export = entryName.substring(0, end).replace('/', '.')
+                            systemBundleExtraSet.add(export)
+                            println "OSGI $export included as system package extra."
+                        }
                     }
                 }
             }
         }
-        // OSGi artifacts built by `jar` task in this module are included as well.
-        final def libsDir = new File(project.buildDir, "libs").listFiles().each { file ->
-            if (file.name.endsWith(".jar")) {
-                final def jarFile = new JarFile(file)
-                if (jarFile.manifest.mainAttributes.getValue("Bundle-SymbolicName") != null) {
-                    final def targetPath = new File(bundlesDir, file.name).toPath()
-                    Files.deleteIfExists(targetPath)
-                    Files.copy(file.toPath(), targetPath)
-                    systemBundleSet.add("bundles/${file.name}")
-                    println "OSGI Bundle $file.name included as resource."
-                }
-            }
+    }
+    return systemBundleExtraSet
+}
+
+tasks.register('osgiBootJar', Jar) {
+    dependsOn jar, project(":osgi-framework-bootstrap").tasks.jar, project(":osgi-framework-bootstrap:framework-api").tasks.jar
+    doFirst {
+        final bundlesDir = new File(project.buildDir, "resources/main/bundles")
+        if (!bundlesDir.exists()) {
+            assert bundlesDir.mkdirs()
         }
-        // Write the `system_bundles` catalog as resource.
+        final Set<String> systemBundleSet = new TreeSet<>()
+        configurations.runtimeClasspath.incoming.findAll { resolvableDependencies ->
+            !configurations.systemPackages.contains(resolvableDependencies)
+        }.each { resolvableDependencies ->
+            osgiAssembleBundlesInResources(resolvableDependencies.artifacts as ArtifactCollection, bundlesDir, systemBundleSet)
+            osgiAssembleBundlesInResources(new File(project.buildDir, "libs").listFiles(), bundlesDir, systemBundleSet)
+        }
+        final systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
         systemBundlesFile.withWriter { writer ->
             systemBundleSet.each { line ->
                 writer.writeLine(line)
             }
         }
-        final def size = systemBundleSet.size()
-        println "TASK buildOsgiBundles included $size OSGi bundles in $systemBundlesFile resource."
-    }
-
-}
-
-def buildSystemPackagesExtra = tasks.register("buildSystemPackagesExtra") {
-    dependsOn jar, project(":osgi-framework-bootstrap:framework-api").tasks.jar
-    doLast {
-        final Set<String> exportSet = new TreeSet<>()
-        configurations.getByName("systemPackages").incoming.each { resolvableDependency ->
-            resolvableDependency.artifacts.each { resolvedArtifact ->
-                new JarFile(resolvedArtifact.file, true, JarFile.OPEN_READ, JarFile.runtimeVersion()).withCloseable { jarFile ->
-                    if (jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME) != null) {
-                        jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.EXPORT_PACKAGE)?.with { exportPackage ->
-                            aQute.bnd.header.OSGiHeader.parseHeader(exportPackage).entrySet().each { exportEntry ->
-                                final def export = exportEntry.key + ";" + exportEntry.value.toString()
-                                exportSet.add(export)
-                                println "OSGI $export included as extra system package."
-                            }
-                        }
-                    } else {
-                        jarFile.versionedStream().filter { jarEntry ->
-                            jarEntry.name.endsWith(".class")
-                        }.each { jarEntry ->
-                            String entryName = jarEntry.name
-                            int end = entryName.lastIndexOf('/')
-                            if (end > 0) {
-                                final def export = entryName.substring(0, end).replace('/', '.')
-                                exportSet.add(export)
-                                println "OSGI $export included as extra system package."
-                            }
-                        }
-                    }
-                }
-            }
+        final numberOfBundles = systemBundleSet.size()
+        println "Included $numberOfBundles OSGi bundles in $systemBundlesFile resource."
+        final Set<String> systemBundleExtraSet = new TreeSet<>()
+        configurations.systemPackages.incoming.each {resolvableDependencies ->
+            osgiAssembleSystemPackagesExtra(resolvableDependencies.artifacts as ArtifactCollection, systemBundleExtraSet)
         }
         final systemPackagesExtraFile = new File(project.buildDir, "resources/main/system_packages_extra")
         Files.deleteIfExists(systemPackagesExtraFile.toPath())
         systemPackagesExtraFile.withWriter { writer ->
-            exportSet.each { export -> writer.writeLine(export) }
+            systemBundleExtraSet.each { export -> writer.writeLine(export) }
         }
-        println "OSGI extra system packages list $systemPackagesExtraFile included as resource."
+        final def numberOfSystemPackagesExtra = systemBundleExtraSet.size()
+        println "Included $numberOfSystemPackagesExtra OSGI system packages extra list in $systemPackagesExtraFile resource."
     }
-}
-
-// Build a self-sufficient bootable jar with Apache Felix and `bootstrapClasspath` embedded.
-// The dependencies built as OSGi bundles are zipped in the `bundles` directory,
-// The OSGi dependencies are listed in the `system_bundles` file zipped in bootable jar.
-// NOTE
-// The bootable jar is built in the `project.buildDir + "boot"` directory.
-def buildBootJar = tasks.register("buildBootJar", Jar) {
-    dependsOn buildOSGiBundles, buildSystemPackagesExtra, project(":osgi-framework-bootstrap").tasks.jar
     archivesBaseName = project.name + ".boot"
-    destinationDirectory = new File(project.buildDir, "boot")
+    destinationDirectory = new File(project.buildDir, "bin")
     from(
             configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) },
             configurations.systemPackages.collect { it.isDirectory() ? it : zipTree(it) },
@@ -178,30 +176,6 @@ def buildBootJar = tasks.register("buildBootJar", Jar) {
     )
     manifest {
         attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
-    }
-}
-
-
-
-tasks.register('osgiBootJar', Jar) {
-    dependsOn(":jar")
-    project.subprojects.findAll { subproject ->
-        subproject.tasks.jar && project != subproject
-    }.each { subproject ->
-        dependsOn subproject.tasks.jar
-        mustRunAfter subproject.tasks.jar
-        from subproject.buildDir
-    }
-    final def systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
-    into systemBundlesFile
-    doLast {
-        configurations.runtimeClasspath.incoming.findAll { resolvableDependencies ->
-            !configurations.systemPackages.contains(resolvableDependencies)
-        }.each { resolvableDependency ->
-            resolvableDependency.artifacts.each { resolvedArtifact ->
-                println resolvedArtifact
-            }
-        }
     }
 }
 
