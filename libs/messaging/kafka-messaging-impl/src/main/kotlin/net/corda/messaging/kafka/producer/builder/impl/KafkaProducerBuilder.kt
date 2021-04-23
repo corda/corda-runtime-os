@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CLOSE_TIMEOUT
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.common.KafkaException
@@ -32,7 +32,7 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
                                 properties: Properties,
                                 publisherConfig: PublisherConfig): Producer<K, V> {
         var producer: Producer<K, V>? = null
-        val timeout = config.getLong(KAFKA_CLOSE_TIMEOUT)
+        val timeout = config.getLong(PRODUCER_CLOSE_TIMEOUT)
         try {
             producer = KafkaProducer(properties)
         } catch (ex: KafkaException) {
