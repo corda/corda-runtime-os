@@ -34,7 +34,7 @@ dependencies {
     systemPackages project(":osgi-framework-bootstrap:framework-api")
 }
 
-jar {
+def jarTask = tasks.named("jar", Jar) {
     archiveBaseName = project.name
     bnd """
 Bundle-Name: $project.description
@@ -120,7 +120,7 @@ private def osgiAssembleSystemPackagesExtra(
 }
 
 tasks.register('osgiBootJar', Jar) {
-    dependsOn jar,
+    dependsOn jarTask,
             configurations.runtimeClasspath,
             project(":osgi-framework-bootstrap").tasks.jar,
             project(":osgi-framework-bootstrap:framework-api").tasks.jar
