@@ -8,10 +8,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
 import net.corda.messaging.kafka.subscription.consumer.listener.PubSubConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import org.apache.kafka.clients.consumer.Consumer
-import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.kafka.clients.consumer.OffsetResetStrategy
-import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.clients.consumer.*
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
@@ -26,7 +23,7 @@ class CordaKafkaConsumerImpl<K, V>(
     kafkaConfig: Config,
     subscriptionConfig: SubscriptionConfig,
     private val consumer: Consumer<K, V>,
-    private val listener: PubSubConsumerRebalanceListener<K, V>
+    private val listener: ConsumerRebalanceListener
 ) : CordaKafkaConsumer<K, V> {
 
     companion object {
