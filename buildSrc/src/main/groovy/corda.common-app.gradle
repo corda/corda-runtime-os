@@ -57,7 +57,7 @@ private Set<String> osgiAssembleBundleInResources(
     Files.deleteIfExists(target.toPath())
     Files.copy(source.toPath(), target.toPath())
     systemBundleSet.add("bundles/${source.name}")
-    println "OSGI Bundle $source.name included as resource."
+    logger.info "OSGI Bundle $source.name included as resource."
     return systemBundleSet
 }
 
@@ -66,7 +66,7 @@ private Set<String> osgiAssembleBundlesInResources(
         final File bundlesDir,
         final Set<String> systemBundleSet) {
     if (!bundlesDir.exists()) {
-        assert bundlesDir.mkdirs()
+        bundlesDir.mkdirs()
     }
     artifacts.each { resolvedArtifact ->
         final def file = resolvedArtifact.file
@@ -75,19 +75,6 @@ private Set<String> osgiAssembleBundlesInResources(
             if (isBundle(jarFile)) {
                 osgiAssembleBundleInResources(file, new File(bundlesDir, file.name), systemBundleSet)
             }
-        }
-    }
-    return systemBundleSet
-}
-
-private Set<String> osgiAssembleBundlesInResources(
-        final File[] files,
-        final File bundlesDir,
-        final Set<String> systemBundleSet) {
-    files.each { file ->
-        final def jarFile = new JarFile(file)
-        if (isBundle(jarFile)) {
-            osgiAssembleBundleInResources(file, new File(bundlesDir, file.name), systemBundleSet)
         }
     }
     return systemBundleSet
@@ -110,7 +97,7 @@ private def osgiAssembleSystemPackagesExtra(
                         aQute.bnd.header.OSGiHeader.parseHeader(exportPackage).entrySet().each { exportEntry ->
                             final def export = exportEntry.key + ";" + exportEntry.value.toString()
                             systemBundleExtraSet.add(export)
-                            println "OSGI $export included as system package extra."
+                            logger.info "OSGI $export included as system package extra."
                         }
                     }
                 } else {
@@ -122,7 +109,7 @@ private def osgiAssembleSystemPackagesExtra(
                         if (end > 0) {
                             final def export = entryName.substring(0, end).replace('/', '.')
                             systemBundleExtraSet.add(export)
-                            println "OSGI $export included as system package extra."
+                            logger.info "OSGI $export included as system package extra."
                         }
                     }
                 }
@@ -140,14 +127,13 @@ tasks.register('osgiBootJar', Jar) {
     doFirst {
         final bundlesDir = new File(project.buildDir, "resources/main/bundles")
         if (!bundlesDir.exists()) {
-            assert bundlesDir.mkdirs()
+            bundlesDir.mkdirs()
         }
         final Set<String> systemBundleSet = new TreeSet<>()
         configurations.runtimeClasspath.incoming.findAll { resolvableDependencies ->
             !configurations.systemPackages.contains(resolvableDependencies)
         }.each { resolvableDependencies ->
             osgiAssembleBundlesInResources(resolvableDependencies.artifacts as ArtifactCollection, bundlesDir, systemBundleSet)
-            osgiAssembleBundlesInResources(new File(project.buildDir, "libs").listFiles(), bundlesDir, systemBundleSet)
         }
         final systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
         systemBundlesFile.withWriter { writer ->
@@ -156,7 +142,7 @@ tasks.register('osgiBootJar', Jar) {
             }
         }
         final numberOfBundles = systemBundleSet.size()
-        println "Included $numberOfBundles OSGi bundles in $systemBundlesFile resource."
+        logger.info "Included $numberOfBundles OSGi bundles in $systemBundlesFile resource."
         final Set<String> systemBundleExtraSet = new TreeSet<>()
         configurations.systemPackages.incoming.each {resolvableDependencies ->
             osgiAssembleSystemPackagesExtra(resolvableDependencies.artifacts as ArtifactCollection, systemBundleExtraSet)
@@ -167,9 +153,9 @@ tasks.register('osgiBootJar', Jar) {
             systemBundleExtraSet.each { export -> writer.writeLine(export) }
         }
         final def numberOfSystemPackagesExtra = systemBundleExtraSet.size()
-        println "Included $numberOfSystemPackagesExtra OSGI system packages extra list in $systemPackagesExtraFile resource."
+        logger.info "Included $numberOfSystemPackagesExtra OSGI system packages extra list in $systemPackagesExtraFile resource."
     }
-    archivesBaseName = project.name + ".boot"
+    archivesBaseName = "corda-" + project.name
     destinationDirectory = new File(project.buildDir, "bin")
     from(
             configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) },
