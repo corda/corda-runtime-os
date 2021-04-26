@@ -6,7 +6,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
-import net.corda.messaging.kafka.subscription.consumer.listener.PubSubConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import org.apache.kafka.clients.consumer.*
 import org.apache.kafka.common.KafkaException
@@ -82,11 +81,10 @@ class CordaKafkaConsumerImpl<K, V>(
     }
 
     override fun subscribeToTopic() {
-        var retries = -1
+        var attempts = 0
         try {
-            retries++
             consumer.subscribe(listOf(topicPrefix + topic), listener)
-            retries = -1
+            attempts = 0
         } catch(ex: IllegalStateException) {
             val message = "PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                     "Consumer is already subscribed to this topic. Closing subscription."
@@ -98,7 +96,8 @@ class CordaKafkaConsumerImpl<K, V>(
             log.error(message, ex)
             throw CordaMessageAPIFatalException(message, ex)
         } catch (ex: KafkaException) {
-            if (retries <= maxRetries) {
+            attempts++
+            if (attempts < maxRetries) {
                 log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                         "retrying.", ex)
             } else {

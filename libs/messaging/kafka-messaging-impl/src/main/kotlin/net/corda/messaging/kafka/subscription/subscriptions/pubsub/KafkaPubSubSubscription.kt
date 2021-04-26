@@ -120,15 +120,15 @@ class KafkaPubSubSubscription<K, V>(
      */
     @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<K, V>) {
-        var retries = -1
+        var attempts = 0
         while (!cancelled) {
             try {
-                retries++
                 val consumerRecords = consumer.poll()
                 processPubSubRecords(consumerRecords, consumer)
-                retries = -1
+                attempts = 0
             } catch (ex: Exception) {
-                if (retries <= consumerProcessorRetries) {
+                attempts++
+                if (attempts < consumerProcessorRetries) {
                     log.error("PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
                                 "Resetting to last committed offset."                    )
                     consumer.resetToLastCommittedPositions(OffsetResetStrategy.LATEST)

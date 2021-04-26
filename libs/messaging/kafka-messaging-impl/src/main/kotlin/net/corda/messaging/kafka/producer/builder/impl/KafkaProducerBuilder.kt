@@ -49,7 +49,7 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
         }
 
         if (publisherConfig.instanceId != null) {
-            initTransactionForProducer(-1, publisherConfig, producer, producerCloseTimeout, producerCreateMaxRetries)
+            initTransactionForProducer(0, publisherConfig, producer, producerCloseTimeout, producerCreateMaxRetries)
         }
 
         return producer
@@ -57,20 +57,19 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
 
     /**
      * Initialise transactions for the transactional producer. Attempt to retry any [InterruptException] or [TimeoutException]
-     * @param currentRetryCount current amount of retries, -1 for first attempt
+     * @param currentAttempts current amount of attempts to execute initialisation, 0 for first attempt
      * @param publisherConfig required for logging information
      * @param producer to initialise transactions for
      * @param producerCloseTimeout time to wait for close to finish
      * @param producerCreateMaxRetries maximum amount of retries to attempt
      */
-    private fun initTransactionForProducer(currentRetryCount: Int,
+    private fun initTransactionForProducer(currentAttempts: Int,
                                         publisherConfig: PublisherConfig,
                                         producer: KafkaProducer<K, V>,
                                         producerCloseTimeout: Long,
                                         producerCreateMaxRetries: Long) {
-        var retries = currentRetryCount
+        var attempts = currentAttempts
         try {
-            retries++
             producer.initTransactions()
         } catch (ex: IllegalStateException) {
             val message = "Failed to initialize kafka producer. No transactional.id has been configured. " +
@@ -93,12 +92,13 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
                     "topic ${publisherConfig.topic}."
             logErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
         } catch (ex: TimeoutException) {
-            if (retries <= producerCreateMaxRetries) {
+            attempts++
+            if (attempts < producerCreateMaxRetries) {
                 val message = "Failed to initialize kafka producer. Timeout. " +
                         "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
                         "topic ${publisherConfig.topic}. Retrying."
                 log.error(message, ex)
-                initTransactionForProducer(retries, publisherConfig, producer, producerCloseTimeout, producerCreateMaxRetries)
+                initTransactionForProducer(attempts, publisherConfig, producer, producerCloseTimeout, producerCreateMaxRetries)
             } else {
                 val message = "Failed to initialize kafka producer. Timeout. " +
                         "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
@@ -106,12 +106,13 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
                 logErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
             }
         } catch (ex: InterruptException) {
-            if (retries <= producerCreateMaxRetries) {
+            attempts++
+            if (attempts < producerCreateMaxRetries) {
                 val message = "Failed to initialize kafka producer. Thread is interrupted while blocked. " +
                         "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
                         "topic ${publisherConfig.topic}. Retrying."
                 log.error(message, ex)
-                initTransactionForProducer(retries, publisherConfig, producer, producerCloseTimeout, producerCreateMaxRetries)
+                initTransactionForProducer(attempts, publisherConfig, producer, producerCloseTimeout, producerCreateMaxRetries)
             } else {
                 val message = "Failed to initialize kafka producer. Thread is interrupted while blocked. " +
                         "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
