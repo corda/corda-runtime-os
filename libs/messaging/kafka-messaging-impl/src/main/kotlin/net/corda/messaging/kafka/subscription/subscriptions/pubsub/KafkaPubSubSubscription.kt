@@ -1,28 +1,19 @@
 package net.corda.messaging.kafka.subscription.subscriptions.pubsub
 
+import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_PROCESSOR_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CREATE_MAX_RETRIES
-import net.corda.messaging.kafka.subscription.consumer.ConsumerBuilder
-import net.corda.messaging.kafka.utils.commitSyncOffsets
-import net.corda.messaging.kafka.utils.resetToLastCommittedPositions
-import net.corda.messaging.kafka.utils.toRecord
-import org.apache.kafka.clients.consumer.Consumer
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
-import org.apache.kafka.clients.consumer.ConsumerRecords
+import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
+import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
-import org.apache.kafka.common.KafkaException
-import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.Exception
-import java.lang.IllegalStateException
-import java.time.Duration
-import java.util.Properties
 import kotlin.concurrent.thread
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.locks.ReentrantLock
@@ -30,11 +21,11 @@ import kotlin.concurrent.withLock
 
 /**
  * Kafka implementation of a PubSubSubscription.
- * Subscription will continuously try connect to Kafka based on the [subscriptionConfig] and [consumerProperties].
+ * Subscription will continuously try connect to Kafka based on the [subscriptionConfig] and [kafkaConfig].
  * After connection is successful subscription will attempt to poll and process records until subscription is stopped.
  * Records are processed using the [executor] if it is not null. Otherwise they are processed on the same thread.
  * @property subscriptionConfig Describes what topic to poll from and what the consumer group name should be.
- * @property consumerProperties properties used to build a kafka consumer.
+ * @property kafkaConfig kafka configuration
  * @property consumerBuilder builder to generate a kafka consumer.
  * @property processor processes records from kafka topic. Does not produce any outputs.
  * @property executor if not null, processor is executed using the executor synchronously.
@@ -43,7 +34,7 @@ import kotlin.concurrent.withLock
  */
 class KafkaPubSubSubscription<K, V>(
     private val subscriptionConfig: SubscriptionConfig,
-    private val consumerProperties: Properties,
+    private val kafkaConfig: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val processor: PubSubProcessor<K, V>,
     private val executor: ExecutorService?
@@ -52,13 +43,16 @@ class KafkaPubSubSubscription<K, V>(
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
-    private val consumerPollTimeout = Duration.ofMillis(consumerProperties[CONSUMER_POLL_TIMEOUT] as Long)
-    private val consumerThreadStopTimeout = consumerProperties[CONSUMER_THREAD_STOP_TIMEOUT] as Long
-    private val maxRetries = consumerProperties[CONSUMER_CREATE_MAX_RETRIES] as Int
+    private val consumerThreadStopTimeout = kafkaConfig.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
+    private val consumerProcessorRetries = kafkaConfig.getLong(CONSUMER_PROCESSOR_RETRIES)
+
     @Volatile
     private var cancelled = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
+    private lateinit var cordaKafkaConsumer: CordaKafkaConsumer<K, V>
+    private val topic = subscriptionConfig.eventTopic
+    private val groupName = subscriptionConfig.groupName
 
     /**
      * Begin consuming events from the configured topic and process them
@@ -103,109 +97,63 @@ class KafkaPubSubSubscription<K, V>(
      * After connection is made begin to process records indefinitely. Mark each record and committed after processing.
      * If an error occurs while processing reset the consumers position on the topic to the last committed position.
      * Execute the processor using the given [executor] if it is not null, otherwise execute on the current thread.
+     * If subscription is stopped close the consumer.
      */
     private fun runConsumeLoop() {
-        val topic = subscriptionConfig.eventTopic
-        val groupName = subscriptionConfig.groupName
-        var retries = -1
+        while (!cancelled) {
+            try {
+                cordaKafkaConsumer = consumerBuilder.createConsumerAndSubscribe(subscriptionConfig)
+                pollAndProcessRecords(cordaKafkaConsumer)
+            } catch (ex: CordaMessageAPIFatalException) {
+                stop()
+                throw CordaMessageAPIFatalException(ex.message, ex)
+            }
+        }
 
+        cordaKafkaConsumer.safeClose()
+    }
+
+    /**
+     * Poll records with the [consumer] and process them with the [processor].
+     * If an exception is thrown while polling and processing then reset the fetch position and try to poll and process again.
+     * If this continues to fail break out of the loop. This will recreate the consumer to fetch at the latest position and poll again.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<K, V>) {
+        var retries = -1
         while (!cancelled) {
             try {
                 retries++
-                val consumer = consumerBuilder.createConsumer(consumerProperties)
-                val listener = object : ConsumerRebalanceListener {
-                    override fun onPartitionsAssigned(partitions: MutableCollection<TopicPartition>) {
-                        onPartitionsAssigned(consumer, partitions)
-                    }
-
-                    override fun onPartitionsRevoked(partitions: MutableCollection<TopicPartition>) {
-                        onPartitionsRevoked(consumer, partitions)
-                    }
-                }
-
-                consumer.subscribe(listOf(topic), listener)
-                pollAndProcessRecords(consumer)
+                val consumerRecords = consumer.poll()
+                processPubSubRecords(consumerRecords, consumer)
                 retries = -1
-            } catch(ex: IllegalStateException) {
-                val message = "PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
-                        "Consumer is already subscribed to this topic. Closing subscription."
-                log.error(message, ex)
-                stop()
-                throw CordaMessageAPIFatalException(message, ex)
-            } catch (ex: IllegalArgumentException) {
-                val message = "PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
-                        "Illegal args provided. Closing subscription."
-                log.error(message, ex)
-                stop()
-                throw CordaMessageAPIFatalException(message, ex)
-            } catch (ex: KafkaException) {
-                if (retries <= maxRetries) {
-                    log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
-                            "retrying.", ex)
+            } catch (ex: Exception) {
+                if (retries <= consumerProcessorRetries) {
+                    log.error("PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
+                                "Resetting to last committed offset."                    )
+                    consumer.resetToLastCommittedPositions(OffsetResetStrategy.LATEST)
                 } else {
-                    val message = "PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
-                            "Max retries exceeded. Closing subscription."
-                    log.error(message, ex)
-                    stop()
-                    throw CordaMessageAPIFatalException(message, ex)
+                    log.error("PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
+                            "Max reties for poll and process exceeded. Recreating consumer and polling from latest position.", ex)
+                    break
                 }
             }
         }
     }
 
     /**
-     * Poll records with the [consumer] and process them.
-     * Catch all possible Exceptions and log them.
-     */
-    @Suppress("TooGenericExceptionCaught")
-    private fun pollAndProcessRecords(consumer: Consumer<K, V>) {
-        val topic = subscriptionConfig.eventTopic
-        val groupName = subscriptionConfig.groupName
-
-        try {
-            while (!cancelled) {
-                val records = consumer.poll(consumerPollTimeout)
-                processPubSubRecords(records, consumer)
-            }
-        } catch (ex: Exception) {
-            // The consumer fetch position needs to be restored to the last committed offset
-            // before the transaction started.
-            // If there is no offset for this consumer then reset to the latest position on the topic
-            log.error(
-                "PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
-                        "Resetting to last committed offset."
-            )
-            consumer.resetToLastCommittedPositions(OffsetResetStrategy.LATEST)
-        }
-    }
-
-    /**
-     * Sorts polled [record]s by their timestamp. Process them using an [executor] if it not null or on the same
+     * Process Kafka [consumerRecords]. Process them using an [executor] if it not null or on the same
      * thread otherwise. Commit the offset for each record back to the topic after processing them synchronously.
      */
-    private fun processPubSubRecords(records: ConsumerRecords<K, V>, consumer: Consumer<K, V>) {
-        val sortedRecords = records.sortedBy { it.timestamp() }
-        for (kafkaRecord in sortedRecords) {
-            val event = kafkaRecord.toRecord()
+    private fun processPubSubRecords(consumerRecords: List<ConsumerRecord<K, V>>, consumer: CordaKafkaConsumer<K, V>) {
+        for (consumerRecord in consumerRecords) {
+            val eventRecord = consumer.getRecord(consumerRecord)
             if (executor != null) {
-                executor.submit { processor.onNext(event) }.get()
+                executor.submit { processor.onNext(eventRecord) }.get()
             } else {
-                processor.onNext(event)
+                processor.onNext(eventRecord)
             }
-            consumer.commitSyncOffsets(kafkaRecord)
+            consumer.commitSyncOffsets(consumerRecord)
         }
-    }
-
-    /**
-     * When a [consumer] is assigned [partitions] set the offset to the end of the partition.
-     * The consumer will not read any messages produced to the topic between the last poll and latest subscription or rebalance.
-     */
-    fun onPartitionsAssigned(consumer: Consumer<K, V>, partitions: MutableCollection<TopicPartition>) {
-        log.info("partition assigned $partitions")
-        consumer.seekToEnd(partitions)
-    }
-
-    fun onPartitionsRevoked(consumer: Consumer<K, V>, partitions: MutableCollection<TopicPartition>) {
-        log.info("partition revoked $partitions")
     }
 }

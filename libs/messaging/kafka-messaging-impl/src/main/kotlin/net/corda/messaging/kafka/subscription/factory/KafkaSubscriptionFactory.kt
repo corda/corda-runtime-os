@@ -15,7 +15,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_C
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CREATE_MAX_RETRIES
-import net.corda.messaging.kafka.subscription.consumer.impl.PubSubConsumerBuilder
+import net.corda.messaging.kafka.subscription.consumer.builder.impl.PubSubConsumerBuilder
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.osgi.service.component.annotations.Component
 import java.util.Properties
@@ -50,7 +50,8 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
         val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
 
         val consumerProperties = getConsumerProps(subscriptionConfig, defaultKafkaConfig, overrideProperties)
-        return KafkaPubSubSubscription(subscriptionConfig, consumerProperties, PubSubConsumerBuilder(), processor, executor)
+        val pubSubConsumerBuilder = PubSubConsumerBuilder<K, V>(defaultKafkaConfig, consumerProperties)
+        return KafkaPubSubSubscription(subscriptionConfig, defaultKafkaConfig, pubSubConsumerBuilder, processor, executor)
     }
 
     override fun <K, V> createDurableSubscription(
@@ -80,17 +81,13 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
         properties.putAll(overrideProperties)
         val conf: Config = ConfigFactory.parseProperties(properties).withFallback(defaultKafkaConfig)
         val consumerProps = Properties()
-        
 
         consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = subscriptionConfig.groupName
         consumerProps[CONSUMER_CREATE_MAX_RETRIES] = conf.getInt(CONSUMER_CREATE_MAX_RETRIES)
         consumerProps[CONSUMER_POLL_TIMEOUT] = conf.getLong(CONSUMER_POLL_TIMEOUT)
         consumerProps[CONSUMER_THREAD_STOP_TIMEOUT] = conf.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
 
-        //Could do something smarter here like
-        //Store all kafka consumer props in typesafeConf as "kafka.consumer.props."
-        //read all values from conf with a prefix of "kafka.consumer.props"
-        //or store all consumer defaults in their own typesafeconfig
+        //TODO - update the below when config task has evolved
         consumerProps[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] =
             conf.getString(CONSUMER_CONF_PREFIX + ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)
         consumerProps[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] =

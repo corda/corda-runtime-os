@@ -20,5 +20,4 @@ interface ProducerBuilder<K, V> {
      * @throws CordaMessageAPIFatalException thrown if producer cannot be created.
     */
     fun createProducer(config: Config, properties: Properties, publisherConfig: PublisherConfig): Producer<K, V>
-
 }

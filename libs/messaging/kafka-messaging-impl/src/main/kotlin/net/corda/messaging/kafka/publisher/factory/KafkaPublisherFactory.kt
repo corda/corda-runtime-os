@@ -24,6 +24,7 @@ class KafkaPublisherFactory : PublisherFactory {
     ): Publisher<K, V> {
         //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required
         val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
+
         val producerProperties = getProducerProps(publisherConfig, defaultKafkaConfig, properties)
         val producer = KafkaProducerBuilder<K, V>().createProducer(defaultKafkaConfig, producerProperties, publisherConfig)
 
@@ -33,7 +34,7 @@ class KafkaPublisherFactory : PublisherFactory {
     /**
      * Generate producer properties with default values from [defaultKafkaConfig] unless overridden by the given [overrideProperties].
      * @param publisherConfig Publisher config
-     * @param defaultKafkaConfig Default Producer config
+     * @param defaultKafkaConfig Default kafka config
      * @param overrideProperties Properties to override default config.
      * @return Kafka Producer properties.
      */
@@ -44,10 +45,7 @@ class KafkaPublisherFactory : PublisherFactory {
         val conf: Config = ConfigFactory.parseProperties(properties).withFallback(defaultKafkaConfig)
         val producerProps = Properties()
 
-        //Could do something smarter here like
-        //Store all kafka producer props in typesafeConf as "kafka.producer.props"
-        //read all values from conf with a prefix of "kafka.producer.props"
-        //or store all producer defaults in their own typesafeconfig
+        //TODO - update the below when config task  has evolved
         producerProps[ProducerConfig.CLIENT_ID_CONFIG] = publisherConfig.clientId
 
         producerProps[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] =

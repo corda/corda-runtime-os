@@ -2,7 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>ComplexMethod:KafkaPublisher.kt$KafkaPublisher$override fun publish(record: Record&lt;K, V&gt;): CordaFuture&lt;Boolean&gt;</ID>
-    <ID>ThrowsCount:KafkaPubSubSubscription.kt$KafkaPubSubSubscription$ private fun runConsumeLoop()</ID>
+    <ID>ComplexMethod:KafkaPublisher.kt$KafkaPublisher$ override fun publish(record: Record&lt;K, V&gt;): CordaFuture&lt;Boolean&gt;</ID>
   </CurrentIssues>
 </SmellBaseline>

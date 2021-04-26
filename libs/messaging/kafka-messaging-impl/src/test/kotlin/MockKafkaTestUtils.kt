@@ -21,11 +21,22 @@ fun createMockConsumerAndAddRecords(topic: String, numberOfRecords: Long, offset
     consumer.updateBeginningOffsets(partitionsBeginningMap)
     consumer.updateEndOffsets(partitionsEndMap)
 
-    for (i in 0 until numberOfRecords) {
-        val value = "value$i".toByteArray()
-        val record = ConsumerRecord<String, ByteArray>(topic, 1, i, "key$i", value)
-        consumer.addRecord(record)
-    }
+    val records = generateMockConsumerRecords(numberOfRecords, topic, 1)
+    records.forEach{consumer.addRecord(it)}
 
     return Pair(consumer, topicPartition)
+}
+
+/**
+ * Generate a list of size [numberOfRecords] ConsumerRecords.
+ * Assigned to [partition] and [topic]
+ */
+fun generateMockConsumerRecords(numberOfRecords: Long, topic: String, partition: Int) : List<ConsumerRecord<String, ByteArray>> {
+    val records = mutableListOf<ConsumerRecord<String, ByteArray>>()
+    for (i in 0 until numberOfRecords) {
+        val value = "value$i".toByteArray()
+        val record = ConsumerRecord(topic, partition, i, "key$i", value)
+        records.add(record)
+    }
+    return records
 }
