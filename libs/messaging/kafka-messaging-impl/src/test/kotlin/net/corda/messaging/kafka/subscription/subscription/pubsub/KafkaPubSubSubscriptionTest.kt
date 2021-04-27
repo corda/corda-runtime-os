@@ -14,7 +14,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_P
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.messaging.kafka.subscription.generateMockConsumerRecords
+import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
 import net.corda.messaging.kafka.subscription.subscriptions.pubsub.KafkaPubSubSubscription
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.KafkaException
@@ -49,7 +49,7 @@ class KafkaPubSubSubscriptionTest {
         mockCordaConsumer = mock()
         processor = mock()
 
-        mockConsumerRecords = generateMockConsumerRecords(5, "topic", 1)
+        mockConsumerRecords = generateMockConsumerRecordList(5, "topic", 1)
         val record = Record("topic", "key", "value".toByteArray())
         doReturn(mockCordaConsumer).whenever(consumerBuilder).createConsumerAndSubscribe(subscriptionConfig)
         doReturn(record).whenever(mockCordaConsumer).getRecord(any())

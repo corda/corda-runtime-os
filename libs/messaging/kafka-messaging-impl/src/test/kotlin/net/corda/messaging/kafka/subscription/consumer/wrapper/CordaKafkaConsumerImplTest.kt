@@ -1,19 +1,24 @@
 package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription.consumer.wrapper
 
-import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.*
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
 import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
+import net.corda.messaging.kafka.subscription.generateMockConsumerRecordsList
 import org.apache.kafka.clients.consumer.*
+import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import java.time.Duration
 
 class CordaKafkaConsumerImplTest {
@@ -42,6 +47,27 @@ class CordaKafkaConsumerImplTest {
     }
 
     @Test
+    fun testPollInvoked() {
+        val consumerRecords = generateMockConsumerRecordsList(2, eventTopic, 1)
+
+        consumer = mock()
+        doReturn(consumerRecords).whenever(consumer).poll(Mockito.any(Duration::class.java))
+        cordaKafkaConsumer = CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
+
+        cordaKafkaConsumer.poll()
+        verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
+    }
+
+    @Test
+    fun testGetRecord() {
+        val consumerRecord = ConsumerRecord("prefixtopic", 1, 1, "key", "value".toByteArray())
+        val record = cordaKafkaConsumer.getRecord(consumerRecord)
+        assertThat(record.topic).isEqualTo("topic")
+        assertThat(record.key).isEqualTo(consumerRecord.key())
+        assertThat(record.value).isEqualTo(consumerRecord.value())
+    }
+
+    @Test
     fun testCommitOffsets() {
         val record = ConsumerRecord<String, ByteArray>(eventTopic, 1, 5L, null, "value".toByteArray())
         assertThat(consumer.committed(setOf(partition))).isEmpty()
@@ -52,6 +78,25 @@ class CordaKafkaConsumerImplTest {
         assertThat(committedPositionAfterCommit.values.first().offset()).isEqualTo(6)
     }
 
+
+    @Test
+    fun testSubscribeToTopic() {
+        consumer = mock()
+        cordaKafkaConsumer = CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
+        cordaKafkaConsumer.subscribeToTopic()
+        verify(consumer, times(1)).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
+    }
+
+    @Test
+    fun testSubscribeToTopicRetries() {
+        consumer = mock()
+        cordaKafkaConsumer = CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
+        doThrow(KafkaException()).whenever(consumer).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
+        assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
+            cordaKafkaConsumer.subscribeToTopic()
+        }
+        verify(consumer, times(3)).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
+    }
 
     @Test
     fun testResetToLastCommittedPositions() {
