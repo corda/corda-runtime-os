@@ -82,17 +82,14 @@ internal class OSGiFrameworkWrapTest {
         assertTrue { Files.exists(frameworkStorageDir) }
     }
 
+    @Disabled // This test fails because unit tests do not generate resources. Planned to be fixed.
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun activate(frameworkFactoryFQN: String) {
         val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
         OSGiFrameworkWrap(framework).use { frameworkWrap ->
             frameworkWrap.start()
-            try {
-                frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
-            } catch (e: IOException) {
-                logger.warn("Tests haven't generated ${OSGiFrameworkMain.SYSTEM_BUNDLES} resource describing the bundles to install.")
-            }
+            frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
             frameworkWrap.activate()
             framework.bundleContext.bundles.forEach { bundle ->
                 if (!OSGiFrameworkWrap.isFragment(bundle)) {
@@ -117,21 +114,18 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
+    @Disabled // This test fails because unit tests do not generate resources. Planned to be fixed.
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun install(frameworkFactoryFQN: String) {
         val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
         OSGiFrameworkWrap(framework).use { frameworkWrap ->
             frameworkWrap.start()
-            try {
-                frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
-                val bundleLocationList = readTextLines(OSGiFrameworkMain.SYSTEM_BUNDLES)
-                assertEquals(bundleLocationList.size, framework.bundleContext.bundles.size - 1)
-                bundleLocationList.forEach { location ->
-                    assertNotNull(framework.bundleContext.getBundle(location))
-                }
-            } catch (e: IOException) {
-                logger.warn("Tests haven't generated ${OSGiFrameworkMain.SYSTEM_BUNDLES} resource describing the bundles to install.")
+            frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
+            val bundleLocationList = readTextLines(OSGiFrameworkMain.SYSTEM_BUNDLES)
+            assertEquals(bundleLocationList.size, framework.bundleContext.bundles.size - 1)
+            bundleLocationList.forEach { location ->
+                assertNotNull(framework.bundleContext.getBundle(location))
             }
         }
     }
