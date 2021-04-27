@@ -6,20 +6,19 @@
 -runfw: org.apache.felix.framework
 -resolve.effective: active
 -runproperties: \
-    org.osgi.framework.bootdelegation=sun.reflect,\
-    org.slf4j.simpleLogger.defaultLogLevel=info,\
-    org.slf4j.simpleLogger.showShortLogName=true,\
-    org.slf4j.simpleLogger.showThreadName=false,\
-    org.slf4j.simpleLogger.showDateTime=true,\
-    org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
+    org.osgi.framework.bootdelegation=sun.reflect',\
+    org.slf4j.api.defaultLogLevel=info,\
+    org.slf4j.api.showShortLogName=true,\
+    org.slf4j.api.showThreadName=false,\
+    org.slf4j.api.showDateTime=true,\
+    org.slf4j.api.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
 
 -runrequires: \
     bnd.identity;id='net.corda.helloworld',\
     bnd.identity;id='net.corda.helloworld-impl',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
-    bnd.identity;id='${project.archivesBaseName}-tests',\
-    bnd.identity;id='slf4j.simple'
+    bnd.identity;id='${project.archivesBaseName}-tests'
 
 # This will help us keep -runbundles sorted
 -runstartlevel: \
@@ -47,5 +46,4 @@
 	org.osgi.test.junit5;version='[0.9.0,0.9.1)',\
 	org.osgi.util.function;version='[1.0.0,1.0.1)',\
 	org.osgi.util.promise;version='[1.0.0,1.0.1)',\
-	slf4j.api;version='[1.7.25,1.7.26)',\
-	slf4j.simple;version='[1.7.25,1.7.26)'
+	slf4j.api;version='[1.7.25,1.7.26)'

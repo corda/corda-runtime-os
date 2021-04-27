@@ -11,6 +11,9 @@ dependencies {
     implementation project(":helloworld")
 
     runtimeOnly project(":helloworld-impl")
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
 
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
 }
