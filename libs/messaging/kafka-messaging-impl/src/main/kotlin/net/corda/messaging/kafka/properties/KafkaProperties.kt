@@ -11,7 +11,7 @@ class KafkaProperties {
         const val CONSUMER_THREAD_STOP_TIMEOUT = "kafka.subscription.consumer.thread.stop.timeout"
         const val CONSUMER_PROCESSOR_RETRIES = "kafka.subscription.consumer.processor.retries"
         const val CONSUMER_POLL_TIMEOUT = "kafka.subscription.consumer.poll.timeout"
-        const val CONSUMER_CREATE_MAX_RETRIES = "kafka.subscription.consumer.create.retries"
+        const val CONSUMER_SUBSCRIBE_MAX_RETRIES = "kafka.subscription.consumer.subscribe.retries"
 
         const val KAFKA_TOPIC_PREFIX = "kafka.subscription.topic.prefix"
     }

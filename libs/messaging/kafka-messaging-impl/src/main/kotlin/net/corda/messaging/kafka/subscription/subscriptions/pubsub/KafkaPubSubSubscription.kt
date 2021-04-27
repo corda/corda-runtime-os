@@ -24,6 +24,7 @@ import kotlin.concurrent.withLock
  * Subscription will continuously try connect to Kafka based on the [subscriptionConfig] and [kafkaConfig].
  * After connection is successful subscription will attempt to poll and process records until subscription is stopped.
  * Records are processed using the [executor] if it is not null. Otherwise they are processed on the same thread.
+ * [executor] will be shutdown when the subscription is stopped.
  * @property subscriptionConfig Describes what topic to poll from and what the consumer group name should be.
  * @property kafkaConfig kafka configuration
  * @property consumerBuilder builder to generate a kafka consumer.
@@ -50,7 +51,7 @@ class KafkaPubSubSubscription<K, V>(
     private var cancelled = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private lateinit var cordaKafkaConsumer: CordaKafkaConsumer<K, V>
+    private var cordaKafkaConsumer: CordaKafkaConsumer<K, V>? = null
     private val topic = subscriptionConfig.eventTopic
     private val groupName = subscriptionConfig.groupName
 
@@ -99,18 +100,21 @@ class KafkaPubSubSubscription<K, V>(
      * Execute the processor using the given [executor] if it is not null, otherwise execute on the current thread.
      * If subscription is stopped close the consumer.
      */
+    @Suppress("TooGenericExceptionCaught")
     private fun runConsumeLoop() {
+        var attempts = 0
         while (!cancelled) {
+            attempts++
             try {
                 cordaKafkaConsumer = consumerBuilder.createConsumerAndSubscribe(subscriptionConfig)
-                pollAndProcessRecords(cordaKafkaConsumer)
-            } catch (ex: CordaMessageAPIFatalException) {
-                stop()
-                throw CordaMessageAPIFatalException(ex.message, ex)
+                pollAndProcessRecords(cordaKafkaConsumer!!)
+                attempts = 0
+            } catch (ex: Exception) {
+                log.warn("PubSubConsumer failed to create consumer for group $groupName, topic $topic, attempts: $attempts. Retrying.", ex)
             }
         }
 
-        cordaKafkaConsumer.safeClose()
+        cordaKafkaConsumer?.close()
     }
 
     /**
@@ -129,11 +133,11 @@ class KafkaPubSubSubscription<K, V>(
             } catch (ex: Exception) {
                 attempts++
                 if (attempts < consumerProcessorRetries) {
-                    log.error("PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
-                                "Resetting to last committed offset."                    )
+                    log.warn("PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
+                                "Resetting to last committed offset and retrying. Attempts: $attempts.")
                     consumer.resetToLastCommittedPositions(OffsetResetStrategy.LATEST)
                 } else {
-                    log.error("PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
+                    log.warn("PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
                             "Max reties for poll and process exceeded. Recreating consumer and polling from latest position.", ex)
                     break
                 }

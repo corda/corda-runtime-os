@@ -32,7 +32,7 @@ import java.time.Duration
  * Producer will automatically attempt resends based on [kafkaConfig].
  * Any Exceptions thrown during publish are returned in a CordaFuture.
  */
-class KafkaPublisher<K, V>(
+class CordaKafkaPublisher<K, V>(
     private val publisherConfig: PublisherConfig,
     private val kafkaConfig: Config,
     private val producer: Producer<K, V>) : Publisher<K, V> {
@@ -113,11 +113,15 @@ class KafkaPublisher<K, V>(
                     "for topic $topic failed to send."
             if (fatalSendExceptions.contains(exception::class.java)) {
                 log.error("$message Fatal error occurred. Closing producer.", exception)
-                future.setException(CordaMessageAPIIntermittentException(message, exception))
-                safeClose()
+                future.setException(CordaMessageAPIFatalException(message, exception))
+                close()
             } else if (exception is InterruptException) {
-                log.error("$message Thread interrupted.", exception)
+                log.warn("$message Thread interrupted.", exception)
                 future.setException(CordaMessageAPIIntermittentException(message, exception))
+            } else {
+                log.error("$message Unknown error occurred. Closing producer.", exception)
+                future.setException(CordaMessageAPIFatalException(message, exception))
+                close()
             }
         }
     }
@@ -127,11 +131,12 @@ class KafkaPublisher<K, V>(
      * If [fatal] is set to true then the producer is closed safely.
      */
     private fun logErrorAndSetFuture(message: String, exception: Exception, future: OpenFuture<Boolean>, fatal: Boolean) {
-        log.error(message, exception, future)
         if (fatal) {
+            log.error(message, exception, future)
             future.setException(CordaMessageAPIFatalException(message, exception))
-            safeClose()
+            close()
         } else {
+            log.warn(message, exception, future)
             future.setException(CordaMessageAPIIntermittentException(message, exception))
         }
     }
@@ -153,11 +158,11 @@ class KafkaPublisher<K, V>(
      * Safely close a producer. If an exception is thrown swallow the error to avoid double exceptions
      */
     @Suppress("TooGenericExceptionCaught")
-    override fun safeClose() {
+    override fun close() {
         try {
             producer.close(Duration.ofMillis(closeTimeout))
         } catch (ex: Exception) {
-            log.error("KafkaPublisher failed to close producer safely. ClientId: $clientId, topic: $topic.", ex)
+            log.error("CordaKafkaPublisher failed to close producer safely. ClientId: $clientId, topic: $topic.", ex)
         }
     }
 

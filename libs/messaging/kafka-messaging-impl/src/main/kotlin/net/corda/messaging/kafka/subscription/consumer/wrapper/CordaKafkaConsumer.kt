@@ -8,12 +8,7 @@ import org.apache.kafka.clients.consumer.OffsetResetStrategy
 /**
  * Wrapper for a Kafka Consumer.
  */
-interface CordaKafkaConsumer<K, V> {
-
-    /**
-     * Safely close a kafka consumer. If an error is thrown log it and swallow the exception.
-     */
-    fun safeClose()
+interface CordaKafkaConsumer<K, V> : AutoCloseable {
 
     /**
      * Poll records from the consumer and sort them by timestamp

@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription.consumer.wrapper
+package net.corda.messaging.kafka.subscription.consumer.wrapper
 
 import com.nhaarman.mockito_kotlin.*
 import com.typesafe.config.Config
@@ -7,7 +7,6 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
 import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordsList
@@ -36,8 +35,8 @@ class CordaKafkaConsumerImplTest {
         subscriptionConfig = SubscriptionConfig("groupName1", eventTopic )
         kafkaConfig = ConfigFactory.empty()
             .withValue(KafkaProperties.CONSUMER_POLL_TIMEOUT, ConfigValueFactory.fromAnyRef(1))
+            .withValue(KafkaProperties.CONSUMER_SUBSCRIBE_MAX_RETRIES, ConfigValueFactory.fromAnyRef(3))
             .withValue(KafkaProperties.CONSUMER_CLOSE_TIMEOUT, ConfigValueFactory.fromAnyRef(1))
-            .withValue(KafkaProperties.CONSUMER_CREATE_MAX_RETRIES, ConfigValueFactory.fromAnyRef(3))
             .withValue(KafkaProperties.KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("prefix"))
 
         val (mockConsumer, mockTopicPartition) = createMockConsumerAndAddRecords(eventTopic,  numberOfRecords, OffsetResetStrategy.EARLIEST)

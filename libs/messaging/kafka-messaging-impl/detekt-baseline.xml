@@ -2,6 +2,7 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>ComplexMethod:KafkaPublisher.kt$KafkaPublisher$ override fun publish(record: Record&lt;K, V&gt;): CordaFuture&lt;Boolean&gt;</ID>
+    <ID>ComplexMethod:CordaKafkaPublisher.kt$CordaKafkaPublisher$ override fun publish(record: Record&lt;K, V&gt;): CordaFuture&lt;Boolean&gt;</ID>
+    <ID>ComplexMethod:KafkaProducerBuilder.kt$KafkaProducerBuilder$ private fun initTransactionForProducer(publisherConfig: PublisherConfig, producer: KafkaProducer&lt;K, V&gt;, producerCloseTimeout: Long, producerCreateMaxRetries: Long)</ID>
   </CurrentIssues>
 </SmellBaseline>

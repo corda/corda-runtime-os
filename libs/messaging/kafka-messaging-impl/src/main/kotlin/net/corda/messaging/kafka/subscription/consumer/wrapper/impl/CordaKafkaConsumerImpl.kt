@@ -35,13 +35,13 @@ class CordaKafkaConsumerImpl<K, V>(
 
     private val consumerPollTimeout = Duration.ofMillis(kafkaConfig.getLong(CONSUMER_POLL_TIMEOUT))
     private val consumerCloseTimeout = Duration.ofMillis(kafkaConfig.getLong(KafkaProperties.CONSUMER_CLOSE_TIMEOUT))
-    private val maxRetries = kafkaConfig.getLong(KafkaProperties.CONSUMER_CREATE_MAX_RETRIES)
+    private val consumerSubscribeMaxRetries = kafkaConfig.getLong(KafkaProperties.CONSUMER_SUBSCRIBE_MAX_RETRIES)
     private val groupName = subscriptionConfig.groupName
     private val topicPrefix = kafkaConfig.getString(KafkaProperties.KAFKA_TOPIC_PREFIX)
     private val topic = subscriptionConfig.eventTopic
 
     @Suppress("TooGenericExceptionCaught")
-    override fun safeClose() {
+    override fun close() {
         try {
             consumer.close(consumerCloseTimeout)
         } catch (ex: Exception) {
@@ -103,7 +103,7 @@ class CordaKafkaConsumerImpl<K, V>(
                 throw CordaMessageAPIFatalException(message, ex)
             } catch (ex: KafkaException) {
                 attempts++
-                if (attempts < maxRetries) {
+                if (attempts < consumerSubscribeMaxRetries) {
                     log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                                 "retrying.", ex)
                 } else {

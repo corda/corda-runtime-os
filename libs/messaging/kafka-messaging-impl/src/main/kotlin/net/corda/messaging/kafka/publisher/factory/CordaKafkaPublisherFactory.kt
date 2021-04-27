@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.kafka.publisher.KafkaPublisher
+import net.corda.messaging.kafka.publisher.CordaKafkaPublisher
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilder
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CONF_PREFIX
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -16,7 +16,7 @@ import java.util.Properties
  * Kafka implementation for Publisher Factory.
  */
 @Component
-class KafkaPublisherFactory : PublisherFactory {
+class CordaKafkaPublisherFactory : PublisherFactory {
 
     override fun <K, V> createPublisher(
         publisherConfig: PublisherConfig,
@@ -28,7 +28,7 @@ class KafkaPublisherFactory : PublisherFactory {
         val producerProperties = getProducerProps(publisherConfig, defaultKafkaConfig, properties)
         val producer = KafkaProducerBuilder<K, V>().createProducer(defaultKafkaConfig, producerProperties, publisherConfig)
 
-        return KafkaPublisher(publisherConfig, defaultKafkaConfig, producer)
+        return CordaKafkaPublisher(publisherConfig, defaultKafkaConfig, producer)
     }
 
     /**
