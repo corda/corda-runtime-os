@@ -111,9 +111,9 @@ private def addSystemPackagesExtra(
 
 def cordaAssembleBundlesTask = tasks.register("cordaAssembleBundles") {
     dependsOn jarTask,
+            configurations.bootstrapClasspath,
             configurations.runtimeClasspath,
-            project(":osgi-framework-bootstrap").tasks.jar, // Avoid circular dependencies.
-            project(":osgi-framework-bootstrap:framework-api").tasks.jar // Avoid circular dependencies.
+            configurations.systemPackages
     doLast {
         final bundlesDir = new File(project.buildDir, "resources/main/bundles")
         if (!bundlesDir.exists()) {
@@ -137,8 +137,7 @@ def cordaAssembleBundlesTask = tasks.register("cordaAssembleBundles") {
 }
 
 def cordaAssembleSystemPackagesExtraTask = tasks.register("cordaAssembleSystemPackagesExtra") {
-    dependsOn jarTask,
-            cordaAssembleBundlesTask
+    dependsOn cordaAssembleBundlesTask
     doLast {
         final Set<String> systemBundleExtraSet = new TreeSet<>()
         configurations.systemPackages.incoming.each { resolvableDependencies ->
