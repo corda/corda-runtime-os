@@ -43,7 +43,7 @@ private static boolean isJar(final File file) {
     return file.name.endsWith(".jar")
 }
 
-private Set<String> osgiAssembleBundleInResources(
+private addBundle(
         final File source,
         final File target,
         final Set<String> systemBundleSet) {
@@ -51,10 +51,9 @@ private Set<String> osgiAssembleBundleInResources(
     Files.copy(source.toPath(), target.toPath())
     systemBundleSet.add("bundles/${source.name}")
     logger.info "OSGI Bundle $source.name included as resource."
-    return systemBundleSet
 }
 
-private Set<String> osgiAssembleBundlesInResources(
+private addBundles(
         final ArtifactCollection artifacts,
         final File bundlesDir,
         final Set<String> systemBundleSet) {
@@ -66,14 +65,13 @@ private Set<String> osgiAssembleBundlesInResources(
         if (isJar(file)) {
             final def jarFile = new JarFile(file)
             if (isBundle(jarFile)) {
-                osgiAssembleBundleInResources(file, new File(bundlesDir, file.name), systemBundleSet)
+                addBundle(file, new File(bundlesDir, file.name), systemBundleSet)
             }
         }
     }
-    return systemBundleSet
 }
 
-private def osgiAssembleSystemPackagesExtra(
+private def addSystemPackagesExtra(
         final ArtifactCollection artifacts,
         final Set<String> systemBundleExtraSet
 ) {
@@ -109,7 +107,6 @@ private def osgiAssembleSystemPackagesExtra(
             }
         }
     }
-    return systemBundleExtraSet
 }
 
 def cordaAssembleBundlesTask = tasks.register("cordaAssembleBundles") {
@@ -126,7 +123,7 @@ def cordaAssembleBundlesTask = tasks.register("cordaAssembleBundles") {
         configurations.runtimeClasspath.incoming.findAll { resolvableDependencies ->
             !configurations.systemPackages.contains(resolvableDependencies)
         }.each { resolvableDependencies ->
-            osgiAssembleBundlesInResources(resolvableDependencies.artifacts as ArtifactCollection, bundlesDir, systemBundleSet)
+            addBundles(resolvableDependencies.artifacts as ArtifactCollection, bundlesDir, systemBundleSet)
         }
         final systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
         systemBundlesFile.withWriter { writer ->
@@ -145,7 +142,7 @@ def cordaAssembleSystemPackagesExtraTask = tasks.register("cordaAssembleSystemPa
     doLast {
         final Set<String> systemBundleExtraSet = new TreeSet<>()
         configurations.systemPackages.incoming.each { resolvableDependencies ->
-            osgiAssembleSystemPackagesExtra(resolvableDependencies.artifacts as ArtifactCollection, systemBundleExtraSet)
+            addSystemPackagesExtra(resolvableDependencies.artifacts as ArtifactCollection, systemBundleExtraSet)
         }
         final systemPackagesExtraFile = new File(project.buildDir, "resources/main/system_packages_extra")
         Files.deleteIfExists(systemPackagesExtraFile.toPath())
