@@ -1,5 +1,6 @@
 package net.corda.osgi.framework
 
+import net.corda.osgi.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
 import net.corda.osgi.framework.api.ArgsService
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
@@ -9,7 +10,6 @@ import org.osgi.framework.launch.Framework
 import org.osgi.framework.launch.FrameworkFactory
 import org.slf4j.LoggerFactory
 import java.io.IOException
-import java.lang.IllegalArgumentException
 import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -80,7 +80,13 @@ class OSGiFrameworkWrap(
          * The [FrameworkFactory] must be in the classpath.
          *
          * @param frameworkFactoryFQN Full Qualified Name of the [FrameworkFactory] making the [Framework] to return.
-         * @param frameworkStorageDir path to the directory the [Framework] uses as bundles' cache.
+         * @param frameworkStorageDir Path to the directory the [Framework] uses as bundles' cache.
+         * @param systemPackagesExtra Packages specified in this property are added to
+         * the `org.osgi.framework.system.packages` property.
+         * This allows the configurator to only define the additional packages and leave the standard execution
+         * environment packages to be defined by the framework.
+         * See [OSGi Core Release 7 - 4.2.2 Launching Properties](http://docs.osgi.org/specification/osgi.core/7.0.0/framework.lifecycle.html#framework.lifecycle.launchingproperties)
+         * See [getFrameworkPropertyFrom] to load properties from resources.
          *
          * @return A new configured [Framework] loaded from the classpath and having [frameworkFactoryFQN] as
          *         Full Qualified Name of the [FrameworkFactory].
@@ -89,13 +95,15 @@ class OSGiFrameworkWrap(
          *                                isn't in the classpath.
          * @throws SecurityException If a [SecurityManager] is installed and the caller hasn't [RuntimePermission].
          */
+        @Suppress("MaxLineLength")
         @Throws(
             ClassNotFoundException::class,
             SecurityException::class
         )
         fun getFrameworkFrom(
             frameworkFactoryFQN: String,
-            frameworkStorageDir: Path
+            frameworkStorageDir: Path,
+            systemPackagesExtra: String = ""
         ): Framework {
             logger.debug("OSGi framework factory = $frameworkFactoryFQN.")
             val frameworkFactory = Class.forName(
@@ -106,11 +114,32 @@ class OSGiFrameworkWrap(
             val configurationMap = mapOf(
                 Constants.FRAMEWORK_STORAGE to frameworkStorageDir.toString(),
                 Constants.FRAMEWORK_STORAGE_CLEAN to Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT,
+                Constants.FRAMEWORK_SYSTEMCAPABILITIES_EXTRA to systemPackagesExtra
             )
             if (logger.isDebugEnabled) {
                 configurationMap.forEach { (key, value) -> logger.debug("OSGi property $key = $value.") }
             }
             return frameworkFactory.newFramework(configurationMap)
+        }
+
+        /**
+         * Return the [resource] as a comma separated list to be used as a property to configure the the OSGi framework.
+         * Ignore anything in a line after `#`.
+         *
+         * @param resource in the classpath from where to read the list.
+         * @return the list loaded from [resource] as a comma separated text value.
+         * @throws IOException If the [resource] can't be accessed.
+         */
+        fun getFrameworkPropertyFrom(resource: String): String {
+            val resourceUrl = OSGiFrameworkMain::class.java.classLoader.getResource(resource)
+                ?: throw IOException("OSGi property resource $resource not found in this classpath/jar.")
+            val propertyValueList = resourceUrl.openStream().bufferedReader().useLines { lines ->
+                lines.map { line -> line.substringBefore('#') }
+                    .map(String::trim)
+                    .filter(String::isNotEmpty)
+                    .toList()
+            }
+            return propertyValueList.joinToString(",")
         }
 
         /**

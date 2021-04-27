@@ -1,9 +1,7 @@
 package net.corda.osgi.framework
 
 import org.slf4j.LoggerFactory
-import java.lang.IllegalArgumentException
 import java.nio.file.Files
-import java.util.*
 
 class OSGiFrameworkMain {
 
@@ -28,6 +26,16 @@ class OSGiFrameworkMain {
         const val SYSTEM_BUNDLES = "system_bundles"
 
         /**
+         * Location of the file listing the extra system packages exposed from the JDK to the framework.
+         * See [OSGi Core Release 7 - 4.2.2 Launching Properties](http://docs.osgi.org/specification/osgi.core/7.0.0/framework.lifecycle.html#framework.lifecycle.launchingproperties)
+         * The location is relative to run time class path:
+         * * `build/resources/main` in a gradle project;
+         * * the root of the fat executable `.jar`.
+         */
+        @Suppress("MaxLineLength")
+        const val SYSTEM_PACKAGES_EXTRA = "system_packages_extra"
+
+        /**
          * Wait for stop of the OSGi framework, without timeout.
          */
         private const val NO_TIMEOUT = 0L
@@ -40,7 +48,11 @@ class OSGiFrameworkMain {
                 val frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX)
                 frameworkStorageDir.toFile().deleteOnExit()
                 val osgiFrameworkWrap = OSGiFrameworkWrap(
-                    OSGiFrameworkWrap.getFrameworkFrom(FRAMEWORK_FACTORY_FQN, frameworkStorageDir)
+                    OSGiFrameworkWrap.getFrameworkFrom(
+                        FRAMEWORK_FACTORY_FQN,
+                        frameworkStorageDir,
+                        OSGiFrameworkWrap.getFrameworkPropertyFrom(SYSTEM_PACKAGES_EXTRA)
+                    )
                 )
                 try {
                     Runtime.getRuntime().addShutdownHook(object : Thread() {
@@ -68,6 +80,6 @@ class OSGiFrameworkMain {
             }
         }
 
-    }
+    } //~ companion object
 
 }

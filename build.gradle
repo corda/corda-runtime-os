@@ -56,6 +56,10 @@ allprojects {
         }
     }
 
+    tasks.named("compileTestKotlin") {
+        kotlinOptions.jvmTarget = VERSION_11
+    }
+
     repositories {
         //repo for CI builds,
         maven {
@@ -108,27 +112,21 @@ allprojects {
     }
 
     dependencies {
+        // Exported as OSGi 'system packages extra' at runtime by the `osgi-framework-bootstrap` module.
+        implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
         implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
         implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
-        implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
         // Test utilities
-        testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
         testImplementation "org.assertj:assertj-core:$assertjVersion"
+        testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     }
 
     tasks.named("test", Test).configure {
         useJUnitPlatform()
     }
-
-    tasks.register('rebuild') {
-        group "build"
-        clean.outputs.upToDateWhen { false }
-        dependsOn clean, build
-    }
 }
-
 
 subprojects {
     apply plugin: 'java-library'
@@ -159,3 +157,4 @@ subprojects {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
     }
 }
+
