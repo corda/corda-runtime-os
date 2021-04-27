@@ -38,7 +38,6 @@ class KafkaPublisherTest {
         verify(producer, times(1)).send(any(), any())
         verify(producer, times(0)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
-
     }
 
     @Test
