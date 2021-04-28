@@ -16,6 +16,11 @@ interface Subscription<K, V> : LifeCycle {
      * @throws CordaMessageAPIFatalException exception thrown during the consume, process or produce stage of a subscription.
      */
     override fun start()
+
+    /**
+     * Check the state of a subscription. true if subscription is still active. false otherwise.
+     */
+    val isRunning: Boolean
 }
 
 /**

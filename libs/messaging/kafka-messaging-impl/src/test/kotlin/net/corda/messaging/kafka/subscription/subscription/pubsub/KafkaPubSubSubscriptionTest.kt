@@ -7,6 +7,7 @@ import com.nhaarman.mockito_kotlin.doAnswer
 import com.nhaarman.mockito_kotlin.whenever
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -17,15 +18,18 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
 import net.corda.messaging.kafka.subscription.subscriptions.pubsub.KafkaPubSubSubscription
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.kafka.common.KafkaException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.fail
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import org.mockito.Mockito
+import java.lang.Exception
 
 class KafkaPubSubSubscriptionTest {
     private companion object {
         private const val TOPIC = "topic1"
+        private const val TEST_TIMEOUT = 30000L
     }
 
     private lateinit var kafkaPubSubSubscription: KafkaPubSubSubscription<String, ByteArray>
@@ -35,9 +39,13 @@ class KafkaPubSubSubscriptionTest {
     private lateinit var processor: PubSubProcessor<String, ByteArray>
     private lateinit var mockCordaConsumer: CordaKafkaConsumer<String, ByteArray>
     private lateinit var mockConsumerRecords: List<ConsumerRecord<String, ByteArray>>
-    private val consumerProcessorRetriesCount = 0
+
+    private val consumerProcessorRetriesCount = 2
     private var executorService: ExecutorService? = null
-    private var pollInvocationCount = 0
+    private var pollInvocationCount : Int = 0
+    private var builderInvocationCount : Int = 0
+    private var mockRecordCount = 5L
+    private var maxTime = 0L
 
     @BeforeEach
     fun setup() {
@@ -49,18 +57,22 @@ class KafkaPubSubSubscriptionTest {
         mockCordaConsumer = mock()
         processor = mock()
 
-        mockConsumerRecords = generateMockConsumerRecordList(5, "topic", 1)
+        mockConsumerRecords = generateMockConsumerRecordList(mockRecordCount, "topic", 1)
         val record = Record("topic", "key", "value".toByteArray())
         doReturn(mockCordaConsumer).whenever(consumerBuilder).createConsumer(subscriptionConfig)
         doReturn(record).whenever(mockCordaConsumer).getRecord(any())
 
+        pollInvocationCount = 0
+        builderInvocationCount = 0
+        maxTime = System.currentTimeMillis() + TEST_TIMEOUT
+
         doAnswer{
-                    if (pollInvocationCount == 0) {
-                        pollInvocationCount++
-                        mockConsumerRecords
-                    } else {
-                        mutableListOf()
-                    }
+            if (pollInvocationCount == 0) {
+                pollInvocationCount++
+                mockConsumerRecords
+            } else {
+                mutableListOf()
+            }
         }.whenever(mockCordaConsumer).poll()
     }
 
@@ -70,12 +82,17 @@ class KafkaPubSubSubscriptionTest {
     @Test
     fun testPubSubConsumer() {
         kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, consumerBuilder, processor, executorService)
-
         kafkaPubSubSubscription.start()
-        Thread.sleep(500)
+
+        // the mocks will only ever return records
+        while (Mockito.mockingDetails(processor).invocations.size < mockRecordCount) {
+            if (System.currentTimeMillis() > maxTime) {
+                fail("Timeout exceeded for test.")
+            }
+        }
         kafkaPubSubSubscription.stop()
 
-        verify(processor, times(5)).onNext(any())
+        verify(processor, times(mockRecordCount.toInt())).onNext(any())
     }
 
     /**
@@ -88,26 +105,65 @@ class KafkaPubSubSubscriptionTest {
 
         kafkaPubSubSubscription.start()
 
-        Thread.sleep(500)
+        while (Mockito.mockingDetails(processor).invocations.size < mockRecordCount) {
+            if (System.currentTimeMillis() > maxTime) {
+                fail("Timeout exceeded for test.")
+            }
+        }
         kafkaPubSubSubscription.stop()
 
-        verify(processor, times(5)).onNext(any())
+        verify(processor, times(mockRecordCount.toInt())).onNext(any())
     }
 
     /**
      * Check that the exceptions thrown during building exits correctly
      */
     @Test
-    fun testKafkaExceptionConsumerBuild() {
-        doThrow(KafkaException()).whenever(consumerBuilder).createConsumer(any())
+    fun testFatalExceptionConsumerBuild() {
+        doAnswer {
+            if (builderInvocationCount == 0) {
+                builderInvocationCount++
+                CordaMessageAPIFatalException("", Exception())
+            } else {
+                mockCordaConsumer
+            }
+        }.whenever(consumerBuilder).createConsumer(any())
 
         kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, consumerBuilder, processor, executorService)
 
         kafkaPubSubSubscription.start()
-        Thread.sleep(500)
+        while (Mockito.mockingDetails(consumerBuilder).invocations.size < 2 ||
+            Mockito.mockingDetails(processor).invocations.size < mockRecordCount) {
+            if (System.currentTimeMillis() > maxTime) {
+                fail("Timeout exceeded for test.")
+            }
+        }
         kafkaPubSubSubscription.stop()
 
-        verify(processor, times(0)).onNext(any())
+        verify(consumerBuilder, times(2)).createConsumer(any())
+        verify(processor, times(5)).onNext(any())
+    }
+
+
+    /**
+     * Check that the exceptions thrown during polling exits correctly
+     */
+    @Test
+    fun testConsumerPollFailRetries() {
+        doThrow(CordaMessageAPIFatalException("", Exception())).whenever(mockCordaConsumer).poll()
+
+        kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, consumerBuilder, processor, executorService)
+
+        kafkaPubSubSubscription.start()
+        while (Mockito.mockingDetails(consumerBuilder).invocations.size < 2) {
+            if (System.currentTimeMillis() > maxTime) {
+                fail("Timeout exceeded for test.")
+            }
+        }
+
+        kafkaPubSubSubscription.stop()
+
+        verify(mockCordaConsumer, times(2)).resetToLastCommittedPositions(any())
     }
 
 
@@ -116,13 +172,20 @@ class KafkaPubSubSubscriptionTest {
      */
     @Test
     fun testKafkaExceptionDuringProcessing() {
-        doThrow(KafkaException()).whenever(processor).onNext(any())
+        doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
+        doThrow(CordaMessageAPIFatalException("", Exception())).whenever(processor).onNext(any())
         kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, consumerBuilder, processor, executorService)
 
         kafkaPubSubSubscription.start()
-        Thread.sleep(500)
+        while (Mockito.mockingDetails(consumerBuilder).invocations.size < 2) {
+            if (System.currentTimeMillis() > maxTime) {
+                fail("Timeout exceeded for test.")
+            }
+        }
+
         kafkaPubSubSubscription.stop()
 
-        verify(processor, times(1)).onNext(any())
+        verify(processor, times(consumerProcessorRetriesCount+1)).onNext(any())
+        verify(mockCordaConsumer, times(consumerProcessorRetriesCount)).resetToLastCommittedPositions(any())
     }
 }

@@ -56,6 +56,14 @@ class KafkaPubSubSubscription<K, V>(
     private val groupName = subscriptionConfig.groupName
 
     /**
+     * Is the subscription running.
+     */
+    override val isRunning: Boolean
+        get() {
+            return !cancelled
+        }
+
+    /**
      * Begin consuming events from the configured topic and process them
      * with the given [processor].
      * @throws CordaMessageAPIFatalException fatal exception thrown during the consume, process or produce stage of a subscription.
@@ -101,7 +109,7 @@ class KafkaPubSubSubscription<K, V>(
      * If subscription is stopped close the consumer.
      */
     @Suppress("TooGenericExceptionCaught")
-    private fun runConsumeLoop() {
+    fun runConsumeLoop() {
         var attempts = 0
         while (!cancelled) {
             attempts++
@@ -142,7 +150,7 @@ class KafkaPubSubSubscription<K, V>(
                 attempts = 0
             } catch (ex: Exception) {
                 attempts++
-                if (attempts < consumerProcessorRetries) {
+                if (attempts <= consumerProcessorRetries) {
                     log.warn("PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
                                 "Resetting to last committed offset and retrying. Attempts: $attempts.")
                     consumer.resetToLastCommittedPositions(OffsetResetStrategy.LATEST)
