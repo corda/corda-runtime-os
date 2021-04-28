@@ -55,6 +55,7 @@ class CordaKafkaPublisher<K, V>(
      * Publish will retry recoverable transaction related errors based on [kafkaConfig]
      * Any fatal errors are returned in the future as [CordaMessageAPIFatalException]
      */
+    @Suppress("TooGenericExceptionCaught")
     override fun publish(record: Record<K, V>): CordaFuture<Boolean> {
         val fut = openFuture<Boolean>()
         try {
