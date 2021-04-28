@@ -7,7 +7,7 @@ flow-worker framework.
 
 ### Common App Plugin
 
-The Common App plugin specifies the set of Gradle tasks, the common configurations and dependencies to build a
+The **Common App** plugin specifies the set of Gradle tasks, the common configurations and dependencies to build a
 self-sufficient bootable jar from the module of the application. The built bootable jar is the form application is
 distributed.
 
@@ -15,7 +15,7 @@ The bootable jar embeds the [Apache Felix](https://felix.apache.org/)
 [OSGi Release 7](http://docs.osgi.org/specification/osgi.core/7.0.0/ch01.html) framework, and the OSGi bundles the
 application needs to run. At runtime, the bootable jar starts Felix and activates the bundles zipped inside itself.
 
-The Common App plugin depends on the code in the `osgi-framework-bootstrap` module to bootstrap and control
+The **Common App** plugin depends on the code in the `osgi-framework-bootstrap` module to bootstrap and control
 the Felix framework, to activate bundles and to stop the application at runtime.
 
 #### How to build an application
@@ -56,12 +56,28 @@ The plugin and the bootable jar exposes the [SLF4J](http://www.slf4j.org/) and
 
 In *Kotlin* code declare the `logger` as usual.
 
-```Kotlin
+```kotlin
 val logger = LoggerFactory.getLogger(MyClass::class.java)
 ```
 
 The application logs in a single flow according the time of generations all events, either logged by OSGi bundles, Felix
 or the code bootstrapping and controlling Felix.
+
+#### Command Line Interface arguments handling.
+
+The code bootstrapping Felix exposes the Command Line Interface arguments as an
+OSGi service to the bundles zipped in the bootable jar built by this plugin and 
+activated at runtime.
+
+To get the arguments from code of an OSGi bundles in *Kotlin*, use...
+```kotlin
+val serviceReference = bundleContext.getServiceReference(ArgsService::class.java)
+val argsService = bundleContext.getService(serviceReference)
+val args = argsService.getArgs()
+```
+
+See [OSGi Core r7 5.2.2 Service Interface](http://docs.osgi.org/specification/osgi.core/7.0.0/framework.service.html).
+In OSGi bundles get the `args` with...
 
 #### Testing
 
@@ -69,7 +85,7 @@ See [OSGi Test Conventions Plugin](#OSGi Test Conventions Plugin).
 
 #### Advanced dependency declarations and Gradle tasks
 
-The Common App plugins allows developers to use the
+The **Common App** plugins allows developers to use the
 
 To build a module as an OSGi bundle, the application depends on, use the [Common Library Plugin](#Common Library Plugin)
 .
@@ -92,6 +108,7 @@ The `appJar` task depends on the tasks
   The file `system_packages_extra` is created at `build/resources/main/` path relative to
   the module. The `systemPackages` dependencies are zipped in the bootable jar by the `appJar` task. This task depends
   on...
+  
 * `cordaAssembleBundles` - copies in the `bundles` directory the OSGi dependencies, 
   and it lists them in the file `system_bundles`.
   The `bundles` directory and `system_bundles` file are assembled in the 
@@ -121,7 +138,7 @@ The classpath or executable jar has the following structure.
 
 ### Common Library Plugin
 
-The Common Library plugin will specify the set of common configurations and dependencies that a library developer will
+The **Common Library** plugin will specify the set of common configurations and dependencies that a library developer will
 need. More can of course be added but, as an example, the minimum needed gradle for a library (when applying the plugin)
 would be
 
@@ -147,7 +164,7 @@ bnd """
 
 ### OSGi Test Conventions Plugin
 
-The OSGi Test Conventions plugin provides tasks useful for running OSGi integration tests as well as some necessary
+The **OSGi Test Conventions** plugin provides tasks useful for running OSGi integration tests as well as some necessary
 dependencies.
 
 The tasks are as follows:
@@ -164,6 +181,6 @@ The tasks are as follows:
 
 ### Publish Plugin
 
-The Publish plugin provides the information to correctly publish artifacts to the R3 servers.
+The **Publish** plugin provides the information to correctly publish artifacts to the R3 servers.
 
 No specific tasks are defined by this plugin.
