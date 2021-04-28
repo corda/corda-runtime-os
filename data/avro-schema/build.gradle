@@ -24,7 +24,10 @@ def generateAvro = tasks.register("generateAvro", GenerateAvroJavaTask) {
     source("src/main/resources/avro")
     outputDir = file(generatedPackageInfoDir)
 }
-assemble.dependsOn generateAvro
+
+avro {
+    fieldVisibility = "PRIVATE"
+}
 
 // region Generate package-info.java
 // The following code ensures that we have a `package-info.java` for every package that we
@@ -33,9 +36,15 @@ assemble.dependsOn generateAvro
 def generateOSGiPackageInfo = tasks.register("generateOSGiPackageInfo", Task) {
     group = "codeGeneration"
     def packages = [] as Set
+    def classes = [] as Set
     file(generatedPackageInfoDir).eachFileRecurse(FileType.FILES) {
         if (!it.name.contains("package-info") && it.name.endsWith('.java')) {
-            packages << ((it.text =~ "package (.+);")[0][1])
+            def packageName = ((it.text =~ "package (.+);")[0][1])
+            packages << packageName
+            def classCapture = it.text.normalize() =~ "@org.apache.avro.specific.AvroGenerated\npublic class (\\w+) extends org.apache.avro.specific.SpecificRecordBase"
+            if (classCapture.any()) {
+                classes << packageName + '.' + classCapture[0][1]
+            }
         }
     }
 
@@ -45,9 +54,19 @@ def generateOSGiPackageInfo = tasks.register("generateOSGiPackageInfo", Task) {
         outputFile << applyPackageInfoTemplate(it)
         outputFile.close()
     }
+
+    sourceSets.main.resources {
+        def generatedClassesDir = 'src/main/resources/net/corda/data'
+        mkdir generatedClassesDir
+        def outputFile = file(generatedClassesDir + '/generated-avro-message-classes.txt').newWriter()
+        for (generatedClass in classes) {
+            outputFile.println generatedClass.toString().denormalize()
+        }
+        outputFile.close()
+    }
+
     dependsOn(generateAvro)
 }
-assemble.dependsOn generateOSGiPackageInfo
 
 private static String applyPackageInfoTemplate(packageName) {
     def engine = new SimpleTemplateEngine()
@@ -63,7 +82,6 @@ package $packageName;
 import org.osgi.annotation.bundle.Export;
 """
     def templateParams = ['packageName': packageName]
-    engine.createTemplate(templateText).make(templateParams).toString()
+    engine.createTemplate(templateText).make(templateParams).toString().denormalize()
 }
 // endregion
-

@@ -20,4 +20,8 @@ generated Avro classes are correctly exposed to OSGi.
 Both tasks will be run when you `assemble`/`build` your project.
 
 You will then need to commit any new files or changes as we version control the
-generated classes.
+generated classes.  Be aware that there are three types of version controlled classes:
+
+- The Avro files which define the message types (`.avsc`)
+- The generated class files that Avro will create (`.java`)
+- The resource file which allows the generated class files to be loaded (`generated-avro-message-classes.txt`)
