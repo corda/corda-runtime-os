@@ -2,12 +2,16 @@ package net.corda.messaging.kafka.publisher.factory
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.kafka.publisher.CordaKafkaPublisher
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilder
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CONF_PREFIX
+import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_CLIENT_ID
+import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_INSTANCE_ID
+import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_TOPIC
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.osgi.service.component.annotations.Component
 import java.util.Properties
@@ -24,9 +28,16 @@ class CordaKafkaPublisherFactory : PublisherFactory {
     ): Publisher<K, V> {
         //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required
         val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
+        var config = defaultKafkaConfig.withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
+            .withValue(PUBLISHER_TOPIC, ConfigValueFactory.fromAnyRef(publisherConfig.topic))
 
-        val producerProperties = getProducerProps(publisherConfig, defaultKafkaConfig, properties)
-        val producer = KafkaProducerBuilder<K, V>().createProducer(defaultKafkaConfig, producerProperties, publisherConfig)
+        val instanceId = publisherConfig.instanceId
+        if (instanceId != null) {
+            config.withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId))
+        }
+
+        val producerProperties = getProducerProps(publisherConfig, config, properties)
+        val producer = KafkaProducerBuilder<K, V>().createProducer(config, producerProperties)
 
         return CordaKafkaPublisher(publisherConfig, defaultKafkaConfig, producer)
     }

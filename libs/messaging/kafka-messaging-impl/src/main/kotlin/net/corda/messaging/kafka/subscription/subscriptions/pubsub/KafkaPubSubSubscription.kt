@@ -2,6 +2,7 @@ package net.corda.messaging.kafka.subscription.subscriptions.pubsub
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -51,7 +52,6 @@ class KafkaPubSubSubscription<K, V>(
     private var cancelled = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private var cordaKafkaConsumer: CordaKafkaConsumer<K, V>? = null
     private val topic = subscriptionConfig.eventTopic
     private val groupName = subscriptionConfig.groupName
 
@@ -106,21 +106,28 @@ class KafkaPubSubSubscription<K, V>(
         while (!cancelled) {
             attempts++
             try {
-                cordaKafkaConsumer = consumerBuilder.createConsumerAndSubscribe(subscriptionConfig)
-                pollAndProcessRecords(cordaKafkaConsumer!!)
+                consumerBuilder.createConsumer(subscriptionConfig).use {
+                    it.subscribeToTopic()
+                    pollAndProcessRecords(it)
+                }
                 attempts = 0
+            } catch (ex: CordaMessageAPIFatalException) {
+                log.warn("PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, attempts: $attempts. Retrying.", ex)
+            } catch (ex: CordaMessageAPIIntermittentException) {
+                log.warn("PubSubConsumer from group $groupName failed to read and process records from topic $topic, attempts: $attempts. Retrying.", ex)
             } catch (ex: Exception) {
-                log.warn("PubSubConsumer failed to create consumer for group $groupName, topic $topic, attempts: $attempts. Retrying.", ex)
+                log.warn("PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, attempts: $attempts. " +
+                        "Unexpected error occurred. Retrying.", ex)
             }
         }
-
-        cordaKafkaConsumer?.close()
     }
 
     /**
      * Poll records with the [consumer] and process them with the [processor].
      * If an exception is thrown while polling and processing then reset the fetch position and try to poll and process again.
      * If this continues to fail break out of the loop. This will recreate the consumer to fetch at the latest position and poll again.
+     * @throws CordaMessageAPIIntermittentException if the records cannot be polled at the current position or cannot be processed and max
+     * retries have been exceeded.
      */
     @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<K, V>) {
@@ -137,9 +144,10 @@ class KafkaPubSubSubscription<K, V>(
                                 "Resetting to last committed offset and retrying. Attempts: $attempts.")
                     consumer.resetToLastCommittedPositions(OffsetResetStrategy.LATEST)
                 } else {
-                    log.warn("PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
-                            "Max reties for poll and process exceeded. Recreating consumer and polling from latest position.", ex)
-                    break
+                    val message = "PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
+                            "Max reties for poll and process exceeded. Recreating consumer and polling from latest position."
+                    log.warn(message, ex)
+                    throw CordaMessageAPIIntermittentException(message, ex)
                 }
             }
         }

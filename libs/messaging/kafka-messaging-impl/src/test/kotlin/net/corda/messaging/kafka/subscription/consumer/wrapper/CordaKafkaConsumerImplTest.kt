@@ -58,6 +58,24 @@ class CordaKafkaConsumerImplTest {
     }
 
     @Test
+    fun testCloseInvoked() {
+        consumer = mock()
+        cordaKafkaConsumer = CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
+
+        cordaKafkaConsumer.close()
+        verify(consumer, times(1)).close(Mockito.any(Duration::class.java))
+    }
+
+    @Test
+    fun testCloseFailNoException() {
+        consumer = mock()
+        doThrow(KafkaException()).whenever(consumer).close(any())
+        cordaKafkaConsumer = CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
+        cordaKafkaConsumer.close()
+        verify(consumer, times(1)).close(Mockito.any(Duration::class.java))
+    }
+
+    @Test
     fun testGetRecord() {
         val consumerRecord = ConsumerRecord("prefixtopic", 1, 1, "key", "value".toByteArray())
         val record = cordaKafkaConsumer.getRecord(consumerRecord)
@@ -98,7 +116,48 @@ class CordaKafkaConsumerImplTest {
     }
 
     @Test
-    fun testResetToLastCommittedPositions() {
+    fun testSubscribeToTopicFatal() {
+        consumer = mock()
+        cordaKafkaConsumer = CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
+        doThrow(IllegalArgumentException()).whenever(consumer).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
+        assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
+            cordaKafkaConsumer.subscribeToTopic()
+        }
+        verify(consumer, times(1)).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
+    }
+
+    @Test
+    fun testResetToLastCommittedPositionsOffsetIsSet() {
+        val offsetCommit = 5L
+        commitOffsetForConsumer(offsetCommit)
+
+        //Reset fetch position to the last committed record
+        //Does not matter what reset strategy is passed here
+        cordaKafkaConsumer.resetToLastCommittedPositions(OffsetResetStrategy.NONE)
+
+        val positionAfterReset = consumer.position(partition)
+        assertThat(positionAfterReset).isEqualTo(offsetCommit)
+    }
+
+    @Test
+    fun testResetToLastCommittedPositionsStrategyLatest() {
+        //Reset fetch position to the last committed record
+        cordaKafkaConsumer.resetToLastCommittedPositions(OffsetResetStrategy.LATEST)
+
+        val positionAfterReset = consumer.position(partition)
+        assertThat(positionAfterReset).isEqualTo(numberOfRecords)
+    }
+
+    @Test
+    fun testResetToLastCommittedPositionsStrategyEarliest() {
+        //Reset fetch position to the last committed record
+        cordaKafkaConsumer.resetToLastCommittedPositions(OffsetResetStrategy.EARLIEST)
+
+        val positionAfterReset = consumer.position(partition)
+        assertThat(positionAfterReset).isEqualTo(0L)
+    }
+
+    private fun commitOffsetForConsumer(offsetCommit: Long) {
         val positionBeforePoll = consumer.position(partition)
         assertThat(positionBeforePoll).isEqualTo(0)
         consumer.poll(Duration.ZERO)
@@ -109,16 +168,9 @@ class CordaKafkaConsumerImplTest {
 
         //Commit offset for half the records = offset of 5.
         val currentOffsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
-        val offsetCommit = 5L
         currentOffsets[partition] = OffsetAndMetadata(offsetCommit, "metaData")
         consumer.commitSync(currentOffsets)
         val positionAfterCommit = consumer.position(partition)
         assertThat(positionAfterCommit).isEqualTo(numberOfRecords)
-
-        //Reset fetch position to the last committed record
-        cordaKafkaConsumer.resetToLastCommittedPositions(OffsetResetStrategy.NONE)
-
-        val positionAfterReset = consumer.position(partition)
-        assertThat(positionAfterReset).isEqualTo(offsetCommit)
     }
 }

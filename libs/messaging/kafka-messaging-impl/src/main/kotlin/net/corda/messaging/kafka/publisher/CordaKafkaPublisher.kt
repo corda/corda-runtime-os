@@ -95,6 +95,10 @@ class CordaKafkaPublisher<K, V>(
             logErrorSetFutureAndAbortTransaction(message, ex, fut)
         } catch (ex: KafkaException) {
             val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
+                    "for topic $topic failed to send. Unknown Kafka error. Closing producer."
+            logErrorAndSetFuture(message, ex, fut, true)
+        } catch (ex: Exception) {
+            val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
                     "for topic $topic failed to send. Unknown error. Closing producer."
             logErrorAndSetFuture(message, ex, fut, true)
         }

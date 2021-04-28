@@ -45,7 +45,7 @@ class CordaKafkaConsumerImpl<K, V>(
         try {
             consumer.close(consumerCloseTimeout)
         } catch (ex: Exception) {
-            log.error("PubSubConsumer failed to close consumer from group $groupName for topic $topic.", ex)
+            log.error("CordaKafkaConsumer failed to close consumer from group $groupName for topic $topic.", ex)
         }
     }
 
@@ -92,23 +92,23 @@ class CordaKafkaConsumerImpl<K, V>(
                 consumer.subscribe(listOf(topicPrefix + topic), listener)
                 attemptSubscription = false
             } catch (ex: IllegalStateException) {
-                val message = "PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
+                val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                         "Consumer is already subscribed to this topic. Closing subscription."
                 log.error(message, ex)
                 throw CordaMessageAPIFatalException(message, ex)
             } catch (ex: IllegalArgumentException) {
-                val message = "PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
+                val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                         "Illegal args provided. Closing subscription."
                 log.error(message, ex)
                 throw CordaMessageAPIFatalException(message, ex)
             } catch (ex: KafkaException) {
                 attempts++
                 if (attempts < consumerSubscribeMaxRetries) {
-                    log.error("PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
+                    log.error("CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                                 "retrying.", ex)
                 } else {
                     val message =
-                        "PubSubConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
+                        "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
                                 "Max retries exceeded. Closing subscription."
                     log.error(message, ex)
                     throw CordaMessageAPIFatalException(message, ex)

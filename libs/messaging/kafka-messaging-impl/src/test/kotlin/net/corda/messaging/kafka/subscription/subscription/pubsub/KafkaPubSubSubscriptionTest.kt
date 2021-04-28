@@ -51,7 +51,7 @@ class KafkaPubSubSubscriptionTest {
 
         mockConsumerRecords = generateMockConsumerRecordList(5, "topic", 1)
         val record = Record("topic", "key", "value".toByteArray())
-        doReturn(mockCordaConsumer).whenever(consumerBuilder).createConsumerAndSubscribe(subscriptionConfig)
+        doReturn(mockCordaConsumer).whenever(consumerBuilder).createConsumer(subscriptionConfig)
         doReturn(record).whenever(mockCordaConsumer).getRecord(any())
 
         doAnswer{
@@ -99,7 +99,7 @@ class KafkaPubSubSubscriptionTest {
      */
     @Test
     fun testKafkaExceptionConsumerBuild() {
-        doThrow(KafkaException()).whenever(consumerBuilder).createConsumerAndSubscribe(any())
+        doThrow(KafkaException()).whenever(consumerBuilder).createConsumer(any())
 
         kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, consumerBuilder, processor, executorService)
 

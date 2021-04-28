@@ -2,10 +2,12 @@ package net.corda.messaging.kafka.producer.builder.impl
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CREATE_MAX_RETRIES
+import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_CLIENT_ID
+import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_INSTANCE_ID
+import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_TOPIC
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.common.KafkaException
@@ -29,22 +31,28 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
     
-    override fun createProducer(config: Config,
-                                properties: Properties,
-                                publisherConfig: PublisherConfig): Producer<K, V> {
+    override fun createProducer(config: Config, properties: Properties): Producer<K, V> {
         val producerCloseTimeout = config.getLong(PRODUCER_CLOSE_TIMEOUT)
         val producerCreateMaxRetries = config.getLong(PRODUCER_CREATE_MAX_RETRIES)
+        val topic = config.getString(PUBLISHER_TOPIC)
+        val clientId = config.getString(PUBLISHER_CLIENT_ID)
+        val instanceIdPresent  = config.hasPath(PUBLISHER_INSTANCE_ID)
+        val instanceId = if (instanceIdPresent) {
+            config.getInt(PUBLISHER_INSTANCE_ID)
+        } else {
+            null
+        }
 
         val producer = try {
             KafkaProducer<K, V>(properties)
         } catch (ex: KafkaException) {
-            log.error("Failed to create kafka producer clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                    "topic ${publisherConfig.topic}.", ex)
+            log.error("Failed to create kafka producer clientId $clientId, instanceId $instanceId, " +
+                    "topic $topic.", ex)
             throw CordaMessageAPIFatalException("Failed to create kafka producer.", ex)
         }
 
-        if (publisherConfig.instanceId != null) {
-            initTransactionForProducer(publisherConfig, producer, producerCloseTimeout, producerCreateMaxRetries)
+        if (instanceId != null) {
+            initTransactionForProducer(config, producer, producerCloseTimeout, producerCreateMaxRetries)
         }
 
         return producer
@@ -52,15 +60,19 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
 
     /**
      * Initialise transactions for the transactional producer. Attempt to retry any [InterruptException] or [TimeoutException]
-     * @param publisherConfig required for logging information
+     * @param config required for logging information
      * @param producer to initialise transactions for
      * @param producerCloseTimeout time to wait for close to finish
      * @param producerCreateMaxRetries maximum amount of retries to attempt
      */
-    private fun initTransactionForProducer(publisherConfig: PublisherConfig,
+    private fun initTransactionForProducer(config: Config,
                                         producer: KafkaProducer<K, V>,
                                         producerCloseTimeout: Long,
                                         producerCreateMaxRetries: Long) {
+        val topic = config.getString(PUBLISHER_TOPIC)
+        val clientId = config.getString(PUBLISHER_CLIENT_ID)
+        val instanceId  = config.getString(PUBLISHER_INSTANCE_ID)
+
         var attempts = 0
         while (true) {
             attempts++
@@ -69,47 +81,47 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
                 break
             } catch (ex: IllegalStateException) {
                 val message = "Failed to initialize kafka producer. No transactional.id has been configured. " +
-                        "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                        "topic ${publisherConfig.topic}."
-                logErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
+                        "clientId $clientId, instanceId $instanceId, " +
+                        "topic $topic."
+                throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
             } catch (ex: UnsupportedVersionException) {
                 val message = "Failed to initialize kafka producer. Broker does not support transactions. " +
-                        "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                        "topic ${publisherConfig.topic}."
-                logErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
+                        "clientId $clientId, instanceId $instanceId, " +
+                        "topic $topic."
+                throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
             } catch (ex: AuthorizationException) {
                 val message = "Failed to initialize kafka producer. Configured transactional.id is not authorized. " +
-                        "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                        "topic ${publisherConfig.topic}."
-                logErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
+                        "clientId $clientId, instanceId $instanceId, " +
+                        "topic $topic."
+                throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
             } catch (ex: KafkaException) {
                 val message = "Failed to initialize kafka producer. Fatal error encountered. " +
-                        "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                        "topic ${publisherConfig.topic}."
-                logErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
+                        "clientId $clientId, instanceId $instanceId, " +
+                        "topic $topic."
+                throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
             } catch (ex: TimeoutException) {
                 if (attempts <= producerCreateMaxRetries) {
                     val message = "Failed to initialize kafka producer. Timeout. " +
-                            "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                            "topic ${publisherConfig.topic}. Attempts: $attempts. Retrying."
+                            "clientId $clientId, instanceId $instanceId, " +
+                            "topic $topic. Attempts: $attempts. Retrying."
                     log.warn(message, ex)
                 } else {
                     val message = "Failed to initialize kafka producer. Timeout. " +
-                            "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                            "topic ${publisherConfig.topic}."
-                    logErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
+                            "clientId $clientId, instanceId $instanceId, " +
+                            "topic $topic."
+                    throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
                 }
             } catch (ex: InterruptException) {
                 if (attempts <= producerCreateMaxRetries) {
                     val message = "Failed to initialize kafka producer. Thread is interrupted while blocked. " +
-                            "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                            "topic ${publisherConfig.topic}. Attempts: $attempts. Retrying."
+                            "clientId $clientId, instanceId $instanceId, " +
+                            "topic $topic. Attempts: $attempts. Retrying."
                     log.warn(message, ex)
                 } else {
                     val message = "Failed to initialize kafka producer. Thread is interrupted while blocked. " +
-                            "clientId ${publisherConfig.clientId}, instanceId ${publisherConfig.instanceId}, " +
-                            "topic ${publisherConfig.topic}."
-                    logErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
+                            "clientId $clientId, instanceId $instanceId, " +
+                            "topic $topic."
+                    throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
                 }
             }
         }
@@ -119,7 +131,7 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
      * Log an error [message] and throw an [exception] as a [CordaMessageAPIFatalException].
      * Close [producer] with the set [timeout].
      */
-    private fun logErrorAndCloseProducer(message: String, exception: Exception, producer: KafkaProducer<K, V>, timeout: Long) {
+    private fun throwErrorAndCloseProducer(message: String, exception: Exception, producer: KafkaProducer<K, V>, timeout: Long) {
         log.error(message)
         close(producer, timeout)
         throw CordaMessageAPIFatalException(message,exception)
