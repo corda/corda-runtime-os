@@ -1,0 +1,170 @@
+import java.nio.file.Files
+import java.util.jar.JarFile
+
+plugins {
+    id 'java'
+    id 'corda.publish'
+    id 'biz.aQute.bnd.builder'
+}
+
+configurations {
+    bootstrapClasspath {
+        transitive = true
+    }
+    systemPackages {
+        transitive = false
+    }
+}
+
+dependencies {
+    bootstrapClasspath "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    bootstrapClasspath "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+    bootstrapClasspath project(":osgi-framework-bootstrap")
+
+    systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
+    systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    systemPackages "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    systemPackages project(":osgi-framework-bootstrap:framework-api")
+}
+
+def jarTask = tasks.named("jar", Jar) {
+    archiveBaseName = project.name
+    bnd """
+Bundle-Name: $project.description
+Bundle-SymbolicName: ${project.group}.${project.name}
+"""
+}
+
+private boolean isBundle(JarFile jarFile) {
+    return jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME) != null
+}
+
+private static boolean isJar(final File file) {
+    return file.name.endsWith(".jar")
+}
+
+private addBundle(
+        final File source,
+        final File target,
+        final Set<String> systemBundleSet) {
+    Files.deleteIfExists(target.toPath())
+    Files.copy(source.toPath(), target.toPath())
+    systemBundleSet.add("bundles/${source.name}")
+    logger.info "OSGI Bundle $source.name included as resource."
+}
+
+private addBundles(
+        final ArtifactCollection artifacts,
+        final File bundlesDir,
+        final Set<String> systemBundleSet) {
+    if (!bundlesDir.exists()) {
+        bundlesDir.mkdirs()
+    }
+    artifacts.each { resolvedArtifact ->
+        final def file = resolvedArtifact.file
+        if (isJar(file)) {
+            final def jarFile = new JarFile(file)
+            if (isBundle(jarFile)) {
+                addBundle(file, new File(bundlesDir, file.name), systemBundleSet)
+            }
+        }
+    }
+}
+
+private def addSystemPackagesExtra(
+        final ArtifactCollection artifacts,
+        final Set<String> systemBundleExtraSet
+) {
+    artifacts.each { resolvedArtifact ->
+        final file = resolvedArtifact.file
+        if (isJar(file)) {
+            new JarFile(
+                    resolvedArtifact.file,
+                    true, JarFile.OPEN_READ,
+                    JarFile.runtimeVersion()
+            ).withCloseable { jarFile ->
+                if (isBundle(jarFile)) {
+                    jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.EXPORT_PACKAGE)?.with { exportPackage ->
+                        aQute.bnd.header.OSGiHeader.parseHeader(exportPackage).entrySet().each { exportEntry ->
+                            final def export = exportEntry.key + ";" + exportEntry.value.toString()
+                            systemBundleExtraSet.add(export)
+                            logger.info "OSGI $export included as system package extra."
+                        }
+                    }
+                } else {
+                    jarFile.versionedStream().filter { jarEntry ->
+                        jarEntry.name.endsWith(".class")
+                    }.each { jarEntry ->
+                        String entryName = jarEntry.name
+                        int end = entryName.lastIndexOf('/')
+                        if (end > 0) {
+                            final def export = entryName.substring(0, end).replace('/', '.')
+                            systemBundleExtraSet.add(export)
+                            logger.info "OSGI $export included as system package extra."
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+def cordaAssembleBundlesTask = tasks.register("cordaAssembleBundles") {
+    dependsOn jarTask,
+            configurations.bootstrapClasspath,
+            configurations.runtimeClasspath,
+            configurations.systemPackages
+    doLast {
+        final bundlesDir = new File(project.buildDir, "resources/main/bundles")
+        if (!bundlesDir.exists()) {
+            bundlesDir.mkdirs()
+        }
+        final Set<String> systemBundleSet = new TreeSet<>()
+        configurations.runtimeClasspath.incoming.findAll { resolvableDependencies ->
+            !configurations.systemPackages.contains(resolvableDependencies)
+        }.each { resolvableDependencies ->
+            addBundles(resolvableDependencies.artifacts as ArtifactCollection, bundlesDir, systemBundleSet)
+        }
+        final systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
+        systemBundlesFile.withWriter { writer ->
+            systemBundleSet.each { line ->
+                writer.writeLine(line)
+            }
+        }
+        final numberOfBundles = systemBundleSet.size()
+        logger.info "Included $numberOfBundles OSGi bundles in $systemBundlesFile resource."
+    }
+}
+
+def cordaAssembleSystemPackagesExtraTask = tasks.register("cordaAssembleSystemPackagesExtra") {
+    dependsOn cordaAssembleBundlesTask
+    doLast {
+        final Set<String> systemBundleExtraSet = new TreeSet<>()
+        configurations.systemPackages.incoming.each { resolvableDependencies ->
+            addSystemPackagesExtra(resolvableDependencies.artifacts as ArtifactCollection, systemBundleExtraSet)
+        }
+        final systemPackagesExtraFile = new File(project.buildDir, "resources/main/system_packages_extra")
+        Files.deleteIfExists(systemPackagesExtraFile.toPath())
+        systemPackagesExtraFile.withWriter { writer ->
+            systemBundleExtraSet.each { export -> writer.writeLine(export) }
+        }
+        final def numberOfSystemPackagesExtra = systemBundleExtraSet.size()
+        logger.info "Included $numberOfSystemPackagesExtra OSGI system packages extra list in $systemPackagesExtraFile resource."
+    }
+}
+
+tasks.register('appJar', Jar) {
+    dependsOn cordaAssembleSystemPackagesExtraTask
+    archivesBaseName = "corda-" + project.name
+    destinationDirectory = new File(project.buildDir, "bin")
+    from(
+            configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) },
+            configurations.systemPackages.collect { it.isDirectory() ? it : zipTree(it) },
+            new File(project.buildDir, "resources/main")
+    )
+    manifest {
+        attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
+    }
+}
+
+
