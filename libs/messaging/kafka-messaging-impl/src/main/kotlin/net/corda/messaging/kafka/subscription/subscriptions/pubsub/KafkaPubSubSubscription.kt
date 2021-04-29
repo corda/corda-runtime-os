@@ -101,7 +101,7 @@ class KafkaPubSubSubscription<K, V>(
     }
 
     /**
-     * Create a Consumer for the given [subscriptionConfig] and [consumerProperties] and subscribe to the topic.
+     * Create a Consumer for the given [subscriptionConfig] and [kafkaConfig] and subscribe to the topic.
      * Attempt to create this connection until it is successful while subscription is active.
      * After connection is made begin to process records indefinitely. Mark each record and committed after processing.
      * If an error occurs while processing reset the consumers position on the topic to the last committed position.
@@ -119,13 +119,14 @@ class KafkaPubSubSubscription<K, V>(
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
-            } catch (ex: CordaMessageAPIFatalException) {
-                log.error("PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
-                        "attempts: $attempts. Retrying.", ex)
             } catch (ex: CordaMessageAPIIntermittentException) {
                 log.error("PubSubConsumer from group $groupName failed to read and process records from topic $topic, " +
                         "attempts: $attempts. Retrying.", ex)
-            } catch (ex: Exception) {
+            } catch (ex: CordaMessageAPIFatalException) {
+                log.error("PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic. " +
+                        "Fatal error occurred. Closing Subscription", ex)
+                throw ex
+            }  catch (ex: Exception) {
                 val message = "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
                         "attempts: $attempts. " +
                         "Unexpected error occurred. Closing subscription."
