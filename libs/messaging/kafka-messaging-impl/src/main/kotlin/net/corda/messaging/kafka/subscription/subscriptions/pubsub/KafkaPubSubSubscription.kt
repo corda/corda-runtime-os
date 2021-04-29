@@ -120,15 +120,17 @@ class KafkaPubSubSubscription<K, V>(
                 }
                 attempts = 0
             } catch (ex: CordaMessageAPIFatalException) {
-                log.warn("PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
+                log.error("PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
                         "attempts: $attempts. Retrying.", ex)
             } catch (ex: CordaMessageAPIIntermittentException) {
-                log.warn("PubSubConsumer from group $groupName failed to read and process records from topic $topic, " +
+                log.error("PubSubConsumer from group $groupName failed to read and process records from topic $topic, " +
                         "attempts: $attempts. Retrying.", ex)
             } catch (ex: Exception) {
-                log.warn("PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
+                val message = "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
                         "attempts: $attempts. " +
-                        "Unexpected error occurred. Retrying.", ex)
+                        "Unexpected error occurred."
+                log.error(message, ex)
+                throw CordaMessageAPIFatalException(message, ex)
             }
         }
     }

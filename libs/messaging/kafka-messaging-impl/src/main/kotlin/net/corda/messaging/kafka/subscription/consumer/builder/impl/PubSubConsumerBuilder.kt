@@ -33,7 +33,7 @@ class PubSubConsumerBuilder<K, V> (private val kafkaConfig: Config, private val 
             log.error(message, ex)
             throw CordaMessageAPIFatalException(message, ex)
         }
-        val listener = PubSubConsumerRebalanceListener(consumer)
+        val listener = PubSubConsumerRebalanceListener(subscriptionConfig, consumer)
         return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
     }
 }

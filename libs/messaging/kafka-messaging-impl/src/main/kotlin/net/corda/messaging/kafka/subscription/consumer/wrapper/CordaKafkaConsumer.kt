@@ -29,6 +29,7 @@ interface CordaKafkaConsumer<K, V> : AutoCloseable {
 
     /**
      * Synchronously commit the consumer offset for this [event] back to the topic partition.
+     * Record [metaData] about this commit back on the [event] topic.
      */
     fun commitSyncOffsets(event: ConsumerRecord<K, V>, metaData: String? = null)
 
