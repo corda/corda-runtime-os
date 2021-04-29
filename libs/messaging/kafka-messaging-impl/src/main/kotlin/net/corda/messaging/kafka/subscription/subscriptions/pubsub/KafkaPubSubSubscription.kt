@@ -66,7 +66,7 @@ class KafkaPubSubSubscription<K, V>(
     /**
      * Begin consuming events from the configured topic and process them
      * with the given [processor].
-     * @throws CordaMessageAPIFatalException fatal exception thrown during the consume, process or produce stage of a subscription.
+     * @throws CordaMessageAPIFatalException if unrecoverable error occurs
      */
     override fun start() {
         lock.withLock {
@@ -107,6 +107,7 @@ class KafkaPubSubSubscription<K, V>(
      * If an error occurs while processing reset the consumers position on the topic to the last committed position.
      * Execute the processor using the given [executor] if it is not null, otherwise execute on the current thread.
      * If subscription is stopped close the consumer.
+     * @throws CordaMessageAPIFatalException if unrecoverable error occurs
      */
     @Suppress("TooGenericExceptionCaught")
     fun runConsumeLoop() {

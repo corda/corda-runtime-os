@@ -13,7 +13,7 @@ interface Subscription<K, V> : LifeCycle {
 
     /**
      * Start a subscription.
-     * @throws CordaMessageAPIFatalException exception thrown during the consume, process or produce stage of a subscription.
+     * @throws CordaMessageAPIFatalException if unrecoverable error occurs
      */
     override fun start()
 
