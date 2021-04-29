@@ -4,7 +4,6 @@ import com.google.common.jimfs.Jimfs
 import net.corda.osgi.framework.api.ArgsService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ArgumentsSource
@@ -22,6 +21,41 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 
+/**
+ * This class tests the [OSGiFrameworkWrap] class.
+ *
+ * The `framework-app-tester` module applies the **Common App** plugin to build a test application (used in future tests),
+ * a test OSGi bundle JAR and the `system_bundles` file to use in the tests of this class.
+ *
+ * The Gradle task `test` in this module is overridden to build first the OSGi bundle from the `framework-app-tester`
+ * module, and to compile the `system_bundles` list.
+ * These files are copied in the locations...
+ *
+ * ```
+ *      <buildDir>
+ *      \___ resources
+ *           +--- test
+ *           \___ bundles
+ *                +--- framework-app-tester-<version>.jar
+ *                \___ system_bundles
+ * ```
+ *
+ * The artifacts children of the `<buildDir>/resources/test` are in the class-path at test time hence
+ * accessible from the test code.
+ *
+ * **IMPORTANT! Run the `test` task to execute unit tests for this module.**
+ *
+ * *WARNING! To run tests from IDE, configure*
+ *
+ * `Settings -> Build, Execution, Deployment -> Build Tools -> Gradle`
+ *
+ * *and set in the pane*
+ *
+ * `Gradle Projects -> Build and run -> Run tests using: IntelliJ IDEA`
+ *
+ * *and run the `test` task at least once after `clean` to assure the test artifacts are generated before
+ * tests run; then tests can be executed directly from the IDE.
+ */
 internal class OSGiFrameworkWrapTest {
 
     companion object {
@@ -82,7 +116,6 @@ internal class OSGiFrameworkWrapTest {
         assertTrue { Files.exists(frameworkStorageDir) }
     }
 
-    @Disabled // This test fails because unit tests do not generate resources. Planned to be fixed.
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun activate(frameworkFactoryFQN: String) {
@@ -114,7 +147,6 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Disabled // This test fails because unit tests do not generate resources. Planned to be fixed.
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun install(frameworkFactoryFQN: String) {
@@ -130,7 +162,6 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Disabled // This test fails because unit tests do not generate resources. Planned to be fixed.
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun install_IllegalStateException(frameworkFactoryFQN: String) {
