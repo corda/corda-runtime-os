@@ -4,23 +4,24 @@ import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import org.apache.kafka.clients.consumer.Consumer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class PubSubConsumerRebalanceListenerTest {
 
-    private lateinit var consumer : Consumer<String, ByteArray>
+    private val consumer : Consumer<String, ByteArray> = mock()
+    private val config : SubscriptionConfig = SubscriptionConfig("","")
     private lateinit var listener : PubSubConsumerRebalanceListener<String, ByteArray>
 
     @BeforeEach
     fun beforeEach() {
-        consumer = mock()
-        listener = PubSubConsumerRebalanceListener(consumer)
+        listener = PubSubConsumerRebalanceListener(config, consumer)
     }
 
     @Test
-    fun testAssignedParititons() {
+    fun testAssignedPartitions() {
         listener.onPartitionsAssigned(mutableListOf())
         verify(consumer, times(1)).seekToEnd(any())
     }

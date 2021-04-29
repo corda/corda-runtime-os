@@ -2,6 +2,7 @@ package net.corda.messaging.kafka.subscription.consumer.wrapper
 
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.Record
+import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 
@@ -9,6 +10,11 @@ import org.apache.kafka.clients.consumer.OffsetResetStrategy
  * Wrapper for a Kafka Consumer.
  */
 interface CordaKafkaConsumer<K, V> : AutoCloseable {
+
+    /**
+     * Access the kafka consumer directly
+     */
+    val consumer: Consumer<K, V>
 
     /**
      * Poll records from the consumer and sort them by timestamp

@@ -6,7 +6,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_PROCESSOR_RETRIES
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -46,10 +46,10 @@ class KafkaPubSubSubscription<K, V>(
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
     private val consumerThreadStopTimeout = kafkaConfig.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val consumerProcessorRetries = kafkaConfig.getLong(CONSUMER_PROCESSOR_RETRIES)
+    private val consumerPollAndProcessRetries = kafkaConfig.getLong(CONSUMER_POLL_AND_PROCESS_RETRIES)
 
     @Volatile
-    private var cancelled = false
+    private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
     private val topic = subscriptionConfig.eventTopic
@@ -60,7 +60,7 @@ class KafkaPubSubSubscription<K, V>(
      */
     override val isRunning: Boolean
         get() {
-            return !cancelled
+            return !stopped
         }
 
     /**
@@ -71,7 +71,7 @@ class KafkaPubSubSubscription<K, V>(
     override fun start() {
         lock.withLock {
             if (consumeLoopThread == null) {
-                cancelled = false
+                stopped = false
                 consumeLoopThread = thread(
                     true,
                     true,
@@ -88,15 +88,15 @@ class KafkaPubSubSubscription<K, V>(
      * Stop the subscription.
      */
     override fun stop() {
-        if (!cancelled) {
+        if (!stopped) {
             val thread = lock.withLock {
-                cancelled = true
+                stopped = true
                 val threadTmp = consumeLoopThread
                 consumeLoopThread = null
                 threadTmp
             }
-            thread?.join(consumerThreadStopTimeout)
             executor?.shutdown()
+            thread?.join(consumerThreadStopTimeout)
         }
     }
 
@@ -112,27 +112,29 @@ class KafkaPubSubSubscription<K, V>(
     @Suppress("TooGenericExceptionCaught")
     fun runConsumeLoop() {
         var attempts = 0
-        while (!cancelled) {
+        var consumer: CordaKafkaConsumer<K, V>? = null
+        while (!stopped) {
             attempts++
             try {
-                consumerBuilder.createConsumer(subscriptionConfig).use {
+                consumer = consumerBuilder.createConsumer(subscriptionConfig)
+                consumer.use {
                     it.subscribeToTopic()
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
             } catch (ex: CordaMessageAPIIntermittentException) {
-                log.error("PubSubConsumer from group $groupName failed to read and process records from topic $topic, " +
+                log.warn("PubSubConsumer from group $groupName failed to read and process records from topic $topic, " +
                         "attempts: $attempts. Retrying.", ex)
             } catch (ex: CordaMessageAPIFatalException) {
                 log.error("PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic. " +
-                        "Fatal error occurred. Closing Subscription", ex)
-                throw ex
+                        "Fatal error occurred. Closing subscription.", ex)
+                stop()
             }  catch (ex: Exception) {
                 val message = "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
                         "attempts: $attempts. " +
                         "Unexpected error occurred. Closing subscription."
                 log.error(message, ex)
-                throw CordaMessageAPIFatalException(message, ex)
+                stop()
             }
         }
     }
@@ -147,14 +149,14 @@ class KafkaPubSubSubscription<K, V>(
     @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<K, V>) {
         var attempts = 0
-        while (!cancelled) {
+        while (!stopped) {
             try {
                 val consumerRecords = consumer.poll()
                 processPubSubRecords(consumerRecords, consumer)
                 attempts = 0
             } catch (ex: Exception) {
                 attempts++
-                if (attempts <= consumerProcessorRetries) {
+                if (attempts <= consumerPollAndProcessRetries) {
                     log.warn("PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
                                 "Resetting to last committed offset and retrying. Attempts: $attempts.")
                     consumer.resetToLastCommittedPositions(OffsetResetStrategy.LATEST)
