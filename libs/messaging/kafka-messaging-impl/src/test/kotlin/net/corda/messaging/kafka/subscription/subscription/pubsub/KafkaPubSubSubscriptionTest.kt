@@ -15,7 +15,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_T
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
-import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription.subscription.pubsub.stubs.StubProcessor
+import net.corda.messaging.kafka.subscription.stubs.StubProcessor
 import net.corda.messaging.kafka.subscription.subscriptions.pubsub.KafkaPubSubSubscription
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.assertj.core.api.Assertions.assertThat
