@@ -128,7 +128,7 @@ class KafkaPubSubSubscription<K, V>(
             } catch (ex: Exception) {
                 val message = "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
                         "attempts: $attempts. " +
-                        "Unexpected error occurred."
+                        "Unexpected error occurred. Closing subscription."
                 log.error(message, ex)
                 throw CordaMessageAPIFatalException(message, ex)
             }
