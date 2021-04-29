@@ -81,6 +81,7 @@ class KafkaPubSubSubscriptionTest {
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
 
         kafkaPubSubSubscription.stop()
+        verify(consumerBuilder, times(1)).createConsumer(any())
         verify(mockCordaConsumer, times(mockRecordCount.toInt())).commitSyncOffsets(any(), isNull())
     }
 
@@ -95,7 +96,7 @@ class KafkaPubSubSubscriptionTest {
         kafkaPubSubSubscription.start()
 
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-
+        verify(consumerBuilder, times(1)).createConsumer(any())
         verify(mockCordaConsumer, times(mockRecordCount.toInt())).commitSyncOffsets(any(),isNull())
     }
 
@@ -104,7 +105,7 @@ class KafkaPubSubSubscriptionTest {
      */
     @Test
     fun testFatalExceptionConsumerBuild() {
-        doThrow(CordaMessageAPIFatalException("Fatal Error", Exception())).whenever(consumerBuilder).createConsumer(any())
+        whenever(consumerBuilder.createConsumer(any())).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
         kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, consumerBuilder, processor, executorService)
 
@@ -112,9 +113,9 @@ class KafkaPubSubSubscriptionTest {
         while (kafkaPubSubSubscription.isRunning) {}
 
         verify(mockCordaConsumer, times(0)).poll()
+        verify(consumerBuilder, times(1)).createConsumer(any())
         assertThat(latch.count).isEqualTo(mockRecordCount)
     }
-
 
     /**
      * Check that the exceptions thrown during polling exits correctly
@@ -129,7 +130,7 @@ class KafkaPubSubSubscriptionTest {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
         }.whenever(consumerBuilder).createConsumer(any())
-        doThrow(CordaMessageAPIFatalException("Fatal Error", Exception())).whenever(mockCordaConsumer).poll()
+        whenever(mockCordaConsumer.poll()).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
         kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, consumerBuilder, processor, executorService)
 
@@ -137,6 +138,7 @@ class KafkaPubSubSubscriptionTest {
         while (kafkaPubSubSubscription.isRunning) {}
 
         assertThat(latch.count).isEqualTo(mockRecordCount)
+        verify(consumerBuilder, times(2)).createConsumer(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
     }
