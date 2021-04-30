@@ -11,10 +11,12 @@ See KDoc in source code for additional info.
 ## Tests
 
 The `framework-app-tester` module applies the **Common App** plugin to build a test application (used in future tests),
-a test OSGi bundle JAR and the `system_bundles` file to use to test the `net.corda.osgi.framework` package.
+a test OSGi bundle JAR, the `system_bundles` and `system_packages_extra` files to use to test the 
+`net.corda.osgi.framework` package.
 
 The Gradle task `test` in this module is overridden to build first the OSGi bundle from the `framework-app-tester`
 module, and to compile the `system_bundles` list.
+The `system_packages_extra` is provided in the `test/resources` directory of the module.
 These files are copied in the locations...
 
 ```
@@ -23,7 +25,8 @@ These files are copied in the locations...
      +--- test
      \___ bundles
           +--- framework-app-tester-<version>.jar
-          \___ system_bundles
+          +___ system_bundles
+          \___ system_packages_extra
 ```
 
 The artifacts children of the `<buildDir>/resources/test` are in the class-path at test time,
