@@ -10,11 +10,12 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 interface PublisherFactory {
 
     /**
-     * Create a publisher which publishes to a topic with a given [config] and map of [properties].
-     * @return a publisher of events
+     * Create a publisher which publishes to a topic with a given [publisherConfig] and map of [properties].
+     * @return A publisher of events.
+     * @throws CordaMessageAPIException Exception in generating a Publisher.
      */
     fun <K, V> createPublisher(
-        config: PublisherConfig,
+        publisherConfig: PublisherConfig,
         properties: Map<String, String>
     ): Publisher<K, V>
 }

@@ -1,6 +1,6 @@
 plugins {
-    id 'biz.aQute.bnd.builder'
     id 'corda.publish'
+    id 'corda.common-library'
 }
 
 dependencies {
