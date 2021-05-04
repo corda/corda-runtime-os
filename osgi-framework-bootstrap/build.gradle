@@ -17,6 +17,7 @@ dependencies {
     implementation project("framework-api")
     implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
 
+    testImplementation project("framework-app-tester")
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
@@ -62,7 +63,6 @@ private addBundles(
 
 test {
     final def appTesterProject = project("framework-app-tester")
-    dependsOn(appTesterProject.tasks.jar)
     doFirst {
         final File source = new File(appTesterProject.buildDir, "libs")
         final File target = new File(buildDir, "resources/test/bundles")
