@@ -51,8 +51,9 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
             log.error("Failed to create kafka producer clientId $clientId, instanceId $instanceId, " +
                     "topic $topic.", ex)
             throw CordaMessageAPIFatalException("Failed to create kafka producer.", ex)
+        } finally {
+            Thread.currentThread().contextClassLoader = contextClassLoader
         }
-        Thread.currentThread().contextClassLoader = contextClassLoader
 
         if (instanceId != null) {
             initTransactionForProducer(config, producer, producerCloseTimeout, producerCreateMaxRetries)

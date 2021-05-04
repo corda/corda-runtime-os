@@ -21,6 +21,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.lang.Exception
 import java.util.concurrent.CountDownLatch
@@ -148,7 +149,7 @@ class KafkaPubSubSubscriptionTest {
      * Check that the exceptions thrown during processing exits correctly
      */
     @Test
-    fun testExceptionDuringProcessing() {
+    fun testCordaExceptionDuringProcessing() {
         doAnswer {
             if (builderInvocationCount == 0) {
                 builderInvocationCount++
@@ -159,7 +160,32 @@ class KafkaPubSubSubscriptionTest {
         }.whenever(consumerBuilder).createConsumer(any())
 
         latch = CountDownLatch(consumerPollAndProcessRetriesCount)
-        processor = StubProcessor(latch, true)
+        processor = StubProcessor(latch, CordaMessageAPIFatalException("", Exception()))
+        doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
+
+        kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, consumerBuilder,
+            processor, executorService)
+
+        kafkaPubSubSubscription.start()
+        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+
+        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
+        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
+    }
+
+    @Test
+    fun testIOExceptionDuringProcessing() {
+        doAnswer {
+            if (builderInvocationCount == 0) {
+                builderInvocationCount++
+                mockCordaConsumer
+            } else {
+                CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
+            }
+        }.whenever(consumerBuilder).createConsumer(any())
+
+        latch = CountDownLatch(consumerPollAndProcessRetriesCount)
+        processor = StubProcessor(latch, IOException())
         doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
 
         kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, consumerBuilder,

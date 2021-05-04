@@ -25,7 +25,7 @@ import java.time.Duration
 class CordaKafkaConsumerImpl<K, V>(
     kafkaConfig: Config,
     subscriptionConfig: SubscriptionConfig,
-    private val kafkaConsumer: Consumer<K, V>,
+    override val consumer: Consumer<K, V>,
     private val listener: ConsumerRebalanceListener
 ) : CordaKafkaConsumer<K, V> {
 
@@ -39,11 +39,6 @@ class CordaKafkaConsumerImpl<K, V>(
     private val groupName = subscriptionConfig.groupName
     private val topicPrefix = kafkaConfig.getString(KafkaProperties.KAFKA_TOPIC_PREFIX)
     private val topic = subscriptionConfig.eventTopic
-
-    override val consumer: Consumer<K, V>
-        get() {
-            return kafkaConsumer
-        }
 
     @Suppress("TooGenericExceptionCaught")
     override fun close() {
