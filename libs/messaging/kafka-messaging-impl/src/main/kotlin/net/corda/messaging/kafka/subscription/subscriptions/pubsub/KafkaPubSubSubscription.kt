@@ -130,10 +130,9 @@ class KafkaPubSubSubscription<K, V>(
                         "Fatal error occurred. Closing subscription.", ex)
                 stop()
             }  catch (ex: Exception) {
-                val message = "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
+                log.error("PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
                         "attempts: $attempts. " +
-                        "Unexpected error occurred. Closing subscription."
-                log.error(message, ex)
+                        "Unexpected error occurred. Closing subscription.", ex)
                 stop()
             }
         }
