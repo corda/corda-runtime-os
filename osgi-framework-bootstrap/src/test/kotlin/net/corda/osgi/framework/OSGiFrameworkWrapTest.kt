@@ -4,7 +4,6 @@ import com.google.common.jimfs.Jimfs
 import net.corda.osgi.framework.api.ArgsService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ArgumentsSource
@@ -22,6 +21,43 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 
+/**
+ * This class tests the [OSGiFrameworkWrap] class.
+ *
+ * The `framework-app-tester` module applies the **Common App** plugin to build a test application (used in future tests),
+ * a test OSGi bundle JAR, the `system_bundles` and `system_packages_extra` files to use in the tests of this class.
+ *
+ * The Gradle task `test` in this module is overridden to build first the OSGi bundle from the `framework-app-tester`
+ * module, and to compile the `system_bundles` list.
+ * The `system_packages_extra` is provided in the `test/resources` directory of the module.
+ * These files are copied in the locations...
+ *
+ * ```
+ *      <buildDir>
+ *      \___ resources
+ *           +--- test
+ *           \___ bundles
+ *                +--- framework-app-tester-<version>.jar
+ *                +___ system_bundles
+ *                \___ system_packages_extra
+ * ```
+ *
+ * The artifacts children of the `<buildDir>/resources/test` are in the class-path at test time hence
+ * accessible from the test code.
+ *
+ * **IMPORTANT! Run the `test` task to execute unit tests for this module.**
+ *
+ * *WARNING! To run tests from IDE, configure*
+ *
+ * `Settings -> Build, Execution, Deployment -> Build Tools -> Gradle`
+ *
+ * *and set in the pane*
+ *
+ * `Gradle Projects -> Build and run -> Run tests using: IntelliJ IDEA`
+ *
+ * *and run the `test` task at least once after `clean` to assure the test artifacts are generated before
+ * tests run; then tests can be executed directly from the IDE.
+ */
 internal class OSGiFrameworkWrapTest {
 
     companion object {
@@ -31,8 +67,6 @@ internal class OSGiFrameworkWrapTest {
         private const val SICK_SYSTEM_BUNDLES = "sick_system_bundles"
 
         private const val TEMP_DIR = "unit_test"
-
-        private val logger = LoggerFactory.getLogger(OSGiFrameworkWrapTest::class.java)
 
         private fun deletePath(path: Path) {
             if (Files.exists(path)) {
@@ -82,11 +116,14 @@ internal class OSGiFrameworkWrapTest {
         assertTrue { Files.exists(frameworkStorageDir) }
     }
 
-    @Disabled // This test fails because unit tests do not generate resources. Planned to be fixed.
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun activate(frameworkFactoryFQN: String) {
-        val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
+        val framework = OSGiFrameworkWrap.getFrameworkFrom(
+            frameworkFactoryFQN,
+            frameworkStorageDir,
+            OSGiFrameworkWrap.getFrameworkPropertyFrom(OSGiFrameworkMain.SYSTEM_PACKAGES_EXTRA)
+        )
         OSGiFrameworkWrap(framework).use { frameworkWrap ->
             frameworkWrap.start()
             frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
@@ -114,11 +151,14 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Disabled // This test fails because unit tests do not generate resources. Planned to be fixed.
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun install(frameworkFactoryFQN: String) {
-        val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
+        val framework = OSGiFrameworkWrap.getFrameworkFrom(
+            frameworkFactoryFQN,
+            frameworkStorageDir,
+            OSGiFrameworkWrap.getFrameworkPropertyFrom(OSGiFrameworkMain.SYSTEM_PACKAGES_EXTRA)
+        )
         OSGiFrameworkWrap(framework).use { frameworkWrap ->
             frameworkWrap.start()
             frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
@@ -130,7 +170,6 @@ internal class OSGiFrameworkWrapTest {
         }
     }
 
-    @Disabled // This test fails because unit tests do not generate resources. Planned to be fixed.
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun install_IllegalStateException(frameworkFactoryFQN: String) {
