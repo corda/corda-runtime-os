@@ -1,5 +1,6 @@
 plugins {
     id 'corda.publish'
+    id 'corda.common-library'
 }
 
 dependencies {

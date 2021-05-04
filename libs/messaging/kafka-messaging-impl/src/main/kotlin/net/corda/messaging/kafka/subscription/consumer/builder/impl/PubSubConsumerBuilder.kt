@@ -26,13 +26,17 @@ class PubSubConsumerBuilder<K, V> (private val kafkaConfig: Config, private val 
     override fun createConsumer(subscriptionConfig : SubscriptionConfig): CordaKafkaConsumer<K, V> {
         val topic = subscriptionConfig.eventTopic
         val groupName = subscriptionConfig.groupName
+        val contextClassLoader = Thread.currentThread().contextClassLoader
+
         val consumer = try {
+            Thread.currentThread().contextClassLoader = null
             KafkaConsumer<K, V>(consumerProperties)
         } catch (ex: KafkaException) {
             val message = "PubSubConsumerBuilder failed to create and subscribe consumer for group $groupName, topic $topic."
             log.error(message, ex)
             throw CordaMessageAPIFatalException(message, ex)
         }
+        Thread.currentThread().contextClassLoader = contextClassLoader
         val listener = PubSubConsumerRebalanceListener(subscriptionConfig, consumer)
         return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
     }

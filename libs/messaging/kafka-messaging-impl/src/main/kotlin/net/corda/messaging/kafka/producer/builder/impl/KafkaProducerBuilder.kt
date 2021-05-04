@@ -43,13 +43,16 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
             null
         }
 
+        val contextClassLoader = Thread.currentThread().contextClassLoader
         val producer = try {
+            Thread.currentThread().contextClassLoader = null;
             KafkaProducer<K, V>(properties)
         } catch (ex: KafkaException) {
             log.error("Failed to create kafka producer clientId $clientId, instanceId $instanceId, " +
                     "topic $topic.", ex)
             throw CordaMessageAPIFatalException("Failed to create kafka producer.", ex)
         }
+        Thread.currentThread().contextClassLoader = contextClassLoader
 
         if (instanceId != null) {
             initTransactionForProducer(config, producer, producerCloseTimeout, producerCreateMaxRetries)
