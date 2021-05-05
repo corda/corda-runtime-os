@@ -107,6 +107,19 @@ private def addSystemPackagesExtra(
             }
         }
     }
+    final jdkExtraPackages = [
+            "net.corda.osgi.framework.api",
+            "sun.net.www.protocol.jar",
+            "sun.nio.ch",
+            "sun.security.x509",
+            "sun.security.ssl",
+            "javax.servlet",
+            "javax.transaction.xa;version=1.1.0",
+            "javax.xml.stream;version=1.0",
+            "javax.xml.stream.events;version=1.0",
+            "javax.xml.stream.util;version=1.0"
+    ]
+    jdkExtraPackages.each { export -> systemBundleExtraSet.add(export) }
 }
 
 def cordaAssembleBundlesTask = tasks.register("cordaAssembleBundles") {

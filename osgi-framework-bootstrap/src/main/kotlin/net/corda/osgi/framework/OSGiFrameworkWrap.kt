@@ -114,7 +114,7 @@ class OSGiFrameworkWrap(
             val configurationMap = mapOf(
                 Constants.FRAMEWORK_STORAGE to frameworkStorageDir.toString(),
                 Constants.FRAMEWORK_STORAGE_CLEAN to Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT,
-                Constants.FRAMEWORK_SYSTEMCAPABILITIES_EXTRA to systemPackagesExtra
+                Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA to systemPackagesExtra
             )
             if (logger.isDebugEnabled) {
                 configurationMap.forEach { (key, value) -> logger.debug("OSGi property $key = $value.") }
