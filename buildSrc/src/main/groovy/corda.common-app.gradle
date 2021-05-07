@@ -23,7 +23,6 @@ dependencies {
 
     systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
-    systemPackages "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     systemPackages project(":osgi-framework-bootstrap:framework-api")
 }
 
@@ -137,6 +136,9 @@ def cordaAssembleBundlesTask = tasks.register("cordaAssembleBundles") {
             !configurations.systemPackages.contains(resolvableDependencies)
         }.each { resolvableDependencies ->
             addBundles(resolvableDependencies.artifacts as ArtifactCollection, bundlesDir, systemBundleSet)
+        }
+        new File(project.buildDir, "libs").listFiles().findAll { file -> isJar(file) }.each { jar ->
+            addBundle(jar, new File(bundlesDir, jar.name), systemBundleSet)
         }
         final systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
         systemBundlesFile.withWriter { writer ->
