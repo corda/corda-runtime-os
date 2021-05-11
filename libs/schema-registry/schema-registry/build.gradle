@@ -1,0 +1,10 @@
+plugins {
+    id 'corda.publish'
+    id 'corda.common-library'
+}
+
+dependencies {
+    api "org.apache.avro:avro:$avroVersion"
+}
+
+description 'Schema Registry Library API'

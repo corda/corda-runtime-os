@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "AvroEnvelope",
+  "namespace": "net.corda.data",
+  "fields": [
+    {
+      "name": "magic",
+      "type": { "type": "fixed", "size": 8, "name": "Magic" }
+    },
+    {
+      "name": "fingerprint",
+      "type": { "type": "fixed", "size": 32, "name": "Fingerprint" }
+    },
+    {
+      "name": "flags",
+      "type": "int"
+    },
+    {
+      "name": "payload",
+      "type": "bytes"
+    }
+  ]
+}

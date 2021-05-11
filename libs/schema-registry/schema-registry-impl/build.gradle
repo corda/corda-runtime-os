@@ -1,0 +1,15 @@
+plugins {
+    id 'corda.publish'
+    id 'corda.common-library'
+}
+
+dependencies {
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "org.apache.avro:avro:$avroVersion"
+    implementation project(":libs:schema-registry:schema-registry")
+    implementation project(":data:avro-schema")
+
+    testRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
+}
+
+description 'Schema Registry Library Implementation'

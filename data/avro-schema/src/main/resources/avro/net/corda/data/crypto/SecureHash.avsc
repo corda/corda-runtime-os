@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "SecureHash",
+  "namespace": "net.corda.data.crypto",
+  "fields": [
+    {
+      "name": "algorithm",
+      "type": "string"
+    },
+    {
+      "name": "serverHash",
+      "type": "bytes"
+    }
+  ]
+}
