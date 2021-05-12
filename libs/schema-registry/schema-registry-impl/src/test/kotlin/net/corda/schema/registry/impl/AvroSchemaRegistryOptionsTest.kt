@@ -26,6 +26,6 @@ internal class AvroSchemaRegistryOptionsTest {
 
     @Test
     fun `assert no unexpected flags added`() {
-        val unexpectedOptions = AvroSchemaRegistryImpl.Options.from(1.inv())
+        AvroSchemaRegistryImpl.Options.from(1.inv())
     }
 }

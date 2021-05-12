@@ -245,10 +245,12 @@ internal class AvroSchemaRegistryImplTest {
             return result
         }
 
+        @Suppress("UNUSED_PARAMETER")
         fun encode(message: TestMessage): ByteArray {
             return ByteBuffer.allocate(4).putInt(something).array()
         }
 
+        @Suppress("UNUSED_PARAMETER")
         fun decode(encoded: ByteArray, schema: Schema, reusable: TestMessage?): TestMessage {
             val buffer = ByteBuffer.wrap(encoded)
             val message = reusable ?: TestMessage()
