@@ -113,7 +113,7 @@ class KafkaPubSubSubscription<K : Any, V : Any>(
     @Suppress("TooGenericExceptionCaught")
     fun runConsumeLoop() {
         var attempts = 0
-        var consumer: CordaKafkaConsumer<K, V>? = null
+        var consumer: CordaKafkaConsumer<K, V>?
         while (!stopped) {
             attempts++
             try {

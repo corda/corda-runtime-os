@@ -14,6 +14,7 @@ import net.corda.v5.base.internal.concurrent.OpenFuture
 import net.corda.v5.base.internal.concurrent.openFuture
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.InterruptException
@@ -72,7 +73,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
             }
 
             producer.send(getProducerRecord(record)) { it, ex ->
-                setFutureFromResponse(ex, fut)
+                setFutureFromResponse(it, ex, fut)
             }
 
             if (instanceId != null) {
@@ -119,7 +120,12 @@ class CordaKafkaPublisher<K : Any, V : Any> (
     /**
      * Helper function to set a [future] result based on the presence of an [exception]
      */
-    private fun setFutureFromResponse(exception: Exception?, future: OpenFuture<Boolean>) {
+    @Suppress("UNUSED_PARAMETER")
+    private fun setFutureFromResponse(
+        recordMetadata: RecordMetadata?,
+        exception: Exception?,
+        future: OpenFuture<Boolean>
+    ) {
         if (exception == null) {
             //if transaction operation can still fail at a later point
             //so do not set to true until transaction is committed
