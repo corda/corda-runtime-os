@@ -1,6 +1,5 @@
 package net.corda.p2p.crypto
 
-import at.favre.lib.crypto.HKDF
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.bouncycastle.crypto.digests.SHA256Digest
@@ -46,7 +45,7 @@ open class AuthenticationProtocol {
     protected val aesCipher = Cipher.getInstance("AES/GCM/NoPadding", provider)
     protected val signature = Signature.getInstance("ECDSA", provider)
     private val sha256Hash = SHA256Digest()
-    private val hkdf = HKDF.fromHmacSha256()
+    private val hkdf = HKDF()
 
     protected val objectMapper = ObjectMapper().registerKotlinModule()
 
