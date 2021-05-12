@@ -78,7 +78,7 @@ class CordaKafkaConsumerImpl<K :Any, V : Any> (
     @Suppress("UNCHECKED_CAST")
     override fun getRecord(consumerRecord: ConsumerRecord<K, ByteBuffer>) : Record<K, V> {
         val classType = avroSchemaRegistry.getClassType(consumerRecord.value())
-        val value: V = avroSchemaRegistry.deserialize(consumerRecord.value(), classType, null) as V
+        val value: V = uncheckedCast(avroSchemaRegistry.deserialize(consumerRecord.value(), classType, null))
         val topic = consumerRecord.topic().substringAfter(topicPrefix)
         return Record(topic, consumerRecord.key(), value)
     }
