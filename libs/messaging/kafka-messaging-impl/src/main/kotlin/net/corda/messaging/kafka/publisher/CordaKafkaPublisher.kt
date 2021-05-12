@@ -127,8 +127,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
         future: OpenFuture<Boolean>
     ) {
         if (exception == null) {
-            //if transaction operation can still fail at a later point
-            //so do not set to true until transaction is committed
+            //transaction operation can still fail at commit stage  so do not set to true until it is committed
             if (instanceId == null) {
                 future.set(true)
             }
