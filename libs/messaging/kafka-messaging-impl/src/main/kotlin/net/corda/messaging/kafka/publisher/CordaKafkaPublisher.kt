@@ -8,6 +8,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_TOPIC_PREFIX
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.concurrent.CordaFuture
 import net.corda.v5.base.internal.concurrent.OpenFuture
 import net.corda.v5.base.internal.concurrent.openFuture
@@ -21,21 +22,28 @@ import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.ProducerFencedException
 import org.apache.kafka.common.errors.InvalidProducerEpochException
 import org.apache.kafka.common.errors.AuthenticationException
+import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.time.Duration
 
 /**
  * Kafka publisher will create a new Kafka instance of Publisher.
  * Publisher will use a kafka [producer] to communicate with kafka.
  * Records are sent via transactions if [publisherConfig].instanceId is not null.
+ * Record values are serialized to [ByteBuffer] using [avroSchemaRegistry]
+ * Record keys are serialized using kafka configured serializer.
  * Producer will automatically attempt resends based on [kafkaConfig].
  * Any Exceptions thrown during publish are returned in a CordaFuture.
  */
-class CordaKafkaPublisher<K, V>(
+@Component
+class CordaKafkaPublisher<K : Any, V : Any> (
     private val publisherConfig: PublisherConfig,
     private val kafkaConfig: Config,
-    private val producer: Producer<K, V>) : Publisher<K, V> {
+    private val producer: Producer<K, ByteBuffer>,
+    private val avroSchemaRegistry: AvroSchemaRegistry
+    ) : Publisher<K, V> {
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -69,6 +77,7 @@ class CordaKafkaPublisher<K, V>(
 
             if (instanceId != null) {
                 producer.commitTransaction()
+                fut.set(true)
             }
         } catch (ex: IllegalStateException) {
             logErrorAndSetFuture("Kafka producer clientId $clientId, instanceId $instanceId, " +
@@ -112,7 +121,11 @@ class CordaKafkaPublisher<K, V>(
      */
     private fun setFutureFromResponse(exception: Exception?, future: OpenFuture<Boolean>) {
         if (exception == null) {
-            future.set(true)
+            //if transaction operation can still fail at a later point
+            //so do not set to true until transaction is committed
+            if (instanceId == null) {
+                future.set(true)
+            }
         } else {
             val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
                     "for topic $topic failed to send."
@@ -173,10 +186,18 @@ class CordaKafkaPublisher<K, V>(
 
     /**
      * Convert a generic [record] to a Kafka ProducerRecord.
+     * Use Avro [avroSchemaRegistry] to serialize the [record] value if it is not null.
+     * Use Kafka serializer for [record] key.
      * Attach the configured kafka topic prefix as a prefix to the [record] topic.
      * @return Producer record with kafka topic prefix attached.
      */
-    private fun getProducerRecord(record: Record<K, V>): ProducerRecord<K, V> {
-        return ProducerRecord(topicPrefix + record.topic, record.key, record.value)
+    private fun getProducerRecord(record: Record<K, V>): ProducerRecord<K, ByteBuffer> {
+        val value = if (record.value != null) {
+            avroSchemaRegistry.serialize(record.value!!)
+        } else {
+            null
+        }
+
+        return ProducerRecord(topicPrefix + record.topic, record.key, value)
     }
 }

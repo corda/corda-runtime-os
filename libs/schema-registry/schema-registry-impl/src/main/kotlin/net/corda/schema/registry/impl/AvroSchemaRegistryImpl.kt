@@ -1,9 +1,10 @@
-package net.corda.schema.registry
+package net.corda.schema.registry.impl
 
 import net.corda.data.AvroEnvelope
 import net.corda.data.AvroGeneratedMessageClasses
 import net.corda.data.Fingerprint
 import net.corda.data.SchemaLoadException
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.internal.uncheckedCast
 import net.corda.v5.base.types.toHexString
@@ -268,7 +269,7 @@ class AvroSchemaRegistryImpl(
 
     init {
         val classes = try {
-            AvroGeneratedMessageClasses.getAvroGeneratedMessageClasses(this::class.java)
+            AvroGeneratedMessageClasses.getAvroGeneratedMessageClasses(AvroGeneratedMessageClasses::class.java)
         } catch (e: SchemaLoadException) {
             throw CordaRuntimeException("Initialization error in AvroSchemaRegistry", e)
         }

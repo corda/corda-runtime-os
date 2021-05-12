@@ -10,8 +10,9 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_TOPIC_PREFIX
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.concurrent.CordaFuture
-import org.apache.kafka.clients.producer.MockProducer
+import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.errors.*
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -20,13 +21,15 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
+import java.nio.ByteBuffer
 import java.time.Duration
 
 class CordaKafkaPublisherTest {
     private lateinit var publisherConfig : PublisherConfig
-    private lateinit var cordaKafkaPublisher : CordaKafkaPublisher<String, ByteArray>
+    private lateinit var cordaKafkaPublisher : CordaKafkaPublisher<String, ByteBuffer>
     private lateinit var kafkaConfig: Config
-    private val producer : MockProducer<String, ByteArray> = mock()
+    private val producer : Producer<String, ByteBuffer> = mock()
+    private val avroSchemaRegistry : AvroSchemaRegistry = mock()
 
     @BeforeEach
     fun beforeEach() {
@@ -37,8 +40,9 @@ class CordaKafkaPublisherTest {
 
     @Test
     fun testPublish() {
-        val future = publish()
+        publish()
         verify(producer, times(1)).send(any(), any())
+        verify(avroSchemaRegistry, times(1)).serialize(any())
         verify(producer, times(0)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
     }
@@ -49,6 +53,7 @@ class CordaKafkaPublisherTest {
         val future = publish()
         assertThrows(CordaMessageAPIFatalException::class.java) { future.getOrThrow() }
         verify(producer, times(1)).send(any(), any())
+        verify(avroSchemaRegistry, times(1)).serialize(any())
         verify(producer, times(0)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
     }
@@ -59,6 +64,7 @@ class CordaKafkaPublisherTest {
         val future = publish()
         assertThrows(CordaMessageAPIIntermittentException::class.java) { future.getOrThrow() }
         verify(producer, times(1)).send(any(), any())
+        verify(avroSchemaRegistry, times(1)).serialize(any())
         verify(producer, times(0)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
     }
@@ -69,14 +75,16 @@ class CordaKafkaPublisherTest {
         val future = publish()
         assertThrows(CordaMessageAPIFatalException::class.java) { future.getOrThrow() }
         verify(producer, times(1)).send(any(), any())
+        verify(avroSchemaRegistry, times(1)).serialize(any())
         verify(producer, times(0)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
     }
 
     @Test
     fun testTransactionPublish() {
-        val future = publish(true)
+        publish(true)
         verify(producer, times(1)).send(any(), any())
+        verify(avroSchemaRegistry, times(1)).serialize(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
     }
@@ -88,6 +96,7 @@ class CordaKafkaPublisherTest {
         val future = publish(true)
         assertThrows(CordaMessageAPIFatalException::class.java) { future.getOrThrow() }
         verify(producer, times(0)).send(any(), any())
+        verify(avroSchemaRegistry, times(0)).serialize(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
     }
@@ -99,6 +108,7 @@ class CordaKafkaPublisherTest {
         val future = publish(true)
         assertThrows(CordaMessageAPIFatalException::class.java) { future.getOrThrow() }
         verify(producer, times(0)).send(any(), any())
+        verify(avroSchemaRegistry, times(0)).serialize(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
     }
@@ -109,6 +119,7 @@ class CordaKafkaPublisherTest {
         val future = publish(true)
         assertThrows(CordaMessageAPIFatalException::class.java) { future.getOrThrow() }
         verify(producer, times(0)).send(any(), any())
+        verify(avroSchemaRegistry, times(0)).serialize(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
     }
@@ -119,6 +130,7 @@ class CordaKafkaPublisherTest {
         val future = publish(true)
         assertThrows(CordaMessageAPIIntermittentException::class.java) { future.getOrThrow() }
         verify(producer, times(1)).send(any(), any())
+        verify(avroSchemaRegistry, times(1)).serialize(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
     }
@@ -129,6 +141,7 @@ class CordaKafkaPublisherTest {
         val future = publish(true)
         assertThrows(CordaMessageAPIIntermittentException::class.java) { future.getOrThrow() }
         verify(producer, times(1)).send(any(), any())
+        verify(avroSchemaRegistry, times(1)).serialize(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
     }
@@ -139,6 +152,7 @@ class CordaKafkaPublisherTest {
         val future = publish(true)
         assertThrows(CordaMessageAPIIntermittentException::class.java) { future.getOrThrow() }
         verify(producer, times(1)).send(any(), any())
+        verify(avroSchemaRegistry, times(1)).serialize(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
     }
@@ -149,6 +163,7 @@ class CordaKafkaPublisherTest {
         val future = publish(true)
         assertThrows(CordaMessageAPIFatalException::class.java) { future.getOrThrow() }
         verify(producer, times(1)).send(any(), any())
+        verify(avroSchemaRegistry, times(1)).serialize(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
     }
@@ -159,13 +174,14 @@ class CordaKafkaPublisherTest {
         val future = publish(true)
         assertThrows(CordaMessageAPIFatalException::class.java) { future.getOrThrow() }
         verify(producer, times(1)).send(any(), any())
+        verify(avroSchemaRegistry, times(1)).serialize(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
     }
 
     @Test
     fun testSafeClose() {
-        cordaKafkaPublisher = CordaKafkaPublisher(publisherConfig, kafkaConfig, producer)
+        cordaKafkaPublisher = CordaKafkaPublisher(publisherConfig, kafkaConfig, producer, avroSchemaRegistry)
 
         cordaKafkaPublisher.close()
         verify(producer, times(1)).close(Mockito.any(Duration::class.java))
@@ -177,9 +193,9 @@ class CordaKafkaPublisherTest {
         } else {
             PublisherConfig("clientId", "topic")
         }
-        cordaKafkaPublisher = CordaKafkaPublisher(publisherConfig, kafkaConfig, producer)
+        cordaKafkaPublisher = CordaKafkaPublisher(publisherConfig, kafkaConfig, producer, avroSchemaRegistry)
 
-        val record = Record("topic", "key1", "value1".toByteArray())
+        val record = Record("topic", "key1", ByteBuffer.wrap("value1".toByteArray()))
         return cordaKafkaPublisher.publish(record)
     }
 }

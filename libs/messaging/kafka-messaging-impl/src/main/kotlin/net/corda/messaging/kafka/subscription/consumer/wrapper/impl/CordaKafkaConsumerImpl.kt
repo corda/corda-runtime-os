@@ -7,6 +7,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
+import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -17,16 +18,18 @@ import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.IllegalStateException
+import java.nio.ByteBuffer
 import java.time.Duration
 
 /**
  * Wrapper for a Kafka Consumer.
  */
-class CordaKafkaConsumerImpl<K, V>(
+class CordaKafkaConsumerImpl<K :Any, V : Any> (
     kafkaConfig: Config,
     subscriptionConfig: SubscriptionConfig,
-    override val consumer: Consumer<K, V>,
-    private val listener: ConsumerRebalanceListener
+    override val consumer: Consumer<K, ByteBuffer>,
+    private val listener: ConsumerRebalanceListener,
+    private val avroSchemaRegistry: AvroSchemaRegistry
 ) : CordaKafkaConsumer<K, V> {
 
     companion object {
@@ -49,7 +52,7 @@ class CordaKafkaConsumerImpl<K, V>(
         }
     }
 
-    override fun poll(): List<ConsumerRecord<K, V>> {
+    override fun poll(): List<ConsumerRecord<K, ByteBuffer>> {
         val consumerRecords = consumer.poll(consumerPollTimeout)
         return consumerRecords.sortedBy { it.timestamp() }
     }
@@ -72,12 +75,14 @@ class CordaKafkaConsumerImpl<K, V>(
         }
     }
 
-    override fun getRecord(consumerRecord: ConsumerRecord<K, V>) : Record<K, V> {
+    override fun getRecord(consumerRecord: ConsumerRecord<K, ByteBuffer>) : Record<K, V> {
+        val classType = avroSchemaRegistry.getClassType(consumerRecord.value())
+        val value = avroSchemaRegistry.deserialize(consumerRecord.value(), classType, null) as V
         val topic = consumerRecord.topic().substringAfter(topicPrefix)
-        return Record(topic, consumerRecord.key(), consumerRecord.value())
+        return Record(topic, consumerRecord.key(), value)
     }
 
-    override fun commitSyncOffsets(event: ConsumerRecord<K, V>, metaData: String?) {
+    override fun commitSyncOffsets(event: ConsumerRecord<K, ByteBuffer>, metaData: String?) {
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
         val topicPartition = TopicPartition(event.topic(), event.partition())
         offsets[topicPartition] = OffsetAndMetadata(event.offset() + 1, metaData)

@@ -1,9 +1,11 @@
-package net.corda.schema.registry
+package net.corda.schema.registry.impl
 
 import net.corda.data.AvroEnvelope
 import net.corda.data.AvroGeneratedMessageClasses.Companion.getAvroGeneratedMessageClasses
 import net.corda.data.crypto.SecureHash
 import net.corda.data.test.EvolvedMessage
+import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.schema.registry.deserialize
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.parseAsHex
 import net.corda.v5.base.types.toHexString

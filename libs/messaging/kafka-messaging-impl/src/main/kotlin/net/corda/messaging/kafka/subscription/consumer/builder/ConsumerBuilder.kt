@@ -6,7 +6,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 /**
  * Builder for creating Consumers.
  */
-interface ConsumerBuilder<K, V> {
+interface ConsumerBuilder<K : Any, V : Any> {
 
     /**
      * Generate a Corda Kafka Consumer based on the [subscriptionConfig].

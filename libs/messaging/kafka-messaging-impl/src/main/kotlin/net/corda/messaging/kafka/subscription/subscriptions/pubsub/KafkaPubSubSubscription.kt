@@ -15,6 +15,7 @@ import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.Exception
+import java.nio.ByteBuffer
 import kotlin.concurrent.thread
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.locks.ReentrantLock
@@ -34,7 +35,7 @@ import kotlin.concurrent.withLock
  *                    If executor is null processor executed on the same thread as the consumer.
  *
  */
-class KafkaPubSubSubscription<K, V>(
+class KafkaPubSubSubscription<K : Any, V : Any>(
     private val subscriptionConfig: SubscriptionConfig,
     private val kafkaConfig: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,
@@ -173,7 +174,7 @@ class KafkaPubSubSubscription<K, V>(
      * Process Kafka [consumerRecords]. Process them using an [executor] if it not null or on the same
      * thread otherwise. Commit the offset for each record back to the topic after processing them synchronously.
      */
-    private fun processPubSubRecords(consumerRecords: List<ConsumerRecord<K, V>>, consumer: CordaKafkaConsumer<K, V>) {
+    private fun processPubSubRecords(consumerRecords: List<ConsumerRecord<K, ByteBuffer>>, consumer: CordaKafkaConsumer<K, V>) {
         for (consumerRecord in consumerRecords) {
             val eventRecord = consumer.getRecord(consumerRecord)
             if (executor != null) {

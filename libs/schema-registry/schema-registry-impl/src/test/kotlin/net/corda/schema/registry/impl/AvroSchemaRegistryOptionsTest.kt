@@ -1,4 +1,4 @@
-package net.corda.schema.registry
+package net.corda.schema.registry.impl
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

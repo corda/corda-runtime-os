@@ -1,4 +1,4 @@
-package net.corda.schema.registry
+package net.corda.schema.registry.impl
 
 import net.corda.data.Magic
 

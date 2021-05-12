@@ -6,7 +6,7 @@ import net.corda.messaging.api.records.Record
  * A processor of events from a pub sub non durable subscription. Consumer processors of events.
  * from PubSub subscriptions should implement this interface.
  */
-interface PubSubProcessor<K, V> {
+interface PubSubProcessor<K : Any, V : Any> {
 
     /**
      * Process an [event] record and produce a list of new records.

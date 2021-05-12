@@ -14,8 +14,10 @@ interface PublisherFactory {
      * @return A publisher of events.
      * @throws CordaMessageAPIException Exception in generating a Publisher.
      */
-    fun <K, V> createPublisher(
+    fun <K : Any, V : Any> createPublisher(
         publisherConfig: PublisherConfig,
-        properties: Map<String, String>
+        properties: Map<String, String>,
+        keyClass: Class<K>,
+        valueClass: Class<V>,
     ): Publisher<K, V>
 }

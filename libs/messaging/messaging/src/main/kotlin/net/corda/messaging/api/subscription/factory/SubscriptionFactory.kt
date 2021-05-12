@@ -26,7 +26,7 @@ interface SubscriptionFactory {
      * execute on the same thread as the consumer.
      * @return A subscription to manage lifecycle.
      */
-    fun <K,V> createPubSubSubscription(subscriptionConfig: SubscriptionConfig,
+    fun <K : Any, V : Any> createPubSubSubscription(subscriptionConfig: SubscriptionConfig,
                                        processor: PubSubProcessor<K, V>,
                                        executor: ExecutorService?,
                                        properties: Map<String, String>): Subscription<K, V>
@@ -41,7 +41,7 @@ interface SubscriptionFactory {
      * @param properties Map of properties to override the default settings for the connection to the source of events
      * @return A subscription to manage lifecycle.
      */
-   fun <K, V> createDurableSubscription(subscriptionConfig: SubscriptionConfig,
+   fun <K : Any, V : Any> createDurableSubscription(subscriptionConfig: SubscriptionConfig,
                                         processor: DurableProcessor<K, V>,
                                         properties: Map<String, String>) : Subscription<K, V>
 
@@ -55,7 +55,7 @@ interface SubscriptionFactory {
      * @param properties Map of properties to override the default settings for the connection to the source of events
      * @return A subscription to manage lifecycle.
      */
-   fun <K, S, E> createStateAndEventSubscription(subscriptionConfig: StateAndEventSubscriptionConfig,
+   fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(subscriptionConfig: StateAndEventSubscriptionConfig,
                                                  processor: StateAndEventProcessor<K, S, E>,
                                                  properties: Map<String, String>) : StateAndEventSubscription<K, S, E>
 }
