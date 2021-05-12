@@ -7,7 +7,10 @@ import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.TopicPartition
 import java.nio.ByteBuffer
 
-fun createMockConsumerAndAddRecords(topic: String, numberOfRecords: Long, offsetResetStrategy: OffsetResetStrategy): Pair<MockConsumer<String, ByteBuffer>, TopicPartition> {
+fun createMockConsumerAndAddRecords(topic: String,
+                                    numberOfRecords: Long,
+                                    offsetResetStrategy: OffsetResetStrategy):
+        Pair<MockConsumer<String, ByteBuffer>, TopicPartition> {
     val topicPartition = TopicPartition(topic, 1)
     val partitions = mutableListOf(topicPartition)
     val partitionsBeginningMap = mutableMapOf<TopicPartition, Long>()
