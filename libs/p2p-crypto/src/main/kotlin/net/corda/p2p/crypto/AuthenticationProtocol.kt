@@ -55,52 +55,58 @@ abstract class AuthenticationProtocol {
     private val hkdf = HKDF()
 
     fun generateHandshakeSecrets(inputKeyMaterial: ByteArray, clientHelloToServerHello: ByteArray): SharedHandshakeSecrets {
-        val earlySecret = hkdf.extract(byteArrayOf(0, 0), ByteArray(32) { 0 })
-        val info = calculateInfo("derived", sha256Hash.hash("".toByteArray()), 32)
-        val salt0 = hkdf.expand(earlySecret, info, 32)
+        val zeroBytes = ByteArray(sha256Hash.digestSize) { 0 }
+        val earlySecret = hkdf.extract(zeroBytes, zeroBytes)
+        val salt0 = hkdfExpandLabel(earlySecret, "derived", sha256Hash.hash("".toByteArray()), 32)
         val handshakeSecret = hkdf.extract(salt0, inputKeyMaterial)
 
+        val clientHandshakeTrafficSecret = hkdfExpandLabel(handshakeSecret, "c hs traffic", sha256Hash.hash(clientHelloToServerHello), 32)
+        val serverHandshakeTrafficSecret = hkdfExpandLabel(handshakeSecret, "s hs traffic", sha256Hash.hash(clientHelloToServerHello), 32)
 
-        val clientHandshakeInfo = calculateInfo("c hs traffic", sha256Hash.hash(clientHelloToServerHello), 32)
-        val serverHandshakeInfo = calculateInfo("s hs traffic", sha256Hash.hash(clientHelloToServerHello), 32)
-        val clientHandshakeTrafficSecret = hkdf.expand(handshakeSecret, clientHandshakeInfo, 32)
-        val serverHandshakeTrafficSecret = hkdf.expand(handshakeSecret, serverHandshakeInfo, 32)
-        val initiatorMacKeyBytes = hkdf.expand(clientHandshakeTrafficSecret, calculateInfo("finished", sha256Hash.hash(ByteArray(0)), 32), 32)
+        val initiatorMacKeyBytes = hkdfExpandLabel(clientHandshakeTrafficSecret, "finished", ByteArray(0),32)
         val initiatorMacKey = SecretKeySpec(initiatorMacKeyBytes, "HmacSHA512")
-        val responderMackKeyBytes = hkdf.expand(serverHandshakeTrafficSecret, calculateInfo("finished", sha256Hash.hash(ByteArray(0)), 32), 32)
+
+        val responderMackKeyBytes = hkdfExpandLabel(serverHandshakeTrafficSecret, "finished", ByteArray(0), 32)
         val responderMacKey = SecretKeySpec(responderMackKeyBytes, "HmacSHA512")
-        val initiatorEncryptionKeyBytes = hkdf.expand(clientHandshakeTrafficSecret, calculateInfo("key", sha256Hash.hash(ByteArray(0)), 16), 16)
+
+        val initiatorEncryptionKeyBytes = hkdfExpandLabel(clientHandshakeTrafficSecret, "key", ByteArray(0), 16)
         val initiatorEncryptionKey = SecretKeySpec(initiatorEncryptionKeyBytes, "HmacSHA512")
-        val responderEncryptionKeyBytes = hkdf.expand(serverHandshakeTrafficSecret, calculateInfo("key", sha256Hash.hash(ByteArray(0)), 16), 16)
+
+        val responderEncryptionKeyBytes = hkdfExpandLabel(serverHandshakeTrafficSecret, "key", ByteArray(0), 16)
         val responderEncryptionKey = SecretKeySpec(responderEncryptionKeyBytes, "HmacSHA512")
-        val initiatorNonce = hkdf.expand(clientHandshakeTrafficSecret, calculateInfo("iv", sha256Hash.hash(ByteArray(0)), 12), 12)
-        val responderNonce = hkdf.expand(serverHandshakeTrafficSecret, calculateInfo("iv", sha256Hash.hash(ByteArray(0)), 12), 12)
+
+        val initiatorNonce = hkdfExpandLabel(clientHandshakeTrafficSecret, "iv", ByteArray(0), 12)
+        val responderNonce = hkdfExpandLabel(serverHandshakeTrafficSecret, "iv", ByteArray(0), 12)
 
         return SharedHandshakeSecrets(initiatorMacKey, responderMacKey, initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
     }
 
     fun generateSessionSecrets(inputKeyMaterial: ByteArray, clientHelloToServerFinished: ByteArray): SharedSessionSecrets {
-        val earlySecret = hkdf.extract(byteArrayOf(0, 0), ByteArray(32) { 0 })
-        val info = calculateInfo("derived", sha256Hash.hash("".toByteArray()), 32)
-        val salt0 = hkdf.expand(earlySecret, info, 32)
+        val zeroBytes = ByteArray(sha256Hash.digestSize) { 0 }
+        val earlySecret = hkdf.extract(zeroBytes, zeroBytes)
+        val salt0 = hkdfExpandLabel(earlySecret, "derived", sha256Hash.hash("".toByteArray()), 32)
         val handshakeSecret = hkdf.extract(salt0, inputKeyMaterial)
-        val salt1 = hkdf.expand(handshakeSecret, calculateInfo("derived", sha256Hash.hash(ByteArray(0)), 32), 32)
-        val masterSecret = hkdf.extract(salt1, ByteArray(32) { 0 })
+        val salt1 = hkdfExpandLabel(handshakeSecret, "derived", ByteArray(0), 32)
+        val masterSecret = hkdf.extract(salt1, zeroBytes)
 
-        val clientApplicationTrafficSecret = hkdf.expand(masterSecret, calculateInfo("c ap traffic", sha256Hash.hash(clientHelloToServerFinished), 32), 32)
-        val serverApplicationTrafficSecret = hkdf.expand(masterSecret, calculateInfo("s ap traffic", sha256Hash.hash(clientHelloToServerFinished), 32), 32)
-        val initiatorEncryptionKeyBytes = hkdf.expand(clientApplicationTrafficSecret, calculateInfo("key", sha256Hash.hash(clientHelloToServerFinished), 16), 16)
+        val clientApplicationTrafficSecret = hkdfExpandLabel(masterSecret, "c ap traffic", sha256Hash.hash(clientHelloToServerFinished), 32)
+        val serverApplicationTrafficSecret = hkdfExpandLabel(masterSecret, "s ap traffic", sha256Hash.hash(clientHelloToServerFinished), 32)
+
+        val initiatorEncryptionKeyBytes = hkdfExpandLabel(clientApplicationTrafficSecret, "key", sha256Hash.hash(clientHelloToServerFinished), 16)
         val initiatorEncryptionKey = SecretKeySpec(initiatorEncryptionKeyBytes, "AES")
-        val responderEncryptionKeyBytes = hkdf.expand(serverApplicationTrafficSecret, calculateInfo("key", sha256Hash.hash(clientHelloToServerFinished), 16), 16)
+
+        val responderEncryptionKeyBytes = hkdfExpandLabel(serverApplicationTrafficSecret, "key", sha256Hash.hash(clientHelloToServerFinished), 16)
         val responderEncryptionKey = SecretKeySpec(responderEncryptionKeyBytes, "AES")
-        val initiatorNonce = hkdf.expand(clientApplicationTrafficSecret, calculateInfo("iv", ByteArray(0), 12), 12)
-        val responderNonce = hkdf.expand(serverApplicationTrafficSecret, calculateInfo("iv", ByteArray(0), 12), 12)
+
+        val initiatorNonce = hkdfExpandLabel(clientApplicationTrafficSecret, "iv", ByteArray(0), 12)
+        val responderNonce = hkdfExpandLabel(serverApplicationTrafficSecret, "iv", ByteArray(0), 12)
 
         return SharedSessionSecrets(initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
     }
 
-    private fun calculateInfo(label: String, context: ByteArray, length: Int): ByteArray {
-        return (length.toString() + "tls13" + label).toByteArray() + context
+    private fun hkdfExpandLabel(secret: ByteArray, label: String, context: ByteArray, length: Int): ByteArray {
+        val info = (length.toString() + "tls13" + label).toByteArray() + context
+        return hkdf.expand(secret, info, length)
     }
 
 

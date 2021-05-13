@@ -6,6 +6,21 @@ import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 
+/**
+ * The initiator side of the session authentication protocol.
+ *
+ * This class expects clients to call methods for each step in sequence and only once, i.e.:
+ * - [generateClientHello]
+ * - [receiveServerHello]
+ * - [generateHandshakeSecrets]
+ * - [generateOurHandshakeMessage]
+ * - [validatePeerHandshakeMessage]
+ * - [getSession]
+ *
+ * The [step] variable can be used to avoid calling methods when they have been called already (i.e. because of a duplicate message).
+ *
+ * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
+ */
 class AuthenticationProtocolInitiator(private val sessionId: String, private val supportedModes: List<Mode>): AuthenticationProtocol() {
 
     var step = Step.INIT
@@ -112,7 +127,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
 
         val fullTranscript = clientHelloToServerHelloBytes!! + clientHandshakePayload!! + serverHandshakePayload!!
         val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
-        return AuthenticatedSession(sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.initiatorNonce, sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce)
+        return AuthenticatedSession(sessionId, 2, sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.responderEncryptionKey)
     }
 
 }

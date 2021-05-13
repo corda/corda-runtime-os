@@ -1,7 +1,5 @@
 package net.corda.p2p.crypto.data
 
-import net.corda.p2p.crypto.data.CommonHeader
-
 data class HandshakeMessage(val recordHeader: CommonHeader, val encryptedData: ByteArray, val tag: ByteArray) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

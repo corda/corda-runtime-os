@@ -8,6 +8,21 @@ import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 
+/**
+ * The responder side of the session authentication protocol.
+ *
+ * This class expects clients to call methods for each step in sequence and only once, i.e.:
+ * - [receiveClientHello]
+ * - [generateServerHello]
+ * - [generateHandshakeSecrets]
+ * - [validatePeerHandshakeMessage]
+ * - [generateOurHandshakeMessage]
+ * - [getSession]
+ *
+ * The [step] variable can be used to avoid calling methods when they have been called already (i.e. because of a duplicate message).
+ *
+ * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
+ */
 class AuthenticationProtocolResponder(private val sessionId: String, private val supportedModes: List<Mode>): AuthenticationProtocol() {
 
     companion object {
@@ -78,9 +93,9 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
     /**
      * Caution: this is available in cases where one component needs to perform step 2 of the handshake
      * and forward the generated DH key downstream to another component that wil complete the protocol from that point on.
-     * This means the private key will be temporarily exposed, which is not ideal.
+     * This means the private key will be temporarily exposed.
      *
-     * That downstream component can resume the protocol from that point onwards using the [fromStep2] method.
+     * That downstream component can resume the protocol from that point onwards creating a new instance of this class using the [fromStep2] method.
      *
      * @return a pair containing (in that order) the private and the public DH key.
      */
@@ -156,7 +171,7 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
 
         val fullTranscript = clientHelloToServerHelloBytes!! + clientHandshakePayload!! + serverHandshakePayload!!
         val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
-        return AuthenticatedSession(sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce, sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.initiatorNonce)
+        return AuthenticatedSession(sessionId, 2, sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.initiatorEncryptionKey)
     }
 
 }
@@ -164,4 +179,4 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
 /**
  * There is no mode that is supported both by the client and the server.
  */
-class NoCommonModeError(clientModes: List<Mode>, serverModes: List<Mode>): RuntimeException()
+class NoCommonModeError(val clientModes: List<Mode>, val serverModes: List<Mode>): RuntimeException()
