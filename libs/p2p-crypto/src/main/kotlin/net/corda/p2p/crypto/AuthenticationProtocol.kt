@@ -3,6 +3,8 @@ package net.corda.p2p.crypto
 import net.corda.p2p.crypto.data.ClientHelloMessage
 import net.corda.p2p.crypto.data.ServerHelloMessage
 import org.bouncycastle.crypto.digests.SHA256Digest
+import org.bouncycastle.crypto.generators.HKDFBytesGenerator
+import org.bouncycastle.crypto.params.HKDFParameters
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.lang.RuntimeException
 import java.nio.ByteBuffer
@@ -43,7 +45,6 @@ abstract class AuthenticationProtocol {
     protected val ecAlgoName = "X25519"
     protected val provider = BouncyCastleProvider()
     protected val ephemeralKeyFactory = KeyFactory.getInstance(ecAlgoName, provider)
-    protected val stableKeyFactory = KeyFactory.getInstance("EC", provider)
     protected val keyPairGenerator = KeyPairGenerator.getInstance(ecAlgoName, provider).apply {
         this.initialize(256, secureRandom)
     }
@@ -52,63 +53,48 @@ abstract class AuthenticationProtocol {
     protected val aesCipher = Cipher.getInstance("AES/GCM/NoPadding", provider)
     protected val signature = Signature.getInstance("ECDSA", provider)
     protected val sha256Hash = SHA256Digest()
-    private val hkdf = HKDF()
 
     fun generateHandshakeSecrets(inputKeyMaterial: ByteArray, clientHelloToServerHello: ByteArray): SharedHandshakeSecrets {
-        val zeroBytes = ByteArray(sha256Hash.digestSize) { 0 }
-        val earlySecret = hkdf.extract(zeroBytes, zeroBytes)
-        val salt0 = hkdfExpandLabel(earlySecret, "derived", sha256Hash.hash("".toByteArray()), 32)
-        val handshakeSecret = hkdf.extract(salt0, inputKeyMaterial)
-
-        val clientHandshakeTrafficSecret = hkdfExpandLabel(handshakeSecret, "c hs traffic", sha256Hash.hash(clientHelloToServerHello), 32)
-        val serverHandshakeTrafficSecret = hkdfExpandLabel(handshakeSecret, "s hs traffic", sha256Hash.hash(clientHelloToServerHello), 32)
-
-        val initiatorMacKeyBytes = hkdfExpandLabel(clientHandshakeTrafficSecret, "finished", ByteArray(0),32)
-        val initiatorMacKey = SecretKeySpec(initiatorMacKeyBytes, "HmacSHA512")
-
-        val responderMackKeyBytes = hkdfExpandLabel(serverHandshakeTrafficSecret, "finished", ByteArray(0), 32)
-        val responderMacKey = SecretKeySpec(responderMackKeyBytes, "HmacSHA512")
-
-        val initiatorEncryptionKeyBytes = hkdfExpandLabel(clientHandshakeTrafficSecret, "key", ByteArray(0), 16)
+        val initiatorEncryptionKeyBytes = hkdf(clientHelloToServerHello, inputKeyMaterial, "Corda client hs enc key", 32)
         val initiatorEncryptionKey = SecretKeySpec(initiatorEncryptionKeyBytes, "HmacSHA512")
 
-        val responderEncryptionKeyBytes = hkdfExpandLabel(serverHandshakeTrafficSecret, "key", ByteArray(0), 16)
+        val responderEncryptionKeyBytes = hkdf(clientHelloToServerHello, inputKeyMaterial, "Corda server hs enc key", 32)
         val responderEncryptionKey = SecretKeySpec(responderEncryptionKeyBytes, "HmacSHA512")
 
-        val initiatorNonce = hkdfExpandLabel(clientHandshakeTrafficSecret, "iv", ByteArray(0), 12)
-        val responderNonce = hkdfExpandLabel(serverHandshakeTrafficSecret, "iv", ByteArray(0), 12)
+        val initiatorNonce = hkdf(clientHelloToServerHello, inputKeyMaterial, "Corda client hs enc iv", 12)
+        val responderNonce = hkdf(clientHelloToServerHello, inputKeyMaterial,"Corda server hs enc iv", 12)
+
+        val initiatorMacKeyBytes = hkdf(clientHelloToServerHello, inputKeyMaterial, "Corda client hs mac key", 32)
+        val initiatorMacKey = SecretKeySpec(initiatorMacKeyBytes, "HmacSHA512")
+
+        val responderMackKeyBytes = hkdf(clientHelloToServerHello, inputKeyMaterial, "Corda server hs mac key", 32)
+        val responderMacKey = SecretKeySpec(responderMackKeyBytes, "HmacSHA512")
 
         return SharedHandshakeSecrets(initiatorMacKey, responderMacKey, initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
     }
 
     fun generateSessionSecrets(inputKeyMaterial: ByteArray, clientHelloToServerFinished: ByteArray): SharedSessionSecrets {
-        val zeroBytes = ByteArray(sha256Hash.digestSize) { 0 }
-        val earlySecret = hkdf.extract(zeroBytes, zeroBytes)
-        val salt0 = hkdfExpandLabel(earlySecret, "derived", sha256Hash.hash("".toByteArray()), 32)
-        val handshakeSecret = hkdf.extract(salt0, inputKeyMaterial)
-        val salt1 = hkdfExpandLabel(handshakeSecret, "derived", ByteArray(0), 32)
-        val masterSecret = hkdf.extract(salt1, zeroBytes)
-
-        val clientApplicationTrafficSecret = hkdfExpandLabel(masterSecret, "c ap traffic", sha256Hash.hash(clientHelloToServerFinished), 32)
-        val serverApplicationTrafficSecret = hkdfExpandLabel(masterSecret, "s ap traffic", sha256Hash.hash(clientHelloToServerFinished), 32)
-
-        val initiatorEncryptionKeyBytes = hkdfExpandLabel(clientApplicationTrafficSecret, "key", sha256Hash.hash(clientHelloToServerFinished), 16)
+        val initiatorEncryptionKeyBytes = hkdf(clientHelloToServerFinished, inputKeyMaterial, "Corda client session key", 32)
         val initiatorEncryptionKey = SecretKeySpec(initiatorEncryptionKeyBytes, "AES")
 
-        val responderEncryptionKeyBytes = hkdfExpandLabel(serverApplicationTrafficSecret, "key", sha256Hash.hash(clientHelloToServerFinished), 16)
+        val responderEncryptionKeyBytes = hkdf(clientHelloToServerFinished, inputKeyMaterial, "Corda server session key", 12)
         val responderEncryptionKey = SecretKeySpec(responderEncryptionKeyBytes, "AES")
 
-        val initiatorNonce = hkdfExpandLabel(clientApplicationTrafficSecret, "iv", ByteArray(0), 12)
-        val responderNonce = hkdfExpandLabel(serverApplicationTrafficSecret, "iv", ByteArray(0), 12)
+        val initiatorNonce = hkdf(clientHelloToServerFinished, inputKeyMaterial, "Corda client session iv", 12)
+        val responderNonce = hkdf(clientHelloToServerFinished, inputKeyMaterial, "Corda server session iv", 12)
 
         return SharedSessionSecrets(initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
     }
 
-    private fun hkdfExpandLabel(secret: ByteArray, label: String, context: ByteArray, length: Int): ByteArray {
-        val info = (length.toString() + "tls13" + label).toByteArray() + context
-        return hkdf.expand(secret, info, length)
-    }
+    private fun hkdf(salt: ByteArray, inputKeyMaterial: ByteArray, info: String, length: Int): ByteArray {
+        val hkdf = HKDFBytesGenerator(sha256Hash)
+        hkdf.init(HKDFParameters(inputKeyMaterial, salt, info.toByteArray(Charsets.UTF_8)))
 
+        val outputKeyMaterial = ByteArray(length)
+        hkdf.generateBytes(outputKeyMaterial, 0, length)
+
+        return outputKeyMaterial
+    }
 
     /**
      * @property initiatorAuthKey used for MAC on handshake messages by initiator.
