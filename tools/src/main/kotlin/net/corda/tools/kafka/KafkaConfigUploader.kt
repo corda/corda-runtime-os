@@ -17,15 +17,15 @@ fun main(args: Array<String>) {
         exitProcess(1)
     }
 
-    val kafkaProps =
-        loadKafkaConfig(args[0], StringSerializer::class.qualifiedName, StringSerializer::class.qualifiedName)
+    val kafkaProps = loadKafkaConfig(args[0])
 
     val topic = args[1]
     createTopic(topic, 1, 1, kafkaProps)
 
     val configuration = ConfigFactory.parseString(File(args[2]).readText())
 
-    val producer = createProducer(kafkaProps)
+    val producer =
+        createProducer(kafkaProps, StringSerializer::class.qualifiedName, StringSerializer::class.qualifiedName)
     for (key in configuration.root().keys) {
         val record = configuration.atKey(key).toString()
         println("Producing record: $key\t$record")

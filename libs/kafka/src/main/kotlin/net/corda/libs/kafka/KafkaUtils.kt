@@ -25,19 +25,14 @@ fun createTopic(
     }
 }
 
-fun createProducer(props: Properties): KafkaProducer<Any, Any> {
-    return KafkaProducer(props)
-}
-
-fun loadKafkaConfig (configFile: String, keySerialiser: String?, valueSerialiser: String?): Properties {
-    val props = loadConfig(configFile)
+fun createProducer(props: Properties, keySerialiser: String?, valueSerialiser: String?): KafkaProducer<Any, Any> {
     props[ProducerConfig.ACKS_CONFIG] = "all"
     props[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = keySerialiser
     props[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = valueSerialiser
-    return props
+    return KafkaProducer(props)
 }
 
-private fun loadConfig(configFile: String) = FileInputStream(configFile).use {
+fun loadKafkaConfig(configFile: String) = FileInputStream(configFile).use {
     Properties().apply {
         load(it)
     }
