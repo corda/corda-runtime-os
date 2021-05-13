@@ -1,0 +1,37 @@
+plugins {
+    id 'corda.publish'
+    id 'corda.common-app'
+    id 'java'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+group 'net.corda'
+version '5.0.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':libs:kafka')
+    implementation 'org.apache.kafka:kafka-clients:2.1.0'
+    implementation 'org.apache.kafka:kafka-streams:2.1.0'
+    implementation 'org.apache.kafka:connect-runtime:2.1.0'
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+task uploadConfigToKafka(type: JavaExec) {
+    classpath = sourceSets["main"].runtimeClasspath
+    main = 'net.corda.tools.kafka.KafkaConfigUploaderKt'
+    args 'C:\\flow-worker\\tools\\src\\main\\resources\\kafka.properties', 'test3', 'C:\\flow-worker\\tools\\src\\main\\resources\\config.conf'
+}
