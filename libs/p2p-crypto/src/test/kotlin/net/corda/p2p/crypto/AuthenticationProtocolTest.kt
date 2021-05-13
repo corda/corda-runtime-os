@@ -18,11 +18,11 @@ class AuthenticationProtocolTest {
 
     // party A
     private val partyAIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId)
+    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, listOf(Mode.AUTHENTICATION_ONLY))
 
     // party B
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId)
+    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, listOf(Mode.AUTHENTICATION_ONLY))
 
     @Test
     fun `test key exchange protocol between two components`() {
@@ -105,7 +105,7 @@ class AuthenticationProtocolTest {
 
         // Fronting component of responder sends data downstream so that protocol can be continued.
         val (privateKey, publicKey) = authenticationProtocolB.getDHKeyPair()
-        val authenticationProtocolBDownstream = AuthenticationProtocolResponder.fromStep2(sessionId, clientHelloMsg, serverHelloMsg, privateKey, publicKey)
+        val authenticationProtocolBDownstream = AuthenticationProtocolResponder.fromStep2(sessionId, listOf(Mode.AUTHENTICATION_ONLY), clientHelloMsg, serverHelloMsg, privateKey, publicKey)
 
         // Both sides generate handshake secrets.
         authenticationProtocolA.generateHandshakeSecrets()

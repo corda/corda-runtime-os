@@ -1,7 +1,7 @@
 package net.corda.p2p.crypto
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import net.corda.p2p.crypto.data.ClientHelloMessage
+import net.corda.p2p.crypto.data.ServerHelloMessage
 import org.bouncycastle.crypto.digests.SHA256Digest
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.ByteBuffer
@@ -13,10 +13,17 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-open class AuthenticationProtocol {
+/**
+ * A base, abstract class containing the core utilities for the session authentication protocol.
+ * [AuthenticationProtocolInitiator] implements the APIs for the initiator side.
+ * [AuthenticationProtocolResponder] implements the APIs for the responder side.
+ */
+abstract class AuthenticationProtocol {
     companion object {
         val clientSigPad = " ".repeat(64) + "Corda, client signature verify" + "\\0"
         val serverSigPad = " ".repeat(64) + "Corda, server signature verify" + "\\0"
+
+        const val PROTOCOL_VERSION = 1
     }
 
     protected var myPrivateDHKey: PrivateKey? = null
@@ -46,8 +53,6 @@ open class AuthenticationProtocol {
     protected val signature = Signature.getInstance("ECDSA", provider)
     private val sha256Hash = SHA256Digest()
     private val hkdf = HKDF()
-
-    protected val objectMapper = ObjectMapper().registerKotlinModule()
 
     fun generateHandshakeSecrets(inputKeyMaterial: ByteArray, clientHelloToServerHello: ByteArray): SharedHandshakeSecrets {
         val earlySecret = hkdf.extract(byteArrayOf(0, 0), ByteArray(32) { 0 })
@@ -162,12 +167,29 @@ fun KeyAgreement.perform(privateKey: PrivateKey, publicKey: PublicKey): ByteArra
 
 fun Int.toByteArray() = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(this).array()
 
-data class HelloMessage(val sessionId: String, val timestamp: Long, val publicKey: ByteArray)
-typealias ClientHelloMessage = HelloMessage
-typealias ServerHelloMessage = HelloMessage
+enum class MessageType {
+    /**
+     * Step 1 of session authentication protocol.
+     */
+    CLIENT_HELLO,
 
-data class RecordHeader(val sessionId: String, val timestamp: Long)
-
-data class HandshakeMessage(val recordHeader: RecordHeader, val encryptedData: ByteArray, val tag: ByteArray)
-typealias ClientHandshakeMessage = HandshakeMessage
-typealias ServerHandshakeMessage = HandshakeMessage
+    /**
+     * Step 2 of session authentication protocol.
+     */
+    SERVER_HELLO,
+    /**
+     * Step 3 of session authentication protocol.
+     */
+    CLIENT_HANDSHAKE,
+    /**
+     * Step 4 of session authentication protocol.
+     */
+    SERVER_HANDSHAKE,
+    /**
+     * Any data message exchanged after the session authentication protocol has been completed.
+     */
+    DATA
+}
+enum class Mode {
+    AUTHENTICATION_ONLY
+}

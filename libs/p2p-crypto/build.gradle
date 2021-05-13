@@ -2,10 +2,6 @@ dependencies {
     implementation "net.corda:corda-base:$cordaVersion"
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
 
-    //TODO: remove the below
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.12.2"
-    implementation "com.fasterxml.jackson.core:jackson-databind:2.12.2"
-
     testRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
 }
 

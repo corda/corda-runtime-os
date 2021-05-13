@@ -1,11 +1,12 @@
 package net.corda.p2p.crypto
 
+import net.corda.p2p.crypto.data.*
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 
-class AuthenticationProtocolInitiator(private val sessionId: String): AuthenticationProtocol() {
+class AuthenticationProtocolInitiator(private val sessionId: String, private val supportedModes: List<Mode>): AuthenticationProtocol() {
 
     var step = Step.INIT
 
@@ -27,7 +28,8 @@ class AuthenticationProtocolInitiator(private val sessionId: String): Authentica
         myPrivateDHKey = keyPair.private
         myPublicDHKey = keyPair.public.encoded
 
-        clientHelloMessage = ClientHelloMessage(sessionId, Instant.now().toEpochMilli(), myPublicDHKey!!)
+        val commonHeader = CommonHeader(MessageType.CLIENT_HELLO, PROTOCOL_VERSION, sessionId, 0, Instant.now().toEpochMilli())
+        clientHelloMessage = ClientHelloMessage(commonHeader, myPublicDHKey!!, supportedModes)
         return clientHelloMessage!!
     }
 
@@ -36,8 +38,8 @@ class AuthenticationProtocolInitiator(private val sessionId: String): Authentica
         step = Step.RECEIVED_PEER_DH_KEY
 
         serverHelloMessage = serverHelloMsg
-        clientHelloToServerHelloBytes = objectMapper.writeValueAsBytes(clientHelloMessage) + objectMapper.writeValueAsBytes(serverHelloMessage)
-        peerPublicDHKey = ephemeralKeyFactory.generatePublic(X509EncodedKeySpec(serverHelloMsg.publicKey))
+        clientHelloToServerHelloBytes = clientHelloMessage!!.toBytes() + serverHelloMessage!!.toBytes()
+        peerPublicDHKey = ephemeralKeyFactory.generatePublic(X509EncodedKeySpec(serverHelloMsg.serverPublicKey))
         sharedDHSecret = keyAgreement.perform(myPrivateDHKey!!, peerPublicDHKey!!)
     }
 
@@ -55,8 +57,8 @@ class AuthenticationProtocolInitiator(private val sessionId: String): Authentica
         require(step == Step.GENERATED_HANDSHAKE_SECRETS)
         step = Step.SENT_HANDSHAKE_MESSAGE
 
-        val clientRecordHeader = RecordHeader(sessionId, Instant.now().toEpochMilli())
-        val clientRecordHeaderBytes = objectMapper.writeValueAsBytes(clientRecordHeader)
+        val clientRecordHeader = CommonHeader(MessageType.CLIENT_HANDSHAKE, PROTOCOL_VERSION, sessionId, 1, Instant.now().toEpochMilli())
+        val clientRecordHeaderBytes = clientRecordHeader.toBytes()
         val clientPublicKey = publicKey.encoded.size.toByteArray() + publicKey.encoded
         val clientHelloToClientPublicKey = clientHelloToServerHelloBytes!! + clientPublicKey
         val contentToBeSignedByClient = clientSigPad.toByteArray(Charsets.UTF_8) + hash.digest(clientHelloToClientPublicKey)
@@ -78,7 +80,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String): Authentica
         require(step == Step.SENT_HANDSHAKE_MESSAGE)
         step = Step.RECEIVED_HANDSHAKE_MESSAGE
 
-        val serverRecordHeader = objectMapper.writeValueAsBytes(serverHandshakeMessage.recordHeader)
+        val serverRecordHeader = serverHandshakeMessage.recordHeader.toBytes()
         serverHandshakePayload = aesCipher.decrypt(serverRecordHeader, serverHandshakeMessage.tag, sharedHandshakeSecrets!!.responderNonce, serverHandshakeMessage.encryptedData, sharedHandshakeSecrets!!.responderEncryptionKey)
         val responderHandshakeMessagePayloadDecryptedBuffer = ByteBuffer.wrap(serverHandshakePayload)
         val responderPublicKeySize = responderHandshakeMessagePayloadDecryptedBuffer.int
