@@ -4,6 +4,7 @@ import net.corda.p2p.crypto.data.ClientHelloMessage
 import net.corda.p2p.crypto.data.ServerHelloMessage
 import org.bouncycastle.crypto.digests.SHA256Digest
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import java.lang.RuntimeException
 import java.nio.ByteBuffer
 import java.security.*
 import javax.crypto.Cipher
@@ -48,10 +49,9 @@ abstract class AuthenticationProtocol {
     }
     protected val keyAgreement = KeyAgreement.getInstance(ecAlgoName, provider)
     protected val hmac = Mac.getInstance("HMac-SHA256", provider)
-    protected val hash = MessageDigest.getInstance("SHA-512", provider)
     protected val aesCipher = Cipher.getInstance("AES/GCM/NoPadding", provider)
     protected val signature = Signature.getInstance("ECDSA", provider)
-    private val sha256Hash = SHA256Digest()
+    protected val sha256Hash = SHA256Digest()
     private val hkdf = HKDF()
 
     fun generateHandshakeSecrets(inputKeyMaterial: ByteArray, clientHelloToServerHello: ByteArray): SharedHandshakeSecrets {
@@ -141,6 +141,12 @@ fun SHA256Digest.hash(data: ByteArray): ByteArray {
     return hash
 }
 
+fun Mac.calculateMac(key: SecretKey, data: ByteArray): ByteArray {
+    this.init(key)
+    this.update(data)
+    return this.doFinal()
+}
+
 /**
  * @return  (in this order) the encrypted data and the authentication tag
  */
@@ -160,6 +166,12 @@ fun Cipher.decrypt(aad: ByteArray, tag: ByteArray, nonce: ByteArray, ciphertext:
     this.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, nonce))
     this.updateAAD(aad)
     return this.doFinal(ciphertext + tag)
+}
+
+fun Signature.verify(publicKey: PublicKey, data: ByteArray, signature: ByteArray): Boolean {
+    this.initVerify(publicKey)
+    this.update(data)
+    return this.verify(signature)
 }
 
 /**
@@ -199,3 +211,6 @@ enum class MessageType {
 enum class Mode {
     AUTHENTICATION_ONLY
 }
+
+class HandshakeMacInvalid: RuntimeException()
+class HandshakeSignatureInvalid: RuntimeException()

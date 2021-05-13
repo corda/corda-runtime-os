@@ -112,55 +112,65 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
         sharedHandshakeSecrets = generateHandshakeSecrets(sharedDHSecret!!, clientHelloToServerHelloBytes!!)
     }
 
-    fun validatePeerHandshakeMessage(clientHandshakeMessage: ClientHandshakeMessage) {
+    /**
+     * @param keyLookupFn a callback function used to perform a lookup of the initiator's public key given its SHA-256 hash.
+     *
+     * @throws HandshakeMacInvalid if the MAC in the handshake is invalid.
+     * @throws HandshakeSignatureInvalid if the signature in the handshake was invalid.
+     *
+     * @return the SHA-256 of the public key we need to use in the handshake.
+     *
+     *
+     */
+    fun validatePeerHandshakeMessage(clientHandshakeMessage: ClientHandshakeMessage, keyLookupFn: (ByteArray) -> PublicKey): ByteArray {
         require(step == Step.GENERATED_HANDSHAKE_SECRETS)
         step = Step.RECEIVED_HANDSHAKE_MESSAGE
 
         val clientRecordHeaderBytes = clientHandshakeMessage.recordHeader.toBytes()
         clientHandshakePayload = aesCipher.decrypt(clientRecordHeaderBytes, clientHandshakeMessage.tag, sharedHandshakeSecrets!!.initiatorNonce, clientHandshakeMessage.encryptedData, sharedHandshakeSecrets!!.initiatorEncryptionKey)
         val payloadBuffer = ByteBuffer.wrap(clientHandshakePayload)
-        val initiatorPublicKeySize = payloadBuffer.int
-        val initiatorPublicKeyBytes = ByteArray(initiatorPublicKeySize)
-        payloadBuffer.get(initiatorPublicKeyBytes)
-        val initiatorPublicKey = stableKeyFactory.generatePublic(X509EncodedKeySpec(initiatorPublicKeyBytes))
-        val signatureSize = payloadBuffer.int
-        val signatureBytes = ByteArray(signatureSize)
-        val clientHelloToClientPublicKey = clientHelloToServerHelloBytes!! + (initiatorPublicKeySize.toByteArray() + initiatorPublicKeyBytes)
-        val contentToBeSigned = clientSigPad.toByteArray(Charsets.UTF_8) + hash.digest(clientHelloToClientPublicKey)
-        payloadBuffer.get(signatureBytes)
-        signature.initVerify(initiatorPublicKey)
-        signature.update(contentToBeSigned)
-        signature.verify(signatureBytes)
-        val macReceivedSize = payloadBuffer.int
-        val macReceived = ByteArray(macReceivedSize)
-        payloadBuffer.get(macReceived)
-        val clientHelloToSignedContent = clientHelloToClientPublicKey + signatureBytes
-        val contentToBeMaced = hash.digest(clientHelloToSignedContent)
-        hmac.init(sharedHandshakeSecrets!!.initiatorAuthKey)
-        hmac.update(contentToBeMaced)
-        val initiatorMacCalculated = hmac.doFinal()
-        require(initiatorMacCalculated.contentEquals(macReceived)) { "Initiator MAC not valid." }
+        val clientEncryptedExtensions = ByteArray(sha256Hash.digestSize)
+        payloadBuffer.get(clientEncryptedExtensions)
+        val clientParty = ByteArray(sha256Hash.digestSize)
+        payloadBuffer.get(clientParty)
+        val initiatorPublicKey = keyLookupFn(clientParty)
+        val clientPartyVerifySize = payloadBuffer.int
+        val clientPartyVerify = ByteArray(clientPartyVerifySize)
+        payloadBuffer.get(clientPartyVerify)
+        val clientHelloToClientParty = clientHelloToServerHelloBytes!! + clientEncryptedExtensions + clientParty
+
+        val signatureWasValid = signature.verify(initiatorPublicKey, clientSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(clientHelloToClientParty), clientPartyVerify)
+        if (!signatureWasValid) {
+            throw HandshakeSignatureInvalid()
+        }
+
+        val clientFinished = ByteArray(hmac.macLength)
+        payloadBuffer.get(clientFinished)
+        val clientHelloToClientPartyVerify = clientHelloToClientParty + clientPartyVerify
+
+        val calculatedClientFinished = hmac.calculateMac(sharedHandshakeSecrets!!.initiatorAuthKey, sha256Hash.hash(clientHelloToClientPartyVerify))
+        if (!calculatedClientFinished.contentEquals(clientFinished)) {
+            throw HandshakeMacInvalid()
+        }
+
+        return clientEncryptedExtensions
     }
 
     /**
      * @param signingFn a callback function that will be invoked for performing signing (with the stable identity key).
      */
-    fun generateOurHandshakeMessage(publicKey: PublicKey, signingFn: (ByteArray) -> ByteArray): ServerHandshakeMessage {
+    fun generateOurHandshakeMessage(ourPublicKey: PublicKey, signingFn: (ByteArray) -> ByteArray): ServerHandshakeMessage {
         require(step == Step.RECEIVED_HANDSHAKE_MESSAGE)
         step = Step.SENT_HANDSHAKE_MESSAGE
 
         val serverRecordHeader = CommonHeader(MessageType.SERVER_HANDSHAKE, PROTOCOL_VERSION, sessionId, 1, Instant.now().toEpochMilli())
         val serverRecordHeaderBytes = serverRecordHeader.toBytes()
-        val serverPublicKey = publicKey.encoded.size.toByteArray() + publicKey.encoded
-        val clientHelloToServerPublicKey = clientHelloToServerHelloBytes!! + clientHandshakePayload!! + serverPublicKey
-        val contentToBeSigned = serverSigPad.toByteArray(Charsets.UTF_8) + hash.digest(clientHelloToServerPublicKey)
-        val serverSignature = signingFn(contentToBeSigned)
-        val clientHelloToServerSignedContent = clientHelloToServerPublicKey + serverSignature
-        val contentToBeMaced = hash.digest(clientHelloToServerSignedContent)
-        hmac.init(sharedHandshakeSecrets!!.responderAuthKey)
-        hmac.update(contentToBeMaced)
-        val serverMac = hmac.doFinal()
-        serverHandshakePayload = serverPublicKey + (serverSignature.size.toByteArray() + serverSignature) + (serverMac.size.toByteArray() + serverMac)
+        val serverParty = sha256Hash.hash(ourPublicKey.encoded)
+        val clientHelloToServerParty = clientHelloToServerHelloBytes!! + clientHandshakePayload!! + serverParty
+        val serverPartyVerify = signingFn(serverSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(clientHelloToServerParty))
+        val clientHelloToServerPartyVerify = clientHelloToServerParty + serverPartyVerify
+        val serverFinished = hmac.calculateMac(sharedHandshakeSecrets!!.responderAuthKey, sha256Hash.hash(clientHelloToServerPartyVerify))
+        serverHandshakePayload = serverParty + (serverPartyVerify.size.toByteArray() + serverPartyVerify) + serverFinished
         val (serverEncryptedData, serverTag) = aesCipher.encryptWithAssociatedData(serverRecordHeaderBytes, sharedHandshakeSecrets!!.responderNonce, serverHandshakePayload!!, sharedHandshakeSecrets!!.responderEncryptionKey)
         return ServerHandshakeMessage(serverRecordHeader, serverEncryptedData, serverTag)
     }
@@ -177,6 +187,6 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
 }
 
 /**
- * There is no mode that is supported both by the client and the server.
+ * Thrown when is no mode that is supported both by the client and the server.
  */
 class NoCommonModeError(val clientModes: List<Mode>, val serverModes: List<Mode>): RuntimeException()
