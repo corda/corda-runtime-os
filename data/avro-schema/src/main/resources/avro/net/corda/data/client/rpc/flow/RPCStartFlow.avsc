@@ -1,0 +1,30 @@
+{
+  "type": "record",
+  "name": "RPCFlowStart",
+  "namespace": "net.corda.data.client.rpc.flow",
+  "fields": [
+    {
+      "name": "clientId",
+      "type": "string"
+    },
+    {
+      "name": "userName",
+      "type": "string"
+    },
+    {
+      "name": "nodeIdentity",
+      "type": "net.corda.data.crypto.SecureHash"
+    },
+    {
+      "name": "flowName",
+      "type": "string"
+    },
+    {
+      "name": "args",
+      "type": {
+        "type": "array",
+        "items": "bytes"
+      }
+    }
+  ]
+}
