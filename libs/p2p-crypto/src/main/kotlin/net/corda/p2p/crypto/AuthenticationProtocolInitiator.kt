@@ -7,6 +7,7 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
+import javax.crypto.AEADBadTagException
 
 /**
  * The initiator side of the session authentication protocol.
@@ -91,19 +92,25 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
 
 
     /**
-     * @throws HandshakeInvalidResponderKeyHash if the responder sent a key hash that does not match with the key we were expecting.
+     * @throws InvalidHandshakeResponderKeyHash if the responder sent a key hash that does not match with the key we were expecting.
+     * @throws InvalidHandshakeMessage if the handshake message was invalid (e.g. due to invalid signatures, MACs etc.)
      */
     fun validatePeerHandshakeMessage(serverHandshakeMessage: ServerHandshakeMessage, theirPublicKey: PublicKey) {
         require(step == Step.SENT_HANDSHAKE_MESSAGE)
         step = Step.RECEIVED_HANDSHAKE_MESSAGE
 
         val serverRecordHeader = serverHandshakeMessage.recordHeader.toBytes()
-        serverHandshakePayload = aesCipher.decrypt(serverRecordHeader, serverHandshakeMessage.tag, sharedHandshakeSecrets!!.responderNonce, serverHandshakeMessage.encryptedData, sharedHandshakeSecrets!!.responderEncryptionKey)
+        try {
+            serverHandshakePayload = aesCipher.decrypt(serverRecordHeader, serverHandshakeMessage.tag, sharedHandshakeSecrets!!.responderNonce, serverHandshakeMessage.encryptedData, sharedHandshakeSecrets!!.responderEncryptionKey)
+        } catch (e: AEADBadTagException) {
+            throw InvalidHandshakeMessage()
+        }
+
         val responderHandshakeMessagePayloadDecryptedBuffer = ByteBuffer.wrap(serverHandshakePayload)
         val serverParty = ByteArray(sha256Hash.digestSize)
         responderHandshakeMessagePayloadDecryptedBuffer.get(serverParty)
         if (!serverParty.contentEquals(sha256Hash.hash(theirPublicKey.encoded))) {
-            throw HandshakeInvalidResponderKeyHash()
+            throw InvalidHandshakeResponderKeyHash()
         }
         val serverPartyVerifySize = responderHandshakeMessagePayloadDecryptedBuffer.int
         val serverPartyVerify = ByteArray(serverPartyVerifySize)
@@ -111,7 +118,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
         val clientHelloToServerParty = clientHelloToServerHelloBytes!! + clientHandshakePayload!! + serverParty
         val signatureWasValid = signature.verify(theirPublicKey, serverSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(clientHelloToServerParty), serverPartyVerify)
         if (!signatureWasValid) {
-            throw HandshakeSignatureInvalid()
+            throw InvalidHandshakeMessage()
         }
 
         val serverFinished = ByteArray(hmac.macLength)
@@ -119,7 +126,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
         val clientHelloToServerPartyVerify = clientHelloToServerParty + serverPartyVerify
         val calculatedServerFinished = hmac.calculateMac(sharedHandshakeSecrets!!.responderAuthKey, sha256Hash.hash(clientHelloToServerPartyVerify))
         if (!calculatedServerFinished.contentEquals(serverFinished)) {
-            throw HandshakeMacInvalid()
+            throw InvalidHandshakeMessage()
         }
     }
 
@@ -137,4 +144,4 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
 /**
  * Thrown when the responder sends an key hash that does not match the one we requested.
  */
-class HandshakeInvalidResponderKeyHash: RuntimeException()
+class InvalidHandshakeResponderKeyHash: RuntimeException()

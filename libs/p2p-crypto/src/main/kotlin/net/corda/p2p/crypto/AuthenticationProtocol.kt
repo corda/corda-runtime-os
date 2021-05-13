@@ -107,17 +107,66 @@ abstract class AuthenticationProtocol {
                                       val initiatorEncryptionKey: SecretKey,
                                       val responderEncryptionKey: SecretKey,
                                       val initiatorNonce: ByteArray,
-                                      val responderNonce: ByteArray)
+                                      val responderNonce: ByteArray) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as SharedHandshakeSecrets
+
+            if (initiatorAuthKey != other.initiatorAuthKey) return false
+            if (responderAuthKey != other.responderAuthKey) return false
+            if (initiatorEncryptionKey != other.initiatorEncryptionKey) return false
+            if (responderEncryptionKey != other.responderEncryptionKey) return false
+            if (!initiatorNonce.contentEquals(other.initiatorNonce)) return false
+            if (!responderNonce.contentEquals(other.responderNonce)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = initiatorAuthKey.hashCode()
+            result = 31 * result + responderAuthKey.hashCode()
+            result = 31 * result + initiatorEncryptionKey.hashCode()
+            result = 31 * result + responderEncryptionKey.hashCode()
+            result = 31 * result + initiatorNonce.contentHashCode()
+            result = 31 * result + responderNonce.contentHashCode()
+            return result
+        }
+    }
 
     /**
      * @property initiatorEncryptionKey used for authentication encryption on session messages by us.
      * @property responderEncryptionKey used for authenticated encryption on session messages by peer.
      */
-    data class SharedSessionSecrets(val initiatorEncryptionKey: SecretKey, val responderEncryptionKey: SecretKey, val initiatorNonce: ByteArray, val responderNonce: ByteArray)
+    data class SharedSessionSecrets(val initiatorEncryptionKey: SecretKey,
+                                    val responderEncryptionKey: SecretKey,
+                                    val initiatorNonce: ByteArray,
+                                    val responderNonce: ByteArray) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as SharedSessionSecrets
+
+            if (initiatorEncryptionKey != other.initiatorEncryptionKey) return false
+            if (responderEncryptionKey != other.responderEncryptionKey) return false
+            if (!initiatorNonce.contentEquals(other.initiatorNonce)) return false
+            if (!responderNonce.contentEquals(other.responderNonce)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = initiatorEncryptionKey.hashCode()
+            result = 31 * result + responderEncryptionKey.hashCode()
+            result = 31 * result + initiatorNonce.contentHashCode()
+            result = 31 * result + responderNonce.contentHashCode()
+            return result
+        }
+    }
 
 }
-
-fun Int.toByteArray() = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(this).array()
 
 enum class MessageType {
     /**
@@ -146,5 +195,6 @@ enum class Mode {
     AUTHENTICATION_ONLY
 }
 
-class HandshakeMacInvalid: RuntimeException()
-class HandshakeSignatureInvalid: RuntimeException()
+class InvalidHandshakeMessage: RuntimeException()
+
+fun Int.toByteArray() = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(this).array()

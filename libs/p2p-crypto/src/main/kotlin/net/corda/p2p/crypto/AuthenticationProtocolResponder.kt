@@ -8,6 +8,7 @@ import java.security.PublicKey
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
+import javax.crypto.AEADBadTagException
 
 /**
  * The responder side of the session authentication protocol.
@@ -116,8 +117,7 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
     /**
      * @param keyLookupFn a callback function used to perform a lookup of the initiator's public key given its SHA-256 hash.
      *
-     * @throws HandshakeMacInvalid if the MAC in the handshake is invalid.
-     * @throws HandshakeSignatureInvalid if the signature in the handshake was invalid.
+     * @throws InvalidHandshakeMessage if the handshake message was invalid (e.g. due to invalid signatures, MACs etc.)
      *
      * @return the SHA-256 of the public key we need to use in the handshake.
      *
@@ -128,7 +128,11 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
         step = Step.RECEIVED_HANDSHAKE_MESSAGE
 
         val clientRecordHeaderBytes = clientHandshakeMessage.recordHeader.toBytes()
-        clientHandshakePayload = aesCipher.decrypt(clientRecordHeaderBytes, clientHandshakeMessage.tag, sharedHandshakeSecrets!!.initiatorNonce, clientHandshakeMessage.encryptedData, sharedHandshakeSecrets!!.initiatorEncryptionKey)
+        try {
+            clientHandshakePayload = aesCipher.decrypt(clientRecordHeaderBytes, clientHandshakeMessage.tag, sharedHandshakeSecrets!!.initiatorNonce, clientHandshakeMessage.encryptedData, sharedHandshakeSecrets!!.initiatorEncryptionKey)
+        } catch (e: AEADBadTagException) {
+            throw InvalidHandshakeMessage()
+        }
         val payloadBuffer = ByteBuffer.wrap(clientHandshakePayload)
         val clientEncryptedExtensions = ByteArray(sha256Hash.digestSize)
         payloadBuffer.get(clientEncryptedExtensions)
@@ -142,7 +146,7 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
 
         val signatureWasValid = signature.verify(initiatorPublicKey, clientSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(clientHelloToClientParty), clientPartyVerify)
         if (!signatureWasValid) {
-            throw HandshakeSignatureInvalid()
+            throw InvalidHandshakeMessage()
         }
 
         val clientFinished = ByteArray(hmac.macLength)
@@ -151,7 +155,7 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
 
         val calculatedClientFinished = hmac.calculateMac(sharedHandshakeSecrets!!.initiatorAuthKey, sha256Hash.hash(clientHelloToClientPartyVerify))
         if (!calculatedClientFinished.contentEquals(clientFinished)) {
-            throw HandshakeMacInvalid()
+            throw InvalidHandshakeMessage()
         }
 
         return clientEncryptedExtensions
