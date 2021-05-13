@@ -1,3 +1,8 @@
+javax.servlet
+javax.transaction.xa;version=1.1.0
+javax.xml.stream.events;version=1.0
+javax.xml.stream.util;version=1.0
+javax.xml.stream;version=1.0
 net.corda.osgi.framework.api
 org.apache.logging.log4j.core.appender.db.jdbc;uses:="org.apache.logging.log4j,org.apache.logging.log4j.core,org.apache.logging.log4j.core.appender.db,org.apache.logging.log4j.core.config,org.apache.logging.log4j.core.config.plugins,org.apache.logging.log4j.core.config.plugins.validation.constraints,org.apache.logging.log4j.core.layout,org.apache.logging.log4j.core.util";version="2.14.1"
 org.apache.logging.log4j.core.appender.db;uses:="org.apache.logging.log4j.core,org.apache.logging.log4j.core.appender,org.apache.logging.log4j.core.config,org.apache.logging.log4j.core.config.plugins,org.apache.logging.log4j.core.util";version="2.14.1"
@@ -59,3 +64,7 @@ org.apache.logging.log4j.util;uses:="org.apache.logging.log4j.message,org.apache
 org.apache.logging.log4j;uses:="org.apache.logging.log4j.message,org.apache.logging.log4j.spi,org.apache.logging.log4j.util";version="2.14.1"
 org.apache.logging.slf4j;uses:="org.apache.logging.log4j,org.apache.logging.log4j.message,org.apache.logging.log4j.spi,org.slf4j,org.slf4j.spi";version="2.14.1"
 org.slf4j.impl;uses:="org.slf4j,org.slf4j.spi";version="2.14.1"
+sun.net.www.protocol.jar
+sun.nio.ch
+sun.security.ssl
+sun.security.x509
