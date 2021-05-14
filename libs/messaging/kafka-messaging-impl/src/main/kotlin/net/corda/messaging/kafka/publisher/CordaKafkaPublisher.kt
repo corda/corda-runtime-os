@@ -72,8 +72,8 @@ class CordaKafkaPublisher<K : Any, V : Any> (
                 producer.beginTransaction()
             }
 
-            producer.send(getProducerRecord(record)) { it, ex ->
-                setFutureFromResponse(it, ex, fut)
+            producer.send(getProducerRecord(record)) { _, ex ->
+                setFutureFromResponse(ex, fut)
             }
 
             if (instanceId != null) {
@@ -122,7 +122,6 @@ class CordaKafkaPublisher<K : Any, V : Any> (
      */
     @Suppress("UNUSED_PARAMETER")
     private fun setFutureFromResponse(
-        recordMetadata: RecordMetadata?,
         exception: Exception?,
         future: OpenFuture<Boolean>
     ) {
@@ -197,12 +196,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
      * @return Producer record with kafka topic prefix attached.
      */
     private fun getProducerRecord(record: Record<K, V>): ProducerRecord<K, ByteBuffer> {
-        val value = if (record.value != null) {
-            avroSchemaRegistry.serialize(record.value!!)
-        } else {
-            null
-        }
-
+        val value = record.value?.let { avroSchemaRegistry.serialize(it) }
         return ProducerRecord(topicPrefix + record.topic, record.key, value)
     }
 }
