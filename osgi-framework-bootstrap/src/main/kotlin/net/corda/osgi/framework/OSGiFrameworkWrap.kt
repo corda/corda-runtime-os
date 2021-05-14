@@ -69,8 +69,21 @@ class OSGiFrameworkWrap(
 
         /**
          * Extension used to identify `jar` files to [install].
+         * @see [install]
          */
         private const val JAR_EXTENSION = ".jar"
+
+        /**
+         * JAR metadata header expressing the main entry point method.
+         * @see [callMainEntryPoint]
+         */
+        private const val MAIN_CLASS_HEADER = "Main-Class"
+
+        /**
+         * Main entry point method for JAR applications.
+         * @see [callMainEntryPoint]
+         */
+        private const val MAIN_METHOD = "main"
 
         /**
          * Return a new configured [Framework] loaded from the classpath and having [frameworkFactoryFQN] as
@@ -140,6 +153,22 @@ class OSGiFrameworkWrap(
                     .toList()
             }
             return propertyValueList.joinToString(",")
+        }
+
+        /**
+         * Return `true` if the [state] LSB is [Bundle.ACTIVE]
+         *
+         * Bundle states are expressed as a bit-mask though a bundle can only be in one state at any time,
+         * the state in the lifecycle is represented in the LSB of the value returned by [Bundle.getState].
+         * See OSGi Core Release 7 [4.4.2 Bundle State](https://docs.osgi.org/specification/osgi.core/7.0.0/framework.lifecycle.html)
+         *
+         * @param state of the bundle.
+         *
+         * @return `true` if the [state] LSB is [Bundle.ACTIVE].
+         */
+        internal fun isActive(state: Int): Boolean {
+            // The bundle lifecycle state is represented by LSB.
+            return state and 0xff == Bundle.ACTIVE
         }
 
         /**
@@ -225,6 +254,41 @@ class OSGiFrameworkWrap(
                 )
             } else {
                 bundle.start()
+            }
+        }
+        return this
+    }
+
+    /**
+     * Introspect the activated bundles to call the `main` entry point method of the bundles if available.
+     *
+     * @param args to pass to the `main` methods of bundles.
+     *
+     * @return this.
+     *
+     * @throws ClassNotFoundException if the full qualified name specified for the [MAIN_CLASS_HEADER] in the
+     *          `MANIFEST.MF` entry of the bundle JAR is not found.
+     * @throws IllegalStateException If this bundle has been uninstalled meanwhile its `main` method is called.
+     * @throws NoSuchMethodException if the [MAIN_METHOD] isn't found in the full qualified name specified for the
+     *          [MAIN_CLASS_HEADER] in the `MANIFEST.MF` entry of the bundle JAR.
+     * @throws SecurityException If a security manager is present and the caller's class loader is not the same as,
+     *          or the security manager denies access to the package of this class.
+     */
+    @Throws(
+        ClassNotFoundException::class,
+        IllegalStateException::class,
+        NoSuchMethodException::class,
+        SecurityException::class
+    )
+    fun callMainEntryPoint(args: Array<String>): OSGiFrameworkWrap {
+        bundleMap.values.forEach { bundle: Bundle ->
+            if (isActive(bundle.state)) {
+                val mainClassFQN: String? = bundle.headers.get(MAIN_CLASS_HEADER)
+                if (mainClassFQN != null) {
+                    val mainClass = bundle.loadClass(mainClassFQN)
+                    val mainMethod = mainClass.getMethod(MAIN_METHOD, Array<String>::class.java)
+                    mainMethod.invoke(null, args)
+                }
             }
         }
         return this
@@ -395,7 +459,7 @@ class OSGiFrameworkWrap(
             framework.bundleContext.addBundleListener { bundleEvent ->
                 val bundle = bundleEvent.bundle
                 logger.info(
-                    "OSGi bundle ${bundle.location}" +
+                    ">OSGi bundle ${bundle.location}" +
                             " ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"}" +
                             " ${bundle.version} ${bundleStateMap[bundle.state]}."
                 )

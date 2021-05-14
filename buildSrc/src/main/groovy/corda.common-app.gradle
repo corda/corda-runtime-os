@@ -108,6 +108,8 @@ private def addSystemPackagesExtra(
         }
     }
     final jdkExtraPackages = [
+            "org.slf4j;version=1.7.0",
+            "kotlin;version=1.4.21",
             "net.corda.osgi.framework.api",
             "sun.net.www.protocol.jar",
             "sun.nio.ch",
@@ -143,6 +145,9 @@ def cordaAssembleBundlesTask = tasks.register("cordaAssembleBundles") {
         new File(project.buildDir, "libs").listFiles().findAll { file ->
             isJar(file) && !systemPackageSet.contains(file.name)
         }.each { jar ->
+            addBundle(jar, new File(bundlesDir, jar.name), systemBundleSet)
+        }
+        new File(project.buildDir, "libs").listFiles().findAll { file -> isJar(file) }.each { jar ->
             addBundle(jar, new File(bundlesDir, jar.name), systemBundleSet)
         }
         final systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")

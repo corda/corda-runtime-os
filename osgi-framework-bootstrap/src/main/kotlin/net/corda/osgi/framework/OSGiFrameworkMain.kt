@@ -1,8 +1,31 @@
 package net.corda.osgi.framework
 
+import net.corda.osgi.framework.OSGiFrameworkMain.Companion.main
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 
+/**
+ * This class provided the main entry point for the applications built with the `corda.common-app` plugin.
+ *
+ * Modules having in `bundle.gradle` the blocks
+ * ```gradle
+ * plugins {
+ *    id 'corda.common-app'
+ * }
+ *
+ * dependencies {
+ *    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+ *    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+ *    compileOnly "org.osgi:osgi.core:$osgiVersion"
+ * }
+ * ```
+ * result in building a bootable JAR named `corda-<module_name>-<version>.jar` in the `build/bin` directory.
+ * The bootable JAR zips the [Apache Felix](https://felix.apache.org/) OSGi framework,
+ * the module assembles as an OSGi  bundle and all the OSGi bundles it requires.
+ *
+ * The bootable JAR is self sufficient to start with `java -jar corda-<module_name>-<version>.jar`.
+ * The main entry point of the bootable JAR is the [main] method.
+ */
 class OSGiFrameworkMain {
 
     companion object {
@@ -40,6 +63,26 @@ class OSGiFrameworkMain {
          */
         private const val NO_TIMEOUT = 0L
 
+        /**
+         * The main entry point for the bootable JAR built with the `corda.common-app` plugin.
+
+         * This method bootstraps the application:
+         * 1. **Start Up**
+         *      1. Start Felix OSGi framework
+         *      2. Install OSGi framework services.
+         * 2.  **Load bundles in bootstrapper**
+         *      1. Install OSGi bundles in the OSGi framework,
+         *      2. Activate OSGi bundles.
+         * 3. **Call application entry-point**
+         *      1. Call the `main` entry point methods of active bundles, if any, passing [args].
+         *
+         *  Then, the method waits for the JVM receives the signal to terminate to
+         *  1. **Shut Down**
+         *      1. Deactivate OSGi bundles.
+         *      2. Stop the OSGi framework.
+         *
+         * @param args passed by the OS when invoking JVM to run this bootable JAR.
+         */
         @JvmStatic
         @Suppress("TooGenericExceptionCaught")
         fun main(args: Array<String>) {
@@ -65,6 +108,7 @@ class OSGiFrameworkMain {
                         .setArguments(args)
                         .install(SYSTEM_BUNDLES)
                         .activate()
+                        .callMainEntryPoint(args)
                         .waitForStop(NO_TIMEOUT)
                 } catch (e: Exception) {
                     logger.error("Error: ${e.message}!", e)

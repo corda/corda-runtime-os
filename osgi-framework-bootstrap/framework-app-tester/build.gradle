@@ -15,3 +15,12 @@ dependencies {
 }
 
 description 'OSGi Framework App Tester'
+
+jar {
+    bnd """
+Bundle-Activator: net.corda.osgi.framework.apptester.AppTester
+"""
+    manifest {
+        attributes 'Main-Class': 'net.corda.osgi.framework.apptester.AppTester'
+    }
+}

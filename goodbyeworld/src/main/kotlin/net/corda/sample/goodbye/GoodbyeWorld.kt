@@ -1,21 +1,23 @@
 package net.corda.sample.goodbye
 
-import net.corda.sample.api.hello.HelloWorld
-import org.osgi.service.component.annotations.Reference
+import org.osgi.framework.BundleActivator
+import org.osgi.framework.BundleContext
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 
-fun main() {
-    // Some bootstrap code goes here
+@Component(immediate = true)
+class GoodbyeWorld : BundleActivator {
 
-    GoodbyeWorld().callHelloWorld()
-}
-
-class GoodbyeWorld {
-
-    @Reference
-    var helloWorld: HelloWorld? = null
-
-    fun callHelloWorld() {
-        helloWorld?.sayHello() ?: println("We couldn't find hello world!!!")
+    @Activate
+    override fun start(context: BundleContext?) {
+        println("net.corda.sample.goodbye.GoodbyeWorld START")
     }
+
+    @Deactivate
+    override fun stop(context: BundleContext?) {
+        println("net.corda.sample.goodbye.GoodbyeWorld STOP")
+    }
+
 }
 
