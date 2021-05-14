@@ -8,6 +8,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.internal.uncheckedCast
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
@@ -83,7 +84,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any> (
             val value: V = uncheckedCast(avroSchemaRegistry.deserialize(consumerRecord.value(), classType, null))
             val topic = consumerRecord.topic().substringAfter(topicPrefix)
             Record(topic, consumerRecord.key(), value)
-        } catch (ex: Exception) {
+        } catch (ex: CordaRuntimeException) {
             val message = "CordaKafkaConsumer failed to deserialize record with key ${consumerRecord.key()}. Group $groupName,topic $topic."
             log.error(message, ex)
             throw CordaMessageAPIFatalException(message, ex)

@@ -10,11 +10,11 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_TOPI
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.concurrent.CordaFuture
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.internal.concurrent.OpenFuture
 import net.corda.v5.base.internal.concurrent.openFuture
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.InterruptException
@@ -200,8 +200,9 @@ class CordaKafkaPublisher<K : Any, V : Any> (
     private fun getProducerRecord(record: Record<K, V>): ProducerRecord<K, ByteBuffer> {
         val value = try {
              record.value?.let { avroSchemaRegistry.serialize(it) }
-        } catch (ex : Exception) {
-            throw CordaMessageAPIFatalException("CordaKafkaPublisher failed to serialize record value with the key ${record.key}. ClientId: $clientId, topic: $topic.")
+        } catch (ex : CordaRuntimeException) {
+            throw CordaMessageAPIFatalException("CordaKafkaPublisher failed to serialize record value with the key ${record.key}. " +
+                    "ClientId: $clientId, topic: $topic.")
         }
         return ProducerRecord(topicPrefix + record.topic, record.key, value)
     }
