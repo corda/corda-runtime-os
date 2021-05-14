@@ -37,9 +37,9 @@ class CordaKafkaPublisherFactory @Activate constructor(
         keyClass: Class<K>,
         valueClass: Class<V>
     ): Publisher<K, V> {
-        //Only allow Strings as Keys for now.
+        //Only allow Strings as Keys for now. See CORE-1367
         if (keyClass != String::class.java) {
-            throw CordaMessageAPIFatalException("Unsupported Key type, use a String.", IllegalArgumentException())
+            throw CordaMessageAPIFatalException("Unsupported Key type, use a String.")
         }
 
         //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required

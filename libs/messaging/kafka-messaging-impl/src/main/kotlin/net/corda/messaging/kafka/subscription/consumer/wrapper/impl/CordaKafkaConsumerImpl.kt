@@ -25,7 +25,7 @@ import java.time.Duration
 /**
  * Wrapper for a Kafka Consumer.
  */
-class CordaKafkaConsumerImpl<K :Any, V : Any> (
+class CordaKafkaConsumerImpl<K : Any, V : Any> (
     kafkaConfig: Config,
     subscriptionConfig: SubscriptionConfig,
     override val consumer: Consumer<K, ByteBuffer>,
