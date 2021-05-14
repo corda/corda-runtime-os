@@ -18,7 +18,6 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.lang.IllegalArgumentException
 import java.nio.ByteBuffer
 import java.util.Properties
 
