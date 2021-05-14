@@ -196,7 +196,6 @@ class CordaKafkaPublisher<K : Any, V : Any> (
      * @return Producer record with kafka topic prefix attached.
      * @throws CordaMessageAPIFatalException when failing to serialize record value
      */
-    @Suppress("TooGenericExceptionCaught")
     private fun getProducerRecord(record: Record<K, V>): ProducerRecord<K, ByteBuffer> {
         val value = try {
              record.value?.let { avroSchemaRegistry.serialize(it) }
