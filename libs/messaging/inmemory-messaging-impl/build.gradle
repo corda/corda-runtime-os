@@ -1,0 +1,17 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+}
+
+description 'Kafka Messaging API Impl'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    implementation project(":libs:messaging:messaging")
+
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+}
