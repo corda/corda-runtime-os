@@ -173,10 +173,20 @@ class KafkaPubSubSubscription<K : Any, V : Any>(
     /**
      * Process Kafka [consumerRecords]. Process them using an [executor] if it not null or on the same
      * thread otherwise. Commit the offset for each record back to the topic after processing them synchronously.
+     * If a record fails to deserialize skip this record and log the error.
      */
     private fun processPubSubRecords(consumerRecords: List<ConsumerRecord<K, ByteBuffer>>, consumer: CordaKafkaConsumer<K, V>) {
         for (consumerRecord in consumerRecords) {
-            val eventRecord = consumer.getRecord(consumerRecord)
+            val eventRecord = try {
+                 consumer.getRecord(consumerRecord)
+            } catch (ex: CordaMessageAPIFatalException) {
+                log.error("PubSubConsumer from group $groupName failed to deserialize record with " +
+                        "key ${consumerRecord.key()} from topic $topic." +
+                        "Skipping record.", ex)
+                consumer.commitSyncOffsets(consumerRecord)
+                continue
+            }
+
             if (executor != null) {
                 executor.submit { processor.onNext(eventRecord) }.get()
             } else {

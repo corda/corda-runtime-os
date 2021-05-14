@@ -78,10 +78,16 @@ class CordaKafkaConsumerImpl<K : Any, V : Any> (
 
     @Suppress("UNCHECKED_CAST")
     override fun getRecord(consumerRecord: ConsumerRecord<K, ByteBuffer>) : Record<K, V> {
-        val classType = avroSchemaRegistry.getClassType(consumerRecord.value())
-        val value: V = uncheckedCast(avroSchemaRegistry.deserialize(consumerRecord.value(), classType, null))
-        val topic = consumerRecord.topic().substringAfter(topicPrefix)
-        return Record(topic, consumerRecord.key(), value)
+        return try {
+            val classType = avroSchemaRegistry.getClassType(consumerRecord.value())
+            val value: V = uncheckedCast(avroSchemaRegistry.deserialize(consumerRecord.value(), classType, null))
+            val topic = consumerRecord.topic().substringAfter(topicPrefix)
+            Record(topic, consumerRecord.key(), value)
+        } catch (ex: Exception) {
+            val message = "CordaKafkaConsumer failed to deserialize record with key ${consumerRecord.key()}. Group $groupName,topic $topic."
+            log.error(message, ex)
+            throw CordaMessageAPIFatalException(message, ex)
+        }
     }
 
     override fun commitSyncOffsets(event: ConsumerRecord<K, ByteBuffer>, metaData: String?) {

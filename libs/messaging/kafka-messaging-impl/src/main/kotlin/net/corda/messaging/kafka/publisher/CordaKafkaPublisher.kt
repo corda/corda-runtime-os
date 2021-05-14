@@ -194,9 +194,15 @@ class CordaKafkaPublisher<K : Any, V : Any> (
      * Use Kafka serializer for [record] key.
      * Attach the configured kafka topic prefix as a prefix to the [record] topic.
      * @return Producer record with kafka topic prefix attached.
+     * @throws CordaMessageAPIFatalException when failing to serialize record value
      */
+    @Suppress("TooGenericExceptionCaught")
     private fun getProducerRecord(record: Record<K, V>): ProducerRecord<K, ByteBuffer> {
-        val value = record.value?.let { avroSchemaRegistry.serialize(it) }
+        val value = try {
+             record.value?.let { avroSchemaRegistry.serialize(it) }
+        } catch (ex : Exception) {
+            throw CordaMessageAPIFatalException("CordaKafkaPublisher failed to serialize record value with the key ${record.key}. ClientId: $clientId, topic: $topic.")
+        }
         return ProducerRecord(topicPrefix + record.topic, record.key, value)
     }
 }

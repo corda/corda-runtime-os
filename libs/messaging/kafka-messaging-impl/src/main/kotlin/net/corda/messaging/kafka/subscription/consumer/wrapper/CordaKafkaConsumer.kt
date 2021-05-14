@@ -34,6 +34,7 @@ interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable {
      * Convert a [consumerRecord] to a [Record] and return it.
      * Avro will be used to convert [ByteBuffer] to [V]
      * Remove the topicPrefix from the [consumerRecord]
+     * @throws CordaMessageAPIFatalException exception thrown when failing to deserialize record
      */
     fun getRecord(consumerRecord: ConsumerRecord<K, ByteBuffer>) : Record<K, V>
 

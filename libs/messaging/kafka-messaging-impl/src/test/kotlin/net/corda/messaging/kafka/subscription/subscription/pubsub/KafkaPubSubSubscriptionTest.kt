@@ -174,6 +174,42 @@ class KafkaPubSubSubscriptionTest {
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
     }
 
+    /**
+     * Check that the exceptions thrown during processing exits correctly
+     */
+    @Test
+    fun testCordaExceptionDuringDeserialization() {
+        doAnswer {
+            if (builderInvocationCount == 0) {
+                builderInvocationCount++
+                mockCordaConsumer
+            } else {
+                CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
+            }
+        }.whenever(consumerBuilder).createConsumer(any())
+        doAnswer{
+            if (pollInvocationCount == 0) {
+                pollInvocationCount++
+                mockConsumerRecords
+            } else {
+                CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
+            }
+        }.whenever(mockCordaConsumer).poll()
+
+        doThrow(CordaMessageAPIFatalException("")).whenever(mockCordaConsumer).getRecord(any())
+
+
+        kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, consumerBuilder,
+            processor, executorService)
+
+        kafkaPubSubSubscription.start()
+        while (kafkaPubSubSubscription.isRunning) {}
+
+        verify(mockCordaConsumer, times(mockConsumerRecords.size)).commitSyncOffsets(any(), anyOrNull())
+        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
+        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+2)).poll()
+    }
+
     @Test
     fun testIOExceptionDuringProcessing() {
         doAnswer {

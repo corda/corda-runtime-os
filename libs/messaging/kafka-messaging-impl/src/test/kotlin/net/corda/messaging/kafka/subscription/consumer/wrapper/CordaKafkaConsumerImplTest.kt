@@ -11,11 +11,13 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaCo
 import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordsList
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.consumer.*
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
@@ -111,6 +113,14 @@ class CordaKafkaConsumerImplTest {
         assertThat(record.topic).isEqualTo("topic")
         assertThat(record.key).isEqualTo(consumerRecord.key())
         assertThat(record.value).isEqualTo(consumerRecord.value())
+        verify(avroSchemaRegistry, times(1)).getClassType(any())
+        verify(avroSchemaRegistry, times(1)).deserialize(any(), any(), anyOrNull())
+    }
+
+    @Test
+    fun testGetRecordFailDeserialization() {
+        doThrow(CordaRuntimeException("")).whenever(avroSchemaRegistry).deserialize(any(), any(), anyOrNull())
+        Assertions.assertThrows(CordaMessageAPIFatalException::class.java) { cordaKafkaConsumer.getRecord(consumerRecord) }
         verify(avroSchemaRegistry, times(1)).getClassType(any())
         verify(avroSchemaRegistry, times(1)).deserialize(any(), any(), anyOrNull())
     }
