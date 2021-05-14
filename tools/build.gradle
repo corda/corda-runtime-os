@@ -1,16 +1,9 @@
 plugins {
     id 'corda.publish'
     id 'corda.common-app'
-    id 'java'
-    id 'org.jetbrains.kotlin.jvm'
 }
 
-group 'net.corda'
-version '5.0.0-SNAPSHOT'
-
-repositories {
-    mavenCentral()
-}
+description "Bootstrapping tools"
 
 dependencies {
     implementation project(':libs:kafka-utils:topic-admin')
@@ -25,10 +18,6 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
-}
-
-test {
-    useJUnitPlatform()
 }
 
 task uploadConfigToKafka(type: JavaExec) {
