@@ -23,5 +23,5 @@ dependencies {
 task uploadConfigToKafka(type: JavaExec) {
     classpath = sourceSets["main"].runtimeClasspath
     main = 'net.corda.tools.kafka.KafkaConfigUploaderKt'
-    args 'bootstrap.servers=localhost:9092', 'test1', 'C:\\flow-worker\\tools\\src\\main\\resources\\config.conf'
+    args 'bootstrap.servers=localhost:9092', 'test123', 'C:\\flow-worker\\tools\\src\\main\\resources\\config.conf'
 }
