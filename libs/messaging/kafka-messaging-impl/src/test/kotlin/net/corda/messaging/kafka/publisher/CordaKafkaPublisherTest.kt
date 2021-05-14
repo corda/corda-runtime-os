@@ -12,6 +12,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_TOPI
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.concurrent.CordaFuture
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.errors.*
@@ -43,6 +44,17 @@ class CordaKafkaPublisherTest {
         publish()
         verify(producer, times(1)).send(any(), any())
         verify(avroSchemaRegistry, times(1)).serialize(Mockito.any(ByteBuffer::class.java))
+        verify(producer, times(0)).beginTransaction()
+        verify(producer, times(0)).commitTransaction()
+    }
+
+    @Test
+    fun testPublishFailSerialization() {
+        doThrow(CordaRuntimeException("")).whenever(avroSchemaRegistry).serialize(Mockito.any(ByteBuffer::class.java))
+        val future = publish()
+        assertThrows(CordaMessageAPIFatalException::class.java) { future.getOrThrow() }
+        verify(avroSchemaRegistry, times(1)).serialize(Mockito.any(ByteBuffer::class.java))
+        verify(producer, times(0)).send(any(), any())
         verify(producer, times(0)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
     }
