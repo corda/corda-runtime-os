@@ -1,0 +1,14 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+}
+
+description 'Kafka configuration write API impl'
+
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+}

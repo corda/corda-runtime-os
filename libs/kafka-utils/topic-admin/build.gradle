@@ -1,0 +1,21 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+}
+
+dependencies {
+    implementation "org.apache.kafka:kafka-clients:$kafkaVersion"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+description 'Kafka Topic admin'

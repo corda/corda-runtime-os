@@ -38,6 +38,10 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'flow-worker'
+include 'libs:configuration'
+include 'libs:configuration:configuration-write'
+include 'libs:kafka-utils:topic-admin'
+include 'libs:kafka-utils:topic-admin-impl'
 include 'libs:messaging:messaging'
 include 'libs:schema-registry:schema-registry'
 include 'libs:schema-registry:schema-registry-impl'
@@ -51,5 +55,4 @@ include 'osgi-framework-bootstrap'
 include 'osgi-framework-bootstrap:framework-api'
 include 'osgi-framework-bootstrap:framework-app-tester'
 include 'tools'
-include 'libs:kafka'
 
