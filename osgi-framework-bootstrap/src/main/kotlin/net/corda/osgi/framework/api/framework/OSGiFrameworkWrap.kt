@@ -411,7 +411,7 @@ class OSGiFrameworkWrap(
     }
 
     /**
-     * Introspect the activated bundles to call the [Lifecycle.start] method of the application bundles.
+     * Introspect the activated bundles to call the [Lifecycle.startup] method of the application bundles.
      *
      * Application bundles have an implementation of the [Lifecycle] interface.
      * This method creates an new instance of the class implementing [Lifecycle]
@@ -422,16 +422,16 @@ class OSGiFrameworkWrap(
      * or all parameters set by default.
      *
      * This method sets [OSGiBundleWrap.lifecycleAtomic] to the [Lifecycle] implementation instance for
-     * application bundles: [stop] method will call [Lifecycle.stop] before to deactivate bundles and to stop
+     * application bundles: [stop] method will call [Lifecycle.shutdown] before to deactivate bundles and to stop
      * the OSGi framework.
      *
      * Thread safe.
      *
      * @param lifecycleHeader in the `MANIFEST.MF` entry of application bundles used to describe the full qualified
      *          name of the class implementing the [Lifecycle] interface.
-     * @param timeout in milliseconds to wait application bundles to be active before to call [Lifecycle.start] of
+     * @param timeout in milliseconds to wait application bundles to be active before to call [Lifecycle.startup] of
      *          the class named in the `MANIFEST.MF`.
-     * @param args to pass to the [Lifecycle.start] method of application bundles.
+     * @param args to pass to the [Lifecycle.startup] method of application bundles.
      *
      * @return this.
      *
@@ -462,7 +462,7 @@ class OSGiFrameworkWrap(
                 if (appLifecycleClass is Lifecycle) {
                     if (wrap.active.await(timeout, TimeUnit.MILLISECONDS)) {
                         val appLifecycle = appLifecycleClass.getDeclaredConstructor().newInstance() as Lifecycle
-                        appLifecycle.start(args)
+                        appLifecycle.startup(args)
                         // When wrap.lifecycleAtomic is set the application implementing Lifecycle started.
                         // Used to know those applications to stop.
                         wrap.lifecycleAtomic.set(appLifecycle)
@@ -487,7 +487,7 @@ class OSGiFrameworkWrap(
     }
 
     /**
-     * Call the [Lifecycle.stop] method of application bundles.
+     * Call the [Lifecycle.shutdown] method of application bundles.
      * Deactivate installed bundles.
      * Stop the [Framework] wrapped by this [OSGiFrameworkWrap].
      * If the [Framework] can't stop, the method logs a warning describing the actual state of the framework.
@@ -512,7 +512,7 @@ class OSGiFrameworkWrap(
         if (isStoppable(framework.state)) {
             logger.debug("OSGi framework stop...")
             bundleWrapMap.values.forEach { wrap: OSGiBundleWrap ->
-                wrap.lifecycleAtomic.getAndSet(null)?.stop()
+                wrap.lifecycleAtomic.getAndSet(null)?.shutdown()
             }
             framework.stop()
         } else {

@@ -11,6 +11,7 @@ interface Lifecycle {
         const val METADATA_HEADER = "Lifecycle-Class"
     }
 
-    fun start(args: Array<String>)
-    fun stop()
+    fun startup(args: Array<String>)
+    fun shutdown()
+
 }

@@ -8,11 +8,11 @@ class AppTester : Lifecycle {
         println("net.corda.osgi.framework.apptester.AppTester.INIT")
     }
 
-    override fun start(args: Array<String>) {
+    override fun startup(args: Array<String>) {
         println("net.corda.osgi.framework.apptester.AppTester.START($args)")
     }
 
-    override fun stop() {
+    override fun shutdown() {
         println("net.corda.osgi.framework.apptester.AppTester.STOP")
     }
 
