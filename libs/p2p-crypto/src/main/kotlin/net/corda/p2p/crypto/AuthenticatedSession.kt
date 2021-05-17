@@ -35,7 +35,8 @@ class AuthenticatedSession(private val sessionId: String,
      * @return the header to be sent to the other party and the authentication code.
      */
     fun createMac(payload: ByteArray): AuthenticationResult {
-        val commonHeader = CommonHeader(MessageType.DATA, AuthenticationProtocol.PROTOCOL_VERSION, sessionId, sequenceNo.getAndIncrement(), Instant.now().toEpochMilli())
+        val commonHeader = CommonHeader(MessageType.DATA, AuthenticationProtocol.PROTOCOL_VERSION, sessionId,
+                                        sequenceNo.getAndIncrement(), Instant.now().toEpochMilli())
         val tag = generationLock.withLock {
             generationHMac.reset()
             generationHMac.update(commonHeader.toBytes())

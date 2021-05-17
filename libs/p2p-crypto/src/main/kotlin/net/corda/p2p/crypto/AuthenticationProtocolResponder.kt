@@ -1,7 +1,16 @@
 package net.corda.p2p.crypto
 
-import net.corda.p2p.crypto.data.*
-import net.corda.p2p.crypto.util.*
+import net.corda.p2p.crypto.data.ClientHandshakeMessage
+import net.corda.p2p.crypto.data.ClientHelloMessage
+import net.corda.p2p.crypto.data.CommonHeader
+import net.corda.p2p.crypto.data.ServerHandshakeMessage
+import net.corda.p2p.crypto.data.ServerHelloMessage
+import net.corda.p2p.crypto.util.calculateMac
+import net.corda.p2p.crypto.util.decrypt
+import net.corda.p2p.crypto.util.encryptWithAssociatedData
+import net.corda.p2p.crypto.util.hash
+import net.corda.p2p.crypto.util.perform
+import net.corda.p2p.crypto.util.verify
 import java.lang.RuntimeException
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -28,7 +37,12 @@ import javax.crypto.AEADBadTagException
 class AuthenticationProtocolResponder(private val sessionId: String, private val supportedModes: List<Mode>): AuthenticationProtocol() {
 
     companion object {
-        fun fromStep2(sessionId: String, supportedModes: List<Mode>, clientHelloMsg: ClientHelloMessage, serverHelloMsg: ServerHelloMessage, privateDHKey: ByteArray, publicDHKey: ByteArray): AuthenticationProtocolResponder {
+        fun fromStep2(sessionId: String,
+                      supportedModes: List<Mode>,
+                      clientHelloMsg: ClientHelloMessage,
+                      serverHelloMsg: ServerHelloMessage,
+                      privateDHKey: ByteArray,
+                      publicDHKey: ByteArray): AuthenticationProtocolResponder {
             val protocol = AuthenticationProtocolResponder(sessionId, supportedModes)
             protocol.apply {
                 receiveClientHello(clientHelloMsg)
@@ -97,7 +111,8 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
      * and forward the generated DH key downstream to another component that wil complete the protocol from that point on.
      * This means the private key will be temporarily exposed.
      *
-     * That downstream component can resume the protocol from that point onwards creating a new instance of this class using the [fromStep2] method.
+     * That downstream component can resume the protocol from that point onwards
+     * creating a new instance of this class using the [fromStep2] method.
      *
      * @return a pair containing (in that order) the private and the public DH key.
      */
@@ -123,13 +138,18 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
      *
      *
      */
-    fun validatePeerHandshakeMessage(clientHandshakeMessage: ClientHandshakeMessage, keyLookupFn: (ByteArray) -> PublicKey): HandshakeIdentityData {
+    fun validatePeerHandshakeMessage(clientHandshakeMessage: ClientHandshakeMessage,
+                                     keyLookupFn: (ByteArray) -> PublicKey): HandshakeIdentityData {
         require(step == Step.GENERATED_HANDSHAKE_SECRETS)
         step = Step.RECEIVED_HANDSHAKE_MESSAGE
 
         val clientRecordHeaderBytes = clientHandshakeMessage.recordHeader.toBytes()
         try {
-            clientHandshakePayload = aesCipher.decrypt(clientRecordHeaderBytes, clientHandshakeMessage.tag, sharedHandshakeSecrets!!.initiatorNonce, clientHandshakeMessage.encryptedData, sharedHandshakeSecrets!!.initiatorEncryptionKey)
+            clientHandshakePayload = aesCipher.decrypt(clientRecordHeaderBytes,
+                                                       clientHandshakeMessage.tag,
+                                                       sharedHandshakeSecrets!!.initiatorNonce,
+                                                       clientHandshakeMessage.encryptedData,
+                                                       sharedHandshakeSecrets!!.initiatorEncryptionKey)
         } catch (e: AEADBadTagException) {
             throw InvalidHandshakeMessage()
         }
@@ -149,7 +169,9 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
         payloadBuffer.get(clientPartyVerify)
         val clientHelloToClientParty = clientHelloToServerHelloBytes!! + clientEncryptedExtensions + clientPublicKeyHash
 
-        val signatureWasValid = signature.verify(initiatorPublicKey, clientSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(clientHelloToClientParty), clientPartyVerify)
+        val signatureWasValid = signature.verify(initiatorPublicKey,
+                                            clientSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(clientHelloToClientParty),
+                                                 clientPartyVerify)
         if (!signatureWasValid) {
             throw InvalidHandshakeMessage()
         }
@@ -158,7 +180,8 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
         payloadBuffer.get(clientFinished)
         val clientHelloToClientPartyVerify = clientHelloToClientParty + clientPartyVerify
 
-        val calculatedClientFinished = hmac.calculateMac(sharedHandshakeSecrets!!.initiatorAuthKey, sha256Hash.hash(clientHelloToClientPartyVerify))
+        val calculatedClientFinished = hmac.calculateMac(sharedHandshakeSecrets!!.initiatorAuthKey,
+                                                         sha256Hash.hash(clientHelloToClientPartyVerify))
         if (!calculatedClientFinished.contentEquals(clientFinished)) {
             throw InvalidHandshakeMessage()
         }
@@ -173,7 +196,8 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
         require(step == Step.RECEIVED_HANDSHAKE_MESSAGE)
         step = Step.SENT_HANDSHAKE_MESSAGE
 
-        val serverRecordHeader = CommonHeader(MessageType.SERVER_HANDSHAKE, PROTOCOL_VERSION, sessionId, 1, Instant.now().toEpochMilli())
+        val serverRecordHeader = CommonHeader(MessageType.SERVER_HANDSHAKE, PROTOCOL_VERSION,
+                                              sessionId, 1, Instant.now().toEpochMilli())
         val serverRecordHeaderBytes = serverRecordHeader.toBytes()
         val serverParty = sha256Hash.hash(ourPublicKey.encoded)
         val clientHelloToServerParty = clientHelloToServerHelloBytes!! + clientHandshakePayload!! + serverParty
@@ -181,7 +205,8 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
         val clientHelloToServerPartyVerify = clientHelloToServerParty + serverPartyVerify
         val serverFinished = hmac.calculateMac(sharedHandshakeSecrets!!.responderAuthKey, sha256Hash.hash(clientHelloToServerPartyVerify))
         serverHandshakePayload = serverParty + (serverPartyVerify.size.toByteArray() + serverPartyVerify) + serverFinished
-        val (serverEncryptedData, serverTag) = aesCipher.encryptWithAssociatedData(serverRecordHeaderBytes, sharedHandshakeSecrets!!.responderNonce, serverHandshakePayload!!, sharedHandshakeSecrets!!.responderEncryptionKey)
+        val (serverEncryptedData, serverTag) = aesCipher.encryptWithAssociatedData(serverRecordHeaderBytes,
+                sharedHandshakeSecrets!!.responderNonce, serverHandshakePayload!!, sharedHandshakeSecrets!!.responderEncryptionKey)
         return ServerHandshakeMessage(serverRecordHeader, serverEncryptedData, serverTag)
     }
 
@@ -191,7 +216,8 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
 
         val fullTranscript = clientHelloToServerHelloBytes!! + clientHandshakePayload!! + serverHandshakePayload!!
         val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
-        return AuthenticatedSession(sessionId, 2, sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.initiatorEncryptionKey)
+        return AuthenticatedSession(sessionId, 2, sharedSessionSecrets.responderEncryptionKey,
+                                    sharedSessionSecrets.initiatorEncryptionKey)
     }
 
 }

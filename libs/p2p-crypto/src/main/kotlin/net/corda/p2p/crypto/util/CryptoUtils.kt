@@ -22,7 +22,10 @@ fun Cipher.decrypt(aad: ByteArray, tag: ByteArray, nonce: ByteArray, ciphertext:
 /**
  * @return  (in this order) the encrypted data and the authentication tag
  */
-fun Cipher.encryptWithAssociatedData(aad: ByteArray, nonce: ByteArray, plaintext: ByteArray, secretKey: SecretKey): Pair<ByteArray, ByteArray> {
+fun Cipher.encryptWithAssociatedData(aad: ByteArray,
+                                     nonce: ByteArray,
+                                     plaintext: ByteArray,
+                                     secretKey: SecretKey): Pair<ByteArray, ByteArray> {
     this.init(Cipher.ENCRYPT_MODE, secretKey, GCMParameterSpec(128, nonce))
     this.updateAAD(aad)
     val cipherWithTag = this.doFinal(plaintext)

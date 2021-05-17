@@ -8,7 +8,12 @@ import org.bouncycastle.crypto.params.HKDFParameters
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.lang.RuntimeException
 import java.nio.ByteBuffer
-import java.security.*
+import java.security.KeyFactory
+import java.security.KeyPairGenerator
+import java.security.PrivateKey
+import java.security.PublicKey
+import java.security.SecureRandom
+import java.security.Signature
 import javax.crypto.Cipher
 import javax.crypto.KeyAgreement
 import javax.crypto.Mac
@@ -71,7 +76,8 @@ abstract class AuthenticationProtocol {
         val responderMackKeyBytes = hkdf(clientHelloToServerHello, inputKeyMaterial, "Corda server hs mac key", 32)
         val responderMacKey = SecretKeySpec(responderMackKeyBytes, "HmacSHA512")
 
-        return SharedHandshakeSecrets(initiatorMacKey, responderMacKey, initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
+        return SharedHandshakeSecrets(initiatorMacKey, responderMacKey,
+                                      initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
     }
 
     fun generateSessionSecrets(inputKeyMaterial: ByteArray, clientHelloToServerFinished: ByteArray): SharedSessionSecrets {
