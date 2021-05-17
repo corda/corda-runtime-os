@@ -17,6 +17,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.errors.AuthenticationException
 import org.apache.kafka.common.errors.AuthorizationException
@@ -57,7 +58,6 @@ class CordaKafkaPublisher<K : Any, V : Any> (
     private val topicPrefix = kafkaConfig.getString(KAFKA_TOPIC_PREFIX)
     private val instanceId = publisherConfig.instanceId
     private val clientId = publisherConfig.clientId
-    private val topic = publisherConfig.topic
 
     /**
      * Publish a record.
@@ -73,8 +73,8 @@ class CordaKafkaPublisher<K : Any, V : Any> (
                 producer.beginTransaction()
             }
 
-            producer.send(getProducerRecord(record)) { _, ex ->
-                setFutureFromResponse(ex, fut)
+            producer.send(getProducerRecord(record)) { it, ex ->
+                setFutureFromResponse(ex, fut, it)
             }
 
             if (instanceId != null) {
@@ -86,19 +86,19 @@ class CordaKafkaPublisher<K : Any, V : Any> (
                 is InvalidProducerEpochException,
                 is InterruptException,
                 is TimeoutException -> {
-                    logErrorSetFutureAndAbortTransaction("Kafka producer clientId $clientId, instanceId $instanceId, " +
-                            "for topic $topic failed to send.", ex, fut)
+                    logErrorSetFutureAndAbortTransaction("Kafka producer clientId $clientId, instanceId $instanceId " +
+                            "failed to send.", ex, fut)
                 }
                 is IllegalStateException,
                 is ProducerFencedException,
                 is AuthorizationException,
                 is KafkaException -> {
-                    logErrorAndSetFuture("Kafka producer clientId $clientId, instanceId $instanceId, " +
-                            "for topic $topic failed to send", ex, fut, true)
+                    logErrorAndSetFuture("Kafka producer clientId $clientId, instanceId $instanceId " +
+                            "failed to send", ex, fut, true)
                 }
                 else -> {
-                    logErrorAndSetFuture("Kafka producer clientId $clientId, instanceId $instanceId, " +
-                            "for topic $topic failed to send. Unknown error.", ex, fut, true)
+                    logErrorAndSetFuture("Kafka producer clientId $clientId, instanceId $instanceId " +
+                            "failed to send. Unknown error.", ex, fut, true)
                 }
             }
         }
@@ -109,9 +109,9 @@ class CordaKafkaPublisher<K : Any, V : Any> (
     /**
      * Helper function to set a [future] result based on the presence of an [exception]
      */
-    private fun setFutureFromResponse(exception: Exception?, future: OpenFuture<Boolean>) {
+    private fun setFutureFromResponse(exception: Exception?, future: OpenFuture<Boolean>, recordMetadata: RecordMetadata) {
         val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
-                "for topic $topic failed to send"
+                "for topic ${recordMetadata.topic()} failed to send"
         when {
             (exception == null) -> {
                 //transaction operation can still fail at commit stage  so do not set to true until it is committed
@@ -174,7 +174,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
         try {
             producer.close(Duration.ofMillis(closeTimeout))
         } catch (ex: Exception) {
-            log.error("CordaKafkaPublisher failed to close producer safely. ClientId: $clientId, topic: $topic.", ex)
+            log.error("CordaKafkaPublisher failed to close producer safely. ClientId: $clientId.", ex)
         }
     }
 
@@ -191,7 +191,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
              record.value?.let { avroSchemaRegistry.serialize(it) }
         } catch (ex : CordaRuntimeException) {
             throw CordaMessageAPIFatalException("CordaKafkaPublisher failed to serialize record value with the key ${record.key}. " +
-                    "ClientId: $clientId, topic: $topic.")
+                    "ClientId: $clientId, topic: ${record.topic}.")
         }
         return ProducerRecord(topicPrefix + record.topic, record.key, value)
     }

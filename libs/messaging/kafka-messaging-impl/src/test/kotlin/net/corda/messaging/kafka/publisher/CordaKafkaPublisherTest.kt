@@ -34,7 +34,7 @@ class CordaKafkaPublisherTest {
 
     @BeforeEach
     fun beforeEach() {
-        publisherConfig  = PublisherConfig("clientId", "topic")
+        publisherConfig  = PublisherConfig("clientId")
         kafkaConfig = ConfigFactory.empty().withValue(PRODUCER_CLOSE_TIMEOUT, ConfigValueFactory.fromAnyRef(1))
         kafkaConfig = kafkaConfig.withValue(KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("prefix"))
     }
@@ -201,9 +201,9 @@ class CordaKafkaPublisherTest {
 
     private fun publish(isTransaction: Boolean = false) : CordaFuture<Boolean> {
         publisherConfig = if (isTransaction) {
-            PublisherConfig("clientId", "topic", 1)
+            PublisherConfig("clientId", 1)
         } else {
-            PublisherConfig("clientId", "topic")
+            PublisherConfig("clientId")
         }
         cordaKafkaPublisher = CordaKafkaPublisher(publisherConfig, kafkaConfig, producer, avroSchemaRegistry)
 

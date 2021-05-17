@@ -10,6 +10,16 @@ import net.corda.v5.base.concurrent.CordaFuture
 interface Publisher<K : Any, V : Any> : AutoCloseable {
 
     /**
+     * Start the publisher.
+     * This needs to be called before the publisher is fully operational.
+     * It will initialise any resources needed (e.g. connections to underlying datastores).
+     *
+     * By default, nothing is performed during initialisation.
+     * Implementations that need to perform initialisation should override this method.
+     */
+    fun start() {}
+
+    /**
      * Publish a list of [record].
      * @return A corda future returning true if the publish to a topic was successful. Never returns false. If fatal error occurs
      * then exception will be thrown of type [CordaMessageAPIFatalException] and publisher will be closed.

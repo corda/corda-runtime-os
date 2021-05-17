@@ -11,7 +11,6 @@ import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilder
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CONF_PREFIX
 import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_CLIENT_ID
 import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_INSTANCE_ID
-import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_TOPIC
 import net.corda.messaging.kafka.publisher.CordaKafkaPublisher
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -44,7 +43,6 @@ class CordaKafkaPublisherFactory @Activate constructor(
         //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required
         val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
         val config = defaultKafkaConfig.withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
-            .withValue(PUBLISHER_TOPIC, ConfigValueFactory.fromAnyRef(publisherConfig.topic))
 
         val instanceId = publisherConfig.instanceId
         if (instanceId != null) {
@@ -85,7 +83,7 @@ class CordaKafkaPublisherFactory @Activate constructor(
 
         if (publisherConfig.instanceId != null) {
             producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] =
-                "publishing-producer-${publisherConfig.clientId}-${publisherConfig.topic}-${publisherConfig.instanceId}"
+                "publishing-producer-${publisherConfig.clientId}-${publisherConfig.instanceId}"
         }
 
         return producerProps
