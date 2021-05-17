@@ -108,22 +108,22 @@ class CordaKafkaConsumerImpl<K : Any, V : Any> (
                 consumer.commitSync(offsets);
                 attemptCommit = false
             }
-            catch (ex: InterruptException) {
-                attempts++
-                handleErrorRetry("Failed to commitSync offsets for record $event on topic $topic", attempts, consumerCommitOffsetMaxRetries, ex)
-            } catch (ex: TimeoutException) {
-                attempts++
-                handleErrorRetry("Failed to commitSync offsets for record $event on topic $topic", attempts, consumerCommitOffsetMaxRetries, ex)
-            } catch (ex: CommitFailedException) {
-                logErrorAndThrowFatalException("Error attempting to commitSync offsets for record $event on topic $topic.", ex)
-            } catch (ex: AuthenticationException) {
-                logErrorAndThrowFatalException("Error attempting to commitSync offsets for record $event on topic $topic.", ex)
-            } catch (ex: AuthorizationException) {
-                logErrorAndThrowFatalException("Error attempting to commitSync offsets for record $event on topic $topic.", ex)
-            } catch (ex: IllegalArgumentException) {
-                logErrorAndThrowFatalException("Error attempting to commitSync offsets for record $event on topic $topic.", ex)
-            } catch (ex: FencedInstanceIdException) {
-                logErrorAndThrowFatalException("Error attempting to commitSync offsets for record $event on topic $topic.", ex)
+            catch (ex: Exception) {
+                when (ex) {
+                    is InterruptException,
+                    is TimeoutException -> {
+                        attempts++
+                        handleErrorRetry("Failed to commitSync offsets for record $event on topic $topic",
+                            attempts, consumerCommitOffsetMaxRetries, ex)
+                    }
+                    is CommitFailedException,
+                    is AuthenticationException,
+                    is AuthorizationException,
+                    is IllegalArgumentException,
+                    is FencedInstanceIdException -> {
+                        logErrorAndThrowFatalException("Error attempting to commitSync offsets for record $event on topic $topic", ex)
+                    }
+                }
             }
         }
     }
@@ -135,15 +135,20 @@ class CordaKafkaConsumerImpl<K : Any, V : Any> (
             try {
                 consumer.subscribe(listOf(topicPrefix + topic), listener)
                 attemptSubscription = false
-            } catch (ex: IllegalStateException) {
-                logErrorAndThrowFatalException("CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
-                        "Consumer is already subscribed to this topic. Closing subscription.", ex)
-            } catch (ex: IllegalArgumentException) {
-                logErrorAndThrowFatalException("CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic. " +
-                        "Illegal args provided. Closing subscription.", ex)
-            } catch (ex: KafkaException) {
-                attempts++
-                handleErrorRetry("CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic. ", attempts, consumerSubscribeMaxRetries, ex)
+            } catch (ex: Exception) {
+                val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
+                when (ex) {
+                    is IllegalStateException -> {
+                        logErrorAndThrowFatalException("$message. Consumer is already subscribed to this topic. Closing subscription.", ex)
+                    }
+                    is IllegalArgumentException -> {
+                        logErrorAndThrowFatalException("$message. Illegal args provided. Closing subscription.", ex)
+                    }
+                    is KafkaException -> {
+                        attempts++
+                        handleErrorRetry(message, attempts, consumerSubscribeMaxRetries, ex)
+                    }
+                }
             }
         }
     }
@@ -154,9 +159,9 @@ class CordaKafkaConsumerImpl<K : Any, V : Any> (
      */
     private fun handleErrorRetry(errorMessage: String, currentAttempt: Long, maxRetries: Long, ex: Exception) {
         if (currentAttempt < maxRetries) {
-            log.warn("$errorMessage Retrying.", ex)
+            log.warn("$errorMessage. Retrying.", ex)
         } else {
-            logErrorAndThrowFatalException("$errorMessage Max Retries exceeded.", ex)
+            logErrorAndThrowFatalException("$errorMessage. Max Retries exceeded.", ex)
         }
     }
 
