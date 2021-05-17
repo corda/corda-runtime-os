@@ -16,13 +16,13 @@ import net.corda.v5.base.internal.concurrent.openFuture
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.KafkaException
+import org.apache.kafka.common.errors.AuthenticationException
 import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.InterruptException
+import org.apache.kafka.common.errors.InvalidProducerEpochException
+import org.apache.kafka.common.errors.ProducerFencedException
 import org.apache.kafka.common.errors.SerializationException
 import org.apache.kafka.common.errors.TimeoutException
-import org.apache.kafka.common.errors.ProducerFencedException
-import org.apache.kafka.common.errors.InvalidProducerEpochException
-import org.apache.kafka.common.errors.AuthenticationException
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -128,19 +128,19 @@ class CordaKafkaPublisher<K : Any, V : Any> (
             }
         } else {
             val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
-                    "for topic $topic failed to send."
+                    "for topic $topic failed to send"
             when {
                 fatalSendExceptions.contains(exception::class.java) -> {
-                    log.error("$message Fatal error occurred. Closing producer.", exception)
+                    log.error("$message. Fatal error occurred. Closing producer.", exception)
                     future.setException(CordaMessageAPIFatalException(message, exception))
                     close()
                 }
                 exception is InterruptException -> {
-                    log.warn("$message Thread interrupted.", exception)
+                    log.warn("$message. Thread interrupted.", exception)
                     future.setException(CordaMessageAPIIntermittentException(message, exception))
                 }
                 else -> {
-                    log.error("$message Unknown error occurred. Closing producer.", exception)
+                    log.error("$message. Unknown error occurred. Closing producer.", exception)
                     future.setException(CordaMessageAPIFatalException(message, exception))
                     close()
                 }
