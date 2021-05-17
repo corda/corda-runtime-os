@@ -1,8 +1,5 @@
-dependencies {
-    implementation "net.corda:corda-base:$cordaVersion"
-    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
-
-    testRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
-}
-
 description 'P2P cryptographic library for session authentication'
+
+dependencies {
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+}
