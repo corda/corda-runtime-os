@@ -96,6 +96,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any> (
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun commitSyncOffsets(event: ConsumerRecord<K, ByteBuffer>, metaData: String?) {
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
         val topicPartition = TopicPartition(event.topic(), event.partition())
@@ -123,11 +124,15 @@ class CordaKafkaConsumerImpl<K : Any, V : Any> (
                     is FencedInstanceIdException -> {
                         logErrorAndThrowFatalException("Error attempting to commitSync offsets for record $event on topic $topic", ex)
                     }
+                    else -> {
+                        logErrorAndThrowFatalException("Unexpected error attempting to commitSync offsets for record $event on topic $topic", ex)
+                    }
                 }
             }
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun subscribeToTopic() {
         var attempts = 0L
         var attemptSubscription = true
@@ -147,6 +152,9 @@ class CordaKafkaConsumerImpl<K : Any, V : Any> (
                     is KafkaException -> {
                         attempts++
                         handleErrorRetry(message, attempts, consumerSubscribeMaxRetries, ex)
+                    }
+                    else -> {
+                        logErrorAndThrowFatalException("$message. Unexpected error.", ex)
                     }
                 }
             }
