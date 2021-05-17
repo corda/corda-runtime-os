@@ -14,7 +14,7 @@ class AuthenticatedSessionTest {
     private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
     private val signature = Signature.getInstance("ECDSA", provider)
 
-    private val sessionId = UUID.randomUUID().toString() + "-4"
+    private val sessionId = UUID.randomUUID().toString()
 
     // party A
     private val partyAIdentityKey = keyPairGenerator.generateKeyPair()
@@ -23,6 +23,8 @@ class AuthenticatedSessionTest {
     // party B
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
     private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, listOf(Mode.AUTHENTICATION_ONLY))
+
+    private val groupId = "some-group-id"
 
     @Test
     fun `session can be established between two parties and used for transmission of authenticated data successfully`() {
@@ -44,7 +46,7 @@ class AuthenticatedSessionTest {
             signature.update(data)
             signature.sign()
         }
-        val clientHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, signingCallbackForA)
+        val clientHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
 
         authenticationProtocolB.validatePeerHandshakeMessage(clientHandshakeMessage) { partyAIdentityKey.public }
 
@@ -105,7 +107,7 @@ class AuthenticatedSessionTest {
             signature.update(data)
             signature.sign()
         }
-        val clientHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, signingCallbackForA)
+        val clientHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
 
         authenticationProtocolBDownstream.validatePeerHandshakeMessage(clientHandshakeMessage) { partyAIdentityKey.public }
 
@@ -162,7 +164,7 @@ class AuthenticatedSessionTest {
             signature.update(data)
             signature.sign()
         }
-        val clientHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, signingCallbackForA)
+        val clientHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
 
         authenticationProtocolB.validatePeerHandshakeMessage(clientHandshakeMessage) { partyAIdentityKey.public }
 

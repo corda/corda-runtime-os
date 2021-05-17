@@ -71,13 +71,14 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
     /**
      * @param signingFn a callback function that will be invoked for performing signing (with the stable identity key).
      */
-    fun generateOurHandshakeMessage(ourPublicKey: PublicKey, theirPublicKey: PublicKey, signingFn: (ByteArray) -> ByteArray): ClientHandshakeMessage {
+    fun generateOurHandshakeMessage(ourPublicKey: PublicKey, theirPublicKey: PublicKey, groupId: String, signingFn: (ByteArray) -> ByteArray): ClientHandshakeMessage {
         require(step == Step.GENERATED_HANDSHAKE_SECRETS)
         step = Step.SENT_HANDSHAKE_MESSAGE
 
         val clientRecordHeader = CommonHeader(MessageType.CLIENT_HANDSHAKE, PROTOCOL_VERSION, sessionId, 1, Instant.now().toEpochMilli())
         val clientRecordHeaderBytes = clientRecordHeader.toBytes()
-        val clientEncryptedExtensions = sha256Hash.hash(theirPublicKey.encoded)
+        val groupIdBytes = groupId.toByteArray(Charsets.UTF_8)
+        val clientEncryptedExtensions = sha256Hash.hash(theirPublicKey.encoded) + groupIdBytes.size.toByteArray() + groupIdBytes
         val clientParty = sha256Hash.hash(ourPublicKey.encoded)
         val clientHelloToClientParty = clientHelloToServerHelloBytes!! + clientEncryptedExtensions + clientParty
         val clientPartyVerify = signingFn(clientSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(clientHelloToClientParty))

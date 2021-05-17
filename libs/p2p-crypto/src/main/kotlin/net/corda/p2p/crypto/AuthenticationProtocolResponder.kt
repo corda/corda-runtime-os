@@ -123,7 +123,7 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
      *
      *
      */
-    fun validatePeerHandshakeMessage(clientHandshakeMessage: ClientHandshakeMessage, keyLookupFn: (ByteArray) -> PublicKey): ByteArray {
+    fun validatePeerHandshakeMessage(clientHandshakeMessage: ClientHandshakeMessage, keyLookupFn: (ByteArray) -> PublicKey): HandshakeIdentityData {
         require(step == Step.GENERATED_HANDSHAKE_SECRETS)
         step = Step.RECEIVED_HANDSHAKE_MESSAGE
 
@@ -134,15 +134,20 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
             throw InvalidHandshakeMessage()
         }
         val payloadBuffer = ByteBuffer.wrap(clientHandshakePayload)
-        val clientEncryptedExtensions = ByteArray(sha256Hash.digestSize)
-        payloadBuffer.get(clientEncryptedExtensions)
-        val clientParty = ByteArray(sha256Hash.digestSize)
-        payloadBuffer.get(clientParty)
-        val initiatorPublicKey = keyLookupFn(clientParty)
+        val serverPublicKeyHash = ByteArray(sha256Hash.digestSize)
+        payloadBuffer.get(serverPublicKeyHash)
+        val groupIdBytesSize = payloadBuffer.int
+        val groupIdBytes = ByteArray(groupIdBytesSize)
+        payloadBuffer.get(groupIdBytes)
+        val groupId = groupIdBytes.toString(Charsets.UTF_8)
+        val clientEncryptedExtensions = serverPublicKeyHash + groupIdBytesSize.toByteArray() + groupIdBytes
+        val clientPublicKeyHash = ByteArray(sha256Hash.digestSize)
+        payloadBuffer.get(clientPublicKeyHash)
+        val initiatorPublicKey = keyLookupFn(clientPublicKeyHash)
         val clientPartyVerifySize = payloadBuffer.int
         val clientPartyVerify = ByteArray(clientPartyVerifySize)
         payloadBuffer.get(clientPartyVerify)
-        val clientHelloToClientParty = clientHelloToServerHelloBytes!! + clientEncryptedExtensions + clientParty
+        val clientHelloToClientParty = clientHelloToServerHelloBytes!! + clientEncryptedExtensions + clientPublicKeyHash
 
         val signatureWasValid = signature.verify(initiatorPublicKey, clientSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(clientHelloToClientParty), clientPartyVerify)
         if (!signatureWasValid) {
@@ -158,7 +163,7 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
             throw InvalidHandshakeMessage()
         }
 
-        return clientEncryptedExtensions
+        return HandshakeIdentityData(clientPublicKeyHash, serverPublicKeyHash, groupId)
     }
 
     /**
@@ -195,3 +200,30 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
  * Thrown when is no mode that is supported both by the client and the server.
  */
 class NoCommonModeError(val clientModes: List<Mode>, val serverModes: List<Mode>): RuntimeException()
+
+/**
+ * @property clientPublicKeyHash the SHA-256 hash of the client's public key.
+ * @property serverPublicKeyHash the SHA-256 hash of the public key to be used by the server.
+ * @property groupId the group identifier the two identities are part of.
+ */
+data class HandshakeIdentityData(val clientPublicKeyHash: ByteArray, val serverPublicKeyHash: ByteArray, val groupId: String) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as HandshakeIdentityData
+
+        if (!clientPublicKeyHash.contentEquals(other.clientPublicKeyHash)) return false
+        if (!serverPublicKeyHash.contentEquals(other.serverPublicKeyHash)) return false
+        if (groupId != other.groupId) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = clientPublicKeyHash.contentHashCode()
+        result = 31 * result + serverPublicKeyHash.contentHashCode()
+        result = 31 * result + groupId.hashCode()
+        return result
+    }
+}

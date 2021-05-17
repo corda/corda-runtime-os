@@ -19,6 +19,8 @@ import javax.crypto.spec.SecretKeySpec
  * A base, abstract class containing the core utilities for the session authentication protocol.
  * [AuthenticationProtocolInitiator] implements the APIs for the initiator side.
  * [AuthenticationProtocolResponder] implements the APIs for the responder side.
+ *
+ * For the detailed spec of the authentication protocol, refer to the corresponding design document.
  */
 abstract class AuthenticationProtocol {
     companion object {
@@ -197,4 +199,4 @@ enum class Mode {
 
 class InvalidHandshakeMessage: RuntimeException()
 
-fun Int.toByteArray() = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(this).array()
+fun Int.toByteArray(): ByteArray = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(this).array()
