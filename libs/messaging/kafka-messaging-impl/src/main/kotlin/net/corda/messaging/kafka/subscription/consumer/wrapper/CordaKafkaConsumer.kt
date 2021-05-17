@@ -41,6 +41,7 @@ interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable {
     /**
      * Synchronously commit the consumer offset for this [event] back to the topic partition.
      * Record [metaData] about this commit back on the [event] topic.
+     * @throws CordaMessageAPIFatalException fatal error occurred attempting to commit offsets.
      */
     fun commitSyncOffsets(event: ConsumerRecord<K, ByteBuffer>, metaData: String? = null)
 
