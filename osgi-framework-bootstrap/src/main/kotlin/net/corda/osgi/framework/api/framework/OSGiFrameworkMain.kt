@@ -1,6 +1,7 @@
-package net.corda.osgi.framework
+package net.corda.osgi.framework.api.framework
 
-import net.corda.osgi.framework.OSGiFrameworkMain.Companion.main
+import net.corda.osgi.framework.api.Lifecycle
+import net.corda.osgi.framework.api.framework.OSGiFrameworkMain.Companion.main
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 
@@ -41,6 +42,11 @@ class OSGiFrameworkMain {
         const val FRAMEWORK_STORAGE_PREFIX = "osgi-cache"
 
         /**
+         * Wait for stop of the OSGi framework, without timeout.
+         */
+        private const val NO_TIMEOUT = 0L
+
+        /**
          * Location of the list of bundles to install in the [OSGiFrameworkWrap] instance.
          * The location is relative to run time class path:
          * * `build/resources/main` in a gradle project;
@@ -59,11 +65,6 @@ class OSGiFrameworkMain {
         const val SYSTEM_PACKAGES_EXTRA = "system_packages_extra"
 
         /**
-         * Wait for stop of the OSGi framework, without timeout.
-         */
-        private const val NO_TIMEOUT = 0L
-
-        /**
          * The main entry point for the bootable JAR built with the `corda.common-app` plugin.
 
          * This method bootstraps the application:
@@ -74,10 +75,11 @@ class OSGiFrameworkMain {
          *      1. Install OSGi bundles in the OSGi framework,
          *      2. Activate OSGi bundles.
          * 3. **Call application entry-point**
-         *      1. Call the `main` entry point methods of active bundles, if any, passing [args].
+         *      1. Call the [Lifecycle.start] method of active application bundles, if any, passing [args].
          *
          *  Then, the method waits for the JVM receives the signal to terminate to
          *  1. **Shut Down**
+         *      1. Call the [Lifecycle.stop] method of application bundles, if any.
          *      1. Deactivate OSGi bundles.
          *      2. Stop the OSGi framework.
          *
@@ -105,10 +107,9 @@ class OSGiFrameworkMain {
                     })
                     osgiFrameworkWrap
                         .start()
-                        .setArguments(args)
                         .install(SYSTEM_BUNDLES)
                         .activate()
-                        .callMainEntryPoint(args)
+                        .startLifecycle(Lifecycle.METADATA_HEADER, NO_TIMEOUT, args)
                         .waitForStop(NO_TIMEOUT)
                 } catch (e: Exception) {
                     logger.error("Error: ${e.message}!", e)

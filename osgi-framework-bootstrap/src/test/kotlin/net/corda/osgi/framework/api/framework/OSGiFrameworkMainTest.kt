@@ -1,4 +1,4 @@
-package net.corda.osgi.framework
+package net.corda.osgi.framework.api.framework
 
 import org.junit.jupiter.api.Test
 

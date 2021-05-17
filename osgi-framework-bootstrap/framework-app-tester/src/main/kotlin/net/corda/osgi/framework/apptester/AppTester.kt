@@ -1,28 +1,19 @@
 package net.corda.osgi.framework.apptester
 
-import org.osgi.framework.BundleActivator
-import org.osgi.framework.BundleContext
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Deactivate
+import net.corda.osgi.framework.api.Lifecycle
 
-class AppTester : BundleActivator {
+class AppTester : Lifecycle {
 
-    companion object {
-
-        @JvmStatic
-        fun main(args: Array<String>) {
-            println("net.corda.osgi.framework.apptester.AppTester MAIN")
-        }
-
-    } //~ companion object
-
-    @Activate
-    override fun start(context: BundleContext?) {
-        println("net.corda.osgi.framework.apptester.AppTester START")
+    init {
+        println("net.corda.osgi.framework.apptester.AppTester.INIT")
     }
 
-    @Deactivate
-    override fun stop(context: BundleContext?) {
-        println("net.corda.osgi.framework.apptester.AppTester STOP")
+    override fun start(args: Array<String>) {
+        println("net.corda.osgi.framework.apptester.AppTester.START($args)")
     }
+
+    override fun stop() {
+        println("net.corda.osgi.framework.apptester.AppTester.STOP")
+    }
+
 }

@@ -1,7 +1,7 @@
-package net.corda.osgi.framework
+package net.corda.osgi.framework.api.framework
 
-import net.corda.osgi.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
-import net.corda.osgi.framework.api.ArgsService
+import net.corda.osgi.framework.api.Lifecycle
+import net.corda.osgi.framework.api.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants
@@ -11,8 +11,8 @@ import org.osgi.framework.launch.FrameworkFactory
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.Path
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 /**
  * `OSGiFrameworkWrap` provides an API to bootstrap an OSGI framework and OSGi bundles in the classpath.
@@ -72,18 +72,6 @@ class OSGiFrameworkWrap(
          * @see [install]
          */
         private const val JAR_EXTENSION = ".jar"
-
-        /**
-         * JAR metadata header expressing the main entry point method.
-         * @see [callMainEntryPoint]
-         */
-        private const val MAIN_CLASS_HEADER = "Main-Class"
-
-        /**
-         * Main entry point method for JAR applications.
-         * @see [callMainEntryPoint]
-         */
-        private const val MAIN_METHOD = "main"
 
         /**
          * Return a new configured [Framework] loaded from the classpath and having [frameworkFactoryFQN] as
@@ -222,13 +210,11 @@ class OSGiFrameworkWrap(
 
     } //~ companion object
 
+
     /**
-     * Map of the bundle installed.
-     *
-     * @see [activate]
-     * @see [install]
+     * Map of the descriptors of bundles installed.
      */
-    private val bundleMap = ConcurrentHashMap<Long, Bundle>()
+    private val bundleWrapMap = ConcurrentHashMap<Long, OSGiBundleWrap>()
 
     /**
      * Activate (start) the bundles installed with [install].
@@ -236,76 +222,37 @@ class OSGiFrameworkWrap(
      *
      * Bundle activation is idempotent.
      *
+     * Thread safe.
+     *
      * @return this.
      *
      * @throws BundleException if any bundled installed fails to start.
      * The first bundle failing to start interrupts the activation of each bundle it should activated next.
      */
+    @Synchronized
     @Throws(
         BundleException::class
     )
     fun activate(): OSGiFrameworkWrap {
-        bundleMap.values.forEach { bundle: Bundle ->
-            if (isFragment(bundle)) {
+        bundleWrapMap.values.forEach { wrap: OSGiBundleWrap ->
+            if (isFragment(wrap.bundle)) {
                 logger.info(
-                    "OSGi bundle ${bundle.location}" +
-                            " ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"}" +
-                            " ${bundle.version} ${bundleStateMap[bundle.state]} fragment."
+                    "OSGi bundle ${wrap.bundle.location}" +
+                            " ID = ${wrap.bundle.bundleId} ${wrap.bundle.symbolicName ?: "\b"}" +
+                            " ${wrap.bundle.version} ${bundleStateMap[wrap.bundle.state]} fragment."
                 )
             } else {
-                bundle.start()
+                wrap.bundle.start()
             }
         }
         return this
-    }
-
-    /**
-     * Introspect the activated bundles to call the `main` entry point method of the bundles if available.
-     *
-     * @param args to pass to the `main` methods of bundles.
-     *
-     * @return this.
-     *
-     * @throws ClassNotFoundException if the full qualified name specified for the [MAIN_CLASS_HEADER] in the
-     *          `MANIFEST.MF` entry of the bundle JAR is not found.
-     * @throws IllegalStateException If this bundle has been uninstalled meanwhile its `main` method is called.
-     * @throws NoSuchMethodException if the [MAIN_METHOD] isn't found in the full qualified name specified for the
-     *          [MAIN_CLASS_HEADER] in the `MANIFEST.MF` entry of the bundle JAR.
-     * @throws SecurityException If a security manager is present and the caller's class loader is not the same as,
-     *          or the security manager denies access to the package of this class.
-     */
-    @Throws(
-        ClassNotFoundException::class,
-        IllegalStateException::class,
-        NoSuchMethodException::class,
-        SecurityException::class
-    )
-    fun callMainEntryPoint(args: Array<String>): OSGiFrameworkWrap {
-        bundleMap.values.forEach { bundle: Bundle ->
-            if (isActive(bundle.state)) {
-                val mainClassFQN: String? = bundle.headers.get(MAIN_CLASS_HEADER)
-                if (mainClassFQN != null) {
-                    val mainClass = bundle.loadClass(mainClassFQN)
-                    val mainMethod = mainClass.getMethod(MAIN_METHOD, Array<String>::class.java)
-                    mainMethod.invoke(null, args)
-                }
-            }
-        }
-        return this
-    }
-
-    /**
-     * Return a read only snapshot map of installed bundles where bundle identifiers are keys of the map.
-     *
-     * @return a read only snapshot map of installed bundles where bundle identifiers are keys of the map.
-     */
-    fun getBundleMap(): Map<Long, Bundle> {
-        return bundleMap.toMap()
     }
 
     /**
      * Install the bundles represented by the [resource] in this classpath in the [Framework] wrapped by this object.
      * All installed bundles starts with the method [activate].
+     *
+     * Thread safe.
      *
      * @param resource represents the path in the classpath where bundles are described.
      * The resource can be:
@@ -325,6 +272,7 @@ class OSGiFrameworkWrap(
      * @see [installBundleJar]
      * @see [installBundleList]
      */
+    @Synchronized
     @Throws(
         BundleException::class,
         IllegalStateException::class,
@@ -369,7 +317,7 @@ class OSGiFrameworkWrap(
                 val bundleContext = framework.bundleContext
                     ?: throw IllegalStateException("OSGi framework not active yet.")
                 val bundle = bundleContext.installBundle(resource, inputStream)
-                bundleMap[bundle.bundleId] = bundle
+                bundleWrapMap[bundle.bundleId] = OSGiBundleWrap(bundle)
                 logger.debug("OSGi bundle $resource installed.")
             } else {
                 throw IOException("OSGi bundle at $resource not found")
@@ -416,27 +364,11 @@ class OSGiFrameworkWrap(
     }
 
     /**
-     * Register the [args] in the [ArgsService] OSGi service to expose [args] to the active bundles.
-     *
-     * @param args in the [ArgsService] OSGi service to expose [args] to the active bundles.
-     *
-     * @return this.
-     *
-     * @throws IllegalStateException if the wrapped [Framework] isn't active yet.
-     */
-    @Throws(
-        IllegalStateException::class,
-    )
-    fun setArguments(args: Array<String>): OSGiFrameworkWrap {
-        val bundleContext = framework.bundleContext ?: throw IllegalStateException("OSGi framework not active yet.")
-        bundleContext.registerService(ArgsService::class.java, ArgsService { args }, Hashtable<String, Any>())
-        return this
-    }
-
-    /**
      * Start the [Framework] wrapped by this [OSGiFrameworkWrap].
      * If the [Framework] can't start, the method logs a warning describing the actual state of the framework.
      * Start the framework multiple times is harmless, it just logs the warning.
+     *
+     * Thread safe.
      *
      * @return this.
      *
@@ -448,6 +380,7 @@ class OSGiFrameworkWrap(
      *
      * See [Framework.start]
      */
+    @Synchronized
     @Throws(
         BundleException::class,
         IllegalStateException::class,
@@ -458,8 +391,11 @@ class OSGiFrameworkWrap(
             framework.start()
             framework.bundleContext.addBundleListener { bundleEvent ->
                 val bundle = bundleEvent.bundle
+                if (isActive(bundle.state)) {
+                    bundleWrapMap[bundle.bundleId]?.active?.countDown()
+                }
                 logger.info(
-                    ">OSGi bundle ${bundle.location}" +
+                    "OSGi bundle ${bundle.location}" +
                             " ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"}" +
                             " ${bundle.version} ${bundleStateMap[bundle.state]}."
                 )
@@ -475,9 +411,89 @@ class OSGiFrameworkWrap(
     }
 
     /**
+     * Introspect the activated bundles to call the [Lifecycle.start] method of the application bundles.
+     *
+     * Application bundles have an implementation of the [Lifecycle] interface.
+     * This method creates an new instance of the class implementing [Lifecycle]
+     * having the full qualified name expressed in the [lifecycleHeader]
+     * of the `MANIFEST.MF` entry of the application bundle.
+     *
+     * The class implementing [Lifecycle] must have a default constructor with no parameters
+     * or all parameters set by default.
+     *
+     * This method sets [OSGiBundleWrap.lifecycleAtomic] to the [Lifecycle] implementation instance for
+     * application bundles: [stop] method will call [Lifecycle.stop] before to deactivate bundles and to stop
+     * the OSGi framework.
+     *
+     * Thread safe.
+     *
+     * @param lifecycleHeader in the `MANIFEST.MF` entry of application bundles used to describe the full qualified
+     *          name of the class implementing the [Lifecycle] interface.
+     * @param timeout in milliseconds to wait application bundles to be active before to call [Lifecycle.start] of
+     *          the class named in the `MANIFEST.MF`.
+     * @param args to pass to the [Lifecycle.start] method of application bundles.
+     *
+     * @return this.
+     *
+     * @throws ClassNotFoundException if the full qualified name specified for the [lifecycleHeader] in the
+     *          `MANIFEST.MF` entry of the bundle JAR is not found.
+     * @throws IllegalStateException If this bundle has been uninstalled meanwhile this method runs.
+     * @throws NoSuchMethodException If the class implementing [Lifecycle] hasn't a default constructor.
+     *          A default constructor has no parameters or all parameters set by default.
+     * @throws SecurityException If a security manager is present and the caller's class loader is not the same as,
+     *          or the security manager denies access to the package of this class.
+     */
+    @Synchronized
+    @Throws(
+        ClassNotFoundException::class,
+        IllegalStateException::class,
+        NoSuchMethodException::class,
+        SecurityException::class
+    )
+    fun startLifecycle(
+        lifecycleHeader: String,
+        timeout: Long,
+        args: Array<String>
+    ): OSGiFrameworkWrap {
+        bundleWrapMap.values.forEach { wrap: OSGiBundleWrap ->
+            val appLifecycleClassFQN: String? = wrap.bundle.headers.get(lifecycleHeader)
+            if (appLifecycleClassFQN != null) {
+                val appLifecycleClass = wrap.bundle.loadClass(appLifecycleClassFQN)
+                if (appLifecycleClass is Lifecycle) {
+                    if (wrap.active.await(timeout, TimeUnit.MILLISECONDS)) {
+                        val appLifecycle = appLifecycleClass.getDeclaredConstructor().newInstance() as Lifecycle
+                        appLifecycle.start(args)
+                        // When wrap.lifecycleAtomic is set the application implementing Lifecycle started.
+                        // Used to know those applications to stop.
+                        wrap.lifecycleAtomic.set(appLifecycle)
+                    } else {
+                        logger.warn(
+                            "OSGi bundle ${wrap.bundle.location}" +
+                                    " ID = ${wrap.bundle.bundleId} ${wrap.bundle.symbolicName ?: "\b"}" +
+                                    " ${wrap.bundle.version} ${bundleStateMap[wrap.bundle.state]}" +
+                                    " time-out after $timeout ms."
+                        )
+                    }
+                } else {
+                    logger.warn(
+                        "OSGi bundle ${wrap.bundle.location}" +
+                                " ID = ${wrap.bundle.bundleId} ${wrap.bundle.symbolicName ?: "\b"}" +
+                                " ${wrap.bundle.version} doesn't implement ${Lifecycle::class.java}."
+                    )
+                }
+            }
+        }
+        return this
+    }
+
+    /**
+     * Call the [Lifecycle.stop] method of application bundles.
+     * Deactivate installed bundles.
      * Stop the [Framework] wrapped by this [OSGiFrameworkWrap].
      * If the [Framework] can't stop, the method logs a warning describing the actual state of the framework.
      * Stop the framework multiple times is harmless, it just logs the warning.
+     *
+     * Thread safe.
      *
      * @return this.
      *
@@ -487,6 +503,7 @@ class OSGiFrameworkWrap(
      *
      * @see [Framework.stop]
      */
+    @Synchronized
     @Throws(
         BundleException::class,
         SecurityException::class
@@ -494,6 +511,9 @@ class OSGiFrameworkWrap(
     fun stop(): OSGiFrameworkWrap {
         if (isStoppable(framework.state)) {
             logger.debug("OSGi framework stop...")
+            bundleWrapMap.values.forEach { wrap: OSGiBundleWrap ->
+                wrap.lifecycleAtomic.getAndSet(null)?.stop()
+            }
             framework.stop()
         } else {
             logger.warn(
@@ -554,8 +574,6 @@ class OSGiFrameworkWrap(
             return frameworkEvent
         }
     }
-
-    //: AutoCloseable
 
     /**
      * Call [stop], implemented to provide [OSGiFrameworkWrap] in `try-with-resources/use` block.
