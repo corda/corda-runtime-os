@@ -27,7 +27,7 @@ internal data class OSGiBundleWrap(
      * Used to distinguish the application bundles.
      * Set to the class implementing [Lifecycle] after [Lifecycle.startup] is called.
      *
-     * @see [OSGiFrameworkWrap.startLifecycle]
+     * @see [OSGiFrameworkWrap.startApplications]
      * @see [OSGiFrameworkWrap.stop]
      */
     val lifecycleAtomic: AtomicReference<Lifecycle?> = AtomicReference()

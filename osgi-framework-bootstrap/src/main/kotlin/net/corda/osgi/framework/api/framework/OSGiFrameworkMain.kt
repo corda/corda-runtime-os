@@ -109,7 +109,7 @@ class OSGiFrameworkMain {
                         .start()
                         .install(SYSTEM_BUNDLES)
                         .activate()
-                        .startLifecycle(Lifecycle.METADATA_HEADER, NO_TIMEOUT, args)
+                        .startApplications(Lifecycle.METADATA_HEADER, NO_TIMEOUT, args)
                         .waitForStop(NO_TIMEOUT)
                 } catch (e: Exception) {
                     logger.error("Error: ${e.message}!", e)

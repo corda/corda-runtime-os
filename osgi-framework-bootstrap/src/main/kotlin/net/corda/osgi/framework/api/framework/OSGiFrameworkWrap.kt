@@ -369,6 +369,12 @@ class OSGiFrameworkWrap(
      * If the [Framework] can't start, the method logs a warning describing the actual state of the framework.
      * Start the framework multiple times is harmless, it just logs the warning.
      *
+     * This method registers the [ShutdownService] used by applications to ask to quit.
+     * The [ShutdownService.shutdown] implementation calls [stop]: both this method and [stop] are synchronized,
+     * but there is no risk of deadlock because applications start-up from synchronized [startApplications],
+     * it runs only after this method returned and the service is registered.
+     * The [ShutdownService.shutdown] runs [stop] in a separate thread.
+     *
      * Thread safe.
      *
      * @return this.
@@ -404,8 +410,13 @@ class OSGiFrameworkWrap(
             framework.bundleContext.registerService(
                 ShutdownService::class.java.name,
                 object : ShutdownService {
+                    // Called by applications using the [ShutdownService].
+                    // No risk of deadlock because applications are registered by [startApplications]
+                    // after this method returned and [stop] runs in separate thread.
                     override fun shutdown(bundle: Bundle) {
-                        stop()
+                        Thread {
+                            stop()
+                        }.run()
                     }
                 },
                 null
@@ -460,7 +471,7 @@ class OSGiFrameworkWrap(
         NoSuchMethodException::class,
         SecurityException::class
     )
-    fun startLifecycle(
+    fun startApplications(
         lifecycleHeader: String,
         timeout: Long,
         args: Array<String>
@@ -471,11 +482,11 @@ class OSGiFrameworkWrap(
                 val lifecycleClass = wrap.bundle.loadClass(lifecycleClassFQN)
                 if (Lifecycle::class.java.isAssignableFrom(lifecycleClass)) {
                     if (wrap.active.await(timeout, TimeUnit.MILLISECONDS)) {
-                        val appLifecycle = lifecycleClass.getDeclaredConstructor().newInstance() as Lifecycle
-                        appLifecycle.startup(args, wrap.bundle)
+                        val lifecycle = lifecycleClass.getDeclaredConstructor().newInstance() as Lifecycle
+                        lifecycle.startup(args, wrap.bundle)
                         // When wrap.lifecycleAtomic is set the application implementing Lifecycle started.
                         // Used to know those applications to stop.
-                        wrap.lifecycleAtomic.set(appLifecycle)
+                        wrap.lifecycleAtomic.set(lifecycle)
                     } else {
                         logger.warn(
                             "OSGi bundle ${wrap.bundle.location}" +
