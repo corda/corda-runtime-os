@@ -7,16 +7,21 @@ import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.listener.PubSubConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
+import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.KafkaException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.util.Properties
 
 /**
  * Generate a Kafka PubSub Consumer Builder.
  */
-class PubSubConsumerBuilder<K, V> (private val kafkaConfig: Config, private val consumerProperties: Properties) :
+class PubSubConsumerBuilder<K : Any, V : Any>(
+    private val kafkaConfig: Config,
+    private val consumerProperties: Properties,
+    private val avroSchemaRegistry: AvroSchemaRegistry) :
     ConsumerBuilder<K, V> {
 
     companion object {
@@ -30,7 +35,7 @@ class PubSubConsumerBuilder<K, V> (private val kafkaConfig: Config, private val 
 
         val consumer = try {
             Thread.currentThread().contextClassLoader = null
-            KafkaConsumer<K, V>(consumerProperties)
+            KafkaConsumer<K, ByteBuffer>(consumerProperties)
         } catch (ex: KafkaException) {
             val message = "PubSubConsumerBuilder failed to create and subscribe consumer for group $groupName, topic $topic."
             log.error(message, ex)
@@ -40,6 +45,6 @@ class PubSubConsumerBuilder<K, V> (private val kafkaConfig: Config, private val 
         }
 
         val listener = PubSubConsumerRebalanceListener(subscriptionConfig, consumer)
-        return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
+        return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener, avroSchemaRegistry)
     }
 }
