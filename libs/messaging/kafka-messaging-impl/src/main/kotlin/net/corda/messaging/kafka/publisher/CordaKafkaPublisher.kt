@@ -121,29 +121,28 @@ class CordaKafkaPublisher<K : Any, V : Any> (
      * Helper function to set a [future] result based on the presence of an [exception]
      */
     private fun setFutureFromResponse(exception: Exception?, future: OpenFuture<Boolean>) {
-        if (exception == null) {
-            //transaction operation can still fail at commit stage  so do not set to true until it is committed
-            if (instanceId == null) {
-                future.set(true)
+        val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
+                "for topic $topic failed to send"
+        when {
+            (exception == null) -> {
+                //transaction operation can still fail at commit stage  so do not set to true until it is committed
+                if (instanceId == null) {
+                    future.set(true)
+                }
             }
-        } else {
-            val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
-                    "for topic $topic failed to send"
-            when {
-                fatalSendExceptions.contains(exception::class.java) -> {
-                    log.error("$message. Fatal error occurred. Closing producer.", exception)
-                    future.setException(CordaMessageAPIFatalException(message, exception))
-                    close()
-                }
-                exception is InterruptException -> {
-                    log.warn("$message. Thread interrupted.", exception)
-                    future.setException(CordaMessageAPIIntermittentException(message, exception))
-                }
-                else -> {
-                    log.error("$message. Unknown error occurred. Closing producer.", exception)
-                    future.setException(CordaMessageAPIFatalException(message, exception))
-                    close()
-                }
+            fatalSendExceptions.contains(exception::class.java) -> {
+                log.error("$message. Fatal error occurred. Closing producer.", exception)
+                future.setException(CordaMessageAPIFatalException(message, exception))
+                close()
+            }
+            exception is InterruptException -> {
+                log.warn("$message. Thread interrupted.", exception)
+                future.setException(CordaMessageAPIIntermittentException(message, exception))
+            }
+            else -> {
+                log.error("$message. Unknown error occurred. Closing producer.", exception)
+                future.setException(CordaMessageAPIFatalException(message, exception))
+                close()
             }
         }
     }
