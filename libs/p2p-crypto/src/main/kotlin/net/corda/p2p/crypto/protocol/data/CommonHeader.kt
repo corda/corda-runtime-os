@@ -1,6 +1,4 @@
-package net.corda.p2p.crypto.data
-
-import net.corda.p2p.crypto.MessageType
+package net.corda.p2p.crypto.protocol.data
 
 data class CommonHeader(val messageType: MessageType,
                         val protocolVersion: Int,

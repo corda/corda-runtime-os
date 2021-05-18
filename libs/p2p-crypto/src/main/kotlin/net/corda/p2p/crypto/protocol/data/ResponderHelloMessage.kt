@@ -1,6 +1,6 @@
-package net.corda.p2p.crypto.data
+package net.corda.p2p.crypto.protocol.data
 
-import net.corda.p2p.crypto.Mode
+import net.corda.p2p.crypto.protocol.api.Mode
 
 data class ResponderHelloMessage(val commonHeader: CommonHeader, val responderPublicKey: ByteArray, val selectedMode: Mode) {
     override fun equals(other: Any?): Boolean {

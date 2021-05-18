@@ -1,6 +1,10 @@
 package net.corda.p2p.crypto
 
-import net.corda.p2p.crypto.data.CommonHeader
+import net.corda.p2p.crypto.protocol.data.CommonHeader
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.InvalidMac
+import net.corda.p2p.crypto.protocol.api.Mode
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test

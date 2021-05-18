@@ -1,12 +1,11 @@
-package net.corda.p2p.crypto
+package net.corda.p2p.crypto.protocol
 
-import net.corda.p2p.crypto.data.InitiatorHelloMessage
-import net.corda.p2p.crypto.data.ResponderHelloMessage
+import net.corda.p2p.crypto.protocol.data.InitiatorHelloMessage
+import net.corda.p2p.crypto.protocol.data.ResponderHelloMessage
 import org.bouncycastle.crypto.digests.SHA256Digest
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
 import org.bouncycastle.crypto.params.HKDFParameters
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import java.lang.RuntimeException
 import java.nio.ByteBuffer
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
@@ -175,35 +174,5 @@ abstract class AuthenticationProtocol {
     }
 
 }
-
-enum class MessageType {
-    /**
-     * Step 1 of session authentication protocol.
-     */
-    INITIATOR_HELLO,
-    /**
-     * Step 2 of session authentication protocol.
-     */
-    RESPONDER_HELLO,
-    /**
-     * Step 3 of session authentication protocol.
-     */
-    INITIATOR_HANDSHAKE,
-    /**
-     * Step 4 of session authentication protocol.
-     */
-    RESPONDER_HANDSHAKE,
-    /**
-     * Any data message exchanged after the session authentication protocol has been completed.
-     */
-    DATA
-}
-
-enum class Mode {
-    AUTHENTICATION_ONLY
-}
-
-class InvalidHandshakeMessage: RuntimeException()
-class IncorrectAPIUsage(message: String): RuntimeException(message)
 
 internal fun Int.toByteArray(): ByteArray = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(this).array()

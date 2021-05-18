@@ -1,6 +1,6 @@
-package net.corda.p2p.crypto.data
+package net.corda.p2p.crypto.protocol.data
 
-import net.corda.p2p.crypto.Mode
+import net.corda.p2p.crypto.protocol.api.Mode
 
 data class InitiatorHelloMessage(val commonHeader: CommonHeader, val initiatorPublicKey: ByteArray, val supportedModes: List<Mode>) {
     init {

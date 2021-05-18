@@ -1,10 +1,13 @@
-package net.corda.p2p.crypto
+package net.corda.p2p.crypto.protocol.api
 
-import net.corda.p2p.crypto.data.InitiatorHandshakeMessage
-import net.corda.p2p.crypto.data.InitiatorHelloMessage
-import net.corda.p2p.crypto.data.CommonHeader
-import net.corda.p2p.crypto.data.ResponderHandshakeMessage
-import net.corda.p2p.crypto.data.ResponderHelloMessage
+import net.corda.p2p.crypto.protocol.AuthenticationProtocol
+import net.corda.p2p.crypto.protocol.data.InitiatorHandshakeMessage
+import net.corda.p2p.crypto.protocol.data.InitiatorHelloMessage
+import net.corda.p2p.crypto.protocol.data.CommonHeader
+import net.corda.p2p.crypto.protocol.data.MessageType
+import net.corda.p2p.crypto.protocol.data.ResponderHandshakeMessage
+import net.corda.p2p.crypto.protocol.data.ResponderHelloMessage
+import net.corda.p2p.crypto.protocol.toByteArray
 import net.corda.p2p.crypto.util.calculateMac
 import net.corda.p2p.crypto.util.decrypt
 import net.corda.p2p.crypto.util.encryptWithAssociatedData
@@ -108,7 +111,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
 
     /**
      * @throws InvalidHandshakeResponderKeyHash if the responder sent a key hash that does not match with the key we were expecting.
-     * @throws InvalidHandshakeMessage if the handshake message was invalid (e.g. due to invalid signatures, MACs etc.)
+     * @throws InvalidHandshakeMessageException if the handshake message was invalid (e.g. due to invalid signatures, MACs etc.)
      */
     fun validatePeerHandshakeMessage(responderHandshakeMessage: ResponderHandshakeMessage, theirPublicKey: PublicKey) {
         transition(Step.SENT_HANDSHAKE_MESSAGE, Step.RECEIVED_HANDSHAKE_MESSAGE)
@@ -121,7 +124,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
                                                        responderHandshakeMessage.encryptedData,
                                                        sharedHandshakeSecrets!!.responderEncryptionKey)
         } catch (e: AEADBadTagException) {
-            throw InvalidHandshakeMessage()
+            throw InvalidHandshakeMessageException()
         }
 
         val responderHandshakeMessagePayloadDecryptedBuffer = ByteBuffer.wrap(responderHandshakePayload)
@@ -138,7 +141,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
                                             responderSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(initiatorHelloToResponderParty),
                                                  responderPartyVerify)
         if (!signatureWasValid) {
-            throw InvalidHandshakeMessage()
+            throw InvalidHandshakeMessageException()
         }
 
         val responderFinished = ByteArray(hmac.macLength)
@@ -147,7 +150,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
         val calculatedResponderFinished = hmac.calculateMac(sharedHandshakeSecrets!!.responderAuthKey,
                                                          sha256Hash.hash(initiatorHelloToResponderPartyVerify))
         if (!calculatedResponderFinished.contentEquals(responderFinished)) {
-            throw InvalidHandshakeMessage()
+            throw InvalidHandshakeMessageException()
         }
     }
 
@@ -162,7 +165,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
 
     private fun transition(fromStep: Step, toStep: Step) {
         if (step != fromStep) {
-            throw IncorrectAPIUsage("This method must be invoked when the protocol is in step $fromStep, but it was in step $step.")
+            throw IncorrectAPIUsageException("This method must be invoked when the protocol is in step $fromStep, but it was in step $step.")
         }
 
         step = toStep

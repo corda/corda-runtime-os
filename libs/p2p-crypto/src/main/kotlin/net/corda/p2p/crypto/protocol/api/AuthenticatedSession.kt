@@ -1,6 +1,8 @@
-package net.corda.p2p.crypto
+package net.corda.p2p.crypto.protocol.api
 
-import net.corda.p2p.crypto.data.CommonHeader
+import net.corda.p2p.crypto.protocol.AuthenticationProtocol
+import net.corda.p2p.crypto.protocol.data.CommonHeader
+import net.corda.p2p.crypto.protocol.data.MessageType
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.lang.RuntimeException
 import java.time.Instant

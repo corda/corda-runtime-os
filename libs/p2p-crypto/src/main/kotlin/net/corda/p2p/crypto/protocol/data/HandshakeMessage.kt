@@ -1,4 +1,4 @@
-package net.corda.p2p.crypto.data
+package net.corda.p2p.crypto.protocol.data
 
 data class HandshakeMessage(val recordHeader: CommonHeader, val encryptedData: ByteArray, val tag: ByteArray) {
     override fun equals(other: Any?): Boolean {
@@ -21,5 +21,6 @@ data class HandshakeMessage(val recordHeader: CommonHeader, val encryptedData: B
         return result
     }
 }
+
 typealias InitiatorHandshakeMessage = HandshakeMessage
 typealias ResponderHandshakeMessage = HandshakeMessage

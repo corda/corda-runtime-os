@@ -1,5 +1,9 @@
 package net.corda.p2p.crypto
 
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
+import net.corda.p2p.crypto.protocol.api.Mode
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
@@ -52,7 +56,7 @@ class AuthenticationProtocolFailureTest {
 
         val modifiedInitiatorHandshakeMessage = initiatorHandshakeMessage.copy(encryptedData = initiatorHandshakeMessage.encryptedData + "0".toByteArray(Charsets.UTF_8))
         assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(modifiedInitiatorHandshakeMessage) { partyAIdentityKey.public } }
-                .isInstanceOf(InvalidHandshakeMessage::class.java)
+                .isInstanceOf(InvalidHandshakeMessageException::class.java)
     }
 
     @Test
@@ -78,7 +82,7 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
 
         assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public } }
-                .isInstanceOf(InvalidHandshakeMessage::class.java)
+                .isInstanceOf(InvalidHandshakeMessageException::class.java)
     }
 
     @Test
@@ -114,7 +118,7 @@ class AuthenticationProtocolFailureTest {
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
 
         assertThatThrownBy { authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public) }
-                .isInstanceOf(InvalidHandshakeMessage::class.java)
+                .isInstanceOf(InvalidHandshakeMessageException::class.java)
     }
 
 
