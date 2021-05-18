@@ -12,7 +12,6 @@ import org.osgi.framework.launch.FrameworkFactory
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.Path
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -467,12 +466,12 @@ class OSGiFrameworkWrap(
         args: Array<String>
     ): OSGiFrameworkWrap {
         bundleWrapMap.values.forEach { wrap: OSGiBundleWrap ->
-            val appLifecycleClassFQN: String? = wrap.bundle.headers.get(lifecycleHeader)
-            if (appLifecycleClassFQN != null) {
-                val appLifecycleClass = wrap.bundle.loadClass(appLifecycleClassFQN)
-                if (Lifecycle::class.java.isAssignableFrom(appLifecycleClass)) {
+            val lifecycleClassFQN: String? = wrap.bundle.headers.get(lifecycleHeader)
+            if (lifecycleClassFQN != null) {
+                val lifecycleClass = wrap.bundle.loadClass(lifecycleClassFQN)
+                if (Lifecycle::class.java.isAssignableFrom(lifecycleClass)) {
                     if (wrap.active.await(timeout, TimeUnit.MILLISECONDS)) {
-                        val appLifecycle = appLifecycleClass.getDeclaredConstructor().newInstance() as Lifecycle
+                        val appLifecycle = lifecycleClass.getDeclaredConstructor().newInstance() as Lifecycle
                         appLifecycle.startup(args, wrap.bundle)
                         // When wrap.lifecycleAtomic is set the application implementing Lifecycle started.
                         // Used to know those applications to stop.
