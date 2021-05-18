@@ -57,10 +57,6 @@ allprojects {
         }
     }
 
-    tasks.named("compileTestKotlin") {
-        kotlinOptions.jvmTarget = VERSION_11
-    }
-
     repositories {
         //repo for CI builds,
         maven {
