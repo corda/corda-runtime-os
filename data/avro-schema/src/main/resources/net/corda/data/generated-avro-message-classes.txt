@@ -1,4 +1,5 @@
 net.corda.data.AvroEnvelope
 net.corda.data.client.rpc.flow.RPCFlowStart
+net.corda.data.config.Configuration
 net.corda.data.crypto.SecureHash
 net.corda.data.test.EvolvedMessage
