@@ -4,19 +4,25 @@ import net.corda.osgi.api.Lifecycle
 import net.corda.osgi.api.ShutdownService
 import org.osgi.framework.Bundle
 
-class AppTester : Lifecycle {
+internal class AppTester : Lifecycle {
+
+    private lateinit var bundle: Bundle
 
     init {
         println("net.corda.osgi.framework.apptester.AppTester.INIT")
     }
 
+
+
     override fun startup(args: Array<String>, bundle: Bundle) {
+        this.bundle = bundle
         println("net.corda.osgi.framework.apptester.AppTester.START($args)")
         Thread.sleep(1000)
-        Thread{
+        Thread {
             val shutdownReference = bundle.bundleContext.getServiceReference(ShutdownService::class.java.name)
             if (shutdownReference != null) {
-                val shutdownService: ShutdownService? = bundle.bundleContext.getService(shutdownReference) as ShutdownService
+                val shutdownService: ShutdownService? =
+                    bundle.bundleContext.getService(shutdownReference) as ShutdownService
                 if (shutdownService != null) {
                     shutdownService.shutdown(bundle)
                 } else {
