@@ -31,12 +31,12 @@ class AuthenticationProtocolFailureTest {
     @Test
     fun `session authentication fails if malicious actor changes initiator's handshake message`() {
         // Step 1: initiator sending hello message to responder.
-        val clientHelloMsg = authenticationProtocolA.generateClientHello()
-        authenticationProtocolB.receiveClientHello(clientHelloMsg)
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
 
         // Step 2: responder sending hello message to initiator.
-        val serverHelloMsg = authenticationProtocolB.generateServerHello()
-        authenticationProtocolA.receiveServerHello(serverHelloMsg)
+        val responderHelloMsg = authenticationProtocolB.generateResponderHello()
+        authenticationProtocolA.receiveResponderHello(responderHelloMsg)
 
         // Both sides generate handshake secrets.
         authenticationProtocolA.generateHandshakeSecrets()
@@ -48,22 +48,22 @@ class AuthenticationProtocolFailureTest {
             signature.update(data)
             signature.sign()
         }
-        val clientHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
 
-        val modifiedClientHandshakeMessage = clientHandshakeMessage.copy(encryptedData = clientHandshakeMessage.encryptedData + "0".toByteArray(Charsets.UTF_8))
-        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(modifiedClientHandshakeMessage) { partyAIdentityKey.public } }
+        val modifiedInitiatorHandshakeMessage = initiatorHandshakeMessage.copy(encryptedData = initiatorHandshakeMessage.encryptedData + "0".toByteArray(Charsets.UTF_8))
+        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(modifiedInitiatorHandshakeMessage) { partyAIdentityKey.public } }
                 .isInstanceOf(InvalidHandshakeMessage::class.java)
     }
 
     @Test
-    fun `session authentication fails if initiator's ClientPartyVerify signature is invalid`() {
+    fun `session authentication fails if initiator's InitiatorPartyVerify signature is invalid`() {
         // Step 1: initiator sending hello message to responder.
-        val clientHelloMsg = authenticationProtocolA.generateClientHello()
-        authenticationProtocolB.receiveClientHello(clientHelloMsg)
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
 
         // Step 2: responder sending hello message to initiator.
-        val serverHelloMsg = authenticationProtocolB.generateServerHello()
-        authenticationProtocolA.receiveServerHello(serverHelloMsg)
+        val responderHelloMsg = authenticationProtocolB.generateResponderHello()
+        authenticationProtocolA.receiveResponderHello(responderHelloMsg)
 
         // Both sides generate handshake secrets.
         authenticationProtocolA.generateHandshakeSecrets()
@@ -75,21 +75,21 @@ class AuthenticationProtocolFailureTest {
             signature.update(data + "0".toByteArray(Charsets.UTF_8))
             signature.sign()
         }
-        val clientHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
 
-        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(clientHandshakeMessage) { partyAIdentityKey.public } }
+        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public } }
                 .isInstanceOf(InvalidHandshakeMessage::class.java)
     }
 
     @Test
-    fun `session authentication fails if responder's ServerPartyVerify signature is invalid`() {
+    fun `session authentication fails if responder's ResponderPartyVerify signature is invalid`() {
         // Step 1: initiator sending hello message to responder.
-        val clientHelloMsg = authenticationProtocolA.generateClientHello()
-        authenticationProtocolB.receiveClientHello(clientHelloMsg)
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
 
         // Step 2: responder sending hello message to initiator.
-        val serverHelloMsg = authenticationProtocolB.generateServerHello()
-        authenticationProtocolA.receiveServerHello(serverHelloMsg)
+        val responderHelloMsg = authenticationProtocolB.generateResponderHello()
+        authenticationProtocolA.receiveResponderHello(responderHelloMsg)
 
         // Both sides generate handshake secrets.
         authenticationProtocolA.generateHandshakeSecrets()
@@ -101,9 +101,9 @@ class AuthenticationProtocolFailureTest {
             signature.update(data)
             signature.sign()
         }
-        val clientHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(clientHandshakeMessage) { partyAIdentityKey.public }
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public }
 
         // Step 4: responder creating different signature than the one expected.
         val signingCallbackForB = { data: ByteArray ->
@@ -111,9 +111,9 @@ class AuthenticationProtocolFailureTest {
             signature.update(data + "0".toByteArray(Charsets.UTF_8))
             signature.sign()
         }
-        val serverHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
+        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
 
-        assertThatThrownBy { authenticationProtocolA.validatePeerHandshakeMessage(serverHandshakeMessage, partyBIdentityKey.public) }
+        assertThatThrownBy { authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public) }
                 .isInstanceOf(InvalidHandshakeMessage::class.java)
     }
 

@@ -2,15 +2,15 @@ package net.corda.p2p.crypto.data
 
 import net.corda.p2p.crypto.Mode
 
-data class ServerHelloMessage(val commonHeader: CommonHeader, val serverPublicKey: ByteArray, val selectedMode: Mode) {
+data class ResponderHelloMessage(val commonHeader: CommonHeader, val responderPublicKey: ByteArray, val selectedMode: Mode) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as ServerHelloMessage
+        other as ResponderHelloMessage
 
         if (commonHeader != other.commonHeader) return false
-        if (!serverPublicKey.contentEquals(other.serverPublicKey)) return false
+        if (!responderPublicKey.contentEquals(other.responderPublicKey)) return false
         if (selectedMode != other.selectedMode) return false
 
         return true
@@ -18,14 +18,14 @@ data class ServerHelloMessage(val commonHeader: CommonHeader, val serverPublicKe
 
     override fun hashCode(): Int {
         var result = commonHeader.hashCode()
-        result = 31 * result + serverPublicKey.contentHashCode()
+        result = 31 * result + responderPublicKey.contentHashCode()
         result = 31 * result + selectedMode.hashCode()
         return result
     }
 
     fun toBytes(): ByteArray {
         return commonHeader.toBytes() +
-                serverPublicKey +
+                responderPublicKey +
                 selectedMode.toString().toByteArray(Charsets.UTF_8)
     }
 }

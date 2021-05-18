@@ -21,5 +21,5 @@ data class HandshakeMessage(val recordHeader: CommonHeader, val encryptedData: B
         return result
     }
 }
-typealias ClientHandshakeMessage = HandshakeMessage
-typealias ServerHandshakeMessage = HandshakeMessage
+typealias InitiatorHandshakeMessage = HandshakeMessage
+typealias ResponderHandshakeMessage = HandshakeMessage

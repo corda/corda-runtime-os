@@ -1,10 +1,10 @@
 package net.corda.p2p.crypto
 
-import net.corda.p2p.crypto.data.ClientHandshakeMessage
-import net.corda.p2p.crypto.data.ClientHelloMessage
+import net.corda.p2p.crypto.data.InitiatorHandshakeMessage
+import net.corda.p2p.crypto.data.InitiatorHelloMessage
 import net.corda.p2p.crypto.data.CommonHeader
-import net.corda.p2p.crypto.data.ServerHandshakeMessage
-import net.corda.p2p.crypto.data.ServerHelloMessage
+import net.corda.p2p.crypto.data.ResponderHandshakeMessage
+import net.corda.p2p.crypto.data.ResponderHelloMessage
 import net.corda.p2p.crypto.util.calculateMac
 import net.corda.p2p.crypto.util.decrypt
 import net.corda.p2p.crypto.util.encryptWithAssociatedData
@@ -23,8 +23,8 @@ import javax.crypto.AEADBadTagException
  * The responder side of the session authentication protocol.
  *
  * This class expects clients to call methods for each step in sequence and only once, i.e.:
- * - [receiveClientHello]
- * - [generateServerHello]
+ * - [receiveInitiatorHello]
+ * - [generateResponderHello]
  * - [generateHandshakeSecrets]
  * - [validatePeerHandshakeMessage]
  * - [generateOurHandshakeMessage]
@@ -39,19 +39,19 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
     companion object {
         fun fromStep2(sessionId: String,
                       supportedModes: List<Mode>,
-                      clientHelloMsg: ClientHelloMessage,
-                      serverHelloMsg: ServerHelloMessage,
+                      initiatorHelloMsg: InitiatorHelloMessage,
+                      responderHelloMsg: ResponderHelloMessage,
                       privateDHKey: ByteArray,
                       publicDHKey: ByteArray): AuthenticationProtocolResponder {
             val protocol = AuthenticationProtocolResponder(sessionId, supportedModes)
             protocol.apply {
-                receiveClientHello(clientHelloMsg)
+                receiveInitiatorHello(initiatorHelloMsg)
                 myPrivateDHKey = protocol.ephemeralKeyFactory.generatePrivate(PKCS8EncodedKeySpec(privateDHKey))
                 myPublicDHKey = publicDHKey
 
                 sharedDHSecret = keyAgreement.perform(myPrivateDHKey!!, peerPublicDHKey!!)
-                serverHelloMessage = serverHelloMsg
-                clientHelloToServerHelloBytes = clientHelloMessage!!.toBytes() + serverHelloMessage!!.toBytes()
+                responderHelloMessage = responderHelloMsg
+                initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toBytes() + responderHelloMessage!!.toBytes()
 
                 step = Step.SENT_MY_DH_KEY
             }
@@ -72,38 +72,37 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
         SESSION_ESTABLISHED
     }
 
-    fun receiveClientHello(clientHelloMsg: ClientHelloMessage) {
-        require(step == Step.INIT)
-        step = Step.RECEIVED_PEER_DH_KEY
+    fun receiveInitiatorHello(initiatorHelloMsg: InitiatorHelloMessage) {
+        transition(Step.INIT, Step.RECEIVED_PEER_DH_KEY)
 
-        clientHelloMessage = clientHelloMsg
-        peerPublicDHKey = ephemeralKeyFactory.generatePublic(X509EncodedKeySpec(clientHelloMsg.clientPublicKey))
+        initiatorHelloMessage = initiatorHelloMsg
+        peerPublicDHKey = ephemeralKeyFactory.generatePublic(X509EncodedKeySpec(initiatorHelloMsg.initiatorPublicKey))
     }
 
     /**
-     * @throws NoCommonModeError when there is no mode that is supported by both the client and the server.
+     * @throws NoCommonModeError when there is no mode that is supported by both the initiator and the responder.
      */
-    fun generateServerHello(): ServerHelloMessage {
-        require(step == Step.RECEIVED_PEER_DH_KEY)
-        step = Step.SENT_MY_DH_KEY
+    fun generateResponderHello(): ResponderHelloMessage {
+        transition(Step.RECEIVED_PEER_DH_KEY, Step.SENT_MY_DH_KEY)
 
         val keyPair = keyPairGenerator.generateKeyPair()
         myPrivateDHKey = keyPair.private
         myPublicDHKey = keyPair.public.encoded
 
         sharedDHSecret = keyAgreement.perform(myPrivateDHKey!!, peerPublicDHKey!!)
-        val commonHeader = CommonHeader(MessageType.SERVER_HELLO, PROTOCOL_VERSION, sessionId, 0, Instant.now().toEpochMilli())
+        val commonHeader = CommonHeader(MessageType.RESPONDER_HELLO, PROTOCOL_VERSION, sessionId,
+                             0, Instant.now().toEpochMilli())
 
-        val commonModes = clientHelloMessage!!.supportedModes.intersect(supportedModes)
+        val commonModes = initiatorHelloMessage!!.supportedModes.intersect(supportedModes)
         val selectedMode = if (commonModes.isEmpty()) {
-            throw NoCommonModeError(clientHelloMessage!!.supportedModes, supportedModes)
+            throw NoCommonModeError(initiatorHelloMessage!!.supportedModes, supportedModes)
         } else {
             commonModes.first()
         }
 
-        serverHelloMessage = ServerHelloMessage(commonHeader, myPublicDHKey!!, selectedMode)
-        clientHelloToServerHelloBytes = clientHelloMessage!!.toBytes() + serverHelloMessage!!.toBytes()
-        return serverHelloMessage!!
+        responderHelloMessage = ResponderHelloMessage(commonHeader, myPublicDHKey!!, selectedMode)
+        initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toBytes() + responderHelloMessage!!.toBytes()
+        return responderHelloMessage!!
     }
 
     /**
@@ -117,16 +116,15 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
      * @return a pair containing (in that order) the private and the public DH key.
      */
     fun getDHKeyPair(): Pair<ByteArray, ByteArray> {
-        require(step == Step.SENT_MY_DH_KEY)
+        checkState(Step.SENT_MY_DH_KEY)
 
         return myPrivateDHKey!!.encoded to myPublicDHKey!!
     }
 
     fun generateHandshakeSecrets() {
-        require(step == Step.SENT_MY_DH_KEY)
-        step = Step.GENERATED_HANDSHAKE_SECRETS
+        transition(Step.SENT_MY_DH_KEY, Step.GENERATED_HANDSHAKE_SECRETS)
 
-        sharedHandshakeSecrets = generateHandshakeSecrets(sharedDHSecret!!, clientHelloToServerHelloBytes!!)
+        sharedHandshakeSecrets = generateHandshakeSecrets(sharedDHSecret!!, initiatorHelloToResponderHelloBytes!!)
     }
 
     /**
@@ -138,117 +136,126 @@ class AuthenticationProtocolResponder(private val sessionId: String, private val
      *
      *
      */
-    fun validatePeerHandshakeMessage(clientHandshakeMessage: ClientHandshakeMessage,
+    fun validatePeerHandshakeMessage(initiatorHandshakeMessage: InitiatorHandshakeMessage,
                                      keyLookupFn: (ByteArray) -> PublicKey): HandshakeIdentityData {
-        require(step == Step.GENERATED_HANDSHAKE_SECRETS)
-        step = Step.RECEIVED_HANDSHAKE_MESSAGE
+        transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.RECEIVED_HANDSHAKE_MESSAGE)
 
-        val clientRecordHeaderBytes = clientHandshakeMessage.recordHeader.toBytes()
+        val initiatorRecordHeaderBytes = initiatorHandshakeMessage.recordHeader.toBytes()
         try {
-            clientHandshakePayload = aesCipher.decrypt(clientRecordHeaderBytes,
-                                                       clientHandshakeMessage.tag,
+            initiatorHandshakePayload = aesCipher.decrypt(initiatorRecordHeaderBytes,
+                                                       initiatorHandshakeMessage.tag,
                                                        sharedHandshakeSecrets!!.initiatorNonce,
-                                                       clientHandshakeMessage.encryptedData,
+                                                       initiatorHandshakeMessage.encryptedData,
                                                        sharedHandshakeSecrets!!.initiatorEncryptionKey)
         } catch (e: AEADBadTagException) {
             throw InvalidHandshakeMessage()
         }
-        val payloadBuffer = ByteBuffer.wrap(clientHandshakePayload)
-        val serverPublicKeyHash = ByteArray(sha256Hash.digestSize)
-        payloadBuffer.get(serverPublicKeyHash)
+        val payloadBuffer = ByteBuffer.wrap(initiatorHandshakePayload)
+        val responderPublicKeyHash = ByteArray(sha256Hash.digestSize)
+        payloadBuffer.get(responderPublicKeyHash)
         val groupIdBytesSize = payloadBuffer.int
         val groupIdBytes = ByteArray(groupIdBytesSize)
         payloadBuffer.get(groupIdBytes)
         val groupId = groupIdBytes.toString(Charsets.UTF_8)
-        val clientEncryptedExtensions = serverPublicKeyHash + groupIdBytesSize.toByteArray() + groupIdBytes
-        val clientPublicKeyHash = ByteArray(sha256Hash.digestSize)
-        payloadBuffer.get(clientPublicKeyHash)
-        val initiatorPublicKey = keyLookupFn(clientPublicKeyHash)
-        val clientPartyVerifySize = payloadBuffer.int
-        val clientPartyVerify = ByteArray(clientPartyVerifySize)
-        payloadBuffer.get(clientPartyVerify)
-        val clientHelloToClientParty = clientHelloToServerHelloBytes!! + clientEncryptedExtensions + clientPublicKeyHash
+        val initiatorEncryptedExtensions = responderPublicKeyHash + groupIdBytesSize.toByteArray() + groupIdBytes
+        val initiatorPublicKeyHash = ByteArray(sha256Hash.digestSize)
+        payloadBuffer.get(initiatorPublicKeyHash)
+        val initiatorPublicKey = keyLookupFn(initiatorPublicKeyHash)
+        val initiatorPartyVerifySize = payloadBuffer.int
+        val initiatorPartyVerify = ByteArray(initiatorPartyVerifySize)
+        payloadBuffer.get(initiatorPartyVerify)
+        val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorEncryptedExtensions + initiatorPublicKeyHash
 
         val signatureWasValid = signature.verify(initiatorPublicKey,
-                                            clientSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(clientHelloToClientParty),
-                                                 clientPartyVerify)
+                                        initiatorSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(initiatorHelloToResponderParty),
+                                             initiatorPartyVerify)
         if (!signatureWasValid) {
             throw InvalidHandshakeMessage()
         }
 
-        val clientFinished = ByteArray(hmac.macLength)
-        payloadBuffer.get(clientFinished)
-        val clientHelloToClientPartyVerify = clientHelloToClientParty + clientPartyVerify
+        val initiatorFinished = ByteArray(hmac.macLength)
+        payloadBuffer.get(initiatorFinished)
+        val initiatorHelloToResponderPartyVerify = initiatorHelloToResponderParty + initiatorPartyVerify
 
-        val calculatedClientFinished = hmac.calculateMac(sharedHandshakeSecrets!!.initiatorAuthKey,
-                                                         sha256Hash.hash(clientHelloToClientPartyVerify))
-        if (!calculatedClientFinished.contentEquals(clientFinished)) {
+        val calculatedInitiatorFinished = hmac.calculateMac(sharedHandshakeSecrets!!.initiatorAuthKey,
+                                                         sha256Hash.hash(initiatorHelloToResponderPartyVerify))
+        if (!calculatedInitiatorFinished.contentEquals(initiatorFinished)) {
             throw InvalidHandshakeMessage()
         }
 
-        return HandshakeIdentityData(clientPublicKeyHash, serverPublicKeyHash, groupId)
+        return HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, groupId)
     }
 
     /**
      * @param signingFn a callback function that will be invoked for performing signing (with the stable identity key).
      */
-    fun generateOurHandshakeMessage(ourPublicKey: PublicKey, signingFn: (ByteArray) -> ByteArray): ServerHandshakeMessage {
-        require(step == Step.RECEIVED_HANDSHAKE_MESSAGE)
-        step = Step.SENT_HANDSHAKE_MESSAGE
+    fun generateOurHandshakeMessage(ourPublicKey: PublicKey, signingFn: (ByteArray) -> ByteArray): ResponderHandshakeMessage {
+        transition(Step.RECEIVED_HANDSHAKE_MESSAGE, Step.SENT_HANDSHAKE_MESSAGE)
 
-        val serverRecordHeader = CommonHeader(MessageType.SERVER_HANDSHAKE, PROTOCOL_VERSION,
+        val responderRecordHeader = CommonHeader(MessageType.RESPONDER_HANDSHAKE, PROTOCOL_VERSION,
                                               sessionId, 1, Instant.now().toEpochMilli())
-        val serverRecordHeaderBytes = serverRecordHeader.toBytes()
-        val serverParty = sha256Hash.hash(ourPublicKey.encoded)
-        val clientHelloToServerParty = clientHelloToServerHelloBytes!! + clientHandshakePayload!! + serverParty
-        val serverPartyVerify = signingFn(serverSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(clientHelloToServerParty))
-        val clientHelloToServerPartyVerify = clientHelloToServerParty + serverPartyVerify
-        val serverFinished = hmac.calculateMac(sharedHandshakeSecrets!!.responderAuthKey, sha256Hash.hash(clientHelloToServerPartyVerify))
-        serverHandshakePayload = serverParty + (serverPartyVerify.size.toByteArray() + serverPartyVerify) + serverFinished
-        val (serverEncryptedData, serverTag) = aesCipher.encryptWithAssociatedData(serverRecordHeaderBytes,
-                sharedHandshakeSecrets!!.responderNonce, serverHandshakePayload!!, sharedHandshakeSecrets!!.responderEncryptionKey)
-        return ServerHandshakeMessage(serverRecordHeader, serverEncryptedData, serverTag)
+        val responderRecordHeaderBytes = responderRecordHeader.toBytes()
+        val responderParty = sha256Hash.hash(ourPublicKey.encoded)
+        val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayload!! + responderParty
+        val responderPartyVerify = signingFn(responderSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(initiatorHelloToResponderParty))
+        val initiatorHelloToResponderPartyVerify = initiatorHelloToResponderParty + responderPartyVerify
+        val responderFinished = hmac.calculateMac(sharedHandshakeSecrets!!.responderAuthKey,
+                                                  sha256Hash.hash(initiatorHelloToResponderPartyVerify))
+        responderHandshakePayload = responderParty + (responderPartyVerify.size.toByteArray() + responderPartyVerify) + responderFinished
+        val (responderEncryptedData, responderTag) = aesCipher.encryptWithAssociatedData(responderRecordHeaderBytes,
+                sharedHandshakeSecrets!!.responderNonce, responderHandshakePayload!!, sharedHandshakeSecrets!!.responderEncryptionKey)
+        return ResponderHandshakeMessage(responderRecordHeader, responderEncryptedData, responderTag)
     }
 
     fun getSession(): AuthenticatedSession {
-        require(step == Step.SENT_HANDSHAKE_MESSAGE)
-        step = Step.SESSION_ESTABLISHED
+        transition(Step.SENT_HANDSHAKE_MESSAGE, Step.SESSION_ESTABLISHED)
 
-        val fullTranscript = clientHelloToServerHelloBytes!! + clientHandshakePayload!! + serverHandshakePayload!!
+        val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayload!! + responderHandshakePayload!!
         val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
         return AuthenticatedSession(sessionId, 2, sharedSessionSecrets.responderEncryptionKey,
                                     sharedSessionSecrets.initiatorEncryptionKey)
     }
 
+    private fun transition(fromStep: Step, toStep: Step) {
+        checkState(fromStep)
+        step = toStep
+    }
+
+    private fun checkState(expectedStep: Step) {
+        if (step != expectedStep) {
+            throw IncorrectAPIUsage("This method must be invoked when the protocol is in step $expectedStep, but it was in step $step.")
+        }
+    }
+
 }
 
 /**
- * Thrown when is no mode that is supported both by the client and the server.
+ * Thrown when is no mode that is supported both by the initiator and the responder.
  */
-class NoCommonModeError(val clientModes: List<Mode>, val serverModes: List<Mode>): RuntimeException()
+class NoCommonModeError(val initiatorModes: List<Mode>, val responderModes: List<Mode>): RuntimeException()
 
 /**
- * @property clientPublicKeyHash the SHA-256 hash of the client's public key.
- * @property serverPublicKeyHash the SHA-256 hash of the public key to be used by the server.
+ * @property initiatorPublicKeyHash the SHA-256 hash of the initiator's public key.
+ * @property responderPublicKeyHash the SHA-256 hash of the public key to be used by the responder.
  * @property groupId the group identifier the two identities are part of.
  */
-data class HandshakeIdentityData(val clientPublicKeyHash: ByteArray, val serverPublicKeyHash: ByteArray, val groupId: String) {
+data class HandshakeIdentityData(val initiatorPublicKeyHash: ByteArray, val responderPublicKeyHash: ByteArray, val groupId: String) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
         other as HandshakeIdentityData
 
-        if (!clientPublicKeyHash.contentEquals(other.clientPublicKeyHash)) return false
-        if (!serverPublicKeyHash.contentEquals(other.serverPublicKeyHash)) return false
+        if (!initiatorPublicKeyHash.contentEquals(other.initiatorPublicKeyHash)) return false
+        if (!responderPublicKeyHash.contentEquals(other.responderPublicKeyHash)) return false
         if (groupId != other.groupId) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = clientPublicKeyHash.contentHashCode()
-        result = 31 * result + serverPublicKeyHash.contentHashCode()
+        var result = initiatorPublicKeyHash.contentHashCode()
+        result = 31 * result + responderPublicKeyHash.contentHashCode()
         result = 31 * result + groupId.hashCode()
         return result
     }

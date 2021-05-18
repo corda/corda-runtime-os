@@ -1,7 +1,7 @@
 package net.corda.p2p.crypto
 
-import net.corda.p2p.crypto.data.ClientHelloMessage
-import net.corda.p2p.crypto.data.ServerHelloMessage
+import net.corda.p2p.crypto.data.InitiatorHelloMessage
+import net.corda.p2p.crypto.data.ResponderHelloMessage
 import org.bouncycastle.crypto.digests.SHA256Digest
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
 import org.bouncycastle.crypto.params.HKDFParameters
@@ -29,8 +29,8 @@ import javax.crypto.spec.SecretKeySpec
  */
 abstract class AuthenticationProtocol {
     companion object {
-        val clientSigPad = " ".repeat(64) + "Corda, client signature verify" + "\\0"
-        val serverSigPad = " ".repeat(64) + "Corda, server signature verify" + "\\0"
+        val initiatorSigPad = " ".repeat(64) + "Corda, client signature verify" + "\\0"
+        val responderSigPad = " ".repeat(64) + "Corda, server signature verify" + "\\0"
 
         const val PROTOCOL_VERSION = 1
     }
@@ -41,11 +41,11 @@ abstract class AuthenticationProtocol {
     protected var sharedDHSecret: ByteArray? = null
     protected var sharedHandshakeSecrets: SharedHandshakeSecrets? = null
 
-    protected var clientHelloMessage: ClientHelloMessage? = null
-    protected var serverHelloMessage: ServerHelloMessage? = null
-    protected var clientHelloToServerHelloBytes: ByteArray? = null
-    protected var clientHandshakePayload: ByteArray? = null
-    protected var serverHandshakePayload: ByteArray? = null
+    protected var initiatorHelloMessage: InitiatorHelloMessage? = null
+    protected var responderHelloMessage: ResponderHelloMessage? = null
+    protected var initiatorHelloToResponderHelloBytes: ByteArray? = null
+    protected var initiatorHandshakePayload: ByteArray? = null
+    protected var responderHandshakePayload: ByteArray? = null
 
     protected val secureRandom = SecureRandom()
     protected val ecAlgoName = "X25519"
@@ -60,35 +60,35 @@ abstract class AuthenticationProtocol {
     protected val signature = Signature.getInstance("ECDSA", provider)
     protected val sha256Hash = SHA256Digest()
 
-    fun generateHandshakeSecrets(inputKeyMaterial: ByteArray, clientHelloToServerHello: ByteArray): SharedHandshakeSecrets {
-        val initiatorEncryptionKeyBytes = hkdf(clientHelloToServerHello, inputKeyMaterial, "Corda client hs enc key", 32)
+    fun generateHandshakeSecrets(inputKeyMaterial: ByteArray, initiatorHelloToResponderHello: ByteArray): SharedHandshakeSecrets {
+        val initiatorEncryptionKeyBytes = hkdf(initiatorHelloToResponderHello, inputKeyMaterial, "Corda client hs enc key", 32)
         val initiatorEncryptionKey = SecretKeySpec(initiatorEncryptionKeyBytes, "HmacSHA512")
 
-        val responderEncryptionKeyBytes = hkdf(clientHelloToServerHello, inputKeyMaterial, "Corda server hs enc key", 32)
+        val responderEncryptionKeyBytes = hkdf(initiatorHelloToResponderHello, inputKeyMaterial, "Corda server hs enc key", 32)
         val responderEncryptionKey = SecretKeySpec(responderEncryptionKeyBytes, "HmacSHA512")
 
-        val initiatorNonce = hkdf(clientHelloToServerHello, inputKeyMaterial, "Corda client hs enc iv", 12)
-        val responderNonce = hkdf(clientHelloToServerHello, inputKeyMaterial,"Corda server hs enc iv", 12)
+        val initiatorNonce = hkdf(initiatorHelloToResponderHello, inputKeyMaterial, "Corda client hs enc iv", 12)
+        val responderNonce = hkdf(initiatorHelloToResponderHello, inputKeyMaterial,"Corda server hs enc iv", 12)
 
-        val initiatorMacKeyBytes = hkdf(clientHelloToServerHello, inputKeyMaterial, "Corda client hs mac key", 32)
+        val initiatorMacKeyBytes = hkdf(initiatorHelloToResponderHello, inputKeyMaterial, "Corda client hs mac key", 32)
         val initiatorMacKey = SecretKeySpec(initiatorMacKeyBytes, "HmacSHA512")
 
-        val responderMackKeyBytes = hkdf(clientHelloToServerHello, inputKeyMaterial, "Corda server hs mac key", 32)
+        val responderMackKeyBytes = hkdf(initiatorHelloToResponderHello, inputKeyMaterial, "Corda server hs mac key", 32)
         val responderMacKey = SecretKeySpec(responderMackKeyBytes, "HmacSHA512")
 
         return SharedHandshakeSecrets(initiatorMacKey, responderMacKey,
                                       initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
     }
 
-    fun generateSessionSecrets(inputKeyMaterial: ByteArray, clientHelloToServerFinished: ByteArray): SharedSessionSecrets {
-        val initiatorEncryptionKeyBytes = hkdf(clientHelloToServerFinished, inputKeyMaterial, "Corda client session key", 32)
+    fun generateSessionSecrets(inputKeyMaterial: ByteArray, initiatorHelloToResponderFinished: ByteArray): SharedSessionSecrets {
+        val initiatorEncryptionKeyBytes = hkdf(initiatorHelloToResponderFinished, inputKeyMaterial, "Corda client session key", 32)
         val initiatorEncryptionKey = SecretKeySpec(initiatorEncryptionKeyBytes, "AES")
 
-        val responderEncryptionKeyBytes = hkdf(clientHelloToServerFinished, inputKeyMaterial, "Corda server session key", 12)
+        val responderEncryptionKeyBytes = hkdf(initiatorHelloToResponderFinished, inputKeyMaterial, "Corda server session key", 12)
         val responderEncryptionKey = SecretKeySpec(responderEncryptionKeyBytes, "AES")
 
-        val initiatorNonce = hkdf(clientHelloToServerFinished, inputKeyMaterial, "Corda client session iv", 12)
-        val responderNonce = hkdf(clientHelloToServerFinished, inputKeyMaterial, "Corda server session iv", 12)
+        val initiatorNonce = hkdf(initiatorHelloToResponderFinished, inputKeyMaterial, "Corda client session iv", 12)
+        val responderNonce = hkdf(initiatorHelloToResponderFinished, inputKeyMaterial, "Corda server session iv", 12)
 
         return SharedSessionSecrets(initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
     }
@@ -180,29 +180,30 @@ enum class MessageType {
     /**
      * Step 1 of session authentication protocol.
      */
-    CLIENT_HELLO,
-
+    INITIATOR_HELLO,
     /**
      * Step 2 of session authentication protocol.
      */
-    SERVER_HELLO,
+    RESPONDER_HELLO,
     /**
      * Step 3 of session authentication protocol.
      */
-    CLIENT_HANDSHAKE,
+    INITIATOR_HANDSHAKE,
     /**
      * Step 4 of session authentication protocol.
      */
-    SERVER_HANDSHAKE,
+    RESPONDER_HANDSHAKE,
     /**
      * Any data message exchanged after the session authentication protocol has been completed.
      */
     DATA
 }
+
 enum class Mode {
     AUTHENTICATION_ONLY
 }
 
 class InvalidHandshakeMessage: RuntimeException()
+class IncorrectAPIUsage(message: String): RuntimeException(message)
 
-fun Int.toByteArray(): ByteArray = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(this).array()
+internal fun Int.toByteArray(): ByteArray = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(this).array()

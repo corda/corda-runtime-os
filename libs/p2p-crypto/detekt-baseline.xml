@@ -2,8 +2,8 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>LongParameterList:AuthenticationProtocolResponder.kt$AuthenticationProtocolResponder.Companion$(sessionId: String, supportedModes: List&lt;Mode&gt;, clientHelloMsg: ClientHelloMessage, serverHelloMsg: ServerHelloMessage, privateDHKey: ByteArray, publicDHKey: ByteArray)</ID>
-    <ID>ThrowsCount:AuthenticationProtocolInitiator.kt$AuthenticationProtocolInitiator$ fun validatePeerHandshakeMessage(serverHandshakeMessage: ServerHandshakeMessage, theirPublicKey: PublicKey)</ID>
-    <ID>ThrowsCount:AuthenticationProtocolResponder.kt$AuthenticationProtocolResponder$ fun validatePeerHandshakeMessage(clientHandshakeMessage: ClientHandshakeMessage, keyLookupFn: (ByteArray) -&gt; PublicKey): HandshakeIdentityData</ID>
+    <ID>LongParameterList:AuthenticationProtocolResponder.kt$AuthenticationProtocolResponder.Companion$(sessionId: String, supportedModes: List&lt;Mode&gt;, initiatorHelloMsg: InitiatorHelloMessage, responderHelloMsg: ResponderHelloMessage, privateDHKey: ByteArray, publicDHKey: ByteArray)</ID>
+    <ID>ThrowsCount:AuthenticationProtocolInitiator.kt$AuthenticationProtocolInitiator$ fun validatePeerHandshakeMessage(responderHandshakeMessage: ResponderHandshakeMessage, theirPublicKey: PublicKey)</ID>
+    <ID>ThrowsCount:AuthenticationProtocolResponder.kt$AuthenticationProtocolResponder$ fun validatePeerHandshakeMessage(initiatorHandshakeMessage: InitiatorHandshakeMessage, keyLookupFn: (ByteArray) -&gt; PublicKey): HandshakeIdentityData</ID>
   </CurrentIssues>
 </SmellBaseline>

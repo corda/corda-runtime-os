@@ -13,7 +13,7 @@ import javax.crypto.spec.GCMParameterSpec
 /**
  * @return the decrypted data
  */
-fun Cipher.decrypt(aad: ByteArray, tag: ByteArray, nonce: ByteArray, ciphertext: ByteArray, secretKey: SecretKey): ByteArray {
+internal fun Cipher.decrypt(aad: ByteArray, tag: ByteArray, nonce: ByteArray, ciphertext: ByteArray, secretKey: SecretKey): ByteArray {
     this.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, nonce))
     this.updateAAD(aad)
     return this.doFinal(ciphertext + tag)
@@ -22,7 +22,7 @@ fun Cipher.decrypt(aad: ByteArray, tag: ByteArray, nonce: ByteArray, ciphertext:
 /**
  * @return  (in this order) the encrypted data and the authentication tag
  */
-fun Cipher.encryptWithAssociatedData(aad: ByteArray,
+internal fun Cipher.encryptWithAssociatedData(aad: ByteArray,
                                      nonce: ByteArray,
                                      plaintext: ByteArray,
                                      secretKey: SecretKey): Pair<ByteArray, ByteArray> {
@@ -34,7 +34,7 @@ fun Cipher.encryptWithAssociatedData(aad: ByteArray,
     return Pair(cipher, tag)
 }
 
-fun Signature.verify(publicKey: PublicKey, data: ByteArray, signature: ByteArray): Boolean {
+internal fun Signature.verify(publicKey: PublicKey, data: ByteArray, signature: ByteArray): Boolean {
     this.initVerify(publicKey)
     this.update(data)
     return this.verify(signature)
@@ -43,13 +43,13 @@ fun Signature.verify(publicKey: PublicKey, data: ByteArray, signature: ByteArray
 /**
  * @return the shared secret key as a byte array.
  */
-fun KeyAgreement.perform(privateKey: PrivateKey, publicKey: PublicKey): ByteArray  {
+internal fun KeyAgreement.perform(privateKey: PrivateKey, publicKey: PublicKey): ByteArray  {
     this.init(privateKey)
     this.doPhase(publicKey, true)
     return this.generateSecret()
 }
 
-fun SHA256Digest.hash(data: ByteArray): ByteArray {
+internal fun SHA256Digest.hash(data: ByteArray): ByteArray {
     this.reset()
     this.update(data, 0, data.size)
     val hash = ByteArray(this.digestSize)
@@ -57,7 +57,7 @@ fun SHA256Digest.hash(data: ByteArray): ByteArray {
     return hash
 }
 
-fun Mac.calculateMac(key: SecretKey, data: ByteArray): ByteArray {
+internal fun Mac.calculateMac(key: SecretKey, data: ByteArray): ByteArray {
     this.init(key)
     this.update(data)
     return this.doFinal()
