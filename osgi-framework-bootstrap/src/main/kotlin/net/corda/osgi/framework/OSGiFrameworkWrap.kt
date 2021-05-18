@@ -464,6 +464,7 @@ class OSGiFrameworkWrap(
      * @throws SecurityException If a security manager is present and the caller's class loader is not the same as,
      *          or the security manager denies access to the package of this class.
      */
+    @Suppress("NestedBlockDepth")
     @Synchronized
     @Throws(
         ClassNotFoundException::class,
