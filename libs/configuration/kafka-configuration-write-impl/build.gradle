@@ -7,6 +7,13 @@ description 'Kafka configuration write API impl'
 
 
 dependencies {
+    implementation project(":data:avro-schema")
+    implementation project(":libs:configuration:configuration-write")
+    implementation project(":libs:messaging:messaging")
+
+    implementation "org.apache.kafka:kafka-clients:$kafkaVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"

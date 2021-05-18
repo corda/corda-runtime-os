@@ -11,14 +11,17 @@ interface TopicUtils {
 
     /**
      * Create new topic based on:
-     *
+     * [topicName]
+     * [partitions]
+     * [replication]
+     * [kafkaProps]
      */
     fun createTopic(topicName: String,
                     partitions: Int,
                     replication: Short,
                     kafkaProps: Properties
     )
-
+    //TODO: remove when write lib is done
     fun createProducer(props: Properties, keySerialiser: String?, valueSerialiser: String?) : KafkaProducer<Any, Any>
 
 }
