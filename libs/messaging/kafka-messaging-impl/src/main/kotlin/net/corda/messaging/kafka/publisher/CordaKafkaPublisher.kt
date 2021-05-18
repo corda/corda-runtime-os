@@ -13,6 +13,8 @@ import net.corda.v5.base.concurrent.CordaFuture
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.internal.concurrent.OpenFuture
 import net.corda.v5.base.internal.concurrent.openFuture
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.KafkaException
@@ -25,7 +27,6 @@ import org.apache.kafka.common.errors.SerializationException
 import org.apache.kafka.common.errors.TimeoutException
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Duration
 
@@ -47,7 +48,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
     ) : Publisher<K, V> {
 
     private companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
         private val fatalSendExceptions = listOf(AuthenticationException::class.java, AuthorizationException::class.java,
             IllegalStateException::class.java, SerializationException::class.java, KafkaException::class.java)
     }
@@ -117,7 +118,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
                 if (instanceId == null) {
                     future.set(true)
                 } else {
-                    log.debug("Asynchronous send completed completed successfully.")
+                    log.debug { "Asynchronous send completed completed successfully." }
                 }
             }
             fatalSendExceptions.contains(exception::class.java) -> {
