@@ -90,7 +90,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any> (
             val topic = consumerRecord.topic().substringAfter(topicPrefix)
             Record(topic, consumerRecord.key(), value)
         } catch (ex: CordaRuntimeException) {
-            val message = "CordaKafkaConsumer failed to deserialize record with key ${consumerRecord.key()}. Group $groupName,topic $topic."
+            val message = "CordaKafkaConsumer failed to deserialize record with key ${consumerRecord.key()}. " +
+                    "Group $groupName,topic $topic."
             log.error(message, ex)
             throw CordaMessageAPIFatalException(message, ex)
         }
@@ -125,7 +126,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any> (
                         logErrorAndThrowFatalException("Error attempting to commitSync offsets for record $event on topic $topic", ex)
                     }
                     else -> {
-                        logErrorAndThrowFatalException("Unexpected error attempting to commitSync offsets for record $event on topic $topic", ex)
+                        logErrorAndThrowFatalException("Unexpected error attempting to commitSync offsets " +
+                                "for record $event on topic $topic", ex)
                     }
                 }
             }
