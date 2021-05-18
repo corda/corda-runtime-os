@@ -1,6 +1,13 @@
 package net.corda.messaging.kafka.subscription.consumer.wrapper
 
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.anyOrNull
+import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.doThrow
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.times
+import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.whenever
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
@@ -12,14 +19,21 @@ import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordsList
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import org.apache.kafka.clients.consumer.*
+import org.apache.kafka.clients.consumer.CommitFailedException
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
+import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.kafka.clients.consumer.MockConsumer
+import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.errors.TimeoutException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.anyMap
 import org.mockito.Mockito
 import java.nio.ByteBuffer
 import java.time.Duration
@@ -46,6 +60,7 @@ class CordaKafkaConsumerImplTest {
             .withValue(KafkaProperties.CONSUMER_SUBSCRIBE_MAX_RETRIES, ConfigValueFactory.fromAnyRef(3))
             .withValue(KafkaProperties.CONSUMER_CLOSE_TIMEOUT, ConfigValueFactory.fromAnyRef(1))
             .withValue(KafkaProperties.KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("prefix"))
+            .withValue(KafkaProperties.CONSUMER_COMMIT_OFFSET_MAX_RETRIES, ConfigValueFactory.fromAnyRef(3))
 
         val (mockConsumer, mockTopicPartition) = createMockConsumerAndAddRecords(eventTopic,  numberOfRecords, OffsetResetStrategy.EARLIEST)
         consumer = mockConsumer
@@ -134,6 +149,44 @@ class CordaKafkaConsumerImplTest {
 
         val committedPositionAfterCommit = consumer.committed(setOf(partition))
         assertThat(committedPositionAfterCommit.values.first().offset()).isEqualTo(6)
+    }
+
+    @Test
+    fun testCommitOffsetsRetries() {
+        consumer = mock()
+        cordaKafkaConsumer = CordaKafkaConsumerImpl(
+            kafkaConfig,
+            subscriptionConfig,
+            consumer,
+            listener,
+            avroSchemaRegistry
+        )
+
+        val record = ConsumerRecord<String, ByteBuffer>(eventTopic, 1, 5L, null, ByteBuffer.wrap("value".toByteArray()))
+        doThrow(TimeoutException()).whenever(consumer).commitSync(anyMap())
+        assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
+            cordaKafkaConsumer.commitSyncOffsets(record, "meta data")
+        }
+        verify(consumer, times(3)).commitSync(anyMap())
+    }
+
+    @Test
+    fun testCommitOffsetsFatal() {
+        consumer = mock()
+        cordaKafkaConsumer = CordaKafkaConsumerImpl(
+            kafkaConfig,
+            subscriptionConfig,
+            consumer,
+            listener,
+            avroSchemaRegistry
+        )
+
+        val record = ConsumerRecord<String, ByteBuffer>(eventTopic, 1, 5L, null, ByteBuffer.wrap("value".toByteArray()))
+        doThrow(CommitFailedException()).whenever(consumer).commitSync(anyMap())
+        assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
+            cordaKafkaConsumer.commitSyncOffsets(record, "meta data")
+        }
+        verify(consumer, times(1)).commitSync(anyMap())
     }
 
 

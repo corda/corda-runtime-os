@@ -16,13 +16,13 @@ import net.corda.v5.base.internal.concurrent.openFuture
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.KafkaException
+import org.apache.kafka.common.errors.AuthenticationException
 import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.InterruptException
+import org.apache.kafka.common.errors.InvalidProducerEpochException
+import org.apache.kafka.common.errors.ProducerFencedException
 import org.apache.kafka.common.errors.SerializationException
 import org.apache.kafka.common.errors.TimeoutException
-import org.apache.kafka.common.errors.ProducerFencedException
-import org.apache.kafka.common.errors.InvalidProducerEpochException
-import org.apache.kafka.common.errors.AuthenticationException
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -80,38 +80,26 @@ class CordaKafkaPublisher<K : Any, V : Any> (
                 producer.commitTransaction()
                 fut.set(true)
             }
-        } catch (ex: IllegalStateException) {
-            logErrorAndSetFuture("Kafka producer clientId $clientId, instanceId $instanceId, " +
-                    "for topic $topic failed to send. Producer is in an illegal state. Closing producer", ex, fut, true)
-        } catch (ex: ProducerFencedException) {
-            logErrorAndSetFuture("Kafka producer clientId $clientId, instanceId $instanceId, " +
-                    "for topic $topic failed to send. Another producer with the same transactional.id is active. " +
-                    "Closing publisher.", ex, fut, true)
-        } catch (ex: InvalidProducerEpochException) {
-            val message ="Kafka producer clientId $clientId, instanceId $instanceId, " +
-                    "for topic $topic failed to send. request sent to the partition leader contains " +
-                    "a non-matching producer epoch."
-            logErrorSetFutureAndAbortTransaction(message, ex, fut)
-        } catch (ex: AuthorizationException) {
-            logErrorAndSetFuture("Kafka producer clientId $clientId, instanceId $instanceId, " +
-                    "for topic $topic failed to send. Producer is not authorized to write to this topic." +
-                    "Closing producer", ex, fut, true)
-        } catch (ex: InterruptException) {
-            val message ="Kafka producer clientId $clientId, instanceId $instanceId, " +
-                    "for topic $topic failed to send. Thread interrupted."
-            logErrorSetFutureAndAbortTransaction(message, ex, fut)
-        } catch (ex: TimeoutException) {
-            val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
-                    "for topic $topic failed to send. Timeout"
-            logErrorSetFutureAndAbortTransaction(message, ex, fut)
-        } catch (ex: KafkaException) {
-            val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
-                    "for topic $topic failed to send. Unknown Kafka error. Closing producer."
-            logErrorAndSetFuture(message, ex, fut, true)
         } catch (ex: Exception) {
-            val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
-                    "for topic $topic failed to send. Unknown error. Closing producer."
-            logErrorAndSetFuture(message, ex, fut, true)
+            when (ex) {
+                is InvalidProducerEpochException,
+                is InterruptException,
+                is TimeoutException -> {
+                    logErrorSetFutureAndAbortTransaction("Kafka producer clientId $clientId, instanceId $instanceId, " +
+                            "for topic $topic failed to send.", ex, fut)
+                }
+                is IllegalStateException,
+                is ProducerFencedException,
+                is AuthorizationException,
+                is KafkaException -> {
+                    logErrorAndSetFuture("Kafka producer clientId $clientId, instanceId $instanceId, " +
+                            "for topic $topic failed to send", ex, fut, true)
+                }
+                else -> {
+                    logErrorAndSetFuture("Kafka producer clientId $clientId, instanceId $instanceId, " +
+                            "for topic $topic failed to send. Unknown error.", ex, fut, true)
+                }
+            }
         }
 
         return fut
@@ -121,29 +109,30 @@ class CordaKafkaPublisher<K : Any, V : Any> (
      * Helper function to set a [future] result based on the presence of an [exception]
      */
     private fun setFutureFromResponse(exception: Exception?, future: OpenFuture<Boolean>) {
-        if (exception == null) {
-            //transaction operation can still fail at commit stage  so do not set to true until it is committed
-            if (instanceId == null) {
-                future.set(true)
+        val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
+                "for topic $topic failed to send"
+        when {
+            (exception == null) -> {
+                //transaction operation can still fail at commit stage  so do not set to true until it is committed
+                if (instanceId == null) {
+                    future.set(true)
+                } else {
+                    log.debug("Asynchronous send completed completed successfully.")
+                }
             }
-        } else {
-            val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
-                    "for topic $topic failed to send."
-            when {
-                fatalSendExceptions.contains(exception::class.java) -> {
-                    log.error("$message Fatal error occurred. Closing producer.", exception)
-                    future.setException(CordaMessageAPIFatalException(message, exception))
-                    close()
-                }
-                exception is InterruptException -> {
-                    log.warn("$message Thread interrupted.", exception)
-                    future.setException(CordaMessageAPIIntermittentException(message, exception))
-                }
-                else -> {
-                    log.error("$message Unknown error occurred. Closing producer.", exception)
-                    future.setException(CordaMessageAPIFatalException(message, exception))
-                    close()
-                }
+            fatalSendExceptions.contains(exception::class.java) -> {
+                log.error("$message. Fatal error occurred. Closing producer.", exception)
+                future.setException(CordaMessageAPIFatalException(message, exception))
+                close()
+            }
+            exception is InterruptException -> {
+                log.warn("$message. Thread interrupted.", exception)
+                future.setException(CordaMessageAPIIntermittentException(message, exception))
+            }
+            else -> {
+                log.error("$message. Unknown error occurred. Closing producer.", exception)
+                future.setException(CordaMessageAPIFatalException(message, exception))
+                close()
             }
         }
     }
@@ -154,7 +143,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
      */
     private fun logErrorAndSetFuture(message: String, exception: Exception, future: OpenFuture<Boolean>, fatal: Boolean) {
         if (fatal) {
-            log.error(message, exception, future)
+            log.error("$message. Closing producer.", exception, future)
             future.setException(CordaMessageAPIFatalException(message, exception))
             close()
         } else {
