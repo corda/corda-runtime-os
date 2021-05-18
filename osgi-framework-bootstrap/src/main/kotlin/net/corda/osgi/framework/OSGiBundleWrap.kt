@@ -1,6 +1,6 @@
-package net.corda.osgi.framework.api.framework
+package net.corda.osgi.framework
 
-import net.corda.osgi.framework.api.Lifecycle
+import net.corda.osgi.api.Lifecycle
 import org.osgi.framework.Bundle
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference

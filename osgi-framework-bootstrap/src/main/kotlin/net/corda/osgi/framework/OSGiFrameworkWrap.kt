@@ -1,8 +1,8 @@
-package net.corda.osgi.framework.api.framework
+package net.corda.osgi.framework
 
-import net.corda.osgi.framework.api.Lifecycle
-import net.corda.osgi.framework.api.ShutdownService
-import net.corda.osgi.framework.api.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
+import net.corda.osgi.api.Lifecycle
+import net.corda.osgi.api.ShutdownService
+import net.corda.osgi.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants

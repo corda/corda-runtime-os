@@ -1,4 +1,4 @@
-package net.corda.osgi.framework.api.framework
+package net.corda.osgi.framework
 
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext

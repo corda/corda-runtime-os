@@ -1,7 +1,7 @@
-package net.corda.osgi.framework.api.framework
+package net.corda.osgi.framework
 
-import net.corda.osgi.framework.api.Lifecycle
-import net.corda.osgi.framework.api.framework.OSGiFrameworkMain.Companion.main
+import net.corda.osgi.api.Lifecycle
+import net.corda.osgi.framework.OSGiFrameworkMain.Companion.main
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 

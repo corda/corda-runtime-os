@@ -1,4 +1,4 @@
-package net.corda.osgi.framework.api.framework
+package net.corda.osgi.framework
 
 import org.apache.sling.testing.mock.osgi.MockOsgi
 import org.osgi.framework.*

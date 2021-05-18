@@ -1,4 +1,4 @@
-package net.corda.osgi.framework.api.framework
+package net.corda.osgi.framework
 
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.jupiter.params.provider.Arguments

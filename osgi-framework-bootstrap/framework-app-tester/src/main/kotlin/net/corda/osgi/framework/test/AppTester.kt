@@ -1,7 +1,7 @@
-package net.corda.osgi.framework.apptester
+package net.corda.osgi.framework.test
 
-import net.corda.osgi.framework.api.Lifecycle
-import net.corda.osgi.framework.api.ShutdownService
+import net.corda.osgi.api.Lifecycle
+import net.corda.osgi.api.ShutdownService
 import org.osgi.framework.Bundle
 
 class AppTester : Lifecycle {

@@ -1,4 +1,4 @@
-package net.corda.osgi.framework.api.framework
+package net.corda.osgi.framework
 
 import com.google.common.jimfs.Jimfs
 import org.junit.jupiter.api.AfterEach

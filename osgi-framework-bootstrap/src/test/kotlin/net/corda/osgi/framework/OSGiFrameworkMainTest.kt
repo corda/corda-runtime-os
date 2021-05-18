@@ -1,11 +1,11 @@
-package net.corda.osgi.framework.api.framework
+package net.corda.osgi.framework
 
 import org.junit.jupiter.api.Test
 
 /**
  * This test installs and runs the test application in the module `framework-app-tester`.
  *
- * The [net.corda.osgi.framework.apptester.AppTester] implements the [net.corda.osgi.framework.api.Lifecycle].
+ * The [net.corda.osgi.framework.test.AppTester] implements the [net.corda.osgi.api.Lifecycle].
  *
  * **NOTE!**
  *
@@ -14,10 +14,10 @@ import org.junit.jupiter.api.Test
  * JUnit finds the test application in the classpath:
  *  1. [OSGiFrameworkMain] installs the application with its dependencies;
  *  2. [OSGiFrameworkWrap.startApplications] bootstraps the application with
- *  [net.corda.osgi.framework.apptester.AppTester] inside;
- *  3. [net.corda.osgi.framework.apptester.AppTester.startup] calls
- *  [net.corda.osgi.framework.api.ShutdownService.shutdown] to ask to quit;
- *  5. [OSGiFrameworkWrap.stop] calls [net.corda.osgi.framework.apptester.AppTester.shutdown],
+ *  [net.corda.osgi.framework.test.AppTester] inside;
+ *  3. [net.corda.osgi.framework.test.AppTester.startup] calls
+ *  [net.corda.osgi.api.ShutdownService.shutdown] to ask to quit;
+ *  5. [OSGiFrameworkWrap.stop] calls [net.corda.osgi.framework.test.AppTester.shutdown],
  *  6. [OSGiFrameworkWrap.stop] stops the OSGi framework.
  *  7. [OSGiFrameworkMain] is free to quit.
  *
