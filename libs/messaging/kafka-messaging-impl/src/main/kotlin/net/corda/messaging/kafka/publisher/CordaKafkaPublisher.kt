@@ -128,6 +128,8 @@ class CordaKafkaPublisher<K : Any, V : Any> (
                 //transaction operation can still fail at commit stage  so do not set to true until it is committed
                 if (instanceId == null) {
                     future.set(true)
+                } else {
+                    log.debug("Asynchronous send completed completed successfully.")
                 }
             }
             fatalSendExceptions.contains(exception::class.java) -> {
