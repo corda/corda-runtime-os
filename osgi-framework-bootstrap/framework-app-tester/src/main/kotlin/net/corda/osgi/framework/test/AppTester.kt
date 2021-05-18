@@ -12,8 +12,6 @@ internal class AppTester : Lifecycle {
         println("net.corda.osgi.framework.apptester.AppTester.INIT")
     }
 
-
-
     override fun startup(args: Array<String>, bundle: Bundle) {
         this.bundle = bundle
         println("net.corda.osgi.framework.apptester.AppTester.START($args)")
