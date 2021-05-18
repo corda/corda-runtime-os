@@ -1,5 +1,7 @@
 package net.corda.osgi.framework.api
 
+import org.osgi.framework.Bundle
+
 interface Lifecycle {
 
     companion object {
@@ -11,7 +13,7 @@ interface Lifecycle {
         const val METADATA_HEADER = "Lifecycle-Class"
     }
 
-    fun startup(args: Array<String>)
-    fun shutdown()
+    fun startup(args: Array<String>, bundle: Bundle)
+    fun shutdown(bundle: Bundle)
 
 }

@@ -1,6 +1,7 @@
 package net.corda.osgi.framework.api.framework
 
 import net.corda.osgi.framework.api.Lifecycle
+import net.corda.osgi.framework.api.ShutdownService
 import net.corda.osgi.framework.api.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
@@ -11,6 +12,7 @@ import org.osgi.framework.launch.FrameworkFactory
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.Path
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -400,6 +402,15 @@ class OSGiFrameworkWrap(
                             " ${bundle.version} ${bundleStateMap[bundle.state]}."
                 )
             }
+            framework.bundleContext.registerService(
+                ShutdownService::class.java.name,
+                object : ShutdownService {
+                    override fun shutdown(bundle: Bundle) {
+                        stop()
+                    }
+                },
+                null
+            )
             logger.info("OSGi framework ${framework::class.java.canonicalName} ${framework.version} started.")
         } else {
             logger.warn(
@@ -459,10 +470,10 @@ class OSGiFrameworkWrap(
             val appLifecycleClassFQN: String? = wrap.bundle.headers.get(lifecycleHeader)
             if (appLifecycleClassFQN != null) {
                 val appLifecycleClass = wrap.bundle.loadClass(appLifecycleClassFQN)
-                if (appLifecycleClass is Lifecycle) {
+                if (Lifecycle::class.java.isAssignableFrom(appLifecycleClass)) {
                     if (wrap.active.await(timeout, TimeUnit.MILLISECONDS)) {
                         val appLifecycle = appLifecycleClass.getDeclaredConstructor().newInstance() as Lifecycle
-                        appLifecycle.startup(args)
+                        appLifecycle.startup(args, wrap.bundle)
                         // When wrap.lifecycleAtomic is set the application implementing Lifecycle started.
                         // Used to know those applications to stop.
                         wrap.lifecycleAtomic.set(appLifecycle)
@@ -512,7 +523,7 @@ class OSGiFrameworkWrap(
         if (isStoppable(framework.state)) {
             logger.debug("OSGi framework stop...")
             bundleWrapMap.values.forEach { wrap: OSGiBundleWrap ->
-                wrap.lifecycleAtomic.getAndSet(null)?.shutdown()
+                wrap.lifecycleAtomic.getAndSet(null)?.shutdown(wrap.bundle)
             }
             framework.stop()
         } else {

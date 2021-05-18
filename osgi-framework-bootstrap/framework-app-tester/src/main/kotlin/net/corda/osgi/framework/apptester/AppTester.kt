@@ -1,6 +1,8 @@
 package net.corda.osgi.framework.apptester
 
 import net.corda.osgi.framework.api.Lifecycle
+import net.corda.osgi.framework.api.ShutdownService
+import org.osgi.framework.Bundle
 
 class AppTester : Lifecycle {
 
@@ -8,11 +10,25 @@ class AppTester : Lifecycle {
         println("net.corda.osgi.framework.apptester.AppTester.INIT")
     }
 
-    override fun startup(args: Array<String>) {
+    override fun startup(args: Array<String>, bundle: Bundle) {
         println("net.corda.osgi.framework.apptester.AppTester.START($args)")
+        Thread.sleep(1000)
+        Thread{
+            val shutdownReference = bundle.bundleContext.getServiceReference(ShutdownService::class.java.name)
+            if (shutdownReference != null) {
+                val shutdownService: ShutdownService? = bundle.bundleContext.getService(shutdownReference) as ShutdownService
+                if (shutdownService != null) {
+                    shutdownService.shutdown(bundle)
+                } else {
+                    throw ClassNotFoundException("Service reference to ${ShutdownService::class.java.name} not found.")
+                }
+            } else {
+                throw ClassNotFoundException("Service ${ShutdownService::class.java.name} not found.")
+            }
+        }.start()
     }
 
-    override fun shutdown() {
+    override fun shutdown(bundle: Bundle) {
         println("net.corda.osgi.framework.apptester.AppTester.STOP")
     }
 
