@@ -27,7 +27,7 @@ class CordaConfigurationServiceImpl(val context: BundleContext) : CordaConfigura
         key: CordaConfigurationKey,
         config: Config
     ) {
-        //TODO:not needed yet
+        //not needed yet
     }
 
     /**

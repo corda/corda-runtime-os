@@ -21,7 +21,7 @@ interface TopicUtils {
                     replication: Short,
                     kafkaProps: Properties
     )
-    //TODO: remove when write lib is done
+    //remove when write lib is done
     fun createProducer(props: Properties, keySerialiser: String?, valueSerialiser: String?) : KafkaProducer<Any, Any>
 
 }

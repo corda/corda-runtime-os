@@ -11,6 +11,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-write")
     implementation project(":libs:messaging:messaging")
 
+    implementation "net.corda:corda-base:$cordaVersion"
     implementation "org.apache.kafka:kafka-clients:$kafkaVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
