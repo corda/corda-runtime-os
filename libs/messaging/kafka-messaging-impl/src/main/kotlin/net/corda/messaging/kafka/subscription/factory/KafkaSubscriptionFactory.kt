@@ -15,6 +15,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CONF_PREFIX
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.subscription.KafkaCompactedSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilder
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -77,7 +78,18 @@ class KafkaSubscriptionFactory @Activate constructor(
         processor: CompactedProcessor<K, V>,
         properties: Map<String, String>
     ): CompactedSubscription<K, V> {
-        TODO("Not yet implemented")
+        // pattern specific properties
+        val overrideProperties = properties.toMutableMap()
+        overrideProperties[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = FALSE
+        overrideProperties[ConsumerConfig.ISOLATION_LEVEL_CONFIG] = ISOLATION_LEVEL_READ_COMMITTED
+        overrideProperties[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = AUTO_OFFSET_RESET_EARLIEST
+
+        //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required
+        val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
+
+        val consumerProperties = getConsumerProps(subscriptionConfig, defaultKafkaConfig, overrideProperties)
+        val consumerBuilder = CordaKafkaConsumerBuilder<K, V>(defaultKafkaConfig, consumerProperties, avroSchemaRegistry)
+        return KafkaCompactedSubscriptionImpl(subscriptionConfig, defaultKafkaConfig, consumerBuilder, processor)
     }
 
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
