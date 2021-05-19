@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription.subscription.pubsub
+package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription.pubsub
 
 import com.nhaarman.mockito_kotlin.*
 import com.typesafe.config.Config
@@ -16,7 +16,7 @@ import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
 import net.corda.messaging.kafka.subscription.stubs.StubProcessor
-import net.corda.messaging.kafka.subscription.subscriptions.pubsub.KafkaPubSubSubscription
+import net.corda.messaging.kafka.subscription.pubsub.KafkaPubSubSubscription
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
