@@ -18,7 +18,6 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaCo
 import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordsList
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -30,7 +29,6 @@ import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.errors.TimeoutException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyMap
@@ -62,15 +60,18 @@ class CordaKafkaConsumerImplTest {
             .withValue(KafkaProperties.KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("prefix"))
             .withValue(KafkaProperties.CONSUMER_COMMIT_OFFSET_MAX_RETRIES, ConfigValueFactory.fromAnyRef(3))
 
-        val (mockConsumer, mockTopicPartition) = createMockConsumerAndAddRecords(eventTopic,  numberOfRecords, OffsetResetStrategy.EARLIEST)
+        val (mockConsumer, mockTopicPartition) = createMockConsumerAndAddRecords(
+            eventTopic,
+            numberOfRecords,
+            OffsetResetStrategy.EARLIEST
+        )
         consumer = mockConsumer
         partition = mockTopicPartition
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
             kafkaConfig,
             subscriptionConfig,
             consumer,
-            listener,
-            avroSchemaRegistry
+            listener
         )
     }
 
@@ -84,8 +85,7 @@ class CordaKafkaConsumerImplTest {
             kafkaConfig,
             subscriptionConfig,
             consumer,
-            listener,
-            avroSchemaRegistry
+            listener
         )
 
         cordaKafkaConsumer.poll()
@@ -99,8 +99,7 @@ class CordaKafkaConsumerImplTest {
             kafkaConfig,
             subscriptionConfig,
             consumer,
-            listener,
-            avroSchemaRegistry
+            listener
         )
 
         cordaKafkaConsumer.close()
@@ -115,37 +114,18 @@ class CordaKafkaConsumerImplTest {
             kafkaConfig,
             subscriptionConfig,
             consumer,
-            listener,
-            avroSchemaRegistry
+            listener
         )
         cordaKafkaConsumer.close()
         verify(consumer, times(1)).close(Mockito.any(Duration::class.java))
     }
 
     @Test
-    fun testGetRecord() {
-        val record = cordaKafkaConsumer.getRecord(consumerRecord)
-        assertThat(record.topic).isEqualTo("topic")
-        assertThat(record.key).isEqualTo(consumerRecord.key())
-        assertThat(record.value).isEqualTo(consumerRecord.value())
-        verify(avroSchemaRegistry, times(1)).getClassType(any())
-        verify(avroSchemaRegistry, times(1)).deserialize(any(), any(), anyOrNull())
-    }
-
-    @Test
-    fun testGetRecordFailDeserialization() {
-        doThrow(CordaRuntimeException("")).whenever(avroSchemaRegistry).deserialize(any(), any(), anyOrNull())
-        Assertions.assertThrows(CordaMessageAPIFatalException::class.java) { cordaKafkaConsumer.getRecord(consumerRecord) }
-        verify(avroSchemaRegistry, times(1)).getClassType(any())
-        verify(avroSchemaRegistry, times(1)).deserialize(any(), any(), anyOrNull())
-    }
-
-    @Test
     fun testCommitOffsets() {
-        val record = ConsumerRecord<String, ByteBuffer>(eventTopic, 1, 5L, null, ByteBuffer.wrap("value".toByteArray()))
+        val consumerRecord = ConsumerRecord(eventTopic, 1, 5L, "", ByteBuffer.wrap("value".toByteArray()))
         assertThat(consumer.committed(setOf(partition))).isEmpty()
 
-        cordaKafkaConsumer.commitSyncOffsets(record, "meta data")
+        cordaKafkaConsumer.commitSyncOffsets(consumerRecord, "meta data")
 
         val committedPositionAfterCommit = consumer.committed(setOf(partition))
         assertThat(committedPositionAfterCommit.values.first().offset()).isEqualTo(6)
@@ -154,18 +134,17 @@ class CordaKafkaConsumerImplTest {
     @Test
     fun testCommitOffsetsRetries() {
         consumer = mock()
-        cordaKafkaConsumer = CordaKafkaConsumerImpl(
+        val cordaKafkaConsumer = CordaKafkaConsumerImpl<String, ByteBuffer>(
             kafkaConfig,
             subscriptionConfig,
             consumer,
-            listener,
-            avroSchemaRegistry
+            listener
         )
 
-        val record = ConsumerRecord<String, ByteBuffer>(eventTopic, 1, 5L, null, ByteBuffer.wrap("value".toByteArray()))
+        val consumerRecord = ConsumerRecord(eventTopic, 1, 5L, "", ByteBuffer.wrap("value".toByteArray()))
         doThrow(TimeoutException()).whenever(consumer).commitSync(anyMap())
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.commitSyncOffsets(record, "meta data")
+            cordaKafkaConsumer.commitSyncOffsets(consumerRecord, "meta data")
         }
         verify(consumer, times(3)).commitSync(anyMap())
     }
@@ -177,14 +156,13 @@ class CordaKafkaConsumerImplTest {
             kafkaConfig,
             subscriptionConfig,
             consumer,
-            listener,
-            avroSchemaRegistry
+            listener
         )
 
-        val record = ConsumerRecord<String, ByteBuffer>(eventTopic, 1, 5L, null, ByteBuffer.wrap("value".toByteArray()))
+        val consumerRecord = ConsumerRecord(eventTopic, 1, 5L, "", ByteBuffer.wrap("value".toByteArray()))
         doThrow(CommitFailedException()).whenever(consumer).commitSync(anyMap())
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.commitSyncOffsets(record, "meta data")
+            cordaKafkaConsumer.commitSyncOffsets(consumerRecord, "meta data")
         }
         verify(consumer, times(1)).commitSync(anyMap())
     }
@@ -197,8 +175,7 @@ class CordaKafkaConsumerImplTest {
             kafkaConfig,
             subscriptionConfig,
             consumer,
-            listener,
-            avroSchemaRegistry
+            listener
         )
         cordaKafkaConsumer.subscribeToTopic()
         verify(consumer, times(1)).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
@@ -211,8 +188,7 @@ class CordaKafkaConsumerImplTest {
             kafkaConfig,
             subscriptionConfig,
             consumer,
-            listener,
-            avroSchemaRegistry
+            listener
         )
         doThrow(KafkaException()).whenever(consumer).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
@@ -228,8 +204,7 @@ class CordaKafkaConsumerImplTest {
             kafkaConfig,
             subscriptionConfig,
             consumer,
-            listener,
-            avroSchemaRegistry
+            listener
         )
         doThrow(IllegalArgumentException()).whenever(consumer).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
