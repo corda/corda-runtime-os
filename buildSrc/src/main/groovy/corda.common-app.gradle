@@ -21,6 +21,7 @@ dependencies {
     bootstrapClasspath "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     bootstrapClasspath project(":osgi-framework-bootstrap")
 
+    systemPackages "org.slf4j:slf4j-api:$osgiSlf4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
     systemPackages project(":osgi-framework-bootstrap:framework-api")
@@ -55,13 +56,14 @@ private addBundle(
 private addBundles(
         final ArtifactCollection artifacts,
         final File bundlesDir,
-        final Set<String> systemBundleSet) {
+        final Set<String> systemBundleSet,
+        final Set<String> systemPackageSet) {
     if (!bundlesDir.exists()) {
         bundlesDir.mkdirs()
     }
     artifacts.each { resolvedArtifact ->
         final def file = resolvedArtifact.file
-        if (isJar(file)) {
+        if (isJar(file) && !systemPackageSet.contains(getJarNameWithoutVersion(file))) {
             final def jarFile = new JarFile(file)
             if (isBundle(jarFile)) {
                 addBundle(file, new File(bundlesDir, file.name), systemBundleSet)
@@ -131,11 +133,18 @@ def cordaAssembleBundlesTask = tasks.register("cordaAssembleBundles") {
         if (!bundlesDir.exists()) {
             bundlesDir.mkdirs()
         }
+        final Set<String> systemPackageSet = new TreeSet<>()
+        configurations.systemPackages.resolve().each { file ->
+            systemPackageSet.add(getJarNameWithoutVersion(file))
+        }
         final Set<String> systemBundleSet = new TreeSet<>()
-        configurations.runtimeClasspath.incoming.findAll { resolvableDependencies ->
-            !configurations.systemPackages.contains(resolvableDependencies)
-        }.each { resolvableDependencies ->
-            addBundles(resolvableDependencies.artifacts as ArtifactCollection, bundlesDir, systemBundleSet)
+        configurations.runtimeClasspath.incoming.each { resolvableDependencies ->
+            addBundles(resolvableDependencies.artifacts as ArtifactCollection, bundlesDir, systemBundleSet, systemPackageSet)
+        }
+        new File(project.buildDir, "libs").listFiles().findAll { file ->
+            isJar(file) && !systemPackageSet.contains(getJarNameWithoutVersion(file))
+        }.each { jar ->
+            addBundle(jar, new File(bundlesDir, jar.name), systemBundleSet)
         }
         final systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
         systemBundlesFile.withWriter { writer ->
@@ -163,6 +172,14 @@ def cordaAssembleSystemPackagesExtraTask = tasks.register("cordaAssembleSystemPa
         final def numberOfSystemPackagesExtra = systemBundleExtraSet.size()
         logger.info "Included $numberOfSystemPackagesExtra OSGI system packages extra list in $systemPackagesExtraFile resource."
     }
+}
+
+private def String getJarNameWithoutVersion(final File file){
+    final indexOfDash = file.name.lastIndexOf('-')
+    if (indexOfDash > 0) {
+        return file.name.substring(0, indexOfDash)
+    }
+    return file.name
 }
 
 tasks.register('appJar', Jar) {

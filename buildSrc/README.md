@@ -129,6 +129,9 @@ The plugin defines two additional configurations to declare dependencies:
     * *IMPORTANT! Dependencies containing packages that should be exposed inside the OSGi framework, but not installed
       as bundles themselves should be declared as `systemPackages`. This configuration should only be used when
       necessary.*
+    * *IMPORTANT! Runtime dependencies - as `implementation` colliding with dependencies defined in `systemPackages`
+      are not zipped as OSGi bundles in the bootable application JAR, regardless the version. What declared as
+      `systemPackages` has precedence.*
 
 The `appJar` task depends on the tasks
 
