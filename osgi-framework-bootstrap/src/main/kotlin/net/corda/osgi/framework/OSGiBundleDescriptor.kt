@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * Description of bundles handled by [OSGiFrameworkWrap].
  */
-internal data class OSGiBundleWrap(
+internal data class OSGiBundleDescriptor(
 
     /**
      * Installed bundle.

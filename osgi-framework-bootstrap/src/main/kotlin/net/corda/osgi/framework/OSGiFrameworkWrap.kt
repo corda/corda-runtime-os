@@ -215,7 +215,7 @@ class OSGiFrameworkWrap(
     /**
      * Map of the descriptors of bundles installed.
      */
-    private val bundleWrapMap = ConcurrentHashMap<Long, OSGiBundleWrap>()
+    private val bundleDescriptorMap = ConcurrentHashMap<Long, OSGiBundleDescriptor>()
 
     /**
      * Activate (start) the bundles installed with [install].
@@ -235,15 +235,15 @@ class OSGiFrameworkWrap(
         BundleException::class
     )
     fun activate(): OSGiFrameworkWrap {
-        bundleWrapMap.values.forEach { wrap: OSGiBundleWrap ->
-            if (isFragment(wrap.bundle)) {
+        bundleDescriptorMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
+            if (isFragment(bundleDescriptor.bundle)) {
                 logger.info(
-                    "OSGi bundle ${wrap.bundle.location}" +
-                            " ID = ${wrap.bundle.bundleId} ${wrap.bundle.symbolicName ?: "\b"}" +
-                            " ${wrap.bundle.version} ${bundleStateMap[wrap.bundle.state]} fragment."
+                    "OSGi bundle ${bundleDescriptor.bundle.location}" +
+                            " ID = ${bundleDescriptor.bundle.bundleId} ${bundleDescriptor.bundle.symbolicName ?: "\b"}" +
+                            " ${bundleDescriptor.bundle.version} ${bundleStateMap[bundleDescriptor.bundle.state]} fragment."
                 )
             } else {
-                wrap.bundle.start()
+                bundleDescriptor.bundle.start()
             }
         }
         return this
@@ -318,7 +318,7 @@ class OSGiFrameworkWrap(
                 val bundleContext = framework.bundleContext
                     ?: throw IllegalStateException("OSGi framework not active yet.")
                 val bundle = bundleContext.installBundle(resource, inputStream)
-                bundleWrapMap[bundle.bundleId] = OSGiBundleWrap(bundle)
+                bundleDescriptorMap[bundle.bundleId] = OSGiBundleDescriptor(bundle)
                 logger.debug("OSGi bundle $resource installed.")
             } else {
                 throw IOException("OSGi bundle at $resource not found")
@@ -399,7 +399,7 @@ class OSGiFrameworkWrap(
             framework.bundleContext.addBundleListener { bundleEvent ->
                 val bundle = bundleEvent.bundle
                 if (isActive(bundle.state)) {
-                    bundleWrapMap[bundle.bundleId]?.active?.countDown()
+                    bundleDescriptorMap[bundle.bundleId]?.active?.countDown()
                 }
                 logger.info(
                     "OSGi bundle ${bundle.location}" +
@@ -442,7 +442,7 @@ class OSGiFrameworkWrap(
      * The class implementing [Lifecycle] must have a default constructor with no parameters
      * or all parameters set by default.
      *
-     * This method sets [OSGiBundleWrap.lifecycleAtomic] to the [Lifecycle] implementation instance for
+     * This method sets [OSGiBundleDescriptor.lifecycleAtomic] to the [Lifecycle] implementation instance for
      * application bundles: [stop] method will call [Lifecycle.shutdown] before to deactivate bundles and to stop
      * the OSGi framework.
      *
@@ -477,30 +477,30 @@ class OSGiFrameworkWrap(
         timeout: Long,
         args: Array<String>
     ): OSGiFrameworkWrap {
-        bundleWrapMap.values.forEach { wrap: OSGiBundleWrap ->
-            val lifecycleClassFQN: String? = wrap.bundle.headers.get(lifecycleHeader)
+        bundleDescriptorMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
+            val lifecycleClassFQN: String? = bundleDescriptor.bundle.headers.get(lifecycleHeader)
             if (lifecycleClassFQN != null) {
-                val lifecycleClass = wrap.bundle.loadClass(lifecycleClassFQN)
+                val lifecycleClass = bundleDescriptor.bundle.loadClass(lifecycleClassFQN)
                 if (Lifecycle::class.java.isAssignableFrom(lifecycleClass)) {
-                    if (wrap.active.await(timeout, TimeUnit.MILLISECONDS)) {
+                    if (bundleDescriptor.active.await(timeout, TimeUnit.MILLISECONDS)) {
                         val lifecycle = lifecycleClass.getDeclaredConstructor().newInstance() as Lifecycle
-                        lifecycle.startup(args, wrap.bundle)
+                        lifecycle.startup(args, bundleDescriptor.bundle)
                         // When wrap.lifecycleAtomic is set the application implementing Lifecycle started.
                         // Used to know those applications to stop.
-                        wrap.lifecycleAtomic.set(lifecycle)
+                        bundleDescriptor.lifecycleAtomic.set(lifecycle)
                     } else {
                         logger.warn(
-                            "OSGi bundle ${wrap.bundle.location}" +
-                                    " ID = ${wrap.bundle.bundleId} ${wrap.bundle.symbolicName ?: "\b"}" +
-                                    " ${wrap.bundle.version} ${bundleStateMap[wrap.bundle.state]}" +
+                            "OSGi bundle ${bundleDescriptor.bundle.location}" +
+                                    " ID = ${bundleDescriptor.bundle.bundleId} ${bundleDescriptor.bundle.symbolicName ?: "\b"}" +
+                                    " ${bundleDescriptor.bundle.version} ${bundleStateMap[bundleDescriptor.bundle.state]}" +
                                     " time-out after $timeout ms."
                         )
                     }
                 } else {
                     logger.warn(
-                        "OSGi bundle ${wrap.bundle.location}" +
-                                " ID = ${wrap.bundle.bundleId} ${wrap.bundle.symbolicName ?: "\b"}" +
-                                " ${wrap.bundle.version} doesn't implement ${Lifecycle::class.java}."
+                        "OSGi bundle ${bundleDescriptor.bundle.location}" +
+                                " ID = ${bundleDescriptor.bundle.bundleId} ${bundleDescriptor.bundle.symbolicName ?: "\b"}" +
+                                " ${bundleDescriptor.bundle.version} doesn't implement ${Lifecycle::class.java}."
                     )
                 }
             }
@@ -533,8 +533,8 @@ class OSGiFrameworkWrap(
     fun stop(): OSGiFrameworkWrap {
         if (isStoppable(framework.state)) {
             logger.debug("OSGi framework stop...")
-            bundleWrapMap.values.forEach { wrap: OSGiBundleWrap ->
-                wrap.lifecycleAtomic.getAndSet(null)?.shutdown(wrap.bundle)
+            bundleDescriptorMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
+                bundleDescriptor.lifecycleAtomic.getAndSet(null)?.shutdown(bundleDescriptor.bundle)
             }
             framework.stop()
         } else {
