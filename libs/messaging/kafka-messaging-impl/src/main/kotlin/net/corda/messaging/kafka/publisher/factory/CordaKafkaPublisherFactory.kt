@@ -43,12 +43,12 @@ class CordaKafkaPublisherFactory @Activate constructor(
 
         //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required
         val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
-        val config = defaultKafkaConfig.withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
+        var config = defaultKafkaConfig.withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
             .withValue(PUBLISHER_TOPIC, ConfigValueFactory.fromAnyRef(publisherConfig.topic))
 
         val instanceId = publisherConfig.instanceId
         if (instanceId != null) {
-            config.withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId))
+            config = config.withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId))
         }
 
         val producerProperties = getProducerProps(publisherConfig, config, properties)

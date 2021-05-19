@@ -11,9 +11,13 @@ interface Publisher<K : Any, V : Any> : AutoCloseable {
 
     /**
      * Publish a list of [record].
-     * @return A corda future returning true if the publish to a topic was successful. Never returns false. If fatal error occurs
+     * @return A list of corda futures returning true or an exception for each message. Never returns false. If fatal error occurs
      * then exception will be thrown of type [CordaMessageAPIFatalException] and publisher will be closed.
      * If error is temporary and can be retried then exception will be of type [CordaMessageAPIIntermittentException].
+     * If publisher is configured for transactions (instanceId is set on publisherConfig) publish is
+     * executed synchronously and committed atomically.
+     * Transactions will return a future of size 1 indicating success or failure of the transaction.
+     * @throws CordaMessageAPIFatalException if record is of the wrong type for this Publisher
      */
-    fun publish(record: Record<K, V>) : CordaFuture<Boolean>
+    fun publish(records: List<Record<K, V>>): List<CordaFuture<Boolean>>
 }
