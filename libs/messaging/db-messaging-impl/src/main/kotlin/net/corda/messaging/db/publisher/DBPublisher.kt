@@ -25,6 +25,8 @@ import java.sql.Types
 import java.util.Properties
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class DBPublisher<K: Any, V: Any>(
     private val publisherConfig: PublisherConfig,
@@ -44,13 +46,22 @@ class DBPublisher<K: Any, V: Any>(
 
     private lateinit var connection: Connection
 
+    @Volatile
+    private var stopped = true
+    private val lock = ReentrantLock()
+
     override fun start() {
-        val props = Properties()
-        props.setProperty("user", username)
-        props.setProperty("password", password)
-        connection = DriverManager.getConnection(jdbcUrl, props)
-        connection.autoCommit = false
-        log.info("Publisher started for client ID: ${publisherConfig.clientId}, connected to database: $jdbcUrl.")
+        lock.withLock {
+            if (stopped) {
+                val props = Properties()
+                props.setProperty("user", username)
+                props.setProperty("password", password)
+                connection = DriverManager.getConnection(jdbcUrl, props)
+                connection.autoCommit = false
+                log.info("Publisher started for client ID: ${publisherConfig.clientId}, connected to database: $jdbcUrl.")
+                stopped = false
+            }
+        }
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -92,7 +103,11 @@ class DBPublisher<K: Any, V: Any>(
     }
 
     override fun close() {
-        connection.close()
-        log.info("Publisher stopped for client ID: ${publisherConfig.clientId}.")
+        lock.withLock {
+            if (!stopped) {
+                connection.close()
+                log.info("Publisher stopped for client ID: ${publisherConfig.clientId}.")
+            }
+        }
     }
 }

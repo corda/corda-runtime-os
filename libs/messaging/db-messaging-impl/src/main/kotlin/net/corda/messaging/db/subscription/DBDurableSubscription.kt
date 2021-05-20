@@ -28,6 +28,8 @@ import java.time.Duration
 import java.util.Properties
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class DBDurableSubscription<K: Any, V: Any>(
     private val subscriptionConfig: SubscriptionConfig,
@@ -61,7 +63,8 @@ class DBDurableSubscription<K: Any, V: Any>(
     private val executor = Executors.newSingleThreadExecutor()
 
     @Volatile
-    private var stopped = false
+    private var stopped = true
+    private val lock = ReentrantLock()
 
     override val isRunning: Boolean
         get() {
@@ -69,26 +72,37 @@ class DBDurableSubscription<K: Any, V: Any>(
         }
 
     override fun start() {
-        val props = Properties()
-        props.setProperty("user", username)
-        props.setProperty("password", password)
-        connection = DriverManager.getConnection(jdbcUrl, props)
-        connection.autoCommit = false
-        readMessageStatement = connection.prepareStatement("SELECT * FROM $topicTableName WHERE $OFFSET_COLUMN_NAME >= ? LIMIT ?")
-        readOffsetStatement = connection.prepareStatement("SELECT MAX($COMMITTED_OFFSET_COLUMN_NAME) FROM $offsetTableName WHERE $CONSUMER_GROUP_COLUMN_NAME = ?")
-        writeOffsetStatement = connection.prepareStatement("INSERT INTO $offsetTableName ($CONSUMER_GROUP_COLUMN_NAME, $COMMITTED_OFFSET_COLUMN_NAME) VALUES (?, ?)")
+        lock.withLock {
+            if (!isRunning) {
+                val props = Properties()
+                props.setProperty("user", username)
+                props.setProperty("password", password)
+                connection = DriverManager.getConnection(jdbcUrl, props)
+                connection.autoCommit = false
+                readMessageStatement = connection.prepareStatement("SELECT * FROM $topicTableName WHERE $OFFSET_COLUMN_NAME >= ? LIMIT ?")
+                readOffsetStatement = connection.prepareStatement("SELECT MAX($COMMITTED_OFFSET_COLUMN_NAME) FROM $offsetTableName WHERE $CONSUMER_GROUP_COLUMN_NAME = ?")
+                writeOffsetStatement = connection.prepareStatement("INSERT INTO $offsetTableName ($CONSUMER_GROUP_COLUMN_NAME, $COMMITTED_OFFSET_COLUMN_NAME) VALUES (?, ?)")
 
-        val initialOffset = getOffset()
-        executor.submit { processingLoop(initialOffset) }
-        log.info("Subscription started for group: ${subscriptionConfig.groupName}, connected to database: $jdbcUrl.")
+                val initialOffset = getOffset()
+                executor.submit { processingLoop(initialOffset) }
+                log.info("Subscription started for group: ${subscriptionConfig.groupName}, connected to database: $jdbcUrl.")
+                stopped = false
+            }
+        }
     }
 
     override fun stop() {
-        stopped = true
-        executor.shutdown()
-        executor.awaitTermination(pollingDelay.toMillis() * 2, TimeUnit.MILLISECONDS)
-        connection.close()
-        log.info("Subscription stopped for group: ${subscriptionConfig.groupName}.")
+        lock.withLock {
+            if (!stopped) {
+                stopped = true
+                executor.shutdown()
+                executor.awaitTermination(pollingDelay.toMillis() * 2, TimeUnit.MILLISECONDS)
+                connection.close()
+                log.info("Subscription stopped for group: ${subscriptionConfig.groupName}.")
+            }
+        }
+
+
     }
 
     @Suppress("TooGenericExceptionCaught")
