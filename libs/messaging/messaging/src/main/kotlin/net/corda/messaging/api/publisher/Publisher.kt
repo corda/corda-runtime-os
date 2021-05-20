@@ -20,10 +20,18 @@ interface Publisher<K : Any, V : Any> : AutoCloseable {
     fun start() {}
 
     /**
-     * Publish a list of [record].
-     * @return A corda future returning true if the publish to a topic was successful. Never returns false. If fatal error occurs
-     * then exception will be thrown of type [CordaMessageAPIFatalException] and publisher will be closed.
-     * If error is temporary and can be retried then exception will be of type [CordaMessageAPIIntermittentException].
+     * Publish the specified [record].
+     * @return A corda future which will be completed once the record has been published successfully.
+     *   If a fatal error occurs, then an exception of type [CordaMessageAPIFatalException] will be thrown and the publisher will be closed.
+     *   If a temporary error occurs and can be retried, then an exception of type [CordaMessageAPIIntermittentException] will be thrown.
      */
-    fun publish(record: Record<K, V>) : CordaFuture<Boolean>
+    fun publish(record: Record<K, V>) : CordaFuture<Unit>
+
+    /**
+     * Publish the specified [record] to the specified [partition].
+     * @return A corda future which will be completed once the record has been published successfully.
+     *   If a fatal error occurs, then an exception of type [CordaMessageAPIFatalException] will be thrown and the publisher will be closed.
+     *   If a temporary error occurs and can be retried, then an exception of type [CordaMessageAPIIntermittentException] will be thrown.
+     */
+    fun publishToPartition(record: Record<K, V>, partition: Int): CordaFuture<Unit>
 }

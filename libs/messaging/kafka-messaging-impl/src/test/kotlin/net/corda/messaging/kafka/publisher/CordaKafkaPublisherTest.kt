@@ -199,7 +199,7 @@ class CordaKafkaPublisherTest {
         verify(producer, times(1)).close(Mockito.any(Duration::class.java))
     }
 
-    private fun publish(isTransaction: Boolean = false) : CordaFuture<Boolean> {
+    private fun publish(isTransaction: Boolean = false) : CordaFuture<Unit> {
         publisherConfig = if (isTransaction) {
             PublisherConfig("clientId", 1)
         } else {

@@ -66,8 +66,8 @@ class CordaKafkaPublisher<K : Any, V : Any> (
      * Any fatal errors are returned in the future as [CordaMessageAPIFatalException]
      */
     @Suppress("TooGenericExceptionCaught")
-    override fun publish(record: Record<K, V>): CordaFuture<Boolean> {
-        val fut = openFuture<Boolean>()
+    override fun publish(record: Record<K, V>): CordaFuture<Unit> {
+        val fut = openFuture<Unit>()
         try {
             if (instanceId != null) {
                 producer.beginTransaction()
@@ -79,7 +79,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
 
             if (instanceId != null) {
                 producer.commitTransaction()
-                fut.set(true)
+                fut.set(Unit)
             }
         } catch (ex: Exception) {
             when (ex) {
@@ -109,14 +109,14 @@ class CordaKafkaPublisher<K : Any, V : Any> (
     /**
      * Helper function to set a [future] result based on the presence of an [exception]
      */
-    private fun setFutureFromResponse(exception: Exception?, future: OpenFuture<Boolean>, recordMetadata: RecordMetadata) {
+    private fun setFutureFromResponse(exception: Exception?, future: OpenFuture<Unit>, recordMetadata: RecordMetadata) {
         val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
                 "for topic ${recordMetadata.topic()} failed to send"
         when {
             (exception == null) -> {
                 //transaction operation can still fail at commit stage  so do not set to true until it is committed
                 if (instanceId == null) {
-                    future.set(true)
+                    future.set(Unit)
                 } else {
                     log.debug { "Asynchronous send completed completed successfully." }
                 }
@@ -142,7 +142,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
      * Log the [message] and [exception]. Set the [exception] to the [future].
      * If [fatal] is set to true then the producer is closed safely.
      */
-    private fun logErrorAndSetFuture(message: String, exception: Exception, future: OpenFuture<Boolean>, fatal: Boolean) {
+    private fun logErrorAndSetFuture(message: String, exception: Exception, future: OpenFuture<Unit>, fatal: Boolean) {
         if (fatal) {
             log.error("$message. Closing producer.", exception, future)
             future.setException(CordaMessageAPIFatalException(message, exception))
@@ -157,7 +157,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
      * Log the [message] and [exception]. Set the [exception] to the [future].
      * If the error occurred as part of a transaction then abort the transaction to reinitialise the producer.
      */
-    private fun logErrorSetFutureAndAbortTransaction(message: String, exception: Exception, future: OpenFuture<Boolean>) {
+    private fun logErrorSetFutureAndAbortTransaction(message: String, exception: Exception, future: OpenFuture<Unit>) {
         if (instanceId != null) {
             producer.abortTransaction()
             logErrorAndSetFuture("$message Aborting transaction and reinitialising producer.", exception, future, false)
@@ -194,5 +194,9 @@ class CordaKafkaPublisher<K : Any, V : Any> (
                     "ClientId: $clientId, topic: ${record.topic}.")
         }
         return ProducerRecord(topicPrefix + record.topic, record.key, value)
+    }
+
+    override fun publishToPartition(record: Record<K, V>, partition: Int): CordaFuture<Unit> {
+        TODO("Not yet implemented")
     }
 }
