@@ -3,6 +3,7 @@ package net.corda.messaging.db.subscription
 import com.typesafe.config.Config
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.db.properties.DbProperties
@@ -34,9 +35,10 @@ class DBDurableSubscription<K: Any, V: Any>(
     private val subscriptionConfig: SubscriptionConfig,
     private val dbConfig: Config,
     private val durableProcessor: DurableProcessor<K, V>,
+    private val partitionAssignmentListener: PartitionAssignmentListener?,
     private val avroSchemaRegistry: AvroSchemaRegistry,
     private val pollingDelay: Duration = 1.seconds,
-    private val batchSize: Int = 100,
+    private val batchSize: Int = 100
 ) : Subscription<K, V> {
 
     init {
@@ -82,6 +84,7 @@ class DBDurableSubscription<K: Any, V: Any>(
                 readOffsetStatement = connection.prepareStatement("SELECT MAX($COMMITTED_OFFSET_COLUMN_NAME) FROM $offsetTableName WHERE $CONSUMER_GROUP_COLUMN_NAME = ?")
                 writeOffsetStatement = connection.prepareStatement("INSERT INTO $offsetTableName ($CONSUMER_GROUP_COLUMN_NAME, $COMMITTED_OFFSET_COLUMN_NAME) VALUES (?, ?)")
 
+                partitionAssignmentListener?.onPartitionsAssigned(listOf(subscriptionConfig.eventTopic to 0))
                 val initialOffset = getOffset()
                 eventLoopThread = thread(
                     true,
@@ -100,13 +103,12 @@ class DBDurableSubscription<K: Any, V: Any>(
         lock.withLock {
             if (!stopped) {
                 stopped = true
+                partitionAssignmentListener?.onPartitionsUnassigned(listOf(subscriptionConfig.eventTopic to 0))
                 eventLoopThread!!.join(pollingDelay.toMillis() * 2)
                 connection.close()
                 log.info("Subscription stopped for group: ${subscriptionConfig.groupName}.")
             }
         }
-
-
     }
 
     @Suppress("TooGenericExceptionCaught")

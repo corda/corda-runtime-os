@@ -83,7 +83,7 @@ class DBMessagingIntegrationTest {
 
         val readMessages = mutableListOf<Pair<SecureHash?, SecureHash?>>()
         val processor = InMemoryHolderProcessor(readMessages, latch, 3)
-        val subscription =  DBDurableSubscription(subscriptionConfig, dbConfig, processor, AvroSchemaRegistryImpl(), 100.millis)
+        val subscription =  DBDurableSubscription(subscriptionConfig, dbConfig, processor, null, AvroSchemaRegistryImpl(), 100.millis)
 
         subscription.start()
         latch.await()
@@ -113,7 +113,7 @@ class DBMessagingIntegrationTest {
 
         val readMessages = mutableListOf<Pair<SecureHash?, SecureHash?>>()
         val processor = InMemoryHolderProcessor(readMessages, latch, 3)
-        val subscription =  DBDurableSubscription(subscriptionConfig, dbConfig, processor, AvroSchemaRegistryImpl(), 100.millis)
+        val subscription =  DBDurableSubscription(subscriptionConfig, dbConfig, processor, null, AvroSchemaRegistryImpl(), 100.millis)
 
         subscription.start()
         latch.await()
@@ -147,8 +147,8 @@ class DBMessagingIntegrationTest {
         val latch2 = CountDownLatch(1)
         val processor1 = InMemoryHolderProcessor(readMessages1, latch1, 3)
         val processor2 = InMemoryHolderProcessor(readMessages2, latch2, 3)
-        val subscription1 =  DBDurableSubscription(subscriptionConfig.copy(groupName = "group1"), dbConfig, processor1, AvroSchemaRegistryImpl(), 100.millis)
-        val subscription2 = DBDurableSubscription(subscriptionConfig.copy(groupName = "group2"), dbConfig, processor2, AvroSchemaRegistryImpl(), 100.millis)
+        val subscription1 =  DBDurableSubscription(subscriptionConfig.copy(groupName = "group1"), dbConfig, processor1, null, AvroSchemaRegistryImpl(), 100.millis)
+        val subscription2 = DBDurableSubscription(subscriptionConfig.copy(groupName = "group2"), dbConfig, processor2, null, AvroSchemaRegistryImpl(), 100.millis)
 
         subscription1.start()
         latch1.await()
