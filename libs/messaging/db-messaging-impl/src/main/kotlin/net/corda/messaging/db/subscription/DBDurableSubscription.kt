@@ -118,7 +118,7 @@ class DBDurableSubscription<K: Any, V: Any>(
             val serialisedValue = resultSet.getBlob(MESSAGE_PAYLOAD_COLUMN_NAME)
 
             val key = if (serialisedKey != null) avroSchemaRegistry.deserialize(serialisedKey.toByteBuffer(), durableProcessor.keyClass, null) else null
-            val value = avroSchemaRegistry.deserialize(serialisedValue.toByteBuffer(), durableProcessor.valueClass, null)
+            val value = if (serialisedValue != null) avroSchemaRegistry.deserialize(serialisedValue.toByteBuffer(), durableProcessor.valueClass, null) else null
             records[offset] = Record(subscriptionConfig.eventTopic, key, value)
         }
 

@@ -18,7 +18,7 @@ import java.nio.ByteBuffer
 class CordaKafkaPublisherFactoryTest {
     private lateinit var cordaKafkaPublisherFactory : CordaKafkaPublisherFactory
     private lateinit var kafkaConfig: Config
-    private val publisherConfig = PublisherConfig("clientId", "topic")
+    private val publisherConfig = PublisherConfig("clientId")
 
     @BeforeEach
     fun beforeEach() {

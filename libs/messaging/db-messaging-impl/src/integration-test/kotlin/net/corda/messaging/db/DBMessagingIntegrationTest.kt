@@ -78,7 +78,7 @@ class DBMessagingIntegrationTest {
             dbPublisher.publish(Record(topicName, null, value)).getOrThrow()
         }
 
-        val readMessages = mutableListOf<Pair<SecureHash?, SecureHash>>()
+        val readMessages = mutableListOf<Pair<SecureHash?, SecureHash?>>()
         val processor = InMemoryHolderProcessor(readMessages, latch, 3)
         val subscription =  DBDurableSubscription(subscriptionConfig, dbConfig, processor, AvroSchemaRegistryImpl(), 100.millis)
 
@@ -89,8 +89,38 @@ class DBMessagingIntegrationTest {
         assertThat(readMessages).hasSize(3)
         readMessages.forEachIndexed { index, _ ->
             assertNull(readMessages[index].first)
-            assertTrue(readMessages[index].second.algorithm == messagesToWrite[index].algorithm)
-            assertTrue(readMessages[index].second.serverHash.array().contentEquals(messagesToWrite[index].serverHash.array()))
+            assertTrue(readMessages[index].second!!.algorithm == messagesToWrite[index].algorithm)
+            assertTrue(readMessages[index].second!!.serverHash.array().contentEquals(messagesToWrite[index].serverHash.array()))
+        }
+    }
+
+    @Test
+    fun `can write and read messages with null values successfully from topic backed by database`() {
+        val subscriptionConfig = SubscriptionConfig(groupName, topicName)
+        val publisherConfig = PublisherConfig(clientId)
+        val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl())
+        dbPublisher.start()
+
+        val messagesToWrite = listOf("msg-1", "msg-2", "msg-3").map {
+            SecureHash("algorithm", ByteBuffer.wrap(it.toByteArray(Charsets.UTF_8)))
+        }
+        messagesToWrite.forEach { value ->
+            dbPublisher.publish(Record(topicName, value, null)).getOrThrow()
+        }
+
+        val readMessages = mutableListOf<Pair<SecureHash?, SecureHash?>>()
+        val processor = InMemoryHolderProcessor(readMessages, latch, 3)
+        val subscription =  DBDurableSubscription(subscriptionConfig, dbConfig, processor, AvroSchemaRegistryImpl(), 100.millis)
+
+        subscription.start()
+        latch.await()
+        subscription.stop()
+
+        assertThat(readMessages).hasSize(3)
+        readMessages.forEachIndexed { index, _ ->
+            assertNull(readMessages[index].second)
+            assertTrue(readMessages[index].first!!.algorithm == messagesToWrite[index].algorithm)
+            assertTrue(readMessages[index].first!!.serverHash.array().contentEquals(messagesToWrite[index].serverHash.array()))
         }
     }
 
@@ -108,7 +138,7 @@ class DBMessagingIntegrationTest {
             dbPublisher.publish(Record(topicName, value, value)).getOrThrow()
         }
 
-        val readMessages = mutableListOf<Pair<SecureHash?, SecureHash>>()
+        val readMessages = mutableListOf<Pair<SecureHash?, SecureHash?>>()
         val processor = InMemoryHolderProcessor(readMessages, latch, 3)
         val subscription =  DBDurableSubscription(subscriptionConfig, dbConfig, processor, AvroSchemaRegistryImpl(), 100.millis)
 
@@ -118,13 +148,13 @@ class DBMessagingIntegrationTest {
 
         assertThat(readMessages).hasSize(3)
         readMessages.forEachIndexed { index, _ ->
-            assertThat(readMessages[index].first!!.serverHash == readMessages[index].second.serverHash)
-            assertTrue(readMessages[index].second.algorithm == messagesToWrite[index].algorithm)
-            assertTrue(readMessages[index].second.serverHash.array().contentEquals(messagesToWrite[index].serverHash.array()))
+            assertThat(readMessages[index].first!!.serverHash == readMessages[index].second!!.serverHash)
+            assertTrue(readMessages[index].first!!.algorithm == messagesToWrite[index].algorithm)
+            assertTrue(readMessages[index].first!!.serverHash.array().contentEquals(messagesToWrite[index].serverHash.array()))
         }
     }
 
-    class InMemoryHolderProcessor(private val readItems: MutableList<Pair<SecureHash?, SecureHash>>, private val latch: CountDownLatch, private val numberOfMessagesToWaitFor: Int): DurableProcessor<SecureHash, SecureHash> {
+    class InMemoryHolderProcessor(private val readItems: MutableList<Pair<SecureHash?, SecureHash?>>, private val latch: CountDownLatch, private val numberOfMessagesToWaitFor: Int): DurableProcessor<SecureHash, SecureHash> {
         override fun onNext(events: List<Record<SecureHash, SecureHash>>): List<Record<*, *>> {
             events.forEach { readItems.add(it.key to it.value) }
             if (events.size == numberOfMessagesToWaitFor) {

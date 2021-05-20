@@ -60,8 +60,12 @@ class DBPublisher<K: Any, V: Any>(
                 statement.setNull(1, Types.BLOB)
             }
 
-            val serialisedValue = schemaRegistry.serialize(record.value)
-            statement.setBlob(2, ByteBufferInputStream(listOf(serialisedValue)))
+            if (record.value != null) {
+                val serialisedValue = schemaRegistry.serialize(record.value!!)
+                statement.setBlob(2, ByteBufferInputStream(listOf(serialisedValue)))
+            } else {
+                statement.setNull(2, Types.BLOB)
+            }
 
             statement.execute()
             connection.commit()
