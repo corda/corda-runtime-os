@@ -53,12 +53,8 @@ class DBPublisher<K: Any, V: Any>(
             val tableName = "$TOPIC_TABLE_PREFIX${record.topic.replace(".", "_")}"
             val statement = connection.prepareStatement("INSERT INTO $tableName ($KEY_COLUMN_NAME, $MESSAGE_PAYLOAD_COLUMN_NAME) VALUES (?, ?)")
 
-            if (record.key != null) {
-                val serialisedKey = schemaRegistry.serialize(record.key!!)
-                statement.setBlob(1, ByteBufferInputStream(listOf(serialisedKey)))
-            } else {
-                statement.setNull(1, Types.BLOB)
-            }
+            val serialisedKey = schemaRegistry.serialize(record.key)
+            statement.setBlob(1, ByteBufferInputStream(listOf(serialisedKey)))
 
             if (record.value != null) {
                 val serialisedValue = schemaRegistry.serialize(record.value!!)

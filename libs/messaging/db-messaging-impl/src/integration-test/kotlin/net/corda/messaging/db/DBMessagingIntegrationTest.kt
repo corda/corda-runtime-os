@@ -65,36 +65,6 @@ class DBMessagingIntegrationTest {
     }
 
     @Test
-    fun `can write and read messages with null keys successfully from topic backed by database`() {
-        val subscriptionConfig = SubscriptionConfig(groupName, topicName)
-        val publisherConfig = PublisherConfig(clientId)
-        val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl())
-        dbPublisher.start()
-
-        val messagesToWrite = listOf("msg-1", "msg-2", "msg-3").map {
-            SecureHash("algorithm", ByteBuffer.wrap(it.toByteArray(Charsets.UTF_8)))
-        }
-        messagesToWrite.forEach { value ->
-            dbPublisher.publish(Record(topicName, null, value)).getOrThrow()
-        }
-
-        val readMessages = mutableListOf<Pair<SecureHash?, SecureHash?>>()
-        val processor = InMemoryHolderProcessor(readMessages, latch, 3)
-        val subscription =  DBDurableSubscription(subscriptionConfig, dbConfig, processor, AvroSchemaRegistryImpl(), 100.millis)
-
-        subscription.start()
-        latch.await()
-        subscription.stop()
-
-        assertThat(readMessages).hasSize(3)
-        readMessages.forEachIndexed { index, _ ->
-            assertNull(readMessages[index].first)
-            assertTrue(readMessages[index].second!!.algorithm == messagesToWrite[index].algorithm)
-            assertTrue(readMessages[index].second!!.serverHash.array().contentEquals(messagesToWrite[index].serverHash.array()))
-        }
-    }
-
-    @Test
     fun `can write and read messages with null values successfully from topic backed by database`() {
         val subscriptionConfig = SubscriptionConfig(groupName, topicName)
         val publisherConfig = PublisherConfig(clientId)
@@ -125,7 +95,7 @@ class DBMessagingIntegrationTest {
     }
 
     @Test
-    fun `can write and read messages with non-null keys successfully from topic backed by database`() {
+    fun `can write and read messages with non-null values successfully from topic backed by database`() {
         val subscriptionConfig = SubscriptionConfig(groupName, topicName)
         val publisherConfig = PublisherConfig(clientId)
         val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl())
