@@ -26,9 +26,8 @@ import java.sql.PreparedStatement
 import java.sql.SQLIntegrityConstraintViolationException
 import java.time.Duration
 import java.util.Properties
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 class DBDurableSubscription<K: Any, V: Any>(
@@ -60,7 +59,7 @@ class DBDurableSubscription<K: Any, V: Any>(
     private lateinit var readOffsetStatement: PreparedStatement
     private lateinit var writeOffsetStatement: PreparedStatement
 
-    private val executor = Executors.newSingleThreadExecutor()
+    private var eventLoopThread: Thread? = null
 
     @Volatile
     private var stopped = true
@@ -84,7 +83,13 @@ class DBDurableSubscription<K: Any, V: Any>(
                 writeOffsetStatement = connection.prepareStatement("INSERT INTO $offsetTableName ($CONSUMER_GROUP_COLUMN_NAME, $COMMITTED_OFFSET_COLUMN_NAME) VALUES (?, ?)")
 
                 val initialOffset = getOffset()
-                executor.submit { processingLoop(initialOffset) }
+                eventLoopThread = thread(
+                    true,
+                    true,
+                    null,
+                    "DB Durable subscription processing thread ${subscriptionConfig.groupName}-${subscriptionConfig.eventTopic}",
+                    -1
+                ) { processingLoop(initialOffset) }
                 log.info("Subscription started for group: ${subscriptionConfig.groupName}, connected to database: $jdbcUrl.")
                 stopped = false
             }
@@ -95,8 +100,7 @@ class DBDurableSubscription<K: Any, V: Any>(
         lock.withLock {
             if (!stopped) {
                 stopped = true
-                executor.shutdown()
-                executor.awaitTermination(pollingDelay.toMillis() * 2, TimeUnit.MILLISECONDS)
+                eventLoopThread!!.join(pollingDelay.toMillis() * 2)
                 connection.close()
                 log.info("Subscription stopped for group: ${subscriptionConfig.groupName}.")
             }
