@@ -7,6 +7,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.db.properties.DbProperties
 import net.corda.messaging.db.schema.Schema.OffsetTable.Companion.COMMITTED_OFFSET_COLUMN_NAME
+import net.corda.messaging.db.schema.Schema.OffsetTable.Companion.CONSUMER_GROUP_COLUMN_NAME
 import net.corda.messaging.db.schema.Schema.TableNames.Companion.OFFSET_TABLE_PREFIX
 import net.corda.messaging.db.schema.Schema.TableNames.Companion.TOPIC_TABLE_PREFIX
 import net.corda.messaging.db.schema.Schema.TopicTable.Companion.KEY_COLUMN_NAME
@@ -33,7 +34,7 @@ class DBDurableSubscription<K: Any, V: Any>(
     private val dbConfig: Config,
     private val durableProcessor: DurableProcessor<K, V>,
     private val avroSchemaRegistry: AvroSchemaRegistry,
-    private val pollingDelay: Duration = 5.seconds
+    private val pollingDelay: Duration = 1.seconds
 ) : Subscription<K, V> {
 
     companion object {
@@ -69,8 +70,8 @@ class DBDurableSubscription<K: Any, V: Any>(
         connection = DriverManager.getConnection(jdbcUrl, props)
         connection.autoCommit = false
         readMessageStatement = connection.prepareStatement("SELECT * FROM $topicTableName WHERE $OFFSET_COLUMN_NAME >= ? LIMIT ?")
-        readOffsetStatement = connection.prepareStatement("SELECT MAX($COMMITTED_OFFSET_COLUMN_NAME) FROM $offsetTableName")
-        writeOffsetStatement = connection.prepareStatement("INSERT INTO $offsetTableName ($COMMITTED_OFFSET_COLUMN_NAME) VALUES (?)")
+        readOffsetStatement = connection.prepareStatement("SELECT MAX($COMMITTED_OFFSET_COLUMN_NAME) FROM $offsetTableName WHERE $CONSUMER_GROUP_COLUMN_NAME = ?")
+        writeOffsetStatement = connection.prepareStatement("INSERT INTO $offsetTableName ($CONSUMER_GROUP_COLUMN_NAME, $COMMITTED_OFFSET_COLUMN_NAME) VALUES (?, ?)")
 
         val initialOffset = getOffset()
         executor.submit { processingLoop(initialOffset) }
@@ -127,15 +128,17 @@ class DBDurableSubscription<K: Any, V: Any>(
 
     private fun commitOffset(offset: Long) {
         try {
-            writeOffsetStatement.setLong(1, offset)
+            writeOffsetStatement.setString(1, subscriptionConfig.groupName)
+            writeOffsetStatement.setLong(2, offset)
             writeOffsetStatement.execute()
             connection.commit()
         } catch (e: SQLIntegrityConstraintViolationException) {
-            log.warn("Offset $offset already committed for topic ${subscriptionConfig.eventTopic}.")
+            log.warn("Offset $offset already committed for topic ${subscriptionConfig.eventTopic} and group ${subscriptionConfig.groupName}.")
         }
     }
 
     private fun getOffset(): Long {
+        readOffsetStatement.setString(1, subscriptionConfig.groupName)
         val resultSet = readOffsetStatement.executeQuery()
 
         return if (resultSet.next()) {

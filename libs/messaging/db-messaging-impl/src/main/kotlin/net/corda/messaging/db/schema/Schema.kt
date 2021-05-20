@@ -18,6 +18,7 @@ class Schema {
 
     class OffsetTable {
         companion object {
+            const val CONSUMER_GROUP_COLUMN_NAME = "consumer_group"
             const val COMMITTED_OFFSET_COLUMN_NAME = "committed_offset"
         }
     }

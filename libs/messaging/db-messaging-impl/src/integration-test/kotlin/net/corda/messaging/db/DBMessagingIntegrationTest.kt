@@ -12,6 +12,7 @@ import net.corda.messaging.db.properties.DbProperties.Companion.DB_USERNAME
 import net.corda.messaging.db.properties.DbProperties.Companion.JDBC_URL
 import net.corda.messaging.db.publisher.DBPublisher
 import net.corda.messaging.db.schema.Schema.OffsetTable.Companion.COMMITTED_OFFSET_COLUMN_NAME
+import net.corda.messaging.db.schema.Schema.OffsetTable.Companion.CONSUMER_GROUP_COLUMN_NAME
 import net.corda.messaging.db.schema.Schema.TableNames.Companion.OFFSET_TABLE_PREFIX
 import net.corda.messaging.db.schema.Schema.TableNames.Companion.TOPIC_TABLE_PREFIX
 import net.corda.messaging.db.schema.Schema.TopicTable.Companion.KEY_COLUMN_NAME
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.ByteBuffer
 import java.nio.file.Path
+import java.sql.Connection
 import java.sql.DriverManager
 import java.util.concurrent.CountDownLatch
 
@@ -47,6 +49,7 @@ class DBMessagingIntegrationTest {
 
     private lateinit var server: Server
     private lateinit var dbConfig: Config
+    private lateinit var connection: Connection
 
     @BeforeEach
     fun setup() {
@@ -54,9 +57,9 @@ class DBMessagingIntegrationTest {
         server.start()
 
         dbConfig = ConfigFactory.load()
-        val connection = DriverManager.getConnection(dbConfig.getString(JDBC_URL), dbConfig.getString(DB_USERNAME), dbConfig.getString(DB_PASSWORD))
+        connection = DriverManager.getConnection(dbConfig.getString(JDBC_URL), dbConfig.getString(DB_USERNAME), dbConfig.getString(DB_PASSWORD))
         connection.prepareStatement("CREATE TABLE ${TOPIC_TABLE_PREFIX}${topicName.replace(".", "_")} ($OFFSET_COLUMN_NAME BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, $KEY_COLUMN_NAME VARCHAR, $MESSAGE_PAYLOAD_COLUMN_NAME VARCHAR);").execute()
-        connection.prepareStatement("CREATE TABLE ${OFFSET_TABLE_PREFIX}${topicName.replace(".", "_")} ($COMMITTED_OFFSET_COLUMN_NAME BIGINT NOT NULL PRIMARY KEY)").execute()
+        connection.prepareStatement("CREATE TABLE ${OFFSET_TABLE_PREFIX}${topicName.replace(".", "_")} ($CONSUMER_GROUP_COLUMN_NAME VARCHAR NOT NULL, $COMMITTED_OFFSET_COLUMN_NAME BIGINT NOT NULL, PRIMARY KEY ($CONSUMER_GROUP_COLUMN_NAME, $COMMITTED_OFFSET_COLUMN_NAME))").execute()
     }
 
     @AfterEach
@@ -121,6 +124,47 @@ class DBMessagingIntegrationTest {
             assertThat(readMessages[index].first!!.serverHash == readMessages[index].second!!.serverHash)
             assertTrue(readMessages[index].first!!.algorithm == messagesToWrite[index].algorithm)
             assertTrue(readMessages[index].first!!.serverHash.array().contentEquals(messagesToWrite[index].serverHash.array()))
+        }
+    }
+
+    @Test
+    fun `multiple consumers groups can read records successfully from topic backed by database`() {
+        val subscriptionConfig = SubscriptionConfig(groupName, topicName)
+        val publisherConfig = PublisherConfig(clientId)
+        val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl())
+        dbPublisher.start()
+
+        val messagesToWrite = listOf("msg-1", "msg-2", "msg-3").map {
+            SecureHash("algorithm", ByteBuffer.wrap(it.toByteArray(Charsets.UTF_8)))
+        }
+        messagesToWrite.forEach { value ->
+            dbPublisher.publish(Record(topicName, value, value)).getOrThrow()
+        }
+
+        val readMessages1 = mutableListOf<Pair<SecureHash?, SecureHash?>>()
+        val readMessages2 = mutableListOf<Pair<SecureHash?, SecureHash?>>()
+        val latch1 = CountDownLatch(1)
+        val latch2 = CountDownLatch(1)
+        val processor1 = InMemoryHolderProcessor(readMessages1, latch1, 3)
+        val processor2 = InMemoryHolderProcessor(readMessages2, latch2, 3)
+        val subscription1 =  DBDurableSubscription(subscriptionConfig.copy(groupName = "group1"), dbConfig, processor1, AvroSchemaRegistryImpl(), 100.millis)
+        val subscription2 = DBDurableSubscription(subscriptionConfig.copy(groupName = "group2"), dbConfig, processor2, AvroSchemaRegistryImpl(), 100.millis)
+
+        subscription1.start()
+        latch1.await()
+        subscription1.stop()
+
+        subscription2.start()
+        latch2.await()
+        subscription2.stop()
+
+        assertThat(readMessages1).hasSize(3)
+        assertThat(readMessages2).hasSize(3)
+        readMessages1.forEachIndexed { index, _ ->
+            assertThat(readMessages1[index].first!!.algorithm == readMessages2[index].first!!.algorithm)
+            assertThat(readMessages1[index].first!!.serverHash.array().contentEquals(readMessages2[index].first!!.serverHash.array()))
+            assertThat(readMessages1[index].second!!.algorithm == readMessages2[index].second!!.algorithm)
+            assertThat(readMessages1[index].second!!.serverHash.array().contentEquals(readMessages2[index].second!!.serverHash.array()))
         }
     }
 
