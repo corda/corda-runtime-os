@@ -34,8 +34,13 @@ class DBDurableSubscription<K: Any, V: Any>(
     private val dbConfig: Config,
     private val durableProcessor: DurableProcessor<K, V>,
     private val avroSchemaRegistry: AvroSchemaRegistry,
-    private val pollingDelay: Duration = 1.seconds
+    private val pollingDelay: Duration = 1.seconds,
+    private val batchSize: Int = 100,
 ) : Subscription<K, V> {
+
+    init {
+        require(batchSize > 0) { "The batch size needs to be positive." }
+    }
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -91,7 +96,7 @@ class DBDurableSubscription<K: Any, V: Any>(
         var nextItemOffset = initialOffset
         while (!stopped) {
             try {
-                val recordsByOffset = fetchRecords(nextItemOffset, subscriptionConfig.batchSize)
+                val recordsByOffset = fetchRecords(nextItemOffset, batchSize)
                 if (recordsByOffset.isEmpty()) {
                     Thread.sleep(pollingDelay.toMillis())
                 } else {
