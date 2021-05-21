@@ -1,6 +1,7 @@
 package net.corda.p2p.crypto.protocol.api
 
-import net.corda.p2p.crypto.protocol.AuthenticationProtocol
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.HMAC_ALGO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
 import net.corda.p2p.crypto.protocol.data.CommonHeader
 import net.corda.p2p.crypto.protocol.data.MessageType
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -22,10 +23,11 @@ class AuthenticatedSession(private val sessionId: String,
                            private val outboundSecretKey: SecretKey,
                            private val inboundSecretKey: SecretKey) {
 
-    private val generationHMac = Mac.getInstance("HMac-SHA256", BouncyCastleProvider()).apply {
+    private val provider = BouncyCastleProvider()
+    private val generationHMac = Mac.getInstance(HMAC_ALGO, provider).apply {
         this.init(outboundSecretKey)
     }
-    private val validationHMac = Mac.getInstance("HMac-SHA256", BouncyCastleProvider()).apply {
+    private val validationHMac = Mac.getInstance(HMAC_ALGO, provider).apply {
         this.init(inboundSecretKey)
     }
     private val generationLock = ReentrantLock()
@@ -37,7 +39,7 @@ class AuthenticatedSession(private val sessionId: String,
      * @return the header to be sent to the other party and the authentication code.
      */
     fun createMac(payload: ByteArray): AuthenticationResult {
-        val commonHeader = CommonHeader(MessageType.DATA, AuthenticationProtocol.PROTOCOL_VERSION, sessionId,
+        val commonHeader = CommonHeader(MessageType.DATA, PROTOCOL_VERSION, sessionId,
                                         sequenceNo.getAndIncrement(), Instant.now().toEpochMilli())
         val tag = generationLock.withLock {
             generationHMac.reset()

@@ -1,14 +1,34 @@
 package net.corda.p2p.crypto.protocol
 
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_ALGO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_KEY_SIZE_BYTES
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_NONCE_SIZE_BYTES
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ELLIPTIC_CURVE_ALGO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ELLIPTIC_CURVE_KEY_SIZE_BITS
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.HASH_ALGO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.HMAC_ALGO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.HMAC_KEY_SIZE_BYTES
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_HANDSHAKE_ENCRYPTION_KEY_INFO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_HANDSHAKE_ENCRYPTION_NONCE_INFO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_HANDSHAKE_MAC_KEY_INFO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SESSION_ENCRYPTION_KEY_INFO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SESSION_NONCE_INFO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_HANDSHAKE_ENCRYPTION_KEY_INFO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_HANDSHAKE_ENCRYPTION_NONCE_INFO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_HANDSHAKE_MAC_KEY_INFO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSION_ENCRYPTION_KEY_INFO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSION_NONCE_INFO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.data.InitiatorHelloMessage
 import net.corda.p2p.crypto.protocol.data.ResponderHelloMessage
-import org.bouncycastle.crypto.digests.SHA256Digest
+import net.corda.p2p.crypto.util.convertToBCDigest
+import net.corda.p2p.crypto.util.generateKey
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
-import org.bouncycastle.crypto.params.HKDFParameters
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.ByteBuffer
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
+import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.SecureRandom
@@ -27,13 +47,6 @@ import javax.crypto.spec.SecretKeySpec
  * For the detailed spec of the authentication protocol, refer to the corresponding design document.
  */
 abstract class AuthenticationProtocol {
-    companion object {
-        val initiatorSigPad = " ".repeat(64) + "Corda, client signature verify" + "\\0"
-        val responderSigPad = " ".repeat(64) + "Corda, server signature verify" + "\\0"
-
-        const val PROTOCOL_VERSION = 1
-    }
-
     protected var myPrivateDHKey: PrivateKey? = null
     protected var myPublicDHKey: ByteArray? = null
     protected var peerPublicDHKey: PublicKey? = null
@@ -47,59 +60,60 @@ abstract class AuthenticationProtocol {
     protected var responderHandshakePayload: ByteArray? = null
 
     protected val secureRandom = SecureRandom()
-    protected val ecAlgoName = "X25519"
     protected val provider = BouncyCastleProvider()
-    protected val ephemeralKeyFactory = KeyFactory.getInstance(ecAlgoName, provider)
-    protected val keyPairGenerator = KeyPairGenerator.getInstance(ecAlgoName, provider).apply {
-        this.initialize(256, secureRandom)
+    protected val ephemeralKeyFactory = KeyFactory.getInstance(ELLIPTIC_CURVE_ALGO, provider)
+    protected val keyPairGenerator = KeyPairGenerator.getInstance(ELLIPTIC_CURVE_ALGO, provider).apply {
+        this.initialize(ELLIPTIC_CURVE_KEY_SIZE_BITS, secureRandom)
     }
-    protected val keyAgreement = KeyAgreement.getInstance(ecAlgoName, provider)
-    protected val hmac = Mac.getInstance("HMac-SHA256", provider)
-    protected val aesCipher = Cipher.getInstance("AES/GCM/NoPadding", provider)
-    protected val signature = Signature.getInstance("ECDSA", provider)
-    protected val sha256Hash = SHA256Digest()
+    protected val keyAgreement = KeyAgreement.getInstance(ELLIPTIC_CURVE_ALGO, provider)
+    protected val hmac = Mac.getInstance(HMAC_ALGO, provider)
+    protected val aesCipher = Cipher.getInstance(CIPHER_ALGO, provider)
+    protected val signature = Signature.getInstance(SIGNATURE_ALGO, provider)
+    protected val messageDigest = MessageDigest.getInstance(HASH_ALGO, provider)
+
+    private val hkdfGenerator = HKDFBytesGenerator(messageDigest.convertToBCDigest())
 
     fun generateHandshakeSecrets(inputKeyMaterial: ByteArray, initiatorHelloToResponderHello: ByteArray): SharedHandshakeSecrets {
-        val initiatorEncryptionKeyBytes = hkdf(initiatorHelloToResponderHello, inputKeyMaterial, "Corda client hs enc key", 32)
-        val initiatorEncryptionKey = SecretKeySpec(initiatorEncryptionKeyBytes, "HmacSHA512")
+        val initiatorEncryptionKeyBytes = hkdfGenerator.generateKey(initiatorHelloToResponderHello, inputKeyMaterial,
+                                                                    INITIATOR_HANDSHAKE_ENCRYPTION_KEY_INFO, CIPHER_KEY_SIZE_BYTES)
+        val initiatorEncryptionKey = SecretKeySpec(initiatorEncryptionKeyBytes, CIPHER_ALGO)
 
-        val responderEncryptionKeyBytes = hkdf(initiatorHelloToResponderHello, inputKeyMaterial, "Corda server hs enc key", 32)
-        val responderEncryptionKey = SecretKeySpec(responderEncryptionKeyBytes, "HmacSHA512")
+        val responderEncryptionKeyBytes = hkdfGenerator.generateKey(initiatorHelloToResponderHello, inputKeyMaterial,
+                                                                    RESPONDER_HANDSHAKE_ENCRYPTION_KEY_INFO, CIPHER_KEY_SIZE_BYTES)
+        val responderEncryptionKey = SecretKeySpec(responderEncryptionKeyBytes, CIPHER_ALGO)
 
-        val initiatorNonce = hkdf(initiatorHelloToResponderHello, inputKeyMaterial, "Corda client hs enc iv", 12)
-        val responderNonce = hkdf(initiatorHelloToResponderHello, inputKeyMaterial,"Corda server hs enc iv", 12)
+        val initiatorNonce = hkdfGenerator.generateKey(initiatorHelloToResponderHello, inputKeyMaterial,
+                                                                    INITIATOR_HANDSHAKE_ENCRYPTION_NONCE_INFO, CIPHER_NONCE_SIZE_BYTES)
+        val responderNonce = hkdfGenerator.generateKey(initiatorHelloToResponderHello, inputKeyMaterial,
+                                                                    RESPONDER_HANDSHAKE_ENCRYPTION_NONCE_INFO, CIPHER_NONCE_SIZE_BYTES)
 
-        val initiatorMacKeyBytes = hkdf(initiatorHelloToResponderHello, inputKeyMaterial, "Corda client hs mac key", 32)
-        val initiatorMacKey = SecretKeySpec(initiatorMacKeyBytes, "HmacSHA512")
+        val initiatorMacKeyBytes = hkdfGenerator.generateKey(initiatorHelloToResponderHello, inputKeyMaterial,
+                                                                    INITIATOR_HANDSHAKE_MAC_KEY_INFO, HMAC_KEY_SIZE_BYTES)
+        val initiatorMacKey = SecretKeySpec(initiatorMacKeyBytes, HMAC_ALGO)
 
-        val responderMackKeyBytes = hkdf(initiatorHelloToResponderHello, inputKeyMaterial, "Corda server hs mac key", 32)
-        val responderMacKey = SecretKeySpec(responderMackKeyBytes, "HmacSHA512")
+        val responderMackKeyBytes = hkdfGenerator.generateKey(initiatorHelloToResponderHello, inputKeyMaterial,
+                                                                    RESPONDER_HANDSHAKE_MAC_KEY_INFO, HMAC_KEY_SIZE_BYTES)
+        val responderMacKey = SecretKeySpec(responderMackKeyBytes, HMAC_ALGO)
 
         return SharedHandshakeSecrets(initiatorMacKey, responderMacKey,
                                       initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
     }
 
     fun generateSessionSecrets(inputKeyMaterial: ByteArray, initiatorHelloToResponderFinished: ByteArray): SharedSessionSecrets {
-        val initiatorEncryptionKeyBytes = hkdf(initiatorHelloToResponderFinished, inputKeyMaterial, "Corda client session key", 32)
-        val initiatorEncryptionKey = SecretKeySpec(initiatorEncryptionKeyBytes, "AES")
+        val initiatorEncryptionKeyBytes = hkdfGenerator.generateKey(initiatorHelloToResponderFinished, inputKeyMaterial,
+                                                                    INITIATOR_SESSION_ENCRYPTION_KEY_INFO, CIPHER_KEY_SIZE_BYTES)
+        val initiatorEncryptionKey = SecretKeySpec(initiatorEncryptionKeyBytes, CIPHER_ALGO)
 
-        val responderEncryptionKeyBytes = hkdf(initiatorHelloToResponderFinished, inputKeyMaterial, "Corda server session key", 12)
-        val responderEncryptionKey = SecretKeySpec(responderEncryptionKeyBytes, "AES")
+        val responderEncryptionKeyBytes = hkdfGenerator.generateKey(initiatorHelloToResponderFinished, inputKeyMaterial,
+                                                                    RESPONDER_SESSION_ENCRYPTION_KEY_INFO, CIPHER_KEY_SIZE_BYTES)
+        val responderEncryptionKey = SecretKeySpec(responderEncryptionKeyBytes, CIPHER_ALGO)
 
-        val initiatorNonce = hkdf(initiatorHelloToResponderFinished, inputKeyMaterial, "Corda client session iv", 12)
-        val responderNonce = hkdf(initiatorHelloToResponderFinished, inputKeyMaterial, "Corda server session iv", 12)
+        val initiatorNonce = hkdfGenerator.generateKey(initiatorHelloToResponderFinished, inputKeyMaterial,
+                                                                    INITIATOR_SESSION_NONCE_INFO, CIPHER_NONCE_SIZE_BYTES)
+        val responderNonce = hkdfGenerator.generateKey(initiatorHelloToResponderFinished, inputKeyMaterial,
+                                                                    RESPONDER_SESSION_NONCE_INFO, CIPHER_NONCE_SIZE_BYTES)
 
         return SharedSessionSecrets(initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
-    }
-
-    private fun hkdf(salt: ByteArray, inputKeyMaterial: ByteArray, info: String, length: Int): ByteArray {
-        val hkdf = HKDFBytesGenerator(sha256Hash)
-        hkdf.init(HKDFParameters(inputKeyMaterial, salt, info.toByteArray(Charsets.UTF_8)))
-
-        val outputKeyMaterial = ByteArray(length)
-        hkdf.generateBytes(outputKeyMaterial, 0, length)
-
-        return outputKeyMaterial
     }
 
     /**
@@ -176,3 +190,4 @@ abstract class AuthenticationProtocol {
 }
 
 internal fun Int.toByteArray(): ByteArray = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(this).array()
+internal fun Long.toByteArray(): ByteArray = ByteBuffer.allocate(Long.SIZE_BITS).putLong(this).array()

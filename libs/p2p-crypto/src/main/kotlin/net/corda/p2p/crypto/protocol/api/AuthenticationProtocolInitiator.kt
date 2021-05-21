@@ -1,6 +1,9 @@
 package net.corda.p2p.crypto.protocol.api
 
 import net.corda.p2p.crypto.protocol.AuthenticationProtocol
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SIG_PAD
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SIG_PAD
 import net.corda.p2p.crypto.protocol.data.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.protocol.data.InitiatorHelloMessage
 import net.corda.p2p.crypto.protocol.data.CommonHeader
@@ -78,6 +81,11 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
     }
 
     /**
+     * Generates our handshake message.
+     * Warning: the latency of this method is bounded by the latency of the provided [signingFn]. So, if you want to use this method from
+     *          a performance-sensitive context, you should execute it asynchronously (i.e. in a separate thread)
+     *          to avoid blocking any other processing.
+     *
      * @param signingFn a callback function that will be invoked for performing signing (with the stable identity key).
      */
     fun generateOurHandshakeMessage(ourPublicKey: PublicKey,
@@ -90,21 +98,23 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
                                                 sessionId, 1, Instant.now().toEpochMilli())
         val initiatorRecordHeaderBytes = initiatorRecordHeader.toBytes()
         val groupIdBytes = groupId.toByteArray(Charsets.UTF_8)
-        val initiatorEncryptedExtensions = sha256Hash.hash(theirPublicKey.encoded) + groupIdBytes.size.toByteArray() + groupIdBytes
-        val initiatorParty = sha256Hash.hash(ourPublicKey.encoded)
+        val initiatorEncryptedExtensions = messageDigest.hash(theirPublicKey.encoded) +
+                                                     groupIdBytes.size.toByteArray() + groupIdBytes
+        val initiatorParty = messageDigest.hash(ourPublicKey.encoded)
         val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorEncryptedExtensions + initiatorParty
-        val initiatorPartyVerify = signingFn(initiatorSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(initiatorHelloToResponderParty))
+        val initiatorPartyVerify = signingFn(INITIATOR_SIG_PAD.toByteArray(Charsets.UTF_8) +
+                                             messageDigest.hash(initiatorHelloToResponderParty))
         val initiatorHelloToInitiatorPartyVerify = initiatorHelloToResponderParty + initiatorPartyVerify
         val initiatorFinished = hmac.calculateMac(sharedHandshakeSecrets!!.initiatorAuthKey,
-                                                  sha256Hash.hash(initiatorHelloToInitiatorPartyVerify))
+                                                  messageDigest.hash(initiatorHelloToInitiatorPartyVerify))
         initiatorHandshakePayload = initiatorEncryptedExtensions +
                                  initiatorParty +
                                  (initiatorPartyVerify.size.toByteArray() + initiatorPartyVerify) +
                                  initiatorFinished
 
         val nonce = sharedHandshakeSecrets!!.initiatorNonce
-        val (initiatorEncryptedData, initiatorTag) = aesCipher.encryptWithAssociatedData(initiatorRecordHeaderBytes, nonce,
-                initiatorHandshakePayload!!, sharedHandshakeSecrets!!.initiatorEncryptionKey)
+        val (initiatorEncryptedData, initiatorTag) = aesCipher.encryptWithAssociatedData(initiatorRecordHeaderBytes,
+                nonce, initiatorHandshakePayload!!, sharedHandshakeSecrets!!.initiatorEncryptionKey)
         return InitiatorHandshakeMessage(initiatorRecordHeader, initiatorEncryptedData, initiatorTag)
     }
 
@@ -128,9 +138,9 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
         }
 
         val responderHandshakeMessagePayloadDecryptedBuffer = ByteBuffer.wrap(responderHandshakePayload)
-        val responderParty = ByteArray(sha256Hash.digestSize)
+        val responderParty = ByteArray(messageDigest.digestLength)
         responderHandshakeMessagePayloadDecryptedBuffer.get(responderParty)
-        if (!responderParty.contentEquals(sha256Hash.hash(theirPublicKey.encoded))) {
+        if (!responderParty.contentEquals(messageDigest.hash(theirPublicKey.encoded))) {
             throw InvalidHandshakeResponderKeyHash()
         }
         val responderPartyVerifySize = responderHandshakeMessagePayloadDecryptedBuffer.int
@@ -138,7 +148,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
         responderHandshakeMessagePayloadDecryptedBuffer.get(responderPartyVerify)
         val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayload!! + responderParty
         val signatureWasValid = signature.verify(theirPublicKey,
-                                            responderSigPad.toByteArray(Charsets.UTF_8) + sha256Hash.hash(initiatorHelloToResponderParty),
+                                            RESPONDER_SIG_PAD.toByteArray(Charsets.UTF_8) + messageDigest.hash(initiatorHelloToResponderParty),
                                                  responderPartyVerify)
         if (!signatureWasValid) {
             throw InvalidHandshakeMessageException()
@@ -148,7 +158,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String, private val
         responderHandshakeMessagePayloadDecryptedBuffer.get(responderFinished)
         val initiatorHelloToResponderPartyVerify = initiatorHelloToResponderParty + responderPartyVerify
         val calculatedResponderFinished = hmac.calculateMac(sharedHandshakeSecrets!!.responderAuthKey,
-                                                         sha256Hash.hash(initiatorHelloToResponderPartyVerify))
+                                                         messageDigest.hash(initiatorHelloToResponderPartyVerify))
         if (!calculatedResponderFinished.contentEquals(responderFinished)) {
             throw InvalidHandshakeMessageException()
         }
