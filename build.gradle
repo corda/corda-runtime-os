@@ -109,7 +109,7 @@ allprojects {
     }
 
     dependencies {
-h        // Exported as OSGi 'system packages extra' at runtime by the `osgi-framework-bootstrap` module.
+        // Exported as OSGi 'system packages extra' at runtime by the `osgi-framework-bootstrap` module.
         implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
         implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
 
