@@ -14,8 +14,8 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class Configuration extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 5001456477121452350L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"Configuration\",\"namespace\":\"net.corda.data.config\",\"fields\":[{\"name\":\"key\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"value\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
+  private static final long serialVersionUID = -6758608654299706160L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"Configuration\",\"namespace\":\"net.corda.data.config\",\"fields\":[{\"name\":\"value\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -71,7 +71,6 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
     return DECODER.decode(b);
   }
 
-   private java.lang.String key;
    private java.lang.String value;
 
   /**
@@ -83,11 +82,9 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
 
   /**
    * All-args constructor.
-   * @param key The new value for key
    * @param value The new value for value
    */
-  public Configuration(java.lang.String key, java.lang.String value) {
-    this.key = key;
+  public Configuration(java.lang.String value) {
     this.value = value;
   }
 
@@ -96,8 +93,7 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
   // Used by DatumWriter.  Applications should not call.
   public java.lang.Object get(int field$) {
     switch (field$) {
-    case 0: return key;
-    case 1: return value;
+    case 0: return value;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -106,27 +102,9 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
   @SuppressWarnings(value="unchecked")
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
-    case 0: key = value$ != null ? value$.toString() : null; break;
-    case 1: value = value$ != null ? value$.toString() : null; break;
+    case 0: value = value$ != null ? value$.toString() : null; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
-  }
-
-  /**
-   * Gets the value of the 'key' field.
-   * @return The value of the 'key' field.
-   */
-  public java.lang.String getKey() {
-    return key;
-  }
-
-
-  /**
-   * Sets the value of the 'key' field.
-   * @param value the value to set.
-   */
-  public void setKey(java.lang.String value) {
-    this.key = value;
   }
 
   /**
@@ -187,7 +165,6 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
   public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<Configuration>
     implements org.apache.avro.data.RecordBuilder<Configuration> {
 
-    private java.lang.String key;
     private java.lang.String value;
 
     /** Creates a new Builder */
@@ -201,13 +178,9 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
      */
     private Builder(net.corda.data.config.Configuration.Builder other) {
       super(other);
-      if (isValidValue(fields()[0], other.key)) {
-        this.key = data().deepCopy(fields()[0].schema(), other.key);
+      if (isValidValue(fields()[0], other.value)) {
+        this.value = data().deepCopy(fields()[0].schema(), other.value);
         fieldSetFlags()[0] = other.fieldSetFlags()[0];
-      }
-      if (isValidValue(fields()[1], other.value)) {
-        this.value = data().deepCopy(fields()[1].schema(), other.value);
-        fieldSetFlags()[1] = other.fieldSetFlags()[1];
       }
     }
 
@@ -217,54 +190,10 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
      */
     private Builder(net.corda.data.config.Configuration other) {
       super(SCHEMA$);
-      if (isValidValue(fields()[0], other.key)) {
-        this.key = data().deepCopy(fields()[0].schema(), other.key);
+      if (isValidValue(fields()[0], other.value)) {
+        this.value = data().deepCopy(fields()[0].schema(), other.value);
         fieldSetFlags()[0] = true;
       }
-      if (isValidValue(fields()[1], other.value)) {
-        this.value = data().deepCopy(fields()[1].schema(), other.value);
-        fieldSetFlags()[1] = true;
-      }
-    }
-
-    /**
-      * Gets the value of the 'key' field.
-      * @return The value.
-      */
-    public java.lang.String getKey() {
-      return key;
-    }
-
-
-    /**
-      * Sets the value of the 'key' field.
-      * @param value The value of 'key'.
-      * @return This builder.
-      */
-    public net.corda.data.config.Configuration.Builder setKey(java.lang.String value) {
-      validate(fields()[0], value);
-      this.key = value;
-      fieldSetFlags()[0] = true;
-      return this;
-    }
-
-    /**
-      * Checks whether the 'key' field has been set.
-      * @return True if the 'key' field has been set, false otherwise.
-      */
-    public boolean hasKey() {
-      return fieldSetFlags()[0];
-    }
-
-
-    /**
-      * Clears the value of the 'key' field.
-      * @return This builder.
-      */
-    public net.corda.data.config.Configuration.Builder clearKey() {
-      key = null;
-      fieldSetFlags()[0] = false;
-      return this;
     }
 
     /**
@@ -282,9 +211,9 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
       * @return This builder.
       */
     public net.corda.data.config.Configuration.Builder setValue(java.lang.String value) {
-      validate(fields()[1], value);
+      validate(fields()[0], value);
       this.value = value;
-      fieldSetFlags()[1] = true;
+      fieldSetFlags()[0] = true;
       return this;
     }
 
@@ -293,7 +222,7 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
       * @return True if the 'value' field has been set, false otherwise.
       */
     public boolean hasValue() {
-      return fieldSetFlags()[1];
+      return fieldSetFlags()[0];
     }
 
 
@@ -303,7 +232,7 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
       */
     public net.corda.data.config.Configuration.Builder clearValue() {
       value = null;
-      fieldSetFlags()[1] = false;
+      fieldSetFlags()[0] = false;
       return this;
     }
 
@@ -312,8 +241,7 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
     public Configuration build() {
       try {
         Configuration record = new Configuration();
-        record.key = fieldSetFlags()[0] ? this.key : (java.lang.String) defaultValue(fields()[0]);
-        record.value = fieldSetFlags()[1] ? this.value : (java.lang.String) defaultValue(fields()[1]);
+        record.value = fieldSetFlags()[0] ? this.value : (java.lang.String) defaultValue(fields()[0]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -346,8 +274,6 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
   @Override public void customEncode(org.apache.avro.io.Encoder out)
     throws java.io.IOException
   {
-    out.writeString(this.key);
-
     out.writeString(this.value);
 
   }
@@ -357,18 +283,12 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
   {
     org.apache.avro.Schema.Field[] fieldOrder = in.readFieldOrderIfDiff();
     if (fieldOrder == null) {
-      this.key = in.readString();
-
       this.value = in.readString();
 
     } else {
-      for (int i = 0; i < 2; i++) {
+      for (int i = 0; i < 1; i++) {
         switch (fieldOrder[i].pos()) {
         case 0:
-          this.key = in.readString();
-          break;
-
-        case 1:
           this.value = in.readString();
           break;
 

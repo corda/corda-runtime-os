@@ -6,22 +6,26 @@ plugins {
 description "Bootstrapping tools"
 
 dependencies {
-    implementation project(':libs:kafka-utils:topic-admin')
-    implementation project(':libs:kafka-utils:topic-admin-impl')
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
 
-    implementation "org.apache.kafka:kafka-clients:$kafkaVersion"
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    implementation project(':data:avro-schema')
+    implementation project(':libs:configuration:configuration-write')
+    implementation project(":libs:configuration:kafka-configuration-write-impl")
+    implementation project(':libs:kafka-utils:topic-admin')
+    implementation project(":libs:kafka-utils:topic-admin-impl")
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
 }
 
 tasks.register("uploadConfigToKafka", JavaExec) {
     classpath = sourceSets["main"].runtimeClasspath
     main = 'net.corda.tools.kafka.KafkaConfigUploaderKt'
-    args 'bootstrap.servers=localhost:9092', 'test123', 'C:\\flow-worker\\tools\\src\\main\\resources\\config.conf'
+    args 'bootstrap.servers=localhost:9092', 'test12', 'C:\\flow-worker\\tools\\src\\main\\resources\\config.conf'
 }

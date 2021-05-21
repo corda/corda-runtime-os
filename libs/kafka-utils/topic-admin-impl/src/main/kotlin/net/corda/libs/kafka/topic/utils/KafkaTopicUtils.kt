@@ -26,13 +26,5 @@ object KafkaTopicUtils : TopicUtils {
             if (e.cause !is TopicExistsException) throw e
         }
     }
-
-    //remove when write lib is done
-    override fun createProducer(props: Properties, keySerialiser: String?, valueSerialiser: String?): KafkaProducer<Any, Any> {
-        props[ProducerConfig.ACKS_CONFIG] = "all"
-        props[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = keySerialiser
-        props[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = valueSerialiser
-        return KafkaProducer(props)
-    }
 }
 

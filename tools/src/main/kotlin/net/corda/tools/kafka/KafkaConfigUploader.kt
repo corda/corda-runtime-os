@@ -1,10 +1,11 @@
 package net.corda.tools.kafka
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.write.CordaConfigurationKey
+import net.corda.libs.configuration.write.CordaConfigurationVersion
+import net.corda.libs.configuration.write.CordaWriteServiceImpl
 import net.corda.libs.kafka.topic.utils.KafkaTopicUtils
-import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.clients.producer.RecordMetadata
-import org.apache.kafka.common.serialization.StringSerializer
 import java.io.File
 import java.io.StringReader
 import java.util.*
@@ -24,19 +25,13 @@ fun main(args: Array<String>) {
     KafkaTopicUtils.createTopic(topicName, 1, 1, kafkaProps)
 
     val configuration = ConfigFactory.parseString(File(args[2]).readText())
+    val configPlusTopic = configuration.withValue("topicName", ConfigValueFactory.fromAnyRef(topicName))
 
-    val producer =
-        KafkaTopicUtils.createProducer(kafkaProps, StringSerializer::class.qualifiedName, StringSerializer::class.qualifiedName)
-    for (key in configuration.root().keys) {
-        val record = configuration.atKey(key).toString()
-        println("Producing record: $key\t$record")
+    val packageVersion = CordaConfigurationVersion("corda", 1, 0)
+    val componentVersion = CordaConfigurationVersion("corda", 1, 0)
+    val configurationKey = CordaConfigurationKey("corda", packageVersion, componentVersion)
 
-        producer.send(ProducerRecord(topicName, key, record)) { m: RecordMetadata, e: Exception? ->
-            when (e) {
-                null -> println("Produced record to topic ${m.topic()} partition [${m.partition()}] @ offset ${m.offset()}")
-                else -> e.printStackTrace()
-            }
-        }
-    }
-    producer.flush()
+    val configurationWriteService = CordaWriteServiceImpl()
+
+    configurationWriteService.updateConfiguration(configurationKey, configPlusTopic)
 }

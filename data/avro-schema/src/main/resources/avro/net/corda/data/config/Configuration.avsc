@@ -4,10 +4,6 @@
   "namespace": "net.corda.data.config",
   "fields": [
     {
-      "name": "key",
-      "type": "string"
-    },
-    {
       "name": "value",
       "type": "string"
     }

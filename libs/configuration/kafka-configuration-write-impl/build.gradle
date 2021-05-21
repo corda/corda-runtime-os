@@ -9,7 +9,10 @@ description 'Kafka configuration write API impl'
 dependencies {
     implementation project(":data:avro-schema")
     implementation project(":libs:configuration:configuration-write")
+    implementation project(":libs:messaging:kafka-messaging-impl")
     implementation project(":libs:messaging:messaging")
+    implementation project(":libs:schema-registry:schema-registry")
+    implementation project(":libs:schema-registry:schema-registry-impl")
 
     implementation "net.corda:corda-base:$cordaVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"

@@ -1,6 +1,5 @@
 package net.corda.libs.kafka.topic.utils
 
-import org.apache.kafka.clients.producer.KafkaProducer
 import java.util.*
 
 
@@ -21,7 +20,4 @@ interface TopicUtils {
                     replication: Short,
                     kafkaProps: Properties
     )
-    //remove when write lib is done
-    fun createProducer(props: Properties, keySerialiser: String?, valueSerialiser: String?) : KafkaProducer<Any, Any>
-
 }
