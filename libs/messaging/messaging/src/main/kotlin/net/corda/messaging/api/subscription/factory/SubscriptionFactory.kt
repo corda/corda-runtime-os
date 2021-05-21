@@ -1,8 +1,10 @@
 package net.corda.messaging.api.subscription.factory
 
-import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
@@ -26,7 +28,7 @@ interface SubscriptionFactory {
      * execute on the same thread as the consumer.
      * @return A subscription to manage lifecycle.
      */
-    fun <K,V> createPubSubSubscription(subscriptionConfig: SubscriptionConfig,
+    fun <K : Any, V : Any> createPubSubSubscription(subscriptionConfig: SubscriptionConfig,
                                        processor: PubSubProcessor<K, V>,
                                        executor: ExecutorService?,
                                        properties: Map<String, String>): Subscription<K, V>
@@ -41,9 +43,20 @@ interface SubscriptionFactory {
      * @param properties Map of properties to override the default settings for the connection to the source of events
      * @return A subscription to manage lifecycle.
      */
-   fun <K, V> createDurableSubscription(subscriptionConfig: SubscriptionConfig,
+   fun <K : Any, V : Any> createDurableSubscription(subscriptionConfig: SubscriptionConfig,
                                         processor: DurableProcessor<K, V>,
                                         properties: Map<String, String>) : Subscription<K, V>
+
+    /**
+     * Create a subscription for processing events from the most recent state of the topic.
+     * The subscription will get the current, most up-to-date state (snapshot) for the topic and subsequent updates.
+     * @param subscriptionConfig Define the mandatory params for creating a subscription.
+     * @param properties Map of properties to override the default settings for the connection to the source of events
+     * @return A subscription to manage lifecycle.
+     */
+    fun <K : Any, V : Any> createCompactedSubscription(subscriptionConfig: SubscriptionConfig,
+                                                       processor: CompactedProcessor<K, V>,
+                                                       properties: Map<String, String>) : CompactedSubscription<K, V>
 
     /**
      * Create a subscription for processing events which also have a state from a durable queue.
@@ -55,7 +68,7 @@ interface SubscriptionFactory {
      * @param properties Map of properties to override the default settings for the connection to the source of events
      * @return A subscription to manage lifecycle.
      */
-   fun <K, S, E> createStateAndEventSubscription(subscriptionConfig: StateAndEventSubscriptionConfig,
+   fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(subscriptionConfig: StateAndEventSubscriptionConfig,
                                                  processor: StateAndEventProcessor<K, S, E>,
                                                  properties: Map<String, String>) : StateAndEventSubscription<K, S, E>
 }

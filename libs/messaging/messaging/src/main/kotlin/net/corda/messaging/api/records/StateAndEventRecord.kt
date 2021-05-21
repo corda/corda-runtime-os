@@ -6,4 +6,4 @@ package net.corda.messaging.api.records
  * @property state the state record for a given event. Can be null if event has no state.
  * @property event the event record.
  */
-class StateAndEventRecord<K, S, E>(val state: Record<K, S>?, val event: Record<K, E>)
+class StateAndEventRecord<K : Any, S : Any, E : Any>(val state: Record<K, S>?, val event: Record<K, E>)

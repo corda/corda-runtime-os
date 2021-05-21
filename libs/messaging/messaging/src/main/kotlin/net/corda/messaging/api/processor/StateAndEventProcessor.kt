@@ -7,7 +7,7 @@ import net.corda.messaging.api.records.StateAndEventRecord
  * A processor of events which also have a state from a durable subscription. Consumer processors
  * of state and event subscriptions should implement this interface.
  */
-interface StateAndEventProcessor<K, S, E> {
+interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
 
     /**
      * Process a [stateAndEvent] pair of records and produce a list of new records.

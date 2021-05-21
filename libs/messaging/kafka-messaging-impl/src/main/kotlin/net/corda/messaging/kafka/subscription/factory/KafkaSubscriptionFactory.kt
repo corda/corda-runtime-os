@@ -2,29 +2,38 @@ package net.corda.messaging.kafka.subscription.factory
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.kafka.subscription.subscriptions.pubsub.KafkaPubSubSubscription
 import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CONF_PREFIX
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.PubSubConsumerBuilder
+import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.messaging.kafka.subscription.subscriptions.pubsub.KafkaPubSubSubscription
 import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import java.util.Properties
 import java.util.concurrent.ExecutorService
 
 /**
  * Kafka implementation of the Subscription Factory.
+ * @property avroSchemaRegistry OSGi DS Injected avro schema registry
  */
 @Component
-class KafkaSubscriptionFactory : SubscriptionFactory {
+class KafkaSubscriptionFactory @Activate constructor(
+    @Reference(service = AvroSchemaRegistry::class)
+    private val avroSchemaRegistry: AvroSchemaRegistry
+): SubscriptionFactory {
 
     companion object {
         private const val ISOLATION_LEVEL_READ_COMMITTED = "read_committed"
@@ -32,7 +41,7 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
         private const val FALSE = "false"
     }
 
-    override fun <K, V> createPubSubSubscription(
+    override fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
@@ -49,11 +58,11 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
         val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
 
         val consumerProperties = getConsumerProps(subscriptionConfig, defaultKafkaConfig, overrideProperties)
-        val pubSubConsumerBuilder = PubSubConsumerBuilder<K, V>(defaultKafkaConfig, consumerProperties)
+        val pubSubConsumerBuilder = PubSubConsumerBuilder<K, V>(defaultKafkaConfig, consumerProperties, avroSchemaRegistry)
         return KafkaPubSubSubscription(subscriptionConfig, defaultKafkaConfig, pubSubConsumerBuilder, processor, executor)
     }
 
-    override fun <K, V> createDurableSubscription(
+    override fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
         properties: Map<String, String>
@@ -61,7 +70,15 @@ class KafkaSubscriptionFactory : SubscriptionFactory {
         TODO("Not yet implemented")
     }
 
-    override fun <K, S, E> createStateAndEventSubscription(
+    override fun <K : Any, V : Any> createCompactedSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: CompactedProcessor<K, V>,
+        properties: Map<String, String>
+    ): CompactedSubscription<K, V> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: StateAndEventSubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
         properties: Map<String, String>

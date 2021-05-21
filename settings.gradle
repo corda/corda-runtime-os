@@ -38,9 +38,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'flow-worker'
-include 'libs:messaging:messaging'
-include 'libs:schema-registry:schema-registry'
-include 'libs:schema-registry:schema-registry-impl'
 include 'data:avro-schema'
 include 'goodbyeworld'
 include 'helloworld'
@@ -48,6 +45,8 @@ include 'helloworld-impl'
 include 'libs:messaging:messaging'
 include 'libs:messaging:kafka-messaging-impl'
 include 'libs:p2p-crypto'
+include 'libs:schema-registry:schema-registry'
+include 'libs:schema-registry:schema-registry-impl'
 include 'osgi-framework-bootstrap'
 include 'osgi-framework-bootstrap:framework-api'
 include 'osgi-framework-bootstrap:framework-app-tester'
