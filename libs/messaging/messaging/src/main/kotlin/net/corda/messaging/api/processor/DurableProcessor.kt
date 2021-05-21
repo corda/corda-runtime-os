@@ -6,7 +6,7 @@ import net.corda.messaging.api.records.Record
  * A processor of events from a durable subscription. Consumer processors of events.
  * from durable subscriptions should implement this interface.
  */
-interface DurableProcessor<K, V> {
+interface DurableProcessor<K : Any, V : Any> {
 
     /**
      * Process an [event] record and produce a list of new records.

@@ -8,12 +8,13 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import org.apache.kafka.clients.consumer.Consumer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.nio.ByteBuffer
 
 class PubSubConsumerRebalanceListenerTest {
 
-    private val consumer : Consumer<String, ByteArray> = mock()
+    private val consumer : Consumer<String, ByteBuffer> = mock()
     private val config : SubscriptionConfig = SubscriptionConfig("","")
-    private lateinit var listener : PubSubConsumerRebalanceListener<String, ByteArray>
+    private lateinit var listener : PubSubConsumerRebalanceListener<String, ByteBuffer>
 
     @BeforeEach
     fun beforeEach() {

@@ -35,5 +35,5 @@ interface CompactedProcessor<K : Any, V : Any> {
      *          - note that for removal of a value from the topic this will result in [V] being null
      * @param currentData the up-to-date state of events for the topic
      */
-    fun onNext(event: Record<K, V?>, currentData: Map<K, V>)
+    fun onNext(event: Record<K, V>, currentData: Map<K, V>)
 }

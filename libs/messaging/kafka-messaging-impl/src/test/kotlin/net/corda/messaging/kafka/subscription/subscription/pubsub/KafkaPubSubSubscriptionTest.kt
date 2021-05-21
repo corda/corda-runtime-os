@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test
 import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.lang.Exception
+import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -40,15 +41,15 @@ class KafkaPubSubSubscriptionTest {
     private val config: Config = ConfigFactory.empty()
         .withValue(CONSUMER_POLL_AND_PROCESS_RETRIES, ConfigValueFactory.fromAnyRef(consumerPollAndProcessRetriesCount))
         .withValue(CONSUMER_THREAD_STOP_TIMEOUT, ConfigValueFactory.fromAnyRef(1000))
-    private val consumerBuilder: ConsumerBuilder<String, ByteArray> = mock()
-    private val mockCordaConsumer: CordaKafkaConsumer<String, ByteArray> = mock()
-    private val mockConsumerRecords: List<ConsumerRecord<String, ByteArray>> = generateMockConsumerRecordList(mockRecordCount, "topic", 1)
+    private val consumerBuilder: ConsumerBuilder<String, ByteBuffer> = mock()
+    private val mockCordaConsumer: CordaKafkaConsumer<String, ByteBuffer> = mock()
+    private val mockConsumerRecords: List<ConsumerRecord<String, ByteBuffer>> = generateMockConsumerRecordList(mockRecordCount, "topic", 1)
 
     private var executorService: ExecutorService? = null
     private var pollInvocationCount : Int = 0
     private var builderInvocationCount : Int = 0
-    private lateinit var kafkaPubSubSubscription: KafkaPubSubSubscription<String, ByteArray>
-    private lateinit var processor: PubSubProcessor<String, ByteArray>
+    private lateinit var kafkaPubSubSubscription: KafkaPubSubSubscription<String, ByteBuffer>
+    private lateinit var processor: PubSubProcessor<String, ByteBuffer>
     private lateinit var latch: CountDownLatch
 
     @BeforeEach
@@ -171,6 +172,42 @@ class KafkaPubSubSubscriptionTest {
 
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
+    }
+
+    /**
+     * Check that the exceptions thrown during processing exits correctly
+     */
+    @Test
+    fun testCordaExceptionDuringDeserialization() {
+        doAnswer {
+            if (builderInvocationCount == 0) {
+                builderInvocationCount++
+                mockCordaConsumer
+            } else {
+                CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
+            }
+        }.whenever(consumerBuilder).createConsumer(any())
+        doAnswer{
+            if (pollInvocationCount == 0) {
+                pollInvocationCount++
+                mockConsumerRecords
+            } else {
+                CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
+            }
+        }.whenever(mockCordaConsumer).poll()
+
+        doThrow(CordaMessageAPIFatalException("")).whenever(mockCordaConsumer).getRecord(any())
+
+
+        kafkaPubSubSubscription = KafkaPubSubSubscription(subscriptionConfig, config, consumerBuilder,
+            processor, executorService)
+
+        kafkaPubSubSubscription.start()
+        while (kafkaPubSubSubscription.isRunning) {}
+
+        verify(mockCordaConsumer, times(mockConsumerRecords.size)).commitSyncOffsets(any(), anyOrNull())
+        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
+        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+2)).poll()
     }
 
     @Test

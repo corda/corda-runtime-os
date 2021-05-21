@@ -1,12 +1,15 @@
-package net.corda.schema.registry
+package net.corda.schema.registry.impl
 
 import net.corda.data.AvroEnvelope
 import net.corda.data.AvroGeneratedMessageClasses
 import net.corda.data.Fingerprint
 import net.corda.data.SchemaLoadException
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.internal.uncheckedCast
 import net.corda.v5.base.types.toHexString
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.apache.avro.Schema
 import org.apache.avro.SchemaNormalization
 import org.apache.avro.io.DecoderFactory
@@ -16,7 +19,6 @@ import org.apache.avro.specific.SpecificDatumReader
 import org.apache.avro.specific.SpecificDatumWriter
 import org.apache.avro.specific.SpecificRecord
 import org.osgi.service.component.annotations.Component
-import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
@@ -61,7 +63,7 @@ class AvroSchemaRegistryImpl(
     }
 
     companion object {
-        private val log = LoggerFactory.getLogger(this::class.java)
+        private val log = contextLogger()
     }
 
     /**
@@ -172,7 +174,7 @@ class AvroSchemaRegistryImpl(
         encoder: ((T) -> ByteArray)?,
         decoder: ((ByteArray, Schema, T?) -> T)?
     ) {
-        log.debug("Adding Schema: ${schema.fullName} for class $clazz")
+        log.debug { "Adding Schema: ${schema.fullName} for class $clazz" }
         // Quick exit before we do the heavy fingerprint operation
         if (!fingerprintsBySchema.containsKey(schema)) {
             val fingerprint = Fingerprint(SchemaNormalization.parsingFingerprint("SHA-256", schema))
@@ -181,7 +183,7 @@ class AvroSchemaRegistryImpl(
             fingerprintsBySchema.putIfAbsent(schema, fingerprint)
             schemasByFingerprint.putIfAbsent(fingerprint, schema)
             if (clazz == null || encoder == null || decoder == null) {
-                log.debug("Skipping class type, encoder, and decoder registration as one or more values are missing.")
+                log.debug { "Skipping class type, encoder, and decoder registration as one or more values are missing." }
                 return
             }
             fingerprintsByClazz.putIfAbsent(clazz, fingerprint)
@@ -251,7 +253,7 @@ class AvroSchemaRegistryImpl(
     }
 
     private fun zipPayload(payload: ByteArray): ByteArray {
-        log.debug("Zipping payload")
+        log.debug { "Zipping payload" }
         val baos = ByteArrayOutputStream()
         DeflaterOutputStream(baos).use {
             it.write(payload)
@@ -261,14 +263,14 @@ class AvroSchemaRegistryImpl(
     }
 
     private fun unzipPayload(payload: ByteBuffer): ByteBuffer {
-        log.debug("Unzipping payload")
+        log.debug { "Unzipping payload" }
         val bytes = InflaterInputStream(payload.array().inputStream()).readAllBytes()
         return ByteBuffer.wrap(bytes)
     }
 
     init {
         val classes = try {
-            AvroGeneratedMessageClasses.getAvroGeneratedMessageClasses(this::class.java)
+            AvroGeneratedMessageClasses.getAvroGeneratedMessageClasses(AvroGeneratedMessageClasses::class.java)
         } catch (e: SchemaLoadException) {
             throw CordaRuntimeException("Initialization error in AvroSchemaRegistry", e)
         }
