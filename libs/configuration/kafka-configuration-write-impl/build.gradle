@@ -12,7 +12,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
 
     implementation "net.corda:corda-base:$cordaVersion"
-    implementation "org.apache.kafka:kafka-clients:$kafkaVersion"
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"

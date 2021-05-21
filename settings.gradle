@@ -38,7 +38,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'flow-worker'
-include 'libs:configuration'
 include 'libs:configuration:configuration-write'
 include 'libs:configuration:kafka-configuration-write-impl'
 include 'libs:kafka-utils:topic-admin'

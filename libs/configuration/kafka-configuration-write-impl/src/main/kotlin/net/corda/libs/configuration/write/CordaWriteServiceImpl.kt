@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 /**
  * Provides the Configuration Server interface.
  */
-class CordaConfigurationServiceImpl(val context: BundleContext) : CordaConfigurationService {
+class CordaWriteServiceImpl(val context: BundleContext) : CordaWriteService {
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)

@@ -20,7 +20,7 @@ dependencies {
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 }
 
-task uploadConfigToKafka(type: JavaExec) {
+tasks.register("uploadConfigToKafka", JavaExec) {
     classpath = sourceSets["main"].runtimeClasspath
     main = 'net.corda.tools.kafka.KafkaConfigUploaderKt'
     args 'bootstrap.servers=localhost:9092', 'test123', 'C:\\flow-worker\\tools\\src\\main\\resources\\config.conf'

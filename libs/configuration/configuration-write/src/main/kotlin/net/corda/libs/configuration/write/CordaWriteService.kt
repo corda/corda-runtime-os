@@ -2,7 +2,7 @@ package net.corda.libs.configuration.write
 
 import com.typesafe.config.Config
 
-interface CordaConfigurationService {
+interface CordaWriteService {
     /**
      * Add the properties recorded in [config] to the component configuration.
      *
