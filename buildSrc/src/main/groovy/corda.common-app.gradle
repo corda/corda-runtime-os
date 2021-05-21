@@ -24,7 +24,8 @@ dependencies {
 
     systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
-
+    systemPackages "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    systemPackages project(":osgi-framework-api")
 }
 
 def jarTask = tasks.named("jar", Jar) {
@@ -109,8 +110,6 @@ private def addSystemPackagesExtra(
         }
     }
     final jdkExtraPackages = [
-            "org.slf4j;version=1.7.0",
-            "kotlin;version=1.4.21",
             "net.corda.osgi.framework.api",
             "sun.net.www.protocol.jar",
             "sun.nio.ch",
