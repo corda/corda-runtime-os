@@ -14,6 +14,7 @@ import net.corda.messaging.db.schema.Schema.TableNames.Companion.TOPIC_TABLE_PRE
 import net.corda.messaging.db.schema.Schema.TopicTable.Companion.KEY_COLUMN_NAME
 import net.corda.messaging.db.schema.Schema.TopicTable.Companion.MESSAGE_PAYLOAD_COLUMN_NAME
 import net.corda.messaging.db.schema.Schema.TopicTable.Companion.OFFSET_COLUMN_NAME
+import net.corda.messaging.db.sync.OffsetTracker
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.seconds
 import org.slf4j.Logger
@@ -37,7 +38,8 @@ class DBDurableSubscription<K: Any, V: Any>(
     private val durableProcessor: DurableProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?,
     private val avroSchemaRegistry: AvroSchemaRegistry,
-    private val pollingDelay: Duration = 1.seconds,
+    private val offsetTracker: OffsetTracker,
+    private val pollingTimeout: Duration = 1.seconds,
     private val batchSize: Int = 100
 ) : Subscription<K, V> {
 
@@ -86,6 +88,7 @@ class DBDurableSubscription<K: Any, V: Any>(
 
                 partitionAssignmentListener?.onPartitionsAssigned(listOf(subscriptionConfig.eventTopic to 0))
                 val initialOffset = getOffset()
+                offsetTracker.advanceOffset(subscriptionConfig.eventTopic, initialOffset)
                 eventLoopThread = thread(
                     true,
                     true,
@@ -104,7 +107,7 @@ class DBDurableSubscription<K: Any, V: Any>(
             if (!stopped) {
                 stopped = true
                 partitionAssignmentListener?.onPartitionsUnassigned(listOf(subscriptionConfig.eventTopic to 0))
-                eventLoopThread!!.join(pollingDelay.toMillis() * 2)
+                eventLoopThread!!.join(pollingTimeout.toMillis() * 2)
                 connection.close()
                 log.info("Subscription stopped for group: ${subscriptionConfig.groupName}.")
             }
@@ -116,10 +119,11 @@ class DBDurableSubscription<K: Any, V: Any>(
         var nextItemOffset = initialOffset
         while (!stopped) {
             try {
+                val awaitedOffset = nextItemOffset + batchSize - 1
+                offsetTracker.waitForOffset(subscriptionConfig.eventTopic, awaitedOffset, pollingTimeout)
+
                 val recordsByOffset = fetchRecords(nextItemOffset, batchSize)
-                if (recordsByOffset.isEmpty()) {
-                    Thread.sleep(pollingDelay.toMillis())
-                } else {
+                if (recordsByOffset.isNotEmpty()) {
                     durableProcessor.onNext(recordsByOffset.values.toList())
                     val maxOffset = recordsByOffset.keys.maxOrNull()!!
                     commitOffset(maxOffset)

@@ -19,6 +19,7 @@ import net.corda.messaging.db.schema.Schema.TopicTable.Companion.KEY_COLUMN_NAME
 import net.corda.messaging.db.schema.Schema.TopicTable.Companion.MESSAGE_PAYLOAD_COLUMN_NAME
 import net.corda.messaging.db.schema.Schema.TopicTable.Companion.OFFSET_COLUMN_NAME
 import net.corda.messaging.db.subscription.DBDurableSubscription
+import net.corda.messaging.db.sync.OffsetTracker
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.v5.base.util.millis
 import org.assertj.core.api.Assertions.assertThat
@@ -43,6 +44,8 @@ class DBMessagingIntegrationTest {
     private val topicName = "test.topic"
 
     private val latch = CountDownLatch(1)
+
+    private val offsetTracker = OffsetTracker()
 
     @TempDir
     lateinit var tempFolder: Path
@@ -71,7 +74,7 @@ class DBMessagingIntegrationTest {
     fun `can write and read messages with null values successfully from topic backed by database`() {
         val subscriptionConfig = SubscriptionConfig(groupName, topicName)
         val publisherConfig = PublisherConfig(clientId)
-        val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl())
+        val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl(), offsetTracker)
         dbPublisher.start()
 
         val messagesToWrite = listOf("msg-1", "msg-2", "msg-3").map {
@@ -83,7 +86,7 @@ class DBMessagingIntegrationTest {
 
         val readMessages = mutableListOf<Pair<SecureHash?, SecureHash?>>()
         val processor = InMemoryHolderProcessor(readMessages, latch, 3)
-        val subscription =  DBDurableSubscription(subscriptionConfig, dbConfig, processor, null, AvroSchemaRegistryImpl(), 100.millis)
+        val subscription =  DBDurableSubscription(subscriptionConfig, dbConfig, processor, null, AvroSchemaRegistryImpl(), offsetTracker, 100.millis)
 
         subscription.start()
         latch.await()
@@ -101,7 +104,7 @@ class DBMessagingIntegrationTest {
     fun `can write and read messages with non-null values successfully from topic backed by database`() {
         val subscriptionConfig = SubscriptionConfig(groupName, topicName)
         val publisherConfig = PublisherConfig(clientId)
-        val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl())
+        val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl(), offsetTracker)
         dbPublisher.start()
 
         val messagesToWrite = listOf("msg-1", "msg-2", "msg-3").map {
@@ -113,7 +116,7 @@ class DBMessagingIntegrationTest {
 
         val readMessages = mutableListOf<Pair<SecureHash?, SecureHash?>>()
         val processor = InMemoryHolderProcessor(readMessages, latch, 3)
-        val subscription =  DBDurableSubscription(subscriptionConfig, dbConfig, processor, null, AvroSchemaRegistryImpl(), 100.millis)
+        val subscription =  DBDurableSubscription(subscriptionConfig, dbConfig, processor, null, AvroSchemaRegistryImpl(), offsetTracker, 100.millis)
 
         subscription.start()
         latch.await()
@@ -131,7 +134,7 @@ class DBMessagingIntegrationTest {
     fun `multiple consumers groups can read records successfully from topic backed by database`() {
         val subscriptionConfig = SubscriptionConfig(groupName, topicName)
         val publisherConfig = PublisherConfig(clientId)
-        val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl())
+        val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl(), offsetTracker)
         dbPublisher.start()
 
         val messagesToWrite = listOf("msg-1", "msg-2", "msg-3").map {
@@ -147,8 +150,8 @@ class DBMessagingIntegrationTest {
         val latch2 = CountDownLatch(1)
         val processor1 = InMemoryHolderProcessor(readMessages1, latch1, 3)
         val processor2 = InMemoryHolderProcessor(readMessages2, latch2, 3)
-        val subscription1 =  DBDurableSubscription(subscriptionConfig.copy(groupName = "group1"), dbConfig, processor1, null, AvroSchemaRegistryImpl(), 100.millis)
-        val subscription2 = DBDurableSubscription(subscriptionConfig.copy(groupName = "group2"), dbConfig, processor2, null, AvroSchemaRegistryImpl(), 100.millis)
+        val subscription1 =  DBDurableSubscription(subscriptionConfig.copy(groupName = "group1"), dbConfig, processor1, null, AvroSchemaRegistryImpl(), offsetTracker, 100.millis)
+        val subscription2 = DBDurableSubscription(subscriptionConfig.copy(groupName = "group2"), dbConfig, processor2, null, AvroSchemaRegistryImpl(), offsetTracker, 100.millis)
 
         subscription1.start()
         latch1.await()

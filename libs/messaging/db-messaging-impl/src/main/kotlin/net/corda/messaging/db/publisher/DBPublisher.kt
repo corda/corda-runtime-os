@@ -10,6 +10,7 @@ import net.corda.messaging.db.properties.DbProperties
 import net.corda.messaging.db.schema.Schema.TableNames.Companion.TOPIC_TABLE_PREFIX
 import net.corda.messaging.db.schema.Schema.TopicTable.Companion.KEY_COLUMN_NAME
 import net.corda.messaging.db.schema.Schema.TopicTable.Companion.MESSAGE_PAYLOAD_COLUMN_NAME
+import net.corda.messaging.db.sync.OffsetTracker
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.concurrent.CordaFuture
 import net.corda.v5.base.internal.concurrent.asCordaFuture
@@ -21,6 +22,7 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLClientInfoException
 import java.sql.SQLNonTransientException
+import java.sql.Statement
 import java.sql.Types
 import java.util.Properties
 import java.util.concurrent.CompletableFuture
@@ -32,6 +34,7 @@ class DBPublisher<K: Any, V: Any>(
     private val publisherConfig: PublisherConfig,
     dbConfig: Config,
     private val schemaRegistry: AvroSchemaRegistry,
+    private val offsetTracker: OffsetTracker,
     threadPoolSize: Int = 25): Publisher<K, V> {
 
     companion object {
@@ -68,7 +71,7 @@ class DBPublisher<K: Any, V: Any>(
     override fun publish(record: Record<K, V>): CordaFuture<Unit> {
         return CompletableFuture.supplyAsync({
             val tableName = "$TOPIC_TABLE_PREFIX${record.topic.replace(".", "_")}"
-            val statement = connection.prepareStatement("INSERT INTO $tableName ($KEY_COLUMN_NAME, $MESSAGE_PAYLOAD_COLUMN_NAME) VALUES (?, ?)")
+            val statement = connection.prepareStatement("INSERT INTO $tableName ($KEY_COLUMN_NAME, $MESSAGE_PAYLOAD_COLUMN_NAME) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)
 
             val serialisedKey = schemaRegistry.serialize(record.key)
             statement.setBlob(1, ByteBufferInputStream(listOf(serialisedKey)))
@@ -81,8 +84,12 @@ class DBPublisher<K: Any, V: Any>(
             }
 
             try {
-                statement.execute()
+                statement.executeUpdate()
                 connection.commit()
+
+                val resultSet = statement.generatedKeys.apply { next() }
+                val offset = resultSet.getLong(1)
+                offsetTracker.advanceOffset(record.topic, offset)
             } catch (e: Exception) {
                 val errorMessage = "Failed to publish record for client ID: ${publisherConfig.clientId}"
                 log.error(errorMessage, e)
