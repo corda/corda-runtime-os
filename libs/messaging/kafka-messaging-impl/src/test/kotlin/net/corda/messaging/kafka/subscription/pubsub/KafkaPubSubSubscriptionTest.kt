@@ -23,7 +23,6 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_T
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
-import net.corda.messaging.kafka.subscription.net.corda.messaging.emulation.stubs.StubProcessor
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

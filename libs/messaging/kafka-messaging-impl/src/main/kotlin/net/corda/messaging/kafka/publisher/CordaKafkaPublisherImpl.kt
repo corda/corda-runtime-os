@@ -106,15 +106,6 @@ class CordaKafkaPublisherImpl<K : Any, V : Any> (
             fut.set(true)
         } catch (ex: Exception) {
             when (ex) {
-                is InvalidProducerEpochException -> {
-                    logErrorSetFutureAndAbortTransaction("Kafka producer clientId $clientId, instanceId $instanceId, " +
-                            "for topic $topic failed to send.", ex, fut, true)
-                }
-                is InterruptException,
-                is TimeoutException -> {
-                    logErrorSetFutureAndAbortTransaction("Kafka producer clientId $clientId, instanceId $instanceId, " +
-                            "for topic $topic failed to send.", ex, fut, false)
-                }
                 is IllegalStateException,
                 is ProducerFencedException,
                 is InvalidProducerEpochException,
