@@ -70,7 +70,7 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
                                         producerCreateMaxRetries: Long) {
         val topic = config.getString(PUBLISHER_TOPIC)
         val clientId = config.getString(PUBLISHER_CLIENT_ID)
-        val instanceId  = config.getString(PUBLISHER_INSTANCE_ID)
+        val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getInt(PUBLISHER_INSTANCE_ID) else null
 
         var attempts = 0
         while (true) {

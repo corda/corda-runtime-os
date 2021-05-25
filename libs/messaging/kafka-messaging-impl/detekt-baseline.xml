@@ -2,7 +2,8 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>ComplexMethod:CordaKafkaPublisher.kt$CordaKafkaPublisher$ @Suppress("TooGenericExceptionCaught") override fun publish(record: Record&lt;K, V&gt;): CordaFuture&lt;Boolean&gt;</ID>
     <ID>ComplexMethod:KafkaProducerBuilder.kt$KafkaProducerBuilder$ private fun initTransactionForProducer(config: Config, producer: KafkaProducer&lt;K, V&gt;, producerCloseTimeout: Long, producerCreateMaxRetries: Long)</ID>
+    <ID>NestedBlockDepth:KafkaDurableSubscription.kt$KafkaDurableSubscription$ @Suppress("TooGenericExceptionCaught") fun runConsumeLoop()</ID>
+    <ID>NestedBlockDepth:KafkaDurableSubscription.kt$KafkaDurableSubscription$ @Suppress("TooGenericExceptionCaught") private fun pollAndProcessRecords(consumer: CordaKafkaConsumer&lt;K, V&gt;, producer: CordaKafkaProducer)</ID>
   </CurrentIssues>
 </SmellBaseline>

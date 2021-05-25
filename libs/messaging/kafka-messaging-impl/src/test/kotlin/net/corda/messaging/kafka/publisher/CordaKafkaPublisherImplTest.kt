@@ -14,7 +14,6 @@ import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.concurrent.CordaFuture
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.producer.MockProducer
-import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.errors.*
 import org.apache.kafka.common.serialization.ByteBufferSerializer
 import org.apache.kafka.common.serialization.StringSerializer
@@ -27,9 +26,9 @@ import java.lang.IllegalStateException
 import java.nio.ByteBuffer
 import java.time.Duration
 
-class CordaKafkaPublisherTest {
+class CordaKafkaPublisherImplTest {
     private lateinit var publisherConfig : PublisherConfig
-    private lateinit var cordaKafkaPublisher : CordaKafkaPublisher<String, ByteBuffer>
+    private lateinit var cordaKafkaPublisherImpl : CordaKafkaPublisherImpl<String, ByteBuffer>
     private lateinit var kafkaConfig: Config
     private lateinit var producer : MockProducer<String, ByteBuffer>
     private val avroSchemaRegistry : AvroSchemaRegistry = mock()
@@ -66,7 +65,7 @@ class CordaKafkaPublisherTest {
     fun testPublishFatalError() {
         producer = MockProducer(false, StringSerializer(), ByteBufferSerializer())
         val future = publish(false, listOf(record))
-        producer.errorNext(KafkaException())
+        producer.errorNext(IllegalStateException(""))
 
         assertThrows(CordaMessageAPIFatalException::class.java) { future[0].getOrThrow() }
 
@@ -171,7 +170,7 @@ class CordaKafkaPublisherTest {
 
     @Test
     fun testTransactionCommitFailureKafkaException() {
-        doThrow(KafkaException("")).whenever(producer).commitTransaction()
+        doThrow(ProducerFencedException("")).whenever(producer).commitTransaction()
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIFatalException::class.java) { futures[0].getOrThrow() }
         verify(producer, times(1)).send(any())
@@ -193,9 +192,9 @@ class CordaKafkaPublisherTest {
 
     @Test
     fun testSafeClose() {
-        cordaKafkaPublisher = CordaKafkaPublisher(publisherConfig, kafkaConfig, producer, avroSchemaRegistry)
+        cordaKafkaPublisherImpl = CordaKafkaPublisherImpl(publisherConfig, kafkaConfig, producer, avroSchemaRegistry)
 
-        cordaKafkaPublisher.close()
+        cordaKafkaPublisherImpl.close()
         verify(producer, times(1)).close(Mockito.any(Duration::class.java))
     }
 
@@ -205,8 +204,8 @@ class CordaKafkaPublisherTest {
         } else {
             PublisherConfig("clientId", "topic")
         }
-        cordaKafkaPublisher = CordaKafkaPublisher(publisherConfig, kafkaConfig, producer, avroSchemaRegistry)
+        cordaKafkaPublisherImpl = CordaKafkaPublisherImpl(publisherConfig, kafkaConfig, producer, avroSchemaRegistry)
 
-        return cordaKafkaPublisher.publish(records)
+        return cordaKafkaPublisherImpl.publish(records)
     }
 }

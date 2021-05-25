@@ -117,7 +117,7 @@ class KafkaPubSubSubscription<K : Any, V : Any>(
         while (!stopped) {
             attempts++
             try {
-                consumer = consumerBuilder.createConsumer(subscriptionConfig)
+                consumer = consumerBuilder.createPubSubConsumer(subscriptionConfig)
                 consumer.use {
                     it.subscribeToTopic()
                     pollAndProcessRecords(it)

@@ -9,10 +9,22 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 interface ConsumerBuilder<K : Any, V : Any> {
 
     /**
-     * Generate a Corda Kafka Consumer based on the [subscriptionConfig].
+     * Generate a Corda Kafka Consumer based on the [subscriptionConfig] for a [PubsubSubscription].
      * This function will handle all retry logic and kafka error handling
      * @return CordaKafkaConsumer
      * @throws CordaMessageAPIFatalException if fatal error occurs during construction of the consumer
      */
-    fun createConsumer(subscriptionConfig : SubscriptionConfig) : CordaKafkaConsumer<K, V>
+    fun createPubSubConsumer(
+        subscriptionConfig: SubscriptionConfig
+    ) : CordaKafkaConsumer<K, V>
+
+    /**
+     * Generate a Corda Kafka Consumer based on the [subscriptionConfig] for a [DurableSubscription].
+     * This function will handle all retry logic and kafka error handling
+     * @return CordaKafkaConsumer
+     * @throws CordaMessageAPIFatalException if fatal error occurs during construction of the consumer
+     */
+    fun createDurableConsumer(
+        subscriptionConfig: SubscriptionConfig
+    ) : CordaKafkaConsumer<K, V>
 }
