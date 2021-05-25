@@ -106,9 +106,7 @@ class Topic (private val topicName : String, private val maxSize: Int) {
      * Log a warning if there records missed due to records max size reached.
      */
     private fun getConsumerNextRecordIndex(consumerOffset: Long, consumerGroup: String): Int {
-        val firstRecord = records.first
-        val oldestRecordIndex = records.indexOf(firstRecord)
-        val oldestRecordOffset = firstRecord.offset
+        val oldestRecordOffset = records.first.offset
 
         var indexOffset = (consumerOffset - oldestRecordOffset).toInt()
         if (indexOffset < 0) {
@@ -117,6 +115,6 @@ class Topic (private val topicName : String, private val maxSize: Int) {
             indexOffset = 0
         }
 
-        return oldestRecordIndex + indexOffset
+        return indexOffset
     }
 }

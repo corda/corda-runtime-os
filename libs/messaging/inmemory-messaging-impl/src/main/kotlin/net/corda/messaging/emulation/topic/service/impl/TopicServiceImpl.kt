@@ -41,7 +41,7 @@ class TopicServiceImpl : TopicService {
         try {
             topicLocks.forEach { it.lock() }
             records.forEach {
-                val topic = topics[it.topic] ?: throw CordaMessageAPIFatalException("Topic Does not exist")
+                val topic = topics[it.topic] ?: throw CordaMessageAPIFatalException("Topic ${it.topic} does not exist")
                 topic.addRecord(it)
             }
         } finally {
@@ -59,14 +59,14 @@ class TopicServiceImpl : TopicService {
         numberOfRecords: Int,
         autoCommitOffset: Boolean
     ): List<RecordMetadata> {
-        val topic = topics[topicName] ?: throw CordaMessageAPIFatalException("Topic Does not exist")
+        val topic = topics[topicName] ?: throw CordaMessageAPIFatalException("Topic $topicName does not exist")
         return topic.lock.withLock {
             topic.getRecords(consumerGroup, numberOfRecords, autoCommitOffset)
         }
     }
 
     override fun commitOffset(topicName: String, consumerGroup: String, offset: Long) {
-        val topic = topics[topicName] ?: throw CordaMessageAPIFatalException("Topic Does not exist")
+        val topic = topics[topicName] ?: throw CordaMessageAPIFatalException("Topic $topicName does not exist")
         topic.commitOffset(consumerGroup, offset)
     }
 }
