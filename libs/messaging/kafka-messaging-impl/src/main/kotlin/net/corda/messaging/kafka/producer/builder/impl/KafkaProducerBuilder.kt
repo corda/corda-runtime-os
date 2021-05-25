@@ -8,6 +8,9 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_C
 import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_CLIENT_ID
 import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_INSTANCE_ID
 import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_TOPIC
+import net.corda.messaging.kafka.publisher.CordaAvroSerializer
+import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.v5.base.internal.uncheckedCast
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.common.KafkaException
@@ -15,6 +18,7 @@ import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.UnsupportedVersionException
+import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -25,7 +29,9 @@ import java.util.*
  * If fatal exception is thrown in the construction of a KafKaProducer
  * then it is closed and exception is thrown as [CordaMessageAPIFatalException].
  */
-class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
+class KafkaProducerBuilder<K : Any, V : Any>(
+    private val avroSchemaRegistry: AvroSchemaRegistry,
+) : ProducerBuilder<K, V> {
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -41,7 +47,11 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
         val contextClassLoader = Thread.currentThread().contextClassLoader
         val producer = try {
             Thread.currentThread().contextClassLoader = null;
-            KafkaProducer<K, V>(properties)
+            KafkaProducer<K, V>(
+                properties,
+                uncheckedCast(StringSerializer()),
+                CordaAvroSerializer<V>(avroSchemaRegistry),
+            )
         } catch (ex: KafkaException) {
             log.error("Failed to create kafka producer clientId $clientId, instanceId $instanceId, " +
                     "topic $topic.", ex)
