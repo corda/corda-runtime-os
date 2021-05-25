@@ -1,5 +1,3 @@
-import static org.gradle.api.JavaVersion.VERSION_11
-
 plugins {
     id 'corda.common-library'
     id 'corda.publish'
