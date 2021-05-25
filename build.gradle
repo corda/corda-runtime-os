@@ -79,6 +79,9 @@ allprojects {
             url = "$artifactoryContextUrl/corda-dependencies"
         }
         //needed for C5 binaries
+        if (System.getProperty("maven.repo.local") != null ) {
+            mavenLocal()
+        }
         maven {
             url = "$artifactoryContextUrl/corda-os-maven-unstable"
             credentials {

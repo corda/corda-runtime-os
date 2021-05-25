@@ -1,0 +1,50 @@
+pipeline {
+    agent {
+        docker {
+            image 'build-zulu-openjdk:11'
+            label 'docker'
+            registryUrl 'https://engineering-docker.software.r3.com/'
+            registryCredentialsId 'artifactory-credentials'
+            // Used to mount storage from the host as a volume to persist the cache between builds
+            alwaysPull true
+        }
+    }
+
+    environment {
+        ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
+        CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
+        CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
+        CORDA_USE_CACHE = "corda-remotes"
+        GRADLE_USER_HOME = "/host_tmp/gradle"
+        CORDA_REVISION = "${env.GIT_COMMIT}"
+    }
+
+    options {
+        buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
+        timeout(time: 120, unit: 'MINUTES')
+        timestamps()
+    }
+
+    stages {
+        stage('Say hi') {
+            steps {
+                echo 'Hi'
+            }
+        }
+        stage('Prepare') {
+            steps {
+               sh 'mkdir -p "${GRADLE_USER_HOME}"'
+            }
+        }
+        stage('Download Corda maven artifacts') {
+            steps {
+                echo 'Hi'
+            }
+        }
+        stage('Build') {
+            steps {
+                sh './gradlew build'
+            }
+        }
+    }
+}
