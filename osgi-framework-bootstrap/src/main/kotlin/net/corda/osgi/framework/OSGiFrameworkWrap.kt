@@ -1,12 +1,13 @@
 package net.corda.osgi.framework
 
-import net.corda.osgi.api.Lifecycle
-import net.corda.osgi.api.ShutdownService
+import net.corda.osgi.api.Shutdown
+import net.corda.osgi.api.Application
 import net.corda.osgi.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants
 import org.osgi.framework.FrameworkEvent
+import org.osgi.framework.ServiceReference
 import org.osgi.framework.launch.Framework
 import org.osgi.framework.launch.FrameworkFactory
 import org.slf4j.LoggerFactory
@@ -203,7 +204,7 @@ class OSGiFrameworkWrap(
          *
          * @return `true` if the [state] LSB is between [Bundle.STARTING] and [Bundle.ACTIVE] excluded.
          */
-        private fun isStoppable(state: Int): Boolean {
+        internal fun isStoppable(state: Int): Boolean {
             // The bundle lifecycle state is represented by LSB.
             val status = state and 0xff
             return status > Bundle.STARTING && state <= Bundle.ACTIVE
@@ -247,6 +248,13 @@ class OSGiFrameworkWrap(
             }
         }
         return this
+    }
+
+    /**
+     * Return [Framework.getState] value.
+     */
+    fun getState(): Int {
+        return framework.state
     }
 
     /**
@@ -369,11 +377,11 @@ class OSGiFrameworkWrap(
      * If the [Framework] can't start, the method logs a warning describing the actual state of the framework.
      * Start the framework multiple times is harmless, it just logs the warning.
      *
-     * This method registers the [ShutdownService] used by applications to ask to quit.
-     * The [ShutdownService.shutdown] implementation calls [stop]: both this method and [stop] are synchronized,
+     * This method registers the [Shutdown] used by applications to ask to quit.
+     * The [Shutdown.shutdown] implementation calls [stop]: both this method and [stop] are synchronized,
      * but there is no risk of deadlock because applications start-up from synchronized [startApplications],
      * it runs only after this method returned and the service is registered.
-     * The [ShutdownService.shutdown] runs [stop] in a separate thread.
+     * The [Shutdown.shutdown] runs [stop] in a separate thread.
      *
      * Thread safe.
      *
@@ -408,9 +416,9 @@ class OSGiFrameworkWrap(
                 )
             }
             framework.bundleContext.registerService(
-                ShutdownService::class.java.name,
-                object : ShutdownService {
-                    // Called by applications using the [ShutdownService].
+                Shutdown::class.java.name,
+                object : Shutdown {
+                    // Called by applications using the [ShutdownBootstrapper].
                     // No risk of deadlock because applications are registered by [startApplications]
                     // after this method returned and [stop] runs in separate thread.
                     override fun shutdown(bundle: Bundle) {
@@ -432,39 +440,31 @@ class OSGiFrameworkWrap(
     }
 
     /**
-     * Introspect the activated bundles to call the [Lifecycle.startup] method of the application bundles.
+     * Call the [Application.startup] method of the class implementing the [Application] interface:
+     * this is the entry-point of the application distributed in the bootable JAR.
      *
-     * Application bundles have an implementation of the [Lifecycle] interface.
-     * This method creates an new instance of the class implementing [Lifecycle]
-     * having the full qualified name expressed in the [lifecycleHeader]
-     * of the `MANIFEST.MF` entry of the application bundle.
+     * If no class implements the [Application] interface in any bundle zipped in the bootable JAR,
+     * it throws [ClassNotFoundException] exception.
      *
-     * The class implementing [Lifecycle] must have a default constructor with no parameters
-     * or all parameters set by default.
-     *
-     * This method sets [OSGiBundleDescriptor.lifecycleAtomic] to the [Lifecycle] implementation instance for
-     * application bundles: [stop] method will call [Lifecycle.shutdown] before to deactivate bundles and to stop
-     * the OSGi framework.
+     * This method waits [timeout] ms for all bundles to be active,
+     * if any bundle is not active yet, it logs a warning and try to startup the application.
      *
      * Thread safe.
      *
-     * @param lifecycleHeader in the `MANIFEST.MF` entry of application bundles used to describe the full qualified
-     *          name of the class implementing the [Lifecycle] interface.
-     * @param timeout in milliseconds to wait application bundles to be active before to call [Lifecycle.startup] of
-     *          the class named in the `MANIFEST.MF`.
-     * @param args to pass to the [Lifecycle.startup] method of application bundles.
+     * @param timeout in milliseconds to wait application bundles to be active before to call
+     *          [StartupApplication.startup].
+     * @param args to pass to the [Application.startup] method of application bundles.
      *
      * @return this.
      *
-     * @throws ClassNotFoundException if the full qualified name specified for the [lifecycleHeader] in the
-     *          `MANIFEST.MF` entry of the bundle JAR is not found.
+     * @throws ClassNotFoundException If no class implements the [Application] interface in any bundle
+     *          zipped in the bootable JAR
      * @throws IllegalStateException If this bundle has been uninstalled meanwhile this method runs.
-     * @throws NoSuchMethodException If the class implementing [Lifecycle] hasn't a default constructor.
+     * @throws NoSuchMethodException If the class implementing [Application] hasn't a default constructor.
      *          A default constructor has no parameters or all parameters set by default.
      * @throws SecurityException If a security manager is present and the caller's class loader is not the same as,
      *          or the security manager denies access to the package of this class.
      */
-    @Suppress("NestedBlockDepth")
     @Synchronized
     @Throws(
         ClassNotFoundException::class,
@@ -472,48 +472,42 @@ class OSGiFrameworkWrap(
         NoSuchMethodException::class,
         SecurityException::class
     )
-    fun startApplications(
-        lifecycleHeader: String,
+    fun startApplication(
         timeout: Long,
-        args: Array<String>
+        args: Array<String>,
     ): OSGiFrameworkWrap {
-        bundleDescriptorMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
-            val lifecycleClassFQN: String? = bundleDescriptor.bundle.headers.get(lifecycleHeader)
-            if (lifecycleClassFQN != null) {
-                val lifecycleClass = bundleDescriptor.bundle.loadClass(lifecycleClassFQN)
-                if (Lifecycle::class.java.isAssignableFrom(lifecycleClass)) {
-                    if (bundleDescriptor.active.await(timeout, TimeUnit.MILLISECONDS)) {
-                        val lifecycle = lifecycleClass.getDeclaredConstructor().newInstance() as Lifecycle
-                        lifecycle.startup(args, bundleDescriptor.bundle)
-                        // When wrap.lifecycleAtomic is set the application implementing Lifecycle started.
-                        // Used to know those applications to stop.
-                        bundleDescriptor.lifecycleAtomic.set(lifecycle)
-                    } else {
-                        logger.warn(
-                            "OSGi bundle ${bundleDescriptor.bundle.location}" +
-                                    " ID = ${bundleDescriptor.bundle.bundleId} ${bundleDescriptor.bundle.symbolicName ?: "\b"}" +
-                                    " ${bundleDescriptor.bundle.version} ${bundleStateMap[bundleDescriptor.bundle.state]}" +
-                                    " time-out after $timeout ms."
-                        )
-                    }
-                } else {
-                    logger.warn(
-                        "OSGi bundle ${bundleDescriptor.bundle.location}" +
-                                " ID = ${bundleDescriptor.bundle.bundleId} ${bundleDescriptor.bundle.symbolicName ?: "\b"}" +
-                                " ${bundleDescriptor.bundle.version} doesn't implement ${Lifecycle::class.java}."
-                    )
-                }
+        bundleWrapMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
+            if (!bundleDescriptor.active.await(timeout, TimeUnit.MILLISECONDS)) {
+                logger.warn(
+                    "OSGi bundle ${bundleDescriptor.bundle.location}" +
+                            " ID = ${bundleDescriptor.bundle.bundleId} ${bundleDescriptor.bundle.symbolicName ?: "\b"}" +
+                            " ${bundleDescriptor.bundle.version} ${bundleStateMap[bundleDescriptor.bundle.state]}" +
+                            " activation time-out after $timeout ms."
+                )
             }
+        }
+        val applicationServiceReference: ServiceReference<Application>? =
+            framework.bundleContext.getServiceReference(Application::class.java)
+        if (applicationServiceReference != null) {
+            framework.bundleContext.getService(applicationServiceReference)?.startup(args)
+        } else {
+            throw ClassNotFoundException("No class in any bundle implements ${Application::class.java}" +
+                    "to register as OSGi service and to start the application.")
         }
         return this
     }
 
     /**
-     * Call the [Lifecycle.shutdown] method of application bundles.
-     * Deactivate installed bundles.
-     * Stop the [Framework] wrapped by this [OSGiFrameworkWrap].
-     * If the [Framework] can't stop, the method logs a warning describing the actual state of the framework.
-     * Stop the framework multiple times is harmless, it just logs the warning.
+     * This method performs the following actions to stop the application running in the OSGi framework.
+     *
+     *  1. Calls the [Application.shutdown] method of the class implementing the [Application] interface.
+     *      If no class implements the [Application] interface in any bundle zipped in the bootable JAR,
+     *      it logs a warning message and continues to shutdowns the OSGi framework.
+     *  2. Deactivate installed bundles.
+     *  3. Stop the [Framework] wrapped by this [OSGiFrameworkWrap].
+     *      If the [Framework] can't stop, the method logs a warning describing the actual state of the framework.
+     *
+     * To stop the framework multiple times is harmless, it just logs the warning.
      *
      * Thread safe.
      *
@@ -533,8 +527,12 @@ class OSGiFrameworkWrap(
     fun stop(): OSGiFrameworkWrap {
         if (isStoppable(framework.state)) {
             logger.debug("OSGi framework stop...")
-            bundleDescriptorMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
-                bundleDescriptor.lifecycleAtomic.getAndSet(null)?.shutdown(bundleDescriptor.bundle)
+            val applicationServiceReference: ServiceReference<Application>? =
+                framework.bundleContext.getServiceReference(Application::class.java)
+            if (applicationServiceReference != null) {
+                framework.bundleContext.getService(applicationServiceReference)?.shutdown()
+            } else {
+                logger.warn("${Application::class.java} service unregistered before to shutdown the application.")
             }
             framework.stop()
         } else {

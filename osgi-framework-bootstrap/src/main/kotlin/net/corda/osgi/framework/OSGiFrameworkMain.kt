@@ -1,7 +1,5 @@
 package net.corda.osgi.framework
 
-import net.corda.osgi.api.Lifecycle
-import net.corda.osgi.framework.OSGiFrameworkMain.Companion.main
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 
@@ -75,11 +73,12 @@ class OSGiFrameworkMain {
          *      1. Install OSGi bundles in the OSGi framework,
          *      2. Activate OSGi bundles.
          * 3. **Call application entry-point**
-         *      1. Call the [Lifecycle.start] method of active application bundles, if any, passing [args].
+         *      1. Call the [net.corda.osgi.api.Application.startup] method of active application bundles, if any,
+         *      passing [args].
          *
          *  Then, the method waits for the JVM receives the signal to terminate to
          *  1. **Shut Down**
-         *      1. Call the [Lifecycle.stop] method of application bundles, if any.
+         *      1. Call the [net.corda.osgi.api.Application.shutdown] method of application bundles, if any.
          *      1. Deactivate OSGi bundles.
          *      2. Stop the OSGi framework.
          *
@@ -102,19 +101,25 @@ class OSGiFrameworkMain {
                 try {
                     Runtime.getRuntime().addShutdownHook(object : Thread() {
                         override fun run() {
-                            osgiFrameworkWrap.stop()
+                            if (OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
+                                osgiFrameworkWrap.stop()
+                            }
                         }
                     })
                     osgiFrameworkWrap
                         .start()
                         .install(SYSTEM_BUNDLES)
                         .activate()
-                        .startApplications(Lifecycle.METADATA_HEADER, NO_TIMEOUT, args)
+                        .startApplication(NO_TIMEOUT, args)
                         .waitForStop(NO_TIMEOUT)
                 } catch (e: Exception) {
                     logger.error("Error: ${e.message}!", e)
                 } finally {
-                    osgiFrameworkWrap.stop()
+                    // If osgiFrameworkWrap stopped because SIGINT/CTRL+C,
+                    // this avoids to call stop twice and log warning.
+                    if (OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
+                        osgiFrameworkWrap.stop()
+                    }
                 }
             } catch (e: IllegalArgumentException) {
                 logger.error("Error: ${e.message}!", e)

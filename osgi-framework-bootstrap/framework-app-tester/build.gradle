@@ -6,7 +6,6 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
-    compileOnly project(":osgi-framework-api")
 
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
@@ -16,9 +15,3 @@ dependencies {
 }
 
 description 'OSGi Framework App Tester'
-
-jar {
-    manifest {
-        attributes 'Lifecycle-Class': 'net.corda.osgi.framework.apptester.AppTester'
-    }
-}
