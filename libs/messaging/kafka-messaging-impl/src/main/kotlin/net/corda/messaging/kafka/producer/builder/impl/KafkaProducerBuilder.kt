@@ -18,7 +18,7 @@ import org.apache.kafka.common.errors.UnsupportedVersionException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.Properties
+import java.util.*
 
 /**
  * Builder for a Kafka Producer. Initialises producer for transactions if publisherConfig contains an instanceId.
@@ -36,12 +36,7 @@ class KafkaProducerBuilder<K, V> : ProducerBuilder<K, V> {
         val producerCreateMaxRetries = config.getLong(PRODUCER_CREATE_MAX_RETRIES)
         val topic = config.getString(PUBLISHER_TOPIC)
         val clientId = config.getString(PUBLISHER_CLIENT_ID)
-        val instanceIdPresent  = config.hasPath(PUBLISHER_INSTANCE_ID)
-        val instanceId = if (instanceIdPresent) {
-            config.getInt(PUBLISHER_INSTANCE_ID)
-        } else {
-            null
-        }
+        val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getInt(PUBLISHER_INSTANCE_ID) else null
 
         val contextClassLoader = Thread.currentThread().contextClassLoader
         val producer = try {

@@ -3,14 +3,11 @@ plugins {
     id 'corda.publish'
 }
 
-description 'Kafka Messaging API Impl'
+description 'In-Memory Messaging API Impl'
 
 dependencies {
     implementation project(":libs:messaging:messaging")
-    implementation project(":libs:schema-registry:schema-registry")
-
     implementation "net.corda:corda-base:$cordaVersion"
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
