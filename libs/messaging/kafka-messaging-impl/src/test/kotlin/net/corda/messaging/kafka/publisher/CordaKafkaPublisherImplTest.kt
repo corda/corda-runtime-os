@@ -1,6 +1,11 @@
 package net.corda.messaging.kafka.publisher
 
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.doThrow
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.times
+import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.whenever
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
@@ -12,18 +17,19 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_TOPI
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.concurrent.CordaFuture
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.KafkaException
-import org.apache.kafka.common.errors.*
+import org.apache.kafka.common.errors.AuthorizationException
+import org.apache.kafka.common.errors.InterruptException
+import org.apache.kafka.common.errors.InvalidProducerEpochException
+import org.apache.kafka.common.errors.ProducerFencedException
+import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.serialization.ByteBufferSerializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
-import java.lang.IllegalArgumentException
-import java.lang.IllegalStateException
 import java.nio.ByteBuffer
 import java.time.Duration
 
@@ -47,17 +53,6 @@ class CordaKafkaPublisherImplTest {
     fun testPublish() {
         publish(false, listOf(record, record, record))
         verify(producer, times(3)).send(any(), any())
-        verify(avroSchemaRegistry, times(3)).serialize(Mockito.any(ByteBuffer::class.java))
-        verify(producer, times(0)).beginTransaction()
-        verify(producer, times(0)).commitTransaction()
-    }
-
-    @Test
-    fun testPublishFailSerialization() {
-        doThrow(CordaRuntimeException("")).whenever(avroSchemaRegistry).serialize(Mockito.any(ByteBuffer::class.java))
-        assertThrows(CordaMessageAPIFatalException::class.java) {  publish(false, listOf(record)) }
-
-        verify(producer, times(0)).send(any(), any())
         verify(producer, times(0)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
     }
@@ -69,8 +64,6 @@ class CordaKafkaPublisherImplTest {
         producer.errorNext(IllegalStateException(""))
 
         assertThrows(CordaMessageAPIFatalException::class.java) { future[0].getOrThrow() }
-
-        verify(avroSchemaRegistry, times(1)).serialize(Mockito.any(ByteBuffer::class.java))
     }
 
     @Test
@@ -79,7 +72,6 @@ class CordaKafkaPublisherImplTest {
         val future = publish(false, listOf(record))
         producer.errorNext(InterruptException(""))
         assertThrows(CordaMessageAPIIntermittentException::class.java) { future[0].getOrThrow() }
-        verify(avroSchemaRegistry, times(1)).serialize(Mockito.any(ByteBuffer::class.java))
     }
 
     @Test
@@ -89,14 +81,12 @@ class CordaKafkaPublisherImplTest {
         producer.errorNext(IllegalArgumentException())
 
         assertThrows(CordaMessageAPIFatalException::class.java) { future[0].getOrThrow() }
-        verify(avroSchemaRegistry, times(1)).serialize(Mockito.any(ByteBuffer::class.java))
     }
 
     @Test
     fun testTransactionPublish() {
         publish(true, listOf(record, record, record))
         verify(producer, times(3)).send(any())
-        verify(avroSchemaRegistry, times(3)).serialize(Mockito.any(ByteBuffer::class.java))
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
     }
@@ -108,7 +98,6 @@ class CordaKafkaPublisherImplTest {
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIFatalException::class.java) { futures[0].getOrThrow() }
         verify(producer, times(0)).send(any())
-        verify(avroSchemaRegistry, times(0)).serialize(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
     }
@@ -120,7 +109,6 @@ class CordaKafkaPublisherImplTest {
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIFatalException::class.java) { futures[0].getOrThrow() }
         verify(producer, times(0)).send(any())
-        verify(avroSchemaRegistry, times(0)).serialize(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
     }
@@ -131,7 +119,6 @@ class CordaKafkaPublisherImplTest {
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIFatalException::class.java) { futures[0].getOrThrow() }
         verify(producer, times(0)).send(any())
-        verify(avroSchemaRegistry, times(0)).serialize(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(0)).commitTransaction()
     }
@@ -142,7 +129,6 @@ class CordaKafkaPublisherImplTest {
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIIntermittentException::class.java) { futures[0].getOrThrow() }
         verify(producer, times(1)).send(any())
-        verify(avroSchemaRegistry, times(1)).serialize(Mockito.any(ByteBuffer::class.java))
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
     }
@@ -153,7 +139,6 @@ class CordaKafkaPublisherImplTest {
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIFatalException::class.java) { futures[0].getOrThrow() }
         verify(producer, times(1)).send(any())
-        verify(avroSchemaRegistry, times(1)).serialize(Mockito.any(ByteBuffer::class.java))
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
     }
@@ -164,7 +149,6 @@ class CordaKafkaPublisherImplTest {
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIIntermittentException::class.java) { futures[0].getOrThrow() }
         verify(producer, times(1)).send(any())
-        verify(avroSchemaRegistry, times(1)).serialize(Mockito.any(ByteBuffer::class.java))
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
     }
@@ -175,7 +159,6 @@ class CordaKafkaPublisherImplTest {
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIFatalException::class.java) { futures[0].getOrThrow() }
         verify(producer, times(1)).send(any())
-        verify(avroSchemaRegistry, times(1)).serialize(Mockito.any(ByteBuffer::class.java))
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
     }
@@ -186,7 +169,6 @@ class CordaKafkaPublisherImplTest {
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIFatalException::class.java) { futures[0].getOrThrow() }
         verify(producer, times(1)).send(any())
-        verify(avroSchemaRegistry, times(1)).serialize(Mockito.any(ByteBuffer::class.java))
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
     }

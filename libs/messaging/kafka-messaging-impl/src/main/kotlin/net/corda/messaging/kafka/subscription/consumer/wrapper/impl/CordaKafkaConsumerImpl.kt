@@ -2,14 +2,11 @@ package net.corda.messaging.kafka.subscription.consumer.wrapper.impl
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
+import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.internal.uncheckedCast
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
@@ -25,19 +22,17 @@ import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.TimeoutException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 import java.time.Duration
 
 /**
  * Wrapper for a Kafka Consumer.
  */
-class CordaKafkaConsumerImpl<K : Any, V : Any> (
+class CordaKafkaConsumerImpl<K : Any, V : Any>(
     kafkaConfig: Config,
     subscriptionConfig: SubscriptionConfig,
-    override val consumer: Consumer<K, ByteBuffer>,
-    private val listener: ConsumerRebalanceListener,
-    private val avroSchemaRegistry: AvroSchemaRegistry
-) : CordaKafkaConsumer<K, V> {
+    private val consumer: Consumer<K, V>,
+    private val listener: ConsumerRebalanceListener?,
+) : CordaKafkaConsumer<K, V>, Consumer<K, V> by consumer {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -60,9 +55,11 @@ class CordaKafkaConsumerImpl<K : Any, V : Any> (
         }
     }
 
-    override fun poll(): List<ConsumerRecord<K, ByteBuffer>> {
+    override fun poll(): List<ConsumerRecordAndMeta<K, V>> {
         val consumerRecords = consumer.poll(consumerPollTimeout)
-        return consumerRecords.sortedBy { it.timestamp() }
+        return consumerRecords
+            .sortedBy { it.timestamp() }
+            .map { ConsumerRecordAndMeta(topicPrefix, it) }
     }
 
     override fun resetToLastCommittedPositions(offsetStrategy: OffsetResetStrategy) {
@@ -83,22 +80,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any> (
         }
     }
 
-    override fun getRecord(consumerRecord: ConsumerRecord<K, ByteBuffer>) : Record<K, V> {
-        return try {
-            val classType = avroSchemaRegistry.getClassType(consumerRecord.value())
-            val value: V = uncheckedCast(avroSchemaRegistry.deserialize(consumerRecord.value(), classType, null))
-            val topic = consumerRecord.topic().substringAfter(topicPrefix)
-            Record(topic, consumerRecord.key(), value)
-        } catch (ex: CordaRuntimeException) {
-            val message = "CordaKafkaConsumer failed to deserialize record with key ${consumerRecord.key()}. " +
-                    "Group $groupName,topic $topic."
-            log.error(message, ex)
-            throw CordaMessageAPIFatalException(message, ex)
-        }
-    }
-
     @Suppress("TooGenericExceptionCaught")
-    override fun commitSyncOffsets(event: ConsumerRecord<K, ByteBuffer>, metaData: String?) {
+    override fun commitSyncOffsets(event: ConsumerRecord<K, V>, metaData: String?) {
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
         val topicPartition = TopicPartition(event.topic(), event.partition())
         offsets[topicPartition] = OffsetAndMetadata(event.offset() + 1, metaData)
@@ -107,7 +90,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any> (
 
         while (attemptCommit) {
             try {
-                consumer.commitSync(offsets);
+                consumer.commitSync(offsets)
                 attemptCommit = false
             }
             catch (ex: Exception) {

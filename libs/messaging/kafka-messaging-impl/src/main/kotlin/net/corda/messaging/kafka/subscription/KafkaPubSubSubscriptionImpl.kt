@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.subscription.pubsub
+package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -9,16 +9,16 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
+import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import org.apache.kafka.clients.consumer.ConsumerRecord
+import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
+import net.corda.v5.base.types.toHexString
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.Exception
-import java.nio.ByteBuffer
-import kotlin.concurrent.thread
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 /**
@@ -35,7 +35,7 @@ import kotlin.concurrent.withLock
  *                    If executor is null processor executed on the same thread as the consumer.
  *
  */
-class KafkaPubSubSubscription<K : Any, V : Any>(
+class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
     private val subscriptionConfig: SubscriptionConfig,
     private val kafkaConfig: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,
@@ -46,6 +46,7 @@ class KafkaPubSubSubscription<K : Any, V : Any>(
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
+
     private val consumerThreadStopTimeout = kafkaConfig.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
     private val consumerPollAndProcessRetries = kafkaConfig.getLong(CONSUMER_POLL_AND_PROCESS_RETRIES)
 
@@ -75,11 +76,11 @@ class KafkaPubSubSubscription<K : Any, V : Any>(
                 stopped = false
                 consumeLoopThread = thread(
                     true,
-                    true,
-                    null,
-                    "pubsub processing thread ${subscriptionConfig.groupName}-${subscriptionConfig.eventTopic}",
-                    -1,
-                    ::runConsumeLoop
+                    isDaemon = true,
+                    contextClassLoader = null,
+                    name = "pubsub processing thread ${subscriptionConfig.groupName}-${subscriptionConfig.eventTopic}",
+                    priority = -1,
+                    block = ::runConsumeLoop
                 )
             }
         }
@@ -113,27 +114,31 @@ class KafkaPubSubSubscription<K : Any, V : Any>(
     @Suppress("TooGenericExceptionCaught")
     fun runConsumeLoop() {
         var attempts = 0
-        var consumer: CordaKafkaConsumer<K, V>?
         while (!stopped) {
             attempts++
             try {
-                consumer = consumerBuilder.createPubSubConsumer(subscriptionConfig)
-                consumer.use {
+                consumerBuilder.createPubSubConsumer(subscriptionConfig, ::logFailedDeserialize).use {
                     it.subscribeToTopic()
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
             } catch (ex: CordaMessageAPIIntermittentException) {
-                log.warn("PubSubConsumer from group $groupName failed to read and process records from topic $topic, " +
-                        "attempts: $attempts. Retrying.", ex)
+                log.warn(
+                    "PubSubConsumer from group $groupName failed to read and process records from topic $topic, " +
+                            "attempts: $attempts. Retrying.", ex
+                )
             } catch (ex: CordaMessageAPIFatalException) {
-                log.error("PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic. " +
-                        "Fatal error occurred. Closing subscription.", ex)
+                log.error(
+                    "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic. " +
+                            "Fatal error occurred. Closing subscription.", ex
+                )
                 stop()
-            }  catch (ex: Exception) {
-                log.error("PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
-                        "attempts: $attempts. " +
-                        "Unexpected error occurred. Closing subscription.", ex)
+            } catch (ex: Exception) {
+                log.error(
+                    "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
+                            "attempts: $attempts. " +
+                            "Unexpected error occurred. Closing subscription.", ex
+                )
                 stop()
             }
         }
@@ -157,12 +162,15 @@ class KafkaPubSubSubscription<K : Any, V : Any>(
             } catch (ex: Exception) {
                 attempts++
                 if (attempts <= consumerPollAndProcessRetries) {
-                    log.warn("PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
-                                "Resetting to last committed offset and retrying. Attempts: $attempts.")
+                    log.warn(
+                        "PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
+                                "Resetting to last committed offset and retrying. Attempts: $attempts."
+                    )
                     consumer.resetToLastCommittedPositions(OffsetResetStrategy.LATEST)
                 } else {
-                    val message = "PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
-                            "Max reties for poll and process exceeded. Recreating consumer and polling from latest position."
+                    val message =
+                        "PubSubConsumer from group $groupName failed to read and process records from topic $topic." +
+                                "Max reties for poll and process exceeded. Recreating consumer and polling from latest position."
                     log.warn(message, ex)
                     throw CordaMessageAPIIntermittentException(message, ex)
                 }
@@ -175,24 +183,18 @@ class KafkaPubSubSubscription<K : Any, V : Any>(
      * thread otherwise. Commit the offset for each record back to the topic after processing them synchronously.
      * If a record fails to deserialize skip this record and log the error.
      */
-    private fun processPubSubRecords(consumerRecords: List<ConsumerRecord<K, ByteBuffer>>, consumer: CordaKafkaConsumer<K, V>) {
-        for (consumerRecord in consumerRecords) {
-            val eventRecord = try {
-                 consumer.getRecord(consumerRecord)
-            } catch (ex: CordaMessageAPIFatalException) {
-                log.error("PubSubConsumer from group $groupName failed to deserialize record with " +
-                        "key ${consumerRecord.key()} from topic $topic." +
-                        "Skipping record.", ex)
-                consumer.commitSyncOffsets(consumerRecord)
-                continue
-            }
-
+    private fun processPubSubRecords(consumerRecords: List<ConsumerRecordAndMeta<K, V>>, consumer: CordaKafkaConsumer<K, V>) {
+        consumerRecords.forEach {
             if (executor != null) {
-                executor.submit { processor.onNext(eventRecord) }.get()
+                executor.submit { processor.onNext(it.asRecord()) }.get()
             } else {
-                processor.onNext(eventRecord)
+                processor.onNext(it.asRecord())
             }
-            consumer.commitSyncOffsets(consumerRecord)
+            consumer.commitSyncOffsets(it.record)
         }
+    }
+
+    private fun logFailedDeserialize(topic: String, data: ByteArray) {
+        log.error("Failed to deserialize a record on $topic: (${data.toHexString()}")
     }
 }

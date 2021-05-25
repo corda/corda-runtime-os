@@ -18,7 +18,6 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
 import java.util.Properties
 
 /**
@@ -53,7 +52,7 @@ class CordaKafkaPublisherFactory @Activate constructor(
         }
 
         val producerProperties = getProducerProps(config, properties)
-        val producer = KafkaProducerBuilder<K, ByteBuffer>().createProducer(config, producerProperties)
+        val producer = KafkaProducerBuilder<K, V>(avroSchemaRegistry).createProducer(config, producerProperties)
 
         return CordaKafkaPublisherImpl(publisherConfig, defaultKafkaConfig, producer, avroSchemaRegistry)
     }
@@ -77,10 +76,6 @@ class CordaKafkaPublisherFactory @Activate constructor(
         //TODO - update the below when config task  has evolved
         producerProps[ProducerConfig.CLIENT_ID_CONFIG] = clientId
 
-        producerProps[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] =
-            conf.getString(PRODUCER_CONF_PREFIX + ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG)
-        producerProps[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] =
-            conf.getString(PRODUCER_CONF_PREFIX + ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG)
         producerProps[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] =
             conf.getString(PRODUCER_CONF_PREFIX + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
         producerProps[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] =

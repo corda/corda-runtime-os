@@ -7,22 +7,26 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import java.nio.ByteBuffer
 
+data class ConsumerRecordAndMeta<K : Any, V : Any>(
+    val topicPrefix: String,
+    val record: ConsumerRecord<K, V>,
+)
+
+fun <K : Any, V : Any> ConsumerRecordAndMeta<K, V>.asRecord(): Record<K, V> {
+    val topic = record.topic().substringAfter(topicPrefix)
+    return Record(topic, record.key(), record.value())
+}
+
 /**
  * Wrapper for a Kafka Consumer.
  * Kafka consumers can have any key type [K] and will have values of type [ByteBuffer].
  * [ByteBuffer] values will be deserialized by avro into [V]
  */
-interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable {
-
-    /**
-     * Access the kafka consumer directly
-     */
-    val consumer: Consumer<K, ByteBuffer>
-
+interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable, Consumer<K, V> {
     /**
      * Poll records from the consumer and sort them by timestamp
      */
-    fun poll(): List<ConsumerRecord<K, ByteBuffer>>
+    fun poll(): List<ConsumerRecordAndMeta<K, V>>
 
     /**
      * Reset the consumer position on a topic to the last committed position. Next poll from the topic will read from this position.
@@ -31,19 +35,11 @@ interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable {
     fun resetToLastCommittedPositions(offsetStrategy: OffsetResetStrategy)
 
     /**
-     * Convert a [consumerRecord] to a [Record] and return it.
-     * Avro will be used to convert [ByteBuffer] to [V]
-     * Remove the topicPrefix from the [consumerRecord]
-     * @throws CordaMessageAPIFatalException exception thrown when failing to deserialize record
-     */
-    fun getRecord(consumerRecord: ConsumerRecord<K, ByteBuffer>) : Record<K, V>
-
-    /**
      * Synchronously commit the consumer offset for this [event] back to the topic partition.
      * Record [metaData] about this commit back on the [event] topic.
      * @throws CordaMessageAPIFatalException fatal error occurred attempting to commit offsets.
      */
-    fun commitSyncOffsets(event: ConsumerRecord<K, ByteBuffer>, metaData: String? = null)
+    fun commitSyncOffsets(event: ConsumerRecord<K, V>, metaData: String? = null)
 
     /**
      * Subscribe this consumer to the topic.

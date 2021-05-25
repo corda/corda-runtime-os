@@ -11,11 +11,14 @@ interface ConsumerBuilder<K : Any, V : Any> {
     /**
      * Generate a Corda Kafka Consumer based on the [subscriptionConfig] for a [PubsubSubscription].
      * This function will handle all retry logic and kafka error handling
+     * @param onError a callback to receive messages that fail to deserialize.  In the consumer feed these will
+     * show up as records with a null value, which means they should be removed from any maps.
      * @return CordaKafkaConsumer
      * @throws CordaMessageAPIFatalException if fatal error occurs during construction of the consumer
      */
     fun createPubSubConsumer(
-        subscriptionConfig: SubscriptionConfig
+        subscriptionConfig: SubscriptionConfig,
+        onError: (String, ByteArray) -> Unit = {_, _ ->}
     ) : CordaKafkaConsumer<K, V>
 
     /**
@@ -25,6 +28,8 @@ interface ConsumerBuilder<K : Any, V : Any> {
      * @throws CordaMessageAPIFatalException if fatal error occurs during construction of the consumer
      */
     fun createDurableConsumer(
-        subscriptionConfig: SubscriptionConfig
+        subscriptionConfig: SubscriptionConfig,
+        onError: (String, ByteArray) -> Unit = {_, _ ->}
     ) : CordaKafkaConsumer<K, V>
+
 }

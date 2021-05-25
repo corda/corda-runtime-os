@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.subscription.durable
+package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -9,15 +9,15 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
+import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
+import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.subscription.producer.builder.SubscriptionProducerBuilder
 import net.corda.messaging.kafka.subscription.producer.wrapper.CordaKafkaProducer
-import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.Exception
-import java.nio.ByteBuffer
 import kotlin.concurrent.thread
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -35,7 +35,7 @@ import kotlin.concurrent.withLock
  * @property processor processes records from kafka topic. Produces list of output records.
  *
  */
-class KafkaDurableSubscription<K : Any, V : Any>(
+class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private val subscriptionConfig: SubscriptionConfig,
     private val config: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,
@@ -117,7 +117,7 @@ class KafkaDurableSubscription<K : Any, V : Any>(
             attempts++
             try {
                 consumer = consumerBuilder.createDurableConsumer(subscriptionConfig)
-                producer = producerBuilder.createProducer(consumer.consumer)
+                producer = producerBuilder.createProducer(consumer)
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribeToTopic()
                     producer.use { cordaProducer ->
@@ -156,7 +156,7 @@ class KafkaDurableSubscription<K : Any, V : Any>(
         var attempts = 0
         while (!stopped) {
             try {
-                processDurableRecords(consumer.poll(), consumer, producer)
+                processDurableRecords(consumer.poll(), producer)
                 attempts = 0
             } catch (ex: Exception) {
                 when (ex) {
@@ -187,13 +187,12 @@ class KafkaDurableSubscription<K : Any, V : Any>(
      */
     @Suppress("TooGenericExceptionCaught")
     private fun processDurableRecords(
-        consumerRecords: List<ConsumerRecord<K, ByteBuffer>>,
-        consumer: CordaKafkaConsumer<K, V>,
+        consumerRecords: List<ConsumerRecordAndMeta<K, V>>,
         producer: CordaKafkaProducer) {
         for (consumerRecord in consumerRecords) {
             try {
                 producer.beginTransaction()
-                producer.sendRecords(processor.onNext(consumer.getRecord(consumerRecord)))
+                producer.sendRecords(processor.onNext(consumerRecord.asRecord()))
                 producer.sendOffsetsToTransaction()
                 producer.commitTransaction()
             } catch (ex: Exception) {
