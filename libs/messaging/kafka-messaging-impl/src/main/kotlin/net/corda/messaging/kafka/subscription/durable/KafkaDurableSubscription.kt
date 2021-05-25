@@ -163,10 +163,10 @@ class KafkaDurableSubscription<K : Any, V : Any>(
                     is CordaMessageAPIFatalException -> { throw ex }
                     else -> {
                         attempts++
-                        consumer.resetToLastCommittedPositions(OffsetResetStrategy.EARLIEST)
                         if (attempts <= consumerPollAndProcessRetries) {
                             log.warn("PubSubConsumer from group $groupName failed to read and process records from topic $topic. " +
                                     "retrying. Attempts: $attempts.")
+                            consumer.resetToLastCommittedPositions(OffsetResetStrategy.EARLIEST)
                         } else {
                             val message = "PubSubConsumer from group $groupName failed to read and process records from topic $topic. " +
                                     "Max reties for poll and process exceeded."
