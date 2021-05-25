@@ -12,6 +12,15 @@ interface CordaKafkaProducer : AutoCloseable, Producer<Any, Any> {
 
     /**
      * Send the offsets of the records consumed back to kafka.
+     * @throws CordaMessageAPIFatalException Fatal error
+     * @throws CordaMessageAPIIntermittentException Retryable error
      */
     fun sendOffsetsToTransaction()
+
+    /**
+     * Try to commit a transaction. If the transaction fails. Abort it.
+     * @throws CordaMessageAPIFatalException Fatal error
+     * @throws CordaMessageAPIIntermittentException Retryable error
+     */
+    fun tryCommitTransaction()
 }

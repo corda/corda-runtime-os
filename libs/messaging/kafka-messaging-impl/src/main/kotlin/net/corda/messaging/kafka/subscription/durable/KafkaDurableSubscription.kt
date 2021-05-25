@@ -191,20 +191,9 @@ class KafkaDurableSubscription<K : Any, V : Any>(
         consumer: CordaKafkaConsumer<K, V>,
         producer: CordaKafkaProducer) {
         for (consumerRecord in consumerRecords) {
-            val eventRecord = try {
-                consumer.getRecord(consumerRecord)
-            } catch (ex: CordaMessageAPIFatalException) {
-                log.error("PubSubConsumer from group $groupName failed to deserialize record with " +
-                            "key ${consumerRecord.key()} from topic $topic. Skipping record.", ex)
-                //TODO - this will throw a warning in kafka about mixing consumer/producer offsets
-                // but will be removed when Ryans SerDe PR is merged
-                consumer.commitSyncOffsets(consumerRecord)
-                continue
-            }
-
             try {
                 producer.beginTransaction()
-                producer.sendRecords(processor.onNext(eventRecord))
+                producer.sendRecords(processor.onNext(consumer.getRecord(consumerRecord)))
                 producer.sendOffsetsToTransaction()
                 producer.commitTransaction()
             } catch (ex: Exception) {

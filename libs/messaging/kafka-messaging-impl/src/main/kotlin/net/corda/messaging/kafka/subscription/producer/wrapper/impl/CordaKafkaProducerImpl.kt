@@ -98,7 +98,7 @@ class CordaKafkaProducerImpl(
         }
     }
 
-    override fun commitTransaction() {
+    override fun tryCommitTransaction() {
         try {
             producer.commitTransaction()
         } catch (ex: Exception) {
