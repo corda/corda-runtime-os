@@ -14,6 +14,7 @@ import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.concurrent.CordaFuture
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.producer.MockProducer
+import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.errors.*
 import org.apache.kafka.common.serialization.ByteBufferSerializer
 import org.apache.kafka.common.serialization.StringSerializer
