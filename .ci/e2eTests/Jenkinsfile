@@ -51,11 +51,10 @@ pipeline {
                 copyArtifacts projectName: 'corda5-poc/corda5-invoke-flowworker',
                     selector: upstream(),
                     fingerprintArtifacts: true,
-                    filter: 'mavenLocal.tar.gz',
-                    target: '/tmp/artifacts'
+                    filter: 'mavenLocal.tar.gz'
                 sh 'find /tmp/artifacts'
-                sh 'tar -xvf /tmp/artifacts/mavenLocal.tar.gz -C /tmp/artifacts/mavenLocal'
-                sh 'rm -rf /tmp/artifacts/mavenLocal.tar.gz'
+                sh 'tar -xvf mavenLocal.tar.gz -C /tmp/artifacts/mavenLocal'
+                sh 'rm -rf mavenLocal.tar.gz'
                 echo 'Hi'
             }
         }
