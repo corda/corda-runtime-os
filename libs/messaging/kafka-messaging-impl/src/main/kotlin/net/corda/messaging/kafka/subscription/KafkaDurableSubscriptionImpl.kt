@@ -161,23 +161,42 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIFatalException -> { throw ex }
-                    else -> {
+                    is CordaMessageAPIIntermittentException -> {
                         attempts++
-                        if (attempts <= consumerPollAndProcessRetries) {
-                            log.warn("Failed to read and process records from topic $topic, group $groupName, " +
-                                    "producerClientId $producerClientId. " +
-                                    "Retrying poll and process. Attempts: $attempts.")
-                            consumer.resetToLastCommittedPositions(OffsetResetStrategy.EARLIEST)
-                        } else {
-                            val message = "Failed to read and process records from topic $topic, group $groupName, " +
-                                    "producerClientId $producerClientId. " +
-                                    "Attempts: $attempts. Max reties for poll and process exceeded."
-                            log.warn(message, ex)
-                            throw CordaMessageAPIIntermittentException(message, ex)
-                        }
+                        handlePollAndProcessIntermittentError(attempts, consumer, ex)
+                    }
+                    else -> {
+                        throw CordaMessageAPIFatalException("Failed to process records from topic $topic, " +
+                                "group $groupName, producerClientId $producerClientId. " +
+                                "Unexpected error occurred in this transaction. Closing producer.", ex)
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Handle whether to log a warning or to throw a [CordaMessageAPIIntermittentException]
+     * Throw if max amount of [attempts] have been reached. Otherwisde log warning.
+     */
+    private fun handlePollAndProcessIntermittentError(
+        attempts: Int,
+        consumer: CordaKafkaConsumer<K, V>,
+        ex: Exception
+    ) {
+        if (attempts <= consumerPollAndProcessRetries) {
+            log.warn(
+                "Failed to read and process records from topic $topic, group $groupName, " +
+                        "producerClientId $producerClientId. " +
+                        "Retrying poll and process. Attempts: $attempts."
+            )
+            consumer.resetToLastCommittedPositions(OffsetResetStrategy.EARLIEST)
+        } else {
+            val message = "Failed to read and process records from topic $topic, group $groupName, " +
+                    "producerClientId $producerClientId. " +
+                    "Attempts: $attempts. Max reties for poll and process exceeded."
+            log.warn(message, ex)
+            throw CordaMessageAPIIntermittentException(message, ex)
         }
     }
 
