@@ -7,6 +7,14 @@ description 'Kafka configuration write API impl'
 
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
     implementation project(":data:avro-schema")
     implementation project(":libs:configuration:configuration-write")
     implementation project(":libs:messaging:kafka-messaging-impl")
@@ -14,12 +22,9 @@ dependencies {
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:schema-registry:schema-registry-impl")
 
-    implementation "net.corda:corda-base:$cordaVersion"
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
 }

@@ -2,26 +2,27 @@ package net.corda.libs.kafka.topic.utils
 
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
-import org.apache.kafka.clients.producer.KafkaProducer
-import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.errors.TopicExistsException
 import org.osgi.service.component.annotations.Component
 import java.util.*
 import java.util.concurrent.ExecutionException
 
+/**
+ * Kafka implementation of [TopicUtils]
+ * Used to create new topics on kafka
+ * Any [ExecutionException]s apart from [TopicExistsException]s are thrown back to the user
+ */
 @Component
-object KafkaTopicUtils : TopicUtils {
+class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
+
     override fun createTopic(
         topicName: String,
         partitions: Int,
-        replication: Short,
-        kafkaProps: Properties
+        replication: Short
     ) {
         val newTopic = NewTopic(topicName, partitions, replication)
         try {
-            with(AdminClient.create(kafkaProps)) {
-                createTopics(listOf(newTopic)).all().get()
-            }
+                adminClient.createTopics(listOf(newTopic)).all().get()
         } catch (e: ExecutionException) {
             if (e.cause !is TopicExistsException) throw e
         }

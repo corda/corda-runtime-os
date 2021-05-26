@@ -27,6 +27,7 @@ class CordaKafkaPublisherFactoryTest {
             .withValue(KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("prefix"))
     }
 
+
     @Test
     fun testCreatePublisher() {
         val publisher = cordaKafkaPublisherFactory.createPublisher(publisherConfig, mapOf(), String::class.java, ByteBuffer::class.java)

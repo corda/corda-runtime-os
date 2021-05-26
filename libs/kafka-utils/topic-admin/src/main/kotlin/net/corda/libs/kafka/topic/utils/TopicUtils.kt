@@ -4,7 +4,8 @@ import java.util.*
 
 
 /**
- * Kafka utility for topic administration
+ * Interface for creating Kafka topics
+ * Instances of this class can be created via [TopicUtilsFactory]
  */
 interface TopicUtils {
 
@@ -13,11 +14,6 @@ interface TopicUtils {
      * [topicName]
      * [partitions]
      * [replication]
-     * [kafkaProps]
      */
-    fun createTopic(topicName: String,
-                    partitions: Int,
-                    replication: Short,
-                    kafkaProps: Properties
-    )
+    fun createTopic(topicName: String, partitions: Int, replication: Short)
 }

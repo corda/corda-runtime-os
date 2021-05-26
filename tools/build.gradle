@@ -18,6 +18,8 @@ dependencies {
     implementation project(":libs:configuration:kafka-configuration-write-impl")
     implementation project(':libs:kafka-utils:topic-admin')
     implementation project(":libs:kafka-utils:topic-admin-impl")
+    implementation project(":libs:schema-registry:schema-registry")
+    implementation project(":libs:schema-registry:schema-registry-impl")
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
