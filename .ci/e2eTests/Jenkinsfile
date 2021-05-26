@@ -12,6 +12,11 @@ pipeline {
         }
     }
 
+    parameters {
+        string(defaultValue: "nop", description: 'The corda version suffix', name: 'CORDA_VERSION_SUFFIX')
+        string(defaultValue: "oh", description: 'The corda build number', name: 'CORDA_BUILD_NUMBER')
+    }
+
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
         CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
@@ -31,6 +36,8 @@ pipeline {
         stage('Say hi') {
             steps {
                 echo 'Hi'
+                echo "CORDA_VERSION_SUFFIX = ${params.CORDA_VERSION_SUFFIX}"
+                echo "CORDA_BUILD_NUMBER = ${params.CORDA_BUILD_NUMBER}"
             }
         }
         stage('Prepare') {
