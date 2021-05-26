@@ -17,7 +17,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.errors.AuthenticationException
 import org.apache.kafka.common.errors.AuthorizationException
@@ -64,30 +63,56 @@ class CordaKafkaPublisher<K : Any, V : Any> (
      * Records are published via transactions if an [instanceId] is configured in the [publisherConfig]
      * Publish will retry recoverable transaction related errors based on [kafkaConfig]
      * Any fatal errors are returned in the future as [CordaMessageAPIFatalException]
+     * Any intermittent errors are returned in the future as [CordaMessageAPIIntermittentException]
+     * If publish is a transaction, sends are executed synchronously and will return a future of size 1.
+     */
+    override fun publish(records: List<Record<K, V>>): List<CordaFuture<Unit>> {
+        val futures = mutableListOf<CordaFuture<Unit>>()
+        if (publisherConfig.instanceId != null) {
+            futures.add(publishTransaction(records))
+        } else {
+            publishRecordsAsync(records, futures)
+        }
+
+        return futures
+    }
+
+    /**
+     * Publish list of [records] asynchronously with results stored in [futures]
+     */
+    private fun publishRecordsAsync(records: List<Record<K, V>>, futures: MutableList<CordaFuture<Unit>>) {
+        records.forEach {
+            val fut = openFuture<Unit>()
+            futures.add(fut)
+            producer.send(getProducerRecord(it)) { _, ex ->
+                setFutureFromResponse(ex, fut, it.topic)
+            }
+        }
+    }
+
+    /**
+     * Send list of [records] as a transaction. It is not necessary to handle exceptions for each send in a transaction
+     * as this is handled by the [KafkaProducer] commitTransaction operation. commitTransaction will execute all sends synchronously
+     * and will fail to send all if any individual sends fail
+     * Set the [future] with the result of the transaction.
+     * @return future set to true if transaction was successful.
      */
     @Suppress("TooGenericExceptionCaught")
-    override fun publish(record: Record<K, V>): CordaFuture<Unit> {
+    private fun publishTransaction(records: List<Record<K, V>>): CordaFuture<Unit> {
         val fut = openFuture<Unit>()
         try {
-            if (instanceId != null) {
-                producer.beginTransaction()
-            }
-
-            producer.send(getProducerRecord(record)) { it, ex ->
-                setFutureFromResponse(ex, fut, it)
-            }
-
-            if (instanceId != null) {
-                producer.commitTransaction()
-                fut.set(Unit)
-            }
+            sendTransaction(records)
+            fut.set(Unit)
         } catch (ex: Exception) {
             when (ex) {
-                is InvalidProducerEpochException,
+                is InvalidProducerEpochException -> {
+                    logErrorSetFutureAndAbortTransaction("Kafka producer clientId $clientId, instanceId $instanceId " +
+                            "failed to send.", ex, fut, true)
+                }
                 is InterruptException,
                 is TimeoutException -> {
-                    logErrorSetFutureAndAbortTransaction("Kafka producer clientId $clientId, instanceId $instanceId " +
-                            "failed to send.", ex, fut)
+                    logErrorSetFutureAndAbortTransaction("Kafka producer clientId $clientId, instanceId $instanceId" +
+                            "failed to send.", ex, fut, false)
                 }
                 is IllegalStateException,
                 is ProducerFencedException,
@@ -107,11 +132,25 @@ class CordaKafkaPublisher<K : Any, V : Any> (
     }
 
     /**
+     * Send list of [records] as a transaction. It is not necessary to handle exceptions for each send in a transaction
+     * as this is handled by the [KafkaProducer] commitTransaction.
+     */
+    private fun sendTransaction(records: List<Record<K, V>>) {
+        producer.beginTransaction()
+
+        for (record in records) {
+            producer.send(getProducerRecord(record))
+        }
+
+        producer.commitTransaction()
+    }
+
+    /**
      * Helper function to set a [future] result based on the presence of an [exception]
      */
-    private fun setFutureFromResponse(exception: Exception?, future: OpenFuture<Unit>, recordMetadata: RecordMetadata) {
+    private fun setFutureFromResponse(exception: Exception?, future: OpenFuture<Unit>, topic: String) {
         val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
-                "for topic ${recordMetadata.topic()} failed to send"
+                "for topic $topic failed to send"
         when {
             (exception == null) -> {
                 //transaction operation can still fail at commit stage  so do not set to true until it is committed
@@ -155,14 +194,15 @@ class CordaKafkaPublisher<K : Any, V : Any> (
 
     /**
      * Log the [message] and [exception]. Set the [exception] to the [future].
+     * If [fatal] is set to true then the producer is closed safely.
      * If the error occurred as part of a transaction then abort the transaction to reinitialise the producer.
      */
-    private fun logErrorSetFutureAndAbortTransaction(message: String, exception: Exception, future: OpenFuture<Unit>) {
+    private fun logErrorSetFutureAndAbortTransaction(message: String, exception: Exception, future: OpenFuture<Unit>, fatal: Boolean) {
         if (instanceId != null) {
             producer.abortTransaction()
-            logErrorAndSetFuture("$message Aborting transaction and reinitialising producer.", exception, future, false)
+            logErrorAndSetFuture("$message Aborting transaction and reinitialising producer.", exception, future, fatal)
         } else {
-            logErrorAndSetFuture(message, exception, future, false)
+            logErrorAndSetFuture(message, exception, future, fatal)
         }
     }
 
@@ -196,7 +236,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
         return ProducerRecord(topicPrefix + record.topic, record.key, value)
     }
 
-    override fun publishToPartition(record: Record<K, V>, partition: Int): CordaFuture<Unit> {
+    override fun publishToPartition(records: List<Pair<Int, Record<K, V>>>): List<CordaFuture<Unit>> {
         TODO("Not yet implemented")
     }
 }

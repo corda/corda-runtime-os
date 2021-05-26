@@ -20,7 +20,7 @@ interface SubscriptionFactory {
     /**
      * Create a PubSub subscription for processing events from a non durable queue.
      * Subscription will only receive events that occur after subscription is started. Older events are ignored.
-     * Events will be processed at most once. In the case of node failures messages consumed but not processed will be lost.
+     * Events will be processed at most once. If errors are thrown processing records then they will be skipped.
      * Events are consumed and synchronously committed back to the source.
      * @param processor Processor of events. Processor does not return any new records to be sent back to the topic.
      * @param subscriptionConfig Define the mandatory params for creating a subscription.

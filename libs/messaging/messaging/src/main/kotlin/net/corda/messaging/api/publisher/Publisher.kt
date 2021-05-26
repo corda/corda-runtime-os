@@ -20,18 +20,23 @@ interface Publisher<K : Any, V : Any> : AutoCloseable {
     fun start() {}
 
     /**
-     * Publish the specified [record].
-     * @return A corda future which will be completed once the record has been published successfully.
-     *   If a fatal error occurs, then an exception of type [CordaMessageAPIFatalException] will be thrown and the publisher will be closed.
-     *   If a temporary error occurs and can be retried, then an exception of type [CordaMessageAPIIntermittentException] will be thrown.
+     * Publish a list of [record].
+     * @return A list of corda futures returning true or an exception for each message. Never returns false. If fatal error occurs
+     * then exception will be thrown of type [CordaMessageAPIFatalException] and publisher will be closed.
+     * If error is temporary and can be retried then exception will be of type [CordaMessageAPIIntermittentException].
+     * If publisher is configured for transactions (instanceId is set on publisherConfig) publish is
+     * executed synchronously and committed atomically.
+     * Transactions will return a future of size 1 indicating success or failure of the transaction.
+     * @throws CordaMessageAPIFatalException if record is of the wrong type for this Publisher
      */
-    fun publish(record: Record<K, V>) : CordaFuture<Unit>
+    fun publish(records: List<Record<K, V>>): List<CordaFuture<Unit>>
 
     /**
-     * Publish the specified [record] to the specified [partition].
-     * @return A corda future which will be completed once the record has been published successfully.
+     * Publish the specified list of records, each one to the specified partition (they key of the map).
+     * @param records a list of pairs, where the each pair contains the partition and the record to be written to this partition.
+     * @return A list of corda futures which will be completed once the record has been published successfully.
      *   If a fatal error occurs, then an exception of type [CordaMessageAPIFatalException] will be thrown and the publisher will be closed.
      *   If a temporary error occurs and can be retried, then an exception of type [CordaMessageAPIIntermittentException] will be thrown.
      */
-    fun publishToPartition(record: Record<K, V>, partition: Int): CordaFuture<Unit>
+    fun publishToPartition(records: List<Pair<Int, Record<K, V>>>): List<CordaFuture<Unit>>
 }

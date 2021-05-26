@@ -81,7 +81,7 @@ class DBMessagingIntegrationTest {
             SecureHash("algorithm", ByteBuffer.wrap(it.toByteArray(Charsets.UTF_8)))
         }
         messagesToWrite.forEach { value ->
-            dbPublisher.publish(Record(topicName, value, null)).getOrThrow()
+            dbPublisher.publish(listOf(Record(topicName, value, null))).first().getOrThrow()
         }
 
         val readMessages = mutableListOf<Pair<SecureHash?, SecureHash?>>()
@@ -111,7 +111,7 @@ class DBMessagingIntegrationTest {
             SecureHash("algorithm", ByteBuffer.wrap(it.toByteArray(Charsets.UTF_8)))
         }
         messagesToWrite.forEach { value ->
-            dbPublisher.publish(Record(topicName, value, value)).getOrThrow()
+            dbPublisher.publish(listOf(Record(topicName, value, value))).first().getOrThrow()
         }
 
         val readMessages = mutableListOf<Pair<SecureHash?, SecureHash?>>()
@@ -141,7 +141,7 @@ class DBMessagingIntegrationTest {
             SecureHash("algorithm", ByteBuffer.wrap(it.toByteArray(Charsets.UTF_8)))
         }
         messagesToWrite.forEach { value ->
-            dbPublisher.publish(Record(topicName, value, value)).getOrThrow()
+            dbPublisher.publish(listOf(Record(topicName, value, value))).first().getOrThrow()
         }
 
         val readMessages1 = mutableListOf<Pair<SecureHash?, SecureHash?>>()

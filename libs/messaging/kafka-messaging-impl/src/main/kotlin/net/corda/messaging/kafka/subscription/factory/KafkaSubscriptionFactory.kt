@@ -18,7 +18,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_P
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.PubSubConsumerBuilder
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.messaging.kafka.subscription.subscriptions.pubsub.KafkaPubSubSubscription
+import net.corda.messaging.kafka.subscription.pubsub.KafkaPubSubSubscription
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

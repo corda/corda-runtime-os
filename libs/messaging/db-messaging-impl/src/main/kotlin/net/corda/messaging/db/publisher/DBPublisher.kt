@@ -68,45 +68,47 @@ class DBPublisher<K: Any, V: Any>(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun publish(record: Record<K, V>): CordaFuture<Unit> {
-        return CompletableFuture.supplyAsync({
-            val tableName = "$TOPIC_TABLE_PREFIX${record.topic.replace(".", "_")}"
-            val statement = connection.prepareStatement("INSERT INTO $tableName ($KEY_COLUMN_NAME, $MESSAGE_PAYLOAD_COLUMN_NAME) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)
+    override fun publish(records: List<Record<K, V>>): List<CordaFuture<Unit>> {
+        return records.map { record ->
+            CompletableFuture.supplyAsync({
+                val tableName = "$TOPIC_TABLE_PREFIX${record.topic.replace(".", "_")}"
+                val statement = connection.prepareStatement("INSERT INTO $tableName ($KEY_COLUMN_NAME, $MESSAGE_PAYLOAD_COLUMN_NAME) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)
 
-            val serialisedKey = schemaRegistry.serialize(record.key)
-            statement.setBlob(1, ByteBufferInputStream(listOf(serialisedKey)))
+                val serialisedKey = schemaRegistry.serialize(record.key)
+                statement.setBlob(1, ByteBufferInputStream(listOf(serialisedKey)))
 
-            if (record.value != null) {
-                val serialisedValue = schemaRegistry.serialize(record.value!!)
-                statement.setBlob(2, ByteBufferInputStream(listOf(serialisedValue)))
-            } else {
-                statement.setNull(2, Types.BLOB)
-            }
+                if (record.value != null) {
+                    val serialisedValue = schemaRegistry.serialize(record.value!!)
+                    statement.setBlob(2, ByteBufferInputStream(listOf(serialisedValue)))
+                } else {
+                    statement.setNull(2, Types.BLOB)
+                }
 
-            try {
-                statement.executeUpdate()
-                connection.commit()
+                try {
+                    statement.executeUpdate()
+                    connection.commit()
 
-                val resultSet = statement.generatedKeys.apply { next() }
-                val offset = resultSet.getLong(1)
-                offsetTracker.advanceOffset(record.topic, offset)
-            } catch (e: Exception) {
-                val errorMessage = "Failed to publish record for client ID: ${publisherConfig.clientId}"
-                log.error(errorMessage, e)
-                when(e) {
-                    is SQLNonTransientException, is SQLClientInfoException,  -> {
-                        throw CordaMessageAPIFatalException(errorMessage, e)
-                    }
-                    else -> {
-                        throw CordaMessageAPIIntermittentException(errorMessage, e)
+                    val resultSet = statement.generatedKeys.apply { next() }
+                    val offset = resultSet.getLong(1)
+                    offsetTracker.advanceOffset(record.topic, offset)
+                } catch (e: Exception) {
+                    val errorMessage = "Failed to publish record for client ID: ${publisherConfig.clientId}"
+                    log.error(errorMessage, e)
+                    when(e) {
+                        is SQLNonTransientException, is SQLClientInfoException,  -> {
+                            throw CordaMessageAPIFatalException(errorMessage, e)
+                        }
+                        else -> {
+                            throw CordaMessageAPIIntermittentException(errorMessage, e)
+                        }
                     }
                 }
-            }
-        }, executor).asCordaFuture()
+            }, executor).asCordaFuture()
+        }.toList()
     }
 
-    override fun publishToPartition(record: Record<K, V>, partition: Int): CordaFuture<Unit> {
-        return publish(record)
+    override fun publishToPartition(records: List<Pair<Int, Record<K, V>>>): List<CordaFuture<Unit>> {
+        return publish(records.map { it.second })
     }
 
     override fun close() {

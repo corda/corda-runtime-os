@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.subscription.subscriptions.pubsub
+package net.corda.messaging.kafka.subscription.pubsub
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
