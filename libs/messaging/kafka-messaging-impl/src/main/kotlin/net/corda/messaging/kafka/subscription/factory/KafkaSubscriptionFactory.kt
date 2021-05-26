@@ -73,7 +73,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         processor: DurableProcessor<K, V>,
         properties: Map<String, String>
     ): Subscription<K, V> {
-        //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required
+        //TODO - replace this with a  call to OSGi ConfigService
         val config = ConfigFactory.load("tmpKafkaDefaults")
             .withValue(PublisherConfigProperties.PUBLISHER_CLIENT_ID,
                 ConfigValueFactory.fromAnyRef(subscriptionConfig.groupName+"-producer"))
@@ -159,7 +159,7 @@ class KafkaSubscriptionFactory @Activate constructor(
             conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
         producerProps[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] =
             conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG)
-        //TODO - append unique id for this node instance to this so it is unique across multiple HA nodes
+        //TODO - append unique id for this node instance + node identity to this so it is unique across multiple HA nodes
         producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] =
             "subscription-$producerClientId"
 

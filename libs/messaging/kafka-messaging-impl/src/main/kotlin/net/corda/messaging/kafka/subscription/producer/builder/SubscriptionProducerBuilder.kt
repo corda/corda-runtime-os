@@ -5,7 +5,7 @@ import net.corda.messaging.kafka.subscription.producer.wrapper.CordaKafkaProduce
 import org.apache.kafka.clients.consumer.Consumer
 
 /**
- * Builder for creating Consumers.
+ * Builder for creating producers for use in Subscriptions. Records received from processors are written back to kafka using this.
  */
 interface SubscriptionProducerBuilder {
 

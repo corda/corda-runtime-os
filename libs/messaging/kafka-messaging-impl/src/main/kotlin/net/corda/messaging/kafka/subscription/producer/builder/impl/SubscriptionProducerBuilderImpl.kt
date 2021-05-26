@@ -10,6 +10,7 @@ import net.corda.messaging.kafka.subscription.producer.wrapper.impl.CordaKafkaPr
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.InterruptException
@@ -20,7 +21,9 @@ import org.slf4j.LoggerFactory
 import java.util.Properties
 
 /**
- * Generate a Kafka PubSub Consumer Builder.
+ * Generate a subscription producer builder applying the [config] and [producerProperties] to each new instance of a producer.
+ * Use the [avroSchemaRegistry] SerDe for converting [Record] to kafka [ProducerRecord].
+ * Initialise producer for transactions.
  */
 class SubscriptionProducerBuilderImpl (
     private val config: Config,
@@ -52,15 +55,18 @@ class SubscriptionProducerBuilderImpl (
     }
 
     /**
-     * Initialise transactions for the transactional producer.
-     * @param producer to initialise transactions for
+     * Initialise transactions for the producer.
+     * @param producer to initialise transactions.
+     * @throws CordaMessageAPIFatalException fatal error occurred.
+     * @throws CordaMessageAPIIntermittentException error occurred that can be retried.
      */
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     private fun initTransactionForProducer(producer: KafkaProducer<Any, Any>) {
         try {
             producer.initTransactions()
         } catch (ex: Exception) {
-            val message = "Failed to initialize producer for transactions"
+            val message = "Failed to initialize producer with " +
+                    "transactionId ${producerProperties[ProducerConfig.TRANSACTIONAL_ID_CONFIG]} for transactions"
             when (ex) {
                 is IllegalStateException,
                 is UnsupportedVersionException,

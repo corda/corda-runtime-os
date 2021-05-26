@@ -28,10 +28,15 @@ import org.apache.kafka.common.errors.UnsupportedVersionException
 import org.slf4j.Logger
 import java.time.Duration
 
+/**
+ * Wrapper for the CordaKafkaProducer.
+ * Delegate actions to kafka [producer].
+ * Wrap calls to [producer] with error handling.
+ */
 @Suppress("TooGenericExceptionCaught")
 class CordaKafkaProducerImpl(
     private val avroSchemaRegistry: AvroSchemaRegistry,
-    private val config: Config,
+    config: Config,
     private val producer: Producer<Any, Any>,
     private val consumer: Consumer<*, *>,
     ) : CordaKafkaProducer, Producer<Any, Any> by producer {
@@ -40,11 +45,9 @@ class CordaKafkaProducerImpl(
     private val topicPrefix = config.getString(KafkaProperties.KAFKA_TOPIC_PREFIX)
     private val clientId =  config.getString(PublisherConfigProperties.PUBLISHER_CLIENT_ID)
 
-
     private companion object {
         private val log: Logger = contextLogger()
     }
-
 
     override fun sendRecords(records: List<Record<*, *>>) {
         for (record in records) {
