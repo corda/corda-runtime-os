@@ -1,5 +1,7 @@
 package net.corda.p2p.crypto.protocol
 
+import net.corda.p2p.crypto.InitiatorHelloMessage
+import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_KEY_SIZE_BYTES
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_NONCE_SIZE_BYTES
@@ -19,8 +21,6 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_HANDS
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSION_ENCRYPTION_KEY_INFO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSION_NONCE_INFO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.SIGNATURE_ALGO
-import net.corda.p2p.crypto.protocol.data.InitiatorHelloMessage
-import net.corda.p2p.crypto.protocol.data.ResponderHelloMessage
 import net.corda.p2p.crypto.util.convertToBCDigest
 import net.corda.p2p.crypto.util.generateKey
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
