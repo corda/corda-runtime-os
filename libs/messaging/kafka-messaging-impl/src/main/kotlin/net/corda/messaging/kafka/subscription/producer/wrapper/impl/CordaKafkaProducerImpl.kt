@@ -62,12 +62,16 @@ class CordaKafkaProducerImpl(
                 is InvalidProducerEpochException,
                 is UnsupportedVersionException,
                 is AuthorizationException -> {
-                    log.error("Error occurred beginning transaction", ex)
-                    throw CordaMessageAPIFatalException("Error occurred beginning transaction", ex)
+                    throw CordaMessageAPIFatalException("Fatal error occurred beginning transaction " +
+                            "for CordaKafkaProducer with clientId $clientId", ex)
                 }
                 is KafkaException -> {
-                    log.error("Error occurred beginning transaction", ex)
-                    throw CordaMessageAPIIntermittentException("Error occurred beginning transaction", ex)
+                    throw CordaMessageAPIIntermittentException("Error occurred beginning transaction " +
+                            "for CordaKafkaProducer with clientId $clientId", ex)
+                }
+                else -> {
+                    throw CordaMessageAPIFatalException("Unexpected fatal error occurred beginning transaction " +
+                            "for CordaKafkaProducer with clientId $clientId", ex)
                 }
             }
         }
@@ -77,22 +81,24 @@ class CordaKafkaProducerImpl(
         try {
             producer.abortTransaction()
         } catch (ex: Exception) {
-            log.error("Failed to abort transaction.", ex)
             when (ex) {
                 is IllegalStateException,
                 is ProducerFencedException,
                 is UnsupportedVersionException,
                 is AuthorizationException,
                 is InvalidProducerEpochException -> {
-                    throw CordaMessageAPIFatalException("Failed to abort transaction.", ex)
+                    throw CordaMessageAPIFatalException("Fatal error occurred aborting transaction " +
+                            "for CordaKafkaProducer with clientId $clientId", ex)
                 }
                 is TimeoutException,
                 is InterruptException,
                 is KafkaException -> {
-                    throw CordaMessageAPIIntermittentException("Failed to abort transaction.", ex)
+                    throw CordaMessageAPIIntermittentException("Error occurred aborting transaction " +
+                            "for CordaKafkaProducer with clientId $clientId", ex)
                 }
                 else -> {
-                    throw CordaMessageAPIFatalException("Error occurred aborting transaction", ex)
+                    throw CordaMessageAPIFatalException("Unexpected error occurred aborting transaction " +
+                            "for CordaKafkaProducer with clientId $clientId", ex)
                 }
             }
         }
@@ -102,7 +108,6 @@ class CordaKafkaProducerImpl(
         try {
             producer.commitTransaction()
         } catch (ex: Exception) {
-            log.error("Error occurred committing transaction", ex)
             producer.abortTransaction()
             when (ex) {
                 is IllegalStateException,
@@ -110,15 +115,18 @@ class CordaKafkaProducerImpl(
                 is UnsupportedVersionException,
                 is AuthorizationException,
                 is InvalidProducerEpochException -> {
-                    throw CordaMessageAPIFatalException("Error occurred beginning transaction", ex)
+                    throw CordaMessageAPIFatalException("Fatal error occurred committing transaction " +
+                            "for CordaKafkaProducer with clientId $clientId", ex)
                 }
                 is TimeoutException,
                 is InterruptException,
                 is KafkaException -> {
-                    throw CordaMessageAPIIntermittentException("Error occurred committing transaction", ex)
+                    throw CordaMessageAPIIntermittentException("Error occurred committing transaction " +
+                            "for CordaKafkaProducer with clientId $clientId", ex)
                 }
                 else -> {
-                    throw CordaMessageAPIFatalException("Error occurred beginning transaction", ex)
+                    throw CordaMessageAPIFatalException("Unexpected error occurred committing transaction " +
+                            "for CordaKafkaProducer with clientId $clientId", ex)
                 }
             }
         }
@@ -128,7 +136,6 @@ class CordaKafkaProducerImpl(
         try {
             producer.sendOffsetsToTransaction(consumerOffsets(), consumer.groupMetadata())
         } catch (ex: Exception) {
-            log.error("Error occurred sending offsets for transaction", ex)
             when (ex) {
                 is IllegalStateException,
                 is ProducerFencedException,
@@ -138,14 +145,17 @@ class CordaKafkaProducerImpl(
                 is CommitFailedException,
                 is InvalidProducerEpochException,
                 is FencedInstanceIdException -> {
-                    throw CordaMessageAPIFatalException("Error occurred beginning transaction", ex)
+                    throw CordaMessageAPIFatalException("Error occurred sending offsets for transaction " +
+                            "for CordaKafkaProducer with clientId $clientId", ex)
                 }
                 is TimeoutException,
                 is InterruptException,
                 is KafkaException -> {
-                    throw CordaMessageAPIIntermittentException("Error occurred beginning transaction", ex)
+                    throw CordaMessageAPIIntermittentException("Fatal error occurred sending offsets for transaction " +
+                            "for CordaKafkaProducer with clientId $clientId", ex)
                 } else -> {
-                    throw CordaMessageAPIFatalException("Error occurred beginning transaction", ex)
+                    throw CordaMessageAPIFatalException("Unexpected error occurred sending offsets for transaction " +
+                            "for CordaKafkaProducer with clientId $clientId", ex)
                 }
             }
         }
@@ -159,7 +169,7 @@ class CordaKafkaProducerImpl(
         try {
             producer.close(Duration.ofMillis(closeTimeout))
         } catch (ex: Exception) {
-            log.error("CordaKafkaPublisher failed to close producer safely. ClientId: $clientId", ex)
+            log.error("CordaKafkaProducer failed to close producer safely. ClientId: $clientId", ex)
         }
     }
 
