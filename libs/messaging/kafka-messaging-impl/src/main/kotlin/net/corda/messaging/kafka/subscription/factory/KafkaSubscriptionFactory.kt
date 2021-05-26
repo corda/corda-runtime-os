@@ -151,10 +151,6 @@ class KafkaSubscriptionFactory @Activate constructor(
         val producerProps = Properties()
         producerProps[ProducerConfig.CLIENT_ID_CONFIG] = producerClientId
 
-        producerProps[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] =
-            conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG)
-        producerProps[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] =
-            conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG)
         producerProps[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] =
             conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
         producerProps[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] =
