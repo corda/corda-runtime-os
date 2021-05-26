@@ -60,7 +60,7 @@ pipeline {
         }
         stage('Build') {
             steps {
-                sh './gradlew build'
+                sh "./gradlew build -Dmaven.repo.local=/tmp/artifacts/mavenLocal -PcordaVersion=1.0.${params.CORDA_VERSION_SUFFIX}"
             }
         }
     }
