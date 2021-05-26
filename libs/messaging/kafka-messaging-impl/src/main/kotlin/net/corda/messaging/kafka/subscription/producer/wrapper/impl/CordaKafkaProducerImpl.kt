@@ -51,7 +51,7 @@ class CordaKafkaProducerImpl(
 
     override fun sendRecords(records: List<Record<*, *>>) {
         for (record in records) {
-            producer.send(getProducerRecord(record))
+            producer.send(ProducerRecord(topicPrefix + record.topic, record.key, record.value))
         }
     }
 
@@ -152,17 +152,6 @@ class CordaKafkaProducerImpl(
                 }
             }
         }
-    }
-
-    private fun getProducerRecord(record: Record<*, *>) : ProducerRecord<Any, Any> {
-        val value = try {
-            record.value?.let { avroSchemaRegistry.serialize(it) }
-        } catch (ex : CordaRuntimeException) {
-            abortTransaction()
-            throw CordaMessageAPIFatalException("CordaKafkaPublisher failed to serialize record value with the key ${record.key}. " +
-                    "ClientId: $clientId")
-        }
-        return ProducerRecord(topicPrefix + record.topic, record.key, value)
     }
 
     /**
