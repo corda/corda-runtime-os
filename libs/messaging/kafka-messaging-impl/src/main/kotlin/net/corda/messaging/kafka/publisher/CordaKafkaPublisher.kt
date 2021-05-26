@@ -10,7 +10,6 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_TOPI
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.concurrent.CordaFuture
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.internal.concurrent.OpenFuture
 import net.corda.v5.base.internal.concurrent.openFuture
 import net.corda.v5.base.util.contextLogger
@@ -43,7 +42,7 @@ import java.time.Duration
 class CordaKafkaPublisher<K : Any, V : Any> (
     private val publisherConfig: PublisherConfig,
     private val kafkaConfig: Config,
-    private val producer: Producer<K, ByteBuffer>,
+    private val producer: Producer<K, V>,
     private val avroSchemaRegistry: AvroSchemaRegistry
     ) : Publisher<K, V> {
 
@@ -57,6 +56,15 @@ class CordaKafkaPublisher<K : Any, V : Any> (
     private val topicPrefix = kafkaConfig.getString(KAFKA_TOPIC_PREFIX)
     private val instanceId = publisherConfig.instanceId
     private val clientId = publisherConfig.clientId
+
+    /**
+     * Convert a generic [record] to a Kafka ProducerRecord.
+     * Attach the configured kafka topic prefix as a prefix to the [record] topic.
+     * @return Producer record with kafka topic prefix attached.
+     */
+    private fun <K : Any, V : Any> Record<K, V>.asProducerRecord(): ProducerRecord<K, V> {
+        return ProducerRecord(topicPrefix + topic, key, value)
+    }
 
     /**
      * Publish a record.
@@ -84,7 +92,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
         records.forEach {
             val fut = openFuture<Unit>()
             futures.add(fut)
-            producer.send(getProducerRecord(it)) { _, ex ->
+            producer.send(it.asProducerRecord()) { _, ex ->
                 setFutureFromResponse(ex, fut, it.topic)
             }
         }
@@ -139,7 +147,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
         producer.beginTransaction()
 
         for (record in records) {
-            producer.send(getProducerRecord(record))
+            producer.send(record.asProducerRecord())
         }
 
         producer.commitTransaction()
@@ -218,25 +226,8 @@ class CordaKafkaPublisher<K : Any, V : Any> (
         }
     }
 
-    /**
-     * Convert a generic [record] to a Kafka ProducerRecord.
-     * Use Avro [avroSchemaRegistry] to serialize the [record] value if it is not null.
-     * Use Kafka serializer for [record] key.
-     * Attach the configured kafka topic prefix as a prefix to the [record] topic.
-     * @return Producer record with kafka topic prefix attached.
-     * @throws CordaMessageAPIFatalException when failing to serialize record value
-     */
-    private fun getProducerRecord(record: Record<K, V>): ProducerRecord<K, ByteBuffer> {
-        val value = try {
-             record.value?.let { avroSchemaRegistry.serialize(it) }
-        } catch (ex : CordaRuntimeException) {
-            throw CordaMessageAPIFatalException("CordaKafkaPublisher failed to serialize record value with the key ${record.key}. " +
-                    "ClientId: $clientId, topic: ${record.topic}.")
-        }
-        return ProducerRecord(topicPrefix + record.topic, record.key, value)
-    }
-
     override fun publishToPartition(records: List<Pair<Int, Record<K, V>>>): List<CordaFuture<Unit>> {
         TODO("Not yet implemented")
     }
+
 }
