@@ -8,6 +8,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.properties.PublisherConfigProperties
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -54,7 +55,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private var consumeLoopThread: Thread? = null
     private val topic = subscriptionConfig.eventTopic
     private val groupName = subscriptionConfig.groupName
-
+    private val producerClientId: String = config.getString(PublisherConfigProperties.PUBLISHER_CLIENT_ID)
     /**
      * Is the subscription running.
      */
@@ -76,7 +77,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
                     start = true,
                     isDaemon = true,
                     contextClassLoader = null,
-                    name = "pubsub processing thread ${subscriptionConfig.groupName}-${subscriptionConfig.eventTopic}",
+                    name = "durable processing thread $groupName-$topic",
                     priority = -1,
                     block = ::runConsumeLoop
                 )
@@ -102,11 +103,10 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     /**
      * Create a Consumer for the given [subscriptionConfig] and [config] and subscribe to the topic.
      * Attempt to create this connection until it is successful while subscription is active.
-     * After connection is made begin to process records indefinitely. Mark each record and committed after processing
+     * After connection is made begin to process records indefinitely. Mark each record as committed after processing
      * is completed and outputs are written to their respective topics.
-     * If an error occurs while processing reset the consumers position on the topic to the last committed position.
+     * If an error occurs while processing, reset the consumers position on the topic to the last committed position.
      * If subscription is stopped close the consumer.
-     * @throws CordaMessageAPIFatalException if unrecoverable error occurs
      */
     @Suppress("TooGenericExceptionCaught")
     fun runConsumeLoop() {
@@ -126,15 +126,15 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
                 }
                 attempts = 0
             } catch (ex: CordaMessageAPIIntermittentException) {
-                log.warn("Failed to read and process records from topic $topic, group $groupName, " +
-                        "attempts: $attempts. Recreating consumer/producer and Retrying.", ex)
+                log.warn("Failed to read and process records from topic $topic, group $groupName. " +
+                        "Attempts: $attempts. Recreating consumer/producer and Retrying.", ex)
             } catch (ex: CordaMessageAPIFatalException) {
-                log.error("PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic. " +
-                        "Fatal error occurred. Closing subscription.", ex)
+                log.error("Failed to read and process records from topic $topic, group $groupName. " +
+                        "Attempts: $attempts.Fatal error occurred. Closing subscription.", ex)
                 stop()
             }  catch (ex: Exception) {
-                log.error("PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
-                        "attempts: $attempts. " +
+                log.error("Failed to read and process records from topic $topic, group $groupName. " +
+                        "Attempts: $attempts. " +
                         "Unexpected error occurred. Closing subscription.", ex)
                 stop()
             }
@@ -142,7 +142,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     }
 
     /**
-     * Poll records with the [consumer], process them with the [processor] and send outputs back to kafka atomically.
+     * Poll records with the [consumer], process them with the [processor] and send outputs back to kafka atomically with the [producer].
      * If an exception is thrown while polling and processing then reset the fetch position to the last committed position.
      * If no offset is present on the topic reset poll position to the start of the topic.
      * If this continues to fail throw a [CordaMessageAPIIntermittentException] to break out of the loop.
@@ -164,12 +164,12 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
                     else -> {
                         attempts++
                         if (attempts <= consumerPollAndProcessRetries) {
-                            log.warn("PubSubConsumer from group $groupName failed to read and process records from topic $topic. " +
-                                    "retrying. Attempts: $attempts.")
+                            log.warn("Failed to read and process records from topic $topic, group $groupName. " +
+                                    "Retrying poll and process. Attempts: $attempts.")
                             consumer.resetToLastCommittedPositions(OffsetResetStrategy.EARLIEST)
                         } else {
-                            val message = "PubSubConsumer from group $groupName failed to read and process records from topic $topic. " +
-                                    "Max reties for poll and process exceeded."
+                            val message = "Failed to read and process records from topic $topic, group $groupName. " +
+                                    "Attempts: $attempts. Max reties for poll and process exceeded."
                             log.warn(message, ex)
                             throw CordaMessageAPIIntermittentException(message, ex)
                         }
@@ -180,7 +180,8 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     }
 
     /**
-     * Process Kafka [consumerRecords].  Commit the offset for each record back to the topic after processing them synchronously.
+     * Process Kafka [consumerRecords]. Commit the offset for each record back to the topic after processing them synchronously
+     * and writing output records back to kafka in a transaction.
      * If a record fails to deserialize skip this record and log the error.
      * @throws CordaMessageAPIIntermittentException error occurred that can be retried.
      * @throws CordaMessageAPIFatalException Fatal unrecoverable error occurred. e.g misconfiguration
@@ -194,7 +195,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
                 producer.beginTransaction()
                 producer.sendRecords(processor.onNext(consumerRecord.asRecord()))
                 producer.sendOffsetsToTransaction()
-                producer.commitTransaction()
+                producer.tryCommitTransaction()
             } catch (ex: Exception) {
                 when(ex) {
                     is CordaMessageAPIFatalException,
@@ -202,7 +203,8 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
                         throw ex
                     }
                     else -> {
-                        throw CordaMessageAPIFatalException("Unexpected error occurred in transaction. Closing producer.", ex)
+                        throw CordaMessageAPIFatalException("Failed to process records from topic $topic, group $groupName. " +
+                                "Unexpected error occurred in this transaction. Closing producer.", ex)
                     }
                 }
             }

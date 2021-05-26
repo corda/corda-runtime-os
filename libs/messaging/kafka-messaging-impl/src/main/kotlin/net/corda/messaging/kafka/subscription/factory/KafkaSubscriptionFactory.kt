@@ -17,7 +17,6 @@ import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CONF_PREFIX
 import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
 import net.corda.messaging.kafka.properties.PublisherConfigProperties
-import net.corda.messaging.kafka.properties.SubscriptionConfigProperties
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
 import net.corda.messaging.kafka.subscription.producer.builder.impl.SubscriptionProducerBuilderImpl
@@ -78,8 +77,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         val config = ConfigFactory.load("tmpKafkaDefaults")
             .withValue(PublisherConfigProperties.PUBLISHER_CLIENT_ID,
                 ConfigValueFactory.fromAnyRef(subscriptionConfig.groupName+"-producer"))
-            .withValue(SubscriptionConfigProperties.SUBSCRIPTION_GROUP_NAME,
-                ConfigValueFactory.fromAnyRef(subscriptionConfig.groupName))
+
         //pattern specific properties
         val overrideProperties = properties.toMutableMap()
         overrideProperties[CONSUMER_CONF_PREFIX + ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = FALSE
@@ -148,11 +146,10 @@ class KafkaSubscriptionFactory @Activate constructor(
         val properties = Properties()
         properties.putAll(overrideProperties)
         val conf: Config = ConfigFactory.parseProperties(properties).withFallback(config)
-        val clientId = config.getString(PublisherConfigProperties.PUBLISHER_CLIENT_ID)
-        val groupName = config.getString(SubscriptionConfigProperties.SUBSCRIPTION_GROUP_NAME)
+        val producerClientId = config.getString(PublisherConfigProperties.PUBLISHER_CLIENT_ID)
 
         val producerProps = Properties()
-        producerProps[ProducerConfig.CLIENT_ID_CONFIG] = clientId
+        producerProps[ProducerConfig.CLIENT_ID_CONFIG] = producerClientId
 
         producerProps[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] =
             conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG)
@@ -162,8 +159,9 @@ class KafkaSubscriptionFactory @Activate constructor(
             conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
         producerProps[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] =
             conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG)
+        //TODO - append unique id for this node instance to this so it is unique across multiple HA nodes
         producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] =
-            "subscription-producer-$clientId-$groupName"
+            "subscription-$producerClientId"
 
         return producerProps
     }
