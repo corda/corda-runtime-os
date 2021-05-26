@@ -47,6 +47,15 @@ pipeline {
         }
         stage('Download Corda maven artifacts') {
             steps {
+                sh 'mkdir -p /tmp/artifacts/mavenLocal'
+                copyArtifacts projectName: 'corda5-poc/corda5-invoke-flowworker',
+                    selector: upstream(),
+                    fingerprintArtifacts: true,
+                    filter: 'mavenLocal.tar.gz',
+                    target: '/tmp/artifacts'
+                sh 'find /tmp/artifacts'
+                sh 'tar -xvf /tmp/artifacts/mavenLocal.tar.gz -C /tmp/artifacts/mavenLocal'
+                sh 'rm -rf /tmp/artifacts/mavenLocal.tar.gz'
                 echo 'Hi'
             }
         }
