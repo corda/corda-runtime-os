@@ -476,7 +476,7 @@ class OSGiFrameworkWrap(
         timeout: Long,
         args: Array<String>,
     ): OSGiFrameworkWrap {
-        bundleWrapMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
+        bundleDescriptorMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
             if (!bundleDescriptor.active.await(timeout, TimeUnit.MILLISECONDS)) {
                 logger.warn(
                     "OSGi bundle ${bundleDescriptor.bundle.location}" +
@@ -594,6 +594,8 @@ class OSGiFrameworkWrap(
             return frameworkEvent
         }
     }
+
+    //: AutoCloseable
 
     /**
      * Call [stop], implemented to provide [OSGiFrameworkWrap] in `try-with-resources/use` block.

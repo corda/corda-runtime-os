@@ -9,7 +9,7 @@ dependencies {
     compileOnly "org.osgi:osgi.core:$osgiVersion"
     implementation project(":helloworld")
     implementation project(":osgi-framework-api")
-    implementation "org.slf4j:slf4j-api:$osgiSlf4jVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
     runtimeOnly project(":helloworld-impl")
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"

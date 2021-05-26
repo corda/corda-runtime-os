@@ -97,7 +97,7 @@ Annotate the class implementing `net.corda.osgi.api.Application` with
 ```kotlin
 @Component(immediate = true)
 ```
- 
+
 See [OSGi Core r7 5.2.2 Service Interface](http://docs.osgi.org/specification/osgi.core/7.0.0/framework.service.html).
 
 The `net.corda.osgi.api.Application.startup(args: Array<String>)` is the entry-point of the application called when all
@@ -106,7 +106,8 @@ the OSGi bundles zipped in the bootable JAR are active.
 If no class implements the `net.corda.osgi.api.Application` interface, the application bootstrap throws an exception and
 stops.
 
-See [How to stop the application programmatically] for a full example of how to implement `net.corda.osgi.api.Application` 
+See [How to stop the application programmatically] for a full example of how to
+implement `net.corda.osgi.api.Application`
 
 #### How to clean-up and release resources before to quit
 
@@ -125,7 +126,7 @@ class App : Application {
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(App::class.java)
     }
-    
+
     override fun startup(args: Array<String>) {
         logger.info("START-UP")
         Thread.sleep(1000)
@@ -148,13 +149,15 @@ class App : Application {
             }
         }
     }
-    
+
 }
 ```
 
 #### Testing
 
 See [OSGi Test Conventions Plugin](#OSGi Test Conventions Plugin).
+
+**
 
 #### Advanced dependency declarations and Gradle tasks
 
@@ -276,6 +279,12 @@ See [OSGi Core r7 5.2.2 Service Interface](http://docs.osgi.org/specification/os
 #### Testing
 
 See [OSGi Test Conventions Plugin](#OSGi Test Conventions Plugin).
+
+*IMPORTANT! After the `clean` or `osgi-framework-bootstrap:clean` tasks, the
+task `osgi-framework-bootstrap:framework-app-tester:appJar` must run before any `test` or `build` task
+because the unit tests for the `osgi-framework-bootstrap` module need to try to activate at the OSGi bundle
+of the application.
+The `osgi-framework-bootstrap:framework-app-tester:appJar` task builds a dummy application bundle.
 
 #### Advanced dependency declarations and Gradle tasks
 
