@@ -51,7 +51,7 @@ class SubscriptionProducerBuilderImpl (
 
         initTransactionForProducer(producer)
 
-        return CordaKafkaProducerImpl(avroSchemaRegistry, config, producer, consumer)
+        return CordaKafkaProducerImpl(config, producer, consumer)
     }
 
     /**

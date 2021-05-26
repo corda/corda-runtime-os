@@ -14,7 +14,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.emulation.stubs.StubPubSubProcessor
+import net.corda.messaging.kafka.stubs.StubPubSubProcessor
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder

@@ -1,4 +1,4 @@
-package net.corda.messaging.emulation.stubs
+package net.corda.messaging.kafka.stubs
 
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record

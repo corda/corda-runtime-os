@@ -15,17 +15,15 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.kafka.stubs.StubDurableProcessor
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.properties.PublisherConfigProperties
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
-import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
-import net.corda.messaging.kafka.subscription.net.corda.messaging.emulation.stubs.StubDurableProcessor
 import net.corda.messaging.kafka.subscription.producer.builder.SubscriptionProducerBuilder
 import net.corda.messaging.kafka.subscription.producer.wrapper.CordaKafkaProducer
-import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -45,6 +43,7 @@ class KafkaDurableSubscriptionImplTest {
     private val config: Config = ConfigFactory.empty()
         .withValue(CONSUMER_POLL_AND_PROCESS_RETRIES, ConfigValueFactory.fromAnyRef(consumerPollAndProcessRetriesCount))
         .withValue(CONSUMER_THREAD_STOP_TIMEOUT, ConfigValueFactory.fromAnyRef(1000))
+        .withValue(PublisherConfigProperties.PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef("clientId"))
     private val consumerBuilder: ConsumerBuilder<String, ByteBuffer> = mock()
     private val producerBuilder: SubscriptionProducerBuilder = mock()
     private val mockCordaConsumer: CordaKafkaConsumer<String, ByteBuffer> = mock()
@@ -95,7 +94,7 @@ class KafkaDurableSubscriptionImplTest {
         verify(mockCordaProducer, times(mockRecordCount.toInt())).beginTransaction()
         verify(mockCordaProducer, times(mockRecordCount.toInt())).sendRecords(any())
         verify(mockCordaProducer, times(mockRecordCount.toInt())).sendOffsetsToTransaction()
-        verify(mockCordaProducer, times(mockRecordCount.toInt())).commitTransaction()
+        verify(mockCordaProducer, times(mockRecordCount.toInt())).tryCommitTransaction()
     }
 
     /**
@@ -131,6 +130,7 @@ class KafkaDurableSubscriptionImplTest {
         verify(mockCordaConsumer, times(0)).poll()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any())
         verify(producerBuilder, times(1)).createProducer(anyOrNull())
+        verify(mockCordaProducer, times(0)).beginTransaction()
         assertThat(latch.count).isEqualTo(mockRecordCount)
     }
 
@@ -157,6 +157,7 @@ class KafkaDurableSubscriptionImplTest {
         assertThat(latch.count).isEqualTo(mockRecordCount)
         verify(consumerBuilder, times(2)).createDurableConsumer(any(), any())
         verify(producerBuilder, times(1)).createProducer(anyOrNull())
+        verify(mockCordaProducer, times(0)).beginTransaction()
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
     }
@@ -186,6 +187,10 @@ class KafkaDurableSubscriptionImplTest {
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(consumerBuilder, times(2)).createDurableConsumer(any(), any())
         verify(producerBuilder, times(1)).createProducer(anyOrNull())
+        verify(mockCordaProducer, times(consumerPollAndProcessRetriesCount+1)).beginTransaction()
+        verify(mockCordaProducer, times(0)).sendRecords(any())
+        verify(mockCordaProducer, times(0)).sendOffsetsToTransaction()
+        verify(mockCordaProducer, times(0)).tryCommitTransaction()
     }
 
     @Test
@@ -203,5 +208,9 @@ class KafkaDurableSubscriptionImplTest {
         verify(mockCordaConsumer, times(1)).poll()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any())
         verify(producerBuilder, times(1)).createProducer(anyOrNull())
+        verify(mockCordaProducer, times(1)).beginTransaction()
+        verify(mockCordaProducer, times(0)).sendRecords(any())
+        verify(mockCordaProducer, times(0)).sendOffsetsToTransaction()
+        verify(mockCordaProducer, times(0)).tryCommitTransaction()
     }
 }

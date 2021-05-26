@@ -7,8 +7,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.PublisherConfigProperties
 import net.corda.messaging.kafka.subscription.producer.wrapper.CordaKafkaProducer
-import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
@@ -35,7 +33,6 @@ import java.time.Duration
  */
 @Suppress("TooGenericExceptionCaught")
 class CordaKafkaProducerImpl(
-    private val avroSchemaRegistry: AvroSchemaRegistry,
     config: Config,
     private val producer: Producer<Any, Any>,
     private val consumer: Consumer<*, *>,

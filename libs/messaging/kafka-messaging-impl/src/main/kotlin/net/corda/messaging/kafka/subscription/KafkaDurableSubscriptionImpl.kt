@@ -126,14 +126,14 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
                 }
                 attempts = 0
             } catch (ex: CordaMessageAPIIntermittentException) {
-                log.warn("Failed to read and process records from topic $topic, group $groupName. " +
+                log.warn("Failed to read and process records from topic $topic, group $groupName, producerClientId $producerClientId. " +
                         "Attempts: $attempts. Recreating consumer/producer and Retrying.", ex)
             } catch (ex: CordaMessageAPIFatalException) {
-                log.error("Failed to read and process records from topic $topic, group $groupName. " +
+                log.error("Failed to read and process records from topic $topic, group $groupName, producerClientId $producerClientId. " +
                         "Attempts: $attempts.Fatal error occurred. Closing subscription.", ex)
                 stop()
             }  catch (ex: Exception) {
-                log.error("Failed to read and process records from topic $topic, group $groupName. " +
+                log.error("Failed to read and process records from topic $topic, group $groupName, producerClientId $producerClientId. " +
                         "Attempts: $attempts. " +
                         "Unexpected error occurred. Closing subscription.", ex)
                 stop()
@@ -164,11 +164,13 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
                     else -> {
                         attempts++
                         if (attempts <= consumerPollAndProcessRetries) {
-                            log.warn("Failed to read and process records from topic $topic, group $groupName. " +
+                            log.warn("Failed to read and process records from topic $topic, group $groupName, " +
+                                    "producerClientId $producerClientId. " +
                                     "Retrying poll and process. Attempts: $attempts.")
                             consumer.resetToLastCommittedPositions(OffsetResetStrategy.EARLIEST)
                         } else {
-                            val message = "Failed to read and process records from topic $topic, group $groupName. " +
+                            val message = "Failed to read and process records from topic $topic, group $groupName, " +
+                                    "producerClientId $producerClientId. " +
                                     "Attempts: $attempts. Max reties for poll and process exceeded."
                             log.warn(message, ex)
                             throw CordaMessageAPIIntermittentException(message, ex)
@@ -203,7 +205,8 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
                         throw ex
                     }
                     else -> {
-                        throw CordaMessageAPIFatalException("Failed to process records from topic $topic, group $groupName. " +
+                        throw CordaMessageAPIFatalException("Failed to process records from topic $topic, " +
+                                "group $groupName, producerClientId $producerClientId. " +
                                 "Unexpected error occurred in this transaction. Closing producer.", ex)
                     }
                 }
