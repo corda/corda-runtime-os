@@ -14,7 +14,6 @@ description("OSGi Framework Bootstrap")
 
 dependencies {
     implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     implementation project("framework-api")
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
