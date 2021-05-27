@@ -7,11 +7,13 @@ import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
+import net.corda.p2p.crypto.internal.InitiatorEncryptedExtensions
+import net.corda.p2p.crypto.internal.InitiatorHandshakePayload
+import net.corda.p2p.crypto.internal.ResponderHandshakePayload
 import net.corda.p2p.crypto.protocol.AuthenticationProtocol
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SIG_PAD
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SIG_PAD
-import net.corda.p2p.crypto.protocol.toByteArray
 import net.corda.p2p.crypto.util.calculateMac
 import net.corda.p2p.crypto.util.decrypt
 import net.corda.p2p.crypto.util.encryptWithAssociatedData
@@ -100,24 +102,30 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         val initiatorRecordHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, PROTOCOL_VERSION,
                                                 sessionId, 1, Instant.now().toEpochMilli())
         val initiatorRecordHeaderBytes = initiatorRecordHeader.toByteBuffer().array()
-        val groupIdBytes = groupId.toByteArray(Charsets.UTF_8)
-        val initiatorEncryptedExtensions = messageDigest.hash(theirPublicKey.encoded) +
-                                                     groupIdBytes.size.toByteArray() + groupIdBytes
-        val initiatorParty = messageDigest.hash(ourPublicKey.encoded)
-        val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorEncryptedExtensions + initiatorParty
-        val initiatorPartyVerify = signingFn(INITIATOR_SIG_PAD.toByteArray(Charsets.UTF_8) +
-                                             messageDigest.hash(initiatorHelloToResponderParty))
-        val initiatorHelloToInitiatorPartyVerify = initiatorHelloToResponderParty + initiatorPartyVerify
-        val initiatorFinished = hmac.calculateMac(sharedHandshakeSecrets!!.initiatorAuthKey,
-                                                  messageDigest.hash(initiatorHelloToInitiatorPartyVerify))
-        initiatorHandshakePayload = initiatorEncryptedExtensions +
-                                 initiatorParty +
-                                 (initiatorPartyVerify.size.toByteArray() + initiatorPartyVerify) +
-                                 initiatorFinished
+        val initiatorHandshakePayload = InitiatorHandshakePayload()
+        val responderPublicKeyHash = ByteBuffer.wrap(messageDigest.hash(theirPublicKey.encoded))
+        initiatorHandshakePayload.initiatorEncryptedExtensions = InitiatorEncryptedExtensions(responderPublicKeyHash, groupId)
+        initiatorHandshakePayload.initiatorPublicKeyHash = ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded))
+        initiatorHandshakePayload.initiatorPartyVerify = ByteBuffer.allocate(0)
+        initiatorHandshakePayload.initiatorFinished = ByteBuffer.allocate(0)
 
+        // calculate signature
+        val initiatorHelloToInitiatorPublicKeyHash = initiatorHelloToResponderHelloBytes!! +
+                                                      initiatorHandshakePayload.toByteBuffer().array()
+        initiatorHandshakePayload.initiatorPartyVerify = ByteBuffer.wrap(signingFn(INITIATOR_SIG_PAD.toByteArray(Charsets.UTF_8) +
+                                                                            messageDigest.hash(initiatorHelloToInitiatorPublicKeyHash)))
+
+        // calculate MAC
+        val initiatorHelloToInitiatorPartyVerify = initiatorHelloToResponderHelloBytes!! +
+                                                            initiatorHandshakePayload.toByteBuffer().array()
+        initiatorHandshakePayload.initiatorFinished = ByteBuffer.wrap(hmac.calculateMac(sharedHandshakeSecrets!!.initiatorAuthKey,
+                                                                                messageDigest.hash(initiatorHelloToInitiatorPartyVerify)))
+        initiatorHandshakePayloadBytes = initiatorHandshakePayload.toByteBuffer().array()
+
+        // encrypt payload
         val nonce = sharedHandshakeSecrets!!.initiatorNonce
         val (initiatorEncryptedData, initiatorTag) = aesCipher.encryptWithAssociatedData(initiatorRecordHeaderBytes,
-                nonce, initiatorHandshakePayload!!, sharedHandshakeSecrets!!.initiatorEncryptionKey)
+                nonce, initiatorHandshakePayloadBytes!!, sharedHandshakeSecrets!!.initiatorEncryptionKey)
         return InitiatorHandshakeMessage(initiatorRecordHeader, ByteBuffer.wrap(initiatorEncryptedData), ByteBuffer.wrap(initiatorTag))
     }
 
@@ -131,7 +139,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
 
         val responderRecordHeader = responderHandshakeMessage.header.toByteBuffer().array()
         try {
-            responderHandshakePayload = aesCipher.decrypt(responderRecordHeader,
+            responderHandshakePayloadBytes = aesCipher.decrypt(responderRecordHeader,
                                                        responderHandshakeMessage.authTag.array(),
                                                        sharedHandshakeSecrets!!.responderNonce,
                                                        responderHandshakeMessage.encryptedData.array(),
@@ -140,29 +148,34 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
             throw InvalidHandshakeMessageException()
         }
 
-        val responderHandshakeMessagePayloadDecryptedBuffer = ByteBuffer.wrap(responderHandshakePayload)
-        val responderParty = ByteArray(messageDigest.digestLength)
-        responderHandshakeMessagePayloadDecryptedBuffer.get(responderParty)
-        if (!responderParty.contentEquals(messageDigest.hash(theirPublicKey.encoded))) {
+        val responderHandshakePayload = ResponderHandshakePayload.fromByteBuffer(ByteBuffer.wrap(responderHandshakePayloadBytes))
+        val responderHandshakePayloadIncomplete = ResponderHandshakePayload()
+        responderHandshakePayloadIncomplete.responderPublicKeyHash = responderHandshakePayload.responderPublicKeyHash
+        responderHandshakePayloadIncomplete.responderPartyVerify = ByteBuffer.allocate(0)
+        responderHandshakePayloadIncomplete.responderFinished = ByteBuffer.allocate(0)
+
+        // check responder's public key hash matches requested one
+        if (!responderHandshakePayload.responderPublicKeyHash.array().contentEquals(messageDigest.hash(theirPublicKey.encoded))) {
             throw InvalidHandshakeResponderKeyHash()
         }
-        val responderPartyVerifySize = responderHandshakeMessagePayloadDecryptedBuffer.int
-        val responderPartyVerify = ByteArray(responderPartyVerifySize)
-        responderHandshakeMessagePayloadDecryptedBuffer.get(responderPartyVerify)
-        val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayload!! + responderParty
+
+        // validate signature
+        val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! +
+                                                      responderHandshakePayloadIncomplete.toByteBuffer().array()
         val signatureWasValid = signature.verify(theirPublicKey,
                                             RESPONDER_SIG_PAD.toByteArray(Charsets.UTF_8) + messageDigest.hash(initiatorHelloToResponderParty),
-                                                 responderPartyVerify)
+                                                 responderHandshakePayload.responderPartyVerify.array())
         if (!signatureWasValid) {
             throw InvalidHandshakeMessageException()
         }
+        responderHandshakePayloadIncomplete.responderPartyVerify = responderHandshakePayload.responderPartyVerify
 
-        val responderFinished = ByteArray(hmac.macLength)
-        responderHandshakeMessagePayloadDecryptedBuffer.get(responderFinished)
-        val initiatorHelloToResponderPartyVerify = initiatorHelloToResponderParty + responderPartyVerify
+        // validate MAC
+        val initiatorHelloToResponderPartyVerify = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! +
+                                                            responderHandshakePayloadIncomplete.toByteBuffer().array()
         val calculatedResponderFinished = hmac.calculateMac(sharedHandshakeSecrets!!.responderAuthKey,
                                                          messageDigest.hash(initiatorHelloToResponderPartyVerify))
-        if (!calculatedResponderFinished.contentEquals(responderFinished)) {
+        if (!calculatedResponderFinished.contentEquals(responderHandshakePayload.responderFinished.array())) {
             throw InvalidHandshakeMessageException()
         }
     }
@@ -170,7 +183,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
     fun getSession(): AuthenticatedSession {
         transition(Step.RECEIVED_HANDSHAKE_MESSAGE, Step.SESSION_ESTABLISHED)
 
-        val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayload!! + responderHandshakePayload!!
+        val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! + responderHandshakePayloadBytes!!
         val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
         return AuthenticatedSession(sessionId, 2, sharedSessionSecrets.initiatorEncryptionKey,
                                     sharedSessionSecrets.responderEncryptionKey)

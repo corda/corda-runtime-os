@@ -56,8 +56,8 @@ abstract class AuthenticationProtocol {
     protected var initiatorHelloMessage: InitiatorHelloMessage? = null
     protected var responderHelloMessage: ResponderHelloMessage? = null
     protected var initiatorHelloToResponderHelloBytes: ByteArray? = null
-    protected var initiatorHandshakePayload: ByteArray? = null
-    protected var responderHandshakePayload: ByteArray? = null
+    protected var initiatorHandshakePayloadBytes: ByteArray? = null
+    protected var responderHandshakePayloadBytes: ByteArray? = null
 
     protected val secureRandom = SecureRandom()
     protected val provider = BouncyCastleProvider()

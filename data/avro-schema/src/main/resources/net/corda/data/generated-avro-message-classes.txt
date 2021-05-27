@@ -1,3 +1,7 @@
+net.corda.p2p.crypto.AuthenticatedDataMessage
+net.corda.p2p.crypto.internal.InitiatorEncryptedExtensions
+net.corda.p2p.crypto.internal.InitiatorHandshakePayload
+net.corda.p2p.crypto.internal.ResponderHandshakePayload
 net.corda.p2p.crypto.InitiatorHelloMessage
 net.corda.p2p.crypto.InitiatorHandshakeMessage
 net.corda.p2p.crypto.ResponderHelloMessage

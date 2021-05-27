@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "ResponderHandshakePayload",
+  "namespace": "net.corda.p2p.crypto.internal",
+  "fields": [
+    {
+      "name": "responderPublicKeyHash",
+      "type": "bytes"
+    },
+    {
+      "name": "responderPartyVerify",
+      "type": "bytes"
+    },
+    {
+      "name": "responderFinished",
+      "type": "bytes"
+    }
+  ]
+}
