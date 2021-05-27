@@ -141,6 +141,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
                             "Failed to read and process records from topic $topic, group $groupName, producerClientId $producerClientId. " +
                                     "Attempts: $attempts. Closing subscription.", ex
                         )
+                        stop()
                     }
                 }
             }
@@ -211,7 +212,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     }
 
     /**
-     * Process Kafka [consumerRecords]. Commit the offset for each record back to the topic after processing them synchronously
+     * Process Kafka [consumerRecords]. Commit the [consumer] offset for each record back to the topic after processing them synchronously
      * and writing output records back to kafka in a transaction.
      * If a record fails to deserialize skip this record and log the error.
      * @throws CordaMessageAPIIntermittentException error occurred that can be retried.

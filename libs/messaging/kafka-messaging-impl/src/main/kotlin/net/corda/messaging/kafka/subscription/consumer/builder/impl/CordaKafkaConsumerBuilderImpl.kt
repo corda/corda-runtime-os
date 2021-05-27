@@ -53,6 +53,14 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
      * Create a [KafkaConsumer] based on the [subscriptionConfig].
      * @throws CordaMessageAPIFatalException fatal error.
      */
+    override fun createCompactedConsumer(
+        subscriptionConfig: SubscriptionConfig,
+        onError: (String, ByteArray) -> Unit,
+    ): CordaKafkaConsumer<K, V> {
+        val consumer = createKafkaConsumer(subscriptionConfig, onError)
+        return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, null)
+    }
+
     private fun createKafkaConsumer(
         subscriptionConfig: SubscriptionConfig,
         onError: (String, ByteArray) -> Unit
