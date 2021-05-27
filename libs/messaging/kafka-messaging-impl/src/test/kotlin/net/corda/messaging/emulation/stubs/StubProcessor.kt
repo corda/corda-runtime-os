@@ -1,8 +1,7 @@
-package net.corda.messaging.kafka.subscription.stubs
+package net.corda.messaging.emulation.stubs
 
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
-import java.lang.Exception
 import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 

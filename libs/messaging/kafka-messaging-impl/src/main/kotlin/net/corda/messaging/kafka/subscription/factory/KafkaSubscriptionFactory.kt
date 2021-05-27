@@ -15,14 +15,14 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CONF_PREFIX
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.subscription.consumer.builder.impl.PubSubConsumerBuilder
+import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
+import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilder
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.messaging.kafka.subscription.subscriptions.pubsub.KafkaPubSubSubscription
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.Properties
+import java.util.*
 import java.util.concurrent.ExecutorService
 
 /**
@@ -38,6 +38,8 @@ class KafkaSubscriptionFactory @Activate constructor(
     companion object {
         private const val ISOLATION_LEVEL_READ_COMMITTED = "read_committed"
         private const val AUTO_OFFSET_RESET_LATEST = "latest"
+        private const val AUTO_OFFSET_RESET_EARLIEST = "earliest"
+        private const val TRUE = "true"
         private const val FALSE = "false"
     }
 
@@ -58,8 +60,8 @@ class KafkaSubscriptionFactory @Activate constructor(
         val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
 
         val consumerProperties = getConsumerProps(subscriptionConfig, defaultKafkaConfig, overrideProperties)
-        val pubSubConsumerBuilder = PubSubConsumerBuilder<K, V>(defaultKafkaConfig, consumerProperties, avroSchemaRegistry)
-        return KafkaPubSubSubscription(subscriptionConfig, defaultKafkaConfig, pubSubConsumerBuilder, processor, executor)
+        val consumerBuilder = CordaKafkaConsumerBuilder<K, V>(defaultKafkaConfig, consumerProperties, avroSchemaRegistry)
+        return KafkaPubSubSubscriptionImpl(subscriptionConfig, defaultKafkaConfig, consumerBuilder, processor, executor)
     }
 
     override fun <K : Any, V : Any> createDurableSubscription(
@@ -103,10 +105,6 @@ class KafkaSubscriptionFactory @Activate constructor(
         consumerProps[CONSUMER_THREAD_STOP_TIMEOUT] = conf.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
 
         //TODO - update the below when config task has evolved
-        consumerProps[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] =
-            conf.getString(CONSUMER_CONF_PREFIX + ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)
-        consumerProps[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] =
-            conf.getString(CONSUMER_CONF_PREFIX + ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)
         consumerProps[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] =
             conf.getString(CONSUMER_CONF_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG)
         consumerProps[ConsumerConfig.MAX_POLL_RECORDS_CONFIG] =

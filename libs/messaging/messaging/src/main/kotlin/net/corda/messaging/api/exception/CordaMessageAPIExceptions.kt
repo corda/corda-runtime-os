@@ -1,7 +1,6 @@
 package net.corda.messaging.api.exception
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import java.lang.Exception
 
 /**
  * Fatal error occurred that is not recoverable

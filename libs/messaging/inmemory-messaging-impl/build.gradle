@@ -1,0 +1,18 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+}
+
+description 'In-Memory Messaging API Impl'
+
+dependencies {
+    implementation project(":libs:messaging:messaging")
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
+}
