@@ -88,10 +88,17 @@ class KafkaSubscriptionFactory @Activate constructor(
         //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required
         val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
 
-        val mapBuilder = { ConcurrentHashMap<K, V>() }
+        val mapFactory = object : SubscriptionMapFactory<K, V> {
+            override fun createMap(): MutableMap<K, V> = ConcurrentHashMap<K, V>()
+
+            override fun destroyMap(map: MutableMap<K, V>) {
+                map.clear()
+            }
+        }
+
         val consumerProperties = getConsumerProps(subscriptionConfig, defaultKafkaConfig, overrideProperties)
         val consumerBuilder = CordaKafkaConsumerBuilder<K, V>(defaultKafkaConfig, consumerProperties, avroSchemaRegistry)
-        return KafkaCompactedSubscriptionImpl(subscriptionConfig, defaultKafkaConfig, mapBuilder, consumerBuilder, processor)
+        return KafkaCompactedSubscriptionImpl(subscriptionConfig, defaultKafkaConfig, mapFactory, consumerBuilder, processor)
     }
 
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(

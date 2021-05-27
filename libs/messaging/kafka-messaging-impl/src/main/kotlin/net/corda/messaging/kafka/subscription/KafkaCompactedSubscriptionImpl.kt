@@ -10,6 +10,7 @@ import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
+import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -21,7 +22,7 @@ import kotlin.concurrent.withLock
 class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     private val subscriptionConfig: SubscriptionConfig,
     kafkaConfig: Config,
-    private val mapFactory: () -> MutableMap<K, V>,
+    private val mapFactory: SubscriptionMapFactory<K, V>,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val processor: CompactedProcessor<K, V>,
 ) : CompactedSubscription<K, V> {
@@ -46,6 +47,8 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
         if (!stopped) {
             val thread = lock.withLock {
                 stopped = true
+                latestValues?.apply { mapFactory.destroyMap(this) }
+                latestValues = null
                 val threadTmp = consumeLoopThread
                 consumeLoopThread = null
                 threadTmp
@@ -109,7 +112,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
 
     private fun getLatestValues(): MutableMap<K, V> {
         return if (latestValues == null) {
-            latestValues = mapFactory.invoke()
+            latestValues = mapFactory.createMap()
             latestValues!!
         } else {
             latestValues!!

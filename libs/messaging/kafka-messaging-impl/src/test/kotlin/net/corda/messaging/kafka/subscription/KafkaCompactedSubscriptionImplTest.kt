@@ -15,6 +15,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
+import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
@@ -33,13 +34,15 @@ class KafkaCompactedSubscriptionImplTest {
         private const val TOPIC = "topic"
     }
 
+    private val mapFactory = object : SubscriptionMapFactory<String, String> {
+        override fun createMap(): MutableMap<String, String> = ConcurrentHashMap<String, String>()
+        override fun destroyMap(map: MutableMap<String, String>) { }
+    }
 
     private val subscriptionConfig = SubscriptionConfig("group", TOPIC, 1)
     private val config: Config = ConfigFactory.empty()
         .withValue(KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT, ConfigValueFactory.fromAnyRef(1000))
         .withValue(KafkaProperties.KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TOPIC_PREFIX))
-
-    private val mapBuilder = { ConcurrentHashMap<String, String>() }
 
     private val initialSnapshotResult = List(10) {
         ConsumerRecordAndMeta<String, String>(
@@ -120,7 +123,7 @@ class KafkaCompactedSubscriptionImplTest {
         val subscription = KafkaCompactedSubscriptionImpl(
             subscriptionConfig,
             config,
-            mapBuilder,
+            mapFactory,
             consumerBuilder,
             processor,
         )
@@ -171,7 +174,7 @@ class KafkaCompactedSubscriptionImplTest {
         val subscription = KafkaCompactedSubscriptionImpl(
             subscriptionConfig,
             config,
-            mapBuilder,
+            mapFactory,
             consumerBuilder,
             processor,
         )
@@ -179,7 +182,6 @@ class KafkaCompactedSubscriptionImplTest {
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         subscription.stop()
 
-        println(processor.incomingRecords)
         assertThat(processor.incomingRecords.size).isEqualTo(4)
         assertThat(processor.incomingRecords[0]).isEqualTo(Record(TOPIC, "4", "4"))
         assertThat(processor.incomingRecords[1]).isEqualTo(Record(TOPIC, "3", "3"))
@@ -201,7 +203,7 @@ class KafkaCompactedSubscriptionImplTest {
         val subscription = KafkaCompactedSubscriptionImpl(
             subscriptionConfig,
             config,
-            mapBuilder,
+            mapFactory,
             consumerBuilder,
             processor,
         )
