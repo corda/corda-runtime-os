@@ -62,6 +62,7 @@ private addBundles(
 }
 
 test {
+    dependsOn('framework-app-tester:appJar')
     final def appTesterProject = project("framework-app-tester")
     doFirst {
         final File source = new File(appTesterProject.buildDir, "libs")
