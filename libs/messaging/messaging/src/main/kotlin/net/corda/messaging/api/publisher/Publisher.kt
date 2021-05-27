@@ -7,7 +7,7 @@ import net.corda.v5.base.concurrent.CordaFuture
  * Interface for publishing records to topics. Consumer libraries will not implement this interface.
  * Publisher instances can be created via the [PublisherFactory].
  */
-interface Publisher<K : Any, V : Any> : AutoCloseable {
+interface Publisher : AutoCloseable {
 
     /**
      * Publish a list of [record].
@@ -19,5 +19,5 @@ interface Publisher<K : Any, V : Any> : AutoCloseable {
      * Transactions will return a future of size 1 indicating success or failure of the transaction.
      * @throws CordaMessageAPIFatalException if record is of the wrong type for this Publisher
      */
-    fun publish(records: List<Record<K, V>>): List<CordaFuture<Boolean>>
+    fun publish(records: List<Record<*, *>>): List<CordaFuture<Boolean>>
 }

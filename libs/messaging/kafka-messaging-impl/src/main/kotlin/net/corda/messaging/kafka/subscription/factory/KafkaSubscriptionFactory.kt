@@ -13,13 +13,13 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilder
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CONF_PREFIX
 import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
 import net.corda.messaging.kafka.properties.PublisherConfigProperties
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
-import net.corda.messaging.kafka.subscription.producer.builder.impl.SubscriptionProducerBuilderImpl
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -74,9 +74,13 @@ class KafkaSubscriptionFactory @Activate constructor(
         properties: Map<String, String>
     ): Subscription<K, V> {
         //TODO - replace this with a  call to OSGi ConfigService
+
+        val clientId = "${subscriptionConfig.groupName}-producer"
         val config = ConfigFactory.load("tmpKafkaDefaults")
             .withValue(PublisherConfigProperties.PUBLISHER_CLIENT_ID,
-                ConfigValueFactory.fromAnyRef(subscriptionConfig.groupName+"-producer"))
+                ConfigValueFactory.fromAnyRef(clientId))
+            .withValue(PublisherConfigProperties.PUBLISHER_INSTANCE_ID,
+                ConfigValueFactory.fromAnyRef("durablesub-$clientId"))
 
         //pattern specific properties
         val overrideProperties = properties.toMutableMap()
@@ -87,7 +91,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         val producerProperties = getProducerProps(config, overrideProperties)
 
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(config, consumerProperties, avroSchemaRegistry)
-        val producerBuilder = SubscriptionProducerBuilderImpl(config, avroSchemaRegistry, producerProperties)
+        val producerBuilder = KafkaProducerBuilder(config, avroSchemaRegistry, producerProperties)
         return KafkaDurableSubscriptionImpl(subscriptionConfig, config, consumerBuilder, producerBuilder, processor)
     }
 
