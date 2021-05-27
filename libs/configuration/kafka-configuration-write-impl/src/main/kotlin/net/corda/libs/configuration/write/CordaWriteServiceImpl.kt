@@ -45,15 +45,18 @@ class CordaWriteServiceImpl constructor(
         key: CordaConfigurationKey,
         config: Config
     ) {
+        val records = mutableListOf<Record<String, Configuration>>()
         for (key1 in config.root().keys) {
             val key1Config = config.getConfig(key1)
             for (key2 in key1Config.root().keys) {
                 val content = Configuration(key1Config.atKey(key2).toString())
                 val record = Record(topicName, "$key1.$key2", content)
                 log.info("Producing record: $key1.$key2\t$content")
-                publisher.publish(record)
+                records.add(record)
+
             }
         }
 
+        publisher.publish(records)
     }
 }

@@ -31,6 +31,6 @@ class CordaWriteServiceImplTest {
         val configurationKey = CordaConfigurationKey("corda", packageVersion, componentVersion)
 
         cordaWriteService.updateConfiguration(configurationKey, config)
-        verify(publisher, times(2)).publish(any())
+        verify(publisher, times(1)).publish(any())
     }
 }
