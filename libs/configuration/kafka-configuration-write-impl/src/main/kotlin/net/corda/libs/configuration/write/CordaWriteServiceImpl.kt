@@ -1,6 +1,7 @@
 package net.corda.libs.configuration.write
 
 import com.typesafe.config.Config
+import jdk.jshell.spi.ExecutionControl
 import net.corda.data.config.Configuration
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -32,7 +33,7 @@ class CordaWriteServiceImpl constructor(
         key: CordaConfigurationKey,
         config: Config
     ) {
-        //not needed yet
+        throw ExecutionControl.NotImplementedException("Not yet implemented")
     }
 
     /**
@@ -53,7 +54,6 @@ class CordaWriteServiceImpl constructor(
                 val record = Record(topicName, "$key1.$key2", content)
                 log.info("Producing record: $key1.$key2\t$content")
                 records.add(record)
-
             }
         }
 
