@@ -21,9 +21,6 @@ dependencies {
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:schema-registry:schema-registry-impl")
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-
 }
 
 tasks.register("uploadConfigToKafka", JavaExec) {

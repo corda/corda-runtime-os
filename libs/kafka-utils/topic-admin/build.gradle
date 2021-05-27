@@ -5,9 +5,6 @@ plugins {
 
 dependencies {
     implementation "org.apache.kafka:kafka-clients:$kafkaVersion"
-
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }
 
 description 'Kafka Topic admin'
