@@ -16,6 +16,8 @@ dependencies {
     implementation project(':data:avro-schema')
     implementation project(':libs:configuration:configuration-write')
     implementation project(":libs:configuration:kafka-configuration-write-impl")
+    implementation project(":libs:messaging:kafka-messaging-impl")
+    implementation project(":libs:messaging:messaging")
     implementation project(':libs:kafka-utils:topic-admin')
     implementation project(":libs:kafka-utils:topic-admin-impl")
     implementation project(":libs:schema-registry:schema-registry")

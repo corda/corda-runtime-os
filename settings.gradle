@@ -38,6 +38,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'flow-worker'
+include 'apps:tools:kafka-setup'
 include 'data:avro-schema'
 include 'goodbyeworld'
 include 'helloworld'
@@ -55,4 +56,3 @@ include 'libs:schema-registry:schema-registry-impl'
 include 'osgi-framework-bootstrap'
 include 'osgi-framework-bootstrap:framework-api'
 include 'osgi-framework-bootstrap:framework-app-tester'
-include 'tools'
