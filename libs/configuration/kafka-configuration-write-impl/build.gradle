@@ -15,7 +15,6 @@ dependencies {
     implementation project(":data:avro-schema")
     implementation project(":libs:configuration:configuration-write")
     implementation project(":libs:messaging:messaging")
-    implementation project(":libs:schema-registry:schema-registry")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
