@@ -93,7 +93,7 @@ class KafkaDurableSubscriptionImplTest {
         verify(producerBuilder, times(1)).createProducer(anyOrNull())
         verify(mockCordaProducer, times(mockRecordCount.toInt())).beginTransaction()
         verify(mockCordaProducer, times(mockRecordCount.toInt())).sendRecords(any())
-        verify(mockCordaProducer, times(mockRecordCount.toInt())).sendOffsetsToTransaction()
+        verify(mockCordaProducer, times(mockRecordCount.toInt())).sendOffsetsToTransaction(any())
         verify(mockCordaProducer, times(mockRecordCount.toInt())).tryCommitTransaction()
     }
 
@@ -189,7 +189,7 @@ class KafkaDurableSubscriptionImplTest {
         verify(producerBuilder, times(1)).createProducer(anyOrNull())
         verify(mockCordaProducer, times(consumerPollAndProcessRetriesCount+1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
-        verify(mockCordaProducer, times(0)).sendOffsetsToTransaction()
+        verify(mockCordaProducer, times(0)).sendOffsetsToTransaction(any())
         verify(mockCordaProducer, times(0)).tryCommitTransaction()
     }
 
@@ -210,7 +210,7 @@ class KafkaDurableSubscriptionImplTest {
         verify(producerBuilder, times(1)).createProducer(anyOrNull())
         verify(mockCordaProducer, times(1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
-        verify(mockCordaProducer, times(0)).sendOffsetsToTransaction()
+        verify(mockCordaProducer, times(0)).sendOffsetsToTransaction(any())
         verify(mockCordaProducer, times(0)).tryCommitTransaction()
     }
 }

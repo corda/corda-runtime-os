@@ -111,21 +111,21 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun testSendOffsetsToTransactions() {
-        cordaKafkaProducer.sendOffsetsToTransaction()
+        cordaKafkaProducer.sendOffsetsToTransaction(consumer)
         verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
     }
 
     @Test
     fun testSendOffsetsToTransactionsFatal() {
         doThrow(IllegalStateException()).whenever(producer).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
-        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.sendOffsetsToTransaction() }
+        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.sendOffsetsToTransaction(consumer) }
         verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
     }
 
     @Test
     fun testSendOffsetsToTransactionsIntermittent() {
         doThrow(KafkaException()).whenever(producer).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
-        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.sendOffsetsToTransaction() }
+        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.sendOffsetsToTransaction(consumer) }
         verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
     }
 

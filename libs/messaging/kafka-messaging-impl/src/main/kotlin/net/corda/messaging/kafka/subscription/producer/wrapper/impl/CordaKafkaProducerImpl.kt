@@ -132,7 +132,7 @@ class CordaKafkaProducerImpl(
         }
     }
 
-    override fun sendOffsetsToTransaction() {
+    override fun sendOffsetsToTransaction(consumer: Consumer<*, *>) {
         try {
             producer.sendOffsetsToTransaction(consumerOffsets(), consumer.groupMetadata())
         } catch (ex: Exception) {
