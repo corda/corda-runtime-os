@@ -4,7 +4,11 @@ import com.typesafe.config.Config
 
 interface CordaWriteService {
     /**
-     * Add the properties recorded in [config] to the component configuration.
+     * When appending, the storage layer is checked for existing configuration for the given [key].
+     * If any exist it will be retrieved. The given [config] object will be merged with the existing one.
+     * The new properties will be added. Properties that exist in both configuration objects will have their value
+     * updated to the new one. Old properties will be kept.
+     * The merged configuration object is then persisted
      *
      * @param key [CordaConfigurationKey] object used to uniquely identify the config
      * @param config Changes to be recorded
@@ -15,7 +19,7 @@ interface CordaWriteService {
     )
 
     /**
-     * Update the component configuration so that it matches [config].
+     * When updating, the stored configuration object for the [key] will be completely replaced by the given [config] object
      *
      * @param key [CordaConfigurationKey] object used to uniquely identify the config
      * @param config Changes to be recorded
