@@ -12,7 +12,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.properties.InMemProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.emulation.properties.InMemProperties.Companion.TOPICS_MAX_SIZE
 import net.corda.messaging.emulation.properties.InMemProperties.Companion.TOPICS_POLL_SIZE
-import net.corda.messaging.kafka.stubs.StubProcessor
+import net.corda.messaging.emulation.stubs.StubProcessor
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.EVENT_TOPIC
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.GROUP_NAME
 import net.corda.messaging.emulation.topic.model.RecordMetadata

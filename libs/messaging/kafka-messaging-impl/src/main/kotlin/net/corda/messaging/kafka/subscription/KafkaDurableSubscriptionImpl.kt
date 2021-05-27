@@ -41,11 +41,13 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private val config: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val producerBuilder: SubscriptionProducerBuilder,
-    private val processor: DurableProcessor<K, V>) : Subscription<K, V> {
+    private val processor: DurableProcessor<K, V>
+) : Subscription<K, V> {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
+
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
     private val consumerPollAndProcessRetries = config.getLong(CONSUMER_POLL_AND_PROCESS_RETRIES)
 
@@ -56,6 +58,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private val topic = subscriptionConfig.eventTopic
     private val groupName = subscriptionConfig.groupName
     private val producerClientId: String = config.getString(PublisherConfigProperties.PUBLISHER_CLIENT_ID)
+
     /**
      * Is the subscription running.
      */
@@ -125,18 +128,21 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
                     }
                 }
                 attempts = 0
-            } catch (ex: CordaMessageAPIIntermittentException) {
-                log.warn("Failed to read and process records from topic $topic, group $groupName, producerClientId $producerClientId. " +
-                        "Attempts: $attempts. Recreating consumer/producer and Retrying.", ex)
-            } catch (ex: CordaMessageAPIFatalException) {
-                log.error("Failed to read and process records from topic $topic, group $groupName, producerClientId $producerClientId. " +
-                        "Attempts: $attempts.Fatal error occurred. Closing subscription.", ex)
-                stop()
-            }  catch (ex: Exception) {
-                log.error("Failed to read and process records from topic $topic, group $groupName, producerClientId $producerClientId. " +
-                        "Attempts: $attempts. " +
-                        "Unexpected error occurred. Closing subscription.", ex)
-                stop()
+            } catch (ex: Exception) {
+                when (ex) {
+                    is CordaMessageAPIIntermittentException -> {
+                        log.warn(
+                            "Failed to read and process records from topic $topic, group $groupName, producerClientId $producerClientId. " +
+                                    "Attempts: $attempts. Recreating consumer/producer and Retrying.", ex
+                        )
+                    }
+                    else -> {
+                        log.error(
+                            "Failed to read and process records from topic $topic, group $groupName, producerClientId $producerClientId. " +
+                                    "Attempts: $attempts. Closing subscription.", ex
+                        )
+                    }
+                }
             }
         }
     }
@@ -160,15 +166,19 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
                 attempts = 0
             } catch (ex: Exception) {
                 when (ex) {
-                    is CordaMessageAPIFatalException -> { throw ex }
+                    is CordaMessageAPIFatalException -> {
+                        throw ex
+                    }
                     is CordaMessageAPIIntermittentException -> {
                         attempts++
                         handlePollAndProcessIntermittentError(attempts, consumer, ex)
                     }
                     else -> {
-                        throw CordaMessageAPIFatalException("Failed to process records from topic $topic, " +
-                                "group $groupName, producerClientId $producerClientId. " +
-                                "Unexpected error occurred in this transaction. Closing producer.", ex)
+                        throw CordaMessageAPIFatalException(
+                            "Failed to process records from topic $topic, " +
+                                    "group $groupName, producerClientId $producerClientId. " +
+                                    "Unexpected error occurred in this transaction. Closing producer.", ex
+                        )
                     }
                 }
             }
@@ -210,7 +220,8 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     @Suppress("TooGenericExceptionCaught")
     private fun processDurableRecords(
         consumerRecords: List<ConsumerRecordAndMeta<K, V>>,
-        producer: CordaKafkaProducer) {
+        producer: CordaKafkaProducer
+    ) {
         for (consumerRecord in consumerRecords) {
             try {
                 producer.beginTransaction()
@@ -218,15 +229,17 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
                 producer.sendOffsetsToTransaction()
                 producer.tryCommitTransaction()
             } catch (ex: Exception) {
-                when(ex) {
+                when (ex) {
                     is CordaMessageAPIFatalException,
                     is CordaMessageAPIIntermittentException -> {
                         throw ex
                     }
                     else -> {
-                        throw CordaMessageAPIFatalException("Failed to process records from topic $topic, " +
-                                "group $groupName, producerClientId $producerClientId. " +
-                                "Unexpected error occurred in this transaction. Closing producer.", ex)
+                        throw CordaMessageAPIFatalException(
+                            "Failed to process records from topic $topic, " +
+                                    "group $groupName, producerClientId $producerClientId. " +
+                                    "Unexpected error occurred in this transaction. Closing producer.", ex
+                        )
                     }
                 }
             }
