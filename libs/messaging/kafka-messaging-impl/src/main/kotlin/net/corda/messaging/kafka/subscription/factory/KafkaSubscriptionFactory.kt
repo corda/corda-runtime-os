@@ -116,7 +116,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         }
 
         val consumerProperties = getConsumerProps(subscriptionConfig, defaultKafkaConfig, overrideProperties)
-        val consumerBuilder = CordaKafkaConsumerBuilder<K, V>(defaultKafkaConfig, consumerProperties, avroSchemaRegistry)
+        val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(defaultKafkaConfig, consumerProperties, avroSchemaRegistry)
         return KafkaCompactedSubscriptionImpl(subscriptionConfig, defaultKafkaConfig, mapFactory, consumerBuilder, processor)
     }
 
