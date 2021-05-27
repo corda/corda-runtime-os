@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation "org.apache.kafka:kafka-clients:$kafkaVersion"
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 }
 
 description 'Kafka Topic admin'

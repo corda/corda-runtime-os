@@ -19,7 +19,6 @@ dependencies {
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:schema-registry:schema-registry-impl")
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
