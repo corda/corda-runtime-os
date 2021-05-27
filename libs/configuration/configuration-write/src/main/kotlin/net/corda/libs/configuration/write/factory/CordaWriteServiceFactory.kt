@@ -10,5 +10,5 @@ interface CordaWriteServiceFactory {
     /**
      * @return An instance of [CordaWriteService]
      */
-    fun getWriteService(destination: String) : CordaWriteService
+    fun createWriteService(destination: String) : CordaWriteService
 }

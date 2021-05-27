@@ -3,8 +3,4 @@ plugins {
     id 'corda.publish'
 }
 
-dependencies {
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
-}
-
 description 'Kafka Topic admin'

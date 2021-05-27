@@ -10,6 +10,7 @@ import org.apache.kafka.common.KafkaFuture
 import org.apache.kafka.common.errors.TopicExistsException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import java.util.concurrent.ExecutionException
 
@@ -50,9 +51,7 @@ class KafkaTopicUtilsTest {
         Mockito.`when`(adminClient.createTopics(any())).thenReturn(topicResult)
         Mockito.`when`(topicResult.all()).thenReturn(kafkaFuture)
         Mockito.`when`(kafkaFuture.get()).thenThrow(ExecutionException(InterruptedException("something bad happened")))
-        try {
-            kafkaTopicUtils.createTopic("dummyName", 1, 1)
-        } catch (e: ExecutionException) {}
+        assertThrows<ExecutionException> { kafkaTopicUtils.createTopic("dummyName", 1, 1) }
 
         verify(adminClient, times(1)).createTopics(any())
     }

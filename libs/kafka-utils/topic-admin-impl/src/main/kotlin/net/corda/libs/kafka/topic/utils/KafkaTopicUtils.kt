@@ -4,6 +4,8 @@ import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.errors.TopicExistsException
 import org.osgi.service.component.annotations.Component
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ExecutionException
 
@@ -15,6 +17,10 @@ import java.util.concurrent.ExecutionException
 @Component
 class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
 
+    private companion object {
+        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+    }
+
     override fun createTopic(
         topicName: String,
         partitions: Int,
@@ -22,9 +28,12 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
     ) {
         val newTopic = NewTopic(topicName, partitions, replication)
         try {
-                adminClient.createTopics(listOf(newTopic)).all().get()
+            log.info("Attempting to create topic: $newTopic")
+            adminClient.createTopics(listOf(newTopic)).all().get()
+            log.info("$newTopic created successfully")
         } catch (e: ExecutionException) {
             if (e.cause !is TopicExistsException) throw e
+            else log.info("$newTopic already exists")
         }
     }
 }

@@ -29,7 +29,7 @@ fun main(args: Array<String>) {
     val packageVersion = CordaConfigurationVersion("corda", 1, 0)
     val componentVersion = CordaConfigurationVersion("corda", 1, 0)
     val configurationKey = CordaConfigurationKey("corda", packageVersion, componentVersion)
-    val configurationWriteService = CordaWriteServiceFactoryImpl(AvroSchemaRegistryImpl()).getWriteService(topicName)
+    val configurationWriteService = CordaWriteServiceFactoryImpl(AvroSchemaRegistryImpl()).createWriteService(topicName)
 
     configurationWriteService.updateConfiguration(configurationKey, configuration)
 }
