@@ -41,7 +41,8 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private val config: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val producerBuilder: ProducerBuilder,
-    private val processor: DurableProcessor<K, V>) : Subscription<K, V> {
+    private val processor: DurableProcessor<K, V>
+) : Subscription<K, V> {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
