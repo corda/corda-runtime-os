@@ -74,16 +74,15 @@ To build the bootable JAR, run the Gradle task
 
 #### Logging
 
-In the `build.gradle` of the module, declare the logger dependencies as usual, for example.
+In the `build.gradle` of the module, declare the logger dependencies as...
 
 ```gradle
-dependencies {
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+dependencies {    
     implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
 ```
 
-The example above let cde to use both SLF4J and Log4j.
+The example above let code to use both SLF4J and Log4j.
 
 The plugin and the bootable JAR exposes the [SLF4J](http://www.slf4j.org/) and
 [Apache Log4j 2](https://logging.apache.org/log4j/2.x/) packages to the bundles through the OSGi framework, using *Log4j

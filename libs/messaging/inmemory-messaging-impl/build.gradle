@@ -8,7 +8,7 @@ description 'In-Memory Messaging API Impl'
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base:$cordaVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     implementation project(":libs:messaging:messaging")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
