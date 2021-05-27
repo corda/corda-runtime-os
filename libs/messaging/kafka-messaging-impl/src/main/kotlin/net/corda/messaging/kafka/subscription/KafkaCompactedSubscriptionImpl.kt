@@ -14,7 +14,6 @@ import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -22,6 +21,7 @@ import kotlin.concurrent.withLock
 class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     private val subscriptionConfig: SubscriptionConfig,
     kafkaConfig: Config,
+    private val mapFactory: () -> MutableMap<K, V>,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val processor: CompactedProcessor<K, V>,
 ) : CompactedSubscription<K, V> {
@@ -40,7 +40,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
 
-    private val latestValues = ConcurrentHashMap<K, V>()
+    private var latestValues: MutableMap<K, V>? = null
 
     override fun stop() {
         if (!stopped) {
@@ -73,7 +73,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     override val isRunning: Boolean
         get() = !stopped
 
-    override fun getValue(key: K): V? = latestValues[key]
+    override fun getValue(key: K): V? = latestValues?.get(key)
 
     @Suppress("TooGenericExceptionCaught")
     private fun runConsumeLoop() {
@@ -107,13 +107,23 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
         }
     }
 
+    private fun getLatestValues(): MutableMap<K, V> {
+        return if (latestValues == null) {
+            latestValues = mapFactory.invoke()
+            latestValues!!
+        } else {
+            latestValues!!
+        }
+    }
+
     private fun pollAndProcessSnapshot(consumer: CordaKafkaConsumer<K, V>) {
         val partitions = consumer.assignment()
         val snapshotEnds = consumer.endOffsets(partitions)
         val currentOffsets = consumer.beginningOffsets(partitions)
         consumer.seekToBeginning(partitions)
 
-        latestValues.clear()
+        val currentData = getLatestValues()
+        currentData.clear()
 
         while (currentOffsets.any { it.value < (snapshotEnds[it.key] ?: 0) }) {
             val consumerRecords = consumer.poll()
@@ -122,14 +132,14 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
             }
             consumerRecords.forEach {
                 if (it.record.value() != null) {
-                    latestValues[it.record.key()] = it.record.value()
+                    currentData[it.record.key()] = it.record.value()
                 } else {
-                    latestValues.remove(it.record.key())
+                    currentData.remove(it.record.key())
                 }
                 currentOffsets[TopicPartition(it.record.topic(), it.record.partition())] = it.record.offset()
             }
         }
-        processor.onSnapshot(latestValues)
+        processor.onSnapshot(currentData)
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -147,17 +157,18 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     private fun processCompactedRecords(
         consumerRecords: List<ConsumerRecordAndMeta<K, V>>
     ) {
+        val currentData = getLatestValues()
         consumerRecords.forEach {
-            val oldValue = latestValues[it.record.key()]
+            val oldValue = currentData[it.record.key()]
             val newValue = it.record.value()
 
             if (newValue == null) {
-                latestValues.remove(it.record.key())
+                currentData.remove(it.record.key())
             } else {
-                latestValues[it.record.key()] = newValue
+                currentData[it.record.key()] = newValue
             }
 
-            processor.onNext(it.asRecord(), oldValue, latestValues)
+            processor.onNext(it.asRecord(), oldValue, currentData)
         }
     }
 }

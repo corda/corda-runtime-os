@@ -21,6 +21,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -37,6 +38,8 @@ class KafkaCompactedSubscriptionImplTest {
     private val config: Config = ConfigFactory.empty()
         .withValue(KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT, ConfigValueFactory.fromAnyRef(1000))
         .withValue(KafkaProperties.KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TOPIC_PREFIX))
+
+    private val mapBuilder = { ConcurrentHashMap<String, String>() }
 
     private val initialSnapshotResult = List(10) {
         ConsumerRecordAndMeta<String, String>(
@@ -100,6 +103,7 @@ class KafkaCompactedSubscriptionImplTest {
                 4L -> {
                     initialSnapshotResult
                 }
+                0L -> emptyList() // Don't return anything on errant extra polls
                 else -> {
                     listOf(
                         ConsumerRecordAndMeta<String, String>(
@@ -116,30 +120,30 @@ class KafkaCompactedSubscriptionImplTest {
         val subscription = KafkaCompactedSubscriptionImpl(
             subscriptionConfig,
             config,
+            mapBuilder,
             consumerBuilder,
             processor,
         )
         subscription.start()
-        latch.await(TEST_TIMEOUT_SECONDS*100, TimeUnit.SECONDS)
+        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         subscription.stop()
 
         assertThat(processor.snapshotMap.size).isEqualTo(10)
         assertThat(processor.snapshotMap).isEqualTo(initialSnapshotResult.associate { it.record.key() to it.record.value() })
 
-        assertThat(processor.incomingRecords.size).isEqualTo(4)
+        assertThat(processor.incomingRecords.size).isEqualTo(3)
         assertThat(processor.incomingRecords[0]).isEqualTo(Record(TOPIC, "3", "3"))
         assertThat(processor.incomingRecords[1]).isEqualTo(Record(TOPIC, "2", "2"))
         assertThat(processor.incomingRecords[2]).isEqualTo(Record(TOPIC, "1", "1"))
-        assertThat(processor.incomingRecords[3]).isEqualTo(Record(TOPIC, "0", "0"))
     }
 
     @Test
     fun `compacted subscription removes record on null value`() {
-        val latch = CountDownLatch(4)
+        val latch = CountDownLatch(5)
 
         doAnswer {
             when (val iteration = latch.count) {
-                4L -> {
+                5L -> {
                     initialSnapshotResult
                 }
                 2L -> {
@@ -150,6 +154,7 @@ class KafkaCompactedSubscriptionImplTest {
                         )
                     )
                 }
+                0L -> emptyList() // Don't return anything on errant extra polls
                 else -> {
                     listOf(
                         ConsumerRecordAndMeta(
@@ -166,18 +171,20 @@ class KafkaCompactedSubscriptionImplTest {
         val subscription = KafkaCompactedSubscriptionImpl(
             subscriptionConfig,
             config,
+            mapBuilder,
             consumerBuilder,
             processor,
         )
         subscription.start()
-        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.DAYS)//TimeUnit.SECONDS)
+        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         subscription.stop()
 
+        println(processor.incomingRecords)
         assertThat(processor.incomingRecords.size).isEqualTo(4)
-        assertThat(processor.incomingRecords[0]).isEqualTo(Record(TOPIC, "3", "3"))
-        assertThat(processor.incomingRecords[1]).isEqualTo(Record(TOPIC, "2", null))
-        assertThat(processor.incomingRecords[2]).isEqualTo(Record(TOPIC, "1", "1"))
-        assertThat(processor.incomingRecords[3]).isEqualTo(Record(TOPIC, "0", "0"))
+        assertThat(processor.incomingRecords[0]).isEqualTo(Record(TOPIC, "4", "4"))
+        assertThat(processor.incomingRecords[1]).isEqualTo(Record(TOPIC, "3", "3"))
+        assertThat(processor.incomingRecords[2]).isEqualTo(Record(TOPIC, "2", null))
+        assertThat(processor.incomingRecords[3]).isEqualTo(Record(TOPIC, "1", "1"))
         assertThat(processor.latestCurrentData?.containsKey("2")).isFalse
         val expectedMap = mutableMapOf<String, String>()
         initialSnapshotResult.associateTo(expectedMap) { it.record.key() to it.record.value() }
@@ -194,6 +201,7 @@ class KafkaCompactedSubscriptionImplTest {
         val subscription = KafkaCompactedSubscriptionImpl(
             subscriptionConfig,
             config,
+            mapBuilder,
             consumerBuilder,
             processor,
         )
