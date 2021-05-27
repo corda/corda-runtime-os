@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
  * @property topicName the topic configurations will be published to
  */
 @Component
-class CordaWriteServiceImpl constructor(
+class CordaWriteServiceImpl (
     private val topicName: String,
     private val publisher: Publisher<String, Configuration>
 ) : CordaWriteService {
