@@ -10,7 +10,6 @@ plugins {
 
 dependencies {
     api "org.apache.avro:avro:$avroVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
     implementation "net.corda:corda-base:$cordaVersion"
 }
 

@@ -7,9 +7,6 @@ description 'Kafka configuration write API impl'
 
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
 
     implementation "net.corda:corda-base:$cordaVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"

@@ -4,10 +4,6 @@ plugins {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-
     implementation "org.apache.kafka:kafka-clients:$kafkaVersion"
     implementation project(":libs:kafka-utils:topic-admin")
 
