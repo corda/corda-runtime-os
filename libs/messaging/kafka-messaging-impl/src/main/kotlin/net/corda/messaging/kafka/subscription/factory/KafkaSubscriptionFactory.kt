@@ -77,12 +77,12 @@ class KafkaSubscriptionFactory @Activate constructor(
     ): Subscription<K, V> {
         //TODO - replace this with a  call to OSGi ConfigService
 
-        val clientId = "${subscriptionConfig.groupName}-producer"
+        val publisherClientId = "${subscriptionConfig.groupName}-producer"
         val config = ConfigFactory.load("tmpKafkaDefaults")
             .withValue(PublisherConfigProperties.PUBLISHER_CLIENT_ID,
-                ConfigValueFactory.fromAnyRef(clientId))
+                ConfigValueFactory.fromAnyRef(publisherClientId))
             .withValue(PublisherConfigProperties.PUBLISHER_INSTANCE_ID,
-                ConfigValueFactory.fromAnyRef("durablesub-$clientId"))
+                ConfigValueFactory.fromAnyRef("durablesub-$publisherClientId"))
 
         //pattern specific properties
         val overrideProperties = properties.toMutableMap()
@@ -181,8 +181,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         producerProps[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] =
             conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG)
         //TODO - append unique id for this node instance + node identity to this so it is unique across multiple HA nodes
-        producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] =
-            "subscription-$producerClientId"
+        producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] = producerClientId
 
         return producerProps
     }

@@ -53,15 +53,6 @@ class CordaKafkaPublisherImpl (
     private val clientId = publisherConfig.clientId
 
     /**
-     * Convert a generic [record] to a Kafka ProducerRecord.
-     * Attach the configured kafka topic prefix as a prefix to the [record] topic.
-     * @return Producer record with kafka topic prefix attached.
-     */
-    private fun Record<Any, Any>.asProducerRecord(): ProducerRecord<Any, Any> {
-        return ProducerRecord(topicPrefix + topic, key, value)
-    }
-
-    /**
      * Publish a record.
      * Records are published via transactions if an [instanceId] is configured in the [publisherConfig]
      * Publish will retry recoverable transaction related errors based on [kafkaConfig]
