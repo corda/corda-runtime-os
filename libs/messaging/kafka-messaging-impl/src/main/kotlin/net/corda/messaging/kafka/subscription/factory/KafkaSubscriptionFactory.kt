@@ -3,6 +3,7 @@ package net.corda.messaging.kafka.subscription.factory
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
@@ -45,7 +46,6 @@ class KafkaSubscriptionFactory @Activate constructor(
         private const val ISOLATION_LEVEL_READ_COMMITTED = "read_committed"
         private const val AUTO_OFFSET_RESET_LATEST = "latest"
         private const val AUTO_OFFSET_RESET_EARLIEST = "earliest"
-        private const val TRUE = "true"
         private const val FALSE = "false"
     }
 
@@ -77,12 +77,12 @@ class KafkaSubscriptionFactory @Activate constructor(
     ): Subscription<K, V> {
         //TODO - replace this with a  call to OSGi ConfigService
 
-        val publisherClientId = "${subscriptionConfig.groupName}-producer"
+        val publisherClientId = "durableSub-${subscriptionConfig.groupName}-producer"
         val config = ConfigFactory.load("tmpKafkaDefaults")
             .withValue(PublisherConfigProperties.PUBLISHER_CLIENT_ID,
                 ConfigValueFactory.fromAnyRef(publisherClientId))
             .withValue(PublisherConfigProperties.PUBLISHER_INSTANCE_ID,
-                ConfigValueFactory.fromAnyRef("durablesub-$publisherClientId"))
+                ConfigValueFactory.fromAnyRef(subscriptionConfig.instanceId))
 
         //pattern specific properties
         val overrideProperties = properties.toMutableMap()
@@ -172,6 +172,9 @@ class KafkaSubscriptionFactory @Activate constructor(
         properties.putAll(overrideProperties)
         val conf: Config = ConfigFactory.parseProperties(properties).withFallback(config)
         val producerClientId = config.getString(PublisherConfigProperties.PUBLISHER_CLIENT_ID)
+        val instanceId = if (config.hasPath(PublisherConfigProperties.PUBLISHER_INSTANCE_ID)) config.getInt(
+            PublisherConfigProperties.PUBLISHER_INSTANCE_ID
+        ) else throw CordaMessageAPIFatalException("Cannot create subscription producer $producerClientId. No instanceId configured")
 
         val producerProps = Properties()
         producerProps[ProducerConfig.CLIENT_ID_CONFIG] = producerClientId
@@ -180,9 +183,7 @@ class KafkaSubscriptionFactory @Activate constructor(
             conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
         producerProps[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] =
             conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG)
-        //TODO - append unique id for this node instance + node identity to this so it is unique and deterministic
-        // across multiple HA nodes and instance restarts
-        producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] = producerClientId
+        producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] = "$producerClientId-$instanceId"
 
         return producerProps
     }
