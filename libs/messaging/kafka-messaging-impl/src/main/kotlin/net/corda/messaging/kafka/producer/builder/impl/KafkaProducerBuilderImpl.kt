@@ -21,7 +21,7 @@ import java.util.*
  * If fatal exception is thrown in the construction of a KafKaProducer
  * then it is closed and exception is thrown as [CordaMessageAPIFatalException].
  */
-class KafkaProducerBuilder(
+class KafkaProducerBuilderImpl(
     private val config: Config,
     private val avroSchemaRegistry: AvroSchemaRegistry,
     private val producerProperties: Properties

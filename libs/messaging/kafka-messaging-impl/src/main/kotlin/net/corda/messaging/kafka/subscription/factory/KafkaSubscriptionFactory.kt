@@ -14,21 +14,21 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CONF_PREFIX
-import net.corda.messaging.kafka.subscription.KafkaCompactedSubscriptionImpl
-import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
 import net.corda.messaging.kafka.properties.PublisherConfigProperties
-import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
+import net.corda.messaging.kafka.subscription.KafkaCompactedSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
-import net.corda.messaging.kafka.subscription.producer.builder.impl.SubscriptionProducerBuilderImpl
+import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
+import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.Properties
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 
@@ -93,7 +93,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         val producerProperties = getProducerProps(config, overrideProperties)
 
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(config, consumerProperties, avroSchemaRegistry)
-        val producerBuilder = SubscriptionProducerBuilderImpl(config, avroSchemaRegistry, producerProperties)
+        val producerBuilder = KafkaProducerBuilderImpl(config, avroSchemaRegistry, producerProperties)
         return KafkaDurableSubscriptionImpl(subscriptionConfig, config, consumerBuilder, producerBuilder, processor)
     }
 

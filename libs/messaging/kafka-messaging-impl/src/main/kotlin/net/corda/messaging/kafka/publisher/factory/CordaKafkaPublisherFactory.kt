@@ -6,7 +6,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilder
+import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CONF_PREFIX
 import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_CLIENT_ID
 import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_INSTANCE_ID
@@ -42,7 +42,7 @@ class CordaKafkaPublisherFactory @Activate constructor(
         }
 
         val producerProperties = getProducerProps(config, properties)
-        val producer = KafkaProducerBuilder(config, avroSchemaRegistry, producerProperties).createProducer()
+        val producer = KafkaProducerBuilderImpl(config, avroSchemaRegistry, producerProperties).createProducer()
 
         return CordaKafkaPublisherImpl(publisherConfig, defaultKafkaConfig, producer)
     }
