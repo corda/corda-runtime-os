@@ -51,7 +51,7 @@ class KafkaTopicUtilsTest {
         Mockito.`when`(adminClient.createTopics(any())).thenReturn(topicResult)
         Mockito.`when`(topicResult.all()).thenReturn(kafkaFuture)
         Mockito.`when`(kafkaFuture.get()).thenThrow(ExecutionException(InterruptedException("something bad happened")))
-        assertThrows<ExecutionException> { kafkaTopicUtils.createTopic("dummyName", 1, 1) }
+        assertThrows<InterruptedException> { kafkaTopicUtils.createTopic("dummyName", 1, 1) }
 
         verify(adminClient, times(1)).createTopics(any())
     }
