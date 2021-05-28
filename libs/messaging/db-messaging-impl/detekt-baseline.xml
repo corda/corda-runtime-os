@@ -2,13 +2,5 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>LongParameterList:DBDurableSubscription.kt$DBDurableSubscription$( private val subscriptionConfig: SubscriptionConfig, private val dbConfig: Config, private val durableProcessor: DurableProcessor&lt;K, V&gt;, private val partitionAssignmentListener: PartitionAssignmentListener?, private val avroSchemaRegistry: AvroSchemaRegistry, private val offsetTracker: OffsetTracker, private val pollingTimeout: Duration = 1.seconds, private val batchSize: Int = 100 )</ID>
-    <ID>MaxLineLength:DBDurableSubscription.kt$DBDurableSubscription$log.error("Received error while processing records from topic ${subscriptionConfig.eventTopic} for ${subscriptionConfig.groupName} at offset $nextItemOffset", e)</ID>
-    <ID>MaxLineLength:DBDurableSubscription.kt$DBDurableSubscription$log.warn("Offset $offset already committed for topic ${subscriptionConfig.eventTopic} and group ${subscriptionConfig.groupName}.")</ID>
-    <ID>MaxLineLength:DBDurableSubscription.kt$DBDurableSubscription$readOffsetStatement = connection.prepareStatement("SELECT MAX($COMMITTED_OFFSET_COLUMN_NAME) FROM $offsetTableName WHERE $CONSUMER_GROUP_COLUMN_NAME = ?")</ID>
-    <ID>MaxLineLength:DBDurableSubscription.kt$DBDurableSubscription$val statement = connection.prepareStatement("INSERT INTO $tableName ($KEY_COLUMN_NAME, $MESSAGE_PAYLOAD_COLUMN_NAME) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)</ID>
-    <ID>MaxLineLength:DBDurableSubscription.kt$DBDurableSubscription$val value = if (serialisedValue != null) avroSchemaRegistry.deserialize(serialisedValue.toByteBuffer(), durableProcessor.valueClass, null) else null</ID>
-    <ID>MaxLineLength:DBDurableSubscription.kt$DBDurableSubscription$writeOffsetStatement = connection.prepareStatement("INSERT INTO $offsetTableName ($CONSUMER_GROUP_COLUMN_NAME, $COMMITTED_OFFSET_COLUMN_NAME) VALUES (?, ?)")</ID>
-    <ID>MaxLineLength:DBPublisher.kt$DBPublisher$val statement = connection.prepareStatement("INSERT INTO $tableName ($KEY_COLUMN_NAME, $MESSAGE_PAYLOAD_COLUMN_NAME) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)</ID>
   </CurrentIssues>
 </SmellBaseline>

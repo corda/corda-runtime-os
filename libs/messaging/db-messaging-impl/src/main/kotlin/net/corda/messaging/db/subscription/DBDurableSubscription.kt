@@ -35,6 +35,7 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 import kotlin.math.max
 
+@Suppress("LongParameterList")
 class DBDurableSubscription<K: Any, V: Any>(
     private val subscriptionConfig: SubscriptionConfig,
     private val dbConfig: Config,
@@ -86,8 +87,10 @@ class DBDurableSubscription<K: Any, V: Any>(
                 connection = DriverManager.getConnection(jdbcUrl, props)
                 connection.autoCommit = false
                 readMessageStatement = connection.prepareStatement("SELECT * FROM $topicTableName WHERE $OFFSET_COLUMN_NAME >= ? LIMIT ?")
-                readOffsetStatement = connection.prepareStatement("SELECT MAX($COMMITTED_OFFSET_COLUMN_NAME) FROM $offsetTableName WHERE $CONSUMER_GROUP_COLUMN_NAME = ?")
-                writeOffsetStatement = connection.prepareStatement("INSERT INTO $offsetTableName ($CONSUMER_GROUP_COLUMN_NAME, $COMMITTED_OFFSET_COLUMN_NAME) VALUES (?, ?)")
+                readOffsetStatement = connection.prepareStatement("SELECT MAX($COMMITTED_OFFSET_COLUMN_NAME) FROM $offsetTableName " +
+                                                                        "WHERE $CONSUMER_GROUP_COLUMN_NAME = ?")
+                writeOffsetStatement = connection.prepareStatement("INSERT INTO $offsetTableName  " +
+                                                            "($CONSUMER_GROUP_COLUMN_NAME, $COMMITTED_OFFSET_COLUMN_NAME) VALUES (?, ?)")
 
                 partitionAssignmentListener?.onPartitionsAssigned(listOf(subscriptionConfig.eventTopic to 0))
                 val initialOffset = getOffset()
@@ -133,7 +136,8 @@ class DBDurableSubscription<K: Any, V: Any>(
                     nextItemOffset = maxOffset + 1
                 }
             } catch (e: Exception) {
-                log.error("Received error while processing records from topic ${subscriptionConfig.eventTopic} for ${subscriptionConfig.groupName} at offset $nextItemOffset", e)
+                log.error("Received error while processing records from topic ${subscriptionConfig.eventTopic} " +
+                        "for ${subscriptionConfig.groupName} at offset $nextItemOffset", e)
             }
         }
     }
@@ -150,7 +154,11 @@ class DBDurableSubscription<K: Any, V: Any>(
             val serialisedValue = resultSet.getBlob(MESSAGE_PAYLOAD_COLUMN_NAME)
 
             val key = avroSchemaRegistry.deserialize(serialisedKey.toByteBuffer(), durableProcessor.keyClass, null)
-            val value = if (serialisedValue != null) avroSchemaRegistry.deserialize(serialisedValue.toByteBuffer(), durableProcessor.valueClass, null) else null
+            val value = if (serialisedValue != null) {
+                avroSchemaRegistry.deserialize(serialisedValue.toByteBuffer(), durableProcessor.valueClass, null)
+            } else {
+                null
+            }
             records[offset] = Record(subscriptionConfig.eventTopic, key, value)
         }
 
@@ -173,7 +181,8 @@ class DBDurableSubscription<K: Any, V: Any>(
             maxOffsets.putIfAbsent(record.topic, -1L)
 
             val tableName = "$TOPIC_TABLE_PREFIX${record.topic.replace(".", "_")}"
-            val statement = connection.prepareStatement("INSERT INTO $tableName ($KEY_COLUMN_NAME, $MESSAGE_PAYLOAD_COLUMN_NAME) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)
+            val statement = connection.prepareStatement("INSERT INTO $tableName ($KEY_COLUMN_NAME, $MESSAGE_PAYLOAD_COLUMN_NAME) " +
+                                                                             "VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)
 
             val serialisedKey = avroSchemaRegistry.serialize(record.key)
             statement.setBlob(1, ByteBufferInputStream(listOf(serialisedKey)))
@@ -206,7 +215,8 @@ class DBDurableSubscription<K: Any, V: Any>(
             writeOffsetStatement.setLong(2, offset)
             writeOffsetStatement.execute()
         } catch (e: SQLIntegrityConstraintViolationException) {
-            log.warn("Offset $offset already committed for topic ${subscriptionConfig.eventTopic} and group ${subscriptionConfig.groupName}.")
+            log.warn("Offset $offset already committed for topic ${subscriptionConfig.eventTopic} " +
+                    "and group ${subscriptionConfig.groupName}.")
         }
     }
 

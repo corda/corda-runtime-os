@@ -72,7 +72,8 @@ class DBPublisher<K: Any, V: Any>(
         return records.map { record ->
             CompletableFuture.supplyAsync({
                 val tableName = "$TOPIC_TABLE_PREFIX${record.topic.replace(".", "_")}"
-                val statement = connection.prepareStatement("INSERT INTO $tableName ($KEY_COLUMN_NAME, $MESSAGE_PAYLOAD_COLUMN_NAME) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)
+                val statement = connection.prepareStatement("INSERT INTO $tableName " +
+                                        "($KEY_COLUMN_NAME, $MESSAGE_PAYLOAD_COLUMN_NAME) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)
 
                 val serialisedKey = schemaRegistry.serialize(record.key)
                 statement.setBlob(1, ByteBufferInputStream(listOf(serialisedKey)))
