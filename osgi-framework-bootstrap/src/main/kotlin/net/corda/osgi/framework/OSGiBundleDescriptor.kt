@@ -5,6 +5,11 @@ import java.util.concurrent.CountDownLatch
 
 /**
  * Description of bundles handled by [OSGiFrameworkWrap].
+ * The class describes the [bundle] and its property needed for a synchronization of
+ * bundle state.
+ *
+ * The [active] [CountDownLatch] is decremented once: the first time the bundle results
+ * activated. OSGi framework can notify bundle states more than once.
  */
 internal data class OSGiBundleDescriptor(
 
@@ -21,4 +26,4 @@ internal data class OSGiBundleDescriptor(
      */
     val active: CountDownLatch = CountDownLatch(1),
 
-)
+    )

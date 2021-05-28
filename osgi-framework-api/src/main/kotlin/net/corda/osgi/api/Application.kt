@@ -32,6 +32,9 @@ interface Application : AutoCloseable {
 
     /**
      * The `osgi-framework-bootstrap` module calls this method before to stop the OSGi framework.
+     *
+     * *WARNING! Do not call [Shutdown] service from here because it calls this method
+     * resulting in an infinite recursive loop.
      */
     fun shutdown()
 
