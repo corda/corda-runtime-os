@@ -45,7 +45,6 @@ class KafkaSubscriptionFactory @Activate constructor(
         private const val ISOLATION_LEVEL_READ_COMMITTED = "read_committed"
         private const val AUTO_OFFSET_RESET_LATEST = "latest"
         private const val AUTO_OFFSET_RESET_EARLIEST = "earliest"
-        private const val TRUE = "true"
         private const val FALSE = "false"
     }
 
@@ -177,7 +176,9 @@ class KafkaSubscriptionFactory @Activate constructor(
         producerProps[ProducerConfig.CLIENT_ID_CONFIG] = producerClientId
 
         producerProps[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] =
-            conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
+            conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.ACKS_CONFIG)
+        producerProps[ProducerConfig.ACKS_CONFIG] =
+            conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.ACKS_CONFIG)
         producerProps[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] =
             conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG)
         //TODO - append unique id for this node instance + node identity to this so it is unique across multiple HA nodes
