@@ -38,6 +38,7 @@ class GoodbyeWorld : BundleActivator, Application {
 
     override fun shutdown() {
         logger.info("SHUTDOWN")
+        // shutdownOSGiFramework() // EXPERIMENTAL to show shutdown doesn't loop.
     }
 
     private fun shutdownOSGiFramework() {

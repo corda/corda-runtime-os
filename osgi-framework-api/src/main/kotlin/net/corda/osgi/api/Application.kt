@@ -35,6 +35,8 @@ interface Application : AutoCloseable {
      *
      * *WARNING! Do not call [Shutdown] service from here because it calls this method
      * resulting in an infinite recursive loop.
+     *
+     * *NOTE. The module `osgi-framework-bootstrap` implements an experimental solution to avoid shutdown loops'.
      */
     fun shutdown()
 

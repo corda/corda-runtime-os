@@ -3,11 +3,7 @@ package net.corda.osgi.framework
 import net.corda.osgi.api.Shutdown
 import net.corda.osgi.api.Application
 import net.corda.osgi.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
-import org.osgi.framework.Bundle
-import org.osgi.framework.BundleException
-import org.osgi.framework.Constants
-import org.osgi.framework.FrameworkEvent
-import org.osgi.framework.ServiceReference
+import org.osgi.framework.*
 import org.osgi.framework.launch.Framework
 import org.osgi.framework.launch.FrameworkFactory
 import org.slf4j.LoggerFactory
@@ -492,7 +488,7 @@ class OSGiFrameworkWrap(
             framework.bundleContext.getService(applicationServiceReference)?.startup(args)
         } else {
             throw ClassNotFoundException("No class in any bundle implements ${Application::class.java}" +
-                    "to register as OSGi service and to start the application.")
+                    " to register as OSGi service and to start the application.")
         }
         return this
     }
@@ -530,7 +526,15 @@ class OSGiFrameworkWrap(
             val applicationServiceReference: ServiceReference<Application>? =
                 framework.bundleContext.getServiceReference(Application::class.java)
             if (applicationServiceReference != null) {
-                framework.bundleContext.getService(applicationServiceReference)?.shutdown()
+                val applicationService: Application? = framework.bundleContext.getService(applicationServiceReference)
+                if (applicationService != null) {
+                    val bundle = FrameworkUtil.getBundle(applicationService::class.java)
+                    val bundleDescriptor = bundleDescriptorMap[bundle.bundleId]
+                    if (bundleDescriptor!!.shutdown.count > 0L) {
+                        bundleDescriptor.shutdown.countDown()
+                        applicationService.shutdown()
+                    }
+                }
             } else {
                 logger.warn("${Application::class.java} service unregistered before to shutdown the application.")
             }
