@@ -14,7 +14,7 @@ description("OSGi Framework Bootstrap")
 
 dependencies {
     implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    implementation project("framework-api")
+    implementation project(":osgi-framework-api")
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"

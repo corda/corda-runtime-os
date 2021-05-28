@@ -19,12 +19,10 @@ configurations {
 dependencies {
     bootstrapClasspath "org.apache.felix:org.apache.felix.framework:$felixVersion"
     bootstrapClasspath "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    bootstrapClasspath project(":osgi-framework-api")
     bootstrapClasspath project(":osgi-framework-bootstrap")
 
     systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
-    systemPackages "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     systemPackages project(":osgi-framework-api")
 }
 
