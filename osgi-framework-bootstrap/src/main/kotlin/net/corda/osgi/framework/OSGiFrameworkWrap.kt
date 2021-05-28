@@ -1,9 +1,14 @@
 package net.corda.osgi.framework
 
-import net.corda.osgi.api.Shutdown
 import net.corda.osgi.api.Application
+import net.corda.osgi.api.Shutdown
 import net.corda.osgi.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
-import org.osgi.framework.*
+import org.osgi.framework.Bundle
+import org.osgi.framework.BundleException
+import org.osgi.framework.Constants
+import org.osgi.framework.FrameworkEvent
+import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.ServiceReference
 import org.osgi.framework.launch.Framework
 import org.osgi.framework.launch.FrameworkFactory
 import org.slf4j.LoggerFactory
@@ -102,7 +107,7 @@ class OSGiFrameworkWrap(
         fun getFrameworkFrom(
             frameworkFactoryFQN: String,
             frameworkStorageDir: Path,
-            systemPackagesExtra: String = ""
+            systemPackagesExtra: String = "",
         ): Framework {
             logger.debug("OSGi framework factory = $frameworkFactoryFQN.")
             val frameworkFactory = Class.forName(
@@ -515,6 +520,7 @@ class OSGiFrameworkWrap(
      *
      * @see [Framework.stop]
      */
+    @Suppress("NestedBlockDepth")
     @Synchronized
     @Throws(
         BundleException::class,
