@@ -20,20 +20,22 @@ interface CompactedProcessor<K : Any, V : Any> {
     val valueClass: Class<V>
 
     /**
-     * Used to receive the initial state of the topic when a subscription starts.  Should only be
-     * called once and should be called _before_ [onNext].
+     * Used to receive the initial state of the topic when a subscription starts or reconnects. Will be called
+     * _before_ [onNext], after a connection or reconnection.
      *
      * @param currentData the up-to-date state of events for the topic
      */
-    fun onFirst(currentData: Map<K, V>)
+    fun onSnapshot(currentData: Map<K, V>)
 
     /**
      * Called when an update occurs for the subscription.  This will be called when a single event updates
-     * the topic, as opposed to [onFirst] which will be the initial state.
+     * the topic, as opposed to [onSnapshot] which will be the initial state.
      *
-     * @param event the specific record update that triggered this call.
+     * @param oldValue the previous value for the given key in [newRecord].  Will be null if there was no previous
+     * value
+     * @param newRecord the specific record update that triggered this call.
      *          - note that for removal of a value from the topic this will result in [V] being null
      * @param currentData the up-to-date state of events for the topic
      */
-    fun onNext(event: Record<K, V>, currentData: Map<K, V>)
+    fun onNext(newRecord: Record<K, V>, oldValue: V?, currentData: Map<K, V>)
 }

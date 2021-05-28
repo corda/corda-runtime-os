@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription.subscription.pubsub
+package net.corda.messaging.kafka.subscription
 
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doAnswer
@@ -14,14 +14,12 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.emulation.stubs.StubProcessor
+import net.corda.messaging.kafka.stubs.StubPubSubProcessor
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,7 +36,7 @@ class KafkaPubSubSubscriptionImplTest {
         private const val TEST_TIMEOUT_SECONDS = 30L
     }
 
-    private val subscriptionConfig: SubscriptionConfig = SubscriptionConfig("group1", TOPIC, 1)
+    private val subscriptionConfig: SubscriptionConfig = SubscriptionConfig("group1",  TOPIC)
     private var mockRecordCount = 5L
     private val consumerPollAndProcessRetriesCount = 2
     private val config: Config = ConfigFactory.empty()
@@ -61,7 +59,7 @@ class KafkaPubSubSubscriptionImplTest {
     @BeforeEach
     fun setup() {
         latch = CountDownLatch(mockRecordCount.toInt())
-        processor = StubProcessor(latch)
+        processor = StubPubSubProcessor(latch)
 
         pollInvocationCount = 0
         doAnswer {
@@ -179,7 +177,7 @@ class KafkaPubSubSubscriptionImplTest {
         }.whenever(consumerBuilder).createPubSubConsumer(any(), any())
 
         latch = CountDownLatch(consumerPollAndProcessRetriesCount)
-        processor = StubProcessor(latch, CordaMessageAPIFatalException("", Exception()))
+        processor = StubPubSubProcessor(latch, CordaMessageAPIFatalException("", Exception()))
         doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
 
         kafkaPubSubSubscription = KafkaPubSubSubscriptionImpl(
@@ -207,7 +205,7 @@ class KafkaPubSubSubscriptionImplTest {
         }.whenever(consumerBuilder).createPubSubConsumer(any(), any())
 
         latch = CountDownLatch(consumerPollAndProcessRetriesCount)
-        processor = StubProcessor(latch, IOException())
+        processor = StubPubSubProcessor(latch, IOException())
         doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
 
         kafkaPubSubSubscription = KafkaPubSubSubscriptionImpl(

@@ -5,6 +5,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
+import net.corda.messaging.kafka.subscription.consumer.listener.DurableConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.listener.PubSubConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
@@ -15,12 +16,12 @@ import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.Properties
 
 /**
  * Generate a Kafka Consumer.
  */
-class CordaKafkaConsumerBuilder<K : Any, V : Any>(
+class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
     private val kafkaConfig: Config,
     private val consumerProperties: Properties,
     private val avroSchemaRegistry: AvroSchemaRegistry,
@@ -37,6 +38,27 @@ class CordaKafkaConsumerBuilder<K : Any, V : Any>(
         val consumer = createKafkaConsumer(subscriptionConfig, onError)
         val listener = PubSubConsumerRebalanceListener(subscriptionConfig, consumer)
         return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
+    }
+
+    override fun createDurableConsumer(
+        subscriptionConfig: SubscriptionConfig,
+        onError: (String, ByteArray) -> Unit
+    ): CordaKafkaConsumer<K, V> {
+        val consumer = createKafkaConsumer(subscriptionConfig, onError)
+        val listener = DurableConsumerRebalanceListener(subscriptionConfig, consumer)
+        return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
+    }
+
+    /**
+     * Create a [KafkaConsumer] based on the [subscriptionConfig].
+     * @throws CordaMessageAPIFatalException fatal error.
+     */
+    override fun createCompactedConsumer(
+        subscriptionConfig: SubscriptionConfig,
+        onError: (String, ByteArray) -> Unit,
+    ): CordaKafkaConsumer<K, V> {
+        val consumer = createKafkaConsumer(subscriptionConfig, onError)
+        return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, null)
     }
 
     private fun createKafkaConsumer(

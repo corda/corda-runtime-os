@@ -14,7 +14,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
 
-class CordaKafkaPublisherFactoryTest {
+class CordaKafkaPublisherImplFactoryTest {
     private lateinit var cordaKafkaPublisherFactory : CordaKafkaPublisherFactory
     private lateinit var kafkaConfig: Config
     private val publisherConfig = PublisherConfig("clientId")

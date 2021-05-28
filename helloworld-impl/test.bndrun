@@ -3,8 +3,11 @@
 -tester: biz.aQute.tester.junit-platform
 
 -runee: JavaSE-11
+
 -runfw: org.apache.felix.framework
+
 -resolve.effective: active
+
 -runproperties: \
     org.osgi.framework.bootdelegation=sun.reflect',\
     org.slf4j.api.defaultLogLevel=info,\
@@ -47,3 +50,5 @@
 	org.osgi.util.function;version='[1.0.0,1.0.1)',\
 	org.osgi.util.promise;version='[1.0.0,1.0.1)',\
 	slf4j.api;version='[1.7.25,1.7.26)'
+
+

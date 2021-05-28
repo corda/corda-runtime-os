@@ -11,13 +11,13 @@ import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilder
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CONF_PREFIX
 import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_CLIENT_ID
 import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_INSTANCE_ID
-import net.corda.messaging.kafka.publisher.CordaKafkaPublisher
+import net.corda.messaging.kafka.publisher.CordaKafkaPublisherImpl
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.*
+import java.util.Properties
 
 /**
  * Kafka implementation for Publisher Factory.
@@ -41,44 +41,46 @@ class CordaKafkaPublisherFactory @Activate constructor(
 
         //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required
         val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
-        var config = defaultKafkaConfig.withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
+        var config = defaultKafkaConfig
+            .withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
 
         val instanceId = publisherConfig.instanceId
         if (instanceId != null) {
             config = config.withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId))
         }
 
-        val producerProperties = getProducerProps(publisherConfig, config, properties)
+        val producerProperties = getProducerProps(config, properties)
         val producer = KafkaProducerBuilder<K, V>(avroSchemaRegistry).createProducer(config, producerProperties)
 
-        return CordaKafkaPublisher(publisherConfig, defaultKafkaConfig, producer, avroSchemaRegistry)
+        return CordaKafkaPublisherImpl(publisherConfig, defaultKafkaConfig, producer, avroSchemaRegistry)
     }
 
     /**
-     * Generate producer properties with default values from [defaultKafkaConfig] unless overridden by the given [overrideProperties].
-     * @param publisherConfig Publisher config
-     * @param defaultKafkaConfig Default kafka config
+     * Generate producer properties with default values from [config] unless overridden by the given [overrideProperties].
+     * @param config config
      * @param overrideProperties Properties to override default config.
      * @return Kafka Producer properties.
      */
-    private fun getProducerProps(publisherConfig: PublisherConfig, defaultKafkaConfig: Config,
+    private fun getProducerProps(config: Config,
                                  overrideProperties: Map<String, String>): Properties {
         val properties = Properties()
         properties.putAll(overrideProperties)
-        val conf: Config = ConfigFactory.parseProperties(properties).withFallback(defaultKafkaConfig)
+        val conf: Config = ConfigFactory.parseProperties(properties).withFallback(config)
         val producerProps = Properties()
+        val clientId = config.getString(PUBLISHER_CLIENT_ID)
+        val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getInt(PUBLISHER_INSTANCE_ID) else null
 
         //TODO - update the below when config task  has evolved
-        producerProps[ProducerConfig.CLIENT_ID_CONFIG] = publisherConfig.clientId
+        producerProps[ProducerConfig.CLIENT_ID_CONFIG] = clientId
 
         producerProps[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] =
             conf.getString(PRODUCER_CONF_PREFIX + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
         producerProps[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] =
             conf.getString(PRODUCER_CONF_PREFIX + ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG)
 
-        if (publisherConfig.instanceId != null) {
+        if (instanceId != null) {
             producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] =
-                "publishing-producer-${publisherConfig.clientId}-${publisherConfig.instanceId}"
+                "publishing-producer-$clientId-$instanceId"
         }
 
         return producerProps
