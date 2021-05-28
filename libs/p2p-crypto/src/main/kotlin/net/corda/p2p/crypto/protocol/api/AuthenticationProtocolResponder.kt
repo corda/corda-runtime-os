@@ -44,11 +44,15 @@ import javax.crypto.AEADBadTagException
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
 class AuthenticationProtocolResponder(private val sessionId: String,
-                                      private val supportedModes: List<ProtocolMode>): AuthenticationProtocol() {
+                                      private val supportedModes: Set<ProtocolMode>): AuthenticationProtocol() {
+
+    init {
+        require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
+    }
 
     companion object {
         fun fromStep2(sessionId: String,
-                      supportedModes: List<ProtocolMode>,
+                      supportedModes: Set<ProtocolMode>,
                       initiatorHelloMsg: InitiatorHelloMessage,
                       responderHelloMsg: ResponderHelloMessage,
                       privateDHKey: ByteArray,
@@ -61,6 +65,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
 
                 sharedDHSecret = keyAgreement.perform(myPrivateDHKey!!, peerPublicDHKey!!)
                 responderHelloMessage = responderHelloMsg
+                selectedMode = responderHelloMsg.selectedMode
                 initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
                                                       responderHelloMessage!!.toByteBuffer().array()
 
@@ -105,10 +110,10 @@ class AuthenticationProtocolResponder(private val sessionId: String,
                              0, Instant.now().toEpochMilli())
 
         val commonModes = initiatorHelloMessage!!.supportedModes.intersect(supportedModes)
-        val selectedMode = if (commonModes.isEmpty()) {
-            throw NoCommonModeError(initiatorHelloMessage!!.supportedModes, supportedModes)
+        selectedMode = if (commonModes.isEmpty()) {
+            throw NoCommonModeError(initiatorHelloMessage!!.supportedModes.toSet(), supportedModes)
         } else {
-            commonModes.first()
+            commonModes.maxByOrNull { getPreference(it) }
         }
 
         responderHelloMessage = ResponderHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), selectedMode)
@@ -239,13 +244,26 @@ class AuthenticationProtocolResponder(private val sessionId: String,
         return ResponderHandshakeMessage(responderRecordHeader, ByteBuffer.wrap(responderEncryptedData), ByteBuffer.wrap(responderTag))
     }
 
-    fun getSession(): AuthenticatedSession {
+    /**
+     * Returns the established session.
+     * The concrete type of the session will depend on the negotiated protocol mode between the two parties.
+     *
+     * If the selected mode was [ProtocolMode.AUTHENTICATION_ONLY], this will return a [AuthenticatedSession].
+     * If the selected mode was [ProtocolMode.AUTHENTICATED_ENCRYPTION], this will return a [AuthenticatedEncryptionSession].
+     */
+    fun getSession(): Session {
         transition(Step.SENT_HANDSHAKE_MESSAGE, Step.SESSION_ESTABLISHED)
 
         val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! + responderHandshakePayloadBytes!!
         val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
-        return AuthenticatedSession(sessionId, 2, sharedSessionSecrets.responderEncryptionKey,
-                                    sharedSessionSecrets.initiatorEncryptionKey)
+
+        return when(selectedMode!!) {
+            ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(sessionId, 2,
+                                                sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.initiatorEncryptionKey)
+            ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(sessionId, 2,
+                                                sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce,
+                                                sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.initiatorNonce)
+        }
     }
 
     private fun transition(fromStep: Step, toStep: Step) {
@@ -264,7 +282,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
 /**
  * Thrown when is no mode that is supported both by the initiator and the responder.
  */
-class NoCommonModeError(val initiatorModes: List<ProtocolMode>, val responderModes: List<ProtocolMode>): RuntimeException()
+class NoCommonModeError(val initiatorModes: Set<ProtocolMode>, val responderModes: Set<ProtocolMode>): RuntimeException()
 
 /**
  * @property initiatorPublicKeyHash the SHA-256 hash of the initiator's public key.

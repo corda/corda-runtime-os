@@ -1,5 +1,6 @@
 package net.corda.p2p.crypto
 
+import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidMac
@@ -64,8 +65,8 @@ class AuthenticatedSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
 
         // Both sides generate session secrets
-        val authenticatedSessionOnA = authenticationProtocolA.getSession()
-        val authenticatedSessionOnB = authenticationProtocolB.getSession()
+        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
+        val authenticatedSessionOnB = authenticationProtocolB.getSession() as AuthenticatedSession
 
         for (i in 1..3) {
             // Data exchange: A sends message to B, which decrypts and validates it
@@ -125,8 +126,8 @@ class AuthenticatedSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
 
         // Both sides generate session secrets
-        val authenticatedSessionOnA = authenticationProtocolA.getSession()
-        val authenticatedSessionOnB = authenticationProtocolBDownstream.getSession()
+        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
+        val authenticatedSessionOnB = authenticationProtocolBDownstream.getSession() as AuthenticatedSession
 
         for (i in 1..3) {
             // Data exchange: A sends message to B, which decrypts and validates it
@@ -182,8 +183,8 @@ class AuthenticatedSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
 
         // Both sides generate session secrets
-        val authenticatedSessionOnA = authenticationProtocolA.getSession()
-        val authenticatedSessionOnB = authenticationProtocolB.getSession()
+        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
+        val authenticatedSessionOnB = authenticationProtocolB.getSession() as AuthenticatedSession
 
         // Data exchange: A sends message to B, B receives corrupted data which fail validation.
         val payload = "ping".toByteArray(Charsets.UTF_8)

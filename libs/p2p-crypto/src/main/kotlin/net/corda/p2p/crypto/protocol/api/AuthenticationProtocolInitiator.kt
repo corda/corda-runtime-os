@@ -43,7 +43,11 @@ import javax.crypto.AEADBadTagException
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
 class AuthenticationProtocolInitiator(private val sessionId: String,
-                                      private val supportedModes: List<ProtocolMode>): AuthenticationProtocol() {
+                                      private val supportedModes: Set<ProtocolMode>): AuthenticationProtocol() {
+
+    init {
+        require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
+    }
 
     var step = Step.INIT
 
@@ -65,7 +69,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         myPublicDHKey = keyPair.public.encoded
 
         val commonHeader = CommonHeader(MessageType.INITIATOR_HELLO, PROTOCOL_VERSION, sessionId, 0, Instant.now().toEpochMilli())
-        initiatorHelloMessage = InitiatorHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!) , supportedModes)
+        initiatorHelloMessage = InitiatorHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!) , supportedModes.toList())
         return initiatorHelloMessage!!
     }
 
@@ -73,6 +77,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         transition(Step.SENT_MY_DH_KEY, Step.RECEIVED_PEER_DH_KEY)
 
         responderHelloMessage = responderHelloMsg
+        selectedMode = responderHelloMsg.selectedMode
         initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
                                               responderHelloMessage!!.toByteBuffer().array()
         peerPublicDHKey = ephemeralKeyFactory.generatePublic(X509EncodedKeySpec(responderHelloMsg.responderPublicKey.array()))
@@ -180,13 +185,25 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         }
     }
 
-    fun getSession(): AuthenticatedSession {
+    /**
+     * Returns the established session.
+     * The concrete type of the session will depend on the negotiated protocol mode between the two parties.
+     *
+     * If the selected mode was [ProtocolMode.AUTHENTICATION_ONLY], this will return a [AuthenticatedSession].
+     * If the selected mode was [ProtocolMode.AUTHENTICATED_ENCRYPTION], this will return a [AuthenticatedEncryptionSession].
+     */
+    fun getSession(): Session {
         transition(Step.RECEIVED_HANDSHAKE_MESSAGE, Step.SESSION_ESTABLISHED)
 
         val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! + responderHandshakePayloadBytes!!
         val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
-        return AuthenticatedSession(sessionId, 2, sharedSessionSecrets.initiatorEncryptionKey,
-                                    sharedSessionSecrets.responderEncryptionKey)
+        return when(selectedMode!!) {
+            ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(sessionId, 2,
+                                                sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.responderEncryptionKey)
+            ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(sessionId, 2,
+                                                        sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.initiatorNonce,
+                                                        sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce)
+        }
     }
 
     private fun transition(fromStep: Step, toStep: Step) {

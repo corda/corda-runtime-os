@@ -1,8 +1,10 @@
 package net.corda.p2p.crypto
 
+import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
+import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
@@ -119,6 +121,20 @@ class AuthenticationProtocolFailureTest {
 
         assertThatThrownBy { authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public) }
                 .isInstanceOf(InvalidHandshakeMessageException::class.java)
+    }
+
+    @Test
+    fun `session authentication fails if two parties do not share a common supported protocol mode`() {
+        val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, listOf(ProtocolMode.AUTHENTICATION_ONLY))
+        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION))
+
+        // Step 1: initiator sending hello message to responder.
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
+
+        // Step 2: responder sending hello message to initiator.
+        assertThatThrownBy { authenticationProtocolB.generateResponderHello() }
+            .isInstanceOf(NoCommonModeError::class.java)
     }
 
 

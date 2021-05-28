@@ -1,6 +1,7 @@
 package net.corda.p2p.crypto.protocol
 
 import net.corda.p2p.crypto.InitiatorHelloMessage
+import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_KEY_SIZE_BYTES
@@ -51,6 +52,7 @@ abstract class AuthenticationProtocol {
     protected var myPublicDHKey: ByteArray? = null
     protected var peerPublicDHKey: PublicKey? = null
     protected var sharedDHSecret: ByteArray? = null
+    protected var selectedMode: ProtocolMode? = null
     protected var sharedHandshakeSecrets: SharedHandshakeSecrets? = null
 
     protected var initiatorHelloMessage: InitiatorHelloMessage? = null
@@ -114,6 +116,17 @@ abstract class AuthenticationProtocol {
                                                                     RESPONDER_SESSION_NONCE_INFO, CIPHER_NONCE_SIZE_BYTES)
 
         return SharedSessionSecrets(initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
+    }
+
+    /**
+     * Defines preference order for different protocol modes, with a higher number indicating higher preference.
+     * Protocol modes that are considered more secure are preferred to less secure modes, when both are supported.
+     */
+    protected fun getPreference(mode: ProtocolMode): Int {
+        return when(mode) {
+            ProtocolMode.AUTHENTICATION_ONLY -> 1
+            ProtocolMode.AUTHENTICATED_ENCRYPTION -> 2
+        }
     }
 
     /**
