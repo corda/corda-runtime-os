@@ -17,20 +17,23 @@ import net.corda.messaging.db.schema.Schema.TopicTable.Companion.OFFSET_COLUMN_N
 import net.corda.messaging.db.sync.OffsetTracker
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.seconds
+import org.apache.avro.util.ByteBufferInputStream
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.Exception
 import java.nio.ByteBuffer
 import java.sql.Blob
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.PreparedStatement
 import java.sql.SQLIntegrityConstraintViolationException
+import java.sql.Statement
+import java.sql.Types
 import java.time.Duration
 import java.util.Properties
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
+import kotlin.math.max
 
 class DBDurableSubscription<K: Any, V: Any>(
     private val subscriptionConfig: SubscriptionConfig,
@@ -124,15 +127,14 @@ class DBDurableSubscription<K: Any, V: Any>(
 
                 val recordsByOffset = fetchRecords(nextItemOffset, batchSize)
                 if (recordsByOffset.isNotEmpty()) {
-                    durableProcessor.onNext(recordsByOffset.values.toList())
+                    val newRecords = durableProcessor.onNext(recordsByOffset.values.toList())
                     val maxOffset = recordsByOffset.keys.maxOrNull()!!
-                    commitOffset(maxOffset)
+                    processRecordsAndCommitOffsetAtomically(newRecords, maxOffset)
                     nextItemOffset = maxOffset + 1
                 }
             } catch (e: Exception) {
                 log.error("Received error while processing records from topic ${subscriptionConfig.eventTopic} for ${subscriptionConfig.groupName} at offset $nextItemOffset", e)
             }
-
         }
     }
 
@@ -155,12 +157,54 @@ class DBDurableSubscription<K: Any, V: Any>(
         return records
     }
 
+    private fun processRecordsAndCommitOffsetAtomically(records: List<Record<*, *>>, offset: Long) {
+        val offsetsPerTopic = processRecords(records)
+        commitOffset(offset)
+        connection.commit()
+        offsetsPerTopic.forEach { (topic, offset) ->
+            offsetTracker.advanceOffset(topic, offset)
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun processRecords(records:List<Record<*, *>>): Map<String, Long> {
+        val maxOffsets = mutableMapOf<String, Long>()
+        records.forEach { record ->
+            maxOffsets.putIfAbsent(record.topic, -1L)
+
+            val tableName = "$TOPIC_TABLE_PREFIX${record.topic.replace(".", "_")}"
+            val statement = connection.prepareStatement("INSERT INTO $tableName ($KEY_COLUMN_NAME, $MESSAGE_PAYLOAD_COLUMN_NAME) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)
+
+            val serialisedKey = avroSchemaRegistry.serialize(record.key)
+            statement.setBlob(1, ByteBufferInputStream(listOf(serialisedKey)))
+
+            if (record.value != null) {
+                val serialisedValue = avroSchemaRegistry.serialize(record.value!!)
+                statement.setBlob(2, ByteBufferInputStream(listOf(serialisedValue)))
+            } else {
+                statement.setNull(2, Types.BLOB)
+            }
+
+            try {
+                statement.executeUpdate()
+                val resultSet = statement.generatedKeys.apply { next() }
+                val offset = resultSet.getLong(1)
+                maxOffsets[record.topic] = max(maxOffsets[record.topic]!!, offset)
+            } catch (e: Exception) {
+                val errorMessage = "Subscription for group ${subscriptionConfig.groupName} failed to write record on topic ${record.topic}."
+                log.error(errorMessage, e)
+                throw e
+            }
+        }
+
+        return maxOffsets
+    }
+
     private fun commitOffset(offset: Long) {
         try {
             writeOffsetStatement.setString(1, subscriptionConfig.groupName)
             writeOffsetStatement.setLong(2, offset)
             writeOffsetStatement.execute()
-            connection.commit()
         } catch (e: SQLIntegrityConstraintViolationException) {
             log.warn("Offset $offset already committed for topic ${subscriptionConfig.eventTopic} and group ${subscriptionConfig.groupName}.")
         }

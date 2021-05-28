@@ -41,7 +41,10 @@ class DBMessagingIntegrationTest {
 
     private val groupName = "test-group"
     private val clientId = "test-client"
-    private val topicName = "test.topic"
+    private val testTopicName = "test.topic"
+
+    private val sourceTopicName = "test.topic.source"
+    private val destinationTopicName = "test.topic.destination"
 
     private val latch = CountDownLatch(1)
 
@@ -61,8 +64,11 @@ class DBMessagingIntegrationTest {
 
         dbConfig = ConfigFactory.load()
         connection = DriverManager.getConnection(dbConfig.getString(JDBC_URL), dbConfig.getString(DB_USERNAME), dbConfig.getString(DB_PASSWORD))
-        connection.prepareStatement("CREATE TABLE ${TOPIC_TABLE_PREFIX}${topicName.replace(".", "_")} ($OFFSET_COLUMN_NAME BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, $KEY_COLUMN_NAME VARCHAR, $MESSAGE_PAYLOAD_COLUMN_NAME VARCHAR);").execute()
-        connection.prepareStatement("CREATE TABLE ${OFFSET_TABLE_PREFIX}${topicName.replace(".", "_")} ($CONSUMER_GROUP_COLUMN_NAME VARCHAR NOT NULL, $COMMITTED_OFFSET_COLUMN_NAME BIGINT NOT NULL, PRIMARY KEY ($CONSUMER_GROUP_COLUMN_NAME, $COMMITTED_OFFSET_COLUMN_NAME))").execute()
+        listOf(testTopicName, sourceTopicName, destinationTopicName).forEach { topicName ->
+            connection.prepareStatement("CREATE TABLE ${TOPIC_TABLE_PREFIX}${topicName.replace(".", "_")} ($OFFSET_COLUMN_NAME BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, $KEY_COLUMN_NAME VARCHAR, $MESSAGE_PAYLOAD_COLUMN_NAME VARCHAR);").execute()
+            connection.prepareStatement("CREATE TABLE ${OFFSET_TABLE_PREFIX}${topicName.replace(".", "_")} ($CONSUMER_GROUP_COLUMN_NAME VARCHAR NOT NULL, $COMMITTED_OFFSET_COLUMN_NAME BIGINT NOT NULL, PRIMARY KEY ($CONSUMER_GROUP_COLUMN_NAME, $COMMITTED_OFFSET_COLUMN_NAME))").execute()
+
+        }
     }
 
     @AfterEach
@@ -72,7 +78,7 @@ class DBMessagingIntegrationTest {
 
     @Test
     fun `can write and read messages with null values successfully from topic backed by database`() {
-        val subscriptionConfig = SubscriptionConfig(groupName, topicName)
+        val subscriptionConfig = SubscriptionConfig(groupName, testTopicName)
         val publisherConfig = PublisherConfig(clientId)
         val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl(), offsetTracker)
         dbPublisher.start()
@@ -81,7 +87,7 @@ class DBMessagingIntegrationTest {
             SecureHash("algorithm", ByteBuffer.wrap(it.toByteArray(Charsets.UTF_8)))
         }
         messagesToWrite.forEach { value ->
-            dbPublisher.publish(listOf(Record(topicName, value, null))).first().getOrThrow()
+            dbPublisher.publish(listOf(Record(testTopicName, value, null))).first().getOrThrow()
         }
 
         val readMessages = mutableListOf<Pair<SecureHash?, SecureHash?>>()
@@ -102,7 +108,7 @@ class DBMessagingIntegrationTest {
 
     @Test
     fun `can write and read messages with non-null values successfully from topic backed by database`() {
-        val subscriptionConfig = SubscriptionConfig(groupName, topicName)
+        val subscriptionConfig = SubscriptionConfig(groupName, testTopicName)
         val publisherConfig = PublisherConfig(clientId)
         val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl(), offsetTracker)
         dbPublisher.start()
@@ -111,7 +117,7 @@ class DBMessagingIntegrationTest {
             SecureHash("algorithm", ByteBuffer.wrap(it.toByteArray(Charsets.UTF_8)))
         }
         messagesToWrite.forEach { value ->
-            dbPublisher.publish(listOf(Record(topicName, value, value))).first().getOrThrow()
+            dbPublisher.publish(listOf(Record(testTopicName, value, value))).first().getOrThrow()
         }
 
         val readMessages = mutableListOf<Pair<SecureHash?, SecureHash?>>()
@@ -131,8 +137,7 @@ class DBMessagingIntegrationTest {
     }
 
     @Test
-    fun `multiple consumers groups can read records successfully from topic backed by database`() {
-        val subscriptionConfig = SubscriptionConfig(groupName, topicName)
+    fun `a subscription writes returned records from onNext successfully`() {
         val publisherConfig = PublisherConfig(clientId)
         val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl(), offsetTracker)
         dbPublisher.start()
@@ -141,7 +146,40 @@ class DBMessagingIntegrationTest {
             SecureHash("algorithm", ByteBuffer.wrap(it.toByteArray(Charsets.UTF_8)))
         }
         messagesToWrite.forEach { value ->
-            dbPublisher.publish(listOf(Record(topicName, value, value))).first().getOrThrow()
+            dbPublisher.publish(listOf(Record(sourceTopicName, value, value))).first().getOrThrow()
+        }
+
+        val readMessages = mutableListOf<Pair<SecureHash?, SecureHash?>>()
+        val inMemoryHolderProcessor = InMemoryHolderProcessor(readMessages, latch, 3)
+        val sourceSubscription =  DBDurableSubscription(SubscriptionConfig(groupName, sourceTopicName), dbConfig, ForwardProcessor(destinationTopicName), null, AvroSchemaRegistryImpl(), offsetTracker, 100.millis)
+        val destinationSubscription = DBDurableSubscription(SubscriptionConfig(groupName, destinationTopicName), dbConfig, inMemoryHolderProcessor, null, AvroSchemaRegistryImpl(), offsetTracker, 100.millis)
+
+        sourceSubscription.start()
+        destinationSubscription.start()
+        latch.await()
+        sourceSubscription.stop()
+        destinationSubscription.stop()
+
+        assertThat(readMessages).hasSize(3)
+        readMessages.forEachIndexed { index, _ ->
+            assertThat(readMessages[index].first!!.serverHash == readMessages[index].second!!.serverHash)
+            assertTrue(readMessages[index].first!!.algorithm == messagesToWrite[index].algorithm)
+            assertTrue(readMessages[index].first!!.serverHash.array().contentEquals(messagesToWrite[index].serverHash.array()))
+        }
+    }
+
+    @Test
+    fun `multiple consumers groups can read records successfully from topic backed by database`() {
+        val subscriptionConfig = SubscriptionConfig(groupName, testTopicName)
+        val publisherConfig = PublisherConfig(clientId)
+        val dbPublisher = DBPublisher<SecureHash, SecureHash>(publisherConfig, dbConfig, AvroSchemaRegistryImpl(), offsetTracker)
+        dbPublisher.start()
+
+        val messagesToWrite = listOf("msg-1", "msg-2", "msg-3").map {
+            SecureHash("algorithm", ByteBuffer.wrap(it.toByteArray(Charsets.UTF_8)))
+        }
+        messagesToWrite.forEach { value ->
+            dbPublisher.publish(listOf(Record(testTopicName, value, value))).first().getOrThrow()
         }
 
         val readMessages1 = mutableListOf<Pair<SecureHash?, SecureHash?>>()
@@ -178,6 +216,17 @@ class DBMessagingIntegrationTest {
                 latch.countDown()
             }
             return emptyList()
+        }
+
+        override val keyClass: Class<SecureHash>
+            get() = SecureHash::class.java
+        override val valueClass: Class<SecureHash>
+            get() = SecureHash::class.java
+    }
+
+    class ForwardProcessor(private val destinationTopic: String): DurableProcessor<SecureHash, SecureHash> {
+        override fun onNext(events: List<Record<SecureHash, SecureHash>>): List<Record<*, *>> {
+            return events.map { Record(destinationTopic, it.key, it.value) }
         }
 
         override val keyClass: Class<SecureHash>
