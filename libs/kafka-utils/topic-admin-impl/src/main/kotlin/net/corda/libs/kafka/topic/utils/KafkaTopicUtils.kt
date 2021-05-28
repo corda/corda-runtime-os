@@ -32,7 +32,7 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
             adminClient.createTopics(listOf(newTopic)).all().get()
             log.info("$newTopic created successfully")
         } catch (e: ExecutionException) {
-            if (e.cause !is TopicExistsException) throw e
+            if (e.cause !is TopicExistsException) throw e.cause!!
             else log.info("$newTopic already exists")
         }
     }
