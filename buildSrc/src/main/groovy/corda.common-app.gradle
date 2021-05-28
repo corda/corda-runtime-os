@@ -55,13 +55,14 @@ private addBundle(
 private addBundles(
         final ArtifactCollection artifacts,
         final File bundlesDir,
-        final Set<String> systemBundleSet) {
+        final Set<String> systemBundleSet,
+        final Set<String> systemPackageSet) {
     if (!bundlesDir.exists()) {
         bundlesDir.mkdirs()
     }
     artifacts.each { resolvedArtifact ->
         final def file = resolvedArtifact.file
-        if (isJar(file)) {
+        if (isJar(file) && !systemPackageSet.contains(file.name)) {
             final def jarFile = new JarFile(file)
             if (isBundle(jarFile)) {
                 addBundle(file, new File(bundlesDir, file.name), systemBundleSet)
@@ -131,11 +132,18 @@ def cordaAssembleBundlesTask = tasks.register("cordaAssembleBundles") {
         if (!bundlesDir.exists()) {
             bundlesDir.mkdirs()
         }
+        final Set<String> systemPackageSet = new TreeSet<>()
+        configurations.systemPackages.resolve().each { file ->
+            systemPackageSet.add(file.name)
+        }
         final Set<String> systemBundleSet = new TreeSet<>()
-        configurations.runtimeClasspath.incoming.findAll { resolvableDependencies ->
-            !configurations.systemPackages.contains(resolvableDependencies)
-        }.each { resolvableDependencies ->
-            addBundles(resolvableDependencies.artifacts as ArtifactCollection, bundlesDir, systemBundleSet)
+        configurations.runtimeClasspath.incoming.each { resolvableDependencies ->
+            addBundles(resolvableDependencies.artifacts as ArtifactCollection, bundlesDir, systemBundleSet, systemPackageSet)
+        }
+        new File(project.buildDir, "libs").listFiles().findAll { file ->
+            isJar(file) && !systemPackageSet.contains(file.name)
+        }.each { jar ->
+            addBundle(jar, new File(bundlesDir, jar.name), systemBundleSet)
         }
         final systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
         systemBundlesFile.withWriter { writer ->

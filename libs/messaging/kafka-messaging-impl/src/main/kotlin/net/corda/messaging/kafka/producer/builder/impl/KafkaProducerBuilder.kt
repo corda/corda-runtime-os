@@ -74,13 +74,14 @@ class KafkaProducerBuilder<K : Any, V : Any>(
      * @param producerCloseTimeout time to wait for close to finish
      * @param producerCreateMaxRetries maximum amount of retries to attempt
      */
+    @Suppress("TooGenericExceptionCaught")
     private fun initTransactionForProducer(config: Config,
                                         producer: KafkaProducer<K, V>,
                                         producerCloseTimeout: Long,
                                         producerCreateMaxRetries: Long) {
         val topic = config.getString(PUBLISHER_TOPIC)
         val clientId = config.getString(PUBLISHER_CLIENT_ID)
-        val instanceId  = config.getString(PUBLISHER_INSTANCE_ID)
+        val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getInt(PUBLISHER_INSTANCE_ID) else null
 
         var attempts = 0
         while (true) {
@@ -88,49 +89,27 @@ class KafkaProducerBuilder<K : Any, V : Any>(
             try {
                 producer.initTransactions()
                 break
-            } catch (ex: IllegalStateException) {
-                val message = "Failed to initialize kafka producer. No transactional.id has been configured. " +
-                        "clientId $clientId, instanceId $instanceId, " +
-                        "topic $topic."
-                throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
-            } catch (ex: UnsupportedVersionException) {
-                val message = "Failed to initialize kafka producer. Broker does not support transactions. " +
-                        "clientId $clientId, instanceId $instanceId, " +
-                        "topic $topic."
-                throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
-            } catch (ex: AuthorizationException) {
-                val message = "Failed to initialize kafka producer. Configured transactional.id is not authorized. " +
-                        "clientId $clientId, instanceId $instanceId, " +
-                        "topic $topic."
-                throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
-            } catch (ex: KafkaException) {
-                val message = "Failed to initialize kafka producer. Fatal error encountered. " +
-                        "clientId $clientId, instanceId $instanceId, " +
-                        "topic $topic."
-                throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
-            } catch (ex: TimeoutException) {
-                if (attempts <= producerCreateMaxRetries) {
-                    val message = "Failed to initialize kafka producer. Timeout. " +
-                            "clientId $clientId, instanceId $instanceId, " +
-                            "topic $topic. Attempts: $attempts. Retrying."
-                    log.warn(message, ex)
-                } else {
-                    val message = "Failed to initialize kafka producer. Timeout. " +
-                            "clientId $clientId, instanceId $instanceId, " +
-                            "topic $topic."
-                    throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
-                }
-            } catch (ex: InterruptException) {
-                if (attempts <= producerCreateMaxRetries) {
-                    val message = "Failed to initialize kafka producer. Thread is interrupted while blocked. " +
-                            "clientId $clientId, instanceId $instanceId, " +
-                            "topic $topic. Attempts: $attempts. Retrying."
-                    log.warn(message, ex)
-                } else {
-                    val message = "Failed to initialize kafka producer. Thread is interrupted while blocked. " +
-                            "clientId $clientId, instanceId $instanceId, " +
-                            "topic $topic."
-                    throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
+            } catch (ex: Exception) {
+                val message =
+                    "Failed to initialize kafka producer, clientId $clientId, instanceId $instanceId, " +
+                            "topic $topic"
+                when (ex) {
+                    is IllegalStateException,
+                    is UnsupportedVersionException,
+                    is AuthorizationException -> {
+                        throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
+                    }
+                    is KafkaException,
+                    is TimeoutException,
+                    is InterruptException -> {
+                        if (attempts <= producerCreateMaxRetries) {
+                            log.warn("$message. Attempts: $attempts. Retrying.", ex)
+                        } else {
+                            throwErrorAndCloseProducer(message, ex, producer, producerCloseTimeout)
+                        }
+                    } else -> {
+                        throwErrorAndCloseProducer("Unexpected error. $message", ex, producer, producerCloseTimeout)
+                    }
                 }
             }
         }
