@@ -39,6 +39,14 @@ class CordaKafkaConsumerBuilder<K : Any, V : Any>(
         return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
     }
 
+    override fun createCompactedConsumer(
+        subscriptionConfig: SubscriptionConfig,
+        onError: (String, ByteArray) -> Unit,
+    ): CordaKafkaConsumer<K, V> {
+        val consumer = createKafkaConsumer(subscriptionConfig, onError)
+        return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, null)
+    }
+
     private fun createKafkaConsumer(
         subscriptionConfig: SubscriptionConfig,
         onError: (String, ByteArray) -> Unit

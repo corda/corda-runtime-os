@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription.subscription.pubsub
+package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription
 
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doAnswer
