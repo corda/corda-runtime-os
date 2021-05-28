@@ -20,6 +20,7 @@ plugins {
     id 'com.jfrog.artifactory'
     id 'maven-publish'
     id 'corda.publish'
+    id 'jacoco'
 }
 
 wrapper {
@@ -131,6 +132,7 @@ subprojects {
     apply plugin: 'kotlin-allopen'
     apply plugin: 'kotlin-noarg'
     apply plugin: DetektPlugin
+    apply plugin: 'jacoco'
 
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")
