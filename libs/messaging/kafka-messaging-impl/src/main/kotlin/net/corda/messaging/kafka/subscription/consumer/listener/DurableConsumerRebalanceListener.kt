@@ -7,8 +7,8 @@ import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class PubSubConsumerRebalanceListener<K, V> (subscriptionConfig: SubscriptionConfig,
-                                             private val consumer: Consumer<K, V>) : ConsumerRebalanceListener {
+class DurableConsumerRebalanceListener<K, V> (subscriptionConfig: SubscriptionConfig,
+                                              private val consumer: Consumer<K, V>) : ConsumerRebalanceListener {
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
@@ -25,12 +25,10 @@ class PubSubConsumerRebalanceListener<K, V> (subscriptionConfig: SubscriptionCon
     }
 
     /**
-     * When a [consumer] is assigned [partitions] set the offset to the end of the partition.
-     * The consumer will not read any messages produced to the topic between the last poll and latest subscription or rebalance.
+     * When a [consumer] is assigned [partitions].
      */
     override fun onPartitionsAssigned(partitions: MutableCollection<TopicPartition>) {
         val partitionIds = partitions.map{it.partition()}.joinToString(",")
         log.info("Consumer group name $groupName for topic $topic partition assigned: $partitionIds.")
-        consumer.seekToEnd(partitions)
     }
 }

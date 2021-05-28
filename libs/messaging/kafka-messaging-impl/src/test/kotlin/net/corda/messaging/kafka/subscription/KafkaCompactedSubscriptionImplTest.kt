@@ -39,7 +39,7 @@ class KafkaCompactedSubscriptionImplTest {
         override fun destroyMap(map: MutableMap<String, String>) { }
     }
 
-    private val subscriptionConfig = SubscriptionConfig("group", TOPIC, 1)
+    private val subscriptionConfig = SubscriptionConfig("group", TOPIC)
     private val config: Config = ConfigFactory.empty()
         .withValue(KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT, ConfigValueFactory.fromAnyRef(1000))
         .withValue(KafkaProperties.KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TOPIC_PREFIX))

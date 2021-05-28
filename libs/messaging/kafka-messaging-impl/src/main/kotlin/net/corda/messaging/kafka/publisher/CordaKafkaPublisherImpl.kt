@@ -39,7 +39,7 @@ import java.time.Duration
  * Any Exceptions thrown during publish are returned in a CordaFuture.
  */
 @Component
-class CordaKafkaPublisher<K : Any, V : Any> (
+class CordaKafkaPublisherImpl<K : Any, V : Any> (
     private val publisherConfig: PublisherConfig,
     private val kafkaConfig: Config,
     private val producer: Producer<K, V>,
@@ -49,7 +49,7 @@ class CordaKafkaPublisher<K : Any, V : Any> (
     private companion object {
         private val log: Logger = contextLogger()
         private val fatalSendExceptions = listOf(AuthenticationException::class.java, AuthorizationException::class.java,
-            IllegalStateException::class.java, SerializationException::class.java, KafkaException::class.java)
+            IllegalStateException::class.java, SerializationException::class.java)
     }
 
     private val closeTimeout = kafkaConfig.getLong(PRODUCER_CLOSE_TIMEOUT)
@@ -114,21 +114,18 @@ class CordaKafkaPublisher<K : Any, V : Any> (
             fut.set(true)
         } catch (ex: Exception) {
             when (ex) {
-                is InvalidProducerEpochException -> {
-                    logErrorSetFutureAndAbortTransaction("Kafka producer clientId $clientId, instanceId $instanceId, " +
-                            "for topic $topic failed to send.", ex, fut, true)
-                }
-                is InterruptException,
-                is TimeoutException -> {
-                    logErrorSetFutureAndAbortTransaction("Kafka producer clientId $clientId, instanceId $instanceId, " +
-                            "for topic $topic failed to send.", ex, fut, false)
-                }
                 is IllegalStateException,
                 is ProducerFencedException,
-                is AuthorizationException,
-                is KafkaException -> {
+                is InvalidProducerEpochException,
+                is AuthorizationException-> {
                     logErrorAndSetFuture("Kafka producer clientId $clientId, instanceId $instanceId, " +
                             "for topic $topic failed to send", ex, fut, true)
+                }
+                is InterruptException,
+                is TimeoutException,
+                is KafkaException -> {
+                    logErrorSetFutureAndAbortTransaction("Kafka producer clientId $clientId, instanceId $instanceId, " +
+                            "for topic $topic failed to send.", ex, fut, false)
                 }
                 else -> {
                     logErrorAndSetFuture("Kafka producer clientId $clientId, instanceId $instanceId, " +
@@ -174,8 +171,8 @@ class CordaKafkaPublisher<K : Any, V : Any> (
                 future.setException(CordaMessageAPIFatalException(message, exception))
                 close()
             }
-            exception is InterruptException -> {
-                log.warn("$message. Thread interrupted.", exception)
+            exception is InterruptException || exception is KafkaException -> {
+                log.warn(message, exception)
                 future.setException(CordaMessageAPIIntermittentException(message, exception))
             }
             else -> {
