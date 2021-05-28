@@ -13,16 +13,15 @@ buildscript {
 description("OSGi Framework Bootstrap")
 
 dependencies {
-
-    implementation project("framework-api")
     implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    implementation project("framework-api")
 
-    testImplementation project("framework-app-tester")
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$jupiterVersion"
+    testImplementation project("framework-app-tester")
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
 }
 
@@ -62,6 +61,7 @@ private addBundles(
 }
 
 test {
+    dependsOn('framework-app-tester:appJar')
     final def appTesterProject = project("framework-app-tester")
     doFirst {
         final File source = new File(appTesterProject.buildDir, "libs")
