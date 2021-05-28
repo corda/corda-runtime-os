@@ -3,6 +3,7 @@ package net.corda.messaging.kafka.subscription.factory
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
@@ -13,7 +14,6 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilder
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CONF_PREFIX
 import net.corda.messaging.kafka.subscription.KafkaCompactedSubscriptionImpl
@@ -21,6 +21,7 @@ import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
 import net.corda.messaging.kafka.properties.PublisherConfigProperties
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
+import net.corda.messaging.kafka.subscription.producer.builder.impl.SubscriptionProducerBuilderImpl
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -76,12 +77,12 @@ class KafkaSubscriptionFactory @Activate constructor(
     ): Subscription<K, V> {
         //TODO - replace this with a  call to OSGi ConfigService
 
-        val publisherClientId = "${subscriptionConfig.groupName}-producer"
+        val publisherClientId = "durableSub-${subscriptionConfig.groupName}-producer"
         val config = ConfigFactory.load("tmpKafkaDefaults")
             .withValue(PublisherConfigProperties.PUBLISHER_CLIENT_ID,
                 ConfigValueFactory.fromAnyRef(publisherClientId))
             .withValue(PublisherConfigProperties.PUBLISHER_INSTANCE_ID,
-                ConfigValueFactory.fromAnyRef("durablesub-$publisherClientId"))
+                ConfigValueFactory.fromAnyRef(subscriptionConfig.instanceId))
 
         //pattern specific properties
         val overrideProperties = properties.toMutableMap()
@@ -92,7 +93,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         val producerProperties = getProducerProps(config, overrideProperties)
 
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(config, consumerProperties, avroSchemaRegistry)
-        val producerBuilder = KafkaProducerBuilder(config, avroSchemaRegistry, producerProperties)
+        val producerBuilder = SubscriptionProducerBuilderImpl(config, avroSchemaRegistry, producerProperties)
         return KafkaDurableSubscriptionImpl(subscriptionConfig, config, consumerBuilder, producerBuilder, processor)
     }
 
@@ -171,18 +172,20 @@ class KafkaSubscriptionFactory @Activate constructor(
         properties.putAll(overrideProperties)
         val conf: Config = ConfigFactory.parseProperties(properties).withFallback(config)
         val producerClientId = config.getString(PublisherConfigProperties.PUBLISHER_CLIENT_ID)
+        val instanceId = if (config.hasPath(PublisherConfigProperties.PUBLISHER_INSTANCE_ID)) config.getInt(
+            PublisherConfigProperties.PUBLISHER_INSTANCE_ID
+        ) else throw CordaMessageAPIFatalException("Cannot create subscription producer $producerClientId. No instanceId configured")
 
         val producerProps = Properties()
         producerProps[ProducerConfig.CLIENT_ID_CONFIG] = producerClientId
 
-        producerProps[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] =
-            conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.ACKS_CONFIG)
         producerProps[ProducerConfig.ACKS_CONFIG] =
             conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.ACKS_CONFIG)
+        producerProps[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] =
+            conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
         producerProps[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] =
             conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG)
-        //TODO - append unique id for this node instance + node identity to this so it is unique across multiple HA nodes
-        producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] = producerClientId
+        producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] = "$producerClientId-$instanceId"
 
         return producerProps
     }

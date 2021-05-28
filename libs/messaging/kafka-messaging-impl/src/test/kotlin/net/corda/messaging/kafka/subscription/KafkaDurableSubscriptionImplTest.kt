@@ -1,13 +1,6 @@
 package net.corda.messaging.kafka.subscription
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.anyOrNull
-import com.nhaarman.mockito_kotlin.doAnswer
-import com.nhaarman.mockito_kotlin.doReturn
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.whenever
+import com.nhaarman.mockito_kotlin.*
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
@@ -16,14 +9,14 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
-import net.corda.messaging.kafka.stubs.StubDurableProcessor
+import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.PublisherConfigProperties
+import net.corda.messaging.kafka.stubs.StubDurableProcessor
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
-import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
-import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
+import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

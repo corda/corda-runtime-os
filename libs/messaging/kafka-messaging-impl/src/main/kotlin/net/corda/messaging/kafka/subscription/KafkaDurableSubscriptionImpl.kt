@@ -7,6 +7,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
+import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.PublisherConfigProperties
@@ -14,13 +15,11 @@ import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
-import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.Exception
-import kotlin.concurrent.thread
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 /**

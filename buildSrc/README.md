@@ -74,9 +74,17 @@ To build the bootable JAR, run the Gradle task
 
 #### Logging
 
-The plugin and the bootable JAR exposes the [SLF4J](http://www.slf4j.org/) and
+The root `build.gradle`  declares the logger dependencies as...
+
+```gradle
+dependencies {    
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+}
+```
+
+This plugin and the bootable JAR exposes the [SLF4J](http://www.slf4j.org/) and
 [Apache Log4j 2](https://logging.apache.org/log4j/2.x/) packages to the bundles through the OSGi framework, using *Log4j
-2* to implement logging.
+2* to implement logging, hence this plugin doesn't zip the SLF4J and Log4j in the bootable JAR.
 
 In *Kotlin* code declare the `logger` as usual.
 
@@ -129,6 +137,9 @@ The plugin defines two additional configurations to declare dependencies:
     * *IMPORTANT! Dependencies containing packages that should be exposed inside the OSGi framework, but not installed
       as bundles themselves should be declared as `systemPackages`. This configuration should only be used when
       necessary.*
+    * *IMPORTANT! Runtime dependencies - as `implementation` colliding with dependencies defined in `systemPackages`
+      are not zipped as OSGi bundles in the bootable application JAR, regardless the version. What declared as
+      `systemPackages` has precedence.*
 
 The `appJar` task depends on the tasks
 
