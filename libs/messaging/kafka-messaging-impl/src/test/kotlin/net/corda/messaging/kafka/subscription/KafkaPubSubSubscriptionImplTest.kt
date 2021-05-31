@@ -216,7 +216,7 @@ class KafkaPubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription.start()
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-
+        kafkaPubSubSubscription.stop()
         assertThat(latch.count).isEqualTo(0)
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll()
@@ -244,7 +244,7 @@ class KafkaPubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription.start()
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-
+        kafkaPubSubSubscription.stop()
         assertThat(latch.count).isEqualTo(0)
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll()
