@@ -16,4 +16,12 @@ interface TopicUtils {
      * [replication]
      */
     fun createTopic(topicName: String, partitions: Int, replication: Short)
+
+    /**
+     * Create new compacted topic based on:
+     * [topicName]
+     * [partitions]
+     * [replication]
+     */
+    fun createCompactedTopic(topicName: String, partitions: Int, replication: Short)
 }

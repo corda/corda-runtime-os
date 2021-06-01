@@ -55,4 +55,12 @@ class KafkaTopicUtilsTest {
 
         verify(adminClient, times(1)).createTopics(any())
     }
+
+    @Test
+    fun testCreateCompactedTopic() {
+        Mockito.`when`(adminClient.createTopics(any())).thenReturn(topicResult)
+        Mockito.`when`(topicResult.all()).thenReturn(kafkaFuture)
+        kafkaTopicUtils.createCompactedTopic("dummyName", 1, 1)
+        verify(adminClient, times(1)).createTopics(any())
+    }
 }

@@ -36,5 +36,22 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
             else log.info("$newTopic already exists")
         }
     }
+
+    override fun createCompactedTopic(
+        topicName: String,
+        partitions: Int,
+        replication: Short,
+    ) {
+        val newTopic = NewTopic(topicName, partitions, replication)
+        newTopic.configs(mapOf(Pair("cleanup.policy", "compact")))
+        try {
+            log.info("Attempting to create topic: $newTopic")
+            adminClient.createTopics(listOf(newTopic)).all().get()
+            log.info("$newTopic created successfully")
+        } catch (e: ExecutionException) {
+            if (e.cause !is TopicExistsException) throw e.cause!!
+            else log.info("$newTopic already exists")
+        }
+    }
 }
 
