@@ -52,7 +52,7 @@ class CordaWriteServiceImpl (
             for (key2 in key1Config.root().keys) {
                 val content = Configuration(key1Config.atKey(key2).toString())
                 val record = Record(topicName, "$key1.$key2", content)
-                log.info("Producing record: $key1.$key2\t$content")
+                log.debug("Producing record: $key1.$key2\t$content")
                 records.add(record)
             }
         }
