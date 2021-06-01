@@ -5,10 +5,11 @@ import net.corda.messaging.api.records.Record
 import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 
-class StubDurableProcessor(private val latch: CountDownLatch, private val exception: Exception? = null) :
+class StubDurableProcessor(private val invocationLatch: CountDownLatch, private val eventsLatch: CountDownLatch, private val exception: Exception? = null) :
     DurableProcessor<String, ByteBuffer> {
     override fun onNext(events: List<Record<String, ByteBuffer>>): List<Record<*, *>> {
-        latch.countDown()
+        invocationLatch.countDown()
+        events.forEach { _ -> eventsLatch.countDown() }
 
         if (exception != null) {
             throw exception
