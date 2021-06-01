@@ -38,13 +38,6 @@ pipeline {
     }
 
     stages {
-        stage('Echos') {
-            steps {
-                echo "Hello"
-                echo "upstream = ${upstream().getClass()}"
-                echo "env.JOB_NAME = $env.JOB_NAME"
-            }
-        }
         stage('Prepare') {
             steps {
                sh 'mkdir -p "${GRADLE_USER_HOME}"'
@@ -52,8 +45,7 @@ pipeline {
         }
         stage('Download Corda maven artifacts') {
             when {
-                // TODO: Change this when the version in gradle.properties had changed
-                expression { return params.UPSTREAM_VERSION_SUFFIX != '1617266069749-rc' }
+                expression { return !params.UPSTREAM_PROJECT_NAME.isEmpty() }
             }
             steps {
                 sh 'mkdir -p /tmp/artifacts/mavenLocal'
