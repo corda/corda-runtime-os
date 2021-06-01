@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "KafkaTopicTemplate",
+  "namespace": "net.corda.data.kafka",
+  "fields": [
+    {
+      "name": "topicName",
+      "type": "string"
+    },
+    {
+      "name": "numPartitions",
+      "type": "int"
+    },
+    {
+      "name": "replicationFactor",
+      "type": "int"
+    },
+    {
+      "name": "config",
+      "type": {
+        "type": "map",
+        "values" : "long",
+        "default": {}
+      }
+    }
+
+  ]
+}
