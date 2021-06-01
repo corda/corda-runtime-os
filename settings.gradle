@@ -39,7 +39,6 @@ dependencyResolutionManagement {
 
 rootProject.name = 'flow-worker'
 include 'applications:examples:goodbyeworld'
-include 'components'
 include 'data:avro-schema'
 include 'libs:examples:helloworld'
 include 'libs:examples:helloworld-impl'
