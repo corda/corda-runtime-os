@@ -5,6 +5,7 @@ import jdk.jshell.spi.ExecutionControl
 import net.corda.data.config.Configuration
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -52,7 +53,7 @@ class CordaWriteServiceImpl (
             for (key2 in key1Config.root().keys) {
                 val content = Configuration(key1Config.atKey(key2).toString())
                 val record = Record(topicName, "$key1.$key2", content)
-                log.debug("Producing record: $key1.$key2\t$content")
+                log.debug {"Producing record: $key1.$key2\t$content"}
                 records.add(record)
             }
         }
