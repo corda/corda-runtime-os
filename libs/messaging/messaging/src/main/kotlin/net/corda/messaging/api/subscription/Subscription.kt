@@ -26,11 +26,15 @@ interface Subscription<K, V> : LifeCycle {
  * A subscription that can be used to manage the life cycle of consumption of event records from a topic.
  * The state for a given record is retrieved and both then passed to a state + event processor.
  * State and Events returned from the processor are produced to one or more topics.
- * Consumption of records, processing and production of new records is done atomically.
- * Subscription will begin consuming events upon start().
- * Subscription will stop consuming events and close the connection upon close()/stop().
+ * Consumption of records, processing and production of new records is done atomically
+ * (that is, within a single _transaction_).
  */
-interface StateAndEventSubscription<K, S, E> : LifeCycle
+interface StateAndEventSubscription<K : Any, S : Any> : LifeCycle {
+    /**
+     *  Queries the topic values for the most recent state [S] of the given [key]
+     */
+    fun getValue(key: K): S?
+}
 
 /**
  * This subscription should be used when consuming records from a compacted topic
