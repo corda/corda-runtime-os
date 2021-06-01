@@ -47,7 +47,7 @@ pipeline {
             }
             steps {
                 sh 'mkdir -p /tmp/artifacts/mavenLocal'
-                copyArtifacts projectName: 'corda5/corda5-os',
+                copyArtifacts projectName: 'Corda5/corda5-os',
                     selector: upstream(),
                     fingerprintArtifacts: true,
                     filter: 'mavenLocal.tar.gz'
