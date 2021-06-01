@@ -17,6 +17,9 @@ pipeline {
         string(defaultValue: "1617266069749-rc",
             description: 'The corda version suffix',
             name: 'UPSTREAM_VERSION_SUFFIX')
+        string(defaultValue: "",
+            description: 'Up String project name',
+            name: 'UPSTREAM_PROJECT_NAME')
     }
 
     environment {
@@ -35,6 +38,13 @@ pipeline {
     }
 
     stages {
+        stage('Echos') {
+            steps {
+                echo "Hello"
+                echo "upstream = $upstream()"
+                echo "env.JOB_NAME = $env.JOB_NAME"
+            }
+        }
         stage('Prepare') {
             steps {
                sh 'mkdir -p "${GRADLE_USER_HOME}"'
@@ -47,7 +57,7 @@ pipeline {
             }
             steps {
                 sh 'mkdir -p /tmp/artifacts/mavenLocal'
-                copyArtifacts projectName: 'Corda5/corda5-os',
+                copyArtifacts projectName: params.UPSTREAM_PROJECT_NAME,
                     selector: upstream(),
                     fingerprintArtifacts: true,
                     filter: 'mavenLocal.tar.gz'
