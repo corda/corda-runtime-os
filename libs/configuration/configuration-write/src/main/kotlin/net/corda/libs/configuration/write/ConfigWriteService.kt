@@ -2,7 +2,7 @@ package net.corda.libs.configuration.write
 
 import com.typesafe.config.Config
 
-interface CordaWriteService {
+interface ConfigWriteService {
     /**
      * When appending, the storage layer is checked for existing configuration for the given [key].
      * If any exist it will be retrieved. The given [config] object will be merged with the existing one.

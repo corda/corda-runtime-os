@@ -10,7 +10,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 
-class CordaWriteServiceFactoryImplTest {
+class ConfigWriteServiceFactoryImplTest {
     private lateinit var cordaWriteServiceFactory: CordaWriteServiceFactoryImpl
     private var publisherFactory: PublisherFactory = mock()
     private var publisher: Publisher<String, Configuration> = mock()

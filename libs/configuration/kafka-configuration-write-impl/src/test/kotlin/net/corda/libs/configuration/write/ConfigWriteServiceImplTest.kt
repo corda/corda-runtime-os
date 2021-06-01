@@ -11,13 +11,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.BufferedReader
 
-class CordaWriteServiceImplTest {
-    private lateinit var cordaWriteService: CordaWriteService
+class ConfigWriteServiceImplTest {
+    private lateinit var configWriteService: ConfigWriteService
     private var publisher: Publisher<String, Configuration> = mock()
 
     @BeforeEach
     fun beforeEach() {
-        cordaWriteService = CordaWriteServiceImpl("topic", publisher)
+        configWriteService = ConfigWriteServiceImpl("topic", publisher)
     }
 
     @Test
@@ -30,7 +30,7 @@ class CordaWriteServiceImplTest {
         val componentVersion = CordaConfigurationVersion("corda", 1, 0)
         val configurationKey = CordaConfigurationKey("corda", packageVersion, componentVersion)
 
-        cordaWriteService.updateConfiguration(configurationKey, config)
+        configWriteService.updateConfiguration(configurationKey, config)
         verify(publisher, times(1)).publish(any())
     }
 }

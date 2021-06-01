@@ -1,7 +1,6 @@
 package net.corda.libs.configuration.write
 
 import com.typesafe.config.Config
-import jdk.jshell.spi.ExecutionControl
 import net.corda.data.config.Configuration
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -11,14 +10,14 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * Kafka implementation of the [CordaWriteService]
+ * Kafka implementation of the [ConfigWriteService]
  * @property topicName the topic configurations will be published to
  */
 @Component
-class CordaWriteServiceImpl (
+class ConfigWriteServiceImpl (
     private val topicName: String,
     private val publisher: Publisher<String, Configuration>
-) : CordaWriteService {
+) : ConfigWriteService {
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -34,7 +33,7 @@ class CordaWriteServiceImpl (
         key: CordaConfigurationKey,
         config: Config
     ) {
-        throw ExecutionControl.NotImplementedException("Not yet implemented")
+        throw NotImplementedError("Not yet implemented")
     }
 
     /**
