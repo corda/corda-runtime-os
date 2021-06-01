@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    implementation project(":data:avro-schema")
     implementation project(":libs:kafka-utils:topic-admin")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

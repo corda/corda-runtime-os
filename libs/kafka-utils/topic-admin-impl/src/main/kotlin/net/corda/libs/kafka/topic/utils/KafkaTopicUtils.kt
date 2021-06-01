@@ -1,5 +1,6 @@
 package net.corda.libs.kafka.topic.utils
 
+import net.corda.data.kafka.KafkaTopicTemplate
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.errors.TopicExistsException
@@ -21,29 +22,10 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    override fun createTopic(
-        topicName: String,
-        partitions: Int,
-        replication: Short
-    ) {
-        val newTopic = NewTopic(topicName, partitions, replication)
-        try {
-            log.info("Attempting to create topic: $newTopic")
-            adminClient.createTopics(listOf(newTopic)).all().get()
-            log.info("$newTopic created successfully")
-        } catch (e: ExecutionException) {
-            if (e.cause !is TopicExistsException) throw e.cause!!
-            else log.info("$newTopic already exists")
-        }
-    }
-
-    override fun createCompactedTopic(
-        topicName: String,
-        partitions: Int,
-        replication: Short,
-    ) {
-        val newTopic = NewTopic(topicName, partitions, replication)
-        newTopic.configs(mapOf(Pair("cleanup.policy", "compact")))
+    override fun createTopic(topicTemplate: KafkaTopicTemplate) {
+        val newTopic =
+            NewTopic(topicTemplate.topicName, topicTemplate.numPartitions, topicTemplate.replicationFactor.toShort())
+        newTopic.configs(topicTemplate.config)
         try {
             log.info("Attempting to create topic: $newTopic")
             adminClient.createTopics(listOf(newTopic)).all().get()

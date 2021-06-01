@@ -14,8 +14,8 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class KafkaTopicTemplate extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 4246276392922266296L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"KafkaTopicTemplate\",\"namespace\":\"net.corda.data.kafka\",\"fields\":[{\"name\":\"topicName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"numPartitions\",\"type\":\"int\"},{\"name\":\"replicationFactor\",\"type\":\"int\"},{\"name\":\"config\",\"type\":{\"type\":\"map\",\"values\":\"long\",\"avro.java.string\":\"String\",\"default\":{}}}]}");
+  private static final long serialVersionUID = 6540162388514063960L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"KafkaTopicTemplate\",\"namespace\":\"net.corda.data.kafka\",\"fields\":[{\"name\":\"topicName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"numPartitions\",\"type\":\"int\"},{\"name\":\"replicationFactor\",\"type\":\"int\"},{\"name\":\"config\",\"type\":{\"type\":\"map\",\"values\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"avro.java.string\":\"String\",\"default\":{}}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -74,7 +74,7 @@ public class KafkaTopicTemplate extends org.apache.avro.specific.SpecificRecordB
    private java.lang.String topicName;
    private int numPartitions;
    private int replicationFactor;
-   private java.util.Map<java.lang.String,java.lang.Long> config;
+   private java.util.Map<java.lang.String,java.lang.String> config;
 
   /**
    * Default constructor.  Note that this does not initialize fields
@@ -90,7 +90,7 @@ public class KafkaTopicTemplate extends org.apache.avro.specific.SpecificRecordB
    * @param replicationFactor The new value for replicationFactor
    * @param config The new value for config
    */
-  public KafkaTopicTemplate(java.lang.String topicName, java.lang.Integer numPartitions, java.lang.Integer replicationFactor, java.util.Map<java.lang.String,java.lang.Long> config) {
+  public KafkaTopicTemplate(java.lang.String topicName, java.lang.Integer numPartitions, java.lang.Integer replicationFactor, java.util.Map<java.lang.String,java.lang.String> config) {
     this.topicName = topicName;
     this.numPartitions = numPartitions;
     this.replicationFactor = replicationFactor;
@@ -117,7 +117,7 @@ public class KafkaTopicTemplate extends org.apache.avro.specific.SpecificRecordB
     case 0: topicName = value$ != null ? value$.toString() : null; break;
     case 1: numPartitions = (java.lang.Integer)value$; break;
     case 2: replicationFactor = (java.lang.Integer)value$; break;
-    case 3: config = (java.util.Map<java.lang.String,java.lang.Long>)value$; break;
+    case 3: config = (java.util.Map<java.lang.String,java.lang.String>)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -177,7 +177,7 @@ public class KafkaTopicTemplate extends org.apache.avro.specific.SpecificRecordB
    * Gets the value of the 'config' field.
    * @return The value of the 'config' field.
    */
-  public java.util.Map<java.lang.String,java.lang.Long> getConfig() {
+  public java.util.Map<java.lang.String,java.lang.String> getConfig() {
     return config;
   }
 
@@ -186,7 +186,7 @@ public class KafkaTopicTemplate extends org.apache.avro.specific.SpecificRecordB
    * Sets the value of the 'config' field.
    * @param value the value to set.
    */
-  public void setConfig(java.util.Map<java.lang.String,java.lang.Long> value) {
+  public void setConfig(java.util.Map<java.lang.String,java.lang.String> value) {
     this.config = value;
   }
 
@@ -234,7 +234,7 @@ public class KafkaTopicTemplate extends org.apache.avro.specific.SpecificRecordB
     private java.lang.String topicName;
     private int numPartitions;
     private int replicationFactor;
-    private java.util.Map<java.lang.String,java.lang.Long> config;
+    private java.util.Map<java.lang.String,java.lang.String> config;
 
     /** Creates a new Builder */
     private Builder() {
@@ -411,7 +411,7 @@ public class KafkaTopicTemplate extends org.apache.avro.specific.SpecificRecordB
       * Gets the value of the 'config' field.
       * @return The value.
       */
-    public java.util.Map<java.lang.String,java.lang.Long> getConfig() {
+    public java.util.Map<java.lang.String,java.lang.String> getConfig() {
       return config;
     }
 
@@ -421,7 +421,7 @@ public class KafkaTopicTemplate extends org.apache.avro.specific.SpecificRecordB
       * @param value The value of 'config'.
       * @return This builder.
       */
-    public net.corda.data.kafka.KafkaTopicTemplate.Builder setConfig(java.util.Map<java.lang.String,java.lang.Long> value) {
+    public net.corda.data.kafka.KafkaTopicTemplate.Builder setConfig(java.util.Map<java.lang.String,java.lang.String> value) {
       validate(fields()[3], value);
       this.config = value;
       fieldSetFlags()[3] = true;
@@ -455,7 +455,7 @@ public class KafkaTopicTemplate extends org.apache.avro.specific.SpecificRecordB
         record.topicName = fieldSetFlags()[0] ? this.topicName : (java.lang.String) defaultValue(fields()[0]);
         record.numPartitions = fieldSetFlags()[1] ? this.numPartitions : (java.lang.Integer) defaultValue(fields()[1]);
         record.replicationFactor = fieldSetFlags()[2] ? this.replicationFactor : (java.lang.Integer) defaultValue(fields()[2]);
-        record.config = fieldSetFlags()[3] ? this.config : (java.util.Map<java.lang.String,java.lang.Long>) defaultValue(fields()[3]);
+        record.config = fieldSetFlags()[3] ? this.config : (java.util.Map<java.lang.String,java.lang.String>) defaultValue(fields()[3]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -498,12 +498,12 @@ public class KafkaTopicTemplate extends org.apache.avro.specific.SpecificRecordB
     out.writeMapStart();
     out.setItemCount(size0);
     long actualSize0 = 0;
-    for (java.util.Map.Entry<java.lang.String, java.lang.Long> e0: this.config.entrySet()) {
+    for (java.util.Map.Entry<java.lang.String, java.lang.String> e0: this.config.entrySet()) {
       actualSize0++;
       out.startItem();
       out.writeString(e0.getKey());
-      java.lang.Long v0 = e0.getValue();
-      out.writeLong(v0);
+      java.lang.String v0 = e0.getValue();
+      out.writeString(v0);
     }
     out.writeMapEnd();
     if (actualSize0 != size0)
@@ -523,17 +523,17 @@ public class KafkaTopicTemplate extends org.apache.avro.specific.SpecificRecordB
       this.replicationFactor = in.readInt();
 
       long size0 = in.readMapStart();
-      java.util.Map<java.lang.String,java.lang.Long> m0 = this.config; // Need fresh name due to limitation of macro system
+      java.util.Map<java.lang.String,java.lang.String> m0 = this.config; // Need fresh name due to limitation of macro system
       if (m0 == null) {
-        m0 = new java.util.HashMap<java.lang.String,java.lang.Long>((int)size0);
+        m0 = new java.util.HashMap<java.lang.String,java.lang.String>((int)size0);
         this.config = m0;
       } else m0.clear();
       for ( ; 0 < size0; size0 = in.mapNext()) {
         for ( ; size0 != 0; size0--) {
           java.lang.String k0 = null;
           k0 = in.readString();
-          java.lang.Long v0 = null;
-          v0 = in.readLong();
+          java.lang.String v0 = null;
+          v0 = in.readString();
           m0.put(k0, v0);
         }
       }
@@ -555,17 +555,17 @@ public class KafkaTopicTemplate extends org.apache.avro.specific.SpecificRecordB
 
         case 3:
           long size0 = in.readMapStart();
-          java.util.Map<java.lang.String,java.lang.Long> m0 = this.config; // Need fresh name due to limitation of macro system
+          java.util.Map<java.lang.String,java.lang.String> m0 = this.config; // Need fresh name due to limitation of macro system
           if (m0 == null) {
-            m0 = new java.util.HashMap<java.lang.String,java.lang.Long>((int)size0);
+            m0 = new java.util.HashMap<java.lang.String,java.lang.String>((int)size0);
             this.config = m0;
           } else m0.clear();
           for ( ; 0 < size0; size0 = in.mapNext()) {
             for ( ; size0 != 0; size0--) {
               java.lang.String k0 = null;
               k0 = in.readString();
-              java.lang.Long v0 = null;
-              v0 = in.readLong();
+              java.lang.String v0 = null;
+              v0 = in.readString();
               m0.put(k0, v0);
             }
           }

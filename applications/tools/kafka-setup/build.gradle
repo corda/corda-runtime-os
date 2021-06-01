@@ -13,15 +13,7 @@ dependencies {
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    implementation project(':data:avro-schema')
-    implementation project(':libs:configuration:configuration-write')
-    implementation project(":libs:configuration:kafka-configuration-write-impl")
-    implementation project(":libs:messaging:kafka-messaging-impl")
-    implementation project(":libs:messaging:messaging")
-    implementation project(':libs:kafka-utils:topic-admin')
-    implementation project(":libs:kafka-utils:topic-admin-impl")
-    implementation project(":libs:schema-registry:schema-registry")
-    implementation project(":libs:schema-registry:schema-registry-impl")
+    implementation project(':components:kafka-topic-admin')
 
 }
 

@@ -19,7 +19,7 @@
       "name": "config",
       "type": {
         "type": "map",
-        "values" : "long",
+        "values" : "string",
         "default": {}
       }
     }
