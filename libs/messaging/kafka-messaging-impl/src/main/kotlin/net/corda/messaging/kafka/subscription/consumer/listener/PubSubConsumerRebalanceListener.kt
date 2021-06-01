@@ -7,7 +7,7 @@ import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class PubSubConsumerRebalanceListener<K, V> (private val subscriptionConfig: SubscriptionConfig,
+class PubSubConsumerRebalanceListener<K, V> (subscriptionConfig: SubscriptionConfig,
                                              private val consumer: Consumer<K, V>) : ConsumerRebalanceListener {
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -15,14 +15,13 @@ class PubSubConsumerRebalanceListener<K, V> (private val subscriptionConfig: Sub
 
     private val topic = subscriptionConfig.eventTopic
     private val groupName = subscriptionConfig.groupName
-    private val instanceId = subscriptionConfig.instanceId
 
     /**
      * When a [consumer] is revoked [partitions] write to log.
      */
     override fun onPartitionsRevoked(partitions: MutableCollection<TopicPartition>) {
         val partitionIds = partitions.map{it.partition()}.joinToString(",")
-        log.info("Consumer group name $groupName with instanceId $instanceId for topic $topic partition revoked: $partitionIds.")
+        log.info("Consumer group name $groupName for topic $topic partition revoked: $partitionIds.")
     }
 
     /**
@@ -31,7 +30,7 @@ class PubSubConsumerRebalanceListener<K, V> (private val subscriptionConfig: Sub
      */
     override fun onPartitionsAssigned(partitions: MutableCollection<TopicPartition>) {
         val partitionIds = partitions.map{it.partition()}.joinToString(",")
-        log.info("Consumer group name $groupName with instanceId $instanceId for topic $topic partition assigned: $partitionIds.")
+        log.info("Consumer group name $groupName for topic $topic partition assigned: $partitionIds.")
         consumer.seekToEnd(partitions)
     }
 }

@@ -7,4 +7,3 @@ package net.corda.messaging.api.records
  * @property value the value of the record
  */
 data class Record<K : Any, V : Any>(val topic: String, val key: K, val value: V?)
-
