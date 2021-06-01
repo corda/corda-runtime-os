@@ -41,7 +41,7 @@ pipeline {
         stage('Echos') {
             steps {
                 echo "Hello"
-                echo "upstream = ${upstream()}"
+                echo "upstream = ${upstream().getClass()}"
                 echo "env.JOB_NAME = $env.JOB_NAME"
             }
         }
