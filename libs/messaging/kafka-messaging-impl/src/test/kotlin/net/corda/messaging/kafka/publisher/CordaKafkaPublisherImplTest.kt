@@ -44,7 +44,7 @@ class CordaKafkaPublisherImplTest {
     @BeforeEach
     fun beforeEach() {
         producer = mock()
-        publisherConfig  = PublisherConfig("clientId", "topic")
+        publisherConfig  = PublisherConfig("clientId")
         kafkaConfig = ConfigFactory.empty().withValue(PRODUCER_CLOSE_TIMEOUT, ConfigValueFactory.fromAnyRef(1))
         kafkaConfig = kafkaConfig.withValue(KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("prefix"))
     }
@@ -181,11 +181,11 @@ class CordaKafkaPublisherImplTest {
         verify(producer, times(1)).close(Mockito.any(Duration::class.java))
     }
 
-    private fun publish(isTransaction: Boolean = false, records: List<Record<String, ByteBuffer>>) : List<CordaFuture<Boolean>> {
+    private fun publish(isTransaction: Boolean = false, records: List<Record<String, ByteBuffer>>) : List<CordaFuture<Unit>> {
         publisherConfig = if (isTransaction) {
-            PublisherConfig("clientId", "topic", 1)
+            PublisherConfig("clientId", 1)
         } else {
-            PublisherConfig("clientId", "topic")
+            PublisherConfig("clientId")
         }
         cordaKafkaPublisherImpl = CordaKafkaPublisherImpl(publisherConfig, kafkaConfig, producer, avroSchemaRegistry)
 

@@ -36,7 +36,6 @@ class CordaPublisherFactory @Activate constructor(
         //TODO - replace with config service
         val defaultKafkaConfig = ConfigFactory.load("tmpInMemDefaults")
         var config = defaultKafkaConfig.withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
-            .withValue(PUBLISHER_TOPIC, ConfigValueFactory.fromAnyRef(publisherConfig.topic))
 
         val instanceId = publisherConfig.instanceId
         if (instanceId != null) {
