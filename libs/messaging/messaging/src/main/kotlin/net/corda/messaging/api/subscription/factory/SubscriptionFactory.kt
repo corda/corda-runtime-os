@@ -71,7 +71,8 @@ interface SubscriptionFactory {
      * @param properties Map of properties to override the default settings for the connection to the source of events
      * @return A subscription to manage lifecycle.
      */
-   fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(subscriptionConfig: StateAndEventSubscriptionConfig,
-                                                 processor: StateAndEventProcessor<K, S, E>,
-                                                 properties: Map<String, String>) : StateAndEventSubscription<K, S, E>
+   fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
+        subscriptionConfig: StateAndEventSubscriptionConfig,
+        processor: StateAndEventProcessor<K, S, E>,
+        properties: Map<String, String>) : StateAndEventSubscription<K, S, E>
 }
