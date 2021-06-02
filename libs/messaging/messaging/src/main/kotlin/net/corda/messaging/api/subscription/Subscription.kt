@@ -60,3 +60,18 @@ interface CompactedSubscription<K : Any, V : Any> : Subscription<K, V> {
      */
     fun getValue(key: K): V?
 }
+
+/**
+ * An interface that can be implemented and configured with a subscription to react to assignment and revocation of topic partitions.
+ */
+interface PartitionAssignmentListener {
+    /**
+     * @param topicPartitions the topic partitions that were assigned.
+     */
+    fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>)
+
+    /**
+     * @param topicPartitions the topic partitions that were unassigned.
+     */
+    fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>)
+}
