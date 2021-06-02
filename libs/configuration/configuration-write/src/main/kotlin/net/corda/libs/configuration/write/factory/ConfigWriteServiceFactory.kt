@@ -5,7 +5,7 @@ import net.corda.libs.configuration.write.ConfigWriteService
 /**
  * Factory for creating instances of [ConfigWriteService]
  */
-interface CordaWriteServiceFactory {
+interface ConfigWriteServiceFactory {
 
     /**
      * @return An instance of [ConfigWriteService]

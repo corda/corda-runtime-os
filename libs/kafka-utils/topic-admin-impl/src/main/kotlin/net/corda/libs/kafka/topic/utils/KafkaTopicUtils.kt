@@ -7,7 +7,6 @@ import org.apache.kafka.common.errors.TopicExistsException
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
 import java.util.concurrent.ExecutionException
 
 /**

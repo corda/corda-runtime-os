@@ -11,14 +11,14 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 
 class ConfigWriteServiceFactoryImplTest {
-    private lateinit var cordaWriteServiceFactory: CordaWriteServiceFactoryImpl
+    private lateinit var cordaWriteServiceFactory: ConfigWriteServiceFactoryImpl
     private var publisherFactory: PublisherFactory = mock()
     private var publisher: Publisher<String, Configuration> = mock()
     private val topicName = "topic"
 
     @BeforeEach
     fun beforeEach() {
-        cordaWriteServiceFactory = CordaWriteServiceFactoryImpl(publisherFactory)
+        cordaWriteServiceFactory = ConfigWriteServiceFactoryImpl(publisherFactory)
     }
 
     @Test

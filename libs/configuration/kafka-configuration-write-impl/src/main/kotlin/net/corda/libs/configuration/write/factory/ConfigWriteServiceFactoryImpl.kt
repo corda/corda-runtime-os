@@ -11,14 +11,14 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 /**
- * Kafka implementation for [CordaWriteServiceFactory].
+ * Kafka implementation for [ConfigWriteServiceFactory].
  * @property publisherFactory
  */
 @Component
-class CordaWriteServiceFactoryImpl @Activate constructor(
+class ConfigWriteServiceFactoryImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory
-) : CordaWriteServiceFactory {
+) : ConfigWriteServiceFactory {
 
     private val CONFIGURATION_WRITE_SERVICE = "CONFIGURATION_WRITE_SERVICE"
 
