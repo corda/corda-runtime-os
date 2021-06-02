@@ -74,5 +74,5 @@ interface SubscriptionFactory {
    fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: StateAndEventSubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        properties: Map<String, String>) : StateAndEventSubscription<K, S>
+        properties: Map<String, String>) : StateAndEventSubscription<K, S, E>
 }

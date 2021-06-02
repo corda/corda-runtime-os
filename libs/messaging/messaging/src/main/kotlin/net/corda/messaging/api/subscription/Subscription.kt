@@ -30,7 +30,7 @@ interface Subscription<K, V> : LifeCycle {
  * Consumption of records, processing and production of new records is done atomically
  * (that is, within a single _transaction_).
  */
-interface StateAndEventSubscription<K : Any, S : Any> : LifeCycle {
+interface StateAndEventSubscription<K, S, E> : LifeCycle {
     /**
      *  Queries the topic values for the most recent state [S] of the given [key].
      *  For partitioned topics not all values may be available.  However, any key
@@ -42,6 +42,11 @@ interface StateAndEventSubscription<K : Any, S : Any> : LifeCycle {
      */
     @Throws(IllegalArgumentException::class)
     fun getValue(key: K): S?
+
+    /**
+     * Check the state of a subscription. true if subscription is still active. false otherwise.
+     */
+    val isRunning: Boolean
 }
 
 /**
