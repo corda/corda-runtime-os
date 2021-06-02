@@ -1,7 +1,6 @@
 package net.corda.messaging.api.processor
 
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.records.StateAndEventRecord
 
 /**
  * A processor of events which also have a state from a durable subscription. Consumer processors
@@ -9,12 +8,27 @@ import net.corda.messaging.api.records.StateAndEventRecord
  */
 interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
 
+    data class Response<S: Any> (
+        /**
+         * The updated state in response to an incoming event from [onNext]
+         */
+        val updatedState: S?,
+
+        /**
+         * A list of events to be published in response to an incoming event from [onNext]
+         */
+        val responseEvents: List<Record<*, *>>
+    )
+
     /**
-     * Process a [stateAndEvent] pair of records and produce a list of new records.
-     * @return a pair of state and event records. State will be of the same type as the input state.
+     * Called to signal an incoming [event] relating to a given [state].  Implementers are expected to
+     * process the event and, if necessary, update the state and return any new events as a result.
+     * @return a [Response] which contains the updated state and any subsequent events, both of which will
+     * be published.
+     *
      * Events can be of different key and value types intended to be put on different topics.
      */
-    fun onNext(stateAndEvent: StateAndEventRecord<K, S, E>): Pair<Record<K, S>,List<Record<*, *>>>
+    fun onNext(state: S?, event: Record<K, E>): Response<S>
 
     /**
      * [keyClass], [stateValueClass] and [eventValueClass] to easily get the class types the processor operates upon.
