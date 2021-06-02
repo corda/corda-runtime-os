@@ -1,6 +1,7 @@
 package net.corda.messaging.api.subscription
 
 import net.corda.messaging.api.processor.CompactedProcessor
+import java.util.*
 
 /**
  * A subscription that can be used to manage the life cycle of consumption of event records from a topic.
@@ -31,8 +32,15 @@ interface Subscription<K, V> : LifeCycle {
  */
 interface StateAndEventSubscription<K : Any, S : Any> : LifeCycle {
     /**
-     *  Queries the topic values for the most recent state [S] of the given [key]
+     *  Queries the topic values for the most recent state [S] of the given [key].
+     *  For partitioned topics not all values may be available.  However, any key
+     *  provided by [StateAndEventProcessor.onNext] will guaranteed available.
+     *
+     *  @param key the topic key for a given state
+     *  @return the current state for the given key, or null if it's not available
+     *  @throws IllegalArgumentException when the [key] is on a remotely managed partition
      */
+    @Throws(IllegalArgumentException::class)
     fun getValue(key: K): S?
 }
 

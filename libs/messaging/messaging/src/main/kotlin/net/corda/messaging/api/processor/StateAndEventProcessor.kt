@@ -8,17 +8,17 @@ import net.corda.messaging.api.records.Record
  */
 interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
 
-    interface Response<S: Any> {
+    data class Response<S: Any> (
         /**
          * The updated state in response to an incoming event from [onNext]
          */
-        val updatedState: S?
+        val updatedState: S?,
 
         /**
          * A list of events to be published in response to an incoming event from [onNext]
          */
         val responseEvents: List<Record<*, *>>
-    }
+    )
 
     /**
      * Called to signal an incoming [event] relating to a given [state].  Implementers are expected to
