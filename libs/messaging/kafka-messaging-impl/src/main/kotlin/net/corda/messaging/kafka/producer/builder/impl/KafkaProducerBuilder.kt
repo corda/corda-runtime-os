@@ -7,7 +7,6 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_C
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CREATE_MAX_RETRIES
 import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_CLIENT_ID
 import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_INSTANCE_ID
-import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_TOPIC
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.internal.uncheckedCast
@@ -40,7 +39,6 @@ class KafkaProducerBuilder<K : Any, V : Any>(
     override fun createProducer(config: Config, properties: Properties): Producer<K, V> {
         val producerCloseTimeout = config.getLong(PRODUCER_CLOSE_TIMEOUT)
         val producerCreateMaxRetries = config.getLong(PRODUCER_CREATE_MAX_RETRIES)
-        val topic = config.getString(PUBLISHER_TOPIC)
         val clientId = config.getString(PUBLISHER_CLIENT_ID)
         val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getInt(PUBLISHER_INSTANCE_ID) else null
 
@@ -53,8 +51,7 @@ class KafkaProducerBuilder<K : Any, V : Any>(
                 CordaAvroSerializer<V>(avroSchemaRegistry),
             )
         } catch (ex: KafkaException) {
-            log.error("Failed to create kafka producer clientId $clientId, instanceId $instanceId, " +
-                    "topic $topic.", ex)
+            log.error("Failed to create kafka producer clientId $clientId, instanceId $instanceId.", ex)
             throw CordaMessageAPIFatalException("Failed to create kafka producer.", ex)
         } finally {
             Thread.currentThread().contextClassLoader = contextClassLoader
@@ -79,7 +76,6 @@ class KafkaProducerBuilder<K : Any, V : Any>(
                                         producer: KafkaProducer<K, V>,
                                         producerCloseTimeout: Long,
                                         producerCreateMaxRetries: Long) {
-        val topic = config.getString(PUBLISHER_TOPIC)
         val clientId = config.getString(PUBLISHER_CLIENT_ID)
         val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getInt(PUBLISHER_INSTANCE_ID) else null
 
@@ -91,8 +87,7 @@ class KafkaProducerBuilder<K : Any, V : Any>(
                 break
             } catch (ex: Exception) {
                 val message =
-                    "Failed to initialize kafka producer, clientId $clientId, instanceId $instanceId, " +
-                            "topic $topic"
+                    "Failed to initialize kafka producer, clientId $clientId, instanceId $instanceId."
                 when (ex) {
                     is IllegalStateException,
                     is UnsupportedVersionException,

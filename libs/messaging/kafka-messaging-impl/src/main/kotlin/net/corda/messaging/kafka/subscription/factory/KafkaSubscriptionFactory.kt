@@ -11,6 +11,7 @@ import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.JournalSubscription
+import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -75,7 +76,8 @@ class KafkaSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
-        properties: Map<String, String>
+        properties: Map<String, String>,
+        partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         //TODO - replace this with a  call to OSGi ConfigService
 
@@ -137,7 +139,8 @@ class KafkaSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
-        properties: Map<String, String>
+        properties: Map<String, String>,
+        partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         TODO("Not yet implemented")
     }

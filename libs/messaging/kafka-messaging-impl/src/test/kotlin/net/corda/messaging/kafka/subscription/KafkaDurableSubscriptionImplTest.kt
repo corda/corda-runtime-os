@@ -56,12 +56,14 @@ class KafkaDurableSubscriptionImplTest {
     private var builderInvocationCount : Int = 0
     private lateinit var kafkaPubSubSubscriptionImpl: KafkaDurableSubscriptionImpl<String, ByteBuffer>
     private lateinit var processor: DurableProcessor<String, ByteBuffer>
-    private lateinit var latch: CountDownLatch
+    private lateinit var pollInvocationLatch: CountDownLatch
+    private lateinit var eventsLatch: CountDownLatch
 
     @BeforeEach
     fun setup() {
-        latch = CountDownLatch(mockRecordCount.toInt())
-        processor = StubDurableProcessor(latch)
+        pollInvocationLatch = CountDownLatch(1)
+        eventsLatch = CountDownLatch(mockRecordCount.toInt())
+        processor = StubDurableProcessor(pollInvocationLatch, eventsLatch)
 
         pollInvocationCount = 0
         doAnswer{
@@ -86,15 +88,15 @@ class KafkaDurableSubscriptionImplTest {
         kafkaPubSubSubscriptionImpl = KafkaDurableSubscriptionImpl(subscriptionConfig, config, consumerBuilder, producerBuilder, processor)
         kafkaPubSubSubscriptionImpl.start()
 
-        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        eventsLatch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
 
         kafkaPubSubSubscriptionImpl.stop()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any())
         verify(producerBuilder, times(1)).createProducer(anyOrNull())
-        verify(mockCordaProducer, times(mockRecordCount.toInt())).beginTransaction()
-        verify(mockCordaProducer, times(mockRecordCount.toInt())).sendRecords(any())
-        verify(mockCordaProducer, times(mockRecordCount.toInt())).sendOffsetsToTransaction(any())
-        verify(mockCordaProducer, times(mockRecordCount.toInt())).tryCommitTransaction()
+        verify(mockCordaProducer, times(1)).beginTransaction()
+        verify(mockCordaProducer, times(1)).sendRecords(any())
+        verify(mockCordaProducer, times(1)).sendOffsetsToTransaction(any())
+        verify(mockCordaProducer, times(1)).tryCommitTransaction()
     }
 
     /**
@@ -112,7 +114,7 @@ class KafkaDurableSubscriptionImplTest {
         verify(mockCordaConsumer, times(0)).poll()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any())
         verify(producerBuilder, times(0)).createProducer(anyOrNull())
-        assertThat(latch.count).isEqualTo(mockRecordCount)
+        assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
     }
 
     /**
@@ -131,7 +133,7 @@ class KafkaDurableSubscriptionImplTest {
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any())
         verify(producerBuilder, times(1)).createProducer(anyOrNull())
         verify(mockCordaProducer, times(0)).beginTransaction()
-        assertThat(latch.count).isEqualTo(mockRecordCount)
+        assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
     }
 
     /**
@@ -154,7 +156,7 @@ class KafkaDurableSubscriptionImplTest {
         kafkaPubSubSubscriptionImpl.start()
         while (kafkaPubSubSubscriptionImpl.isRunning) {}
 
-        assertThat(latch.count).isEqualTo(mockRecordCount)
+        assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
         verify(consumerBuilder, times(2)).createDurableConsumer(any(), any())
         verify(producerBuilder, times(1)).createProducer(anyOrNull())
         verify(mockCordaProducer, times(0)).beginTransaction()
@@ -173,15 +175,15 @@ class KafkaDurableSubscriptionImplTest {
             }
         }.whenever(consumerBuilder).createDurableConsumer(any(), any())
 
-        latch = CountDownLatch(consumerPollAndProcessRetriesCount)
-        processor = StubDurableProcessor(latch, CordaMessageAPIIntermittentException(""))
+        pollInvocationLatch = CountDownLatch(consumerPollAndProcessRetriesCount)
+        processor = StubDurableProcessor(pollInvocationLatch, eventsLatch, CordaMessageAPIIntermittentException(""))
         doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
 
         kafkaPubSubSubscriptionImpl = KafkaDurableSubscriptionImpl(subscriptionConfig, config, consumerBuilder, producerBuilder,
             processor)
 
         kafkaPubSubSubscriptionImpl.start()
-        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        pollInvocationLatch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
 
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
@@ -195,8 +197,8 @@ class KafkaDurableSubscriptionImplTest {
 
     @Test
     fun testFatalExceptionDuringTransaction() {
-        latch = CountDownLatch(consumerPollAndProcessRetriesCount)
-        processor = StubDurableProcessor(latch, CordaMessageAPIFatalException(""))
+        pollInvocationLatch = CountDownLatch(consumerPollAndProcessRetriesCount)
+        processor = StubDurableProcessor(pollInvocationLatch, eventsLatch, CordaMessageAPIFatalException(""))
 
         kafkaPubSubSubscriptionImpl = KafkaDurableSubscriptionImpl(subscriptionConfig, config, consumerBuilder, producerBuilder,
             processor)

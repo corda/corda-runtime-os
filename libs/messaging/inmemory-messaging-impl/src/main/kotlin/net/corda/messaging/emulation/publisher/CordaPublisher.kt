@@ -33,7 +33,7 @@ class CordaPublisher<K : Any, V : Any> (
     private val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getInt(PUBLISHER_INSTANCE_ID) else null
 
     @Suppress("TooGenericExceptionCaught")
-    override fun publish(records: List<Record<K, V>>): List<CordaFuture<Boolean>> {
+    override fun publish(records: List<Record<K, V>>): List<CordaFuture<Unit>> {
         return try {
             topicService.addRecords(records)
             getFutures(records.size)
@@ -48,9 +48,9 @@ class CordaPublisher<K : Any, V : Any> (
      * [Publisher] api expects each record to be sent separately if transaction is not enabled.
      * Emulate multiple sends by copying transaction result to a list of futures [size] times.
      */
-    private fun getFutures(size: Int, ex: Exception? = null) : List<OpenFuture<Boolean>> {
-        val futures = mutableListOf<OpenFuture<Boolean>>()
-        val future = openFuture<Boolean>()
+    private fun getFutures(size: Int, ex: Exception? = null) : List<OpenFuture<Unit>> {
+        val futures = mutableListOf<OpenFuture<Unit>>()
+        val future = openFuture<Unit>()
         futures.add(future)
 
         if (ex != null) {
@@ -59,7 +59,7 @@ class CordaPublisher<K : Any, V : Any> (
             log.error(message, ex)
             future.setException(CordaMessageAPIFatalException(message, ex))
         } else {
-            future.set(true)
+            future.set(Unit)
         }
 
         //if not a transaction emulate multiple sends
@@ -75,5 +75,9 @@ class CordaPublisher<K : Any, V : Any> (
     override fun close() {
         log.info("Closing Corda publisher clientId $clientId, instanceId $instanceId, " +
                 "for topic $topic.")
+    }
+
+    override fun publishToPartition(records: List<Pair<Int, Record<K, V>>>): List<CordaFuture<Unit>> {
+        TODO("Not yet implemented")
     }
 }

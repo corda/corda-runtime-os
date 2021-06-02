@@ -1,0 +1,23 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+}
+
+description 'Kafka configuration write API impl'
+
+
+dependencies {
+
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    implementation project(":data:avro-schema")
+    implementation project(":libs:configuration:configuration-write")
+    implementation project(":libs:messaging:messaging")
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
+}
