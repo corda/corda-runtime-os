@@ -1,6 +1,6 @@
 package net.corda.lifecycle
 
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -31,10 +31,6 @@ internal class SimpleLifeCycleCoordinatorTest {
     }
 
     @Test
-    fun isRunning() {
-    }
-
-    @Test
     fun start() {
         val startLatch = CountDownLatch(1)
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { lifeCycleEvent: LifeCycleEvent ->
@@ -43,25 +39,44 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is StartEvent -> startLatch.countDown()
             }
         }.use { coordinator ->
+            assertFalse(coordinator.isRunning)
             coordinator.start()
-            assertTrue(startLatch.await(0, TimeUnit.MILLISECONDS))
+            assertTrue(startLatch.await(TIMEOUT * 2, TimeUnit.MILLISECONDS))
+            assertTrue(coordinator.isRunning)
         }
-
     }
 
     @Test
     fun stop() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { lifeCycleEvent: LifeCycleEvent ->
+            logger.debug("processEvent $lifeCycleEvent")
+            when (lifeCycleEvent) {
+                is StartEvent -> startLatch.countDown()
+                is StopEvent -> stopLatch.countDown()
+            }
+        }.use { coordinator ->
+            coordinator.start()
+            assertTrue(startLatch.await(TIMEOUT * 2, TimeUnit.MILLISECONDS))
+            assertTrue(coordinator.isRunning)
+            coordinator.stop()
+            assertTrue(stopLatch.await(TIMEOUT * 2, TimeUnit.MILLISECONDS))
+            assertFalse(coordinator.isRunning)
+        }
     }
 
     @Test
     fun getBatchSize() {
-    }
-
-    @Test
-    fun getLifeCycleProcessor() {
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { }.use { coordinator ->
+            assertEquals(BATCH_SIZE, coordinator.batchSize)
+        }
     }
 
     @Test
     fun getTimeout() {
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { }.use { coordinator ->
+            assertEquals(TIMEOUT, coordinator.timeout)
+        }
     }
 }
