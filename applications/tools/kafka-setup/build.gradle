@@ -1,0 +1,31 @@
+plugins {
+    id 'corda.publish'
+    id 'corda.common-app'
+}
+
+description "Bootstrapping tools"
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    implementation project(':data:avro-schema')
+    implementation project(':libs:configuration:configuration-write')
+    implementation project(":libs:configuration:kafka-configuration-write-impl")
+    implementation project(":libs:messaging:kafka-messaging-impl")
+    implementation project(":libs:messaging:messaging")
+    implementation project(':libs:kafka-utils:topic-admin')
+    implementation project(":libs:kafka-utils:topic-admin-impl")
+    implementation project(":libs:schema-registry:schema-registry")
+    implementation project(":libs:schema-registry:schema-registry-impl")
+
+}
+
+tasks.register("uploadConfigToKafka", JavaExec) {
+    classpath = sourceSets["main"].runtimeClasspath
+    main = 'net.corda.tools.kafka.KafkaConfigUploaderKt'
+    args 'bootstrap.servers=localhost:9092', 'test12', 'C:\\flow-worker\\tools\\src\\main\\resources\\config.conf'
+}
