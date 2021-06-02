@@ -3,6 +3,28 @@ package net.corda.osgi.framework
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 
+/**
+ * This class provided the main entry point for the applications built with the `corda.common-app` plugin.
+ *
+ * Modules having in `bundle.gradle` the blocks
+ * ```gradle
+ * plugins {
+ *    id 'corda.common-app'
+ * }
+ *
+ * dependencies {
+ *    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+ *    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+ *    compileOnly "org.osgi:osgi.core:$osgiVersion"
+ * }
+ * ```
+ * result in building a bootable JAR named `corda-<module_name>-<version>.jar` in the `build/bin` directory.
+ * The bootable JAR zips the [Apache Felix](https://felix.apache.org/) OSGi framework,
+ * the module assembles as an OSGi  bundle and all the OSGi bundles it requires.
+ *
+ * The bootable JAR is self sufficient to start with `java -jar corda-<module_name>-<version>.jar`.
+ * The main entry point of the bootable JAR is the [main] method.
+ */
 class OSGiFrameworkMain {
 
     companion object {
@@ -16,6 +38,11 @@ class OSGiFrameworkMain {
          * Prefix of the temporary directory used as bundle cache.
          */
         const val FRAMEWORK_STORAGE_PREFIX = "osgi-cache"
+
+        /**
+         * Wait for stop of the OSGi framework, without timeout.
+         */
+        private const val NO_TIMEOUT = 0L
 
         /**
          * Location of the list of bundles to install in the [OSGiFrameworkWrap] instance.
@@ -36,10 +63,27 @@ class OSGiFrameworkMain {
         const val SYSTEM_PACKAGES_EXTRA = "system_packages_extra"
 
         /**
-         * Wait for stop of the OSGi framework, without timeout.
-         */
-        private const val NO_TIMEOUT = 0L
+         * The main entry point for the bootable JAR built with the `corda.common-app` plugin.
 
+         * This method bootstraps the application:
+         * 1. **Start Up**
+         *      1. Start Felix OSGi framework
+         *      2. Install OSGi framework services.
+         * 2.  **Load bundles in bootstrapper**
+         *      1. Install OSGi bundles in the OSGi framework,
+         *      2. Activate OSGi bundles.
+         * 3. **Call application entry-point**
+         *      1. Call the [net.corda.osgi.api.Application.startup] method of active application bundles, if any,
+         *      passing [args].
+         *
+         *  Then, the method waits for the JVM receives the signal to terminate to
+         *  1. **Shut Down**
+         *      1. Call the [net.corda.osgi.api.Application.shutdown] method of application bundles, if any.
+         *      1. Deactivate OSGi bundles.
+         *      2. Stop the OSGi framework.
+         *
+         * @param args passed by the OS when invoking JVM to run this bootable JAR.
+         */
         @JvmStatic
         @Suppress("TooGenericExceptionCaught")
         fun main(args: Array<String>) {
@@ -57,19 +101,25 @@ class OSGiFrameworkMain {
                 try {
                     Runtime.getRuntime().addShutdownHook(object : Thread() {
                         override fun run() {
-                            osgiFrameworkWrap.stop()
+                            if (OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
+                                osgiFrameworkWrap.stop()
+                            }
                         }
                     })
                     osgiFrameworkWrap
                         .start()
-                        .setArguments(args)
                         .install(SYSTEM_BUNDLES)
                         .activate()
+                        .startApplication(NO_TIMEOUT, args)
                         .waitForStop(NO_TIMEOUT)
                 } catch (e: Exception) {
                     logger.error("Error: ${e.message}!", e)
                 } finally {
-                    osgiFrameworkWrap.stop()
+                    // If osgiFrameworkWrap stopped because SIGINT/CTRL+C,
+                    // this avoids to call stop twice and log warning.
+                    if (OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
+                        osgiFrameworkWrap.stop()
+                    }
                 }
             } catch (e: IllegalArgumentException) {
                 logger.error("Error: ${e.message}!", e)

@@ -9,8 +9,8 @@ plugins {
 }
 
 dependencies {
-    implementation "net.corda:corda-base:$cordaVersion"
     api "org.apache.avro:avro:$avroVersion"
+    implementation "net.corda:corda-base:$cordaVersion"
 }
 
 description 'Data Model Definitions'
