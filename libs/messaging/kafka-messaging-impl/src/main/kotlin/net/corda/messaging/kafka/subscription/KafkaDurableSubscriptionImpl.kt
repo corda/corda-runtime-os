@@ -223,25 +223,23 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
         producer: CordaKafkaProducer,
         consumer: CordaKafkaConsumer<K, V>
     ) {
-        for (consumerRecord in consumerRecords) {
-            try {
-                producer.beginTransaction()
-                producer.sendRecords(processor.onNext(consumerRecord.asRecord()))
-                producer.sendOffsetsToTransaction(consumer)
-                producer.tryCommitTransaction()
-            } catch (ex: Exception) {
-                when (ex) {
-                    is CordaMessageAPIFatalException,
-                    is CordaMessageAPIIntermittentException -> {
-                        throw ex
-                    }
-                    else -> {
-                        throw CordaMessageAPIFatalException(
-                            "Failed to process records from topic $topic, " +
-                                    "group $groupName, producerClientId $producerClientId. " +
-                                    "Unexpected error occurred in this transaction. Closing producer.", ex
-                        )
-                    }
+        try {
+            producer.beginTransaction()
+            producer.sendRecords(processor.onNext(consumerRecords.map { it.asRecord() }))
+            producer.sendOffsetsToTransaction(consumer)
+            producer.tryCommitTransaction()
+        } catch (ex: Exception) {
+            when (ex) {
+                is CordaMessageAPIFatalException,
+                is CordaMessageAPIIntermittentException -> {
+                    throw ex
+                }
+                else -> {
+                    throw CordaMessageAPIFatalException(
+                        "Failed to process records from topic $topic, " +
+                                "group $groupName, producerClientId $producerClientId. " +
+                                "Unexpected error occurred in this transaction. Closing producer.", ex
+                    )
                 }
             }
         }

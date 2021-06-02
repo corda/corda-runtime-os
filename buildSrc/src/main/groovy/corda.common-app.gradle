@@ -23,7 +23,7 @@ dependencies {
 
     systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
-    systemPackages project(":osgi-framework-bootstrap:framework-api")
+    systemPackages project(":osgi-framework-api")
 }
 
 def jarTask = tasks.named("jar", Jar) {
@@ -143,6 +143,9 @@ def cordaAssembleBundlesTask = tasks.register("cordaAssembleBundles") {
         new File(project.buildDir, "libs").listFiles().findAll { file ->
             isJar(file) && !systemPackageSet.contains(file.name)
         }.each { jar ->
+            addBundle(jar, new File(bundlesDir, jar.name), systemBundleSet)
+        }
+        new File(project.buildDir, "libs").listFiles().findAll { file -> isJar(file) }.each { jar ->
             addBundle(jar, new File(bundlesDir, jar.name), systemBundleSet)
         }
         final systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")

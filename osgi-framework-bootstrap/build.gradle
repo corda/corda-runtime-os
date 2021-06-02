@@ -14,14 +14,13 @@ description("OSGi Framework Bootstrap")
 
 dependencies {
     implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    implementation project("framework-api")
+    implementation project(":osgi-framework-api")
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$jupiterVersion"
-    testImplementation project("framework-app-tester")
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
 }
 
@@ -81,4 +80,3 @@ test {
         logger.info "Included $numberOfBundles OSGi bundles in $systemBundlesFile resource."
     }
 }
-

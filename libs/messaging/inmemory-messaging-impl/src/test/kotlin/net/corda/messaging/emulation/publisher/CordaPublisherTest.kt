@@ -43,7 +43,7 @@ class CordaPublisherTest {
         verify(topicService, times(1)).addRecords(any())
         assertThat(futures.size).isEqualTo(3)
         for (future in futures) {
-            assertTrue(future.getOrThrow())
+            future.getOrThrow()
         }
     }
 
@@ -55,7 +55,7 @@ class CordaPublisherTest {
         verify(topicService, times(1)).addRecords(any())
         assertThat(futures.size).isEqualTo(1)
         for (future in futures) {
-            assertTrue(future.getOrThrow())
+            future.getOrThrow()
         }
     }
 

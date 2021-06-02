@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "Configuration",
+  "namespace": "net.corda.data.config",
+  "fields": [
+    {
+      "name": "value",
+      "type": "string"
+    },
+    {
+      "name": "version",
+      "type": "string"
+    }
+  ]
+}
