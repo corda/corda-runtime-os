@@ -8,7 +8,7 @@ interface LifeCycle: AutoCloseable {
 
     fun start()
 
-    fun stop(): Boolean
+    fun stop()
 
     //: AutoCloseable
 

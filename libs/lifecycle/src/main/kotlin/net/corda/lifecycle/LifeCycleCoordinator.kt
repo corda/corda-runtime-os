@@ -4,7 +4,7 @@ interface LifeCycleCoordinator: LifeCycle {
 
     val batchSize: Int
 
-    val lifeCycleProcessor: LifeCycleProcessor
+    val lifeCycleProcessor: (lifeCycleEvent: LifeCycleEvent) -> Unit
 
     fun cancelTimer(key: String)
 

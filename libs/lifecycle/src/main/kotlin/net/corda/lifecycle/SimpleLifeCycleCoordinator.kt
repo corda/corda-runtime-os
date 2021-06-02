@@ -1,5 +1,7 @@
 package net.corda.lifecycle
 
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
@@ -7,9 +9,15 @@ import kotlin.concurrent.withLock
 
 class SimpleLifeCycleCoordinator(
     override val batchSize: Int,
-    override val lifeCycleProcessor: LifeCycleProcessor,
     override val timeout: Long,
+    override val lifeCycleProcessor: (lifeCycleEvent: LifeCycleEvent) -> Unit,
 ) : LifeCycleCoordinator {
+
+    companion object {
+
+        private val logger: Logger = LoggerFactory.getLogger(LifeCycleCoordinator::class.java)
+
+    } //~ companion
 
     private val lock = ReentrantLock()
 
@@ -32,7 +40,7 @@ class SimpleLifeCycleCoordinator(
             eventList.add(lifeCycleEvent)
         }
         for (lifeCycleEvent in eventList) {
-            lifeCycleProcessor.processEvent(lifeCycleEvent)
+            lifeCycleProcessor.invoke(lifeCycleEvent)
         }
         isScheduled.set(false)
         if (eventQueue.isNotEmpty()) {
@@ -80,8 +88,8 @@ class SimpleLifeCycleCoordinator(
     override fun start() {
         lock.withLock {
             if (executorService == null) {
-                executorService = Executors.newSingleThreadScheduledExecutor {
-                    val thread = Thread()
+                executorService = Executors.newSingleThreadScheduledExecutor { runnable ->
+                    val thread = Thread(runnable)
                     thread.isDaemon = true
                     thread
                 }
@@ -98,12 +106,10 @@ class SimpleLifeCycleCoordinator(
      * to flag this [LifeCycleCoordinator] stopped.
      * See [isRunning].
      *
-     * Having a reference of the [executorService] before to set it to `null`...
-     *
      */
-    override fun stop(): Boolean {
-        lock.withLock {
-            val executorService = lock.withLock {
+    override fun stop() {
+        val executorService = lock.withLock {
+            lock.withLock {
                 val executorService = this.executorService
                 this.executorService = null
                 executorService
@@ -113,9 +119,9 @@ class SimpleLifeCycleCoordinator(
             eventQueue.offer(StopEvent)
             submit(::processEvents)
             shutdown()
-            return awaitTermination(timeout, TimeUnit.MILLISECONDS)
+            if (!awaitTermination(timeout, TimeUnit.MILLISECONDS)) {
+                logger.warn("Stop: timeout after $timeout ms.")
+            }
         }
-        // executorService is `null` hence terminated before => return `true`.
-        return true
     }
 }
