@@ -2,9 +2,11 @@ package net.corda.messaging.api.subscription.factory
 
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.JournalSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
@@ -71,4 +73,19 @@ interface SubscriptionFactory {
    fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(subscriptionConfig: StateAndEventSubscriptionConfig,
                                                  processor: StateAndEventProcessor<K, S, E>,
                                                  properties: Map<String, String>) : StateAndEventSubscription<K, S, E>
+
+    /**
+     * Creates an event log subscription.
+     * @param processor the processor that will be wired up with the created subscription.
+     */
+    fun <K: Any, V: Any> createEventLogSubscription(subscriptionConfig: SubscriptionConfig,
+                                                    processor: EventLogProcessor<K, V>,
+                                                    properties: Map<String, String>): Subscription<K, V>
+
+    /**
+     * Creates a journal subscription.
+     */
+    fun <K: Any, V: Any> createJournalSubscription(subscriptionConfig: SubscriptionConfig,
+                                                   properties: Map<String, String>): JournalSubscription<K, V>
+    
 }
