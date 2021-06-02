@@ -14,8 +14,8 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class Configuration extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = -6758608654299706160L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"Configuration\",\"namespace\":\"net.corda.data.config\",\"fields\":[{\"name\":\"value\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
+  private static final long serialVersionUID = -7606360065481172322L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"Configuration\",\"namespace\":\"net.corda.data.config\",\"fields\":[{\"name\":\"value\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"version\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -72,6 +72,7 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
   }
 
    private java.lang.String value;
+   private java.lang.String version;
 
   /**
    * Default constructor.  Note that this does not initialize fields
@@ -83,9 +84,11 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
   /**
    * All-args constructor.
    * @param value The new value for value
+   * @param version The new value for version
    */
-  public Configuration(java.lang.String value) {
+  public Configuration(java.lang.String value, java.lang.String version) {
     this.value = value;
+    this.version = version;
   }
 
   public org.apache.avro.specific.SpecificData getSpecificData() { return MODEL$; }
@@ -94,6 +97,7 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
   public java.lang.Object get(int field$) {
     switch (field$) {
     case 0: return value;
+    case 1: return version;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -103,6 +107,7 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
     case 0: value = value$ != null ? value$.toString() : null; break;
+    case 1: version = value$ != null ? value$.toString() : null; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -122,6 +127,23 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
    */
   public void setValue(java.lang.String value) {
     this.value = value;
+  }
+
+  /**
+   * Gets the value of the 'version' field.
+   * @return The value of the 'version' field.
+   */
+  public java.lang.String getVersion() {
+    return version;
+  }
+
+
+  /**
+   * Sets the value of the 'version' field.
+   * @param value the value to set.
+   */
+  public void setVersion(java.lang.String value) {
+    this.version = value;
   }
 
   /**
@@ -166,6 +188,7 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
     implements org.apache.avro.data.RecordBuilder<Configuration> {
 
     private java.lang.String value;
+    private java.lang.String version;
 
     /** Creates a new Builder */
     private Builder() {
@@ -182,6 +205,10 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
         this.value = data().deepCopy(fields()[0].schema(), other.value);
         fieldSetFlags()[0] = other.fieldSetFlags()[0];
       }
+      if (isValidValue(fields()[1], other.version)) {
+        this.version = data().deepCopy(fields()[1].schema(), other.version);
+        fieldSetFlags()[1] = other.fieldSetFlags()[1];
+      }
     }
 
     /**
@@ -193,6 +220,10 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
       if (isValidValue(fields()[0], other.value)) {
         this.value = data().deepCopy(fields()[0].schema(), other.value);
         fieldSetFlags()[0] = true;
+      }
+      if (isValidValue(fields()[1], other.version)) {
+        this.version = data().deepCopy(fields()[1].schema(), other.version);
+        fieldSetFlags()[1] = true;
       }
     }
 
@@ -236,12 +267,53 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
       return this;
     }
 
+    /**
+      * Gets the value of the 'version' field.
+      * @return The value.
+      */
+    public java.lang.String getVersion() {
+      return version;
+    }
+
+
+    /**
+      * Sets the value of the 'version' field.
+      * @param value The value of 'version'.
+      * @return This builder.
+      */
+    public net.corda.data.config.Configuration.Builder setVersion(java.lang.String value) {
+      validate(fields()[1], value);
+      this.version = value;
+      fieldSetFlags()[1] = true;
+      return this;
+    }
+
+    /**
+      * Checks whether the 'version' field has been set.
+      * @return True if the 'version' field has been set, false otherwise.
+      */
+    public boolean hasVersion() {
+      return fieldSetFlags()[1];
+    }
+
+
+    /**
+      * Clears the value of the 'version' field.
+      * @return This builder.
+      */
+    public net.corda.data.config.Configuration.Builder clearVersion() {
+      version = null;
+      fieldSetFlags()[1] = false;
+      return this;
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public Configuration build() {
       try {
         Configuration record = new Configuration();
         record.value = fieldSetFlags()[0] ? this.value : (java.lang.String) defaultValue(fields()[0]);
+        record.version = fieldSetFlags()[1] ? this.version : (java.lang.String) defaultValue(fields()[1]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -276,6 +348,8 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
   {
     out.writeString(this.value);
 
+    out.writeString(this.version);
+
   }
 
   @Override public void customDecode(org.apache.avro.io.ResolvingDecoder in)
@@ -285,11 +359,17 @@ public class Configuration extends org.apache.avro.specific.SpecificRecordBase i
     if (fieldOrder == null) {
       this.value = in.readString();
 
+      this.version = in.readString();
+
     } else {
-      for (int i = 0; i < 1; i++) {
+      for (int i = 0; i < 2; i++) {
         switch (fieldOrder[i].pos()) {
         case 0:
           this.value = in.readString();
+          break;
+
+        case 1:
+          this.version = in.readString();
           break;
 
         default:

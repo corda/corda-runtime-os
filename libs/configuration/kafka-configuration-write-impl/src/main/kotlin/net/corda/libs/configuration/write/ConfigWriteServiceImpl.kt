@@ -26,11 +26,11 @@ class ConfigWriteServiceImpl (
     /**
      * Add the properties recorded in [config] to the component configuration.
      *
-     * @param key configuration key containing identity, package version and component version
+     * @param configKey containing identity, package version and component version
      * @param config typesafe config object
      */
     override fun appendConfiguration(
-        key: CordaConfigurationKey,
+        configKey: CordaConfigurationKey,
         config: Config
     ) {
         throw NotImplementedError("Not yet implemented")
@@ -39,18 +39,18 @@ class ConfigWriteServiceImpl (
     /**
      * Update the component configuration so that it matches [config].
      *
-     * @param key configuration key containing identity, package version and component version
+     * @param configKey containing identity, package version and component version
      * @param config typesafe config object
      */
     override fun updateConfiguration(
-        key: CordaConfigurationKey,
+        configKey: CordaConfigurationKey,
         config: Config
     ) {
         val records = mutableListOf<Record<String, Configuration>>()
         for (key1 in config.root().keys) {
             val key1Config = config.getConfig(key1)
             for (key2 in key1Config.root().keys) {
-                val content = Configuration(key1Config.atKey(key2).toString())
+                val content = Configuration(key1Config.atKey(key2).toString(), configKey.componentVersion.version)
                 val record = Record(topicName, "$key1.$key2", content)
                 log.debug {"Producing record: $key1.$key2\t$content"}
                 records.add(record)
