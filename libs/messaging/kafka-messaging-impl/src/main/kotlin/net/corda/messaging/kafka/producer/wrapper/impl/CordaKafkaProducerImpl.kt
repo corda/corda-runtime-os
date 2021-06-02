@@ -38,7 +38,6 @@ class CordaKafkaProducerImpl(
     config: Config,
     private val producer: Producer<Any, Any>
 ) : CordaKafkaProducer, Producer<Any, Any> by producer {
-
     private val closeTimeout = config.getLong(PRODUCER_CLOSE_TIMEOUT)
     private val topicPrefix = config.getString(KAFKA_TOPIC_PREFIX)
     private val clientId = config.getString(PUBLISHER_CLIENT_ID)
@@ -57,36 +56,6 @@ class CordaKafkaProducerImpl(
     override fun sendRecords(records: List<Record<*, *>>) {
         for (record in records) {
             producer.send(ProducerRecord(topicPrefix + record.topic, record.key, record.value))
-        }
-    }
-
-    /**
-     * Initialise transactions for the [producer].
-     * @throws CordaMessageAPIFatalException fatal error occurred.
-     * @throws CordaMessageAPIIntermittentException error occurred that can be retried.
-     */
-    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
-    private fun initTransactionForProducer() {
-        try {
-            producer.initTransactions()
-        } catch (ex: Exception) {
-            val message = "Failed to initialize producer with " +
-                    "transactionId $instanceId for transactions"
-            when (ex) {
-                is IllegalStateException,
-                is UnsupportedVersionException,
-                is AuthorizationException -> {
-                    throw CordaMessageAPIFatalException(message, ex)
-                }
-                is KafkaException,
-                is InterruptException,
-                is TimeoutException -> {
-                    throw CordaMessageAPIIntermittentException(message, ex)
-                }
-                else -> {
-                    throw CordaMessageAPIFatalException("$message. Unexpected error occurred.", ex)
-                }
-            }
         }
     }
 
@@ -245,5 +214,35 @@ class CordaKafkaProducerImpl(
             offsets[topicPartition] = OffsetAndMetadata(consumer.position(topicPartition), null)
         }
         return offsets
+    }
+
+    /**
+     * Initialise transactions for the [producer].
+     * @throws CordaMessageAPIFatalException fatal error occurred.
+     * @throws CordaMessageAPIIntermittentException error occurred that can be retried.
+     */
+    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
+    private fun initTransactionForProducer() {
+        try {
+            producer.initTransactions()
+        } catch (ex: Exception) {
+            val message = "Failed to initialize producer with " +
+                    "transactionId $instanceId for transactions"
+            when (ex) {
+                is IllegalStateException,
+                is UnsupportedVersionException,
+                is AuthorizationException -> {
+                    throw CordaMessageAPIFatalException(message, ex)
+                }
+                is KafkaException,
+                is InterruptException,
+                is TimeoutException -> {
+                    throw CordaMessageAPIIntermittentException(message, ex)
+                }
+                else -> {
+                    throw CordaMessageAPIFatalException("$message. Unexpected error occurred.", ex)
+                }
+            }
+        }
     }
 }

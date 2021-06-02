@@ -10,7 +10,7 @@ interface ProducerBuilder {
 
     /**
     * Generate kafka producer with given properties.
-    * @return Kafka Producer capable of publishing records of any type to any topic
+    * @return Kafka Producer capable of publishing records of any type to any topic.
     * @throws CordaMessageAPIFatalException thrown if producer cannot be created.
     */
     fun createProducer(): CordaKafkaProducer

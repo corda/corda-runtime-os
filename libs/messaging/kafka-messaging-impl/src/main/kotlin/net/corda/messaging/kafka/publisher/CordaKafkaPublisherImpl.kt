@@ -79,7 +79,7 @@ class CordaKafkaPublisherImpl (
             val fut = openFuture<Unit>()
             futures.add(fut)
             cordaKafkaProducer.send(ProducerRecord(topicPrefix + it.topic, it.key, it.value)) { _, ex ->
-                setFutureFromResponse(ex, fut)
+                setFutureFromResponse(ex, fut, it.topic)
             }
         }
     }
@@ -99,7 +99,7 @@ class CordaKafkaPublisherImpl (
             cordaKafkaProducer.beginTransaction()
             cordaKafkaProducer.sendRecords(records)
             cordaKafkaProducer.tryCommitTransaction()
-            fut.set(true)
+            fut.set(Unit)
 
         } catch (ex: Exception) {
             when(ex) {
@@ -122,7 +122,7 @@ class CordaKafkaPublisherImpl (
      */
     private fun setFutureFromResponse(exception: Exception?, future: OpenFuture<Unit>, topic: String) {
         val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
-                "failed to send"
+                "for topic $topic failed to send"
         when {
             (exception == null) -> {
                 //transaction operation can still fail at commit stage  so do not set to true until it is committed
@@ -150,18 +150,6 @@ class CordaKafkaPublisherImpl (
     }
 
     /**
-     * Safely close a producer. If an exception is thrown swallow the error to avoid double exceptions
-     */
-    @Suppress("TooGenericExceptionCaught")
-    override fun close() {
-        try {
-            cordaKafkaProducer.close(Duration.ofMillis(closeTimeout))
-        } catch (ex: Exception) {
-            log.error("CordaKafkaPublisher failed to close producer safely. ClientId: $clientId", ex)
-        }
-    }
-
-    /**
      * Log the [message] and [exception]. Set the [exception] to the [future].
      * If [fatal] is set to true then the producer is closed safely.
      */
@@ -175,4 +163,21 @@ class CordaKafkaPublisherImpl (
             future.setException(CordaMessageAPIIntermittentException(message, exception))
         }
     }
+
+    /**
+     * Safely close a producer. If an exception is thrown swallow the error to avoid double exceptions
+     */
+    @Suppress("TooGenericExceptionCaught")
+    override fun close() {
+        try {
+            cordaKafkaProducer.close(Duration.ofMillis(closeTimeout))
+        } catch (ex: Exception) {
+            log.error("CordaKafkaPublisher failed to close producer safely. ClientId: $clientId", ex)
+        }
+    }
+
+    override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CordaFuture<Unit>> {
+        TODO("Not yet implemented")
+    }
+
 }

@@ -17,7 +17,9 @@ import org.slf4j.LoggerFactory
 import java.util.*
 
 /**
- * Builder for a Kafka Producer. Initialises producer for transactions if publisherConfig contains an instanceId.
+ * Builder for a Kafka Producer.
+ * Initialises producer for transactions if publisherConfig contains an instanceId.
+ * Producer uses avro for serialization.
  * If fatal exception is thrown in the construction of a KafKaProducer
  * then it is closed and exception is thrown as [CordaMessageAPIFatalException].
  */

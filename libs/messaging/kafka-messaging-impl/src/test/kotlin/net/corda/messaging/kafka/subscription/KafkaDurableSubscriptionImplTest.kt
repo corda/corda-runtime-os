@@ -1,6 +1,13 @@
 package net.corda.messaging.kafka.subscription
 
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.anyOrNull
+import com.nhaarman.mockito_kotlin.doAnswer
+import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.times
+import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.whenever
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
@@ -86,10 +93,10 @@ class KafkaDurableSubscriptionImplTest {
         kafkaPubSubSubscriptionImpl.stop()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any())
         verify(producerBuilder, times(1)).createProducer()
-        verify(mockCordaProducer, times(mockRecordCount.toInt())).beginTransaction()
-        verify(mockCordaProducer, times(mockRecordCount.toInt())).sendRecords(any())
-        verify(mockCordaProducer, times(mockRecordCount.toInt())).sendOffsetsToTransaction(any())
-        verify(mockCordaProducer, times(mockRecordCount.toInt())).tryCommitTransaction()
+        verify(mockCordaProducer, times(1)).beginTransaction()
+        verify(mockCordaProducer, times(1)).sendRecords(any())
+        verify(mockCordaProducer, times(1)).sendOffsetsToTransaction(any())
+        verify(mockCordaProducer, times(1)).tryCommitTransaction()
     }
 
     /**

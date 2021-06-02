@@ -74,7 +74,7 @@ class CordaPublisher (
         log.info("Closing Corda publisher clientId $clientId, instanceId $instanceId")
     }
 
-    override fun publishToPartition(records: List<Pair<Int, Record<K, V>>>): List<CordaFuture<Unit>> {
+    override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CordaFuture<Unit>> {
         TODO("Not yet implemented")
     }
 }

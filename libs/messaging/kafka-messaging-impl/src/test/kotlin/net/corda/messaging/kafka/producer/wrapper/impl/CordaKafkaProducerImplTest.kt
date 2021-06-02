@@ -1,11 +1,10 @@
-package net.corda.messaging.kafka.subscription.producer.wrapper.impl
+package net.corda.messaging.kafka.producer.wrapper.impl
 
 import com.nhaarman.mockito_kotlin.*
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.kafka.producer.wrapper.impl.CordaKafkaProducerImpl
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.producer.Producer
