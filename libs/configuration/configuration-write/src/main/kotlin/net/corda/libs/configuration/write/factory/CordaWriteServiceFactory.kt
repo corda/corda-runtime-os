@@ -1,14 +1,14 @@
 package net.corda.libs.configuration.write.factory
 
-import net.corda.libs.configuration.write.CordaWriteService
+import net.corda.libs.configuration.write.ConfigWriteService
 
 /**
- * Factory for creating instances of [CordaWriteService]
+ * Factory for creating instances of [ConfigWriteService]
  */
 interface CordaWriteServiceFactory {
 
     /**
-     * @return An instance of [CordaWriteService]
+     * @return An instance of [ConfigWriteService]
      */
-    fun createWriteService(destination: String) : CordaWriteService
+    fun createWriteService(destination: String) : ConfigWriteService
 }
