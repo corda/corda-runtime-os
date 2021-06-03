@@ -10,7 +10,7 @@ import kotlin.concurrent.withLock
 class SimpleLifeCycleCoordinator(
     override val batchSize: Int,
     override val timeout: Long,
-    override val lifeCycleProcessor: (lifeCycleEvent: LifeCycleEvent) -> Unit,
+    override val lifeCycleProcessor: (LifeCycleEvent: LifeCycleEvent, lifecycleCoordinator: LifeCycleCoordinator) -> Unit,
 ) : LifeCycleCoordinator {
 
     companion object {
@@ -40,7 +40,7 @@ class SimpleLifeCycleCoordinator(
             eventList.add(lifeCycleEvent)
         }
         for (lifeCycleEvent in eventList) {
-            lifeCycleProcessor.invoke(lifeCycleEvent)
+            lifeCycleProcessor.invoke(lifeCycleEvent, this)
         }
         isScheduled.set(false)
         if (eventQueue.isNotEmpty()) {
@@ -68,8 +68,8 @@ class SimpleLifeCycleCoordinator(
         }
     }
 
-    override fun postEvent(lifeCycleEvent: LifeCycleEvent) {
-        eventQueue.offer(lifeCycleEvent)
+    override fun postEvent(LifeCycleEvent: LifeCycleEvent) {
+        eventQueue.offer(LifeCycleEvent)
         scheduleIfRequired()
     }
 
@@ -107,21 +107,21 @@ class SimpleLifeCycleCoordinator(
      * See [isRunning].
      *
      */
+
     override fun stop() {
-        val executorService = lock.withLock {
-            lock.withLock {
-                val executorService = this.executorService
-                this.executorService = null
-                executorService
-            }
-        }
-        executorService?.apply {
-            eventQueue.offer(StopEvent)
-            submit(::processEvents)
-            shutdown()
-            if (!awaitTermination(timeout, TimeUnit.MILLISECONDS)) {
-                logger.warn("Stop: timeout after $timeout ms.")
+        lock.withLock {
+            executorService?.apply {
+                eventQueue.offer(StopEvent)
+                while (!eventQueue.isEmpty()) {
+                    submit(::processEvents)
+                }
+                executorService = null
+                shutdown()
+                if (!awaitTermination(timeout, TimeUnit.MILLISECONDS)) {
+                    logger.warn("Stop: timeout after $timeout ms.")
+                }
             }
         }
     }
+
 }
