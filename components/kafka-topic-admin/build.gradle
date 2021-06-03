@@ -12,7 +12,6 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    implementation project(":libs:messaging:messaging")
     implementation project(':libs:kafka-utils:topic-admin')
 
 }
