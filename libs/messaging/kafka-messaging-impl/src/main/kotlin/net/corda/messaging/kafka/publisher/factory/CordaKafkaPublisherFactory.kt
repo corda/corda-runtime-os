@@ -6,6 +6,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.kafka.mergeProperties
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CONF_PREFIX
 import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_CLIENT_ID
@@ -55,20 +56,12 @@ class CordaKafkaPublisherFactory @Activate constructor(
      */
     private fun getProducerProps(config: Config,
                                  overrideProperties: Map<String, String>): Properties {
-        val properties = Properties()
-        properties.putAll(overrideProperties)
-        val conf: Config = ConfigFactory.parseProperties(properties).withFallback(config)
-        val producerProps = Properties()
         val clientId = config.getString(PUBLISHER_CLIENT_ID)
         val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getString(PUBLISHER_INSTANCE_ID) else null
 
         //TODO - update the below when config task  has evolved
+        val producerProps = mergeProperties(config, PRODUCER_CONF_PREFIX, overrideProperties)
         producerProps[ProducerConfig.CLIENT_ID_CONFIG] = clientId
-
-        producerProps[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] =
-            conf.getString(PRODUCER_CONF_PREFIX + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
-        producerProps[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] =
-            conf.getString(PRODUCER_CONF_PREFIX + ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG)
 
         if (instanceId != null) {
             producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] =
