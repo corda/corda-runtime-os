@@ -61,6 +61,15 @@ class CordaKafkaPublisherImpl (
      * If publish is a transaction, sends are executed synchronously and will return a future of size 1.
      */
     override fun publish(records: List<Record<*, *>>): List<CordaFuture<Unit>> {
+        //Only allow keys as string for now. see CORE-1367
+        records.forEach {
+            if (it.key.javaClass != String::class.java) {
+                val future = openFuture<Unit>()
+                future.setException(CordaMessageAPIFatalException("Unsupported Key type, use a String."))
+                return listOf(future)
+            }
+        }
+
         val futures = mutableListOf<CordaFuture<Unit>>()
         if (publisherConfig.instanceId != null) {
             futures.add(publishTransaction(records))

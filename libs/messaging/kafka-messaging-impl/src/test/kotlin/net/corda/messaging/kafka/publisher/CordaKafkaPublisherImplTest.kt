@@ -61,6 +61,12 @@ class CordaKafkaPublisherImplTest {
     }
 
     @Test
+    fun testPublishWrongKeyType() {
+        val future = publish(false, listOf(Record("topic", 2, "value")))
+        assertThrows(CordaMessageAPIFatalException::class.java) { future[0].getOrThrow() }
+    }
+
+    @Test
     fun testPublishFatalError() {
         mockProducer = MockProducer(false, StringSerializer(), ByteBufferSerializer())
         producer = CordaKafkaProducerImpl(kafkaConfig, uncheckedCast(mockProducer))
@@ -189,7 +195,7 @@ class CordaKafkaPublisherImplTest {
         verify(producer, times(1)).close(Mockito.any(Duration::class.java))
     }
 
-    private fun publish(isTransaction: Boolean = false, records: List<Record<String, ByteBuffer>>) : List<CordaFuture<Unit>> {
+    private fun publish(isTransaction: Boolean = false, records: List<Record<*, *>>) : List<CordaFuture<Unit>> {
         publisherConfig = if (isTransaction) {
             PublisherConfig("clientId", 1)
         } else {
