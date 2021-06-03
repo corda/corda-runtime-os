@@ -6,7 +6,7 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.JournalSubscription
+import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
@@ -91,11 +91,11 @@ interface SubscriptionFactory {
                                                     partitionAssignmentListener: PartitionAssignmentListener?): Subscription<K, V>
 
     /**
-     * Creates a journal subscription.
+     * Creates a random access subscription.
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param properties Map of properties to override the default settings for the connection to the source of events
      */
-    fun <K: Any, V: Any> createJournalSubscription(subscriptionConfig: SubscriptionConfig,
-                                                   properties: Map<String, String>): JournalSubscription<K, V>
+    fun <K: Any, V: Any> createRandomAccessSubscription(subscriptionConfig: SubscriptionConfig,
+                                                        properties: Map<String, String>): RandomAccessSubscription<K, V>
     
 }

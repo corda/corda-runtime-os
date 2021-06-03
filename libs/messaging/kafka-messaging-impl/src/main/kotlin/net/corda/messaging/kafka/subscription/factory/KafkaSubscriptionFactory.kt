@@ -10,7 +10,7 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.JournalSubscription
+import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
@@ -145,10 +145,10 @@ class KafkaSubscriptionFactory @Activate constructor(
         TODO("Not yet implemented")
     }
 
-    override fun <K : Any, V : Any> createJournalSubscription(
+    override fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
         properties: Map<String, String>
-    ): JournalSubscription<K, V> {
+    ): RandomAccessSubscription<K, V> {
         TODO("Not yet implemented")
     }
 

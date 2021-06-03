@@ -69,7 +69,7 @@ interface CompactedSubscription<K : Any, V : Any> : Subscription<K, V> {
 /**
  * A subscription that can be used to retrieve records at a specific (partition, offset) location.
  */
-interface JournalSubscription<K: Any, V: Any>: Subscription<K, V> {
+interface RandomAccessSubscription<K: Any, V: Any>: Subscription<K, V> {
 
     /**
      * Get the record at the provided partition and offset.
