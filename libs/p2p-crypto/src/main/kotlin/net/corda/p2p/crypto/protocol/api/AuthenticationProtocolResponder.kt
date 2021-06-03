@@ -8,6 +8,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorHandshakePayload
+import net.corda.p2p.crypto.internal.ResponderEncryptedExtensions
 import net.corda.p2p.crypto.internal.ResponderHandshakePayload
 import net.corda.p2p.crypto.protocol.AuthenticationProtocol
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SIG_PAD
@@ -27,6 +28,7 @@ import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
+import kotlin.math.min
 
 /**
  * The responder side of the session authentication protocol.
@@ -44,16 +46,24 @@ import javax.crypto.AEADBadTagException
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
 class AuthenticationProtocolResponder(private val sessionId: String,
-                                      private val supportedModes: List<ProtocolMode>): AuthenticationProtocol() {
+                                      private val supportedModes: List<ProtocolMode>,
+                                      private val maxMessageSize: Int): AuthenticationProtocol() {
+
+    init {
+        require(supportedModes.isNotEmpty()) { "there must be at least one supported mode." }
+        require(maxMessageSize > 0) { "max message size needs to be a positive number." }
+    }
 
     companion object {
+        @Suppress("LongParameterList")
         fun fromStep2(sessionId: String,
                       supportedModes: List<ProtocolMode>,
+                      maxMessageSize: Int,
                       initiatorHelloMsg: InitiatorHelloMessage,
                       responderHelloMsg: ResponderHelloMessage,
                       privateDHKey: ByteArray,
                       publicDHKey: ByteArray): AuthenticationProtocolResponder {
-            val protocol = AuthenticationProtocolResponder(sessionId, supportedModes)
+            val protocol = AuthenticationProtocolResponder(sessionId, supportedModes, maxMessageSize)
             protocol.apply {
                 receiveInitiatorHello(initiatorHelloMsg)
                 myPrivateDHKey = protocol.ephemeralKeyFactory.generatePrivate(PKCS8EncodedKeySpec(privateDHKey))
@@ -168,11 +178,12 @@ class AuthenticationProtocolResponder(private val sessionId: String,
         }
 
         val initiatorHandshakePayload = InitiatorHandshakePayload.fromByteBuffer(ByteBuffer.wrap(initiatorHandshakePayloadBytes))
-        val initiatorHandshakePayloadIncomplete = InitiatorHandshakePayload()
-        initiatorHandshakePayloadIncomplete.initiatorEncryptedExtensions = initiatorHandshakePayload.initiatorEncryptedExtensions
-        initiatorHandshakePayloadIncomplete.initiatorPublicKeyHash = initiatorHandshakePayload.initiatorPublicKeyHash
-        initiatorHandshakePayloadIncomplete.initiatorPartyVerify = ByteBuffer.allocate(0)
-        initiatorHandshakePayloadIncomplete.initiatorFinished = ByteBuffer.allocate(0)
+        val initiatorHandshakePayloadIncomplete = InitiatorHandshakePayload(
+            initiatorHandshakePayload.initiatorEncryptedExtensions,
+            initiatorHandshakePayload.initiatorPublicKeyHash,
+            ByteBuffer.allocate(0),
+            ByteBuffer.allocate(0)
+        )
 
         // validate signature
         val initiatorPublicKey = keyLookupFn(initiatorHandshakePayloadIncomplete.initiatorPublicKeyHash.array())
@@ -196,6 +207,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
             throw InvalidHandshakeMessageException()
         }
 
+        agreedMaxMessageSize = min(maxMessageSize, initiatorHandshakePayload.initiatorEncryptedExtensions.maxMessageSize)
         return HandshakeIdentityData(initiatorHandshakePayload.initiatorPublicKeyHash.array(),
                                      initiatorHandshakePayload.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
                                      initiatorHandshakePayload.initiatorEncryptedExtensions.groupId)
@@ -216,10 +228,12 @@ class AuthenticationProtocolResponder(private val sessionId: String,
             sessionId, 1, Instant.now().toEpochMilli())
         val responderRecordHeaderBytes = responderRecordHeader.toByteBuffer().array()
 
-        val responderHandshakePayload = ResponderHandshakePayload()
-        responderHandshakePayload.responderPublicKeyHash = ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded))
-        responderHandshakePayload.responderPartyVerify = ByteBuffer.allocate(0)
-        responderHandshakePayload.responderFinished = ByteBuffer.allocate(0)
+        val responderHandshakePayload = ResponderHandshakePayload(
+            ResponderEncryptedExtensions(agreedMaxMessageSize),
+            ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)),
+            ByteBuffer.allocate(0),
+            ByteBuffer.allocate(0)
+        )
 
         // calculate signature
         val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! +
@@ -245,7 +259,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
         val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! + responderHandshakePayloadBytes!!
         val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
         return AuthenticatedSession(sessionId, 2, sharedSessionSecrets.responderEncryptionKey,
-                                    sharedSessionSecrets.initiatorEncryptionKey)
+                                    sharedSessionSecrets.initiatorEncryptionKey, agreedMaxMessageSize!!)
     }
 
     private fun transition(fromStep: Step, toStep: Step) {

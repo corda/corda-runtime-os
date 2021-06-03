@@ -43,7 +43,13 @@ import javax.crypto.AEADBadTagException
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
 class AuthenticationProtocolInitiator(private val sessionId: String,
-                                      private val supportedModes: List<ProtocolMode>): AuthenticationProtocol() {
+                                      private val supportedModes: List<ProtocolMode>,
+                                      private val maxMessageSize: Int): AuthenticationProtocol() {
+
+    init {
+        require(supportedModes.isNotEmpty()) { "there must be at least one supported mode." }
+        require(maxMessageSize > 0) { "max message size needs to be a positive number." }
+    }
 
     var step = Step.INIT
 
@@ -102,12 +108,13 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         val initiatorRecordHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, PROTOCOL_VERSION,
                                                 sessionId, 1, Instant.now().toEpochMilli())
         val initiatorRecordHeaderBytes = initiatorRecordHeader.toByteBuffer().array()
-        val initiatorHandshakePayload = InitiatorHandshakePayload()
         val responderPublicKeyHash = ByteBuffer.wrap(messageDigest.hash(theirPublicKey.encoded))
-        initiatorHandshakePayload.initiatorEncryptedExtensions = InitiatorEncryptedExtensions(responderPublicKeyHash, groupId)
-        initiatorHandshakePayload.initiatorPublicKeyHash = ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded))
-        initiatorHandshakePayload.initiatorPartyVerify = ByteBuffer.allocate(0)
-        initiatorHandshakePayload.initiatorFinished = ByteBuffer.allocate(0)
+        val initiatorHandshakePayload = InitiatorHandshakePayload(
+            InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, maxMessageSize),
+            ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)),
+            ByteBuffer.allocate(0),
+            ByteBuffer.allocate(0)
+        )
 
         // calculate signature
         val initiatorHelloToInitiatorPublicKeyHash = initiatorHelloToResponderHelloBytes!! +
@@ -149,10 +156,12 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         }
 
         val responderHandshakePayload = ResponderHandshakePayload.fromByteBuffer(ByteBuffer.wrap(responderHandshakePayloadBytes))
-        val responderHandshakePayloadIncomplete = ResponderHandshakePayload()
-        responderHandshakePayloadIncomplete.responderPublicKeyHash = responderHandshakePayload.responderPublicKeyHash
-        responderHandshakePayloadIncomplete.responderPartyVerify = ByteBuffer.allocate(0)
-        responderHandshakePayloadIncomplete.responderFinished = ByteBuffer.allocate(0)
+        val responderHandshakePayloadIncomplete = ResponderHandshakePayload(
+            responderHandshakePayload.responderEncryptedExtensions,
+            responderHandshakePayload.responderPublicKeyHash,
+            ByteBuffer.allocate(0),
+            ByteBuffer.allocate(0)
+        )
 
         // check responder's public key hash matches requested one
         if (!responderHandshakePayload.responderPublicKeyHash.array().contentEquals(messageDigest.hash(theirPublicKey.encoded))) {
@@ -178,6 +187,8 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         if (!calculatedResponderFinished.contentEquals(responderHandshakePayload.responderFinished.array())) {
             throw InvalidHandshakeMessageException()
         }
+
+        agreedMaxMessageSize = responderHandshakePayload.responderEncryptedExtensions.maxMessageSize
     }
 
     fun getSession(): AuthenticatedSession {
@@ -186,7 +197,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! + responderHandshakePayloadBytes!!
         val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
         return AuthenticatedSession(sessionId, 2, sharedSessionSecrets.initiatorEncryptionKey,
-                                    sharedSessionSecrets.responderEncryptionKey)
+                                    sharedSessionSecrets.responderEncryptionKey, agreedMaxMessageSize!!)
     }
 
     private fun transition(fromStep: Step, toStep: Step) {
