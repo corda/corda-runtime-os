@@ -1,10 +1,11 @@
-package net.corda.libs.kafka.topic.utils
+package net.corda.libs.kafka.topic.utils.impl
 
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
 import net.corda.data.kafka.KafkaTopicTemplate
+import net.corda.libs.kafka.topic.utils.impl.KafkaTopicUtils
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.CreateTopicsResult
 import org.apache.kafka.common.KafkaFuture

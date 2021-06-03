@@ -1,7 +1,8 @@
-package net.corda.libs.kafka.topic.utils.factory
+package net.corda.libs.kafka.topic.utils.impl.factory
 
-import net.corda.libs.kafka.topic.utils.KafkaTopicUtils
+import net.corda.libs.kafka.topic.utils.impl.KafkaTopicUtils
 import net.corda.libs.kafka.topic.utils.TopicUtils
+import net.corda.libs.kafka.topic.utils.factory.TopicUtilsFactory
 import org.apache.kafka.clients.admin.AdminClient
 import org.osgi.service.component.annotations.Component
 import java.util.*

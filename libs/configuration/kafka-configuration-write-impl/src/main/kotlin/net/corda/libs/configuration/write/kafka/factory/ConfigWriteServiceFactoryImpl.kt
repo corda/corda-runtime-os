@@ -1,8 +1,9 @@
-package net.corda.libs.configuration.write.factory
+package net.corda.libs.configuration.write.kafka.factory
 
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.write.ConfigWriteService
-import net.corda.libs.configuration.write.ConfigWriteServiceImpl
+import net.corda.libs.configuration.write.factory.ConfigWriteServiceFactory
+import net.corda.libs.configuration.write.kafka.ConfigWriteServiceImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.publisher.factory.createPublisher

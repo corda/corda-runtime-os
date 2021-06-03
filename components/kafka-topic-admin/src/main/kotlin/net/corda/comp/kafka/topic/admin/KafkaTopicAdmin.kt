@@ -20,12 +20,15 @@ class KafkaTopicAdmin @Activate constructor(
 ) {
 
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(KafkaTopicAdmin::class.java)
+        private val log: Logger = LoggerFactory.getLogger(KafkaTopicAdmin::class.java)
     }
 
-    fun createTopic(props: String, topicTemplate: String) {
+    fun createTopic(props: String, topicTemplate: String): KafkaTopicTemplate{
         val topicUtils = topicUtilsFactory.createTopicUtils(parseProperties(props))
-        topicUtils.createTopic(parseTopicTemplate(topicTemplate))
+        val template = parseTopicTemplate(topicTemplate)
+        topicUtils.createTopic(template)
+
+        return template
     }
 
     private fun parseProperties(props: String): Properties {
@@ -41,7 +44,7 @@ class KafkaTopicAdmin @Activate constructor(
             val decoder = DecoderFactory.get().jsonDecoder(KafkaTopicTemplate.getClassSchema(), template)
             templateObject = reader.read(null, decoder)
         } catch (e: IOException) {
-            logger.error("Error deserialising given template: " + e.message)
+            log.error("Error deserialising given template: ${e.message}")
         }
         return templateObject
     }

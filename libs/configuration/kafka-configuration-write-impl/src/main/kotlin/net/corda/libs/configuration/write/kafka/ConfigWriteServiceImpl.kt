@@ -1,7 +1,9 @@
-package net.corda.libs.configuration.write
+package net.corda.libs.configuration.write.kafka
 
 import com.typesafe.config.Config
 import net.corda.data.config.Configuration
+import net.corda.libs.configuration.write.ConfigWriteService
+import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.debug
@@ -14,7 +16,7 @@ import org.slf4j.LoggerFactory
  * @property topicName the topic configurations will be published to
  */
 @Component
-class ConfigWriteServiceImpl (
+class ConfigWriteServiceImpl(
     private val topicName: String,
     private val publisher: Publisher<String, Configuration>
 ) : ConfigWriteService {
@@ -46,17 +48,10 @@ class ConfigWriteServiceImpl (
         configKey: CordaConfigurationKey,
         config: Config
     ) {
-        val records = mutableListOf<Record<String, Configuration>>()
-        for (key1 in config.root().keys) {
-            val key1Config = config.getConfig(key1)
-            for (key2 in key1Config.root().keys) {
-                val content = Configuration(key1Config.atKey(key2).toString(), configKey.componentVersion.version)
-                val record = Record(topicName, "$key1.$key2", content)
-                log.debug {"Producing record: $key1.$key2\t$content"}
-                records.add(record)
-            }
-        }
-
-        publisher.publish(records)
+        val content = Configuration(config.toString(), configKey.componentVersion.version)
+        val recordKey = "${configKey.packageVersion.name}.${configKey.componentVersion.name}"
+        val record = Record(topicName, recordKey, content)
+        log.debug { "Producing record: $recordKey\t$content" }
+        publisher.publish(listOf(record))
     }
 }

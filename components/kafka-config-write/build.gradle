@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-app'
 }
 
-description "Kafka topic admin component"
+description "Kafka config write component"
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
@@ -14,7 +14,9 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation project(':data:avro-schema')
+    implementation project(':libs:configuration:configuration-write')
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:kafka-utils:topic-admin')
+    implementation project(":libs:schema-registry:schema-registry")
 
 }

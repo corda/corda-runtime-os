@@ -1,8 +1,9 @@
-package net.corda.libs.configuration.write.factory
+package net.corda.libs.configuration.write.kafka.factory
 
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import net.corda.data.config.Configuration
+import net.corda.libs.configuration.write.kafka.factory.ConfigWriteServiceFactoryImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import org.junit.jupiter.api.Assertions

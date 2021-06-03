@@ -1,6 +1,7 @@
-package net.corda.libs.kafka.topic.utils
+package net.corda.libs.kafka.topic.utils.impl
 
 import net.corda.data.kafka.KafkaTopicTemplate
+import net.corda.libs.kafka.topic.utils.TopicUtils
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.errors.TopicExistsException
