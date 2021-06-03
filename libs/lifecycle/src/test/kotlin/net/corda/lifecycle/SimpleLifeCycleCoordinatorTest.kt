@@ -61,25 +61,25 @@ internal class SimpleLifeCycleCoordinatorTest {
         val startLatch = CountDownLatch(1)
         val countDownLatch = CountDownLatch(n)
         val stopLatch = CountDownLatch(1)
-        val coordinator =
-            SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT * n) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
-                logger.debug("processEvent $event")
-                when (event) {
-                    is StartEvent -> {
-                        startLatch.countDown()
-                    }
-                    is TimerEvent -> {
-                        countDownLatch.countDown()
-                    }
-                    is StopEvent -> {
-                        stopLatch.countDown()
-                    }
-                    else -> {
-                        fail("$event unexpected!")
-                    }
+        SimpleLifeCycleCoordinator(BATCH_SIZE,
+            TIMEOUT * n) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+            logger.debug("processEvent $event")
+            when (event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+                is TimerEvent -> {
+                    countDownLatch.countDown()
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
+
+                }
+                else -> {
+                    fail("$event unexpected!")
                 }
             }
-        coordinator.use {
+        }.use { coordinator ->
             coordinator.start()
             assertTrue(startLatch.await(coordinator.timeout, TimeUnit.MILLISECONDS))
             for (i in 0 until n) {
@@ -90,11 +90,15 @@ internal class SimpleLifeCycleCoordinatorTest {
                 val delay = Random.nextLong(0, TIMEOUT / 2)
                 coordinator.setTimer(onTime.key, delay) { onTime }
             }
-            coordinator.stop()
-            //assertTrue(stopLatch.await(coordinator.timeout * n, TimeUnit.MILLISECONDS))
-            assertTrue(countDownLatch.await(coordinator.timeout * n, TimeUnit.MILLISECONDS))
+            Thread {
+                while (countDownLatch.count > coordinator.batchSize / 2) {
+                    Thread.sleep(Random.nextLong(0, TIMEOUT / 20))
+                }
+                coordinator.stop()
+            }.start()
+            assertTrue(stopLatch.await(coordinator.timeout * n, TimeUnit.MILLISECONDS))
         }
-        //assertTrue(stopLatch.await(coordinator.timeout * n, TimeUnit.MILLISECONDS))
+        assertTrue(n > countDownLatch.count)
     }
 
     @Test

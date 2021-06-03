@@ -118,6 +118,8 @@ class SimpleLifeCycleCoordinator(
         executor?.apply {
             eventQueue.offer(StopEvent)
             submit {
+                timerMap.forEach { (key, _) -> cancelTimer(key) }
+                timerMap.clear()
                 while (!eventQueue.isEmpty()) {
                     val event = eventQueue.poll()
                     lifeCycleProcessor(event, t)
