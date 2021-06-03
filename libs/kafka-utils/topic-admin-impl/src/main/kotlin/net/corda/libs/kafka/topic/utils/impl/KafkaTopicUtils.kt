@@ -1,12 +1,12 @@
-package net.corda.libs.kafka.topic.utils
+package net.corda.libs.kafka.topic.utils.impl
 
+import net.corda.libs.kafka.topic.utils.TopicUtils
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.errors.TopicExistsException
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
 import java.util.concurrent.ExecutionException
 
 /**

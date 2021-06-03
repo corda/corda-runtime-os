@@ -1,11 +1,12 @@
-package net.corda.libs.configuration.write
+package net.corda.libs.configuration.write.kafka
 
 import com.typesafe.config.Config
 import net.corda.data.config.Configuration
+import net.corda.libs.configuration.write.ConfigWriteService
+import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.debug
-import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -13,7 +14,6 @@ import org.slf4j.LoggerFactory
  * Kafka implementation of the [ConfigWriteService]
  * @property topicName the topic configurations will be published to
  */
-@Component
 class ConfigWriteServiceImpl (
     private val topicName: String,
     private val publisher: Publisher<String, Configuration>

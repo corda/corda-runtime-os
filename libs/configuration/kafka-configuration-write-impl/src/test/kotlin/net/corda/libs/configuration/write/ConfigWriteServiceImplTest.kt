@@ -6,6 +6,7 @@ import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
 import com.typesafe.config.ConfigFactory
 import net.corda.data.config.Configuration
+import net.corda.libs.configuration.write.kafka.ConfigWriteServiceImpl
 import net.corda.messaging.api.publisher.Publisher
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

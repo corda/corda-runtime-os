@@ -1,4 +1,4 @@
-package net.corda.libs.kafka.topic.utils
+package net.corda.libs.kafka.topic.utils.impl
 
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock

@@ -3,8 +3,8 @@ package net.corda.tools.kafka
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
-import net.corda.libs.configuration.write.factory.CordaWriteServiceFactoryImpl
-import net.corda.libs.kafka.topic.utils.factory.KafkaTopicUtilsFactory
+import net.corda.libs.configuration.write.kafka.factory.CordaWriteServiceFactoryImpl
+import net.corda.libs.kafka.topic.utils.impl.factory.KafkaTopicUtilsFactory
 import net.corda.messaging.kafka.publisher.factory.CordaKafkaPublisherFactory
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import java.io.File
