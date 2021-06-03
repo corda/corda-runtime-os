@@ -8,8 +8,8 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class SimpleLifeCycleCoordinator(
-    override val batchSize: Int,
-    override val timeout: Long,
+    val batchSize: Int,
+    val timeout: Long,
     override val lifeCycleProcessor: (LifeCycleEvent: LifeCycleEvent, lifecycleCoordinator: LifeCycleCoordinator) -> Unit,
 ) : LifeCycleCoordinator {
 
@@ -40,7 +40,7 @@ class SimpleLifeCycleCoordinator(
             eventList.add(lifeCycleEvent)
         }
         for (lifeCycleEvent in eventList) {
-            lifeCycleProcessor.invoke(lifeCycleEvent, this)
+            lifeCycleProcessor(lifeCycleEvent, this)
         }
         isScheduled.set(false)
         if (eventQueue.isNotEmpty()) {
@@ -109,17 +109,25 @@ class SimpleLifeCycleCoordinator(
      */
 
     override fun stop() {
-        lock.withLock {
-            executorService?.apply {
-                eventQueue.offer(StopEvent)
+        val t = this
+        val executor = lock.withLock {
+            val exec = executorService
+            executorService = null
+            exec
+        }
+        executor?.apply {
+            eventQueue.offer(StopEvent)
+            submit {
                 while (!eventQueue.isEmpty()) {
-                    submit(::processEvents)
+                    val event = eventQueue.poll()
+                    lifeCycleProcessor(event, t)
+                    if (event is StopEvent) break
                 }
-                executorService = null
-                shutdown()
-                if (!awaitTermination(timeout, TimeUnit.MILLISECONDS)) {
-                    logger.warn("Stop: timeout after $timeout ms.")
-                }
+                eventQueue.clear()
+            }
+            shutdown()
+            if (!awaitTermination(timeout, TimeUnit.MILLISECONDS)) {
+                logger.warn("Stop: timeout after $timeout ms.")
             }
         }
     }
