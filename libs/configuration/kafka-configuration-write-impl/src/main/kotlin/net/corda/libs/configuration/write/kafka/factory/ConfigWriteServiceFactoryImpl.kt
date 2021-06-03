@@ -26,8 +26,7 @@ class ConfigWriteServiceFactoryImpl @Activate constructor(
     override fun createWriteService(destination: String): ConfigWriteService {
         val publisher = publisherFactory.createPublisher<String, Configuration>(
             PublisherConfig(
-                CONFIGURATION_WRITE_SERVICE,
-                destination
+                CONFIGURATION_WRITE_SERVICE
             ), mapOf()
         )
         return ConfigWriteServiceImpl(destination, publisher)

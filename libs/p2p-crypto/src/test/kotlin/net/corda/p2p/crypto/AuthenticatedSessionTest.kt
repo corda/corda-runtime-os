@@ -1,13 +1,12 @@
 package net.corda.p2p.crypto
 
-import net.corda.p2p.crypto.protocol.data.CommonHeader
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidMac
-import net.corda.p2p.crypto.protocol.api.Mode
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
+import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.util.*
@@ -22,11 +21,11 @@ class AuthenticatedSessionTest {
 
     // party A
     private val partyAIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, listOf(Mode.AUTHENTICATION_ONLY))
+    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, listOf(ProtocolMode.AUTHENTICATION_ONLY))
 
     // party B
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, listOf(Mode.AUTHENTICATION_ONLY))
+    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, listOf(ProtocolMode.AUTHENTICATION_ONLY))
 
     private val groupId = "some-group-id"
 
@@ -72,18 +71,18 @@ class AuthenticatedSessionTest {
             // Data exchange: A sends message to B, which decrypts and validates it
             val payload = "ping $i".toByteArray(Charsets.UTF_8)
             val authenticationResult = authenticatedSessionOnA.createMac(payload)
-            val initiatorMsg = DataMessage(authenticationResult.header, payload, authenticationResult.mac)
+            val initiatorMsg = AuthenticatedDataMessage(authenticationResult.header, ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac))
 
-            authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload, initiatorMsg.mac)
+            authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload.array(), initiatorMsg.authTag.array())
         }
 
         for (i in 1..3) {
             // Data exchange: B -> A
             val payload = "pong $i".toByteArray(Charsets.UTF_8)
             val authenticationResult = authenticatedSessionOnB.createMac(payload)
-            val responderMsg = DataMessage(authenticationResult.header, payload, authenticationResult.mac)
+            val responderMsg = AuthenticatedDataMessage(authenticationResult.header, ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac))
 
-            authenticatedSessionOnA.validateMac(responderMsg.header, responderMsg.payload, responderMsg.mac)
+            authenticatedSessionOnA.validateMac(responderMsg.header, responderMsg.payload.array(), responderMsg.authTag.array())
         }
     }
 
@@ -99,7 +98,7 @@ class AuthenticatedSessionTest {
 
         // Fronting component of responder sends data downstream so that protocol can be continued.
         val (privateKey, publicKey) = authenticationProtocolB.getDHKeyPair()
-        val authenticationProtocolBDownstream = AuthenticationProtocolResponder.fromStep2(sessionId, listOf(Mode.AUTHENTICATION_ONLY), initiatorHelloMsg, responderHelloMsg, privateKey, publicKey)
+        val authenticationProtocolBDownstream = AuthenticationProtocolResponder.fromStep2(sessionId, listOf(ProtocolMode.AUTHENTICATION_ONLY), initiatorHelloMsg, responderHelloMsg, privateKey, publicKey)
 
         // Both sides generate handshake secrets.
         authenticationProtocolA.generateHandshakeSecrets()
@@ -133,18 +132,18 @@ class AuthenticatedSessionTest {
             // Data exchange: A sends message to B, which decrypts and validates it
             val payload = "ping $i".toByteArray(Charsets.UTF_8)
             val authenticationResult = authenticatedSessionOnA.createMac(payload)
-            val initiatorMsg = DataMessage(authenticationResult.header, payload, authenticationResult.mac)
+            val initiatorMsg = AuthenticatedDataMessage(authenticationResult.header, ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac))
 
-            authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload, initiatorMsg.mac)
+            authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload.array(), initiatorMsg.authTag.array())
         }
 
         for (i in 1..3) {
             // Data exchange: B -> A
             val payload = "pong $i".toByteArray(Charsets.UTF_8)
             val authenticationResult = authenticatedSessionOnB.createMac(payload)
-            val responderMsg = DataMessage(authenticationResult.header, payload, authenticationResult.mac)
+            val responderMsg = AuthenticatedDataMessage(authenticationResult.header, ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac) )
 
-            authenticatedSessionOnA.validateMac(responderMsg.header, responderMsg.payload, responderMsg.mac)
+            authenticatedSessionOnA.validateMac(responderMsg.header, responderMsg.payload.array(), responderMsg.authTag.array())
         }
     }
 
@@ -189,12 +188,10 @@ class AuthenticatedSessionTest {
         // Data exchange: A sends message to B, B receives corrupted data which fail validation.
         val payload = "ping".toByteArray(Charsets.UTF_8)
         val authenticationResult = authenticatedSessionOnA.createMac(payload)
-        val initiatorMsg = DataMessage(authenticationResult.header, payload, authenticationResult.mac)
+        val initiatorMsg = AuthenticatedDataMessage(authenticationResult.header, ByteBuffer.wrap(payload) , ByteBuffer.wrap(authenticationResult.mac))
 
-        assertThatThrownBy { authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload + "0".toByteArray(Charsets.UTF_8), initiatorMsg.mac) }
+        assertThatThrownBy { authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload.array() + "0".toByteArray(Charsets.UTF_8), initiatorMsg.authTag.array()) }
             .isInstanceOf(InvalidMac::class.java)
     }
 
 }
-
-data class DataMessage(val header: CommonHeader, val payload: ByteArray, val mac: ByteArray)

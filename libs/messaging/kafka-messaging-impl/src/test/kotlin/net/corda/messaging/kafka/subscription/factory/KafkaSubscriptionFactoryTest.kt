@@ -35,11 +35,11 @@ class KafkaSubscriptionFactoryTest {
 
     @Test
     fun createDurableSub() {
-        factory.createDurableSubscription<Any, Any>(subscriptionConfig, mock(),  mapOf())
+        factory.createDurableSubscription<Any, Any>(subscriptionConfig, mock(),  mapOf(), null)
     }
 
     @Test
     fun createDurableSubNoInstanceId() {
-        assertThrows<CordaMessageAPIFatalException> { factory.createDurableSubscription<Any, Any>( SubscriptionConfig("group1", "event"), mock(), mapOf()) }
+        assertThrows<CordaMessageAPIFatalException> { factory.createDurableSubscription<Any, Any>( SubscriptionConfig("group1", "event"), mock(), mapOf(), null) }
     }
 }

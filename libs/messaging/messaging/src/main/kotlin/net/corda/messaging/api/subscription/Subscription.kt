@@ -1,6 +1,7 @@
 package net.corda.messaging.api.subscription
 
 import net.corda.messaging.api.processor.CompactedProcessor
+import java.util.*
 
 /**
  * A subscription that can be used to manage the life cycle of consumption of event records from a topic.
@@ -26,11 +27,27 @@ interface Subscription<K, V> : LifeCycle {
  * A subscription that can be used to manage the life cycle of consumption of event records from a topic.
  * The state for a given record is retrieved and both then passed to a state + event processor.
  * State and Events returned from the processor are produced to one or more topics.
- * Consumption of records, processing and production of new records is done atomically.
- * Subscription will begin consuming events upon start().
- * Subscription will stop consuming events and close the connection upon close()/stop().
+ * Consumption of records, processing and production of new records is done atomically
+ * (that is, within a single _transaction_).
  */
-interface StateAndEventSubscription<K, S, E> : LifeCycle
+interface StateAndEventSubscription<K, S, E> : LifeCycle {
+    /**
+     *  Queries the topic values for the most recent state [S] of the given [key].
+     *  For partitioned topics not all values may be available.  However, any key
+     *  provided by [StateAndEventProcessor.onNext] will guaranteed available.
+     *
+     *  @param key the topic key for a given state
+     *  @return the current state for the given key, or null if it's not available
+     *  @throws IllegalArgumentException when the [key] is on a remotely managed partition
+     */
+    @Throws(IllegalArgumentException::class)
+    fun getValue(key: K): S?
+
+    /**
+     * Check the state of a subscription. true if subscription is still active. false otherwise.
+     */
+    val isRunning: Boolean
+}
 
 /**
  * This subscription should be used when consuming records from a compacted topic
@@ -47,4 +64,19 @@ interface CompactedSubscription<K : Any, V : Any> : Subscription<K, V> {
      *  Queries the topic values for the most recent value [V] of the given [key]
      */
     fun getValue(key: K): V?
+}
+
+/**
+ * An interface that can be implemented and configured with a subscription to react to assignment and revocation of topic partitions.
+ */
+interface PartitionAssignmentListener {
+    /**
+     * @param topicPartitions the topic partitions that were assigned.
+     */
+    fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>)
+
+    /**
+     * @param topicPartitions the topic partitions that were unassigned.
+     */
+    fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>)
 }
