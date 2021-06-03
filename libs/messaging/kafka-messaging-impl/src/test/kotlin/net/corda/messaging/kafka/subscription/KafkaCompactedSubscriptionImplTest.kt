@@ -19,8 +19,6 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAnd
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.kafka.common.Node
-import org.apache.kafka.common.PartitionInfo
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -128,10 +126,8 @@ class KafkaCompactedSubscriptionImplTest {
         }.whenever(kafkaConsumer).poll()
 
         doAnswer {
-            listOf(
-                PartitionInfo(TOPIC, 0, Node(0, "", 0), emptyArray(), emptyArray())
-            )
-        }.whenever(kafkaConsumer).partitionsFor(any(), any())
+            listOf(TopicPartition(TOPIC, 0))
+        }.whenever(kafkaConsumer).getPartitions(any(), any())
 
         val subscription = KafkaCompactedSubscriptionImpl(
             subscriptionConfig,

@@ -5,7 +5,9 @@ import net.corda.messaging.api.records.Record
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
+import org.apache.kafka.common.TopicPartition
 import java.nio.ByteBuffer
+import java.time.Duration
 
 data class ConsumerRecordAndMeta<K : Any, V : Any>(
     val topicPrefix: String,
@@ -47,4 +49,9 @@ interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable, Consumer<K, V> {
      * @throws CordaMessageAPIFatalException for fatal errors.
      */
     fun subscribeToTopic()
+
+    /**
+     * Similar to [KafkaConsumer.partitionsFor] but returning a [TopicPartition].
+     */
+    fun getPartitions(topic: String, duration: Duration): List<TopicPartition>
 }

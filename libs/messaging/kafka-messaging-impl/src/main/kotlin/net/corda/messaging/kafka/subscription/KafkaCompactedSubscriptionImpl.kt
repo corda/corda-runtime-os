@@ -85,12 +85,10 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 consumerBuilder.createCompactedConsumer(subscriptionConfig).use {
-                    val partitions = it.partitionsFor(
+                    val partitions = it.getPartitions(
                         topicPrefix + subscriptionConfig.eventTopic,
                         Duration.ofSeconds(consumerThreadStopTimeout)
-                    ).map { partitionInfo ->
-                        TopicPartition(partitionInfo.topic(), partitionInfo.partition())
-                    }
+                    )
                     it.assign(partitions)
                     pollAndProcessSnapshot(it)
                     pollAndProcessRecords(it)
@@ -111,12 +109,12 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     }
 
     private fun getLatestValues(): MutableMap<K, V> {
-        return if (latestValues == null) {
-            latestValues = mapFactory.createMap()
-            latestValues!!
-        } else {
-            latestValues!!
+        var latest = latestValues
+        if (latest == null) {
+            latest = mapFactory.createMap()
+            latestValues = latest
         }
+        return latest
     }
 
     private fun pollAndProcessSnapshot(consumer: CordaKafkaConsumer<K, V>) {
