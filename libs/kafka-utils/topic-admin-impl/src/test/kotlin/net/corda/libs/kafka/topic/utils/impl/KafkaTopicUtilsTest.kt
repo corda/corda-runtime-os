@@ -4,8 +4,8 @@ import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
-import net.corda.data.kafka.KafkaTopicTemplate
-import net.corda.libs.kafka.topic.utils.impl.KafkaTopicUtils
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.CreateTopicsResult
 import org.apache.kafka.common.KafkaFuture
@@ -21,8 +21,6 @@ class KafkaTopicUtilsTest {
     private val adminClient: AdminClient = mock()
     private val topicResult: CreateTopicsResult = mock()
     private val kafkaFuture: KafkaFuture<Void> = mock()
-    private val topicTemplate: KafkaTopicTemplate =
-        KafkaTopicTemplate("dummyName", 1, 1, mapOf(Pair("cleanup.policy", "compact")))
 
 
     @BeforeEach
@@ -34,7 +32,7 @@ class KafkaTopicUtilsTest {
     fun testCreateTopic() {
         Mockito.`when`(adminClient.createTopics(any())).thenReturn(topicResult)
         Mockito.`when`(topicResult.all()).thenReturn(kafkaFuture)
-        kafkaTopicUtils.createTopic(topicTemplate)
+        kafkaTopicUtils.createTopic(dummyTopicConfig())
         verify(adminClient, times(1)).createTopics(any())
     }
 
@@ -42,11 +40,11 @@ class KafkaTopicUtilsTest {
     fun testCreateTopicAlreadyExists() {
         Mockito.`when`(adminClient.createTopics(any())).thenReturn(topicResult)
         Mockito.`when`(topicResult.all()).thenReturn(kafkaFuture)
-        kafkaTopicUtils.createTopic(topicTemplate)
+        kafkaTopicUtils.createTopic(dummyTopicConfig())
         verify(adminClient, times(1)).createTopics(any())
 
         Mockito.`when`(kafkaFuture.get()).thenThrow(ExecutionException(TopicExistsException("already exists")))
-        kafkaTopicUtils.createTopic(topicTemplate)
+        kafkaTopicUtils.createTopic(dummyTopicConfig())
         verify(adminClient, times(2)).createTopics(any())
     }
 
@@ -55,8 +53,20 @@ class KafkaTopicUtilsTest {
         Mockito.`when`(adminClient.createTopics(any())).thenReturn(topicResult)
         Mockito.`when`(topicResult.all()).thenReturn(kafkaFuture)
         Mockito.`when`(kafkaFuture.get()).thenThrow(ExecutionException(InterruptedException("something bad happened")))
-        assertThrows<InterruptedException> { kafkaTopicUtils.createTopic(topicTemplate) }
+        assertThrows<InterruptedException> { kafkaTopicUtils.createTopic(dummyTopicConfig()) }
 
         verify(adminClient, times(1)).createTopics(any())
     }
+
+    private fun dummyTopicConfig(): Config = ConfigFactory.parseString(
+        """
+        topicName = "dummyName"
+        numPartitions = 1
+        replicationFactor = 1
+        config {
+            first.key = "firstValue",
+            second.key = "secondValue"
+        }
+    """.trimIndent()
+    )
 }
