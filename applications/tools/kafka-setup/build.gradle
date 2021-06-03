@@ -10,9 +10,6 @@ dependencies {
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-
     implementation project(':components:kafka-topic-admin')
     implementation project(':components:kafka-config-write')
     implementation project(':data:avro-schema')
