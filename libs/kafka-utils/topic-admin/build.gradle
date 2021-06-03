@@ -6,6 +6,5 @@ plugins {
 description 'Kafka Topic admin'
 
 dependencies {
-
-    implementation project(":data:avro-schema")
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
 }

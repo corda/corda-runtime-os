@@ -1,6 +1,6 @@
 package net.corda.libs.kafka.topic.utils.impl
 
-import net.corda.data.kafka.KafkaTopicTemplate
+import com.typesafe.config.Config
 import net.corda.libs.kafka.topic.utils.TopicUtils
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
@@ -22,10 +22,16 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    override fun createTopic(topicTemplate: KafkaTopicTemplate) {
+    override fun createTopic(topicTemplate: Config) {
         val newTopic =
-            NewTopic(topicTemplate.topicName, topicTemplate.numPartitions, topicTemplate.replicationFactor.toShort())
-        newTopic.configs(topicTemplate.config)
+            NewTopic(
+                topicTemplate.getString("topicName"),
+                topicTemplate.getInt("numPartitions"),
+                topicTemplate.getInt("replicationFactor").toShort()
+            )
+        val topicConfigOption = topicTemplate.getConfig("config").entrySet()
+            .map { entry -> Pair<String, String>(entry.key, entry.value.toString()) }.toMap()
+        newTopic.configs(topicConfigOption)
         try {
             log.info("Attempting to create topic: $newTopic")
             adminClient.createTopics(listOf(newTopic)).all().get()

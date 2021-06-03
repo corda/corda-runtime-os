@@ -1,7 +1,6 @@
 package net.corda.libs.kafka.topic.utils
 
-import net.corda.data.kafka.KafkaTopicTemplate
-import java.util.*
+import com.typesafe.config.Config
 
 
 /**
@@ -13,6 +12,6 @@ interface TopicUtils {
     /**
      * Create new topic based on [topicTemplate]
      */
-    fun createTopic(topicTemplate: KafkaTopicTemplate)
+    fun createTopic(topicTemplate: Config)
 
 }

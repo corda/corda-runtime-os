@@ -10,7 +10,8 @@ dependencies {
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 
-    implementation project(':data:avro-schema')
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:kafka-utils:topic-admin')
 

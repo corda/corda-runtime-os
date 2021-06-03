@@ -1,15 +1,14 @@
 package net.corda.comp.kafka.topic.admin
 
-import net.corda.data.kafka.KafkaTopicTemplate
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigException
+import com.typesafe.config.ConfigFactory
 import net.corda.libs.kafka.topic.utils.factory.TopicUtilsFactory
-import org.apache.avro.io.DecoderFactory
-import org.apache.avro.specific.SpecificDatumReader
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.IOException
 import java.io.StringReader
 import java.util.*
 
@@ -23,9 +22,9 @@ class KafkaTopicAdmin @Activate constructor(
         private val log: Logger = LoggerFactory.getLogger(KafkaTopicAdmin::class.java)
     }
 
-    fun createTopic(props: String, topicTemplate: String): KafkaTopicTemplate{
+    fun createTopic(props: String, topicTemplate: String): Config {
         val topicUtils = topicUtilsFactory.createTopicUtils(parseProperties(props))
-        val template = parseTopicTemplate(topicTemplate)
+        val template = parseAndValidateTopicTemplate(topicTemplate)
         topicUtils.createTopic(template)
 
         return template
@@ -37,17 +36,28 @@ class KafkaTopicAdmin @Activate constructor(
         return properties
     }
 
-    private fun parseTopicTemplate(template: String): KafkaTopicTemplate {
-        val reader = SpecificDatumReader(KafkaTopicTemplate::class.java)
-        var templateObject = KafkaTopicTemplate()
+    private fun parseAndValidateTopicTemplate(template: String): Config {
+        val templateConfig = ConfigFactory.parseString(template)
         try {
-            val decoder = DecoderFactory.get().jsonDecoder(KafkaTopicTemplate.getClassSchema(), template)
-            templateObject = reader.read(null, decoder)
-        } catch (e: IOException) {
-            log.error("Error deserialising given template: ${e.message}")
+            templateConfig.checkValid(referenceTopicConfig())
+        } catch (e: ConfigException) {
+            log.error("Error validating topic configuration")
         }
-        return templateObject
+
+        return templateConfig
     }
 
+
+    private fun referenceTopicConfig(): Config = ConfigFactory.parseString(
+        """
+        topicName = "dummyName"
+        numPartitions = 1
+        replicationFactor = 1
+        config {
+            first.key = "firstValue",
+            second.key = "secondValue"
+        }
+    """.trimIndent()
+    )
 
 }
