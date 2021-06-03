@@ -14,14 +14,13 @@ import net.corda.p2p.crypto.protocol.AuthenticationProtocol
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SIG_PAD
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SIG_PAD
-import net.corda.p2p.crypto.protocol.toByteArray
 import net.corda.p2p.crypto.util.calculateMac
 import net.corda.p2p.crypto.util.decrypt
 import net.corda.p2p.crypto.util.encryptWithAssociatedData
 import net.corda.p2p.crypto.util.hash
 import net.corda.p2p.crypto.util.perform
 import net.corda.p2p.crypto.util.verify
-import java.lang.RuntimeException
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.security.spec.PKCS8EncodedKeySpec
@@ -278,7 +277,9 @@ class AuthenticationProtocolResponder(private val sessionId: String,
 /**
  * Thrown when is no mode that is supported both by the initiator and the responder.
  */
-class NoCommonModeError(val initiatorModes: List<ProtocolMode>, val responderModes: List<ProtocolMode>): RuntimeException()
+class NoCommonModeError(initiatorModes: List<ProtocolMode>, responderModes: List<ProtocolMode>):
+    CordaRuntimeException("There was no common mode between those supported by the initiator ($initiatorModes) " +
+                          "and those supported by the responder ($responderModes)")
 
 /**
  * @property initiatorPublicKeyHash the SHA-256 hash of the initiator's public key.

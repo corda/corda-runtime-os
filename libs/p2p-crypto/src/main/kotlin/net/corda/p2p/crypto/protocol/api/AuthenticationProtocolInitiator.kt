@@ -20,7 +20,7 @@ import net.corda.p2p.crypto.util.encryptWithAssociatedData
 import net.corda.p2p.crypto.util.hash
 import net.corda.p2p.crypto.util.perform
 import net.corda.p2p.crypto.util.verify
-import java.lang.RuntimeException
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
@@ -213,4 +213,4 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
 /**
  * Thrown when the responder sends an key hash that does not match the one we requested.
  */
-class InvalidHandshakeResponderKeyHash: RuntimeException()
+class InvalidHandshakeResponderKeyHash: CordaRuntimeException("The responder sent a key hash that was different to the one we requested.")

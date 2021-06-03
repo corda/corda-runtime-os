@@ -1,5 +1,5 @@
 package net.corda.p2p.crypto.protocol.api
 
-import java.lang.RuntimeException
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
-class IncorrectAPIUsageException(message: String): RuntimeException(message)
+class IncorrectAPIUsageException(message: String): CordaRuntimeException(message)

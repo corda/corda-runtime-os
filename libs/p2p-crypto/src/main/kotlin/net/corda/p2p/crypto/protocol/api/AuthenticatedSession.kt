@@ -4,8 +4,8 @@ import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.HMAC_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import java.lang.RuntimeException
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantLock
@@ -99,6 +99,6 @@ data class AuthenticationResult(val header: CommonHeader, val mac: ByteArray) {
     }
 }
 
-class InvalidMac: RuntimeException()
+class InvalidMac: CordaRuntimeException("The provided MAC was invalid.")
 class MessageTooLargeError(messageSize: Int, maxMessageSize: Int):
-    RuntimeException("Message's size ($messageSize bytes) was larger than the max message size of the session ($maxMessageSize bytes)")
+    CordaRuntimeException("Message's size ($messageSize bytes) was larger than the max message size of the session ($maxMessageSize bytes)")
