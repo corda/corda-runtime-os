@@ -1,0 +1,10 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+}
+
+description 'Configuration write API'
+
+dependencies {
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+}

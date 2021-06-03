@@ -4,6 +4,8 @@ import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doAnswer
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.times
+import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -17,6 +19,8 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAnd
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.kafka.common.Node
+import org.apache.kafka.common.PartitionInfo
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -58,8 +62,10 @@ class KafkaCompactedSubscriptionImplTest {
     fun setup() {
         doReturn(kafkaConsumer).whenever(consumerBuilder).createCompactedConsumer(any(), any())
         doReturn(
-            mutableMapOf(TopicPartition(TOPIC, 0) to 0L),
-            mutableMapOf(TopicPartition(TOPIC, 1) to 0L),
+            mutableMapOf(
+                TopicPartition(TOPIC, 0) to 0L,
+                TopicPartition(TOPIC, 1) to 0L
+            )
         ).whenever(kafkaConsumer).beginningOffsets(any())
         doReturn(
             mutableMapOf(
@@ -69,7 +75,7 @@ class KafkaCompactedSubscriptionImplTest {
         ).whenever(kafkaConsumer).endOffsets(any())
     }
 
-    private val processor = object : CompactedProcessor<String, String> {
+    private class TestProcessor : CompactedProcessor<String, String> {
         override val keyClass: Class<String>
             get() = String::class.java
         override val valueClass: Class<String>
@@ -99,6 +105,7 @@ class KafkaCompactedSubscriptionImplTest {
     @Test
     fun `compacted subscription returns correct results`() {
         val latch = CountDownLatch(4)
+        val processor = TestProcessor()
 
         doAnswer {
             val iteration = latch.count
@@ -120,6 +127,12 @@ class KafkaCompactedSubscriptionImplTest {
             }
         }.whenever(kafkaConsumer).poll()
 
+        doAnswer {
+            listOf(
+                PartitionInfo(TOPIC, 0, Node(0, "", 0), emptyArray(), emptyArray())
+            )
+        }.whenever(kafkaConsumer).partitionsFor(any(), any())
+
         val subscription = KafkaCompactedSubscriptionImpl(
             subscriptionConfig,
             config,
@@ -131,6 +144,7 @@ class KafkaCompactedSubscriptionImplTest {
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         subscription.stop()
 
+        verify(kafkaConsumer, times(1)).assign(listOf(TopicPartition(TOPIC, 0)))
         assertThat(processor.snapshotMap.size).isEqualTo(10)
         assertThat(processor.snapshotMap).isEqualTo(initialSnapshotResult.associate { it.record.key() to it.record.value() })
 
@@ -143,6 +157,7 @@ class KafkaCompactedSubscriptionImplTest {
     @Test
     fun `compacted subscription removes record on null value`() {
         val latch = CountDownLatch(5)
+        val processor = TestProcessor()
 
         doAnswer {
             when (val iteration = latch.count) {
@@ -197,6 +212,7 @@ class KafkaCompactedSubscriptionImplTest {
     @Test
     @Timeout(2, unit = TimeUnit.SECONDS)
     fun `subscription stops on processor snapshot error`() {
+        val processor = TestProcessor()
         doAnswer { initialSnapshotResult }.whenever(kafkaConsumer).poll()
 
         processor.failSnapshot = true
@@ -212,5 +228,74 @@ class KafkaCompactedSubscriptionImplTest {
         while (subscription.isRunning) {
             Thread.sleep(500)
         }
+    }
+
+    @Test
+    fun `subscription attempts to reconnect after intermittent failure`() {
+        val latch = CountDownLatch(6)
+        val processor = TestProcessor()
+
+        doAnswer {
+            latch.countDown()
+            if (latch.count == 4L || latch.count == 2L) {
+                throw Exception("Kaboom!")
+            }
+            emptyList<ConsumerRecordAndMeta<String, String>>()
+        }.whenever(kafkaConsumer).poll()
+
+        val subscription = KafkaCompactedSubscriptionImpl(
+            subscriptionConfig,
+            config,
+            mapFactory,
+            consumerBuilder,
+            processor,
+        )
+        subscription.start()
+        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        subscription.stop()
+
+        // Three calls: First time and after each exception thrown
+        verify(consumerBuilder, times(3)).createCompactedConsumer(any(), any())
+    }
+
+    @Test
+    fun `subscription attempts to reconnect after processor failure`() {
+        val latch = CountDownLatch(6)
+        val processor = TestProcessor()
+
+        doAnswer {
+            val iteration = latch.count
+            when (iteration) {
+                4L -> {
+                    initialSnapshotResult
+                }
+                0L -> emptyList() // Don't return anything on errant extra polls
+                else -> {
+                    listOf(
+                        ConsumerRecordAndMeta<String, String>(
+                            TOPIC_PREFIX,
+                            ConsumerRecord(TOPIC, 0, iteration, iteration.toString(), iteration.toString())
+                        )
+                    )
+                }
+            }.also {
+                latch.countDown()
+            }
+        }.whenever(kafkaConsumer).poll()
+
+        processor.failNext = true
+        val subscription = KafkaCompactedSubscriptionImpl(
+            subscriptionConfig,
+            config,
+            mapFactory,
+            consumerBuilder,
+            processor,
+        )
+        subscription.start()
+        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.DAYS)
+        subscription.stop()
+
+        // Three calls: First time and after each exception thrown
+        verify(consumerBuilder, times(3)).createCompactedConsumer(any(), any())
     }
 }
