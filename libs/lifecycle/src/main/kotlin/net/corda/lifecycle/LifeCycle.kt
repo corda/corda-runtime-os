@@ -4,8 +4,6 @@ interface LifeCycle: AutoCloseable {
 
     val isRunning: Boolean
 
-    val timeout: Long
-
     fun start()
 
     fun stop()

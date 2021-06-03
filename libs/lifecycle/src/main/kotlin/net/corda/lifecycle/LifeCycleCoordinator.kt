@@ -6,6 +6,8 @@ interface LifeCycleCoordinator: LifeCycle {
 
     val lifeCycleProcessor: (lifeCycleEvent: LifeCycleEvent) -> Unit
 
+    val timeout: Long
+
     fun cancelTimer(key: String)
 
     fun postEvent(lifeCycleEvent: LifeCycleEvent)
