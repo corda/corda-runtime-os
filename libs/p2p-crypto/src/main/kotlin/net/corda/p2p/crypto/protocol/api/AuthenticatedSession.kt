@@ -4,7 +4,6 @@ import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.HMAC_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
-import net.corda.p2p.crypto.util.calculateMac
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.lang.RuntimeException
 import java.time.Instant

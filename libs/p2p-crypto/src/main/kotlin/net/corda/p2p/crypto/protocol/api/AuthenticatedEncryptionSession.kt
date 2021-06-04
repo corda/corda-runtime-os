@@ -18,6 +18,7 @@ import javax.crypto.SecretKey
  *
  * This class is thread-safe, which means multiple threads can try to encrypt & decrypt data concurrently using the same session.
  */
+@Suppress("LongParameterList")
 class AuthenticatedEncryptionSession(private val sessionId: String,
                                      nextSequenceNo: Long,
                                      private val outboundSecretKey: SecretKey,
@@ -34,7 +35,8 @@ class AuthenticatedEncryptionSession(private val sessionId: String,
         val commonHeader = CommonHeader(MessageType.DATA, ProtocolConstants.PROTOCOL_VERSION, sessionId,
                                         sequenceNo.getAndIncrement(), Instant.now().toEpochMilli())
 
-        val (encryptedData, authTag) = encryptionCipher.encryptWithAssociatedData(commonHeader.toByteBuffer().array(), outboundNonce, payload, outboundSecretKey)
+        val (encryptedData, authTag) =
+            encryptionCipher.encryptWithAssociatedData(commonHeader.toByteBuffer().array(), outboundNonce, payload, outboundSecretKey)
         return EncryptionResult(commonHeader, authTag, encryptedData)
     }
 

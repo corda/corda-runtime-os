@@ -1,18 +1,21 @@
 package net.corda.osgi.framework
 
+import net.corda.osgi.api.Application
+import net.corda.osgi.api.Shutdown
 import net.corda.osgi.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
-import net.corda.osgi.framework.api.ArgsService
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants
 import org.osgi.framework.FrameworkEvent
+import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.ServiceReference
 import org.osgi.framework.launch.Framework
 import org.osgi.framework.launch.FrameworkFactory
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.Path
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 /**
  * `OSGiFrameworkWrap` provides an API to bootstrap an OSGI framework and OSGi bundles in the classpath.
@@ -69,6 +72,7 @@ class OSGiFrameworkWrap(
 
         /**
          * Extension used to identify `jar` files to [install].
+         * @see [install]
          */
         private const val JAR_EXTENSION = ".jar"
 
@@ -103,7 +107,7 @@ class OSGiFrameworkWrap(
         fun getFrameworkFrom(
             frameworkFactoryFQN: String,
             frameworkStorageDir: Path,
-            systemPackagesExtra: String = ""
+            systemPackagesExtra: String = "",
         ): Framework {
             logger.debug("OSGi framework factory = $frameworkFactoryFQN.")
             val frameworkFactory = Class.forName(
@@ -140,6 +144,22 @@ class OSGiFrameworkWrap(
                     .toList()
             }
             return propertyValueList.joinToString(",")
+        }
+
+        /**
+         * Return `true` if the [state] LSB is [Bundle.ACTIVE]
+         *
+         * Bundle states are expressed as a bit-mask though a bundle can only be in one state at any time,
+         * the state in the lifecycle is represented in the LSB of the value returned by [Bundle.getState].
+         * See OSGi Core Release 7 [4.4.2 Bundle State](https://docs.osgi.org/specification/osgi.core/7.0.0/framework.lifecycle.html)
+         *
+         * @param state of the bundle.
+         *
+         * @return `true` if the [state] LSB is [Bundle.ACTIVE].
+         */
+        internal fun isActive(state: Int): Boolean {
+            // The bundle lifecycle state is represented by LSB.
+            return state and 0xff == Bundle.ACTIVE
         }
 
         /**
@@ -185,7 +205,7 @@ class OSGiFrameworkWrap(
          *
          * @return `true` if the [state] LSB is between [Bundle.STARTING] and [Bundle.ACTIVE] excluded.
          */
-        private fun isStoppable(state: Int): Boolean {
+        internal fun isStoppable(state: Int): Boolean {
             // The bundle lifecycle state is represented by LSB.
             val status = state and 0xff
             return status > Bundle.STARTING && state <= Bundle.ACTIVE
@@ -193,13 +213,11 @@ class OSGiFrameworkWrap(
 
     } //~ companion object
 
+
     /**
-     * Map of the bundle installed.
-     *
-     * @see [activate]
-     * @see [install]
+     * Map of the descriptors of bundles installed.
      */
-    private val bundleMap = ConcurrentHashMap<Long, Bundle>()
+    private val bundleDescriptorMap = ConcurrentHashMap<Long, OSGiBundleDescriptor>()
 
     /**
      * Activate (start) the bundles installed with [install].
@@ -207,41 +225,44 @@ class OSGiFrameworkWrap(
      *
      * Bundle activation is idempotent.
      *
+     * Thread safe.
+     *
      * @return this.
      *
      * @throws BundleException if any bundled installed fails to start.
      * The first bundle failing to start interrupts the activation of each bundle it should activated next.
      */
+    @Synchronized
     @Throws(
         BundleException::class
     )
     fun activate(): OSGiFrameworkWrap {
-        bundleMap.values.forEach { bundle: Bundle ->
-            if (isFragment(bundle)) {
+        bundleDescriptorMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
+            if (isFragment(bundleDescriptor.bundle)) {
                 logger.info(
-                    "OSGi bundle ${bundle.location}" +
-                            " ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"}" +
-                            " ${bundle.version} ${bundleStateMap[bundle.state]} fragment."
+                    "OSGi bundle ${bundleDescriptor.bundle.location}" +
+                            " ID = ${bundleDescriptor.bundle.bundleId} ${bundleDescriptor.bundle.symbolicName ?: "\b"}" +
+                            " ${bundleDescriptor.bundle.version} ${bundleStateMap[bundleDescriptor.bundle.state]} fragment."
                 )
             } else {
-                bundle.start()
+                bundleDescriptor.bundle.start()
             }
         }
         return this
     }
 
     /**
-     * Return a read only snapshot map of installed bundles where bundle identifiers are keys of the map.
-     *
-     * @return a read only snapshot map of installed bundles where bundle identifiers are keys of the map.
+     * Return [Framework.getState] value.
      */
-    fun getBundleMap(): Map<Long, Bundle> {
-        return bundleMap.toMap()
+    fun getState(): Int {
+        return framework.state
     }
 
     /**
      * Install the bundles represented by the [resource] in this classpath in the [Framework] wrapped by this object.
      * All installed bundles starts with the method [activate].
+     *
+     * Thread safe.
      *
      * @param resource represents the path in the classpath where bundles are described.
      * The resource can be:
@@ -261,6 +282,7 @@ class OSGiFrameworkWrap(
      * @see [installBundleJar]
      * @see [installBundleList]
      */
+    @Synchronized
     @Throws(
         BundleException::class,
         IllegalStateException::class,
@@ -305,7 +327,7 @@ class OSGiFrameworkWrap(
                 val bundleContext = framework.bundleContext
                     ?: throw IllegalStateException("OSGi framework not active yet.")
                 val bundle = bundleContext.installBundle(resource, inputStream)
-                bundleMap[bundle.bundleId] = bundle
+                bundleDescriptorMap[bundle.bundleId] = OSGiBundleDescriptor(bundle)
                 logger.debug("OSGi bundle $resource installed.")
             } else {
                 throw IOException("OSGi bundle at $resource not found")
@@ -352,27 +374,17 @@ class OSGiFrameworkWrap(
     }
 
     /**
-     * Register the [args] in the [ArgsService] OSGi service to expose [args] to the active bundles.
-     *
-     * @param args in the [ArgsService] OSGi service to expose [args] to the active bundles.
-     *
-     * @return this.
-     *
-     * @throws IllegalStateException if the wrapped [Framework] isn't active yet.
-     */
-    @Throws(
-        IllegalStateException::class,
-    )
-    fun setArguments(args: Array<String>): OSGiFrameworkWrap {
-        val bundleContext = framework.bundleContext ?: throw IllegalStateException("OSGi framework not active yet.")
-        bundleContext.registerService(ArgsService::class.java, ArgsService { args }, Hashtable<String, Any>())
-        return this
-    }
-
-    /**
      * Start the [Framework] wrapped by this [OSGiFrameworkWrap].
      * If the [Framework] can't start, the method logs a warning describing the actual state of the framework.
      * Start the framework multiple times is harmless, it just logs the warning.
+     *
+     * This method registers the [Shutdown] used by applications to ask to quit.
+     * The [Shutdown.shutdown] implementation calls [stop]: both this method and [stop] are synchronized,
+     * but there is no risk of deadlock because applications start-up from synchronized [startApplications],
+     * it runs only after this method returned and the service is registered.
+     * The [Shutdown.shutdown] runs [stop] in a separate thread.
+     *
+     * Thread safe.
      *
      * @return this.
      *
@@ -384,6 +396,7 @@ class OSGiFrameworkWrap(
      *
      * See [Framework.start]
      */
+    @Synchronized
     @Throws(
         BundleException::class,
         IllegalStateException::class,
@@ -394,12 +407,29 @@ class OSGiFrameworkWrap(
             framework.start()
             framework.bundleContext.addBundleListener { bundleEvent ->
                 val bundle = bundleEvent.bundle
+                if (isActive(bundle.state)) {
+                    bundleDescriptorMap[bundle.bundleId]?.active?.countDown()
+                }
                 logger.info(
                     "OSGi bundle ${bundle.location}" +
                             " ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"}" +
                             " ${bundle.version} ${bundleStateMap[bundle.state]}."
                 )
             }
+            framework.bundleContext.registerService(
+                Shutdown::class.java.name,
+                object : Shutdown {
+                    // Called by applications using the [ShutdownBootstrapper].
+                    // No risk of deadlock because applications are registered by [startApplications]
+                    // after this method returned and [stop] runs in separate thread.
+                    override fun shutdown(bundle: Bundle) {
+                        Thread {
+                            stop()
+                        }.run()
+                    }
+                },
+                null
+            )
             logger.info("OSGi framework ${framework::class.java.canonicalName} ${framework.version} started.")
         } else {
             logger.warn(
@@ -411,9 +441,76 @@ class OSGiFrameworkWrap(
     }
 
     /**
-     * Stop the [Framework] wrapped by this [OSGiFrameworkWrap].
-     * If the [Framework] can't stop, the method logs a warning describing the actual state of the framework.
-     * Stop the framework multiple times is harmless, it just logs the warning.
+     * Call the [Application.startup] method of the class implementing the [Application] interface:
+     * this is the entry-point of the application distributed in the bootable JAR.
+     *
+     * If no class implements the [Application] interface in any bundle zipped in the bootable JAR,
+     * it throws [ClassNotFoundException] exception.
+     *
+     * This method waits [timeout] ms for all bundles to be active,
+     * if any bundle is not active yet, it logs a warning and try to startup the application.
+     *
+     * Thread safe.
+     *
+     * @param timeout in milliseconds to wait application bundles to be active before to call
+     *          [StartupApplication.startup].
+     * @param args to pass to the [Application.startup] method of application bundles.
+     *
+     * @return this.
+     *
+     * @throws ClassNotFoundException If no class implements the [Application] interface in any bundle
+     *          zipped in the bootable JAR
+     * @throws IllegalStateException If this bundle has been uninstalled meanwhile this method runs.
+     * @throws NoSuchMethodException If the class implementing [Application] hasn't a default constructor.
+     *          A default constructor has no parameters or all parameters set by default.
+     * @throws SecurityException If a security manager is present and the caller's class loader is not the same as,
+     *          or the security manager denies access to the package of this class.
+     */
+    @Synchronized
+    @Throws(
+        ClassNotFoundException::class,
+        IllegalStateException::class,
+        NoSuchMethodException::class,
+        SecurityException::class
+    )
+    fun startApplication(
+        timeout: Long,
+        args: Array<String>,
+    ): OSGiFrameworkWrap {
+        bundleDescriptorMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
+            if (!bundleDescriptor.active.await(timeout, TimeUnit.MILLISECONDS)) {
+                logger.warn(
+                    "OSGi bundle ${bundleDescriptor.bundle.location}" +
+                            " ID = ${bundleDescriptor.bundle.bundleId} ${bundleDescriptor.bundle.symbolicName ?: "\b"}" +
+                            " ${bundleDescriptor.bundle.version} ${bundleStateMap[bundleDescriptor.bundle.state]}" +
+                            " activation time-out after $timeout ms."
+                )
+            }
+        }
+        val applicationServiceReference: ServiceReference<Application>? =
+            framework.bundleContext.getServiceReference(Application::class.java)
+        if (applicationServiceReference != null) {
+            framework.bundleContext.getService(applicationServiceReference)?.startup(args)
+        } else {
+            throw ClassNotFoundException("No class in any bundle implements ${Application::class.java}" +
+                    " to register as OSGi service and to start the application.")
+        }
+        return this
+    }
+
+    /**
+     * This method performs the following actions to stop the application running in the OSGi framework.
+     *
+     *  1. Calls the [Application.shutdown] method of the class implementing the [Application] interface.
+     *      If no class implements the [Application] interface in any bundle zipped in the bootable JAR,
+     *      it logs a warning message and continues to shutdowns the OSGi framework.
+     *  2. Deactivate installed bundles.
+     *  3. Stop the [Framework] wrapped by this [OSGiFrameworkWrap].
+     *      If the [Framework] can't stop, the method logs a warning describing the actual state of the framework.
+     *
+     * To stop the framework multiple times is harmless, it just logs the warning.
+     *
+     * Thread safe.
      *
      * @return this.
      *
@@ -423,6 +520,8 @@ class OSGiFrameworkWrap(
      *
      * @see [Framework.stop]
      */
+    @Suppress("NestedBlockDepth")
+    @Synchronized
     @Throws(
         BundleException::class,
         SecurityException::class
@@ -430,6 +529,21 @@ class OSGiFrameworkWrap(
     fun stop(): OSGiFrameworkWrap {
         if (isStoppable(framework.state)) {
             logger.debug("OSGi framework stop...")
+            val applicationServiceReference: ServiceReference<Application>? =
+                framework.bundleContext.getServiceReference(Application::class.java)
+            if (applicationServiceReference != null) {
+                val applicationService: Application? = framework.bundleContext.getService(applicationServiceReference)
+                if (applicationService != null) {
+                    val bundle = FrameworkUtil.getBundle(applicationService::class.java)
+                    val bundleDescriptor = bundleDescriptorMap[bundle.bundleId]
+                    if (bundleDescriptor!!.shutdown.count > 0L) {
+                        bundleDescriptor.shutdown.countDown()
+                        applicationService.shutdown()
+                    }
+                }
+            } else {
+                logger.warn("${Application::class.java} service unregistered before to shutdown the application.")
+            }
             framework.stop()
         } else {
             logger.warn(

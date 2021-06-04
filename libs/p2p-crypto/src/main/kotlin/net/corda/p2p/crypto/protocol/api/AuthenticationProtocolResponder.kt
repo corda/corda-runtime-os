@@ -51,6 +51,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
     }
 
     companion object {
+        @Suppress("LongParameterList")
         fun fromStep2(sessionId: String,
                       supportedModes: Set<ProtocolMode>,
                       initiatorHelloMsg: InitiatorHelloMessage,

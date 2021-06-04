@@ -10,4 +10,5 @@ net.corda.p2p.crypto.ResponderHandshakeMessage
 net.corda.data.crypto.SecureHash
 net.corda.data.AvroEnvelope
 net.corda.data.test.EvolvedMessage
+net.corda.data.config.Configuration
 net.corda.data.client.rpc.flow.RPCFlowStart

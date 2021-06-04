@@ -1,0 +1,11 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+    id 'corda.publish'
+}
+
+description 'Hello World Implementation'
+
+dependencies {
+    implementation project(":libs:examples:helloworld")
+}
