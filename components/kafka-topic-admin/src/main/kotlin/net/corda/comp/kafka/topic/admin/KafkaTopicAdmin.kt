@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 import java.io.StringReader
 import java.util.*
 
-@Component
+@Component(immediate = true, service = [KafkaTopicAdmin::class])
 class KafkaTopicAdmin @Activate constructor(
     @Reference(service = TopicUtilsFactory::class)
     private val topicUtilsFactory: TopicUtilsFactory

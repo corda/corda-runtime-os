@@ -12,7 +12,7 @@ import java.util.*
  * Kafka implementation of [TopicUtilsFactory]
  * Used to create kafka instances of [TopicUtils]
  */
-@Component
+@Component(immediate = true)
 class KafkaTopicUtilsFactory : TopicUtilsFactory {
 
     override fun createTopicUtils(kafkaProps: Properties): TopicUtils {
