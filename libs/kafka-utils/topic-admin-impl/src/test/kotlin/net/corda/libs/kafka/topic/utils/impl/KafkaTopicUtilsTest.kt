@@ -18,13 +18,16 @@ import java.util.concurrent.ExecutionException
 
 class KafkaTopicUtilsTest {
     private lateinit var kafkaTopicUtils: KafkaTopicUtils
-    private val adminClient: AdminClient = mock()
-    private val topicResult: CreateTopicsResult = mock()
-    private val kafkaFuture: KafkaFuture<Void> = mock()
+    private lateinit var adminClient: AdminClient
+    private lateinit var topicResult: CreateTopicsResult
+    private lateinit var kafkaFuture: KafkaFuture<Void>
 
 
     @BeforeEach
     fun beforeEach() {
+        adminClient = mock()
+        topicResult = mock()
+        kafkaFuture = mock()
         kafkaTopicUtils = KafkaTopicUtils(adminClient)
     }
 
