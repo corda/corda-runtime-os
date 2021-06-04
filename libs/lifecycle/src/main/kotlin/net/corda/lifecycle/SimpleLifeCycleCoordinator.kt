@@ -7,6 +7,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
+/**
+ * The class coordinates [LifeCycleEvent] submitted with [postEvent] and [TimerEvent] timers set with [setTimer].
+ *
+ * @param batchSize max number of events processed in a single [processEvents] call.
+ * @param timeout in milliseconds this coordinator stops before to log a warning.
+ * @param lifeCycleProcessor method receiving the [LifeCycleEvent] notifications coordinated by this object.
+ */
 class SimpleLifeCycleCoordinator(
     val batchSize: Int,
     val timeout: Long,
@@ -20,7 +27,7 @@ class SimpleLifeCycleCoordinator(
     } //~ companion
 
     /**
-     *
+     * Synchronize the access to [executorService].
      */
     private val lock = ReentrantLock()
 
@@ -57,7 +64,13 @@ class SimpleLifeCycleCoordinator(
      *
      * To improve performance, events are buffered in an array list of [batchSize] length
      * to be accessed by the [lifeCycleProcessor].
+     *
+     * @throws RejectedExecutionException if [eventQueue] is not empty and next execution of this method can't
+     *      be scheduled by [scheduleIfRequired].
      */
+    @Throws(
+        RejectedExecutionException::class
+    )
     private fun processEvents() {
         val eventList = ArrayList<LifeCycleEvent>(batchSize)
         for (i in 0 until batchSize) {
@@ -75,7 +88,12 @@ class SimpleLifeCycleCoordinator(
 
     /**
      * Call [processEvents] if not processing and if this coordinator is running, else do nothing.
+     *
+     * @throws RejectedExecutionException if [processEvents] can't be scheduled for execution by [executorService].
      */
+    @Throws(
+        RejectedExecutionException::class
+    )
     private fun scheduleIfRequired() {
         val executorService = this.executorService ?: return
         if (!isScheduled.getAndSet(true)) {
@@ -111,7 +129,12 @@ class SimpleLifeCycleCoordinator(
      * Events are processed in the order they are posted.
      *
      * @param lifeCycleEvent to be processed.
+     *
+     * @throws RejectedExecutionException if [processEvents] can't be scheduled for execution by [executorService].
      */
+    @Throws(
+        RejectedExecutionException::class
+    )
     override fun postEvent(lifeCycleEvent: LifeCycleEvent) {
         eventQueue.offer(lifeCycleEvent)
         scheduleIfRequired()
@@ -128,7 +151,12 @@ class SimpleLifeCycleCoordinator(
      * @param onTime scheduled [TimerEvent].
      *
      * @see [cancelTimer]
+     *
+     * @throws RejectedExecutionException if [executorService] can't schedule [onTime].
      */
+    @Throws(
+        RejectedExecutionException::class
+    )
     override fun setTimer(key: String, delay: Long, onTime: (String) -> TimerEvent) {
         val executorService = this.executorService ?: return
         cancelTimer(key)
@@ -147,7 +175,12 @@ class SimpleLifeCycleCoordinator(
      * Start this coordinator.
      *
      * **NOTE: events posted after last [stop] and before start are ignored.**
+     *
+     * @throws RejectedExecutionException if [executorService] can't schedule [processEvents].
      */
+    @Throws(
+        RejectedExecutionException::class
+    )
     override fun start() {
         lock.withLock {
             if (executorService == null) {
@@ -171,7 +204,10 @@ class SimpleLifeCycleCoordinator(
      *
      * The queue of events submitted with [postEvent] is cleared.
      *
+     * If this method spends more than [timeout] milliseconds to stop, it logs a warning message.
+     *
      * **NOTE! Events posted after stop and before [start] are ignored.**
+     *
      */
     override fun stop() {
         val t = this

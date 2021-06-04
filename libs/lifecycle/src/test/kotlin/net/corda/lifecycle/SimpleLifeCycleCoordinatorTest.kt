@@ -91,7 +91,7 @@ internal class SimpleLifeCycleCoordinatorTest {
                 coordinator.setTimer(onTime.key, delay) { onTime }
             }
             Thread {
-                while (countDownLatch.count > coordinator.batchSize / 2) {
+                while (countDownLatch.count >= coordinator.batchSize / 2) {
                     Thread.sleep(Random.nextLong(0, TIMEOUT / 20))
                 }
                 coordinator.stop()
@@ -106,12 +106,12 @@ internal class SimpleLifeCycleCoordinatorTest {
         val startLatch = CountDownLatch(1)
         val key = "kill_me_softly"
         val timerLatch = CountDownLatch(1)
-        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { LifeCycleEvent: LifeCycleEvent, _: LifeCycleCoordinator ->
-            logger.debug("processEvent $LifeCycleEvent")
-            when (LifeCycleEvent) {
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+            logger.debug("processEvent $event")
+            when (event) {
                 is StartEvent -> startLatch.countDown()
                 is TimerEvent -> {
-                    fail("${LifeCycleEvent}.${LifeCycleEvent.key} cancelled but executed! ")
+                    fail("${event}.${event.key} cancelled but executed! ")
                 }
             }
         }.use { coordinator ->
@@ -131,8 +131,8 @@ internal class SimpleLifeCycleCoordinatorTest {
     @Test
     fun postEvent() {
         val postLatch = CountDownLatch(1)
-        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { LifeCycleEvent: LifeCycleEvent, _: LifeCycleCoordinator ->
-            when (LifeCycleEvent) {
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+            when (event) {
                 is PostEvent -> postLatch.countDown()
             }
         }.use { coordinator ->
@@ -147,13 +147,13 @@ internal class SimpleLifeCycleCoordinatorTest {
         val startLatch = CountDownLatch(1)
         val key = "wait_for_me"
         val timerLatch = CountDownLatch(1)
-        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { LifeCycleEvent: LifeCycleEvent, _: LifeCycleCoordinator ->
-            logger.debug("processEvent $LifeCycleEvent")
-            when (LifeCycleEvent) {
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+            logger.debug("processEvent $event")
+            when (event) {
                 is StartEvent -> startLatch.countDown()
                 is TimerEvent -> {
                     timerLatch.countDown()
-                    assertEquals(key, LifeCycleEvent.key)
+                    assertEquals(key, event.key)
                 }
             }
         }.use { coordinator ->
@@ -172,9 +172,9 @@ internal class SimpleLifeCycleCoordinatorTest {
     @Test
     fun start() {
         val startLatch = CountDownLatch(1)
-        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { LifeCycleEvent: LifeCycleEvent, _: LifeCycleCoordinator ->
-            logger.debug("processEvent $LifeCycleEvent")
-            when (LifeCycleEvent) {
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+            logger.debug("processEvent $event")
+            when (event) {
                 is StartEvent -> startLatch.countDown()
             }
         }.use { coordinator ->
@@ -189,9 +189,9 @@ internal class SimpleLifeCycleCoordinatorTest {
     fun stop() {
         val startLatch = CountDownLatch(1)
         val stopLatch = CountDownLatch(1)
-        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { LifeCycleEvent: LifeCycleEvent, _: LifeCycleCoordinator ->
-            logger.debug("processEvent $LifeCycleEvent")
-            when (LifeCycleEvent) {
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+            logger.debug("processEvent $event")
+            when (event) {
                 is StartEvent -> startLatch.countDown()
                 is StopEvent -> stopLatch.countDown()
             }

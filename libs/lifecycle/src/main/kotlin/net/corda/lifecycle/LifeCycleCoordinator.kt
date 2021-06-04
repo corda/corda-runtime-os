@@ -23,7 +23,7 @@ interface LifeCycleCoordinator : LifeCycle {
      *
      * Events submitted calling [setTimer] are executed asynchronously when they are scheduled.
      */
-    fun postEvent(LifeCycleEvent: LifeCycleEvent)
+    fun postEvent(lifeCycleEvent: LifeCycleEvent)
 
     /**
      * Submit an event to be asynchronously processed
