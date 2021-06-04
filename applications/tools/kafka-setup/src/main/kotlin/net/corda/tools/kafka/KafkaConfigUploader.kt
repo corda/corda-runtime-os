@@ -19,7 +19,7 @@ private var configWriter: KafkaConfigWrite
 
     override fun startup(args: Array<String>) {
         if (args.size != 3) {
-            println("Required command line arguments: kafkaProps topicTemplate typesafeconfig")
+            println("Required command line arguments: kafkaProps topicTemplate typesafeConfig")
             exitProcess(1)
         }
 
