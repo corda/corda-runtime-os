@@ -19,20 +19,45 @@ class SimpleLifeCycleCoordinator(
 
     } //~ companion
 
+    /**
+     *
+     */
     private val lock = ReentrantLock()
 
     /**
+     * It owns [processEvents] when this coordinator is running.
+     *
      * Must be synchronized with [lock].
+     *
+     * @see [start]
+     * @see [stop]
      */
     @Volatile
     private var executorService: ScheduledExecutorService? = null
 
+    /**
+     * Queue of events to be processed by [lifeCycleProcessor] when [processEvents] is called.
+     */
     private val eventQueue = ConcurrentLinkedDeque<LifeCycleEvent>()
 
+    /**
+     * `true` if [processEvents] is executing.
+     */
     private val isScheduled = AtomicBoolean(false)
 
+    /**
+     * Map of [ScheduledFuture] according [TimerEvent.key] to allow timers to be cancelled.
+     *
+     * @see [cancelTimer]
+     */
     private val timerMap = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
+    /**
+     * Process the events in [eventQueue].
+     *
+     * To improve performance, events are buffered in an array list of [batchSize] length
+     * to be accessed by the [lifeCycleProcessor].
+     */
     private fun processEvents() {
         val eventList = ArrayList<LifeCycleEvent>(batchSize)
         for (i in 0 until batchSize) {
@@ -48,6 +73,9 @@ class SimpleLifeCycleCoordinator(
         }
     }
 
+    /**
+     * Call [processEvents] if not processing and if this coordinator is running, else do nothing.
+     */
     private fun scheduleIfRequired() {
         val executorService = this.executorService ?: return
         if (!isScheduled.getAndSet(true)) {
@@ -57,6 +85,15 @@ class SimpleLifeCycleCoordinator(
 
     //: LifeCycleCoordinator
 
+    /**
+     * Cancel the [TimerEvent] uniquely identified by [key].
+     * If [key] doesn't identify any [TimerEvent] scheduled with [setTimer], this method doesn't anything.
+     *
+     * @param key identifying the [TimerEvent] to cancel,
+     *
+     * @see [setTimer]
+     *
+     */
     override fun cancelTimer(key: String) {
         timerMap[key]?.cancel(false)
         val eventQueueIterator = eventQueue.iterator()
@@ -68,12 +105,30 @@ class SimpleLifeCycleCoordinator(
         }
     }
 
-    override fun postEvent(LifeCycleEvent: LifeCycleEvent) {
-        eventQueue.offer(LifeCycleEvent)
+    /**
+     * Post the [lifeCycleEvent] to be processed as soon is possible by [lifeCycleProcessor].
+     *
+     * Events are processed in the order they are posted.
+     *
+     * @param lifeCycleEvent to be processed.
+     */
+    override fun postEvent(lifeCycleEvent: LifeCycleEvent) {
+        eventQueue.offer(lifeCycleEvent)
         scheduleIfRequired()
     }
 
 
+    /**
+     * Schedule the [onTime] event to be processed after [delay] ms.
+     *
+     * **NOTE! Pending [TimerEvent] are cancelled when [stop] is called.
+     *
+     * @param key unique [TimerEvent] identifier.
+     * @param delay in milliseconds, when [onTime] is processed.
+     * @param onTime scheduled [TimerEvent].
+     *
+     * @see [cancelTimer]
+     */
     override fun setTimer(key: String, delay: Long, onTime: (String) -> TimerEvent) {
         val executorService = this.executorService ?: return
         cancelTimer(key)
@@ -82,12 +137,21 @@ class SimpleLifeCycleCoordinator(
 
     //: LifeCycle
 
+    /**
+     * Return `true` in this coordinator is processing posted events.
+     */
     override val isRunning: Boolean
         get() = lock.withLock { (executorService != null) }
 
+    /**
+     * Start this coordinator.
+     *
+     * **NOTE: events posted after last [stop] and before start are ignored.**
+     */
     override fun start() {
         lock.withLock {
             if (executorService == null) {
+                eventQueue.clear()
                 executorService = Executors.newSingleThreadScheduledExecutor { runnable ->
                     val thread = Thread(runnable)
                     thread.isDaemon = true
@@ -100,14 +164,15 @@ class SimpleLifeCycleCoordinator(
     }
 
     /**
-     * Stop this [LifeCycleCoordinator] processing remaining [LifeCycleEvent] in [eventQueue].
+     * Stop this [LifeCycleCoordinator] processing remaining [LifeCycleEvent] in [eventQueue] but
+     * cancelling all pending [TimerEvent].
      *
-     * This method stops the coordinator setting the [executorService] to `null` first
-     * to flag this [LifeCycleCoordinator] stopped.
-     * See [isRunning].
+     * Before to stop, this method submits [StopEvent] assuring it is processed.
      *
+     * The queue of events submitted with [postEvent] is cleared.
+     *
+     * **NOTE! Events posted after stop and before [start] are ignored.**
      */
-
     override fun stop() {
         val t = this
         val executor = lock.withLock {
