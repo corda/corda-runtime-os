@@ -14,4 +14,6 @@ dependencies {
 
     implementation project(':libs:kafka-utils:topic-admin')
 
+    runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
+
 }

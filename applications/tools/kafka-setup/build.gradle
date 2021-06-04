@@ -14,6 +14,11 @@ dependencies {
 
     implementation project(':components:kafka-topic-admin')
     implementation project(':components:kafka-config-write')
+    implementation project(":osgi-framework-api")
+
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
 }
 
