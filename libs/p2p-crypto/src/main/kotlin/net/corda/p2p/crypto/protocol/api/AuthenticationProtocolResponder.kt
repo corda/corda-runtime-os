@@ -11,7 +11,9 @@ import net.corda.p2p.crypto.internal.InitiatorHandshakePayload
 import net.corda.p2p.crypto.internal.ResponderEncryptedExtensions
 import net.corda.p2p.crypto.internal.ResponderHandshakePayload
 import net.corda.p2p.crypto.protocol.AuthenticationProtocol
+import net.corda.p2p.crypto.protocol.InvalidMaxMessageSizeProposedError
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SIG_PAD
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SIG_PAD
 import net.corda.p2p.crypto.util.calculateMac
@@ -46,11 +48,11 @@ import kotlin.math.min
  */
 class AuthenticationProtocolResponder(private val sessionId: String,
                                       private val supportedModes: List<ProtocolMode>,
-                                      private val maxMessageSize: Int): AuthenticationProtocol() {
+                                      private val ourMaxMessageSize: Int): AuthenticationProtocol() {
 
     init {
         require(supportedModes.isNotEmpty()) { "there must be at least one supported mode." }
-        require(maxMessageSize > 0) { "max message size needs to be a positive number." }
+        require(ourMaxMessageSize > MIN_PACKET_SIZE) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
     }
 
     companion object {
@@ -206,7 +208,15 @@ class AuthenticationProtocolResponder(private val sessionId: String,
             throw InvalidHandshakeMessageException()
         }
 
-        agreedMaxMessageSize = min(maxMessageSize, initiatorHandshakePayload.initiatorEncryptedExtensions.maxMessageSize)
+        initiatorHandshakePayload.initiatorEncryptedExtensions.maxMessageSize.apply {
+            if (this <= MIN_PACKET_SIZE) {
+                throw InvalidMaxMessageSizeProposedError("Initiator's proposed max message size ($this) " +
+                        "was smaller than the minimum allowed value ($MIN_PACKET_SIZE).")
+            }
+
+            agreedMaxMessageSize = min(ourMaxMessageSize, this)
+        }
+
         return HandshakeIdentityData(initiatorHandshakePayload.initiatorPublicKeyHash.array(),
                                      initiatorHandshakePayload.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
                                      initiatorHandshakePayload.initiatorEncryptedExtensions.groupId)
