@@ -2,9 +2,11 @@ package net.corda.messaging.api.subscription.factory
 
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
@@ -42,7 +44,7 @@ interface SubscriptionFactory {
      * be given the processor once.
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param properties Map of properties to override the default settings for the connection to the source of events
-     * @param properties a listener that reacts to partition assignment and revocations.
+     * @param partitionAssignmentListener a listener that reacts to partition assignment and revocations.
      * @return A subscription to manage lifecycle.
      */
    fun <K : Any, V : Any> createDurableSubscription(subscriptionConfig: SubscriptionConfig,
@@ -71,8 +73,29 @@ interface SubscriptionFactory {
      * @param properties Map of properties to override the default settings for the connection to the source of events
      * @return A subscription to manage lifecycle.
      */
-   fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
+    fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: StateAndEventSubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
         properties: Map<String, String>) : StateAndEventSubscription<K, S, E>
+
+    /**
+     * Creates an event log subscription.
+     * @param processor the processor that will be wired up with the created subscription.
+     * @param subscriptionConfig Define the mandatory params for creating a subscription.
+     * @param properties Map of properties to override the default settings for the connection to the source of events
+     * @param partitionAssignmentListener a listener that reacts to partition assignment and revocations.
+     */
+    fun <K: Any, V: Any> createEventLogSubscription(subscriptionConfig: SubscriptionConfig,
+                                                    processor: EventLogProcessor<K, V>,
+                                                    properties: Map<String, String>,
+                                                    partitionAssignmentListener: PartitionAssignmentListener?): Subscription<K, V>
+
+    /**
+     * Creates a random access subscription.
+     * @param subscriptionConfig Define the mandatory params for creating a subscription.
+     * @param properties Map of properties to override the default settings for the connection to the source of events
+     */
+    fun <K: Any, V: Any> createRandomAccessSubscription(subscriptionConfig: SubscriptionConfig,
+                                                        properties: Map<String, String>): RandomAccessSubscription<K, V>
+    
 }
