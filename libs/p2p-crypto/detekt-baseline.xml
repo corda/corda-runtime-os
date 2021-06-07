@@ -2,7 +2,7 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>LongParameterList:AuthenticationProtocolResponder.kt$AuthenticationProtocolResponder.Companion$(sessionId: String, supportedModes: List&lt;Mode&gt;, initiatorHelloMsg: InitiatorHelloMessage, responderHelloMsg: ResponderHelloMessage, privateDHKey: ByteArray, publicDHKey: ByteArray)</ID>
+    <ID>LongParameterList:AuthenticationProtocolResponder.kt$AuthenticationProtocolResponder.Companion$(sessionId: String, supportedModes: List&lt;ProtocolMode&gt;, initiatorHelloMsg: InitiatorHelloMessage, responderHelloMsg: ResponderHelloMessage, privateDHKey: ByteArray, publicDHKey: ByteArray)</ID>
     <ID>MaxLineLength:AuthenticationProtocolInitiator.kt$AuthenticationProtocolInitiator$RESPONDER_SIG_PAD.toByteArray(Charsets.UTF_8) + messageDigest.hash(initiatorHelloToResponderParty)</ID>
     <ID>MaxLineLength:AuthenticationProtocolInitiator.kt$AuthenticationProtocolInitiator$throw IncorrectAPIUsageException("This method must be invoked when the protocol is in step $fromStep, but it was in step $step.")</ID>
     <ID>MaxLineLength:AuthenticationProtocolResponder.kt$AuthenticationProtocolResponder$throw IncorrectAPIUsageException("This method must be invoked when the protocol is in step $expectedStep, but it was in step $step.")</ID>

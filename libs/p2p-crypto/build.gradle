@@ -2,4 +2,5 @@ description 'P2P cryptographic library for session authentication'
 
 dependencies {
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation project(":data:avro-schema")
 }

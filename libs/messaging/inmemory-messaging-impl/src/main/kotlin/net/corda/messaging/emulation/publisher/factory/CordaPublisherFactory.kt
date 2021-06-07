@@ -22,21 +22,17 @@ class CordaPublisherFactory @Activate constructor(
 ) : PublisherFactory {
 
     companion object {
-        const val PUBLISHER_TOPIC = "topic"
         const val PUBLISHER_INSTANCE_ID = "instanceId"
         const val PUBLISHER_CLIENT_ID = "clientId"
     }
 
-    override fun <K : Any, V : Any> createPublisher(
+    override fun createPublisher(
         publisherConfig: PublisherConfig,
-        properties: Map<String, String>,
-        keyClass: Class<K>,
-        valueClass: Class<V>
-    ): Publisher<K, V> {
+        properties: Map<String, String>
+    ): Publisher {
         //TODO - replace with config service
         val defaultKafkaConfig = ConfigFactory.load("tmpInMemDefaults")
         var config = defaultKafkaConfig.withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
-            .withValue(PUBLISHER_TOPIC, ConfigValueFactory.fromAnyRef(publisherConfig.topic))
 
         val instanceId = publisherConfig.instanceId
         if (instanceId != null) {
