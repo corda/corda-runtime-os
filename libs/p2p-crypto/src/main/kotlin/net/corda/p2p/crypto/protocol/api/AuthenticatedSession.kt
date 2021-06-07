@@ -1,9 +1,9 @@
 package net.corda.p2p.crypto.protocol.api
 
+import net.corda.p2p.crypto.CommonHeader
+import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.HMAC_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
-import net.corda.p2p.crypto.protocol.data.CommonHeader
-import net.corda.p2p.crypto.protocol.data.MessageType
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.lang.RuntimeException
 import java.time.Instant
@@ -43,7 +43,7 @@ class AuthenticatedSession(private val sessionId: String,
                                         sequenceNo.getAndIncrement(), Instant.now().toEpochMilli())
         val tag = generationLock.withLock {
             generationHMac.reset()
-            generationHMac.update(commonHeader.toBytes())
+            generationHMac.update(commonHeader.toByteBuffer().array())
             generationHMac.update(payload)
             generationHMac.doFinal()
         }
@@ -58,7 +58,7 @@ class AuthenticatedSession(private val sessionId: String,
     fun validateMac(header: CommonHeader, payload: ByteArray, tag: ByteArray) {
         val calculatedTag = validationLock.withLock {
             validationHMac.reset()
-            validationHMac.update(header.toBytes())
+            validationHMac.update(header.toByteBuffer().array())
             validationHMac.update(payload)
             validationHMac.doFinal()
         }

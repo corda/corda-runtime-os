@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.subscription.producer.wrapper
+package net.corda.messaging.kafka.producer.wrapper
 
 import net.corda.messaging.api.records.Record
 import org.apache.kafka.clients.consumer.Consumer

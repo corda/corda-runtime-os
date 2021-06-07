@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "InitiatorHandshakePayload",
+  "namespace": "net.corda.p2p.crypto.internal",
+  "fields": [
+    {
+      "name": "initiatorEncryptedExtensions",
+      "type": "net.corda.p2p.crypto.internal.InitiatorEncryptedExtensions"
+    },
+    {
+      "name": "initiatorPublicKeyHash",
+      "type": "bytes"
+    },
+    {
+      "name": "initiatorPartyVerify",
+      "type": "bytes"
+    },
+    {
+      "name": "initiatorFinished",
+      "type": "bytes"
+    }
+  ]
+}

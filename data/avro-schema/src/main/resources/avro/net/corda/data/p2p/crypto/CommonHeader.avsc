@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "CommonHeader",
+  "namespace": "net.corda.p2p.crypto",
+  "fields": [
+    {
+      "name": "messageType",
+      "type": "net.corda.p2p.crypto.MessageType"
+    },
+    {
+      "name": "protocolVersion",
+      "type": "int"
+    },
+    {
+      "name": "sessionId",
+      "type": "string"
+    },
+    {
+      "name": "sequenceNo",
+      "type": "long"
+    },
+    {
+      "name": "timestamp",
+      "type": "long"
+    }
+  ]
+}

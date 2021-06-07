@@ -17,14 +17,15 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.mergeProperties
+import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CONF_PREFIX
-import net.corda.messaging.kafka.subscription.KafkaCompactedSubscriptionImpl
-import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CONF_PREFIX
 import net.corda.messaging.kafka.properties.PublisherConfigProperties
-import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
+import net.corda.messaging.kafka.subscription.KafkaCompactedSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
-import net.corda.messaging.kafka.subscription.producer.builder.impl.SubscriptionProducerBuilderImpl
+import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
+import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -43,7 +44,7 @@ import java.util.concurrent.ExecutorService
 class KafkaSubscriptionFactory @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
     private val avroSchemaRegistry: AvroSchemaRegistry
-): SubscriptionFactory {
+) : SubscriptionFactory {
 
     companion object {
         private const val ISOLATION_LEVEL_READ_COMMITTED = "read_committed"
@@ -83,21 +84,25 @@ class KafkaSubscriptionFactory @Activate constructor(
 
         val publisherClientId = "durableSub-${subscriptionConfig.groupName}-producer"
         val config = ConfigFactory.load("tmpKafkaDefaults")
-            .withValue(PublisherConfigProperties.PUBLISHER_CLIENT_ID,
-                ConfigValueFactory.fromAnyRef(publisherClientId))
-            .withValue(PublisherConfigProperties.PUBLISHER_INSTANCE_ID,
-                ConfigValueFactory.fromAnyRef(subscriptionConfig.instanceId))
+            .withValue(
+                PublisherConfigProperties.PUBLISHER_CLIENT_ID,
+                ConfigValueFactory.fromAnyRef(publisherClientId)
+            )
+            .withValue(
+                PublisherConfigProperties.PUBLISHER_INSTANCE_ID,
+                ConfigValueFactory.fromAnyRef(subscriptionConfig.instanceId)
+            )
 
         //pattern specific properties
-        val overrideProperties = properties.toMutableMap()
-        overrideProperties[CONSUMER_CONF_PREFIX + ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = FALSE
-        overrideProperties[CONSUMER_CONF_PREFIX + ConsumerConfig.ISOLATION_LEVEL_CONFIG] = ISOLATION_LEVEL_READ_COMMITTED
-        overrideProperties[CONSUMER_CONF_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = AUTO_OFFSET_RESET_EARLIEST
-        val consumerProperties = getConsumerProps(subscriptionConfig, config, overrideProperties)
-        val producerProperties = getProducerProps(config, overrideProperties)
+        val consumerOverrideProperties = properties.toMutableMap()
+        consumerOverrideProperties[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = FALSE
+        consumerOverrideProperties[ConsumerConfig.ISOLATION_LEVEL_CONFIG] = ISOLATION_LEVEL_READ_COMMITTED
+        consumerOverrideProperties[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = AUTO_OFFSET_RESET_EARLIEST
+        val consumerProperties = getConsumerProps(subscriptionConfig, config, consumerOverrideProperties)
+        val producerProperties = getProducerProps(config, emptyMap())
 
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(config, consumerProperties, avroSchemaRegistry)
-        val producerBuilder = SubscriptionProducerBuilderImpl(config, avroSchemaRegistry, producerProperties)
+        val producerBuilder = KafkaProducerBuilderImpl(config, avroSchemaRegistry, producerProperties)
         return KafkaDurableSubscriptionImpl(subscriptionConfig, config, consumerBuilder, producerBuilder, processor)
     }
 
@@ -125,7 +130,13 @@ class KafkaSubscriptionFactory @Activate constructor(
 
         val consumerProperties = getConsumerProps(subscriptionConfig, defaultKafkaConfig, overrideProperties)
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(defaultKafkaConfig, consumerProperties, avroSchemaRegistry)
-        return KafkaCompactedSubscriptionImpl(subscriptionConfig, defaultKafkaConfig, mapFactory, consumerBuilder, processor)
+        return KafkaCompactedSubscriptionImpl(
+            subscriptionConfig,
+            defaultKafkaConfig,
+            mapFactory,
+            consumerBuilder,
+            processor
+        )
     }
 
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
@@ -157,28 +168,13 @@ class KafkaSubscriptionFactory @Activate constructor(
      * unless overridden by the given [overrideProperties].
      * @return Kafka Consumer properties
      */
-    private fun getConsumerProps(subscriptionConfig: SubscriptionConfig, defaultKafkaConfig: Config,
-                                 overrideProperties: Map<String, String>): Properties {
-        val properties = Properties()
-        properties.putAll(overrideProperties)
-        val conf: Config = ConfigFactory.parseProperties(properties).withFallback(defaultKafkaConfig)
-        val consumerProps = Properties()
-
-        consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = subscriptionConfig.groupName
-
+    private fun getConsumerProps(
+        subscriptionConfig: SubscriptionConfig, config: Config,
+        overrideProperties: Map<String, String>
+    ): Properties {
         //TODO - update the below when config task has evolved
-        consumerProps[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] =
-            conf.getString(CONSUMER_CONF_PREFIX + ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG)
-        consumerProps[ConsumerConfig.MAX_POLL_RECORDS_CONFIG] =
-            conf.getString(CONSUMER_CONF_PREFIX + ConsumerConfig.MAX_POLL_RECORDS_CONFIG)
-        consumerProps[ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG] =
-            conf.getString(CONSUMER_CONF_PREFIX + ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG)
-        consumerProps[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] =
-            conf.getString(CONSUMER_CONF_PREFIX + ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG)
-        consumerProps[ConsumerConfig.ISOLATION_LEVEL_CONFIG] =
-            conf.getString(CONSUMER_CONF_PREFIX + ConsumerConfig.ISOLATION_LEVEL_CONFIG)
-        consumerProps[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] =
-            conf.getString(CONSUMER_CONF_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG)
+        val consumerProps = mergeProperties(config, CONSUMER_CONF_PREFIX, overrideProperties)
+        consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = subscriptionConfig.groupName
         return consumerProps
     }
 
@@ -188,21 +184,13 @@ class KafkaSubscriptionFactory @Activate constructor(
      */
     private fun getProducerProps(config: Config, overrideProperties: Map<String, String>): Properties {
         //TODO - update the below when config task  has evolved
-        val properties = Properties()
-        properties.putAll(overrideProperties)
-        val conf: Config = ConfigFactory.parseProperties(properties).withFallback(config)
         val producerClientId = config.getString(PublisherConfigProperties.PUBLISHER_CLIENT_ID)
         val instanceId = if (config.hasPath(PublisherConfigProperties.PUBLISHER_INSTANCE_ID)) config.getInt(
             PublisherConfigProperties.PUBLISHER_INSTANCE_ID
         ) else throw CordaMessageAPIFatalException("Cannot create subscription producer $producerClientId. No instanceId configured")
 
-        val producerProps = Properties()
+        val producerProps = mergeProperties(config, PRODUCER_CONF_PREFIX, overrideProperties)
         producerProps[ProducerConfig.CLIENT_ID_CONFIG] = producerClientId
-
-        producerProps[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] =
-            conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.BOOTSTRAP_SERVERS_CONFIG)
-        producerProps[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] =
-            conf.getString(KafkaProperties.PRODUCER_CONF_PREFIX + ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG)
         producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] = "$producerClientId-$instanceId"
 
         return producerProps

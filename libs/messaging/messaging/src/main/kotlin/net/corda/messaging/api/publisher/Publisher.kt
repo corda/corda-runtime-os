@@ -7,7 +7,7 @@ import net.corda.v5.base.concurrent.CordaFuture
  * Interface for publishing records to topics. Consumer libraries will not implement this interface.
  * Publisher instances can be created via the [PublisherFactory].
  */
-interface Publisher<K : Any, V : Any> : AutoCloseable {
+interface Publisher : AutoCloseable {
 
     /**
      * Start the publisher.
@@ -20,7 +20,7 @@ interface Publisher<K : Any, V : Any> : AutoCloseable {
     fun start() {}
 
     /**
-     * Publish a list of [record].
+     * Publish a list of [records].
      * @return A list of corda futures returning true or an exception for each message. Never returns false. If fatal error occurs
      * then exception will be thrown of type [CordaMessageAPIFatalException] and publisher will be closed.
      * If error is temporary and can be retried then exception will be of type [CordaMessageAPIIntermittentException].
@@ -29,7 +29,7 @@ interface Publisher<K : Any, V : Any> : AutoCloseable {
      * Transactions will return a future of size 1 indicating success or failure of the transaction.
      * @throws CordaMessageAPIFatalException if record is of the wrong type for this Publisher
      */
-    fun publish(records: List<Record<K, V>>): List<CordaFuture<Unit>>
+    fun publish(records: List<Record<*, *>>): List<CordaFuture<Unit>>
 
     /**
      * Publish the specified list of records, each one to the specified partition (they key of the map).
@@ -38,5 +38,5 @@ interface Publisher<K : Any, V : Any> : AutoCloseable {
      *   If a fatal error occurs, then an exception of type [CordaMessageAPIFatalException] will be thrown and the publisher will be closed.
      *   If a temporary error occurs and can be retried, then an exception of type [CordaMessageAPIIntermittentException] will be thrown.
      */
-    fun publishToPartition(records: List<Pair<Int, Record<K, V>>>): List<CordaFuture<Unit>>
+    fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CordaFuture<Unit>>
 }

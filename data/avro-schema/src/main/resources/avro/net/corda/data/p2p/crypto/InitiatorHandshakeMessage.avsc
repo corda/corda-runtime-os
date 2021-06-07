@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "InitiatorHandshakeMessage",
+  "namespace": "net.corda.p2p.crypto",
+  "fields": [
+    {
+      "name": "header",
+      "type": "net.corda.p2p.crypto.CommonHeader"
+    },
+    {
+      "name": "encryptedData",
+      "type": "bytes"
+    },
+    {
+      "name": "authTag",
+      "type": "bytes"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.subscription.producer.wrapper.impl
+package net.corda.messaging.kafka.producer.wrapper.impl
 
 import com.nhaarman.mockito_kotlin.*
 import com.typesafe.config.Config
@@ -28,7 +28,7 @@ class CordaKafkaProducerImplTest {
     @BeforeEach
     fun setup () {
         doReturn(ConsumerGroupMetadata("")).whenever(consumer).groupMetadata()
-        cordaKafkaProducer = CordaKafkaProducerImpl(config, producer, consumer)
+        cordaKafkaProducer = CordaKafkaProducerImpl(config, producer)
     }
 
     @Test
