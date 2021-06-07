@@ -81,7 +81,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         selectedMode = responderHelloMsg.selectedMode
         if (!supportedModes.contains(selectedMode)) {
             throw InvalidSelectedModeError("The mode selected by the responder ($selectedMode) " +
-                    "was not amongst the ones we proposed ($supportedModes)")
+                    "was not amongst the ones we proposed ($supportedModes).")
         }
         initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
                                               responderHelloMessage!!.toByteBuffer().array()

@@ -48,6 +48,9 @@ class AuthenticatedEncryptionSession(private val sessionId: String,
         return EncryptionResult(commonHeader, authTag, encryptedData)
     }
 
+    /**
+     * @throws DecryptionFailedError if decryption of the provided data failed, e.g because of invalid or modified data.
+     */
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     fun decryptData(header: CommonHeader, encryptedPayload: ByteArray, authTag: ByteArray): ByteArray {
         val nonce = xor(inboundNonce, header.sequenceNo.toByteArray())
@@ -65,6 +68,7 @@ class AuthenticatedEncryptionSession(private val sessionId: String,
 
     private fun xor(initialisationVector: ByteArray, seqNo: ByteArray): ByteArray {
         val paddingSize = initialisationVector.size - seqNo.size
+        require(paddingSize >= 0)
         val paddedSeqNo = ByteArray(paddingSize + seqNo.size)
         System.arraycopy(seqNo, 0, paddedSeqNo, paddingSize, seqNo.size)
 

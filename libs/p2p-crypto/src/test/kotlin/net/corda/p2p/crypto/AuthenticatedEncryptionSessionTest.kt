@@ -32,7 +32,7 @@ class AuthenticatedEncryptionSessionTest {
     private val groupId = "some-group-id"
 
     @Test
-    fun `session can be established between two parties and used for transmission of authenticated data successfully`() {
+    fun `session can be established between two parties and used for transmission of authenticated and encrypted data successfully`() {
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
@@ -91,7 +91,7 @@ class AuthenticatedEncryptionSessionTest {
     }
 
     @Test
-    fun `session can be established between two parties and used for transmission of authenticated data successfully with step 2 executed on separate component`() {
+    fun `session can be established between two parties and used for transmission of authenticated and encrypted data successfully with step 2 executed on separate component`() {
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
@@ -154,7 +154,7 @@ class AuthenticatedEncryptionSessionTest {
     }
 
     @Test
-    fun `when data message is altered during transmission, validation fails with an error`() {
+    fun `when data message is altered during transmission, decryption fails with an error`() {
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
