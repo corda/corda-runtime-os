@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory
 @Component
 class ConfigWriteServiceImpl (
     private val topicName: String,
-    private val publisher: Publisher<String, Configuration>
+    private val publisher: Publisher
 ) : ConfigWriteService {
 
     private companion object {
