@@ -1,10 +1,9 @@
 package net.corda.p2p.crypto
 
-import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
+import net.corda.p2p.crypto.protocol.NoCommonModeError
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
-import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test

@@ -4,13 +4,20 @@ import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_ALGO
+import net.corda.p2p.crypto.protocol.toByteArray
 import net.corda.p2p.crypto.util.decrypt
 import net.corda.p2p.crypto.util.encryptWithAssociatedData
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import java.lang.Exception
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
+import javax.crypto.AEADBadTagException
+import javax.crypto.BadPaddingException
 import javax.crypto.Cipher
+import javax.crypto.IllegalBlockSizeException
 import javax.crypto.SecretKey
+import kotlin.experimental.xor
 
 /**
  * A session established between two parties that allows authentication & encryption of data (prior to transmission),
@@ -35,13 +42,34 @@ class AuthenticatedEncryptionSession(private val sessionId: String,
         val commonHeader = CommonHeader(MessageType.DATA, ProtocolConstants.PROTOCOL_VERSION, sessionId,
                                         sequenceNo.getAndIncrement(), Instant.now().toEpochMilli())
 
+        val nonce = xor(outboundNonce, commonHeader.sequenceNo.toByteArray())
         val (encryptedData, authTag) =
-            encryptionCipher.encryptWithAssociatedData(commonHeader.toByteBuffer().array(), outboundNonce, payload, outboundSecretKey)
+            encryptionCipher.encryptWithAssociatedData(commonHeader.toByteBuffer().array(), nonce, payload, outboundSecretKey)
         return EncryptionResult(commonHeader, authTag, encryptedData)
     }
 
+    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     fun decryptData(header: CommonHeader, encryptedPayload: ByteArray, authTag: ByteArray): ByteArray {
-        return decryptionCipher.decrypt(header.toByteBuffer().array(), authTag, inboundNonce, encryptedPayload, inboundSecretKey)
+        val nonce = xor(inboundNonce, header.sequenceNo.toByteArray())
+        try {
+            return decryptionCipher.decrypt(header.toByteBuffer().array(), authTag, nonce, encryptedPayload, inboundSecretKey)
+        } catch (e: Exception) {
+            when(e) {
+                is AEADBadTagException -> throw DecryptionFailedError("Decryption failed due to bad authentication tag.", e)
+                is BadPaddingException -> throw DecryptionFailedError("Decryption failed due to bad padding.", e)
+                is IllegalBlockSizeException -> throw DecryptionFailedError("Decryption failed due to bad block size", e)
+                else -> throw e
+            }
+        }
+    }
+
+    private fun xor(initialisationVector: ByteArray, seqNo: ByteArray): ByteArray {
+        val paddingSize = initialisationVector.size - seqNo.size
+        val paddedSeqNo = ByteArray(paddingSize + seqNo.size)
+        System.arraycopy(seqNo, 0, paddedSeqNo, paddingSize, seqNo.size)
+
+        return initialisationVector.zip(paddedSeqNo).map { (first, second) -> first xor second }
+            .toList().toByteArray()
     }
 
 }
@@ -68,3 +96,5 @@ data class EncryptionResult(val header: CommonHeader, val authTag: ByteArray, va
     }
 
 }
+
+class DecryptionFailedError(msg: String, cause: Throwable): CordaRuntimeException(msg, cause)

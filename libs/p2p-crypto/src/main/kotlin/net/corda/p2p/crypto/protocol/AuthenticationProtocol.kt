@@ -119,17 +119,6 @@ abstract class AuthenticationProtocol {
     }
 
     /**
-     * Defines preference order for different protocol modes, with a higher number indicating higher preference.
-     * Protocol modes that are considered more secure are preferred to less secure modes, when both are supported.
-     */
-    protected fun getPreference(mode: ProtocolMode): Int {
-        return when(mode) {
-            ProtocolMode.AUTHENTICATION_ONLY -> 1
-            ProtocolMode.AUTHENTICATED_ENCRYPTION -> 2
-        }
-    }
-
-    /**
      * @property initiatorAuthKey used for MAC on handshake messages by initiator.
      * @property responderAuthKey used for MAC on handshake messages by responder.
      * @property initiatorEncryptionKey used for authenticated encryption on handshake messages by initiator.
@@ -202,5 +191,4 @@ abstract class AuthenticationProtocol {
 
 }
 
-internal fun Int.toByteArray(): ByteArray = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(this).array()
-internal fun Long.toByteArray(): ByteArray = ByteBuffer.allocate(Long.SIZE_BITS).putLong(this).array()
+internal fun Long.toByteArray(): ByteArray = ByteBuffer.allocate(Long.SIZE_BYTES).putLong(this).array()

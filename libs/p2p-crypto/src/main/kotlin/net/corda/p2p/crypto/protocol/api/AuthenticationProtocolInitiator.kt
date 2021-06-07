@@ -20,6 +20,7 @@ import net.corda.p2p.crypto.util.encryptWithAssociatedData
 import net.corda.p2p.crypto.util.hash
 import net.corda.p2p.crypto.util.perform
 import net.corda.p2p.crypto.util.verify
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.lang.RuntimeException
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -78,6 +79,10 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
 
         responderHelloMessage = responderHelloMsg
         selectedMode = responderHelloMsg.selectedMode
+        if (!supportedModes.contains(selectedMode)) {
+            throw InvalidSelectedModeError("The mode selected by the responder ($selectedMode) " +
+                    "was not amongst the ones we proposed ($supportedModes)")
+        }
         initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
                                               responderHelloMessage!!.toByteBuffer().array()
         peerPublicDHKey = ephemeralKeyFactory.generatePublic(X509EncodedKeySpec(responderHelloMsg.responderPublicKey.array()))
@@ -220,3 +225,4 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
  * Thrown when the responder sends an key hash that does not match the one we requested.
  */
 class InvalidHandshakeResponderKeyHash: RuntimeException()
+class InvalidSelectedModeError(msg: String): CordaRuntimeException(msg)
