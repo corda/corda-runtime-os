@@ -16,7 +16,7 @@ import java.io.BufferedReader
 
 class ConfigWriteServiceImplTest {
     private lateinit var configWriteService: ConfigWriteService
-    private var publisher: Publisher<String, Configuration> = mock()
+    private var publisher: Publisher = mock()
 
     @BeforeEach
     fun beforeEach() {
