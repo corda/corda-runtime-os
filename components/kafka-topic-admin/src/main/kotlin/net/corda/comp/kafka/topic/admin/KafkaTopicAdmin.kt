@@ -6,7 +6,6 @@ import net.corda.libs.kafka.topic.utils.factory.TopicUtilsFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.io.StringReader
 import java.util.*
 
 @Component(immediate = true, service = [KafkaTopicAdmin::class])
