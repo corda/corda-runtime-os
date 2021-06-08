@@ -128,6 +128,8 @@ class SimpleLifeCycleCoordinator(
      *
      * Events are processed in the order they are posted.
      *
+     * **Note! Events posted between last [stop] and next [start] are ignored: this method lags a warning message.**
+     *
      * @param lifeCycleEvent to be processed.
      *
      * @throws RejectedExecutionException if [processEvents] can't be scheduled for execution by [executorService].
@@ -136,8 +138,12 @@ class SimpleLifeCycleCoordinator(
         RejectedExecutionException::class
     )
     override fun postEvent(lifeCycleEvent: LifeCycleEvent) {
-        eventQueue.offer(lifeCycleEvent)
-        scheduleIfRequired()
+        if (isRunning) {
+            eventQueue.offer(lifeCycleEvent)
+            scheduleIfRequired()
+        } else {
+            logger.warn("Life-Cycle coordinator not running: posted event ignored!")
+        }
     }
 
 
@@ -145,6 +151,8 @@ class SimpleLifeCycleCoordinator(
      * Schedule the [onTime] event to be processed after [delay] ms.
      *
      * **NOTE! Pending [TimerEvent] are cancelled when [stop] is called.
+     *
+     * **Note! Timers set between last [stop] and next [start] are ignored: this method lags a warning message.**
      *
      * @param key unique [TimerEvent] identifier.
      * @param delay in milliseconds, when [onTime] is processed.
@@ -158,9 +166,13 @@ class SimpleLifeCycleCoordinator(
         RejectedExecutionException::class
     )
     override fun setTimer(key: String, delay: Long, onTime: (String) -> TimerEvent) {
-        val executorService = this.executorService ?: return
-        cancelTimer(key)
-        timerMap[key] = executorService.schedule({ postEvent(onTime(key)) }, delay, TimeUnit.MILLISECONDS)
+        val executorService = this.executorService
+        if (executorService != null) {
+            cancelTimer(key)
+            timerMap[key] = executorService.schedule({ postEvent(onTime(key)) }, delay, TimeUnit.MILLISECONDS)
+        } else {
+            logger.warn("Life-Cycle coordinator not running: timer set with key = $key is ignored!")
+        }
     }
 
     //: LifeCycle
