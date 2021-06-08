@@ -9,6 +9,8 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.io.FileInputStream
+import java.util.*
 import kotlin.system.exitProcess
 
 @Component(immediate = true)
@@ -29,7 +31,10 @@ private var configWriter: KafkaConfigWrite
             exitProcess(1)
         }
 
-        val topic = topicAdmin.createTopic(File(args[0]).readText(), File(args[1]).readText())
+        val kafkaConnectionProperties = Properties()
+        kafkaConnectionProperties.load(FileInputStream(args[0]))
+
+        val topic = topicAdmin.createTopic(kafkaConnectionProperties, File(args[1]).readText())
         configWriter.updateConfig(topic.getString("topicName"), File(args[2]).readText())
         shutdown()
     }
