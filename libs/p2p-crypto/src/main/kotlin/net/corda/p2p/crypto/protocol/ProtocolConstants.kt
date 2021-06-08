@@ -33,5 +33,10 @@ class ProtocolConstants {
         const val RESPONDER_SESSION_ENCRYPTION_KEY_INFO = "Corda server session key"
         const val INITIATOR_SESSION_NONCE_INFO = "Corda client session iv"
         const val RESPONDER_SESSION_NONCE_INFO = "Corda server session iv"
+
+        /**
+         * We establish a minimum packet size of 10KB to ensure all handshake messages are considered valid.
+         */
+        const val MIN_PACKET_SIZE = 10_000
     }
 }

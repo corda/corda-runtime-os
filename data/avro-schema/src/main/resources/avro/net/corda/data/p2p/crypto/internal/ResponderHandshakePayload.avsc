@@ -4,6 +4,10 @@
   "namespace": "net.corda.p2p.crypto.internal",
   "fields": [
     {
+      "name": "responderEncryptedExtensions",
+      "type": "net.corda.p2p.crypto.internal.ResponderEncryptedExtensions"
+    },
+    {
       "name": "responderPublicKeyHash",
       "type": "bytes"
     },
