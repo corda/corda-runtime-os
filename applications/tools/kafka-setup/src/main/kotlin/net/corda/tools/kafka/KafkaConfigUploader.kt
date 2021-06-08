@@ -2,6 +2,7 @@ package net.corda.tools.kafka
 
 import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
+import net.corda.osgi.api.Application
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -14,10 +15,10 @@ class KafkaConfigUploader @Activate constructor(
     private var topicAdmin: KafkaTopicAdmin,
     @Reference(service = KafkaConfigWrite::class)
     private var configWriter: KafkaConfigWrite,
-) //: Application
+): Application
 {
 
-    fun startup(args: Array<String>) {
+    override fun startup(args: Array<String>) {
         if (args.size != 3) {
             println("Required command line arguments: kafkaProps topicTemplate typesafeConfig")
             exitProcess(1)
@@ -27,7 +28,7 @@ class KafkaConfigUploader @Activate constructor(
         configWriter.updateConfig(topic.getString("topicName"), File(args[2]).readText())
     }
 
-    fun shutdown() {
+    override fun shutdown() {
         TODO("Not yet implemented")
     }
 }
