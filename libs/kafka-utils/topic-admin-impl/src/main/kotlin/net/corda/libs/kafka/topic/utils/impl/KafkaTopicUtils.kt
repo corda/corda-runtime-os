@@ -1,6 +1,8 @@
 package net.corda.libs.kafka.topic.utils.impl
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigException
+import com.typesafe.config.ConfigFactory
 import net.corda.libs.kafka.topic.utils.TopicUtils
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
@@ -23,6 +25,12 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
     }
 
     override fun createTopic(topicTemplate: Config) {
+        try {
+            topicTemplate.checkValid(referenceTopicConfig())
+        } catch (e: ConfigException) {
+            log.error("Error validating topic configuration")
+        }
+
         val newTopic =
             NewTopic(
                 topicTemplate.getString("topicName"),
@@ -30,7 +38,7 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
                 topicTemplate.getInt("replicationFactor").toShort()
             )
         val topicConfigOption = topicTemplate.getConfig("config").entrySet()
-            .map { entry -> Pair<String, String>(entry.key, entry.value.toString()) }.toMap()
+            .map { entry -> Pair<String, String>(entry.key, entry.value.unwrapped().toString()) }.toMap()
         newTopic.configs(topicConfigOption)
         try {
             log.info("Attempting to create topic: $newTopic")
@@ -46,5 +54,13 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
             }
         }
     }
-}
 
+    private fun referenceTopicConfig(): Config = ConfigFactory.parseString(
+        """
+        topicName = "dummyName"
+        numPartitions = 1
+        replicationFactor = 1
+        config {}
+    """.trimIndent()
+    )
+}

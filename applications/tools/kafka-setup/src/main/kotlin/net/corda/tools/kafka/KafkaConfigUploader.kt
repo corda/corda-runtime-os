@@ -6,10 +6,12 @@ import net.corda.osgi.api.Application
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.File
 import kotlin.system.exitProcess
 
-@Component
+@Component(immediate = true)
 class KafkaConfigUploader @Activate constructor(
     @Reference(service = KafkaTopicAdmin::class)
     private var topicAdmin: KafkaTopicAdmin,
@@ -17,9 +19,13 @@ class KafkaConfigUploader @Activate constructor(
 private var configWriter: KafkaConfigWrite
 ) : Application {
 
+    private companion object {
+        private val logger: Logger = LoggerFactory.getLogger(KafkaConfigWrite::class.java)
+    }
+
     override fun startup(args: Array<String>) {
         if (args.size != 3) {
-            println("Required command line arguments: kafkaProps topicTemplate typesafeConfig")
+            logger.error("Required command line arguments: kafkaProps topicTemplate typesafeConfig")
             exitProcess(1)
         }
 
@@ -28,6 +34,6 @@ private var configWriter: KafkaConfigWrite
     }
 
     override fun shutdown() {
-        TODO("Not yet implemented")
+        logger.info("Shutting down config uploader")
     }
 }

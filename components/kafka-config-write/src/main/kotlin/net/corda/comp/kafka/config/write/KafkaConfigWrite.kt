@@ -11,7 +11,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-@Component
+@Component(immediate = true, service = [KafkaConfigWrite::class])
 class KafkaConfigWrite @Activate constructor(
     @Reference(service = ConfigWriteServiceFactory::class)
     private val configWriteServiceFactory: ConfigWriteServiceFactory

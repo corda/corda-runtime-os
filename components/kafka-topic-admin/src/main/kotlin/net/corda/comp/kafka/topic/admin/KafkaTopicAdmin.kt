@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 import java.io.StringReader
 import java.util.*
 
-@Component
+@Component(immediate = true, service = [KafkaTopicAdmin::class])
 class KafkaTopicAdmin @Activate constructor(
     @Reference(service = TopicUtilsFactory::class)
     private val topicUtilsFactory: TopicUtilsFactory
@@ -24,7 +24,7 @@ class KafkaTopicAdmin @Activate constructor(
 
     fun createTopic(props: String, topicTemplate: String): Config {
         val topicUtils = topicUtilsFactory.createTopicUtils(parseProperties(props))
-        val template = parseAndValidateTopicTemplate(topicTemplate)
+        val template = ConfigFactory.parseString(topicTemplate)
         topicUtils.createTopic(template)
 
         return template
@@ -35,29 +35,4 @@ class KafkaTopicAdmin @Activate constructor(
         properties.load(StringReader(props))
         return properties
     }
-
-    private fun parseAndValidateTopicTemplate(template: String): Config {
-        val templateConfig = ConfigFactory.parseString(template)
-        try {
-            templateConfig.checkValid(referenceTopicConfig())
-        } catch (e: ConfigException) {
-            log.error("Error validating topic configuration")
-        }
-
-        return templateConfig
-    }
-
-
-    private fun referenceTopicConfig(): Config = ConfigFactory.parseString(
-        """
-        topicName = "dummyName"
-        numPartitions = 1
-        replicationFactor = 1
-        config {
-            first.key = "firstValue",
-            second.key = "secondValue"
-        }
-    """.trimIndent()
-    )
-
 }
