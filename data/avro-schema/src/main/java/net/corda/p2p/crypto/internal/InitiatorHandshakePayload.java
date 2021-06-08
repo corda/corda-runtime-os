@@ -14,8 +14,8 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class InitiatorHandshakePayload extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 3495771901941838380L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"InitiatorHandshakePayload\",\"namespace\":\"net.corda.p2p.crypto.internal\",\"fields\":[{\"name\":\"initiatorEncryptedExtensions\",\"type\":{\"type\":\"record\",\"name\":\"InitiatorEncryptedExtensions\",\"fields\":[{\"name\":\"responderPublicKeyHash\",\"type\":\"bytes\"},{\"name\":\"groupId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}},{\"name\":\"initiatorPublicKeyHash\",\"type\":\"bytes\"},{\"name\":\"initiatorPartyVerify\",\"type\":\"bytes\"},{\"name\":\"initiatorFinished\",\"type\":\"bytes\"}]}");
+  private static final long serialVersionUID = -4454592914474970845L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"InitiatorHandshakePayload\",\"namespace\":\"net.corda.p2p.crypto.internal\",\"fields\":[{\"name\":\"initiatorEncryptedExtensions\",\"type\":{\"type\":\"record\",\"name\":\"InitiatorEncryptedExtensions\",\"fields\":[{\"name\":\"responderPublicKeyHash\",\"type\":\"bytes\"},{\"name\":\"groupId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"maxMessageSize\",\"type\":\"int\"}]}},{\"name\":\"initiatorPublicKeyHash\",\"type\":\"bytes\"},{\"name\":\"initiatorPartyVerify\",\"type\":\"bytes\"},{\"name\":\"initiatorFinished\",\"type\":\"bytes\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();

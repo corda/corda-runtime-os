@@ -10,6 +10,10 @@
     {
       "name": "groupId",
       "type": "string"
+    },
+    {
+      "name": "maxMessageSize",
+      "type": "int"
     }
   ]
 }

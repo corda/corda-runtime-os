@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "ResponderEncryptedExtensions",
+  "namespace": "net.corda.p2p.crypto.internal",
+  "fields": [
+    {
+      "name": "maxMessageSize",
+      "type": "int"
+    }
+  ]
+}
