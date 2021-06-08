@@ -210,7 +210,7 @@ class SimpleLifeCycleCoordinator(
      *
      */
     override fun stop() {
-        val t = this
+        val self = this
         val executor = lock.withLock {
             val exec = executorService
             executorService = null
@@ -223,7 +223,7 @@ class SimpleLifeCycleCoordinator(
                 timerMap.clear()
                 while (!eventQueue.isEmpty()) {
                     val event = eventQueue.poll()
-                    lifeCycleProcessor(event, t)
+                    lifeCycleProcessor(event, self)
                     if (event is StopEvent) break
                 }
                 eventQueue.clear()
