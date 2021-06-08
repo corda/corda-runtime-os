@@ -11,7 +11,9 @@ import net.corda.p2p.crypto.internal.InitiatorEncryptedExtensions
 import net.corda.p2p.crypto.internal.InitiatorHandshakePayload
 import net.corda.p2p.crypto.internal.ResponderHandshakePayload
 import net.corda.p2p.crypto.protocol.AuthenticationProtocol
+import net.corda.p2p.crypto.protocol.InvalidMaxMessageSizeProposedError
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SIG_PAD
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SIG_PAD
 import net.corda.p2p.crypto.util.calculateMac
@@ -21,7 +23,6 @@ import net.corda.p2p.crypto.util.hash
 import net.corda.p2p.crypto.util.perform
 import net.corda.p2p.crypto.util.verify
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import java.lang.RuntimeException
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
@@ -44,10 +45,12 @@ import javax.crypto.AEADBadTagException
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
 class AuthenticationProtocolInitiator(private val sessionId: String,
-                                      private val supportedModes: Set<ProtocolMode>): AuthenticationProtocol() {
+                                      private val supportedModes: Set<ProtocolMode>,
+                                      private val ourMaxMessageSize: Int): AuthenticationProtocol() {
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
+        require(ourMaxMessageSize > MIN_PACKET_SIZE ) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
     }
 
     var step = Step.INIT
@@ -112,12 +115,13 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         val initiatorRecordHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, PROTOCOL_VERSION,
                                                 sessionId, 1, Instant.now().toEpochMilli())
         val initiatorRecordHeaderBytes = initiatorRecordHeader.toByteBuffer().array()
-        val initiatorHandshakePayload = InitiatorHandshakePayload()
         val responderPublicKeyHash = ByteBuffer.wrap(messageDigest.hash(theirPublicKey.encoded))
-        initiatorHandshakePayload.initiatorEncryptedExtensions = InitiatorEncryptedExtensions(responderPublicKeyHash, groupId)
-        initiatorHandshakePayload.initiatorPublicKeyHash = ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded))
-        initiatorHandshakePayload.initiatorPartyVerify = ByteBuffer.allocate(0)
-        initiatorHandshakePayload.initiatorFinished = ByteBuffer.allocate(0)
+        val initiatorHandshakePayload = InitiatorHandshakePayload(
+            InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, ourMaxMessageSize),
+            ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)),
+            ByteBuffer.allocate(0),
+            ByteBuffer.allocate(0)
+        )
 
         // calculate signature
         val initiatorHelloToInitiatorPublicKeyHash = initiatorHelloToResponderHelloBytes!! +
@@ -159,10 +163,12 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         }
 
         val responderHandshakePayload = ResponderHandshakePayload.fromByteBuffer(ByteBuffer.wrap(responderHandshakePayloadBytes))
-        val responderHandshakePayloadIncomplete = ResponderHandshakePayload()
-        responderHandshakePayloadIncomplete.responderPublicKeyHash = responderHandshakePayload.responderPublicKeyHash
-        responderHandshakePayloadIncomplete.responderPartyVerify = ByteBuffer.allocate(0)
-        responderHandshakePayloadIncomplete.responderFinished = ByteBuffer.allocate(0)
+        val responderHandshakePayloadIncomplete = ResponderHandshakePayload(
+            responderHandshakePayload.responderEncryptedExtensions,
+            responderHandshakePayload.responderPublicKeyHash,
+            ByteBuffer.allocate(0),
+            ByteBuffer.allocate(0)
+        )
 
         // check responder's public key hash matches requested one
         if (!responderHandshakePayload.responderPublicKeyHash.array().contentEquals(messageDigest.hash(theirPublicKey.encoded))) {
@@ -188,6 +194,18 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         if (!calculatedResponderFinished.contentEquals(responderHandshakePayload.responderFinished.array())) {
             throw InvalidHandshakeMessageException()
         }
+
+        responderHandshakePayload.responderEncryptedExtensions.maxMessageSize.apply {
+            if (this > ourMaxMessageSize) {
+                throw InvalidMaxMessageSizeProposedError("Responder's proposed max message size ($this) " +
+                        "was larger than the one we proposed ($ourMaxMessageSize).")
+            }
+            if (this <= MIN_PACKET_SIZE) {
+                throw InvalidMaxMessageSizeProposedError("Responder's proposed max message size ($this) " +
+                        "was smaller than the minimum allowed value ($MIN_PACKET_SIZE).")
+            }
+            agreedMaxMessageSize = this
+        }
     }
 
     /**
@@ -203,8 +221,8 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! + responderHandshakePayloadBytes!!
         val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
         return when(selectedMode!!) {
-            ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(sessionId, 2,
-                                                sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.responderEncryptionKey)
+            ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(sessionId, 2, sharedSessionSecrets.initiatorEncryptionKey,
+                                                        sharedSessionSecrets.responderEncryptionKey, agreedMaxMessageSize!!)
             ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(sessionId, 2,
                                                         sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.initiatorNonce,
                                                         sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce)
@@ -224,5 +242,5 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
 /**
  * Thrown when the responder sends an key hash that does not match the one we requested.
  */
-class InvalidHandshakeResponderKeyHash: RuntimeException()
+class InvalidHandshakeResponderKeyHash: CordaRuntimeException("The responder sent a key hash that was different to the one we requested.")
 class InvalidSelectedModeError(msg: String): CordaRuntimeException(msg)

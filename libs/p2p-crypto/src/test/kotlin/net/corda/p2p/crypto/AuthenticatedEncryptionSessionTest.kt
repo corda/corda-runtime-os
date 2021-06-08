@@ -22,12 +22,14 @@ class AuthenticatedEncryptionSessionTest {
     private val sessionId = UUID.randomUUID().toString()
 
     // party A
+    private val partyAMaxMessageSize = 1_000_000
     private val partyAIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION))
+    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyAMaxMessageSize)
 
     // party B
+    private val partyBMaxMessageSize = 1_500_000
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION))
+    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize)
 
     private val groupId = "some-group-id"
 
@@ -102,7 +104,7 @@ class AuthenticatedEncryptionSessionTest {
 
         // Fronting component of responder sends data downstream so that protocol can be continued.
         val (privateKey, publicKey) = authenticationProtocolB.getDHKeyPair()
-        val authenticationProtocolBDownstream = AuthenticationProtocolResponder.fromStep2(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), initiatorHelloMsg, responderHelloMsg, privateKey, publicKey)
+        val authenticationProtocolBDownstream = AuthenticationProtocolResponder.fromStep2(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, initiatorHelloMsg, responderHelloMsg, privateKey, publicKey)
 
         // Both sides generate handshake secrets.
         authenticationProtocolA.generateHandshakeSecrets()

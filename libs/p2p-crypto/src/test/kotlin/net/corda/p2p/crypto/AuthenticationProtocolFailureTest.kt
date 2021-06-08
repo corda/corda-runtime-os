@@ -24,12 +24,14 @@ class AuthenticationProtocolFailureTest {
     private val sessionId = UUID.randomUUID().toString()
 
     // party A
+    private val partyAMaxMessageSize = 1_000_000
     private val partyAIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY))
+    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyAMaxMessageSize)
 
     // party B
+    private val partyBMaxMessageSize = 1_500_000
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY))
+    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
 
     private val groupId = "some-group-id"
 
@@ -124,8 +126,8 @@ class AuthenticationProtocolFailureTest {
 
     @Test
     fun `session authentication fails if two parties do not share a common supported protocol mode`() {
-        val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY))
-        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION))
+        val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyAMaxMessageSize)
+        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize)
 
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()

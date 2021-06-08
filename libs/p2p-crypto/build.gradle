@@ -3,5 +3,6 @@ description 'P2P cryptographic library for session authentication'
 dependencies {
     implementation "net.corda:corda-base:$cordaVersion"
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation "net.corda:corda-base:$cordaVersion"
     implementation project(":data:avro-schema")
 }
