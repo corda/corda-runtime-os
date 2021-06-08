@@ -1,5 +1,6 @@
 package net.corda.messaging.api.subscription
 
+import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.processor.CompactedProcessor
 import java.util.*
 
@@ -43,10 +44,7 @@ interface StateAndEventSubscription<K, S, E> : LifeCycle {
     @Throws(IllegalArgumentException::class)
     fun getValue(key: K): S?
 
-    /**
-     * Check the state of a subscription. true if subscription is still active. false otherwise.
-     */
-    override val isRunning: Boolean
+
 }
 
 /**

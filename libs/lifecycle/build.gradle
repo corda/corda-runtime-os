@@ -8,7 +8,6 @@ dependencies {
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 
-    implementation project(":libs:messaging:messaging")
 }
 
 description "LifeCycle API"

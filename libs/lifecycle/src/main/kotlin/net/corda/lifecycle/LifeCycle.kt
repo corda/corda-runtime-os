@@ -1,4 +1,4 @@
-package net.corda.messaging.api.subscription
+package net.corda.lifecycle
 
 /**
  * This interface defines a component it can [start] and [stop] and be used as a try-with-resource as
