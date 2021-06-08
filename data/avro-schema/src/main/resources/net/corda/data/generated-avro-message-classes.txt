@@ -4,9 +4,8 @@ net.corda.data.config.Configuration
 net.corda.data.client.rpc.flow.RPCFlowStart
 net.corda.data.test.EvolvedMessage
 net.corda.p2p.crypto.internal.InitiatorEncryptedExtensions
-net.corda.p2p.crypto.internal.ResponderEncryptedExtensions
-net.corda.p2p.crypto.internal.InitiatorHandshakePayload
 net.corda.p2p.crypto.internal.ResponderHandshakePayload
+net.corda.p2p.crypto.internal.ResponderEncryptedExtensions
 net.corda.p2p.crypto.internal.InitiatorHandshakePayload
 net.corda.p2p.crypto.InitiatorHandshakeMessage
 net.corda.p2p.crypto.InitiatorHelloMessage

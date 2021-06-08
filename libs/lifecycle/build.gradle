@@ -3,11 +3,4 @@ plugins {
     id 'corda.common-library'
 }
 
-dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-
-}
-
 description "LifeCycle API"
