@@ -29,11 +29,13 @@ class KafkaConfigWrite @Activate constructor(
             val packageVersion = CordaConfigurationVersion(key1, packageVersionNumber.major, packageVersionNumber.minor)
             val key1Config = configuration.getConfig(key1)
             for (key2 in key1Config.root().keys) {
-                val componentVersionNumber = ConfigVersionNumber.from(configuration.getString("$key1.$key2.version"))
-                val componentVersion =
-                    CordaConfigurationVersion(key2, componentVersionNumber.major, componentVersionNumber.minor)
-                val configurationKey = CordaConfigurationKey(key1, packageVersion, componentVersion)
-                writer.updateConfiguration(configurationKey, key1Config.atKey(key2))
+                if(!key2.equals("version")) {
+                    val componentVersionNumber = ConfigVersionNumber.from(key1Config.getString("$key2.version"))
+                    val componentVersion =
+                        CordaConfigurationVersion(key2, componentVersionNumber.major, componentVersionNumber.minor)
+                    val configurationKey = CordaConfigurationKey(key1, packageVersion, componentVersion)
+                    writer.updateConfiguration(configurationKey, key1Config.atKey(key2))
+                }
             }
         }
     }
