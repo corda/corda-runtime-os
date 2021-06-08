@@ -14,7 +14,7 @@ import org.mockito.Mockito
 class ConfigWriteServiceFactoryImplTest {
     private lateinit var cordaWriteServiceFactory: CordaWriteServiceFactoryImpl
     private var publisherFactory: PublisherFactory = mock()
-    private var publisher: Publisher<String, Configuration> = mock()
+    private var publisher: Publisher = mock()
     private val topicName = "topic"
 
     @BeforeEach
@@ -24,7 +24,7 @@ class ConfigWriteServiceFactoryImplTest {
 
     @Test
     fun testCreateCordaWriteService() {
-        Mockito.`when`(publisherFactory.createPublisher<String,Configuration>(any(), any(), any(), any()))
+        Mockito.`when`(publisherFactory.createPublisher(any(), any()))
             .thenReturn(publisher)
         val writeService = cordaWriteServiceFactory.createWriteService(topicName)
         Assertions.assertNotNull(writeService)

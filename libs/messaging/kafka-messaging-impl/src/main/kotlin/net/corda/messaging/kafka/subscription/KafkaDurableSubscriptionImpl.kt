@@ -6,6 +6,8 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.kafka.producer.builder.ProducerBuilder
+import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.PublisherConfigProperties
@@ -13,14 +15,11 @@ import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
-import net.corda.messaging.kafka.subscription.producer.builder.SubscriptionProducerBuilder
-import net.corda.messaging.kafka.subscription.producer.wrapper.CordaKafkaProducer
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.Exception
-import kotlin.concurrent.thread
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 /**
@@ -40,7 +39,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private val subscriptionConfig: SubscriptionConfig,
     private val config: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,
-    private val producerBuilder: SubscriptionProducerBuilder,
+    private val producerBuilder: ProducerBuilder,
     private val processor: DurableProcessor<K, V>
 ) : Subscription<K, V> {
 
@@ -120,7 +119,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 consumer = consumerBuilder.createDurableConsumer(subscriptionConfig)
-                producer = producerBuilder.createProducer(consumer)
+                producer = producerBuilder.createProducer()
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribeToTopic()
                     producer.use { cordaProducer ->
@@ -222,7 +221,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private fun processDurableRecords(
         consumerRecords: List<ConsumerRecordAndMeta<K, V>>,
         producer: CordaKafkaProducer,
-        consumer: CordaKafkaConsumer<*, *>
+        consumer: CordaKafkaConsumer<K, V>
     ) {
         try {
             producer.beginTransaction()

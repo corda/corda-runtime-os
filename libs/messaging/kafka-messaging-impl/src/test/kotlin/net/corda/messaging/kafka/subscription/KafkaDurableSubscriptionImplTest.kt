@@ -15,15 +15,15 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.kafka.stubs.StubDurableProcessor
+import net.corda.messaging.kafka.producer.builder.ProducerBuilder
+import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.PublisherConfigProperties
+import net.corda.messaging.kafka.stubs.StubDurableProcessor
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
-import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
-import net.corda.messaging.kafka.subscription.producer.builder.SubscriptionProducerBuilder
-import net.corda.messaging.kafka.subscription.producer.wrapper.CordaKafkaProducer
+import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -45,7 +45,7 @@ class KafkaDurableSubscriptionImplTest {
         .withValue(CONSUMER_THREAD_STOP_TIMEOUT, ConfigValueFactory.fromAnyRef(1000))
         .withValue(PublisherConfigProperties.PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef("clientId"))
     private val consumerBuilder: ConsumerBuilder<String, ByteBuffer> = mock()
-    private val producerBuilder: SubscriptionProducerBuilder = mock()
+    private val producerBuilder: ProducerBuilder = mock()
     private val mockCordaConsumer: CordaKafkaConsumer<String, ByteBuffer> = mock()
     private val mockCordaProducer: CordaKafkaProducer = mock()
     private val mockConsumerRecords =
@@ -77,7 +77,7 @@ class KafkaDurableSubscriptionImplTest {
 
         builderInvocationCount = 0
         doReturn(mockCordaConsumer).whenever(consumerBuilder).createDurableConsumer(any(), any())
-        doReturn(mockCordaProducer).whenever(producerBuilder).createProducer(anyOrNull())
+        doReturn(mockCordaProducer).whenever(producerBuilder).createProducer()
     }
 
     /**
@@ -92,7 +92,7 @@ class KafkaDurableSubscriptionImplTest {
 
         kafkaPubSubSubscriptionImpl.stop()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any())
-        verify(producerBuilder, times(1)).createProducer(anyOrNull())
+        verify(producerBuilder, times(1)).createProducer()
         verify(mockCordaProducer, times(1)).beginTransaction()
         verify(mockCordaProducer, times(1)).sendRecords(any())
         verify(mockCordaProducer, times(1)).sendOffsetsToTransaction(any())
@@ -113,7 +113,7 @@ class KafkaDurableSubscriptionImplTest {
 
         verify(mockCordaConsumer, times(0)).poll()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any())
-        verify(producerBuilder, times(0)).createProducer(anyOrNull())
+        verify(producerBuilder, times(0)).createProducer()
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
     }
 
@@ -122,7 +122,7 @@ class KafkaDurableSubscriptionImplTest {
      */
     @Test
     fun testFatalExceptionProducerBuild() {
-        whenever(producerBuilder.createProducer(anyOrNull())).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
+        whenever(producerBuilder.createProducer()).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
         kafkaPubSubSubscriptionImpl = KafkaDurableSubscriptionImpl(subscriptionConfig, config, consumerBuilder, producerBuilder,  processor)
 
@@ -131,7 +131,7 @@ class KafkaDurableSubscriptionImplTest {
 
         verify(mockCordaConsumer, times(0)).poll()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any())
-        verify(producerBuilder, times(1)).createProducer(anyOrNull())
+        verify(producerBuilder, times(1)).createProducer()
         verify(mockCordaProducer, times(0)).beginTransaction()
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
     }
@@ -158,7 +158,7 @@ class KafkaDurableSubscriptionImplTest {
 
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
         verify(consumerBuilder, times(2)).createDurableConsumer(any(), any())
-        verify(producerBuilder, times(1)).createProducer(anyOrNull())
+        verify(producerBuilder, times(1)).createProducer()
         verify(mockCordaProducer, times(0)).beginTransaction()
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
@@ -188,7 +188,7 @@ class KafkaDurableSubscriptionImplTest {
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(consumerBuilder, times(2)).createDurableConsumer(any(), any())
-        verify(producerBuilder, times(1)).createProducer(anyOrNull())
+        verify(producerBuilder, times(1)).createProducer()
         verify(mockCordaProducer, times(consumerPollAndProcessRetriesCount+1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
         verify(mockCordaProducer, times(0)).sendOffsetsToTransaction(any())
@@ -209,7 +209,7 @@ class KafkaDurableSubscriptionImplTest {
         verify(mockCordaConsumer, times(0)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(1)).poll()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any())
-        verify(producerBuilder, times(1)).createProducer(anyOrNull())
+        verify(producerBuilder, times(1)).createProducer()
         verify(mockCordaProducer, times(1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
         verify(mockCordaProducer, times(0)).sendOffsetsToTransaction(any())

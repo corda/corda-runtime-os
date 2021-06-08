@@ -3,10 +3,10 @@ package net.corda.p2p.crypto
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
-import net.corda.p2p.crypto.protocol.api.Mode
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
+import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.util.*
@@ -23,12 +23,14 @@ class AuthenticationProtocolFailureTest {
     private val sessionId = UUID.randomUUID().toString()
 
     // party A
+    private val partyAMaxMessageSize = 1_000_000
     private val partyAIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, listOf(Mode.AUTHENTICATION_ONLY))
+    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, listOf(ProtocolMode.AUTHENTICATION_ONLY), partyAMaxMessageSize)
 
     // party B
+    private val partyBMaxMessageSize = 1_500_000
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, listOf(Mode.AUTHENTICATION_ONLY))
+    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, listOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
 
     private val groupId = "some-group-id"
 
@@ -54,7 +56,7 @@ class AuthenticationProtocolFailureTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
 
-        val modifiedInitiatorHandshakeMessage = initiatorHandshakeMessage.copy(encryptedData = initiatorHandshakeMessage.encryptedData + "0".toByteArray(Charsets.UTF_8))
+        val modifiedInitiatorHandshakeMessage = InitiatorHandshakeMessage(initiatorHandshakeMessage.header, ByteBuffer.wrap(initiatorHandshakeMessage.encryptedData.array() + "0".toByte()), initiatorHandshakeMessage.authTag)
         assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(modifiedInitiatorHandshakeMessage) { partyAIdentityKey.public } }
                 .isInstanceOf(InvalidHandshakeMessageException::class.java)
     }

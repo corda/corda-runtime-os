@@ -1,12 +1,10 @@
 package net.corda.libs.configuration.write.kafka.factory
 
-import net.corda.data.config.Configuration
 import net.corda.libs.configuration.write.ConfigWriteService
 import net.corda.libs.configuration.write.factory.CordaWriteServiceFactory
 import net.corda.libs.configuration.write.kafka.ConfigWriteServiceImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.publisher.factory.createPublisher
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -24,7 +22,7 @@ class CordaWriteServiceFactoryImpl @Activate constructor(
     private val CONFIGURATION_WRITE_SERVICE = "CONFIGURATION_WRITE_SERVICE"
 
     override fun createWriteService(destination: String): ConfigWriteService {
-        val publisher = publisherFactory.createPublisher<String, Configuration>(
+        val publisher = publisherFactory.createPublisher(
             PublisherConfig(
                 CONFIGURATION_WRITE_SERVICE
             ), mapOf()

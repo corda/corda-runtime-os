@@ -4,15 +4,12 @@ import com.nhaarman.mockito_kotlin.mock
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_TOPIC_PREFIX
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.nio.ByteBuffer
 
 class CordaKafkaPublisherImplFactoryTest {
     private lateinit var cordaKafkaPublisherFactory : CordaKafkaPublisherFactory
@@ -28,12 +25,7 @@ class CordaKafkaPublisherImplFactoryTest {
 
     @Test
     fun testCreatePublisher() {
-        val publisher = cordaKafkaPublisherFactory.createPublisher(publisherConfig, mapOf(), String::class.java, ByteBuffer::class.java)
+        val publisher = cordaKafkaPublisherFactory.createPublisher(publisherConfig, mapOf())
         assertNotNull(publisher)
-    }
-
-    @Test
-    fun testCreatePublisherWrongKey() {
-        assertThrows(CordaMessageAPIFatalException::class.java) { cordaKafkaPublisherFactory.createPublisher(publisherConfig, mapOf(), ByteBuffer::class.java, ByteBuffer::class.java) }
     }
 }
