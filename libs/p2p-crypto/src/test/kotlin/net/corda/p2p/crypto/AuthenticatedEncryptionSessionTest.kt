@@ -1,9 +1,11 @@
 package net.corda.p2p.crypto
 
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
+import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
+import net.corda.p2p.crypto.protocol.api.MessageTooLargeError
 import org.assertj.core.api.Assertions
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
+import java.time.Instant
 import java.util.UUID
 
 class AuthenticatedEncryptionSessionTest {
@@ -226,6 +229,48 @@ class AuthenticatedEncryptionSessionTest {
             )
         }.isInstanceOf(DecryptionFailedError::class.java)
             .hasMessageContaining("Decryption failed due to bad authentication tag.")
+    }
+
+    @Test
+    fun `when trying to encrypt message larger than the agreed max message size, an exception is thrown`() {
+        // Step 1: initiator sending hello message to responder.
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
+
+        // Step 2: responder sending hello message to initiator.
+        val responderHelloMsg = authenticationProtocolB.generateResponderHello()
+        authenticationProtocolA.receiveResponderHello(responderHelloMsg)
+
+        // Both sides generate handshake secrets.
+        authenticationProtocolA.generateHandshakeSecrets()
+        authenticationProtocolB.generateHandshakeSecrets()
+
+        // Step 3: initiator sending handshake message and responder validating it.
+        val signingCallbackForA = { data: ByteArray ->
+            signature.initSign(partyAIdentityKey.private)
+            signature.update(data)
+            signature.sign()
+        }
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
+
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public }
+
+        // Step 4: responder sending handshake message and initiator validating it.
+        val signingCallbackForB = { data: ByteArray ->
+            signature.initSign(partyBIdentityKey.private)
+            signature.update(data)
+            signature.sign()
+        }
+        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
+
+        authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
+
+        // Both sides generate session secrets
+        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedEncryptionSession
+
+        Assertions.assertThatThrownBy { authenticatedSessionOnA.encryptData(ByteArray(partyAMaxMessageSize + 1)) }
+            .isInstanceOf(MessageTooLargeError::class.java)
+            .hasMessageContaining("Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message size of the session ($partyAMaxMessageSize bytes)")
     }
 
 }

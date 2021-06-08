@@ -225,7 +225,8 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
                                                         sharedSessionSecrets.responderEncryptionKey, agreedMaxMessageSize!!)
             ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(sessionId, 2,
                                                         sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.initiatorNonce,
-                                                        sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce)
+                                                        sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce,
+                                                        agreedMaxMessageSize!!)
         }
     }
 

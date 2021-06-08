@@ -100,5 +100,3 @@ data class AuthenticationResult(val header: CommonHeader, val mac: ByteArray) {
 }
 
 class InvalidMac: CordaRuntimeException("The provided MAC was invalid.")
-class MessageTooLargeError(messageSize: Int, maxMessageSize: Int):
-    CordaRuntimeException("Message's size ($messageSize bytes) was larger than the max message size of the session ($maxMessageSize bytes)")

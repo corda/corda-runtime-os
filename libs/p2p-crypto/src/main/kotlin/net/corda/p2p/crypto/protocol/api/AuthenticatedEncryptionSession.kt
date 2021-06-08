@@ -31,7 +31,8 @@ class AuthenticatedEncryptionSession(private val sessionId: String,
                                      private val outboundSecretKey: SecretKey,
                                      private val outboundNonce: ByteArray,
                                      private val inboundSecretKey: SecretKey,
-                                     private val inboundNonce: ByteArray): Session {
+                                     private val inboundNonce: ByteArray,
+                                     val maxMessageSize: Int): Session {
 
     private val provider = BouncyCastleProvider()
     private val encryptionCipher = Cipher.getInstance(CIPHER_ALGO, provider)
@@ -39,6 +40,10 @@ class AuthenticatedEncryptionSession(private val sessionId: String,
     private val sequenceNo = AtomicLong(nextSequenceNo)
 
     fun encryptData(payload: ByteArray): EncryptionResult {
+        if (payload.size > maxMessageSize) {
+            throw MessageTooLargeError(payload.size, maxMessageSize)
+        }
+
         val commonHeader = CommonHeader(MessageType.DATA, ProtocolConstants.PROTOCOL_VERSION, sessionId,
                                         sequenceNo.getAndIncrement(), Instant.now().toEpochMilli())
 
@@ -54,8 +59,8 @@ class AuthenticatedEncryptionSession(private val sessionId: String,
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     fun decryptData(header: CommonHeader, encryptedPayload: ByteArray, authTag: ByteArray): ByteArray {
         val nonce = xor(inboundNonce, header.sequenceNo.toByteArray())
-        try {
-            return decryptionCipher.decrypt(header.toByteBuffer().array(), authTag, nonce, encryptedPayload, inboundSecretKey)
+        val plaintext = try {
+            decryptionCipher.decrypt(header.toByteBuffer().array(), authTag, nonce, encryptedPayload, inboundSecretKey)
         } catch (e: Exception) {
             when(e) {
                 is AEADBadTagException -> throw DecryptionFailedError("Decryption failed due to bad authentication tag.", e)
@@ -64,6 +69,12 @@ class AuthenticatedEncryptionSession(private val sessionId: String,
                 else -> throw e
             }
         }
+
+        if (plaintext.size > maxMessageSize) {
+            throw MessageTooLargeError(plaintext.size, maxMessageSize)
+        }
+
+        return plaintext
     }
 
     private fun xor(initialisationVector: ByteArray, seqNo: ByteArray): ByteArray {
