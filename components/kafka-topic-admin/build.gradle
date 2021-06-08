@@ -1,6 +1,6 @@
 plugins {
     id 'corda.publish'
-    id 'corda.common-app'
+    id 'corda.common-library'
 }
 
 description "Kafka topic admin component"
