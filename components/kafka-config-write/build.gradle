@@ -14,8 +14,4 @@ dependencies {
 
     implementation project(':libs:configuration:configuration-write')
 
-    runtimeOnly project(":libs:configuration:kafka-configuration-write-impl")
-    runtimeOnly project(":libs:messaging:kafka-messaging-impl")
-    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
-
 }

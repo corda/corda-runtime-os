@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
  * Kafka implementation of the [ConfigWriteService]
  * @property topicName the topic configurations will be published to
  */
-@Component
+@Component(immediate = true, service = [ConfigWriteServiceImpl::class])
 class ConfigWriteServiceImpl(
     private val topicName: String,
     private val publisher: Publisher

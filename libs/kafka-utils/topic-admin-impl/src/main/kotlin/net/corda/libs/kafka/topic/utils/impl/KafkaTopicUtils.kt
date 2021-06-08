@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutionException
  * Used to create new topics on kafka
  * Any [ExecutionException]s apart from [TopicExistsException]s are thrown back to the user
  */
-@Component
+@Component(immediate = true, service = [KafkaTopicUtils::class])
 class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
 
     private companion object {

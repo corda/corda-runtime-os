@@ -31,6 +31,7 @@ private var configWriter: KafkaConfigWrite
 
         val topic = topicAdmin.createTopic(File(args[0]).readText(), File(args[1]).readText())
         configWriter.updateConfig(topic.getString("topicName"), File(args[2]).readText())
+        shutdown()
     }
 
     override fun shutdown() {

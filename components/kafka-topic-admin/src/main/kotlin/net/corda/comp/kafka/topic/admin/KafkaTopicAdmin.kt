@@ -1,7 +1,6 @@
 package net.corda.comp.kafka.topic.admin
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.kafka.topic.utils.factory.TopicUtilsFactory
 import org.osgi.service.component.annotations.Activate
@@ -17,10 +16,6 @@ class KafkaTopicAdmin @Activate constructor(
     @Reference(service = TopicUtilsFactory::class)
     private val topicUtilsFactory: TopicUtilsFactory
 ) {
-
-    private companion object {
-        private val log: Logger = LoggerFactory.getLogger(KafkaTopicAdmin::class.java)
-    }
 
     fun createTopic(props: String, topicTemplate: String): Config {
         val topicUtils = topicUtilsFactory.createTopicUtils(parseProperties(props))

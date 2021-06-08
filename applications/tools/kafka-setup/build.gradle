@@ -24,13 +24,9 @@ dependencies {
     runtimeOnly project(':components:kafka-config-write')
     runtimeOnly project(":libs:configuration:kafka-configuration-write-impl")
     runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
+    runtimeOnly project(":libs:lifecycle")
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
+    runtimeOnly project(":libs:messaging:messaging")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 
-}
-
-tasks.register("uploadConfigToKafka", JavaExec) {
-    classpath = sourceSets["main"].runtimeClasspath
-    main = 'net.corda.tools.kafka.KafkaConfigUploaderKt'
-    args 'bootstrap.servers=localhost:9092', 'test12', 'C:\\flow-worker\\tools\\src\\main\\resources\\config.conf'
 }
