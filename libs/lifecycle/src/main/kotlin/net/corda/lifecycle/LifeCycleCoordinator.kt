@@ -1,5 +1,7 @@
 package net.corda.lifecycle
 
+import net.corda.messaging.api.subscription.LifeCycle
+
 /**
  * This interface defines a component as coordinator of [LifeCycleEvent] events
  * processed by the [lifeCycleProcessor].

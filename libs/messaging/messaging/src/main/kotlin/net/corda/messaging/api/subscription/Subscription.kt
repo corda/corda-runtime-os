@@ -20,7 +20,7 @@ interface Subscription<K, V> : LifeCycle {
     /**
      * Check the state of a subscription. true if subscription is still active. false otherwise.
      */
-    val isRunning: Boolean
+    override val isRunning: Boolean
 }
 
 /**
@@ -46,7 +46,7 @@ interface StateAndEventSubscription<K, S, E> : LifeCycle {
     /**
      * Check the state of a subscription. true if subscription is still active. false otherwise.
      */
-    val isRunning: Boolean
+    override val isRunning: Boolean
 }
 
 /**
