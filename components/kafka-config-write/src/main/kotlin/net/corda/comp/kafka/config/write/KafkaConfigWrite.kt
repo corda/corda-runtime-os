@@ -10,6 +10,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.*
 
 @Component(immediate = true, service = [KafkaConfigWrite::class])
 class KafkaConfigWrite @Activate constructor(
@@ -20,8 +21,8 @@ class KafkaConfigWrite @Activate constructor(
         private val log: Logger = LoggerFactory.getLogger(KafkaConfigWrite::class.java)
     }
 
-    fun updateConfig(destination: String, config: String) {
-        val writer = configWriteServiceFactory.createWriteService(destination)
+    fun updateConfig(destination: String, kafkaProperties: Properties, config: String) {
+        val writer = configWriteServiceFactory.createWriteService(destination, kafkaProperties)
         val configuration = ConfigFactory.parseString(config)
 
         for (key1 in configuration.root().keys) {

@@ -3,15 +3,9 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Kafka config write component"
+description "Kafka Config Write Component"
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-
     implementation project(':libs:configuration:configuration-write')
-
 }

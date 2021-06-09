@@ -8,6 +8,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.*
 
 /**
  * Kafka implementation for [ConfigWriteServiceFactory].
@@ -21,11 +22,13 @@ class ConfigWriteServiceFactoryImpl @Activate constructor(
 
     private val CONFIGURATION_WRITE_SERVICE = "CONFIGURATION_WRITE_SERVICE"
 
-    override fun createWriteService(destination: String): ConfigWriteService {
+    override fun createWriteService(destination: String, kafkaProperties: Properties): ConfigWriteService {
+        val propertiesMap = mutableMapOf<String, String>()
+        kafkaProperties.forEach{(k, v) -> propertiesMap[k.toString()] = v.toString() }
         val publisher = publisherFactory.createPublisher(
             PublisherConfig(
                 CONFIGURATION_WRITE_SERVICE
-            ), mapOf()
+            ), propertiesMap
         )
         return ConfigWriteServiceImpl(destination, publisher)
     }

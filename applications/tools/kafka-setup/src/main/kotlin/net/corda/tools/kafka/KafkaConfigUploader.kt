@@ -39,7 +39,7 @@ private var configWriter: KafkaConfigWrite
         kafkaConnectionProperties.load(FileInputStream(args[0]))
 
         val topic = topicAdmin.createTopic(kafkaConnectionProperties, File(args[1]).readText())
-        configWriter.updateConfig(topic.getString("topicName"), File(args[2]).readText())
+        configWriter.updateConfig(topic.getString("topicName"), kafkaConnectionProperties, File(args[2]).readText())
         shutdownOSGiFramework()
     }
 
