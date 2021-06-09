@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "LinkManagerToGatewayMessage",
+  "namespace": "net.corda.p2p.crypto",
+  "fields": [
+    {
+      "name": "header",
+      "type": "net.corda.p2p.crypto.LinkManagerToGatewayHeader"
+    },
+    {
+      "name": "payload",
+      "type": [
+        "net.corda.p2p.crypto.AuthenticatedDataMessage",
+        "net.corda.p2p.crypto.InitiatorHelloMessage",
+        "net.corda.p2p.crypto.InitiatorHandshakeMessage",
+        "net.corda.p2p.crypto.ResponderHelloMessage",
+        "net.corda.p2p.crypto.ResponderHandshakeMessage",
+        "net.corda.p2p.crypto.Step2Message"
+      ]
+    }
+  ]
+}

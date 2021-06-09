@@ -1,118 +1,141 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.p2p.crypto.AuthenticatedDataMessage
+import net.corda.p2p.crypto.FlowMessage
+import net.corda.p2p.crypto.FlowMessageHeader
+import net.corda.p2p.crypto.InitiatorHandshakeMessage
+import net.corda.p2p.crypto.InitiatorHelloMessage
+import net.corda.p2p.crypto.ProtocolMode
+import net.corda.p2p.crypto.ResponderHandshakeMessage
+import net.corda.p2p.crypto.Step2Message
+import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
-import net.corda.p2p.crypto.protocol.api.Mode
-import net.corda.p2p.crypto.protocol.data.CommonHeader
-import net.corda.p2p.crypto.protocol.data.InitiatorHelloMessage
-import net.corda.p2p.crypto.protocol.data.MessageType
+import net.corda.p2p.linkmanager.sessions.SessionNetworkMap.Companion.toAvroPeer
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.assertThrows
-import java.lang.IllegalArgumentException
+import java.nio.ByteBuffer
 import java.security.KeyPair
 import java.security.KeyPairGenerator
-import java.security.PrivateKey
+import java.security.MessageDigest
 import java.security.PublicKey
 import java.security.Signature
+import kotlin.collections.HashMap
 
 class SessionManagerTest {
 
     companion object {
-        const val PARTY_A = "PartyA"
-        const val PARTY_B = "PartyB"
         const val GROUP_ID = "MyGroup"
+        val PARTY_A = SessionNetworkMap.Peer("PartyA", GROUP_ID)
+        val PARTY_B = SessionNetworkMap.Peer("PartyB", GROUP_ID)
     }
 
-    class MockNetworkMap(nodes: List<String>) {
+    class MockNetworkMap(nodes: List<SessionNetworkMap.Peer>) {
         private val provider = BouncyCastleProvider()
         private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-        private val keys = HashMap<String, KeyPair>()
         private val signature = Signature.getInstance("ECDSA", provider)
+        private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
+
+        private val keys = HashMap<SessionNetworkMap.Peer, KeyPair>()
+        private val peerForHash = HashMap<Int, SessionNetworkMap.Peer>()
+
+        private fun MessageDigest.hash(data: ByteArray): ByteArray {
+            this.reset()
+            this.update(data)
+            return digest()
+        }
 
         init {
             for (node in nodes) {
-                keys[node] = keyPairGenerator.generateKeyPair()
+                val keyPair = keyPairGenerator.generateKeyPair()
+                keys[node] = keyPair
+                peerForHash[messageDigest.hash(keyPair.public.encoded).contentHashCode()] = node
             }
         }
 
-        fun getPrivateKey(node: String): PrivateKey? {
-            return keys[node]?.private
+        fun getSessionNetworkMapForNode(node: SessionNetworkMap.Peer): SessionNetworkMap {
+            return object : SessionNetworkMap {
+                override fun getPublicKey(peer: SessionNetworkMap.Peer): PublicKey? {
+                    return keys[peer]?.public
+                }
+
+                override fun getPublicKeyFromHash(hash: ByteArray): PublicKey {
+                    val peer = getPeerFromHash(hash)
+                    return keys[peer]!!.public
+                }
+
+                override fun getPeerFromHash(hash: ByteArray): SessionNetworkMap.Peer? {
+                    return peerForHash[hash.contentHashCode()]
+                }
+
+                override fun getEndPoint(peer: SessionNetworkMap.Peer): SessionNetworkMap.EndPoint? {
+                    //This is not needed in this test as it is only used by the Gateway.
+                    return SessionNetworkMap.EndPoint("", "")
+                }
+
+                override fun getOurPublicKey(): PublicKey {
+                    return keys[node]!!.public
+                }
+
+                override fun getOurPeer(): SessionNetworkMap.Peer {
+                    return node
+                }
+
+                override fun signData(data: ByteArray): ByteArray {
+                    signature.initSign(keys[node]?.private)
+                    signature.update(data)
+                    return signature.sign()
+                }
+            }
         }
 
-        fun getPublicKey(node: String): PublicKey? {
-            return keys[node]?.public
-        }
-
-        fun signData(node: String, data: ByteArray): ByteArray {
-            signature.initSign(getPrivateKey(node))
-            signature.update(data)
-            return signature.sign()
-        }
     }
 
-    fun mockGatewayResponse(message: InitiatorSessionMessage.InitiatorHello, us: Peer): InitiatorSessionMessage.Step2Message {
-        val authenticationProtocol = AuthenticationProtocolResponder(message.header.sessionId, listOf(Mode.AUTHENTICATION_ONLY))
-        authenticationProtocol.receiveInitiatorHello(message.message)
+    fun mockGatewayResponse(message: InitiatorHelloMessage): Step2Message {
+        val authenticationProtocol = AuthenticationProtocolResponder(message.header.sessionId, listOf(ProtocolMode.AUTHENTICATION_ONLY))
+        authenticationProtocol.receiveInitiatorHello(message)
         val responderHello = authenticationProtocol.generateResponderHello()
         val (privateKey, publicKey) = authenticationProtocol.getDHKeyPair()
-        return InitiatorSessionMessage.Step2Message(Header(message.header.source, us, message.header.sessionId), message.message, responderHello, privateKey, publicKey)
+        return Step2Message(message, responderHello, ByteBuffer.wrap(privateKey), ByteBuffer.wrap(publicKey))
     }
 
     @Test
     fun `A session can be negotiated between SessionManagerInitiator and SessionManagerResponder`() {
         val netMap = MockNetworkMap(listOf(PARTY_A, PARTY_B))
         val initiatorSessionManager = SessionManagerInitiator(
-            Mode.AUTHENTICATION_ONLY,
-            PARTY_A,
-            netMap::getPublicKey,
-            {data -> netMap.signData(PARTY_A, data)},
-            GROUP_ID
+            ProtocolMode.AUTHENTICATION_ONLY,
+            netMap.getSessionNetworkMapForNode(PARTY_A)
         )
         val responderSessionManager = SessionManagerResponder(
-            Mode.AUTHENTICATION_ONLY,
-            PARTY_B,
-            netMap::getPublicKey
-        ) { data -> netMap.signData(PARTY_B, data) }
+            ProtocolMode.AUTHENTICATION_ONLY,
+            netMap.getSessionNetworkMapForNode(PARTY_B)
+        )
 
-        val payload = "Hello from PartyA".toByteArray()
-        val message = SessionMessage(payload, PARTY_B)
+        val payload = ByteBuffer.wrap("Hello from PartyA".toByteArray())
+        val header = FlowMessageHeader(PARTY_B.toAvroPeer(), PARTY_A.toAvroPeer(), null, "messageId", "")
+        val message = FlowMessage(header, payload)
         initiatorSessionManager.sendMessage(message)
         val initiatorHelloMessage = initiatorSessionManager.getQueuedOutboundMessage()
-        assertTrue(initiatorHelloMessage is InitiatorSessionMessage.InitiatorHello)
+        assertTrue(initiatorHelloMessage.payload is InitiatorHelloMessage)
 
-        val step2Message = mockGatewayResponse(initiatorHelloMessage as InitiatorSessionMessage.InitiatorHello, PARTY_B)
-        responderSessionManager.processSessionMessage(step2Message)
-        initiatorSessionManager.processSessionMessage(ResponderSessionMessage.ResponderHello(Header(PARTY_B, PARTY_A, step2Message.header.sessionId), step2Message.responderHelloMsg))
+        //Strip the Header from the message (as the Gateway does before sending it).
+        val step2Message = mockGatewayResponse(initiatorHelloMessage.payload as InitiatorHelloMessage)
+        responderSessionManager.processMessage(step2Message)
+        initiatorSessionManager.processSessionMessage(step2Message.responderHello)
 
         val initiatorHandshakeMessage = initiatorSessionManager.getQueuedOutboundMessage()
-        assertTrue(initiatorHandshakeMessage is InitiatorSessionMessage.InitiatorHandshake)
-        responderSessionManager.processSessionMessage(initiatorHandshakeMessage as InitiatorSessionMessage)
+        assertTrue(initiatorHandshakeMessage.payload is InitiatorHandshakeMessage)
+        responderSessionManager.processMessage(initiatorHandshakeMessage.payload)
 
         val responderHandshakeMessage = responderSessionManager.getQueuedOutboundMessage()
-        assertTrue(responderHandshakeMessage is ResponderSessionMessage.ResponderHandshake)
-        initiatorSessionManager.processSessionMessage(responderHandshakeMessage as ResponderSessionMessage)
+        assertTrue(responderHandshakeMessage!!.payload is ResponderHandshakeMessage)
+        initiatorSessionManager.processSessionMessage(responderHandshakeMessage.payload)
         val authenticatedMessage = initiatorSessionManager.getQueuedOutboundMessage()
-        assertTrue(authenticatedMessage is AuthenticatedMessage)
-        assertEquals((authenticatedMessage as AuthenticatedMessage).payload, payload)
+        assertTrue(authenticatedMessage.payload is AuthenticatedDataMessage)
 
-        responderSessionManager.processAuthenticatedMessage(authenticatedMessage)
+        responderSessionManager.processMessage(authenticatedMessage.payload)
         val queuedMessage = responderSessionManager.getQueuedInboundMessage()
         assertEquals(queuedMessage?.payload, payload)
-    }
-
-    @Test
-    fun `SessionManagerResponder correctly handles InitiatorHello message`() {
-        val commonHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, "Id", 0, 100)
-        val message = InitiatorHelloMessage(commonHeader, "PublicKey".toByteArray(), listOf(Mode.AUTHENTICATION_ONLY))
-        val outerMessage = InitiatorSessionMessage.InitiatorHello(Header("Peer", "Dest", "Id"), message)
-        val netMap = MockNetworkMap(listOf(PARTY_A, PARTY_B))
-        val responderSessionManager = SessionManagerResponder(
-            Mode.AUTHENTICATION_ONLY,
-            PARTY_B,
-            netMap::getPublicKey
-        ) { data -> netMap.signData(PARTY_B, data) }
-        assertThrows<IllegalArgumentException> { responderSessionManager.processSessionMessage(outerMessage) }
     }
 }

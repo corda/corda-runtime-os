@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "FlowMessageHeader",
+  "namespace": "net.corda.p2p.crypto",
+  "fields": [
+    {
+      "name": "destination",
+      "type": "net.corda.p2p.crypto.Peer"
+    },
+    {
+      "name": "source",
+      "type": "net.corda.p2p.crypto.Peer"
+    },
+    {
+      "name": "ttl",
+      "type": ["null", "string"]
+    },
+    {
+      "name": "messageId",
+      "type": "string"
+    },
+    {
+      "name": "traceId",
+      "type": "string"
+    }
+  ]
+}

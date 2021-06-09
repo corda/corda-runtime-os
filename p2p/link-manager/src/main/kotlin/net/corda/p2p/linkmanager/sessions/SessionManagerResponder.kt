@@ -1,97 +1,101 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.p2p.crypto.AuthenticatedDataMessage
+import net.corda.p2p.crypto.FlowMessage
+import net.corda.p2p.crypto.InitiatorHandshakeMessage
+import net.corda.p2p.crypto.LinkManagerToGatewayMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidMac
-import net.corda.p2p.crypto.protocol.api.Mode
+import net.corda.p2p.crypto.ProtocolMode
+import net.corda.p2p.crypto.Step2Message
+import net.corda.p2p.linkmanager.sessions.SessionManagerInitiator.Companion.generateLinkManagerMessage
+import net.corda.p2p.linkmanager.sessions.SessionManagerInitiator.Companion.toByteArray
+import net.corda.p2p.linkmanager.sessions.SessionNetworkMap.Companion.toAvroPeer
 import org.slf4j.LoggerFactory
-import java.lang.IllegalArgumentException
-import java.security.PublicKey
+import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class SessionManagerResponder(
-    private val mode: Mode,
-    private val us: Peer,
-    private val networkMap: (Peer) -> PublicKey?,
-    private val signingFn: (ByteArray) -> ByteArray
+    private val mode: ProtocolMode,
+    private val networkMap: SessionNetworkMap
     ) {
 
     private val logger = LoggerFactory.getLogger(this::class.java.name)
-    private val queuedOutboundMessages = ConcurrentLinkedQueue<Any>()
-    private val queuedInboundMessages =  ConcurrentLinkedQueue<InboundSessionMessage>()
+    private val queuedOutboundMessages = ConcurrentLinkedQueue<LinkManagerToGatewayMessage>()
+    private val queuedInboundMessages =  ConcurrentLinkedQueue<FlowMessage>()
     private val pendingSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
     private val activeSessions = ConcurrentHashMap<String, AuthenticatedSession>()
 
-    fun processAuthenticatedMessage(message: AuthenticatedMessage) {
-        val session = activeSessions[message.mac.header.sessionId]
-        if (session != null) {
-            try {
-                session.validateMac(message.mac.header, message.payload, message.mac.mac)
-            } catch (expection: InvalidMac) {
-                logger.warn("MAC check failed for message for session ${message.mac.header.sessionId}.")
-                return
-            }
-            queuedInboundMessages.add(InboundSessionMessage(message.payload, message.source))
-        } else {
-            logger.warn("Received message of type ${AuthenticatedMessage::class.java.simpleName}" +
-                " but there is no session with id: ${message.mac.header.sessionId}")
-        }
-    }
-
-    fun processSessionMessage(message: InitiatorSessionMessage) {
+    fun processMessage(message: Any) {
         when (message) {
-            is InitiatorSessionMessage.InitiatorHandshake -> processInitiatorHandshake(message)
-            is InitiatorSessionMessage.Step2Message -> processStep2Message(message)
-            is InitiatorSessionMessage.InitiatorHello -> processInitiatorHello()
+            is AuthenticatedDataMessage -> processAuthenticatedMessage(message)
+            is InitiatorHandshakeMessage -> processInitiatorHandshake(message)
+            is Step2Message -> processStep2Message(message)
         }
     }
 
-    fun getQueuedOutboundMessage(): Any? {
+    fun getQueuedOutboundMessage(): LinkManagerToGatewayMessage? {
         return queuedOutboundMessages.poll()
     }
 
-    fun getQueuedInboundMessage(): InboundSessionMessage? {
+    fun getQueuedInboundMessage(): FlowMessage? {
         return queuedInboundMessages.poll()
     }
 
-    private fun processInitiatorHello() {
-        throw IllegalArgumentException("Received a message of type ${InitiatorSessionMessage.InitiatorHello::class.java.simpleName} " +
-            "this message should be processed by the gateway.")
+    private fun processAuthenticatedMessage(message: AuthenticatedDataMessage) {
+        val session = activeSessions[message.header.sessionId]
+        if (session != null) {
+            try {
+                session.validateMac(message.header, message.payload.array(), message.authTag.array())
+            } catch (exception: InvalidMac) {
+                logger.warn("MAC check failed for message for session ${message.header.sessionId}.")
+                return
+            }
+            val deserializedMessage = try {
+                FlowMessage.fromByteBuffer(message.payload)
+            } catch (exception: IOException) {
+                logger.warn("Could not deserialize message for session ${message.header.sessionId}.")
+                return
+            }
+            queuedInboundMessages.add(deserializedMessage)
+        } else {
+            logger.warn("Received message of type ${AuthenticatedDataMessage::class.java.simpleName}" +
+                    " but there is no session with id: ${message.header.sessionId}")
+        }
     }
 
-    private fun processStep2Message(message: InitiatorSessionMessage.Step2Message) {
-        val session = AuthenticationProtocolResponder.fromStep2(message.header.sessionId,
-            listOf(Mode.AUTHENTICATION_ONLY),
-            message.initiatorHelloMsg,
-            message.responderHelloMsg,
-            message.privateKey,
-            message.publicKey)
+    private fun processStep2Message(message: Step2Message) {
+        val session = AuthenticationProtocolResponder.fromStep2(message.initiatorHello.header.sessionId,
+            listOf(ProtocolMode.AUTHENTICATION_ONLY),
+            message.initiatorHello,
+            message.responderHello,
+            message.privateKey.toByteArray(),
+            message.publicKey.toByteArray())
         session.generateHandshakeSecrets()
-        pendingSessions[message.header.sessionId] = session
+        pendingSessions[message.initiatorHello.header.sessionId] = session
     }
 
-    private fun processInitiatorHandshake(message: InitiatorSessionMessage.InitiatorHandshake) {
+    private fun processInitiatorHandshake(message: InitiatorHandshakeMessage) {
         val session = pendingSessions[message.header.sessionId]
         if (session == null) {
-            logger.warn("Received ${InitiatorSessionMessage.InitiatorHandshake::class.java::getSimpleName} from peer " +
-                "${message.header.source} but there is no pending session. The message was discarded.")
+            logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId = " +
+                "${message.header.sessionId} but there is no pending session with this id. The message was discarded.")
             return
         }
-        val ourKey = networkMap(us)
-        if (ourKey == null) {
-            logger.warn("Could not find our identity ($us) in the network map.")
+        val ourKey = networkMap.getOurPublicKey()
+        val identityData = session.validatePeerHandshakeMessage(message, networkMap::getPublicKeyFromHash)
+        val response = session.generateOurHandshakeMessage(ourKey, networkMap::signData)
+        val peer = networkMap.getPeerFromHash(identityData.initiatorPublicKeyHash)?.toAvroPeer()
+        if (peer == null) {
+            logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId = " +
+                "${message.header.sessionId}. Identity with public key hash = ${identityData.initiatorPublicKeyHash} " +
+                "is not in the network map.")
             return
         }
-        val initiatorPublicKey = networkMap(message.header.source)
-        if (initiatorPublicKey == null) {
-            logger.info("Received ${InitiatorSessionMessage.InitiatorHandshake::class.java.simpleName} from peer " +
-                "(${message.header.source}) which is not in the network map.")
-            return
-        }
-        session.validatePeerHandshakeMessage(message.message) { initiatorPublicKey }
-        val response = session.generateOurHandshakeMessage(ourKey, signingFn)
-        queuedOutboundMessages.add(ResponderSessionMessage.ResponderHandshake(Header(us, message.header.source, message.header.sessionId), response))
+        val responseMessage = generateLinkManagerMessage(response, peer, networkMap)
+        queuedOutboundMessages.add(responseMessage)
         activeSessions[message.header.sessionId] = session.getSession()
         pendingSessions.remove(message.header.sessionId)
     }

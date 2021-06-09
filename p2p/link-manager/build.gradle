@@ -2,5 +2,6 @@ description 'LinkManager for p2p communication'
 
 dependencies {
     implementation project(":libs:p2p-crypto")
+    implementation project(":data:avro-schema")
     testImplementation "org.bouncycastle:bcprov-jdk15on:1.68"
 }
