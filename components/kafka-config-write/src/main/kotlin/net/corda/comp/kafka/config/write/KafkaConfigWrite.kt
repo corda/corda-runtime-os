@@ -25,17 +25,23 @@ class KafkaConfigWrite @Activate constructor(
         val writer = configWriteServiceFactory.createWriteService(destination, kafkaProperties)
         val configuration = ConfigFactory.parseString(config)
 
-        for (key1 in configuration.root().keys) {
-            val packageVersionNumber = ConfigVersionNumber.from(configuration.getString("$key1.version"))
-            val packageVersion = CordaConfigurationVersion(key1, packageVersionNumber.major, packageVersionNumber.minor)
-            val key1Config = configuration.getConfig(key1)
-            for (key2 in key1Config.root().keys) {
-                if(!key2.equals("version")) {
-                    val componentVersionNumber = ConfigVersionNumber.from(key1Config.getString("$key2.version"))
+        for (packageKey in configuration.root().keys) {
+            val packageVersionNumber = ConfigVersionNumber.from(configuration.getString("$packageKey.version"))
+            val packageVersion =
+                CordaConfigurationVersion(packageKey, packageVersionNumber.major, packageVersionNumber.minor)
+            val packageConfig = configuration.getConfig(packageKey)
+            for (componentKey in packageConfig.root().keys) {
+                if (!componentKey.equals("version")) {
+                    val componentVersionNumber =
+                        ConfigVersionNumber.from(packageConfig.getString("$componentKey.version"))
                     val componentVersion =
-                        CordaConfigurationVersion(key2, componentVersionNumber.major, componentVersionNumber.minor)
-                    val configurationKey = CordaConfigurationKey(key1, packageVersion, componentVersion)
-                    writer.updateConfiguration(configurationKey, key1Config.atKey(key2))
+                        CordaConfigurationVersion(
+                            componentKey,
+                            componentVersionNumber.major,
+                            componentVersionNumber.minor
+                        )
+                    val configurationKey = CordaConfigurationKey(packageKey, packageVersion, componentVersion)
+                    writer.updateConfiguration(configurationKey, packageConfig.atKey(componentKey))
                 }
             }
         }
