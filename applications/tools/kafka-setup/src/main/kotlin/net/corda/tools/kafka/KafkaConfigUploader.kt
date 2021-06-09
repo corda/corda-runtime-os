@@ -17,6 +17,7 @@ import java.io.FileInputStream
 import java.util.*
 import picocli.CommandLine
 
+@Suppress("SpreadOperator")
 @Component(immediate = true)
 class KafkaConfigUploader @Activate constructor(
     @Reference(service = KafkaTopicAdmin::class)

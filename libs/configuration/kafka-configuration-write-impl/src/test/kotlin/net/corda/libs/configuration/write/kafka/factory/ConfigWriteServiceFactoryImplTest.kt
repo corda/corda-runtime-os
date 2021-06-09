@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
+import java.util.*
 
 class ConfigWriteServiceFactoryImplTest {
     private lateinit var cordaWriteServiceFactory: ConfigWriteServiceFactoryImpl
@@ -26,7 +27,7 @@ class ConfigWriteServiceFactoryImplTest {
     fun testCreateCordaWriteService() {
         Mockito.`when`(publisherFactory.createPublisher(any(), any()))
             .thenReturn(publisher)
-        val writeService = cordaWriteServiceFactory.createWriteService(topicName)
+        val writeService = cordaWriteServiceFactory.createWriteService(topicName, Properties())
         Assertions.assertNotNull(writeService)
     }
 }
