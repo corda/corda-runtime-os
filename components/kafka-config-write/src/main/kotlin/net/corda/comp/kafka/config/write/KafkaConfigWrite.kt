@@ -39,7 +39,7 @@ class KafkaConfigWrite @Activate constructor(
                     "Package $packageKey has no defined packageVersion. " +
                             "Discarding package configuration"
                 )
-                break
+                continue
             }
 
             val packageConfig = configuration.getConfig(packageKey)
