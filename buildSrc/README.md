@@ -98,7 +98,20 @@ Annotate the class implementing `net.corda.osgi.api.Application` with
 @Component(immediate = true)
 ```
 
+*NOTE! In this document the expressions 'component' and OSGi 'service' are synonyms 
+because OSGi services are declared with the `@Component` annotation.*
+
 See [OSGi Core r7 5.2.2 Service Interface](http://docs.osgi.org/specification/osgi.core/7.0.0/framework.service.html).
+
+See [OSGi Compendium r7 112. Declarative Services Specification](https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.component.html).
+
+To set the component as `immediate = true` means on object is instantiated for each object
+using the component as soon as possible, without delaying the creation of the component when
+required runtime. To create components immediately isn't compulsory, but it is convenient 
+when they are surely used and during the development to be sure  those components are registered
+and available at debug time.
+
+See [OSGi Compendium r7 112.2.2 Immediate Component](https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.component.html#d0e36881).
 
 The `net.corda.osgi.api.Application.startup(args: Array<String>)` is the entry-point of the application called when all
 the OSGi bundles zipped in the bootable JAR are active.
@@ -108,6 +121,43 @@ stops.
 
 See [How to stop the application programmatically] for a full example of how to
 implement `net.corda.osgi.api.Application`
+
+#### How to refer to additional components in the class implementing the Application interface
+
+The class implementing the `net.corda.osgi.api.Application` is an OSGI service, thus a OSGi component, the
+terms are synonyms.
+
+To let the class to access additional services, annotate them with `@Reference` where the
+`service` attribute is the full-qualified name used to publish the service.
+
+The following example declares `kafkaTopicAdmin` to refers the service published as 
+the `KafkaTopicAdmin` service. 
+
+```kotlin
+@Component(immediate = true)
+class App @Activate constructor(
+    @Reference(service = KafkaTopicAdmin::class)
+    private var kafkaTopicAdmin: KafkaTopicAdmin,
+) : Application {
+    // ...
+}
+```
+
+The referenced service must be annotated as `@Component` with an element of the `service` attribute set to the
+same class used in the reference. Completing the above example, the `KafkaTopicAdmin` class must be annotated as
+
+```kotlin
+@Component(immediate = true, service = [KafkaTopicAdmin::class])
+class KafkaTopicAdmin @Activate constructor(
+    @Reference(service = TopicUtilsFactory::class)
+    private val topicUtilsFactory: TopicUtilsFactory
+) {
+    // ...
+}
+```
+
+As rule of thumbs, each time a property is annotated with `@Reference(service = <class>)`,
+the `<class>` must be annotated with `@Component(service = [<class>])`.
 
 #### How to clean-up and release resources before to quit
 
