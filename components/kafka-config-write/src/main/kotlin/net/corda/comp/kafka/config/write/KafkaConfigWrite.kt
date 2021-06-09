@@ -1,7 +1,6 @@
 package net.corda.comp.kafka.config.write
 
 import com.typesafe.config.ConfigFactory
-import net.corda.libs.configuration.write.ConfigVersionNumber
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
 import net.corda.libs.configuration.write.factory.ConfigWriteServiceFactory
