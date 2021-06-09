@@ -1,7 +1,8 @@
 package net.corda.messaging.api.subscription
 
+import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.processor.CompactedProcessor
-import java.util.*
+import net.corda.messaging.api.records.Record
 
 /**
  * A subscription that can be used to manage the life cycle of consumption of event records from a topic.
@@ -20,7 +21,7 @@ interface Subscription<K, V> : LifeCycle {
     /**
      * Check the state of a subscription. true if subscription is still active. false otherwise.
      */
-    val isRunning: Boolean
+    override val isRunning: Boolean
 }
 
 /**
@@ -43,10 +44,7 @@ interface StateAndEventSubscription<K, S, E> : LifeCycle {
     @Throws(IllegalArgumentException::class)
     fun getValue(key: K): S?
 
-    /**
-     * Check the state of a subscription. true if subscription is still active. false otherwise.
-     */
-    val isRunning: Boolean
+
 }
 
 /**
@@ -64,6 +62,19 @@ interface CompactedSubscription<K : Any, V : Any> : Subscription<K, V> {
      *  Queries the topic values for the most recent value [V] of the given [key]
      */
     fun getValue(key: K): V?
+}
+
+/**
+ * A subscription that can be used to retrieve records at a specific (partition, offset) location.
+ */
+interface RandomAccessSubscription<K: Any, V: Any>: Subscription<K, V> {
+
+    /**
+     * Get the record at the provided partition and offset.
+     * @return the record if there is one at the specified location, null otherwise.
+     */
+    fun getRecord(partition: Int, offset: Long): Record<K, V>?
+
 }
 
 /**

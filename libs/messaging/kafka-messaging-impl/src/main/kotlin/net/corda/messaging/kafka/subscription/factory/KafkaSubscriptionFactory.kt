@@ -6,9 +6,11 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
@@ -142,6 +144,22 @@ class KafkaSubscriptionFactory @Activate constructor(
         processor: StateAndEventProcessor<K, S, E>,
         properties: Map<String, String>
     ): StateAndEventSubscription<K, S, E> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <K : Any, V : Any> createEventLogSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: EventLogProcessor<K, V>,
+        properties: Map<String, String>,
+        partitionAssignmentListener: PartitionAssignmentListener?
+    ): Subscription<K, V> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <K : Any, V : Any> createRandomAccessSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        properties: Map<String, String>
+    ): RandomAccessSubscription<K, V> {
         TODO("Not yet implemented")
     }
 

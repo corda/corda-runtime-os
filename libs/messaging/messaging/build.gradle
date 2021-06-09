@@ -9,6 +9,7 @@ dependencies {
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 
     implementation "net.corda:corda-base:$cordaVersion"
+    implementation project(":libs:lifecycle")
 }
 
 description 'Messaging API'
