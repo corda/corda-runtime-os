@@ -29,8 +29,8 @@ class ConfigWriteServiceImplTest {
         val config = ConfigFactory.parseString(configReader.readText())
         configReader.close()
 
-        val packageVersion = CordaConfigurationVersion("corda", "1.0")
-        val componentVersion = CordaConfigurationVersion("corda", "1.0")
+        val packageVersion = CordaConfigurationVersion("corda", 1, 0)
+        val componentVersion = CordaConfigurationVersion("corda", 1, 0)
         val configurationKey = CordaConfigurationKey("corda", packageVersion, componentVersion)
 
         configWriteService.updateConfiguration(configurationKey, config)

@@ -13,7 +13,7 @@ import org.osgi.service.component.annotations.Reference
  * Kafka implementation for [ConfigWriteServiceFactory].
  * @property publisherFactory
  */
-@Component(immediate = true, service = [ConfigWriteServiceFactoryImpl::class])
+@Component(immediate = true)
 class ConfigWriteServiceFactoryImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory

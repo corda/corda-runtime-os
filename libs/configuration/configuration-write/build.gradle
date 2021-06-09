@@ -7,4 +7,6 @@ description 'Configuration write API'
 
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
 }

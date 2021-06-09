@@ -1,6 +1,7 @@
 package net.corda.comp.kafka.config.write
 
 import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.write.ConfigVersionNumber
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
 import net.corda.libs.configuration.write.factory.ConfigWriteServiceFactory
@@ -24,11 +25,14 @@ class KafkaConfigWrite @Activate constructor(
         val configuration = ConfigFactory.parseString(config)
 
         for (key1 in configuration.root().keys) {
-            val packageVersion = CordaConfigurationVersion(key1, configuration.getString("$key1.version"))
+            val packageVersionNumber = ConfigVersionNumber.from(configuration.getString("$key1.version"))
+            val packageVersion = CordaConfigurationVersion(key1, packageVersionNumber.major, packageVersionNumber.minor)
             val key1Config = configuration.getConfig(key1)
             for (key2 in key1Config.root().keys) {
-                if (!key2.equals("version")) {
-                    val componentVersion = CordaConfigurationVersion(key2, key1Config.getString("$key2.version"))
+                if(!key2.equals("version")) {
+                    val componentVersionNumber = ConfigVersionNumber.from(key1Config.getString("$key2.version"))
+                    val componentVersion =
+                        CordaConfigurationVersion(key2, componentVersionNumber.major, componentVersionNumber.minor)
                     val configurationKey = CordaConfigurationKey(key1, packageVersion, componentVersion)
                     writer.updateConfiguration(configurationKey, key1Config.atKey(key2))
                 }
