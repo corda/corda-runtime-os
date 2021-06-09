@@ -5,45 +5,51 @@ import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
 import net.corda.libs.configuration.write.factory.CordaWriteServiceFactory
 import net.corda.libs.kafka.topic.utils.factory.TopicUtilsFactory
-import net.corda.osgi.api.Application
-import org.osgi.service.component.annotations.Activate
+import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.LifeCycleCoordinator
+import net.corda.lifecycle.StartEvent
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.StringReader
 import java.util.*
-import kotlin.system.exitProcess
 
 @Component
-class BootstrapTopics @Activate constructor(
-    @Reference(service = TopicUtilsFactory::class)
+class BootstrapTopics(
+    private val lifeCycleCoordinator: LifeCycleCoordinator,
     private val topicUtilsFactory: TopicUtilsFactory,
-    @Reference(service = CordaWriteServiceFactory::class)
-    private val cordaWriteServiceFactory: CordaWriteServiceFactory
-) : Application {
+    private val cordaWriteServiceFactory: CordaWriteServiceFactory,
+    private val topicPrefix: String,
+) : LifeCycle {
+    private companion object {
+        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        const val topicName = "configTopic"
+        const val kafkaProperty: String = "bootstrap.servers=localhost:9092"
+    }
 
 
-    override fun startup(args: Array<String>) {
-        if (args.size != 3) {
-            println("Required command line arguments: kafkaServerProperty topicName typesafeconfig")
-            exitProcess(1)
-        }
+    override var isRunning: Boolean = false
 
+    override fun start() {
+        isRunning = true
         val kafkaProps = Properties()
-        kafkaProps.load(StringReader(args[0]))
+        kafkaProps.load(StringReader(kafkaProperty))
 
-        val topicName = args[1]
         val topicUtils = topicUtilsFactory.createTopicUtils(kafkaProps)
-        topicUtils.createTopic(topicName, 1, 1)
-        val configuration = ConfigFactory.load(args[2])
+        topicUtils.createTopic(topicPrefix + topicName, 1, 1)
+        val configuration = ConfigFactory.load("config1")
         val packageVersion = CordaConfigurationVersion("corda", 1, 0)
         val componentVersion = CordaConfigurationVersion("corda", 1, 0)
         val configurationKey = CordaConfigurationKey("corda", packageVersion, componentVersion)
-        val configurationWriteService = cordaWriteServiceFactory.createWriteService(topicName)
+        val configurationWriteService = cordaWriteServiceFactory.createWriteService(topicPrefix + topicName)
 
         configurationWriteService.updateConfiguration(configurationKey, configuration)
+        isRunning = false
+        lifeCycleCoordinator.postEvent(StartEvent)
     }
 
-    override fun shutdown() {
-        TODO("Not yet implemented")
+    override fun stop() {
+        isRunning = false
+        log.info("Stopping topic bootstrapper")
     }
 }
