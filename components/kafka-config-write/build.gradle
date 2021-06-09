@@ -8,4 +8,9 @@ description "Kafka Config Write Component"
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation project(':libs:configuration:configuration-write')
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
 }
