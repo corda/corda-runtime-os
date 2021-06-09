@@ -30,8 +30,18 @@ class KafkaConfigWrite @Activate constructor(
         val configuration = ConfigFactory.parseString(config)
 
         for (packageKey in configuration.root().keys) {
-            val packageVersion =
-                CordaConfigurationVersion.from(packageKey, configuration.getString("$packageKey.packageVersion"))
+            var packageVersion: CordaConfigurationVersion
+            try {
+                packageVersion =
+                    CordaConfigurationVersion.from(packageKey, configuration.getString("$packageKey.packageVersion"))
+            } catch (e: ConfigException) {
+                log.warn(
+                    "Package $packageKey has no defined packageVersion. " +
+                            "Discarding package configuration"
+                )
+                break
+            }
+
             val packageConfig = configuration.getConfig(packageKey)
             for (componentKey in packageConfig.root().keys) {
                 //skip if the component key is the package version
