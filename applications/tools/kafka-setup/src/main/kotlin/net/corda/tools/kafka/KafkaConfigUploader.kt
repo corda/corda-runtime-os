@@ -3,6 +3,10 @@ package net.corda.tools.kafka
 import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.osgi.api.Application
+import net.corda.osgi.api.Shutdown
+import org.osgi.framework.BundleContext
+import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.ServiceReference
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -36,10 +40,21 @@ private var configWriter: KafkaConfigWrite
 
         val topic = topicAdmin.createTopic(kafkaConnectionProperties, File(args[1]).readText())
         configWriter.updateConfig(topic.getString("topicName"), File(args[2]).readText())
-        shutdown()
+        shutdownOSGiFramework()
     }
 
     override fun shutdown() {
         logger.info("Shutting down config uploader")
+    }
+
+    private fun shutdownOSGiFramework() {
+        val bundleContext: BundleContext? = FrameworkUtil.getBundle(KafkaConfigUploader::class.java).bundleContext
+        if (bundleContext != null) {
+            val shutdownServiceReference: ServiceReference<Shutdown>? =
+                bundleContext.getServiceReference(Shutdown::class.java)
+            if (shutdownServiceReference != null) {
+                bundleContext.getService(shutdownServiceReference)?.shutdown(bundleContext.bundle)
+            }
+        }
     }
 }
