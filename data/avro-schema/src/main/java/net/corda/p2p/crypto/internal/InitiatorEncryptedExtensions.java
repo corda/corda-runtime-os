@@ -14,8 +14,8 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class InitiatorEncryptedExtensions extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 6963393124639617518L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"InitiatorEncryptedExtensions\",\"namespace\":\"net.corda.p2p.crypto.internal\",\"fields\":[{\"name\":\"responderPublicKeyHash\",\"type\":\"bytes\"},{\"name\":\"groupId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
+  private static final long serialVersionUID = 5868375559389361116L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"InitiatorEncryptedExtensions\",\"namespace\":\"net.corda.p2p.crypto.internal\",\"fields\":[{\"name\":\"responderPublicKeyHash\",\"type\":\"bytes\"},{\"name\":\"groupId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"maxMessageSize\",\"type\":\"int\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -73,6 +73,7 @@ public class InitiatorEncryptedExtensions extends org.apache.avro.specific.Speci
 
    private java.nio.ByteBuffer responderPublicKeyHash;
    private java.lang.String groupId;
+   private int maxMessageSize;
 
   /**
    * Default constructor.  Note that this does not initialize fields
@@ -85,10 +86,12 @@ public class InitiatorEncryptedExtensions extends org.apache.avro.specific.Speci
    * All-args constructor.
    * @param responderPublicKeyHash The new value for responderPublicKeyHash
    * @param groupId The new value for groupId
+   * @param maxMessageSize The new value for maxMessageSize
    */
-  public InitiatorEncryptedExtensions(java.nio.ByteBuffer responderPublicKeyHash, java.lang.String groupId) {
+  public InitiatorEncryptedExtensions(java.nio.ByteBuffer responderPublicKeyHash, java.lang.String groupId, java.lang.Integer maxMessageSize) {
     this.responderPublicKeyHash = responderPublicKeyHash;
     this.groupId = groupId;
+    this.maxMessageSize = maxMessageSize;
   }
 
   public org.apache.avro.specific.SpecificData getSpecificData() { return MODEL$; }
@@ -98,6 +101,7 @@ public class InitiatorEncryptedExtensions extends org.apache.avro.specific.Speci
     switch (field$) {
     case 0: return responderPublicKeyHash;
     case 1: return groupId;
+    case 2: return maxMessageSize;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -108,6 +112,7 @@ public class InitiatorEncryptedExtensions extends org.apache.avro.specific.Speci
     switch (field$) {
     case 0: responderPublicKeyHash = (java.nio.ByteBuffer)value$; break;
     case 1: groupId = value$ != null ? value$.toString() : null; break;
+    case 2: maxMessageSize = (java.lang.Integer)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -144,6 +149,23 @@ public class InitiatorEncryptedExtensions extends org.apache.avro.specific.Speci
    */
   public void setGroupId(java.lang.String value) {
     this.groupId = value;
+  }
+
+  /**
+   * Gets the value of the 'maxMessageSize' field.
+   * @return The value of the 'maxMessageSize' field.
+   */
+  public int getMaxMessageSize() {
+    return maxMessageSize;
+  }
+
+
+  /**
+   * Sets the value of the 'maxMessageSize' field.
+   * @param value the value to set.
+   */
+  public void setMaxMessageSize(int value) {
+    this.maxMessageSize = value;
   }
 
   /**
@@ -189,6 +211,7 @@ public class InitiatorEncryptedExtensions extends org.apache.avro.specific.Speci
 
     private java.nio.ByteBuffer responderPublicKeyHash;
     private java.lang.String groupId;
+    private int maxMessageSize;
 
     /** Creates a new Builder */
     private Builder() {
@@ -209,6 +232,10 @@ public class InitiatorEncryptedExtensions extends org.apache.avro.specific.Speci
         this.groupId = data().deepCopy(fields()[1].schema(), other.groupId);
         fieldSetFlags()[1] = other.fieldSetFlags()[1];
       }
+      if (isValidValue(fields()[2], other.maxMessageSize)) {
+        this.maxMessageSize = data().deepCopy(fields()[2].schema(), other.maxMessageSize);
+        fieldSetFlags()[2] = other.fieldSetFlags()[2];
+      }
     }
 
     /**
@@ -224,6 +251,10 @@ public class InitiatorEncryptedExtensions extends org.apache.avro.specific.Speci
       if (isValidValue(fields()[1], other.groupId)) {
         this.groupId = data().deepCopy(fields()[1].schema(), other.groupId);
         fieldSetFlags()[1] = true;
+      }
+      if (isValidValue(fields()[2], other.maxMessageSize)) {
+        this.maxMessageSize = data().deepCopy(fields()[2].schema(), other.maxMessageSize);
+        fieldSetFlags()[2] = true;
       }
     }
 
@@ -307,6 +338,45 @@ public class InitiatorEncryptedExtensions extends org.apache.avro.specific.Speci
       return this;
     }
 
+    /**
+      * Gets the value of the 'maxMessageSize' field.
+      * @return The value.
+      */
+    public int getMaxMessageSize() {
+      return maxMessageSize;
+    }
+
+
+    /**
+      * Sets the value of the 'maxMessageSize' field.
+      * @param value The value of 'maxMessageSize'.
+      * @return This builder.
+      */
+    public net.corda.p2p.crypto.internal.InitiatorEncryptedExtensions.Builder setMaxMessageSize(int value) {
+      validate(fields()[2], value);
+      this.maxMessageSize = value;
+      fieldSetFlags()[2] = true;
+      return this;
+    }
+
+    /**
+      * Checks whether the 'maxMessageSize' field has been set.
+      * @return True if the 'maxMessageSize' field has been set, false otherwise.
+      */
+    public boolean hasMaxMessageSize() {
+      return fieldSetFlags()[2];
+    }
+
+
+    /**
+      * Clears the value of the 'maxMessageSize' field.
+      * @return This builder.
+      */
+    public net.corda.p2p.crypto.internal.InitiatorEncryptedExtensions.Builder clearMaxMessageSize() {
+      fieldSetFlags()[2] = false;
+      return this;
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public InitiatorEncryptedExtensions build() {
@@ -314,6 +384,7 @@ public class InitiatorEncryptedExtensions extends org.apache.avro.specific.Speci
         InitiatorEncryptedExtensions record = new InitiatorEncryptedExtensions();
         record.responderPublicKeyHash = fieldSetFlags()[0] ? this.responderPublicKeyHash : (java.nio.ByteBuffer) defaultValue(fields()[0]);
         record.groupId = fieldSetFlags()[1] ? this.groupId : (java.lang.String) defaultValue(fields()[1]);
+        record.maxMessageSize = fieldSetFlags()[2] ? this.maxMessageSize : (java.lang.Integer) defaultValue(fields()[2]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -350,6 +421,8 @@ public class InitiatorEncryptedExtensions extends org.apache.avro.specific.Speci
 
     out.writeString(this.groupId);
 
+    out.writeInt(this.maxMessageSize);
+
   }
 
   @Override public void customDecode(org.apache.avro.io.ResolvingDecoder in)
@@ -361,8 +434,10 @@ public class InitiatorEncryptedExtensions extends org.apache.avro.specific.Speci
 
       this.groupId = in.readString();
 
+      this.maxMessageSize = in.readInt();
+
     } else {
-      for (int i = 0; i < 2; i++) {
+      for (int i = 0; i < 3; i++) {
         switch (fieldOrder[i].pos()) {
         case 0:
           this.responderPublicKeyHash = in.readBytes(this.responderPublicKeyHash);
@@ -370,6 +445,10 @@ public class InitiatorEncryptedExtensions extends org.apache.avro.specific.Speci
 
         case 1:
           this.groupId = in.readString();
+          break;
+
+        case 2:
+          this.maxMessageSize = in.readInt();
           break;
 
         default:
