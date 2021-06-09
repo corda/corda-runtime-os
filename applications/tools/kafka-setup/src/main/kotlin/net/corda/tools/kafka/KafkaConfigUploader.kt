@@ -15,14 +15,14 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileInputStream
 import java.util.*
-import kotlin.system.exitProcess
+import picocli.CommandLine
 
 @Component(immediate = true)
 class KafkaConfigUploader @Activate constructor(
     @Reference(service = KafkaTopicAdmin::class)
     private var topicAdmin: KafkaTopicAdmin,
     @Reference(service = KafkaConfigWrite::class)
-private var configWriter: KafkaConfigWrite
+    private var configWriter: KafkaConfigWrite
 ) : Application {
 
     private companion object {
@@ -30,17 +30,24 @@ private var configWriter: KafkaConfigWrite
     }
 
     override fun startup(args: Array<String>) {
-        if (args.size != 3) {
-            logger.error("Required command line arguments: kafkaProps topicTemplate typesafeConfig")
-            exitProcess(1)
+
+        val parameters = CliParameters()
+        CommandLine(parameters).parseArgs(*args)
+        if (parameters.helpRequested) {
+            CommandLine.usage(CliParameters(), System.out)
+            shutdownOSGiFramework()
+        } else {
+            val kafkaConnectionProperties = Properties()
+            kafkaConnectionProperties.load(FileInputStream(parameters.kafkaConnection))
+
+            val topic = topicAdmin.createTopic(kafkaConnectionProperties, parameters.topicTemplate.readText())
+            configWriter.updateConfig(
+                topic.getString("topicName"),
+                kafkaConnectionProperties,
+                parameters.configurationFile.readText()
+            )
+            shutdownOSGiFramework()
         }
-
-        val kafkaConnectionProperties = Properties()
-        kafkaConnectionProperties.load(FileInputStream(args[0]))
-
-        val topic = topicAdmin.createTopic(kafkaConnectionProperties, File(args[1]).readText())
-        configWriter.updateConfig(topic.getString("topicName"), kafkaConnectionProperties, File(args[2]).readText())
-        shutdownOSGiFramework()
     }
 
     override fun shutdown() {
@@ -57,4 +64,18 @@ private var configWriter: KafkaConfigWrite
             }
         }
     }
+}
+
+class CliParameters {
+    @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties"])
+    lateinit var kafkaConnection: File
+
+    @CommandLine.Option(names = ["--topic"], description = ["File containing the topic template"])
+    lateinit var topicTemplate: File
+
+    @CommandLine.Option(names = ["--config"], description = ["File containing configuration to be stored"])
+    lateinit var configurationFile: File
+
+    @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
+    var helpRequested = false
 }

@@ -26,19 +26,16 @@ class KafkaConfigWrite @Activate constructor(
         val configuration = ConfigFactory.parseString(config)
 
         for (packageKey in configuration.root().keys) {
-            val packageVersionNumber = ConfigVersionNumber.from(configuration.getString("$packageKey.version"))
             val packageVersion =
-                CordaConfigurationVersion(packageKey, packageVersionNumber.major, packageVersionNumber.minor)
+                CordaConfigurationVersion.from(packageKey, configuration.getString("$packageKey.packageVersion"))
             val packageConfig = configuration.getConfig(packageKey)
             for (componentKey in packageConfig.root().keys) {
-                if (!componentKey.equals("version")) {
-                    val componentVersionNumber =
-                        ConfigVersionNumber.from(packageConfig.getString("$componentKey.version"))
+                //skip if the component key is the package version
+                if (componentKey != "packageVersion") {
                     val componentVersion =
-                        CordaConfigurationVersion(
+                        CordaConfigurationVersion.from(
                             componentKey,
-                            componentVersionNumber.major,
-                            componentVersionNumber.minor
+                            packageConfig.getString("$componentKey.componentVersion")
                         )
                     val configurationKey = CordaConfigurationKey(packageKey, packageVersion, componentVersion)
                     writer.updateConfiguration(configurationKey, packageConfig.atKey(componentKey))
