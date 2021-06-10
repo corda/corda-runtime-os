@@ -67,7 +67,10 @@ class Demo @Activate constructor(
                 }
 
                 is StopEvent -> {
-
+                    pubsubSub?.stop()
+                    compactedSub?.stop()
+                    durableSub?.stop()
+                    publisherSub?.stop()
                 }
                 else -> {
                     log.error("$event unexpected!")
