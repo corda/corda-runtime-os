@@ -1,6 +1,6 @@
 package net.corda.libs.kafka.topic.utils
 
-import java.util.*
+import com.typesafe.config.Config
 
 
 /**
@@ -10,18 +10,8 @@ import java.util.*
 interface TopicUtils {
 
     /**
-     * Create new topic based on:
-     * [topicName]
-     * [partitions]
-     * [replication]
+     * Create new topic based on [topicTemplate]
      */
-    fun createTopic(topicName: String, partitions: Int, replication: Short)
+    fun createTopic(topicTemplate: Config)
 
-    /**
-     * Create new compacted topic based on:
-     * [topicName]
-     * [partitions]
-     * [replication]
-     */
-    fun createCompactedTopic(topicName: String, partitions: Int, replication: Short)
 }

@@ -3,7 +3,7 @@ plugins {
     id 'corda.publish'
 }
 
-description 'Kafka configuration write API impl'
+description 'Kafka Configuration Write API Impl'
 
 
 dependencies {
