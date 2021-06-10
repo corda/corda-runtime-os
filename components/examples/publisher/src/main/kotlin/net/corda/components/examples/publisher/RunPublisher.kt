@@ -2,7 +2,6 @@ package net.corda.components.examples.publisher
 
 import net.corda.data.demo.DemoRecord
 import net.corda.lifecycle.LifeCycle
-import net.corda.lifecycle.LifeCycleCoordinator
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -13,7 +12,6 @@ import org.slf4j.LoggerFactory
 
 @Component
 class RunPublisher (
-    private val lifeCycleCoordinator: LifeCycleCoordinator,
     private val publisherFactory: PublisherFactory,
     private val instanceId: Int?
 ) : LifeCycle {
@@ -22,11 +20,11 @@ class RunPublisher (
     private var publisherTransactional: Publisher? = null
 
 
-    private companion object {
+    companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java)
         const val clientId = "publisher"
         const val numberOfRecords = 1000
-        const val topic = "publisherTopic"
+        const val publisherTopic = "publisherTopic"
     }
 
     override var isRunning: Boolean = false
@@ -38,12 +36,12 @@ class RunPublisher (
 
         val recordsAsync = mutableListOf<Record<*, *>>()
         for (i in 1..numberOfRecords) {
-            recordsAsync.add(Record(topic, "key1", DemoRecord(i)))
+            recordsAsync.add(Record(publisherTopic, "key1", DemoRecord(i)))
         }
 
         val recordsTransactional = mutableListOf<Record<*, *>>()
         for (i in 1..numberOfRecords) {
-            recordsTransactional.add(Record(topic, "key2", DemoRecord(i)))
+            recordsTransactional.add(Record(publisherTopic, "key2", DemoRecord(i)))
         }
 
         log.info("Publishing Async records..")

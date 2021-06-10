@@ -1,6 +1,7 @@
 package net.corda.components.examples.demo
 
 import net.corda.components.examples.bootstrap.topics.BootstrapTopics
+import net.corda.components.examples.bootstrap.topics.ConfigCompleteEvent
 import net.corda.components.examples.compacted.RunCompactedSub
 import net.corda.components.examples.durable.RunDurableSub
 import net.corda.components.examples.publisher.RunPublisher
@@ -37,7 +38,7 @@ class Demo @Activate constructor(
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java)
         const val BATCH_SIZE: Int = 128
-        const val TIMEOUT: Long = 1000L
+        const val TIMEOUT: Long = 10000L
     }
 
     override fun startup(args: Array<String>) {
@@ -49,46 +50,42 @@ class Demo @Activate constructor(
         val instanceId = args[0].toInt()
         val topicPrefix = args[1]
 
-        var bootstrapTopics: BootstrapTopics?
-        var compactedSub: RunCompactedSub? = null
-        var durableSub: RunDurableSub? = null
-        var pubsubSub: RunPubSub? = null
-        var publisherSub: RunPublisher? = null
+        var bootstrapTopics: BootstrapTopics? = null
 
-        val lifeCycleCoordinator = SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+        val compactedSub = RunCompactedSub(subscriptionFactory)
+        val durableSub = RunDurableSub(subscriptionFactory, instanceId)
+        val pubsubSub = RunPubSub(subscriptionFactory)
+        val publisher = RunPublisher(publisherFactory, instanceId)
+
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             log.debug("processEvent $event")
             when (event) {
 
                 is StartEvent -> {
-                    pubsubSub?.start()
-                    compactedSub?.start()
-                    durableSub?.start()
-                    publisherSub?.start()
+                    bootstrapTopics?.start()
+                }
+
+                is ConfigCompleteEvent -> {
+                    pubsubSub.start()
+                    compactedSub.start()
+                    durableSub.start()
+                    publisher.start()
                 }
 
                 is StopEvent -> {
-                    pubsubSub?.stop()
-                    compactedSub?.stop()
-                    durableSub?.stop()
-                    publisherSub?.stop()
+                    pubsubSub.stop()
+                    compactedSub.stop()
+                    durableSub.stop()
+                    publisher.stop()
                 }
                 else -> {
                     log.error("$event unexpected!")
                 }
             }
-        }
-
-        lifeCycleCoordinator.use {
+        }.let {
             bootstrapTopics = BootstrapTopics(it, topicUtilsFactory, cordaWriteServiceFactory, topicPrefix)
-            compactedSub = RunCompactedSub(it, subscriptionFactory)
-            durableSub = RunDurableSub(it, subscriptionFactory, instanceId)
-            pubsubSub = RunPubSub(it, subscriptionFactory)
-            publisherSub = RunPublisher(it, publisherFactory, instanceId)
+            it.start()
         }
-
-
-        lifeCycleCoordinator.start()
-        bootstrapTopics?.start()
     }
 
     override fun shutdown() {
