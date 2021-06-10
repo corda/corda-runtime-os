@@ -3,7 +3,7 @@ plugins {
     id 'corda.publish'
 }
 
-description 'Configuration write API'
+description 'Configuration Write API'
 
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"

@@ -4,3 +4,7 @@ plugins {
 }
 
 description 'Kafka Topic admin'
+
+dependencies {
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+}
