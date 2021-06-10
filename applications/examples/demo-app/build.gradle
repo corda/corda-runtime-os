@@ -9,10 +9,12 @@ dependencies {
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "info.picocli:picocli:$picocliVersion"
 
     implementation project(":osgi-framework-api")
-    implementation project(":libs:kafka-utils:topic-admin")
-    implementation project(":libs:configuration:configuration-write")
+    implementation project(':components:kafka-topic-admin')
+    implementation project(':components:kafka-config-write')
+
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle")
     implementation project(":data:avro-schema")
