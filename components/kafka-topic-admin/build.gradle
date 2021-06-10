@@ -1,0 +1,11 @@
+plugins {
+    id 'corda.publish'
+    id 'corda.common-library'
+}
+
+description "Kafka Topic Admin Component"
+
+dependencies {
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation project(':libs:kafka-utils:topic-admin')
+}

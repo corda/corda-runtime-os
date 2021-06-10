@@ -1,39 +1,82 @@
 package net.corda.tools.kafka
 
-import com.typesafe.config.ConfigFactory
-import net.corda.libs.configuration.write.CordaConfigurationKey
-import net.corda.libs.configuration.write.CordaConfigurationVersion
-import net.corda.libs.configuration.write.kafka.factory.CordaWriteServiceFactoryImpl
-import net.corda.libs.kafka.topic.utils.impl.factory.KafkaTopicUtilsFactory
-import net.corda.messaging.kafka.publisher.factory.CordaKafkaPublisherFactory
-import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
+import net.corda.comp.kafka.config.write.KafkaConfigWrite
+import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
+import net.corda.osgi.api.Application
+import net.corda.osgi.api.Shutdown
+import org.osgi.framework.BundleContext
+import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.ServiceReference
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.File
-import java.io.StringReader
+import java.io.FileInputStream
 import java.util.*
-import kotlin.system.exitProcess
+import picocli.CommandLine
 
+@Suppress("SpreadOperator")
+@Component(immediate = true)
+class KafkaConfigUploader @Activate constructor(
+    @Reference(service = KafkaTopicAdmin::class)
+    private var topicAdmin: KafkaTopicAdmin,
+    @Reference(service = KafkaConfigWrite::class)
+    private var configWriter: KafkaConfigWrite
+) : Application {
 
-fun main(args: Array<String>) {
-    if (args.size != 3) {
-        println("Required command line arguments: kafkaServerProperty topicName typesafeconfig")
-        exitProcess(1)
+    private companion object {
+        private val logger: Logger = LoggerFactory.getLogger(KafkaConfigWrite::class.java)
     }
 
-    val kafkaProps = Properties()
-    kafkaProps.load(StringReader(args[0]))
+    override fun startup(args: Array<String>) {
 
-    val topicName = args[1]
-    val topicUtils = KafkaTopicUtilsFactory().createTopicUtils(kafkaProps)
-    topicUtils.createTopic(topicName, 1, 1)
+        val parameters = CliParameters()
+        CommandLine(parameters).parseArgs(*args)
+        if (parameters.helpRequested) {
+            CommandLine.usage(CliParameters(), System.out)
+            shutdownOSGiFramework()
+        } else {
+            val kafkaConnectionProperties = Properties()
+            kafkaConnectionProperties.load(FileInputStream(parameters.kafkaConnection))
 
-    val configuration = ConfigFactory.parseString(File(args[2]).readText())
-    val packageVersion = CordaConfigurationVersion("corda", 1, 0)
-    val componentVersion = CordaConfigurationVersion("corda", 1, 0)
-    val configurationKey = CordaConfigurationKey("corda", packageVersion, componentVersion)
-    //this need to go once bootstrapper is in place
+            val topic = topicAdmin.createTopic(kafkaConnectionProperties, parameters.topicTemplate.readText())
+            configWriter.updateConfig(
+                topic.getString("topicName"),
+                kafkaConnectionProperties,
+                parameters.configurationFile.readText()
+            )
+            shutdownOSGiFramework()
+        }
+    }
 
-    val configurationWriteService =
-        CordaWriteServiceFactoryImpl(CordaKafkaPublisherFactory(AvroSchemaRegistryImpl())).createWriteService(topicName)
+    override fun shutdown() {
+        logger.info("Shutting down config uploader")
+    }
 
-    configurationWriteService.updateConfiguration(configurationKey, configuration)
+    private fun shutdownOSGiFramework() {
+        val bundleContext: BundleContext? = FrameworkUtil.getBundle(KafkaConfigUploader::class.java).bundleContext
+        if (bundleContext != null) {
+            val shutdownServiceReference: ServiceReference<Shutdown>? =
+                bundleContext.getServiceReference(Shutdown::class.java)
+            if (shutdownServiceReference != null) {
+                bundleContext.getService(shutdownServiceReference)?.shutdown(bundleContext.bundle)
+            }
+        }
+    }
+}
+
+class CliParameters {
+    @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties"])
+    lateinit var kafkaConnection: File
+
+    @CommandLine.Option(names = ["--topic"], description = ["File containing the topic template"])
+    lateinit var topicTemplate: File
+
+    @CommandLine.Option(names = ["--config"], description = ["File containing configuration to be stored"])
+    lateinit var configurationFile: File
+
+    @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
+    var helpRequested = false
 }

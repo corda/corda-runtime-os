@@ -22,6 +22,7 @@ class DemoPubSubProcessor(private val outputEventTopic: String, private val outp
         val outputRecords = mutableListOf<Record<*, *>>()
 
         for (event in events) {
+            log.info("Durable sub processing record ${event.key} - ${event.value}")
             outputRecords.add(Record(outputEventTopic, event.key, event.value))
             outputRecords.add(Record(outputPubSubTopic, event.key, event.value))
         }

@@ -23,7 +23,7 @@ class RunPublisher (
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java)
         const val clientId = "publisher"
-        const val numberOfRecords = 1000
+        const val numberOfRecords = 10
         const val publisherTopic = "publisherTopic"
     }
 
