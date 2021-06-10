@@ -41,18 +41,18 @@ class KafkaConfigWriteTest {
         val cordaDatabaseKey = CordaConfigurationKey(
             "corda",
             CordaConfigurationVersion("corda", 5, 4),
-            CordaConfigurationVersion("database", 5, 4)
+            CordaConfigurationVersion("database", 5, 2)
         )
 
         val cordaSecurityKey = CordaConfigurationKey(
             "corda",
             CordaConfigurationVersion("corda", 5, 4),
-            CordaConfigurationVersion("security", 5, 4)
+            CordaConfigurationVersion("security", 5, 3)
         )
 
         verify(configWriteService, times(2)).updateConfiguration(capture(keyCaptor), any())
-        Assertions.assertEquals(0, cordaDatabaseKey.compareTo(keyCaptor.allValues[0]))
-        Assertions.assertEquals(0, cordaSecurityKey.compareTo(keyCaptor.allValues[1]))
+        Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
+        Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
 
     }
 
@@ -64,18 +64,18 @@ class KafkaConfigWriteTest {
         val cordaDatabaseKey = CordaConfigurationKey(
             "corda",
             CordaConfigurationVersion("corda", 5, 4),
-            CordaConfigurationVersion("database", 5, 4)
+            CordaConfigurationVersion("database", 5, 2)
         )
 
         val cordaSecurityKey = CordaConfigurationKey(
             "corda",
             CordaConfigurationVersion("corda", 5, 4),
-            CordaConfigurationVersion("security", 5, 4)
+            CordaConfigurationVersion("security", 5, 3)
         )
 
         verify(configWriteService, times(2)).updateConfiguration(capture(keyCaptor), any())
-        Assertions.assertEquals(0, cordaDatabaseKey.compareTo(keyCaptor.allValues[0]))
-        Assertions.assertEquals(0, cordaSecurityKey.compareTo(keyCaptor.allValues[1]))
+        Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
+        Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
     }
 
 
@@ -88,32 +88,32 @@ class KafkaConfigWriteTest {
         val cordaDatabaseKey = CordaConfigurationKey(
             "corda",
             CordaConfigurationVersion("corda", 5, 4),
-            CordaConfigurationVersion("database", 5, 4)
+            CordaConfigurationVersion("database", 5, 2)
         )
 
         val cordaSecurityKey = CordaConfigurationKey(
             "corda",
             CordaConfigurationVersion("corda", 5, 4),
-            CordaConfigurationVersion("security", 5, 4)
+            CordaConfigurationVersion("security", 5, 3)
         )
 
         val improvedCordaDatabaseKey = CordaConfigurationKey(
             "improvedCorda",
             CordaConfigurationVersion("improvedCorda", 5, 4),
-            CordaConfigurationVersion("database", 5, 4)
+            CordaConfigurationVersion("database", 5, 2)
         )
 
         val improvedCordaSecurityKey = CordaConfigurationKey(
             "improvedCorda",
             CordaConfigurationVersion("improvedCorda", 5, 4),
-            CordaConfigurationVersion("security", 5, 4)
+            CordaConfigurationVersion("security", 5, 3)
         )
 
         verify(configWriteService, times(4)).updateConfiguration(capture(keyCaptor), any())
-        Assertions.assertEquals(0, cordaDatabaseKey.compareTo(keyCaptor.allValues[0]))
-        Assertions.assertEquals(0, cordaSecurityKey.compareTo(keyCaptor.allValues[1]))
-        Assertions.assertEquals(0, improvedCordaDatabaseKey.compareTo(keyCaptor.allValues[2]))
-        Assertions.assertEquals(0, improvedCordaSecurityKey.compareTo(keyCaptor.allValues[3]))
+        Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
+        Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
+        Assertions.assertEquals(improvedCordaDatabaseKey, keyCaptor.allValues[2])
+        Assertions.assertEquals(improvedCordaSecurityKey, keyCaptor.allValues[3])
     }
 
     @Test
@@ -124,18 +124,18 @@ class KafkaConfigWriteTest {
         val cordaDatabaseKey = CordaConfigurationKey(
             "corda",
             CordaConfigurationVersion("corda", 5, 4),
-            CordaConfigurationVersion("database", 5, 4)
+            CordaConfigurationVersion("database", 5, 2)
         )
 
         val cordaSecurityKey = CordaConfigurationKey(
             "corda",
             CordaConfigurationVersion("corda", 5, 4),
-            CordaConfigurationVersion("security", 5, 4)
+            CordaConfigurationVersion("security", 5, 3)
         )
 
         verify(configWriteService, times(2)).updateConfiguration(capture(keyCaptor), any())
-        Assertions.assertEquals(0, cordaDatabaseKey.compareTo(keyCaptor.allValues[0]))
-        Assertions.assertEquals(0, cordaSecurityKey.compareTo(keyCaptor.allValues[1]))
+        Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
+        Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
     }
 
     private fun readConfigFile(file: String): String {

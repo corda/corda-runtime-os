@@ -18,4 +18,12 @@ data class CordaConfigurationKey(
         { it.packageVersion.version },
         { it.componentVersion.name },
         { it.componentVersion.version })
+
+    override fun equals(other: Any?): Boolean {
+        var flag = false
+        if(compareTo(other as CordaConfigurationKey) == 0) {
+            flag = true
+        }
+        return flag
+    }
 }
