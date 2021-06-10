@@ -5,11 +5,11 @@
   "fields": [
     {
       "name": "destination",
-      "type": "net.corda.p2p.crypto.Peer"
+      "type": "net.corda.p2p.crypto.AvroHoldingIdentity"
     },
     {
       "name": "source",
-      "type": "net.corda.p2p.crypto.Peer"
+      "type": "net.corda.p2p.crypto.AvroHoldingIdentity"
     },
     {
       "name": "ttl",

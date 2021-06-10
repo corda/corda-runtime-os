@@ -13,24 +13,24 @@ import org.apache.avro.message.BinaryMessageDecoder;
 import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
-public class Peer extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 2452047404282340855L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"Peer\",\"namespace\":\"net.corda.p2p.crypto\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}");
+public class AvroHoldingIdentity extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
+  private static final long serialVersionUID = -5363698506103880862L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"AvroHoldingIdentity\",\"namespace\":\"net.corda.p2p.crypto\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
 
-  private static final BinaryMessageEncoder<Peer> ENCODER =
-      new BinaryMessageEncoder<Peer>(MODEL$, SCHEMA$);
+  private static final BinaryMessageEncoder<AvroHoldingIdentity> ENCODER =
+      new BinaryMessageEncoder<AvroHoldingIdentity>(MODEL$, SCHEMA$);
 
-  private static final BinaryMessageDecoder<Peer> DECODER =
-      new BinaryMessageDecoder<Peer>(MODEL$, SCHEMA$);
+  private static final BinaryMessageDecoder<AvroHoldingIdentity> DECODER =
+      new BinaryMessageDecoder<AvroHoldingIdentity>(MODEL$, SCHEMA$);
 
   /**
    * Return the BinaryMessageEncoder instance used by this class.
    * @return the message encoder used by this class
    */
-  public static BinaryMessageEncoder<Peer> getEncoder() {
+  public static BinaryMessageEncoder<AvroHoldingIdentity> getEncoder() {
     return ENCODER;
   }
 
@@ -38,7 +38,7 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
    * Return the BinaryMessageDecoder instance used by this class.
    * @return the message decoder used by this class
    */
-  public static BinaryMessageDecoder<Peer> getDecoder() {
+  public static BinaryMessageDecoder<AvroHoldingIdentity> getDecoder() {
     return DECODER;
   }
 
@@ -47,12 +47,12 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
    * @param resolver a {@link SchemaStore} used to find schemas by fingerprint
    * @return a BinaryMessageDecoder instance for this class backed by the given SchemaStore
    */
-  public static BinaryMessageDecoder<Peer> createDecoder(SchemaStore resolver) {
-    return new BinaryMessageDecoder<Peer>(MODEL$, SCHEMA$, resolver);
+  public static BinaryMessageDecoder<AvroHoldingIdentity> createDecoder(SchemaStore resolver) {
+    return new BinaryMessageDecoder<AvroHoldingIdentity>(MODEL$, SCHEMA$, resolver);
   }
 
   /**
-   * Serializes this Peer to a ByteBuffer.
+   * Serializes this AvroHoldingIdentity to a ByteBuffer.
    * @return a buffer holding the serialized data for this instance
    * @throws java.io.IOException if this instance could not be serialized
    */
@@ -61,12 +61,12 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
   }
 
   /**
-   * Deserializes a Peer from a ByteBuffer.
+   * Deserializes a AvroHoldingIdentity from a ByteBuffer.
    * @param b a byte buffer holding serialized data for an instance of this class
-   * @return a Peer instance decoded from the given buffer
+   * @return a AvroHoldingIdentity instance decoded from the given buffer
    * @throws java.io.IOException if the given bytes could not be deserialized into an instance of this class
    */
-  public static Peer fromByteBuffer(
+  public static AvroHoldingIdentity fromByteBuffer(
       java.nio.ByteBuffer b) throws java.io.IOException {
     return DECODER.decode(b);
   }
@@ -79,14 +79,14 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
    * to their default values from the schema.  If that is desired then
    * one should use <code>newBuilder()</code>.
    */
-  public Peer() {}
+  public AvroHoldingIdentity() {}
 
   /**
    * All-args constructor.
    * @param x500Name The new value for x500Name
    * @param groupId The new value for groupId
    */
-  public Peer(java.lang.String x500Name, java.lang.String groupId) {
+  public AvroHoldingIdentity(java.lang.String x500Name, java.lang.String groupId) {
     this.x500Name = x500Name;
     this.groupId = groupId;
   }
@@ -147,45 +147,45 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
   }
 
   /**
-   * Creates a new Peer RecordBuilder.
-   * @return A new Peer RecordBuilder
+   * Creates a new AvroHoldingIdentity RecordBuilder.
+   * @return A new AvroHoldingIdentity RecordBuilder
    */
-  public static net.corda.p2p.crypto.Peer.Builder newBuilder() {
-    return new net.corda.p2p.crypto.Peer.Builder();
+  public static net.corda.p2p.crypto.AvroHoldingIdentity.Builder newBuilder() {
+    return new net.corda.p2p.crypto.AvroHoldingIdentity.Builder();
   }
 
   /**
-   * Creates a new Peer RecordBuilder by copying an existing Builder.
+   * Creates a new AvroHoldingIdentity RecordBuilder by copying an existing Builder.
    * @param other The existing builder to copy.
-   * @return A new Peer RecordBuilder
+   * @return A new AvroHoldingIdentity RecordBuilder
    */
-  public static net.corda.p2p.crypto.Peer.Builder newBuilder(net.corda.p2p.crypto.Peer.Builder other) {
+  public static net.corda.p2p.crypto.AvroHoldingIdentity.Builder newBuilder(net.corda.p2p.crypto.AvroHoldingIdentity.Builder other) {
     if (other == null) {
-      return new net.corda.p2p.crypto.Peer.Builder();
+      return new net.corda.p2p.crypto.AvroHoldingIdentity.Builder();
     } else {
-      return new net.corda.p2p.crypto.Peer.Builder(other);
+      return new net.corda.p2p.crypto.AvroHoldingIdentity.Builder(other);
     }
   }
 
   /**
-   * Creates a new Peer RecordBuilder by copying an existing Peer instance.
+   * Creates a new AvroHoldingIdentity RecordBuilder by copying an existing AvroHoldingIdentity instance.
    * @param other The existing instance to copy.
-   * @return A new Peer RecordBuilder
+   * @return A new AvroHoldingIdentity RecordBuilder
    */
-  public static net.corda.p2p.crypto.Peer.Builder newBuilder(net.corda.p2p.crypto.Peer other) {
+  public static net.corda.p2p.crypto.AvroHoldingIdentity.Builder newBuilder(net.corda.p2p.crypto.AvroHoldingIdentity other) {
     if (other == null) {
-      return new net.corda.p2p.crypto.Peer.Builder();
+      return new net.corda.p2p.crypto.AvroHoldingIdentity.Builder();
     } else {
-      return new net.corda.p2p.crypto.Peer.Builder(other);
+      return new net.corda.p2p.crypto.AvroHoldingIdentity.Builder(other);
     }
   }
 
   /**
-   * RecordBuilder for Peer instances.
+   * RecordBuilder for AvroHoldingIdentity instances.
    */
   @org.apache.avro.specific.AvroGenerated
-  public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<Peer>
-    implements org.apache.avro.data.RecordBuilder<Peer> {
+  public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<AvroHoldingIdentity>
+    implements org.apache.avro.data.RecordBuilder<AvroHoldingIdentity> {
 
     private java.lang.String x500Name;
     private java.lang.String groupId;
@@ -199,7 +199,7 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
      * Creates a Builder by copying an existing Builder.
      * @param other The existing Builder to copy.
      */
-    private Builder(net.corda.p2p.crypto.Peer.Builder other) {
+    private Builder(net.corda.p2p.crypto.AvroHoldingIdentity.Builder other) {
       super(other);
       if (isValidValue(fields()[0], other.x500Name)) {
         this.x500Name = data().deepCopy(fields()[0].schema(), other.x500Name);
@@ -212,10 +212,10 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
     }
 
     /**
-     * Creates a Builder by copying an existing Peer instance
+     * Creates a Builder by copying an existing AvroHoldingIdentity instance
      * @param other The existing instance to copy.
      */
-    private Builder(net.corda.p2p.crypto.Peer other) {
+    private Builder(net.corda.p2p.crypto.AvroHoldingIdentity other) {
       super(SCHEMA$);
       if (isValidValue(fields()[0], other.x500Name)) {
         this.x500Name = data().deepCopy(fields()[0].schema(), other.x500Name);
@@ -241,7 +241,7 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
       * @param value The value of 'x500Name'.
       * @return This builder.
       */
-    public net.corda.p2p.crypto.Peer.Builder setX500Name(java.lang.String value) {
+    public net.corda.p2p.crypto.AvroHoldingIdentity.Builder setX500Name(java.lang.String value) {
       validate(fields()[0], value);
       this.x500Name = value;
       fieldSetFlags()[0] = true;
@@ -261,7 +261,7 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
       * Clears the value of the 'x500Name' field.
       * @return This builder.
       */
-    public net.corda.p2p.crypto.Peer.Builder clearX500Name() {
+    public net.corda.p2p.crypto.AvroHoldingIdentity.Builder clearX500Name() {
       x500Name = null;
       fieldSetFlags()[0] = false;
       return this;
@@ -281,7 +281,7 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
       * @param value The value of 'groupId'.
       * @return This builder.
       */
-    public net.corda.p2p.crypto.Peer.Builder setGroupId(java.lang.String value) {
+    public net.corda.p2p.crypto.AvroHoldingIdentity.Builder setGroupId(java.lang.String value) {
       validate(fields()[1], value);
       this.groupId = value;
       fieldSetFlags()[1] = true;
@@ -301,7 +301,7 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
       * Clears the value of the 'groupId' field.
       * @return This builder.
       */
-    public net.corda.p2p.crypto.Peer.Builder clearGroupId() {
+    public net.corda.p2p.crypto.AvroHoldingIdentity.Builder clearGroupId() {
       groupId = null;
       fieldSetFlags()[1] = false;
       return this;
@@ -309,9 +309,9 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
 
     @Override
     @SuppressWarnings("unchecked")
-    public Peer build() {
+    public AvroHoldingIdentity build() {
       try {
-        Peer record = new Peer();
+        AvroHoldingIdentity record = new AvroHoldingIdentity();
         record.x500Name = fieldSetFlags()[0] ? this.x500Name : (java.lang.String) defaultValue(fields()[0]);
         record.groupId = fieldSetFlags()[1] ? this.groupId : (java.lang.String) defaultValue(fields()[1]);
         return record;
@@ -324,8 +324,8 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
   }
 
   @SuppressWarnings("unchecked")
-  private static final org.apache.avro.io.DatumWriter<Peer>
-    WRITER$ = (org.apache.avro.io.DatumWriter<Peer>)MODEL$.createDatumWriter(SCHEMA$);
+  private static final org.apache.avro.io.DatumWriter<AvroHoldingIdentity>
+    WRITER$ = (org.apache.avro.io.DatumWriter<AvroHoldingIdentity>)MODEL$.createDatumWriter(SCHEMA$);
 
   @Override public void writeExternal(java.io.ObjectOutput out)
     throws java.io.IOException {
@@ -333,8 +333,8 @@ public class Peer extends org.apache.avro.specific.SpecificRecordBase implements
   }
 
   @SuppressWarnings("unchecked")
-  private static final org.apache.avro.io.DatumReader<Peer>
-    READER$ = (org.apache.avro.io.DatumReader<Peer>)MODEL$.createDatumReader(SCHEMA$);
+  private static final org.apache.avro.io.DatumReader<AvroHoldingIdentity>
+    READER$ = (org.apache.avro.io.DatumReader<AvroHoldingIdentity>)MODEL$.createDatumReader(SCHEMA$);
 
   @Override public void readExternal(java.io.ObjectInput in)
     throws java.io.IOException {

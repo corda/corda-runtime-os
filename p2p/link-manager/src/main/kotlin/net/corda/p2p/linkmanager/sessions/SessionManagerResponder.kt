@@ -11,7 +11,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.Step2Message
 import net.corda.p2p.linkmanager.sessions.SessionManagerInitiator.Companion.generateLinkManagerMessage
 import net.corda.p2p.linkmanager.sessions.SessionManagerInitiator.Companion.toByteArray
-import net.corda.p2p.linkmanager.sessions.SessionNetworkMap.Companion.toAvroPeer
+import net.corda.p2p.linkmanager.sessions.SessionNetworkMap.Companion.toAvroHoldingIdentity
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
@@ -84,14 +84,31 @@ class SessionManagerResponder(
                 "${message.header.sessionId} but there is no pending session with this id. The message was discarded.")
             return
         }
-        val ourKey = networkMap.getOurPublicKey()
+
         val identityData = session.validatePeerHandshakeMessage(message, networkMap::getPublicKeyFromHash)
-        val response = session.generateOurHandshakeMessage(ourKey, networkMap::signData)
-        val peer = networkMap.getPeerFromHash(identityData.initiatorPublicKeyHash)?.toAvroPeer()
+        //Find the correct Holding Identity to use (using the public key hash).
+        val us = networkMap.getPeerFromHash(identityData.responderPublicKeyHash)
+        if (us == null) {
+            logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId = " +
+                "${message.header.sessionId}. Our identity (responder) with public key hash = " +
+                 "${identityData.initiatorPublicKeyHash} is not in the network map.")
+            return
+        }
+
+        val ourPublicKey = networkMap.getOurPublicKey(us.groupId)
+        if (ourPublicKey == null) {
+            logger.info("Received ${InitiatorHandshakeMessage::class.java.simpleName} from peer. Our key (for " +
+                "${us.groupId} is not in the networkMap.")
+            return
+        }
+
+        val signData = {it : ByteArray -> (networkMap::signData)(us.groupId, it)}
+        val response = session.generateOurHandshakeMessage(ourPublicKey, signData)
+        val peer = networkMap.getPeerFromHash(identityData.initiatorPublicKeyHash)?.toAvroHoldingIdentity()
         if (peer == null) {
             logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId = " +
-                "${message.header.sessionId}. Identity with public key hash = ${identityData.initiatorPublicKeyHash} " +
-                "is not in the network map.")
+                "${message.header.sessionId}. Initiator identity with public key hash = " +
+                "${identityData.initiatorPublicKeyHash} is not in the network map.")
             return
         }
         val responseMessage = generateLinkManagerMessage(response, peer, networkMap)

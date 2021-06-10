@@ -2,9 +2,9 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.FlowMessage
+import net.corda.p2p.crypto.AvroHoldingIdentity
 import net.corda.p2p.crypto.LinkManagerToGatewayHeader
 import net.corda.p2p.crypto.LinkManagerToGatewayMessage
-import net.corda.p2p.crypto.Peer
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
@@ -12,6 +12,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
+import net.corda.p2p.linkmanager.sessions.SessionNetworkMap.Companion.toAvroHoldingIdentity
 import net.corda.p2p.linkmanager.sessions.SessionNetworkMap.Companion.toSessionNetworkMapPeer
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -29,26 +30,37 @@ class SessionManagerInitiator(
             return ByteArray(this.capacity()) { this.get(it) }
         }
 
-        internal fun generateLinkManagerMessage(payload: Any, dest: Peer, networkMap: SessionNetworkMap): LinkManagerToGatewayMessage {
+        internal fun generateLinkManagerMessage(payload: Any, dest: AvroHoldingIdentity, networkMap: SessionNetworkMap): LinkManagerToGatewayMessage {
             val header = generateLinkManagerToGatewayHeaderFromPeer(dest, networkMap)
                 ?: throw IllegalArgumentException("Attempted to send message to peer: which is not in the network map.")
             return LinkManagerToGatewayMessage(header, payload)
         }
 
-        private fun generateLinkManagerToGatewayHeaderFromPeer(peer: Peer, networkMap: SessionNetworkMap): LinkManagerToGatewayHeader? {
+        private fun generateLinkManagerToGatewayHeaderFromPeer(peer: AvroHoldingIdentity, networkMap: SessionNetworkMap): LinkManagerToGatewayHeader? {
             val endPoint = networkMap.getEndPoint(peer.toSessionNetworkMapPeer()) ?: return null
             return LinkManagerToGatewayHeader(endPoint.sni, endPoint.address)
         }
     }
 
-    private val pendingSessions = ConcurrentHashMap<String, Pair<Peer, AuthenticationProtocolInitiator>>()
-    private val activeSessions = ConcurrentHashMap<Peer, AuthenticatedSession>()
+    //On the Initiator side there is a single unique session per set (
+    data class SessionKey(val ourGroupId: String?, val responderId: SessionNetworkMap.NetMapHoldingIdentity)
+
+    private val pendingSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
+    private val activeSessions = ConcurrentHashMap<SessionKey, AuthenticatedSession>()
     private val queuedMessages = ConcurrentLinkedQueue<LinkManagerToGatewayMessage>()
-    private val queuedMessagesPendingSession = ConcurrentHashMap<Peer, ConcurrentLinkedQueue<FlowMessage>>()
+    private val queuedMessagesPendingSession = ConcurrentHashMap<SessionKey, ConcurrentLinkedQueue<FlowMessage>>()
     private val logger = LoggerFactory.getLogger(this::class.java.name)
 
     fun sendMessage(message: FlowMessage) {
-        val session = activeSessions[message.header.destination]
+        val ourHoldingIdentity = networkMap.getOurHoldingIdentity(message.header.source.groupId) ?:
+            throw IllegalArgumentException("Message Invalid: Our holding Identity ${message.header.source.groupId} is" +
+                " not in the networkMap.")
+        if (ourHoldingIdentity.x500Name != message.header.source.x500Name) {
+            throw IllegalArgumentException("Message has invalid source identity")
+        }
+        val key = SessionKey(ourHoldingIdentity.groupId, message.header.destination.toSessionNetworkMapPeer())
+        val session = activeSessions[key]
+
         if (session != null) {
             val payload = message.toByteBuffer()
             val result = session.createMac(payload.toByteArray())
@@ -58,9 +70,9 @@ class SessionManagerInitiator(
         } else {
             val newQueue = ConcurrentLinkedQueue<FlowMessage>()
             newQueue.add(message)
-            val oldQueue = queuedMessagesPendingSession.putIfAbsent(message.header.destination, newQueue)
+            val oldQueue = queuedMessagesPendingSession.putIfAbsent(key, newQueue)
             if (oldQueue == null) {
-                beginSessionNegotiation(message.header.destination)
+                beginSessionNegotiation(key)
             } else {
                 oldQueue.add(message)
             }
@@ -78,16 +90,16 @@ class SessionManagerInitiator(
         return queuedMessages.poll()
     }
 
-    private fun beginSessionNegotiation(peer: Peer) {
+    private fun beginSessionNegotiation(sessionKey: SessionKey) {
         val sessionId = UUID.randomUUID().toString()
         val session = AuthenticationProtocolInitiator(sessionId, listOf(mode))
-        pendingSessions[sessionId] = Pair(peer, session)
-        val helloMessage = generateLinkManagerMessage(session.generateInitiatorHello(), peer, networkMap)
+        pendingSessions[sessionId] = Pair(sessionKey, session)
+        val helloMessage = generateLinkManagerMessage(session.generateInitiatorHello(), sessionKey.responderId.toAvroHoldingIdentity(), networkMap)
         queuedMessages.add(helloMessage)
     }
 
     private fun processResponderHello(message: ResponderHelloMessage) {
-        val (sourceFromMemory, session) = pendingSessions[message.header.sessionId] ?: run {
+        val (sessionInfo, session) = pendingSessions[message.header.sessionId] ?: run {
             logger.warn("Received ${message::class.java::getSimpleName} with sessionId ${message.header.sessionId} " +
                     "but there is no pending session. The message was discarded.")
             return
@@ -95,42 +107,49 @@ class SessionManagerInitiator(
 
         session.receiveResponderHello(message)
         session.generateHandshakeSecrets()
-        val ourKey = networkMap.getOurPublicKey()
-        val responderKey = networkMap.getPublicKey(sourceFromMemory.toSessionNetworkMapPeer())
-        if (responderKey == null) {
-            logger.info("Received ${ResponderHelloMessage::class.java.simpleName} from peer " +
-                "(${sourceFromMemory}) which is not in the network map.")
+        val ourKey = networkMap.getOurPublicKey(sessionInfo.ourGroupId)
+        if (ourKey == null) {
+            logger.info("Cannot find public key for our Holding Identity ${sessionInfo.ourGroupId}.")
             return
         }
-        val payload = session.generateOurHandshakeMessage(ourKey, responderKey, networkMap.getOurPeer().groupId ?: "", networkMap::signData)
-        val outboundMessage = generateLinkManagerMessage(payload, sourceFromMemory, networkMap)
+
+        val responderKey = networkMap.getPublicKey(sessionInfo.responderId)
+        if (responderKey == null) {
+            logger.info("Received ${ResponderHelloMessage::class.java.simpleName} from peer " +
+                "(${sessionInfo}) which is not in the network map. The message was discarded.")
+            return
+        }
+        val signData = {it : ByteArray -> (networkMap::signData)(sessionInfo.ourGroupId, it)}
+        val groupIdOrEmpty = sessionInfo.ourGroupId ?: ""
+        val payload = session.generateOurHandshakeMessage(ourKey, responderKey, groupIdOrEmpty, signData)
+        val outboundMessage = generateLinkManagerMessage(payload, sessionInfo.responderId.toAvroHoldingIdentity(), networkMap)
         queuedMessages.add(outboundMessage)
     }
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage) {
-        val (sourceFromMemory, session) = pendingSessions[message.header.sessionId] ?: run {
+        val (sessionInfo, session) = pendingSessions[message.header.sessionId] ?: run {
             logger.warn("Received ${message::class.java::getSimpleName} with sessionId = ${message.header.sessionId} " +
                 "but there is no pending session. The message was discarded.")
             return
         }
 
-        val responderKey = networkMap.getPublicKey(sourceFromMemory.toSessionNetworkMapPeer())
+        val responderKey = networkMap.getPublicKey(sessionInfo.responderId)
         if (responderKey == null) {
             logger.warn("Received ${ResponderHandshakeMessage::class.java.simpleName} from peer " +
-                    "(${sourceFromMemory}) which is not in the network map.")
+                    "(${sessionInfo.responderId}) which is not in the network map. The message was discarded.")
             return
         }
         try {
             session.validatePeerHandshakeMessage(message, responderKey)
         } catch (exception: InvalidHandshakeResponderKeyHash) {
             logger.warn("Received ${ResponderHandshakeMessage::class.java.simpleName} from peer " +
-                "${sourceFromMemory} with sessionId = ${message.header.sessionId} which failed validation. " +
+                "${sessionInfo.responderId} with sessionId = ${message.header.sessionId} which failed validation. " +
                  "The message was discarded.")
             return
         }
 
-        activeSessions[sourceFromMemory] = session.getSession()
+        activeSessions[sessionInfo] = session.getSession()
         pendingSessions.remove(message.header.sessionId)
-        queuedMessagesPendingSession[sourceFromMemory]?.forEach { sendMessage(it) }
+        queuedMessagesPendingSession[sessionInfo]?.forEach { sendMessage(it) }
     }
 }

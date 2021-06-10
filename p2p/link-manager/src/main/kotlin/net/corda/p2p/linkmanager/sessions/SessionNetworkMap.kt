@@ -1,36 +1,36 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.p2p.linkmanager.sessions.SessionNetworkMap.Companion.toSessionNetworkMapPeer
+import net.corda.p2p.crypto.AvroHoldingIdentity
 import java.security.PublicKey
 
 interface SessionNetworkMap {
 
     companion object {
-        internal fun net.corda.p2p.crypto.Peer.toSessionNetworkMapPeer(): Peer {
-            return Peer(this.x500Name, this.groupId)
+        internal fun AvroHoldingIdentity.toSessionNetworkMapPeer(): NetMapHoldingIdentity {
+            return NetMapHoldingIdentity(this.x500Name, this.groupId)
         }
 
-        internal fun Peer.toAvroPeer(): net.corda.p2p.crypto.Peer {
-            return net.corda.p2p.crypto.Peer(this.x500Name, this.groupId)
+        internal fun NetMapHoldingIdentity.toAvroHoldingIdentity(): AvroHoldingIdentity {
+            return AvroHoldingIdentity(this.x500Name, this.groupId)
         }
 
     }
 
-    fun getPublicKey(peer: Peer): PublicKey?
+    fun getPublicKey(holdingIdentity: NetMapHoldingIdentity): PublicKey?
 
     fun getPublicKeyFromHash(hash: ByteArray): PublicKey
 
-    fun getPeerFromHash(hash: ByteArray): Peer?
+    fun getPeerFromHash(hash: ByteArray): NetMapHoldingIdentity?
 
-    fun getEndPoint(peer: Peer): EndPoint?
+    fun getEndPoint(holdingIdentity: NetMapHoldingIdentity): EndPoint?
 
-    fun getOurPublicKey(): PublicKey
+    fun getOurPublicKey(groupId: String?): PublicKey?
 
-    fun getOurPeer(): Peer
+    fun getOurHoldingIdentity(groupId: String?): NetMapHoldingIdentity?
 
-    fun signData(data: ByteArray): ByteArray
+    fun signData(groupId: String?, data: ByteArray): ByteArray
 
     data class EndPoint(val sni: String, val address: String)
 
-    data class Peer(val x500Name: String, val groupId: String?)
+    data class NetMapHoldingIdentity(val x500Name: String, val groupId: String?)
 }

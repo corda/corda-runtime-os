@@ -10,9 +10,10 @@ import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.Step2Message
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
-import net.corda.p2p.linkmanager.sessions.SessionNetworkMap.Companion.toAvroPeer
+import net.corda.p2p.linkmanager.sessions.SessionNetworkMap.Companion.toAvroHoldingIdentity
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertTrue
 import java.nio.ByteBuffer
@@ -26,19 +27,19 @@ import kotlin.collections.HashMap
 class SessionManagerTest {
 
     companion object {
-        const val GROUP_ID = "MyGroup"
-        val PARTY_A = SessionNetworkMap.Peer("PartyA", GROUP_ID)
-        val PARTY_B = SessionNetworkMap.Peer("PartyB", GROUP_ID)
+        private val GROUP_ID = null
+        val PARTY_A = SessionNetworkMap.NetMapHoldingIdentity("PartyA", GROUP_ID)
+        val PARTY_B = SessionNetworkMap.NetMapHoldingIdentity("PartyB", GROUP_ID)
     }
 
-    class MockNetworkMap(nodes: List<SessionNetworkMap.Peer>) {
+    class MockNetworkMap(nodes: List<SessionNetworkMap.NetMapHoldingIdentity>) {
         private val provider = BouncyCastleProvider()
         private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
         private val signature = Signature.getInstance("ECDSA", provider)
         private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
 
-        private val keys = HashMap<SessionNetworkMap.Peer, KeyPair>()
-        private val peerForHash = HashMap<Int, SessionNetworkMap.Peer>()
+        private val keys = HashMap<SessionNetworkMap.NetMapHoldingIdentity, KeyPair>()
+        private val peerForHash = HashMap<Int, SessionNetworkMap.NetMapHoldingIdentity>()
 
         private fun MessageDigest.hash(data: ByteArray): ByteArray {
             this.reset()
@@ -54,10 +55,10 @@ class SessionManagerTest {
             }
         }
 
-        fun getSessionNetworkMapForNode(node: SessionNetworkMap.Peer): SessionNetworkMap {
+        fun getSessionNetworkMapForNode(node: SessionNetworkMap.NetMapHoldingIdentity): SessionNetworkMap {
             return object : SessionNetworkMap {
-                override fun getPublicKey(peer: SessionNetworkMap.Peer): PublicKey? {
-                    return keys[peer]?.public
+                override fun getPublicKey(holdingIdentity: SessionNetworkMap.NetMapHoldingIdentity): PublicKey? {
+                    return keys[holdingIdentity]?.public
                 }
 
                 override fun getPublicKeyFromHash(hash: ByteArray): PublicKey {
@@ -65,24 +66,27 @@ class SessionManagerTest {
                     return keys[peer]!!.public
                 }
 
-                override fun getPeerFromHash(hash: ByteArray): SessionNetworkMap.Peer? {
+                override fun getPeerFromHash(hash: ByteArray): SessionNetworkMap.NetMapHoldingIdentity? {
                     return peerForHash[hash.contentHashCode()]
                 }
 
-                override fun getEndPoint(peer: SessionNetworkMap.Peer): SessionNetworkMap.EndPoint? {
+                override fun getEndPoint(holdingIdentity: SessionNetworkMap.NetMapHoldingIdentity): SessionNetworkMap.EndPoint? {
                     //This is not needed in this test as it is only used by the Gateway.
                     return SessionNetworkMap.EndPoint("", "")
                 }
 
-                override fun getOurPublicKey(): PublicKey {
+                override fun getOurPublicKey(groupId: String?): PublicKey? {
+                    assertNull(groupId) {"In this case the groupId should be null."}
                     return keys[node]!!.public
                 }
 
-                override fun getOurPeer(): SessionNetworkMap.Peer {
+                override fun getOurHoldingIdentity(groupId: String?): SessionNetworkMap.NetMapHoldingIdentity {
+                    assertNull(groupId) {"In this case the groupId should be null."}
                     return node
                 }
 
-                override fun signData(data: ByteArray): ByteArray {
+                override fun signData(groupId: String?, data: ByteArray): ByteArray {
+                    assertNull(groupId) {"In this case the groupId should be null."}
                     signature.initSign(keys[node]?.private)
                     signature.update(data)
                     return signature.sign()
@@ -113,7 +117,7 @@ class SessionManagerTest {
         )
 
         val payload = ByteBuffer.wrap("Hello from PartyA".toByteArray())
-        val header = FlowMessageHeader(PARTY_B.toAvroPeer(), PARTY_A.toAvroPeer(), null, "messageId", "")
+        val header = FlowMessageHeader(PARTY_B.toAvroHoldingIdentity(), PARTY_A.toAvroHoldingIdentity(), null, "messageId", "")
         val message = FlowMessage(header, payload)
         initiatorSessionManager.sendMessage(message)
         val initiatorHelloMessage = initiatorSessionManager.getQueuedOutboundMessage()

@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "Peer",
+  "name": "AvroHoldingIdentity",
   "namespace": "net.corda.p2p.crypto",
   "fields": [
     {
