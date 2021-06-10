@@ -41,7 +41,8 @@ class BootstrapTopics(
         kafkaProps.load(StringReader(kafkaProperty))
 
         val topicUtils = topicUtilsFactory.createTopicUtils(kafkaProps)
-        topicUtils.createTopic(topicPrefix + configTopicName, 1, 1)
+
+        topicUtils.createCompactedTopic(topicPrefix + configTopicName, 1, 1)
         topicUtils.createTopic(topicPrefix + publisherTopicName, 3, 1)
         topicUtils.createTopic(topicPrefix + eventTopicName, 3, 1)
         topicUtils.createTopic(topicPrefix + stateTopicName, 3, 1)

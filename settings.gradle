@@ -39,11 +39,11 @@ dependencyResolutionManagement {
 
 rootProject.name = 'flow-worker'
 include 'applications:tools:kafka-setup'
+include 'applications:examples:demo-app'
 include 'applications:examples:goodbyeworld'
 include 'data:avro-schema'
 include 'components:examples:bootstrap-topics'
 include 'components:examples:compacted-sub'
-include 'components:examples:demo-app'
 include 'components:examples:durable-sub'
 include 'components:examples:pubsub-sub'
 include 'components:examples:state-plus-event-sub'

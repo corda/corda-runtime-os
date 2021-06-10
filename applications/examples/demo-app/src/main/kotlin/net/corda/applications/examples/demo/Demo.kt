@@ -1,4 +1,4 @@
-package net.corda.components.examples.demo
+package net.corda.applications.examples.demo
 
 import net.corda.components.examples.bootstrap.topics.BootstrapTopics
 import net.corda.components.examples.bootstrap.topics.ConfigCompleteEvent

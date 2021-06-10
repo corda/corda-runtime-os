@@ -4,15 +4,9 @@ plugins {
 }
 
 dependencies {
-
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    implementation project(":osgi-framework-api")
-    implementation project(":libs:kafka-utils:topic-admin")
+
     implementation project(":libs:messaging:messaging")
     implementation project(":data:avro-schema")
     implementation project(":libs:lifecycle")
