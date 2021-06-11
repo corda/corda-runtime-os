@@ -75,7 +75,7 @@ class CordaPublisherTest {
         verify(topicService, times(1)).addRecords(any())
         assertThat(futures.size).isEqualTo(3)
         for (future in futures) {
-            assertThrows(CordaRuntimeException::class.java, getCauseOrThrow(future))
+            assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(future))
         }
     }
 
@@ -88,7 +88,7 @@ class CordaPublisherTest {
         verify(topicService, times(1)).addRecords(any())
         assertThat(futures.size).isEqualTo(1)
         for (future in futures) {
-            assertThrows(CordaRuntimeException::class.java, getCauseOrThrow(future))
+            assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(future))
         }
     }
 

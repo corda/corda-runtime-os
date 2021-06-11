@@ -1,6 +1,7 @@
 package net.corda.messaging.emulation.publisher
 
 import com.typesafe.config.Config
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -52,7 +53,7 @@ class CordaPublisher (
             val message = "Corda publisher clientId $clientId, instanceId $instanceId, " +
                     "failed to send record."
             log.error(message, ex)
-            future.completeExceptionally(ex)
+            future.completeExceptionally(CordaMessageAPIFatalException(message, ex))
         } else {
             future.complete(Unit)
         }
