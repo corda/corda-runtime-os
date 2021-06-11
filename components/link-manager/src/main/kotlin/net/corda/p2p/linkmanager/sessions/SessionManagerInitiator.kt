@@ -32,13 +32,20 @@ class SessionManagerInitiator(
             return ByteArray(this.capacity()) { this.get(it) }
         }
 
-        internal fun generateLinkManagerMessage(payload: Any, dest: AvroHoldingIdentity, networkMap: SessionNetworkMap): LinkManagerToGatewayMessage {
+        internal fun generateLinkManagerMessage(
+            payload: Any,
+            dest: AvroHoldingIdentity,
+            networkMap: SessionNetworkMap
+        ): LinkManagerToGatewayMessage {
             val header = generateLinkManagerToGatewayHeaderFromPeer(dest, networkMap)
                 ?: throw IllegalArgumentException("Attempted to send message to peer: which is not in the network map.")
             return LinkManagerToGatewayMessage(header, payload)
         }
 
-        private fun generateLinkManagerToGatewayHeaderFromPeer(peer: AvroHoldingIdentity, networkMap: SessionNetworkMap): LinkManagerToGatewayHeader? {
+        private fun generateLinkManagerToGatewayHeaderFromPeer(
+            peer: AvroHoldingIdentity,
+            networkMap: SessionNetworkMap
+        ): LinkManagerToGatewayHeader? {
             val endPoint = networkMap.getEndPoint(peer.toSessionNetworkMapPeer()) ?: return null
             return LinkManagerToGatewayHeader(endPoint.sni, endPoint.address)
         }
@@ -105,7 +112,11 @@ class SessionManagerInitiator(
         val sessionId = UUID.randomUUID().toString()
         val session = AuthenticationProtocolInitiator(sessionId, listOf(mode), maxMessageSize)
         pendingSessions[sessionId] = Pair(sessionKey, session)
-        val helloMessage = generateLinkManagerMessage(session.generateInitiatorHello(), sessionKey.responderId.toAvroHoldingIdentity(), networkMap)
+        val helloMessage = generateLinkManagerMessage(
+            session.generateInitiatorHello(),
+            sessionKey.responderId.toAvroHoldingIdentity(),
+            networkMap
+        )
         queuedMessages.add(helloMessage)
     }
 
@@ -133,7 +144,11 @@ class SessionManagerInitiator(
         val signData = {it : ByteArray -> (networkMap::signData)(sessionInfo.ourGroupId, it)}
         val groupIdOrEmpty = sessionInfo.ourGroupId ?: ""
         val payload = session.generateOurHandshakeMessage(ourKey, responderKey, groupIdOrEmpty, signData)
-        val outboundMessage = generateLinkManagerMessage(payload, sessionInfo.responderId.toAvroHoldingIdentity(), networkMap)
+        val outboundMessage = generateLinkManagerMessage(
+            payload,
+            sessionInfo.responderId.toAvroHoldingIdentity(),
+            networkMap
+        )
         queuedMessages.add(outboundMessage)
     }
 
