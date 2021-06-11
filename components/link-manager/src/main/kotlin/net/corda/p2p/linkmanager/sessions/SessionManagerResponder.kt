@@ -19,7 +19,8 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 class SessionManagerResponder(
     private val mode: ProtocolMode,
-    private val networkMap: SessionNetworkMap
+    private val networkMap: SessionNetworkMap,
+    private val maxMessageSize: Int
     ) {
 
     private val logger = LoggerFactory.getLogger(this::class.java.name)
@@ -69,6 +70,7 @@ class SessionManagerResponder(
     private fun processStep2Message(message: Step2Message) {
         val session = AuthenticationProtocolResponder.fromStep2(message.initiatorHello.header.sessionId,
             listOf(ProtocolMode.AUTHENTICATION_ONLY),
+            maxMessageSize,
             message.initiatorHello,
             message.responderHello,
             message.privateKey.toByteArray(),

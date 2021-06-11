@@ -22,7 +22,8 @@ import java.nio.ByteBuffer
 
 class SessionManagerInitiator(
     private val mode: ProtocolMode,
-    private val networkMap: SessionNetworkMap
+    private val networkMap: SessionNetworkMap,
+    private val maxMessageSize: Int
     ) {
 
     companion object {
@@ -92,7 +93,7 @@ class SessionManagerInitiator(
 
     private fun beginSessionNegotiation(sessionKey: SessionKey) {
         val sessionId = UUID.randomUUID().toString()
-        val session = AuthenticationProtocolInitiator(sessionId, listOf(mode))
+        val session = AuthenticationProtocolInitiator(sessionId, listOf(mode), maxMessageSize)
         pendingSessions[sessionId] = Pair(sessionKey, session)
         val helloMessage = generateLinkManagerMessage(session.generateInitiatorHello(), sessionKey.responderId.toAvroHoldingIdentity(), networkMap)
         queuedMessages.add(helloMessage)

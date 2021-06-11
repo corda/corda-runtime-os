@@ -30,6 +30,7 @@ class SessionManagerTest {
         private val GROUP_ID = null
         val PARTY_A = SessionNetworkMap.NetMapHoldingIdentity("PartyA", GROUP_ID)
         val PARTY_B = SessionNetworkMap.NetMapHoldingIdentity("PartyB", GROUP_ID)
+        const val MAX_MESSAGE_SIZE = 1024 * 1024
     }
 
     class MockNetworkMap(nodes: List<SessionNetworkMap.NetMapHoldingIdentity>) {
@@ -97,7 +98,11 @@ class SessionManagerTest {
     }
 
     fun mockGatewayResponse(message: InitiatorHelloMessage): Step2Message {
-        val authenticationProtocol = AuthenticationProtocolResponder(message.header.sessionId, listOf(ProtocolMode.AUTHENTICATION_ONLY))
+        val authenticationProtocol = AuthenticationProtocolResponder(
+            message.header.sessionId,
+            listOf(ProtocolMode.AUTHENTICATION_ONLY),
+            MAX_MESSAGE_SIZE
+        )
         authenticationProtocol.receiveInitiatorHello(message)
         val responderHello = authenticationProtocol.generateResponderHello()
         val (privateKey, publicKey) = authenticationProtocol.getDHKeyPair()
@@ -109,11 +114,13 @@ class SessionManagerTest {
         val netMap = MockNetworkMap(listOf(PARTY_A, PARTY_B))
         val initiatorSessionManager = SessionManagerInitiator(
             ProtocolMode.AUTHENTICATION_ONLY,
-            netMap.getSessionNetworkMapForNode(PARTY_A)
+            netMap.getSessionNetworkMapForNode(PARTY_A),
+            MAX_MESSAGE_SIZE
         )
         val responderSessionManager = SessionManagerResponder(
             ProtocolMode.AUTHENTICATION_ONLY,
-            netMap.getSessionNetworkMapForNode(PARTY_B)
+            netMap.getSessionNetworkMapForNode(PARTY_B),
+            MAX_MESSAGE_SIZE
         )
 
         val payload = ByteBuffer.wrap("Hello from PartyA".toByteArray())
