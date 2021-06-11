@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.sessions
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.FlowMessage
 import net.corda.p2p.crypto.FlowMessageHeader
+import net.corda.p2p.crypto.GatewayToLinkManagerMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
@@ -132,20 +133,20 @@ class SessionManagerTest {
 
         //Strip the Header from the message (as the Gateway does before sending it).
         val step2Message = mockGatewayResponse(initiatorHelloMessage.payload as InitiatorHelloMessage)
-        responderSessionManager.processMessage(step2Message)
-        initiatorSessionManager.processSessionMessage(step2Message.responderHello)
+        responderSessionManager.processMessage(GatewayToLinkManagerMessage(step2Message))
+        initiatorSessionManager.processSessionMessage(GatewayToLinkManagerMessage(step2Message.responderHello))
 
         val initiatorHandshakeMessage = initiatorSessionManager.getQueuedOutboundMessage()
         assertTrue(initiatorHandshakeMessage.payload is InitiatorHandshakeMessage)
-        responderSessionManager.processMessage(initiatorHandshakeMessage.payload)
+        responderSessionManager.processMessage(GatewayToLinkManagerMessage(initiatorHandshakeMessage.payload))
 
         val responderHandshakeMessage = responderSessionManager.getQueuedOutboundMessage()
         assertTrue(responderHandshakeMessage!!.payload is ResponderHandshakeMessage)
-        initiatorSessionManager.processSessionMessage(responderHandshakeMessage.payload)
+        initiatorSessionManager.processSessionMessage(GatewayToLinkManagerMessage(responderHandshakeMessage.payload))
         val authenticatedMessage = initiatorSessionManager.getQueuedOutboundMessage()
         assertTrue(authenticatedMessage.payload is AuthenticatedDataMessage)
 
-        responderSessionManager.processMessage(authenticatedMessage.payload)
+        responderSessionManager.processMessage(GatewayToLinkManagerMessage(authenticatedMessage.payload))
         val queuedMessage = responderSessionManager.getQueuedInboundMessage()
         assertEquals(queuedMessage?.payload, payload)
     }

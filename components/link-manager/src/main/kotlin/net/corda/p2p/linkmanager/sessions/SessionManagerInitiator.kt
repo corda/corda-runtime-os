@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.sessions
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.FlowMessage
 import net.corda.p2p.crypto.AvroHoldingIdentity
+import net.corda.p2p.crypto.GatewayToLinkManagerMessage
 import net.corda.p2p.crypto.LinkManagerToGatewayHeader
 import net.corda.p2p.crypto.LinkManagerToGatewayMessage
 import net.corda.p2p.crypto.ProtocolMode
@@ -80,15 +81,24 @@ class SessionManagerInitiator(
         }
     }
 
-    fun processSessionMessage(message: Any) {
-        when(message) {
-            is ResponderHelloMessage -> processResponderHello(message)
-            is ResponderHandshakeMessage -> processResponderHandshake(message)
+    fun processSessionMessage(message: GatewayToLinkManagerMessage) {
+        when(val payload = message.payload) {
+            is ResponderHelloMessage -> processResponderHello(payload)
+            is ResponderHandshakeMessage -> processResponderHandshake(payload)
         }
     }
 
     fun getQueuedOutboundMessage(): LinkManagerToGatewayMessage {
         return queuedMessages.poll()
+    }
+
+    fun getQueuedOutboundMessages(): List<LinkManagerToGatewayMessage> {
+        val messages = mutableListOf<LinkManagerToGatewayMessage>()
+        for (i in 0 until queuedMessages.size) {
+            val message = queuedMessages.element() ?: break
+            messages.add(message)
+        }
+        return messages
     }
 
     private fun beginSessionNegotiation(sessionKey: SessionKey) {
@@ -99,7 +109,7 @@ class SessionManagerInitiator(
         queuedMessages.add(helloMessage)
     }
 
-    private fun processResponderHello(message: ResponderHelloMessage) {
+    fun processResponderHello(message: ResponderHelloMessage) {
         val (sessionInfo, session) = pendingSessions[message.header.sessionId] ?: run {
             logger.warn("Received ${message::class.java::getSimpleName} with sessionId ${message.header.sessionId} " +
                     "but there is no pending session. The message was discarded.")
@@ -127,7 +137,7 @@ class SessionManagerInitiator(
         queuedMessages.add(outboundMessage)
     }
 
-    private fun processResponderHandshake(message: ResponderHandshakeMessage) {
+    fun processResponderHandshake(message: ResponderHandshakeMessage) {
         val (sessionInfo, session) = pendingSessions[message.header.sessionId] ?: run {
             logger.warn("Received ${message::class.java::getSimpleName} with sessionId = ${message.header.sessionId} " +
                 "but there is no pending session. The message was discarded.")

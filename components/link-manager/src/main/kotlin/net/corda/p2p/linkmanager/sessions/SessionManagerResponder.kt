@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.FlowMessage
+import net.corda.p2p.crypto.GatewayToLinkManagerMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.LinkManagerToGatewayMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
@@ -29,11 +30,11 @@ class SessionManagerResponder(
     private val pendingSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
     private val activeSessions = ConcurrentHashMap<String, AuthenticatedSession>()
 
-    fun processMessage(message: Any) {
-        when (message) {
-            is AuthenticatedDataMessage -> processAuthenticatedMessage(message)
-            is InitiatorHandshakeMessage -> processInitiatorHandshake(message)
-            is Step2Message -> processStep2Message(message)
+    fun processMessage(message: GatewayToLinkManagerMessage) {
+        when (val payload = message.payload) {
+            is AuthenticatedDataMessage -> processAuthenticatedMessage(payload)
+            is InitiatorHandshakeMessage -> processInitiatorHandshake(payload)
+            is Step2Message -> processStep2Message(payload)
         }
     }
 
@@ -41,11 +42,30 @@ class SessionManagerResponder(
         return queuedOutboundMessages.poll()
     }
 
+    fun getQueuedOutboundMessages(): List<LinkManagerToGatewayMessage> {
+        val messages = mutableListOf<LinkManagerToGatewayMessage>()
+        for (i in 0 until queuedOutboundMessages.size) {
+            val message = queuedOutboundMessages.element() ?: break
+            messages.add(message)
+        }
+        return messages
+    }
+
     fun getQueuedInboundMessage(): FlowMessage? {
         return queuedInboundMessages.poll()
     }
 
-    private fun processAuthenticatedMessage(message: AuthenticatedDataMessage) {
+    fun getQueuedInboundMessages(): List<FlowMessage> {
+        val messages = mutableListOf<FlowMessage>()
+        for (i in 0 until queuedInboundMessages.size) {
+            val message = queuedInboundMessages.element() ?: break
+            messages.add(message)
+        }
+        return messages
+    }
+
+
+    fun processAuthenticatedMessage(message: AuthenticatedDataMessage) {
         val session = activeSessions[message.header.sessionId]
         if (session != null) {
             try {
@@ -67,7 +87,7 @@ class SessionManagerResponder(
         }
     }
 
-    private fun processStep2Message(message: Step2Message) {
+    fun processStep2Message(message: Step2Message) {
         val session = AuthenticationProtocolResponder.fromStep2(message.initiatorHello.header.sessionId,
             listOf(ProtocolMode.AUTHENTICATION_ONLY),
             maxMessageSize,
@@ -79,7 +99,7 @@ class SessionManagerResponder(
         pendingSessions[message.initiatorHello.header.sessionId] = session
     }
 
-    private fun processInitiatorHandshake(message: InitiatorHandshakeMessage) {
+    fun processInitiatorHandshake(message: InitiatorHandshakeMessage) {
         val session = pendingSessions[message.header.sessionId]
         if (session == null) {
             logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId = " +

@@ -18,6 +18,7 @@ net.corda.p2p.crypto.AvroHoldingIdentity
 net.corda.p2p.crypto.CommonHeader
 net.corda.p2p.crypto.FlowMessage
 net.corda.p2p.crypto.FlowMessageHeader
+net.corda.p2p.crypto.GatewayToLinkManagerMessage
 net.corda.p2p.crypto.InitiatorHandshakeMessage
 net.corda.p2p.crypto.InitiatorHelloMessage
 net.corda.p2p.crypto.LinkManagerToGatewayHeader
