@@ -15,6 +15,4 @@ interface ConfigReadService {
      * @param clazz The class you want the retrieved information to be cast as
      */
     fun <T> parseConfiguration(componentName: String, clazz: Class<T>): T
-
-    fun registerCallback(callback: CordaConfigurationUpdate)
 }

@@ -1,7 +1,6 @@
-package net.corda.tools.kafka
+package net.corda.tools.kafka.reader
 
-import net.corda.comp.kafka.config.write.KafkaConfigWrite
-import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
+import net.corda.comp.kafka.config.read.KafkaConfigRead
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import org.osgi.framework.BundleContext
@@ -12,26 +11,23 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
 import java.util.*
-import picocli.CommandLine
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
-class KafkaConfigUploader @Activate constructor(
-    @Reference(service = KafkaTopicAdmin::class)
-    private var topicAdmin: KafkaTopicAdmin,
-    @Reference(service = KafkaConfigWrite::class)
-    private var configWriter: KafkaConfigWrite
+class KafkaConfigReader @Activate constructor(
+    @Reference(service = KafkaConfigRead::class)
+    private var configReader: KafkaConfigRead
 ) : Application {
 
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(KafkaConfigUploader::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(KafkaConfigReader::class.java)
     }
 
     override fun startup(args: Array<String>) {
-
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
         if (parameters.helpRequested) {
@@ -41,12 +37,15 @@ class KafkaConfigUploader @Activate constructor(
             val kafkaConnectionProperties = Properties()
             kafkaConnectionProperties.load(FileInputStream(parameters.kafkaConnection))
 
-            val topic = topicAdmin.createTopic(kafkaConnectionProperties, parameters.topicTemplate.readText())
-            configWriter.updateConfig(
-                topic.getString("topicName"),
-                kafkaConnectionProperties,
-                parameters.configurationFile.readText()
-            )
+            configReader.startSubscription(parameters.topicName, kafkaConnectionProperties)
+
+            val configs = configReader.getAllConfigurations()
+
+            for(config in configs) {
+                logger.info("-------List of available configurations-------")
+                logger.info("${config.key} -> ${config.value}")
+            }
+
             shutdownOSGiFramework()
         }
     }
@@ -56,7 +55,7 @@ class KafkaConfigUploader @Activate constructor(
     }
 
     private fun shutdownOSGiFramework() {
-        val bundleContext: BundleContext? = FrameworkUtil.getBundle(KafkaConfigUploader::class.java).bundleContext
+        val bundleContext: BundleContext? = FrameworkUtil.getBundle(KafkaConfigReader::class.java).bundleContext
         if (bundleContext != null) {
             val shutdownServiceReference: ServiceReference<Shutdown>? =
                 bundleContext.getServiceReference(Shutdown::class.java)
@@ -71,11 +70,8 @@ class CliParameters {
     @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties"])
     lateinit var kafkaConnection: File
 
-    @CommandLine.Option(names = ["--topic"], description = ["File containing the topic template"])
-    lateinit var topicTemplate: File
-
-    @CommandLine.Option(names = ["--config"], description = ["File containing configuration to be stored"])
-    lateinit var configurationFile: File
+    @CommandLine.Option(names = ["--topic"], description = ["String topic name"])
+    lateinit var topicName: String
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false

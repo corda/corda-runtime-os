@@ -1,15 +1,16 @@
-package net.corda.libs.configuration.read.impl
+package net.corda.libs.configuration.read.kafka
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.typesafe.config.Config
 import net.corda.libs.configuration.read.ConfigReadService
-import net.corda.libs.configuration.read.CordaConfigurationUpdate
+import net.corda.libs.configuration.read.ConfigRepository
 import org.osgi.service.component.annotations.Component
 
+@Suppress("TooGenericExceptionCaught")
 @Component(immediate = true, service = [ConfigReadService::class])
-class ConfigReadServiceImpl(private val configurationList: Map<String, Config>) : ConfigReadService {
+class ConfigReadServiceImpl(private val configurationRepository: ConfigRepository) : ConfigReadService {
 
     companion object {
         private val objectMapper = ObjectMapper()
@@ -18,7 +19,8 @@ class ConfigReadServiceImpl(private val configurationList: Map<String, Config>) 
     }
 
     override fun getConfiguration(componentName: String): Config {
-        return configurationList[componentName] ?: throw IllegalArgumentException("Unknown component: $componentName")
+        return configurationRepository.getConfigurations()[componentName]
+            ?: throw IllegalArgumentException("Unknown component: $componentName")
     }
 
     override fun <T> parseConfiguration(componentName: String, clazz: Class<T>): T {
@@ -31,9 +33,4 @@ class ConfigReadServiceImpl(private val configurationList: Map<String, Config>) 
             throw IllegalArgumentException("Cannot deserialize configuration for $clazz", e)
         }
     }
-
-    override fun registerCallback(callback: CordaConfigurationUpdate) {
-        TODO("Not yet implemented")
-    }
-
 }
