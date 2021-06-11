@@ -51,7 +51,7 @@ class KafkaConfigReader @Activate constructor(
     }
 
     override fun shutdown() {
-        logger.info("Shutting down config uploader")
+        logger.info("Shutting down config reader")
     }
 
     private fun shutdownOSGiFramework() {
