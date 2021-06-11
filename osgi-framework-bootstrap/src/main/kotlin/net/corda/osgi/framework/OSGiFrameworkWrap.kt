@@ -492,8 +492,12 @@ class OSGiFrameworkWrap(
         if (applicationServiceReference != null) {
             framework.bundleContext.getService(applicationServiceReference)?.startup(args)
         } else {
-            throw ClassNotFoundException("No class in any bundle implements ${Application::class.java}" +
-                    " to register as OSGi service and to start the application.")
+            throw ClassNotFoundException(
+                "No class implementing ${Application::class.java} found to start the application.\n" +
+                        "Check if the class implementing ${Application::class.java}" +
+                        " has properties annotated with @Reference(service = <class>).\n" +
+                        "Each referred <class> must be annotated as @Component(service = [<class>])" +
+                        " else the class implementing ${Application::class.java} can't be found at bootstrap." )
         }
         return this
     }
