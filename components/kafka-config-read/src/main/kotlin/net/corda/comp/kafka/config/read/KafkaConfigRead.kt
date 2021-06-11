@@ -38,7 +38,7 @@ class KafkaConfigRead @Activate constructor(
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(CONFIGURATION_READ_SERVICE, topicName),
                 ConfigCompactedProcessor(configRepository),
-                mapOf()
+                propertiesMap
             )
         compactedSubscription.start()
     }
