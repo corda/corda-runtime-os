@@ -1,15 +1,12 @@
 package net.corda.messaging.emulation.publisher
 
 import com.typesafe.config.Config
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.topic.service.TopicService
-import net.corda.v5.base.concurrent.CordaFuture
-import net.corda.v5.base.internal.concurrent.OpenFuture
-import net.corda.v5.base.internal.concurrent.openFuture
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.CompletableFuture
 
 /**
  * In-memory corda publisher. Emulates CordaKafkaPublisher.
@@ -31,7 +28,7 @@ class CordaPublisher (
     private val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getString(PUBLISHER_INSTANCE_ID) else null
 
     @Suppress("TooGenericExceptionCaught")
-    override fun publish(records: List<Record<*, *>>): List<CordaFuture<Unit>> {
+    override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
         return try {
             topicService.addRecords(records)
             getFutures(records.size)
@@ -46,18 +43,18 @@ class CordaPublisher (
      * [Publisher] api expects each record to be sent separately if transaction is not enabled.
      * Emulate multiple sends by copying transaction result to a list of futures [size] times.
      */
-    private fun getFutures(size: Int, ex: Exception? = null) : List<OpenFuture<Unit>> {
-        val futures = mutableListOf<OpenFuture<Unit>>()
-        val future = openFuture<Unit>()
+    private fun getFutures(size: Int, ex: Exception? = null) : List<CompletableFuture<Unit>> {
+        val futures = mutableListOf<CompletableFuture<Unit>>()
+        val future = CompletableFuture<Unit>()
         futures.add(future)
 
         if (ex != null) {
             val message = "Corda publisher clientId $clientId, instanceId $instanceId, " +
                     "failed to send record."
             log.error(message, ex)
-            future.setException(CordaMessageAPIFatalException(message, ex))
+            future.completeExceptionally(ex)
         } else {
-            future.set(Unit)
+            future.complete(Unit)
         }
 
         //if not a transaction emulate multiple sends
@@ -74,7 +71,7 @@ class CordaPublisher (
         log.info("Closing Corda publisher clientId $clientId, instanceId $instanceId")
     }
 
-    override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CordaFuture<Unit>> {
+    override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
         TODO("Not yet implemented")
     }
 }
