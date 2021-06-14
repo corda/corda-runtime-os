@@ -1,5 +1,6 @@
 package net.corda.p2p.crypto
 
+import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidMac
@@ -24,12 +25,12 @@ class AuthenticatedSessionTest {
     // party A
     private val partyAMaxMessageSize = 1_000_000
     private val partyAIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, listOf(ProtocolMode.AUTHENTICATION_ONLY), partyAMaxMessageSize)
+    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyAMaxMessageSize)
 
     // party B
     private val partyBMaxMessageSize = 1_500_000
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, listOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
+    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
 
     private val groupId = "some-group-id"
 
@@ -68,8 +69,8 @@ class AuthenticatedSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
 
         // Both sides generate session secrets
-        val authenticatedSessionOnA = authenticationProtocolA.getSession()
-        val authenticatedSessionOnB = authenticationProtocolB.getSession()
+        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
+        val authenticatedSessionOnB = authenticationProtocolB.getSession() as AuthenticatedSession
 
         for (i in 1..3) {
             // Data exchange: A sends message to B, which decrypts and validates it
@@ -102,7 +103,7 @@ class AuthenticatedSessionTest {
 
         // Fronting component of responder sends data downstream so that protocol can be continued.
         val (privateKey, publicKey) = authenticationProtocolB.getDHKeyPair()
-        val authenticationProtocolBDownstream = AuthenticationProtocolResponder.fromStep2(sessionId, listOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, initiatorHelloMsg, responderHelloMsg, privateKey, publicKey)
+        val authenticationProtocolBDownstream = AuthenticationProtocolResponder.fromStep2(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, initiatorHelloMsg, responderHelloMsg, privateKey, publicKey)
 
         // Both sides generate handshake secrets.
         authenticationProtocolA.generateHandshakeSecrets()
@@ -129,8 +130,8 @@ class AuthenticatedSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
 
         // Both sides generate session secrets
-        val authenticatedSessionOnA = authenticationProtocolA.getSession()
-        val authenticatedSessionOnB = authenticationProtocolBDownstream.getSession()
+        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
+        val authenticatedSessionOnB = authenticationProtocolBDownstream.getSession() as AuthenticatedSession
 
         for (i in 1..3) {
             // Data exchange: A sends message to B, which decrypts and validates it
@@ -186,8 +187,8 @@ class AuthenticatedSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
 
         // Both sides generate session secrets
-        val authenticatedSessionOnA = authenticationProtocolA.getSession()
-        val authenticatedSessionOnB = authenticationProtocolB.getSession()
+        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
+        val authenticatedSessionOnB = authenticationProtocolB.getSession() as AuthenticatedSession
 
         // Data exchange: A sends message to B, B receives corrupted data which fail validation.
         val payload = "ping".toByteArray(Charsets.UTF_8)
@@ -233,8 +234,8 @@ class AuthenticatedSessionTest {
         authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
 
         // Both sides generate session secrets
-        val authenticatedSessionOnA = authenticationProtocolA.getSession()
-        val authenticatedSessionOnB = authenticationProtocolB.getSession()
+        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
+        val authenticatedSessionOnB = authenticationProtocolB.getSession() as AuthenticatedSession
 
         assertThatThrownBy { authenticatedSessionOnA.createMac(ByteArray(partyAMaxMessageSize + 1)) }
             .isInstanceOf(MessageTooLargeError::class.java)
