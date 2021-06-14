@@ -70,6 +70,12 @@ class DBAccessProvider(private val jdbcUrl: String, private val username: String
                                         "$RECORD_OFFSET_COLUMN_NAME >= ? and $RECORD_OFFSET_COLUMN_NAME <= ? " +
                                         "limit ?"
 
+    private val selectRecordByPartitionOffsetStmt = "select $RECORD_KEY_COLUMN_NAME, $RECORD_VALUE_COLUMN_NAME " +
+                                        "from ${DbSchema.RecordsTable.TABLE_NAME} where " +
+                                        "${DbSchema.RecordsTable.TOPIC_COLUMN_NAME} = ? and " +
+                                        "$PARTITION_COLUMN_NAME = ? and " +
+                                        "$RECORD_OFFSET_COLUMN_NAME = ?"
+
     private val readTopicsStmt = "select ${DbSchema.TopicsTable.TOPIC_COLUMN_NAME} from ${DbSchema.TopicsTable.TABLE_NAME}"
 
     private val insertTopicStmt = "insert into ${DbSchema.TopicsTable.TABLE_NAME} " +
@@ -209,6 +215,34 @@ class DBAccessProvider(private val jdbcUrl: String, private val username: String
         }, "retrieve (up to $maxNumberOfRecords) records from $topic starting from offset $startOffset up to offset $maxOffset")
 
         return records
+    }
+
+    /**
+     * Retrieves a record from a topic at a specific (partition, offset) location.
+     * @return the record at the specified location, or null if there is no record for this location.
+     */
+    fun getRecord(topic: String, partition: Int, offset: Long): RecordDbEntry? {
+        var record: RecordDbEntry? = null
+
+        executeWithErrorHandling({
+            val stmt = it.prepareStatement(selectRecordByPartitionOffsetStmt)
+            stmt.setString(1, topic)
+            stmt.setInt(2, partition)
+            stmt.setLong(3, offset)
+
+            val result = stmt.executeQuery()
+            if (result.next()) {
+                val keyBlob = result.getBlob(1)
+                val valueBlob = result.getBlob(2)
+                record = RecordDbEntry(topic,
+                                       partition,
+                                       offset,
+                                       keyBlob.getBytes(0, keyBlob.length().toInt()),
+                                       valueBlob?.getBytes(0, valueBlob.length().toInt()))
+            }
+        }, "retrieve record from topic $topic at location (partition: $partition, offset: $offset)")
+
+        return record
     }
 
     /**

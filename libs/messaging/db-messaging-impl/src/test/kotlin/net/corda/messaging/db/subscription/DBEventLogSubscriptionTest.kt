@@ -139,8 +139,8 @@ class DBEventLogSubscriptionTest {
     @Test
     fun `non-transactional subscription processes records, commits offsets and writes new records successfully`() {
         val topic1Records = listOf(
-            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 1, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 2, "blah".toByteArray(), "blah".toByteArray())
+            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 2, "key-2".toByteArray(), "value-2".toByteArray())
         )
         dbRecords[topic1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
@@ -153,8 +153,8 @@ class DBEventLogSubscriptionTest {
             assertThat(dbOffsets[topic1]!!.maxOrNull()).isNotNull
             assertThat(dbOffsets[topic1]!!.maxOrNull()!!).isEqualTo(2)
             assertThat(dbRecords[topic2]).containsExactlyElementsOf(listOf(
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 1, "blah".toByteArray(), "blah".toByteArray()),
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 2, "blah".toByteArray(), "blah".toByteArray())
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 2, "key-2".toByteArray(), "value-2".toByteArray())
             ))
             assertThat(releasedOffsets).containsExactlyElementsOf(listOf(1, 2))
         }
@@ -165,8 +165,8 @@ class DBEventLogSubscriptionTest {
     @Test
     fun `transactional subscription processes records, commits offsets and writes new records successfully`() {
         val topic1Records = listOf(
-            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 1, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 2, "blah".toByteArray(), "blah".toByteArray())
+            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 2, "key-2".toByteArray(), "value-2".toByteArray())
         )
         dbRecords[topic1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
@@ -179,8 +179,8 @@ class DBEventLogSubscriptionTest {
             assertThat(dbOffsets[topic1]!!.maxOrNull()).isNotNull
             assertThat(dbOffsets[topic1]!!.maxOrNull()!!).isEqualTo(2)
             assertThat(dbRecords[topic2]).containsExactlyElementsOf(listOf(
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 1, "blah".toByteArray(), "blah".toByteArray()),
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 2, "blah".toByteArray(), "blah".toByteArray())
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 2, "key-2".toByteArray(), "value-2".toByteArray())
             ))
             assertThat(releasedOffsets).containsExactlyElementsOf(listOf(1, 2))
         }
@@ -191,8 +191,8 @@ class DBEventLogSubscriptionTest {
     @Test
     fun `subscription processes records with null values, commits offsets and writes new records successfully`() {
         val topic1Records = listOf(
-            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 1, "blah".toByteArray(), null),
-            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 2, "blah".toByteArray(), null)
+            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 1, "key-1".toByteArray(), null),
+            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 2, "key-2".toByteArray(), null)
         )
         dbRecords[topic1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
@@ -205,8 +205,8 @@ class DBEventLogSubscriptionTest {
             assertThat(dbOffsets[topic1]!!.maxOrNull()).isNotNull
             assertThat(dbOffsets[topic1]!!.maxOrNull()!!).isEqualTo(2)
             assertThat(dbRecords[topic2]).containsExactlyElementsOf(listOf(
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 1, "blah".toByteArray(), null),
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 2, "blah".toByteArray(), null)
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 1, "key-1".toByteArray(), null),
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 2, "key-2".toByteArray(), null)
             ))
             assertThat(releasedOffsets).containsExactlyElementsOf(listOf(1, 2))
         }
@@ -218,8 +218,8 @@ class DBEventLogSubscriptionTest {
     fun `if transactional db write fails temporarily, transactional subscription delivers records to processor multiple times`() {
         failuresToSimulateForAtomicDbWrite = 3
         val topic1Records = listOf(
-            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 1, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 2, "blah".toByteArray(), "blah".toByteArray())
+            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 2, "key-2".toByteArray(), "value-2".toByteArray())
         )
         val expectedRecordsToProcess = topic1Records.size * (failuresToSimulateForAtomicDbWrite + 1)
         dbRecords[topic1]!!.addAll(topic1Records)
@@ -233,8 +233,8 @@ class DBEventLogSubscriptionTest {
             assertThat(dbOffsets[topic1]!!.maxOrNull()).isNotNull
             assertThat(dbOffsets[topic1]!!.maxOrNull()!!).isEqualTo(2)
             assertThat(dbRecords[topic2]).containsExactlyElementsOf(listOf(
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 7, "blah".toByteArray(), "blah".toByteArray()),
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 8, "blah".toByteArray(), "blah".toByteArray())
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 7, "key-1".toByteArray(), "value-1".toByteArray()),
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 8, "key-2".toByteArray(), "value-2".toByteArray())
             ))
             assertThat(releasedOffsets).containsExactlyElementsOf((1L..8L).toList())
         }
@@ -246,8 +246,8 @@ class DBEventLogSubscriptionTest {
     fun `if writing of records to db fails fails temporarily, non-transactional subscription delivers records to processor multiple times`() {
         failuresToSimulateForDbRecordsWrite = 3
         val topic1Records = listOf(
-            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 1, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 2, "blah".toByteArray(), "blah".toByteArray())
+            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 2, "key-2".toByteArray(), "value-2".toByteArray())
         )
         val expectedRecordsToProcess = topic1Records.size * (failuresToSimulateForDbRecordsWrite + 1)
         dbRecords[topic1]!!.addAll(topic1Records)
@@ -261,8 +261,8 @@ class DBEventLogSubscriptionTest {
             assertThat(dbOffsets[topic1]!!.maxOrNull()).isNotNull
             assertThat(dbOffsets[topic1]!!.maxOrNull()!!).isEqualTo(2)
             assertThat(dbRecords[topic2]).containsExactlyElementsOf(listOf(
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 7, "blah".toByteArray(), "blah".toByteArray()),
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 8, "blah".toByteArray(), "blah".toByteArray())
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 7, "key-1".toByteArray(), "value-1".toByteArray()),
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 8, "key-2".toByteArray(), "value-2".toByteArray())
             ))
             assertThat(releasedOffsets).containsExactlyElementsOf((1L..8L).toList())
         }
@@ -274,8 +274,8 @@ class DBEventLogSubscriptionTest {
     fun `if writing of offsets to db fails fails temporarily, non-transactional subscription produces records and delivers them to processor multiple times`() {
         failuresToSimulateForDbOffsetWrite = 3
         val topic1Records = listOf(
-            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 1, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 2, "blah".toByteArray(), "blah".toByteArray())
+            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic1, DbSchema.FIXED_PARTITION_NO, 2, "key-2".toByteArray(), "value-2".toByteArray())
         )
         val expectedRecordsToProcess = topic1Records.size * (failuresToSimulateForDbOffsetWrite + 1)
         dbRecords[topic1]!!.addAll(topic1Records)
@@ -289,14 +289,14 @@ class DBEventLogSubscriptionTest {
             assertThat(dbOffsets[topic1]!!.maxOrNull()).isNotNull
             assertThat(dbOffsets[topic1]!!.maxOrNull()!!).isEqualTo(2)
             assertThat(dbRecords[topic2]).containsExactlyElementsOf(listOf(
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 1, "blah".toByteArray(), "blah".toByteArray()),
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 2, "blah".toByteArray(), "blah".toByteArray()),
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 3, "blah".toByteArray(), "blah".toByteArray()),
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 4, "blah".toByteArray(), "blah".toByteArray()),
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 5, "blah".toByteArray(), "blah".toByteArray()),
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 6, "blah".toByteArray(), "blah".toByteArray()),
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 7, "blah".toByteArray(), "blah".toByteArray()),
-                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 8, "blah".toByteArray(), "blah".toByteArray())
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 2, "key-2".toByteArray(), "value-2".toByteArray()),
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 3, "key-1".toByteArray(), "value-1".toByteArray()),
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 4, "key-2".toByteArray(), "value-2".toByteArray()),
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 5, "key-1".toByteArray(), "value-1".toByteArray()),
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 6, "key-2".toByteArray(), "value-2".toByteArray()),
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 7, "key-1".toByteArray(), "value-1".toByteArray()),
+                RecordDbEntry(topic2, DbSchema.FIXED_PARTITION_NO, 8, "key-2".toByteArray(), "value-2".toByteArray())
             ))
             assertThat(releasedOffsets).containsExactlyElementsOf((1L..8L).toList())
         }

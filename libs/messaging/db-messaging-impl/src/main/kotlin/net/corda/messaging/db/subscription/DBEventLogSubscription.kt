@@ -39,7 +39,7 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
 
     @Volatile
     private var running = false
-    private val lock = ReentrantLock()
+    private val startStopLock = ReentrantLock()
 
     private var eventLoopThread: Thread? = null
 
@@ -47,7 +47,7 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
         get() = running
 
     override fun start() {
-        lock.withLock {
+        startStopLock.withLock {
             if (!running) {
                 val maxCommittedOffset =
                     dbAccessProvider.getMaxCommittedOffset(subscriptionConfig.eventTopic, subscriptionConfig.groupName) ?: 0
@@ -66,7 +66,7 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
     }
 
     override fun stop() {
-        lock.withLock {
+        startStopLock.withLock {
             if (running) {
                 partitionAssignmentListener?.onPartitionsUnassigned(listOf(subscriptionConfig.eventTopic to DbSchema.FIXED_PARTITION_NO))
                 eventLoopThread!!.join(pollingTimeout.toMillis() * 2)

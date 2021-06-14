@@ -8,11 +8,10 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.db.persistence.DBAccessProvider
-import net.corda.messaging.db.persistence.DbSchema
-import net.corda.messaging.db.persistence.RecordDbEntry
 import net.corda.messaging.db.publisher.DBPublisher
 import net.corda.messaging.db.subscription.DBDurableSubscription
 import net.corda.messaging.db.subscription.DBEventLogSubscription
+import net.corda.messaging.db.subscription.DBRandomAccessSubscription
 import net.corda.messaging.db.sync.OffsetTrackersManager
 import net.corda.messaging.db.util.DbUtils.Companion.createOffsetsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicRecordsTableStmt
@@ -154,6 +153,25 @@ class DBMessagingIntegrationTest {
         subscriptionTopic1.stop()
         subscriptionTopic2.stop()
         publisher.stop()
+    }
+
+    @Test
+    fun `published messages can be retrieved individually using a random access subscription`() {
+        val randomAccessSubscription = DBRandomAccessSubscription(subscriptionConfigTopic1, avroSchemaRegistry,
+                                                            offsetTrackersManager, dbAccessProvider, String::class.java, String::class.java)
+        val publisher =  DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager)
+        publisher.start()
+        randomAccessSubscription.start()
+
+        val records = (1..10).map { Record(topic1, "key-$it", "value-$it") }
+        publisher.publish(records).map { it.getOrThrow() }
+
+        val record = randomAccessSubscription.getRecord(1, 5)
+
+        assertThat(record).isNotNull
+        assertThat(record!!.topic).isEqualTo(topic1)
+        assertThat(record.key).isEqualTo(records[4].key)
+        assertThat(record.value).isEqualTo(records[4].value)
     }
 
     class InMemoryEventLogProcessor<K: Any, V: Any>(private val processedRecords: MutableList<Record<K, V>>,

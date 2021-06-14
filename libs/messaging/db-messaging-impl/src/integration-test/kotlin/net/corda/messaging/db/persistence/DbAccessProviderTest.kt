@@ -57,11 +57,11 @@ class DbAccessProviderTest {
     @Test
     fun `max offsets per topic are calculated properly`() {
         val records = listOf(
-            RecordDbEntry(topic1, 1, 1, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, 1, 2, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic2, 1, 7, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic2, 1, 8, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic2, 1, 9, "blah".toByteArray(), "blah".toByteArray())
+            RecordDbEntry(topic1, 1, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic1, 1, 2, "key-2".toByteArray(), "value-2".toByteArray()),
+            RecordDbEntry(topic2, 1, 7, "key-3".toByteArray(), "value-3".toByteArray()),
+            RecordDbEntry(topic2, 1, 8, "key-4".toByteArray(), "value-4".toByteArray()),
+            RecordDbEntry(topic2, 1, 9, "key-5".toByteArray(), "value-4".toByteArray())
         )
         dbAccessProvider.writeRecords(records) {}
 
@@ -107,11 +107,11 @@ class DbAccessProviderTest {
     fun `records can be written and read successfully`() {
         var called = false
         val records = listOf(
-            RecordDbEntry(topic1, 1, 1, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, 1, 2, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic2, 1, 7, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic2, 1, 8, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic2, 1, 9, "blah".toByteArray(), "blah".toByteArray())
+            RecordDbEntry(topic1, 1, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic1, 1, 2, "key-2".toByteArray(), "value-2".toByteArray()),
+            RecordDbEntry(topic2, 1, 7, "key-3".toByteArray(), "value-3".toByteArray()),
+            RecordDbEntry(topic2, 1, 8, "key-4".toByteArray(), "value-4".toByteArray()),
+            RecordDbEntry(topic2, 1, 9, "key-5".toByteArray(), "value-5".toByteArray())
         )
         dbAccessProvider.writeRecords(records) { called = true }
 
@@ -126,11 +126,11 @@ class DbAccessProviderTest {
     @Test
     fun `records after the max offset are not returned`() {
         val records = listOf(
-            RecordDbEntry(topic1, 1, 1, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, 1, 2, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, 1, 3, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, 1, 4, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, 1, 5, "blah".toByteArray(), "blah".toByteArray()),
+            RecordDbEntry(topic1, 1, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic1, 1, 2, "key-2".toByteArray(), "value-2".toByteArray()),
+            RecordDbEntry(topic1, 1, 3, "key-3".toByteArray(), "value-3".toByteArray()),
+            RecordDbEntry(topic1, 1, 4, "key-4".toByteArray(), "value-4".toByteArray()),
+            RecordDbEntry(topic1, 1, 5, "key-5".toByteArray(), "value-5".toByteArray()),
         )
         dbAccessProvider.writeRecords(records) {}
 
@@ -142,11 +142,11 @@ class DbAccessProviderTest {
     @Test
     fun `returned records do not exceed the specified max limit`() {
         val records = listOf(
-            RecordDbEntry(topic1, 1, 1, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, 1, 2, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, 1, 3, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, 1, 4, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, 1, 5, "blah".toByteArray(), "blah".toByteArray()),
+            RecordDbEntry(topic1, 1, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic1, 1, 2, "key-2".toByteArray(), "value-2".toByteArray()),
+            RecordDbEntry(topic1, 1, 3, "key-3".toByteArray(), "value-3".toByteArray()),
+            RecordDbEntry(topic1, 1, 4, "key-4".toByteArray(), "value-4".toByteArray()),
+            RecordDbEntry(topic1, 1, 5, "key-5".toByteArray(), "value-5".toByteArray()),
         )
         dbAccessProvider.writeRecords(records) {}
 
@@ -159,9 +159,9 @@ class DbAccessProviderTest {
     fun `can write offset and records atomically`() {
         val committedOffset = 3L
         val records = listOf(
-            RecordDbEntry(topic1, 1, 4, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, 1, 5, "blah".toByteArray(), "blah".toByteArray()),
-            RecordDbEntry(topic1, 1, 6, "blah".toByteArray(), "blah".toByteArray())
+            RecordDbEntry(topic1, 1, 4, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic1, 1, 5, "key-2".toByteArray(), "value-2".toByteArray()),
+            RecordDbEntry(topic1, 1, 6, "key-3".toByteArray(), "value-3".toByteArray())
         )
         dbAccessProvider.writeOffsetAndRecordsAtomically(topic1, consumer1, committedOffset, records) {}
 
@@ -170,6 +170,23 @@ class DbAccessProviderTest {
 
         val returnedCommittedOffset = dbAccessProvider.getMaxCommittedOffset(topic1, consumer1)
         assertThat(returnedCommittedOffset).isEqualTo(committedOffset)
+    }
+
+    @Test
+    fun `can retrieve record at specific location`() {
+        val committedOffset = 3L
+        val records = listOf(
+            RecordDbEntry(topic1, 1, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic1, 1, 2, "key-2".toByteArray(), "value-2".toByteArray()),
+            RecordDbEntry(topic1, 1, 3, "key-3".toByteArray(), "value-3".toByteArray())
+        )
+        dbAccessProvider.writeOffsetAndRecordsAtomically(topic1, consumer1, committedOffset, records) {}
+
+        val existingRecord = dbAccessProvider.getRecord(topic1, 1, 2)
+        assertThat(existingRecord).isEqualTo(records[1])
+
+        val nonExistingRecord = dbAccessProvider.getRecord(topic1, 1, 10)
+        assertThat(nonExistingRecord).isNull()
     }
 
 }
