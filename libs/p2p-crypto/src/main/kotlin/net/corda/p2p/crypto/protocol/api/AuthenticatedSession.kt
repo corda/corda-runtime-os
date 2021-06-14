@@ -14,7 +14,7 @@ import javax.crypto.SecretKey
 import kotlin.concurrent.withLock
 
 /**
- * A session established between two parties that allows authentication data (prior to transmission) & validation of them (post receipt).
+ * A session established between two parties that allows authentication of data (prior to transmission) & validation of them (post receipt).
  *
  * This class is thread-safe, which means multiple threads can try to create & validate MACs concurrently using the same session.
  */
@@ -22,7 +22,7 @@ class AuthenticatedSession(private val sessionId: String,
                            nextSequenceNo: Long,
                            private val outboundSecretKey: SecretKey,
                            private val inboundSecretKey: SecretKey,
-                           val maxMessageSize: Int) {
+                           val maxMessageSize: Int): Session {
 
     private val provider = BouncyCastleProvider()
     private val generationHMac = Mac.getInstance(HMAC_ALGO, provider).apply {
@@ -100,5 +100,3 @@ data class AuthenticationResult(val header: CommonHeader, val mac: ByteArray) {
 }
 
 class InvalidMac: CordaRuntimeException("The provided MAC was invalid.")
-class MessageTooLargeError(messageSize: Int, maxMessageSize: Int):
-    CordaRuntimeException("Message's size ($messageSize bytes) was larger than the max message size of the session ($maxMessageSize bytes)")
