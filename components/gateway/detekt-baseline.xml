@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>EmptyDefaultConstructor:Gateway.kt$Gateway$()</ID>
+    <ID>EmptyDefaultConstructor:HttpClient.kt$HttpClient$()</ID>
+  </CurrentIssues>
+</SmellBaseline>
