@@ -7,8 +7,10 @@ import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class DurableConsumerRebalanceListener<K, V> (subscriptionConfig: SubscriptionConfig,
-                                              private val consumer: Consumer<K, V>) : ConsumerRebalanceListener {
+class DurableConsumerRebalanceListener<K, V>(
+    subscriptionConfig: SubscriptionConfig,
+    private val consumer: Consumer<K, V>,
+) : ConsumerRebalanceListener {
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
