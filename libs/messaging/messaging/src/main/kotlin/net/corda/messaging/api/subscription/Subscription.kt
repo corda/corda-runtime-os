@@ -37,14 +37,14 @@ interface StateAndEventSubscription<K, S, E> : LifeCycle {
      *  For partitioned topics not all values may be available.  However, any key
      *  provided by [StateAndEventProcessor.onNext] will guaranteed available.
      *
+     *  This is not thread-safe!
+     *
      *  @param key the topic key for a given state
      *  @return the current state for the given key, or null if it's not available
      *  @throws IllegalArgumentException when the [key] is on a remotely managed partition
      */
     @Throws(IllegalArgumentException::class)
     fun getValue(key: K): S?
-
-
 }
 
 /**

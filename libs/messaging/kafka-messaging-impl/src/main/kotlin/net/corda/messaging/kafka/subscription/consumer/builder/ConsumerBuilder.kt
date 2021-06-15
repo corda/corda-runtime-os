@@ -2,6 +2,7 @@ package net.corda.messaging.kafka.subscription.consumer.builder
 
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 
 /**
  * Builder for creating Consumers.
@@ -24,14 +25,16 @@ interface ConsumerBuilder<K : Any, V : Any> {
     /**
      * Generate a Corda Kafka Consumer based on the [subscriptionConfig] for a [DurableSubscription].
      * This function will handle all retry logic and kafka error handling
+     * @param consumerRebalanceListener when not null, an override for the default rebalance handling for
+     * the subscription.
      * @return CordaKafkaConsumer
      * @throws CordaMessageAPIFatalException if fatal error occurs during construction of the consumer
      */
     fun createDurableConsumer(
         subscriptionConfig: SubscriptionConfig,
-        onError: (String, ByteArray) -> Unit = {_, _ ->}
+        onError: (String, ByteArray) -> Unit = {_, _ ->},
+        consumerRebalanceListener: ConsumerRebalanceListener? = null,
     ) : CordaKafkaConsumer<K, V>
-
 
     /**
      * Generate a Corda Kafka Compacted topic Consumer based on the [subscriptionConfig].
@@ -43,4 +46,5 @@ interface ConsumerBuilder<K : Any, V : Any> {
         subscriptionConfig : SubscriptionConfig,
         onError: (String, ByteArray) -> Unit = {_, _ ->},
     ) : CordaKafkaConsumer<K, V>
+
 }

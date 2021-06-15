@@ -1,11 +1,6 @@
 package net.corda.messaging.kafka.publisher
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.doThrow
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.whenever
+import com.nhaarman.mockito_kotlin.*
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
@@ -18,7 +13,6 @@ import net.corda.messaging.kafka.producer.wrapper.impl.CordaKafkaProducerImpl
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_TOPIC_PREFIX
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_CLIENT_ID
-import net.corda.v5.base.concurrent.CordaFuture
 import net.corda.v5.base.internal.uncheckedCast
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.errors.AuthorizationException
@@ -30,22 +24,36 @@ import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.function.Executable
 import org.mockito.Mockito
 import java.nio.ByteBuffer
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
 
 class CordaKafkaPublisherImplTest {
-    private lateinit var publisherConfig : PublisherConfig
-    private lateinit var cordaKafkaPublisherImpl : CordaKafkaPublisherImpl
+    private lateinit var publisherConfig: PublisherConfig
+    private lateinit var cordaKafkaPublisherImpl: CordaKafkaPublisherImpl
     private lateinit var kafkaConfig: Config
-    private lateinit var producer : CordaKafkaProducer
+    private lateinit var producer: CordaKafkaProducer
     private lateinit var mockProducer: MockProducer<String, ByteBuffer>
     private val record = Record("topic", "key1", ByteBuffer.wrap("value1".toByteArray()))
+
+    @Throws(IllegalStateException::class)
+    private fun <T : Any?> getCauseOrThrow(completableFuture: CompletableFuture<T>): Executable {
+        return Executable {
+            try {
+                throw IllegalStateException("Unexpected ${completableFuture.get()}!")
+            } catch (e: ExecutionException) {
+                throw e.cause!!
+            }
+        }
+    }
 
     @BeforeEach
     fun beforeEach() {
         producer = mock()
-        publisherConfig  = PublisherConfig("clientId", )
+        publisherConfig = PublisherConfig("clientId")
         kafkaConfig = ConfigFactory.empty()
             .withValue(PRODUCER_CLOSE_TIMEOUT, ConfigValueFactory.fromAnyRef(1))
             .withValue(KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("prefix"))
@@ -62,28 +70,26 @@ class CordaKafkaPublisherImplTest {
 
     @Test
     fun testPublishWrongKeyType() {
-        val future = publish(false, listOf(Record("topic", 2, "value")))
-        assertThrows(CordaMessageAPIFatalException::class.java) { future[0].getOrThrow() }
+        val futures = publish(false, listOf(Record("topic", 2, "value")))
+        assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
     }
 
     @Test
     fun testPublishFatalError() {
         mockProducer = MockProducer(false, StringSerializer(), ByteBufferSerializer())
         producer = CordaKafkaProducerImpl(kafkaConfig, uncheckedCast(mockProducer))
-        val future = publish(false, listOf(record))
+        val futures = publish(false, listOf(record))
         mockProducer.errorNext(IllegalStateException(""))
-
-        assertThrows(CordaMessageAPIFatalException::class.java) { future[0].getOrThrow() }
+        assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
     }
 
     @Test
     fun testPublishIntermittentError() {
         mockProducer = MockProducer(false, StringSerializer(), ByteBufferSerializer())
         producer = CordaKafkaProducerImpl(kafkaConfig, uncheckedCast(mockProducer))
-        val future = publish(false, listOf(record))
+        val futures = publish(false, listOf(record))
         mockProducer.errorNext(InterruptException(""))
-
-        assertThrows(CordaMessageAPIIntermittentException::class.java) { future[0].getOrThrow() }
+        assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
     }
 
 
@@ -91,10 +97,9 @@ class CordaKafkaPublisherImplTest {
     fun testPublishUnknownError() {
         mockProducer = MockProducer(false, StringSerializer(), ByteBufferSerializer())
         producer = CordaKafkaProducerImpl(kafkaConfig, uncheckedCast(mockProducer))
-        val future = publish(false, listOf(record))
+        val futures = publish(false, listOf(record))
         mockProducer.errorNext(IllegalArgumentException(""))
-
-        assertThrows(CordaMessageAPIFatalException::class.java) { future[0].getOrThrow() }
+        assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
     }
 
     @Test
@@ -110,7 +115,7 @@ class CordaKafkaPublisherImplTest {
     fun testTransactionBeginTransactionFailureIllegalStateException() {
         doThrow(IllegalStateException("")).whenever(producer).beginTransaction()
         val futures = publish(true, listOf(record))
-        assertThrows(CordaMessageAPIFatalException::class.java) { futures[0].getOrThrow() }
+        assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(0)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(0)).tryCommitTransaction()
@@ -121,7 +126,7 @@ class CordaKafkaPublisherImplTest {
     fun testTransactionBeginTransactionAuthorizationException() {
         doThrow(AuthorizationException("")).whenever(producer).beginTransaction()
         val futures = publish(true, listOf(record))
-        assertThrows(CordaMessageAPIFatalException::class.java) { futures[0].getOrThrow() }
+        assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(0)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(0)).tryCommitTransaction()
@@ -131,7 +136,7 @@ class CordaKafkaPublisherImplTest {
     fun testTransactionBeginTransactionProducerFencedException() {
         doThrow(ProducerFencedException("")).whenever(producer).beginTransaction()
         val futures = publish(true, listOf(record))
-        assertThrows(CordaMessageAPIFatalException::class.java) { futures[0].getOrThrow() }
+        assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(0)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(0)).tryCommitTransaction()
@@ -141,7 +146,7 @@ class CordaKafkaPublisherImplTest {
     fun testTransactionCommitFailureTimeout() {
         doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).tryCommitTransaction()
         val futures = publish(true, listOf(record))
-        assertThrows(CordaMessageAPIIntermittentException::class.java) { futures[0].getOrThrow() }
+        assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).tryCommitTransaction()
@@ -151,7 +156,7 @@ class CordaKafkaPublisherImplTest {
     fun testTransactionCommitFailureEpochException() {
         doThrow(InvalidProducerEpochException("")).whenever(producer).tryCommitTransaction()
         val futures = publish(true, listOf(record))
-        assertThrows(CordaMessageAPIFatalException::class.java) { futures[0].getOrThrow() }
+        assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).tryCommitTransaction()
@@ -161,7 +166,7 @@ class CordaKafkaPublisherImplTest {
     fun testTransactionCommitFailureInterruptException() {
         doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).tryCommitTransaction()
         val futures = publish(true, listOf(record))
-        assertThrows(CordaMessageAPIIntermittentException::class.java) { futures[0].getOrThrow() }
+        assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).tryCommitTransaction()
@@ -171,7 +176,7 @@ class CordaKafkaPublisherImplTest {
     fun testTransactionCommitFailureCordaMessageAPIFatalException() {
         doThrow(CordaMessageAPIFatalException("")).whenever(producer).tryCommitTransaction()
         val futures = publish(true, listOf(record))
-        assertThrows(CordaMessageAPIFatalException::class.java) { futures[0].getOrThrow() }
+        assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).tryCommitTransaction()
@@ -181,7 +186,7 @@ class CordaKafkaPublisherImplTest {
     fun testTransactionCommitFailureUnknownException() {
         doThrow(IllegalArgumentException("")).whenever(producer).tryCommitTransaction()
         val futures = publish(true, listOf(record))
-        assertThrows(CordaMessageAPIFatalException::class.java) { futures[0].getOrThrow() }
+        assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).tryCommitTransaction()
@@ -195,13 +200,13 @@ class CordaKafkaPublisherImplTest {
         verify(producer, times(1)).close(Mockito.any(Duration::class.java))
     }
 
-    private fun publish(isTransaction: Boolean = false, records: List<Record<*, *>>) : List<CordaFuture<Unit>> {
+    private fun publish(isTransaction: Boolean = false, records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
         publisherConfig = if (isTransaction) {
             PublisherConfig("clientId", 1)
         } else {
             PublisherConfig("clientId")
         }
-        cordaKafkaPublisherImpl = CordaKafkaPublisherImpl(publisherConfig, kafkaConfig, producer,)
+        cordaKafkaPublisherImpl = CordaKafkaPublisherImpl(publisherConfig, kafkaConfig, producer)
 
         return cordaKafkaPublisherImpl.publish(records)
     }
