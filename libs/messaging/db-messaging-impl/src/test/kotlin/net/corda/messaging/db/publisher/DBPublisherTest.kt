@@ -19,6 +19,7 @@ import org.mockito.Mockito.mock
 import java.nio.ByteBuffer
 import java.sql.SQLNonTransientException
 import java.sql.SQLTransientException
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.atomic.AtomicLong
 
 class DBPublisherTest {
@@ -73,7 +74,7 @@ class DBPublisherTest {
         dbPublisher.use {  publisher ->
             val results = publisher.publish(records)
             assertThat(results).hasSize(1)
-            results.first().getOrThrow()
+            results.first().get()
 
             assertThat(writtenDbRecords).hasSize(2)
             val writtenRecords = writtenDbRecords.map { Record(it.topic, String(it.key), String(it.value!!)) }
@@ -94,7 +95,7 @@ class DBPublisherTest {
         dbPublisher.use { publisher ->
             val results = publisher.publish(records)
             assertThat(results).hasSize(records.size)
-            results.forEach { it.getOrThrow() }
+            results.forEach { it.get() }
 
             assertThat(writtenDbRecords).hasSize(2)
             val writtenRecords = writtenDbRecords.map { Record(it.topic, String(it.key), String(it.value!!)) }
@@ -115,7 +116,7 @@ class DBPublisherTest {
         dbPublisher.use {publisher ->
             val results = publisher.publishToPartition(records)
             assertThat(results).hasSize(records.size)
-            results.forEach { it.getOrThrow() }
+            results.forEach { it.get() }
 
             assertThat(writtenDbRecords).hasSize(2)
             val keyValueEntries = writtenDbRecords.map { String(it.key) to Pair(it.partition, String(it.value!!)) }.toMap()
@@ -139,7 +140,7 @@ class DBPublisherTest {
         dbPublisher.use { publisher ->
             val results = publisher.publish(records)
             assertThat(results).hasSize(1)
-            results.first().getOrThrow()
+            results.first().get()
 
             assertThat(writtenDbRecords).hasSize(2)
             val keyValueEntries = writtenDbRecords.map { String(it.key) to it.value }.toMap()
@@ -165,8 +166,9 @@ class DBPublisherTest {
             val results = publisher.publish(records)
 
             assertThat(results).hasSize(1)
-            assertThatThrownBy { results.first().getOrThrow() }
-                .isInstanceOf(CordaMessageAPIIntermittentException::class.java)
+            assertThatThrownBy { results.first().get() }
+                .isInstanceOf(ExecutionException::class.java)
+                .hasCauseInstanceOf(CordaMessageAPIIntermittentException::class.java)
             assertThat(releasedOffsets).containsExactly(1, 2)
             assertThat(writtenDbRecords).isEmpty()
         }
@@ -186,8 +188,9 @@ class DBPublisherTest {
             val results = publisher.publish(records)
 
             assertThat(results).hasSize(1)
-            assertThatThrownBy { results.first().getOrThrow() }
-                .isInstanceOf(CordaMessageAPIFatalException::class.java)
+            assertThatThrownBy { results.first().get() }
+                .isInstanceOf(ExecutionException::class.java)
+                .hasCauseInstanceOf(CordaMessageAPIFatalException::class.java)
             assertThat(releasedOffsets).containsExactly(1, 2)
             assertThat(writtenDbRecords).isEmpty()
         }

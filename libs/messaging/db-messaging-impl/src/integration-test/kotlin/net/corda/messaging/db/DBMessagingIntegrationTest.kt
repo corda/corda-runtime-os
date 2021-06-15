@@ -112,7 +112,7 @@ class DBMessagingIntegrationTest {
 
         val topic1Records = (1..10).map { Record(topic1, "key-$it", "value-$it") }
         val topic2ExpectedRecords = topic1Records.map { Record(topic2, it.key, it.value) }
-        publisher.publish(topic1Records).map { it.getOrThrow() }
+        publisher.publish(topic1Records).map { it.get() }
 
         eventually(5.seconds, 5.millis) {
             assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1").isEqualTo(topic1Records.size)
@@ -142,7 +142,7 @@ class DBMessagingIntegrationTest {
 
         val topic1Records = (1..10).map { Record(topic1, "key-$it", "value-$it") }
         val topic2ExpectedRecords = topic1Records.map { Record(topic2, it.key, it.value) }
-        publisher.publish(topic1Records).map { it.getOrThrow() }
+        publisher.publish(topic1Records).map { it.get() }
 
         eventually(5.seconds, 5.millis) {
             assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1").isEqualTo(topic1Records.size)
@@ -165,7 +165,7 @@ class DBMessagingIntegrationTest {
         randomAccessSubscription.start()
 
         val records = (1..10).map { Record(topic1, "key-$it", "value-$it") }
-        publisher.publish(records).map { it.getOrThrow() }
+        publisher.publish(records).map { it.get() }
 
         val record = randomAccessSubscription.getRecord(1, 5)
 

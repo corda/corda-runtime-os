@@ -12,8 +12,6 @@ import net.corda.messaging.db.persistence.DbSchema
 import net.corda.messaging.db.persistence.RecordDbEntry
 import net.corda.messaging.db.sync.OffsetTrackersManager
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.concurrent.CordaFuture
-import net.corda.v5.base.internal.concurrent.asCordaFuture
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -74,11 +72,11 @@ class DBPublisher(private val publisherConfig: PublisherConfig,
      * Currently, there is no support for multi-partition topics on the database implementation,
      * so all the records go to a single, fixed partition (instead of being partitioned based on their key).
      */
-    override fun publish(records: List<Record<*, *>>): List<CordaFuture<Unit>> {
+    override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
         return publishToPartition(records.map { DbSchema.FIXED_PARTITION_NO to it })
     }
 
-    override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CordaFuture<Unit>> {
+    override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
         log.trace { "Publishing records: $records" }
         val recordEntries = records.map {
             val offset = offsetTrackersManager.getNextOffset(it.second.topic)
@@ -99,7 +97,7 @@ class DBPublisher(private val publisherConfig: PublisherConfig,
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun publishTransactionally(recordEntries: List<RecordDbEntry>): CordaFuture<Unit> {
+    private fun publishTransactionally(recordEntries: List<RecordDbEntry>): CompletableFuture<Unit> {
         return CompletableFuture.supplyAsync({
             try {
                 dbAccessProvider.writeRecords(recordEntries) { records ->
@@ -117,10 +115,10 @@ class DBPublisher(private val publisherConfig: PublisherConfig,
                     }
                 }
             }
-        }, executor).asCordaFuture()
+        }, executor)
     }
 
-    private fun publishNonTransactionally(recordEntries: List<RecordDbEntry>): List<CordaFuture<Unit>> {
+    private fun publishNonTransactionally(recordEntries: List<RecordDbEntry>): List<CompletableFuture<Unit>> {
         return recordEntries.map { publishTransactionally(listOf(it)) }
     }
 
