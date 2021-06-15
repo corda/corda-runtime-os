@@ -10,12 +10,11 @@ import net.corda.libs.configuration.read.ConfigUpdate
 import net.corda.libs.configuration.read.kafka.processor.ConfigCompactedProcessor
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 
 @Suppress("TooGenericExceptionCaught")
 @Component(immediate = true, service = [ConfigReadService::class])
-class ConfigReadServiceImpl @Activate constructor(
+class ConfigReadServiceImpl(
     private val configurationRepository: ConfigRepository,
     private val subscriptionFactory: SubscriptionFactory
 ) :

@@ -10,9 +10,11 @@ dependencies {
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
 
     implementation project(':components:kafka-config-read')
+    implementation project(":libs:configuration:configuration-read")
     implementation project(":osgi-framework-api")
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
