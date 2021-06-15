@@ -3,6 +3,7 @@ package net.corda.components.examples.pubsub
 import net.corda.components.examples.pubsub.processor.DemoPubSubProcessor
 import net.corda.data.demo.DemoRecord
 import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.LifeCycleCoordinator
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory
 
 @Component
 class RunPubSub(
+    private val lifeCycleCoordinator: LifeCycleCoordinator,
     private val subscriptionFactory: SubscriptionFactory
 ) : LifeCycle {
 

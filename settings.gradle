@@ -40,6 +40,7 @@ dependencyResolutionManagement {
 rootProject.name = 'flow-worker'
 include 'applications:tools:kafka-setup'
 include 'applications:examples:demo-app'
+include 'applications:examples:demo-publisher'
 include 'applications:examples:goodbyeworld'
 include 'components:kafka-config-write'
 include 'components:kafka-topic-admin'

@@ -3,6 +3,7 @@ package net.corda.components.examples.durable
 import net.corda.components.examples.durable.processor.DemoPubSubProcessor
 import net.corda.data.demo.DemoRecord
 import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.LifeCycleCoordinator
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -12,8 +13,10 @@ import org.slf4j.LoggerFactory
 
 @Component
 class RunDurableSub(
+    private val lifeCycleCoordinator: LifeCycleCoordinator,
     private val subscriptionFactory: SubscriptionFactory,
-    private val instanceId: Int
+    private val instanceId: Int,
+    private val killProcessOnRecord: Int = 0,
     ) : LifeCycle {
 
     private companion object {
@@ -30,7 +33,7 @@ class RunDurableSub(
         get() = subscription?.isRunning ?: false
 
     override fun start() {
-        val processor = DemoPubSubProcessor(outputEventTopic, outputPubSubTopic)
+        val processor = DemoPubSubProcessor(outputEventTopic, outputPubSubTopic, killProcessOnRecord)
         subscription = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig(groupName, inputTopic, instanceId),
             processor,

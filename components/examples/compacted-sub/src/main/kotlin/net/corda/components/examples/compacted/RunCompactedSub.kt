@@ -3,6 +3,7 @@ package net.corda.components.examples.compacted
 import net.corda.components.examples.compacted.processor.DemoCompactedProcessor
 import net.corda.data.demo.DemoRecord
 import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.LifeCycleCoordinator
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory
 
 @Component
 class RunCompactedSub(
+    private val lifeCycleCoordinator: LifeCycleCoordinator,
     private val subscriptionFactory: SubscriptionFactory
 ) : LifeCycle {
 

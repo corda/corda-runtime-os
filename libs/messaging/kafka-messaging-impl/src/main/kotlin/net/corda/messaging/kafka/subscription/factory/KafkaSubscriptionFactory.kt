@@ -10,8 +10,8 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
+import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -32,7 +32,7 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.Properties
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 
@@ -62,9 +62,9 @@ class KafkaSubscriptionFactory @Activate constructor(
 
         //pattern specific properties
         val overrideProperties = properties.toMutableMap()
-        overrideProperties[CONSUMER_CONF_PREFIX + ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = FALSE
-        overrideProperties[CONSUMER_CONF_PREFIX + ConsumerConfig.ISOLATION_LEVEL_CONFIG] = ISOLATION_LEVEL_READ_COMMITTED
-        overrideProperties[CONSUMER_CONF_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = AUTO_OFFSET_RESET_LATEST
+        overrideProperties[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = FALSE
+        overrideProperties[ConsumerConfig.ISOLATION_LEVEL_CONFIG] = ISOLATION_LEVEL_READ_COMMITTED
+        overrideProperties[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = AUTO_OFFSET_RESET_LATEST
 
         //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required
         val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
@@ -113,9 +113,9 @@ class KafkaSubscriptionFactory @Activate constructor(
     ): CompactedSubscription<K, V> {
         // pattern specific properties
         val overrideProperties = properties.toMutableMap()
-        overrideProperties[CONSUMER_CONF_PREFIX + ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = FALSE
-        overrideProperties[CONSUMER_CONF_PREFIX + ConsumerConfig.ISOLATION_LEVEL_CONFIG] = ISOLATION_LEVEL_READ_COMMITTED
-        overrideProperties[CONSUMER_CONF_PREFIX + ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = AUTO_OFFSET_RESET_EARLIEST
+        overrideProperties[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = FALSE
+        overrideProperties[ConsumerConfig.ISOLATION_LEVEL_CONFIG] = ISOLATION_LEVEL_READ_COMMITTED
+        overrideProperties[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = AUTO_OFFSET_RESET_EARLIEST
 
         //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required
         val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")

@@ -12,7 +12,7 @@ class DemoPubSubProcessor : PubSubProcessor<String, DemoRecord> {
     }
 
     override fun onNext(event: Record<String, DemoRecord>) {
-        log.info("PubSub Processor: Record value ${event.value}")
+        log.info("PubSub Processor: Record key/value  ${event.key}/${event.value}")
     }
 
     override val keyClass: Class<String>
