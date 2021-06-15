@@ -16,6 +16,7 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SIG_P
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SIG_PAD
+import net.corda.p2p.crypto.protocol.ProtocolModeNegotiation
 import net.corda.p2p.crypto.util.calculateMac
 import net.corda.p2p.crypto.util.decrypt
 import net.corda.p2p.crypto.util.encryptWithAssociatedData
@@ -47,18 +48,18 @@ import kotlin.math.min
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
 class AuthenticationProtocolResponder(private val sessionId: String,
-                                      private val supportedModes: List<ProtocolMode>,
+                                      private val supportedModes: Set<ProtocolMode>,
                                       private val ourMaxMessageSize: Int): AuthenticationProtocol() {
 
     init {
-        require(supportedModes.isNotEmpty()) { "there must be at least one supported mode." }
+        require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
         require(ourMaxMessageSize > MIN_PACKET_SIZE) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
     }
 
     companion object {
         @Suppress("LongParameterList")
         fun fromStep2(sessionId: String,
-                      supportedModes: List<ProtocolMode>,
+                      supportedModes: Set<ProtocolMode>,
                       maxMessageSize: Int,
                       initiatorHelloMsg: InitiatorHelloMessage,
                       responderHelloMsg: ResponderHelloMessage,
@@ -72,6 +73,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
 
                 sharedDHSecret = keyAgreement.perform(myPrivateDHKey!!, peerPublicDHKey!!)
                 responderHelloMessage = responderHelloMsg
+                selectedMode = responderHelloMsg.selectedMode
                 initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
                                                       responderHelloMessage!!.toByteBuffer().array()
 
@@ -115,13 +117,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
         val commonHeader = CommonHeader(MessageType.RESPONDER_HELLO, PROTOCOL_VERSION, sessionId,
                              0, Instant.now().toEpochMilli())
 
-        val commonModes = initiatorHelloMessage!!.supportedModes.intersect(supportedModes)
-        val selectedMode = if (commonModes.isEmpty()) {
-            throw NoCommonModeError(initiatorHelloMessage!!.supportedModes, supportedModes)
-        } else {
-            commonModes.first()
-        }
-
+        selectedMode = ProtocolModeNegotiation.selectMode(initiatorHelloMessage!!.supportedModes.toSet(), supportedModes)
         responderHelloMessage = ResponderHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), selectedMode)
         initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
                                               responderHelloMessage!!.toByteBuffer().array()
@@ -262,13 +258,27 @@ class AuthenticationProtocolResponder(private val sessionId: String,
         return ResponderHandshakeMessage(responderRecordHeader, ByteBuffer.wrap(responderEncryptedData), ByteBuffer.wrap(responderTag))
     }
 
-    fun getSession(): AuthenticatedSession {
+    /**
+     * Returns the established session.
+     * The concrete type of the session will depend on the negotiated protocol mode between the two parties.
+     *
+     * If the selected mode was [ProtocolMode.AUTHENTICATION_ONLY], this will return a [AuthenticatedSession].
+     * If the selected mode was [ProtocolMode.AUTHENTICATED_ENCRYPTION], this will return a [AuthenticatedEncryptionSession].
+     */
+    fun getSession(): Session {
         transition(Step.SENT_HANDSHAKE_MESSAGE, Step.SESSION_ESTABLISHED)
 
         val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! + responderHandshakePayloadBytes!!
         val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
-        return AuthenticatedSession(sessionId, 2, sharedSessionSecrets.responderEncryptionKey,
-                                    sharedSessionSecrets.initiatorEncryptionKey, agreedMaxMessageSize!!)
+
+        return when(selectedMode!!) {
+            ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(sessionId, 2, sharedSessionSecrets.responderEncryptionKey,
+                                                sharedSessionSecrets.initiatorEncryptionKey, agreedMaxMessageSize!!)
+            ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(sessionId, 2,
+                                                sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce,
+                                                sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.initiatorNonce,
+                                                agreedMaxMessageSize!!)
+        }
     }
 
     private fun transition(fromStep: Step, toStep: Step) {

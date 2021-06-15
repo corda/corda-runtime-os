@@ -59,7 +59,7 @@ def generateOSGiPackageInfo = tasks.register("generateOSGiPackageInfo", Task) {
         def generatedClassesDir = 'src/main/resources/net/corda/data'
         mkdir generatedClassesDir
         def outputFile = file(generatedClassesDir + '/generated-avro-message-classes.txt').newWriter()
-        for (generatedClass in classes) {
+        for (generatedClass in classes.sort()) {
             outputFile.println generatedClass.toString().denormalize()
         }
         outputFile.close()
