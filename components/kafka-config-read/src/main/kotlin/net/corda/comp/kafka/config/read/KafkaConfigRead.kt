@@ -1,6 +1,7 @@
 package net.corda.comp.kafka.config.read
 
 import com.typesafe.config.Config
+import net.corda.libs.configuration.read.ConfigUpdate
 import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -13,8 +14,8 @@ class KafkaConfigRead @Activate constructor(
     @Reference(service = ConfigReadServiceFactory::class)
     private val readServiceFactory: ConfigReadServiceFactory
 
-) {
-    private companion object{
+) : ConfigUpdate {
+    private companion object {
         private val logger: Logger = LoggerFactory.getLogger(KafkaConfigRead::class.java)
     }
 
@@ -24,7 +25,7 @@ class KafkaConfigRead @Activate constructor(
 
     fun startReader() {
         configReadService.start()
-        configReadService.registerCallback(ReadConfigUpdate(this))
+        configReadService.registerCallback(this)
     }
 
     fun getAllConfiguration(): Map<String, Config> {
@@ -41,6 +42,10 @@ class KafkaConfigRead @Activate constructor(
 
     fun snapshotReceived() {
         receivedSnapshot = true
+    }
+
+    override fun onUpdate(updatedConfig: Map<String, Config>) {
+        snapshotReceived()
     }
 
 }
