@@ -45,11 +45,11 @@ import javax.crypto.AEADBadTagException
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
 class AuthenticationProtocolInitiator(private val sessionId: String,
-                                      private val supportedModes: List<ProtocolMode>,
+                                      private val supportedModes: Set<ProtocolMode>,
                                       private val ourMaxMessageSize: Int): AuthenticationProtocol() {
 
     init {
-        require(supportedModes.isNotEmpty()) { "there must be at least one supported mode." }
+        require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
         require(ourMaxMessageSize > MIN_PACKET_SIZE ) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
     }
 
@@ -73,7 +73,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         myPublicDHKey = keyPair.public.encoded
 
         val commonHeader = CommonHeader(MessageType.INITIATOR_HELLO, PROTOCOL_VERSION, sessionId, 0, Instant.now().toEpochMilli())
-        initiatorHelloMessage = InitiatorHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!) , supportedModes)
+        initiatorHelloMessage = InitiatorHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!) , supportedModes.toList())
         return initiatorHelloMessage!!
     }
 
@@ -81,6 +81,11 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         transition(Step.SENT_MY_DH_KEY, Step.RECEIVED_PEER_DH_KEY)
 
         responderHelloMessage = responderHelloMsg
+        selectedMode = responderHelloMsg.selectedMode
+        if (!supportedModes.contains(selectedMode)) {
+            throw InvalidSelectedModeError("The mode selected by the responder ($selectedMode) " +
+                    "was not amongst the ones we proposed ($supportedModes).")
+        }
         initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
                                               responderHelloMessage!!.toByteBuffer().array()
         peerPublicDHKey = ephemeralKeyFactory.generatePublic(X509EncodedKeySpec(responderHelloMsg.responderPublicKey.array()))
@@ -203,13 +208,26 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         }
     }
 
-    fun getSession(): AuthenticatedSession {
+    /**
+     * Returns the established session.
+     * The concrete type of the session will depend on the negotiated protocol mode between the two parties.
+     *
+     * If the selected mode was [ProtocolMode.AUTHENTICATION_ONLY], this will return a [AuthenticatedSession].
+     * If the selected mode was [ProtocolMode.AUTHENTICATED_ENCRYPTION], this will return a [AuthenticatedEncryptionSession].
+     */
+    fun getSession(): Session {
         transition(Step.RECEIVED_HANDSHAKE_MESSAGE, Step.SESSION_ESTABLISHED)
 
         val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! + responderHandshakePayloadBytes!!
         val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
-        return AuthenticatedSession(sessionId, 2, sharedSessionSecrets.initiatorEncryptionKey,
-                                    sharedSessionSecrets.responderEncryptionKey, agreedMaxMessageSize!!)
+        return when(selectedMode!!) {
+            ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(sessionId, 2, sharedSessionSecrets.initiatorEncryptionKey,
+                                                        sharedSessionSecrets.responderEncryptionKey, agreedMaxMessageSize!!)
+            ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(sessionId, 2,
+                                                        sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.initiatorNonce,
+                                                        sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce,
+                                                        agreedMaxMessageSize!!)
+        }
     }
 
     private fun transition(fromStep: Step, toStep: Step) {
@@ -226,3 +244,4 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
  * Thrown when the responder sends an key hash that does not match the one we requested.
  */
 class InvalidHandshakeResponderKeyHash: CordaRuntimeException("The responder sent a key hash that was different to the one we requested.")
+class InvalidSelectedModeError(msg: String): CordaRuntimeException(msg)

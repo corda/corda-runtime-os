@@ -25,13 +25,17 @@ import net.corda.messaging.kafka.properties.PublisherConfigProperties
 import net.corda.messaging.kafka.subscription.KafkaCompactedSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
+import net.corda.messaging.kafka.subscription.KafkaStateAndEventSubscriptionImpl
+import net.corda.messaging.kafka.subscription.asEventSubscriptionConfig
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
+import net.corda.messaging.kafka.subscription.consumer.builder.impl.StateAndEventConsumerBuilderImpl
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Instant
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
@@ -144,7 +148,65 @@ class KafkaSubscriptionFactory @Activate constructor(
         processor: StateAndEventProcessor<K, S, E>,
         properties: Map<String, String>
     ): StateAndEventSubscription<K, S, E> {
-        TODO("Not yet implemented")
+        //TODO - replace this with a  call to OSGi ConfigService
+
+        val publisherClientId = "stateAndEvent-${subscriptionConfig.groupName}-producer"
+        val config = ConfigFactory.load("tmpKafkaDefaults")
+            .withValue(
+                PublisherConfigProperties.PUBLISHER_CLIENT_ID,
+                ConfigValueFactory.fromAnyRef(publisherClientId)
+            )
+            .withValue(
+                PublisherConfigProperties.PUBLISHER_INSTANCE_ID,
+                ConfigValueFactory.fromAnyRef(subscriptionConfig.instanceId)
+            )
+
+        //pattern specific properties
+        val consumerOverrideProperties = properties.toMutableMap()
+        consumerOverrideProperties[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = FALSE
+        consumerOverrideProperties[ConsumerConfig.ISOLATION_LEVEL_CONFIG] = ISOLATION_LEVEL_READ_COMMITTED
+        consumerOverrideProperties[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = AUTO_OFFSET_RESET_EARLIEST
+        val consumerProperties = getConsumerProps(
+            subscriptionConfig.asEventSubscriptionConfig(),
+            config,
+            consumerOverrideProperties
+        )
+        val producerProperties = getProducerProps(config, emptyMap())
+
+        val eventConsumerBuilder = CordaKafkaConsumerBuilderImpl<K, E>(
+            config,
+            consumerProperties,
+            avroSchemaRegistry
+        )
+        val stateConsumerBuilder = CordaKafkaConsumerBuilderImpl<K, S>(
+            config,
+            consumerProperties,
+            avroSchemaRegistry
+        )
+        val stateAndEventConsumerBuilder = StateAndEventConsumerBuilderImpl(
+            stateConsumerBuilder,
+            eventConsumerBuilder,
+            subscriptionConfig
+        )
+
+        val mapFactory = object : SubscriptionMapFactory<K, Pair<Long, S>> {
+            override fun createMap(): MutableMap<K, Pair<Long, S>> = ConcurrentHashMap<K, Pair<Long, S>>()
+
+            override fun destroyMap(map: MutableMap<K, Pair<Long, S>>) {
+                map.clear()
+            }
+        }
+
+
+        val producerBuilder = KafkaProducerBuilderImpl(config, avroSchemaRegistry, producerProperties)
+        return KafkaStateAndEventSubscriptionImpl(
+            subscriptionConfig,
+            config,
+            mapFactory,
+            stateAndEventConsumerBuilder,
+            producerBuilder,
+            processor
+        )
     }
 
     override fun <K : Any, V : Any> createEventLogSubscription(
@@ -169,12 +231,14 @@ class KafkaSubscriptionFactory @Activate constructor(
      * @return Kafka Consumer properties
      */
     private fun getConsumerProps(
-        subscriptionConfig: SubscriptionConfig, config: Config,
+        subscriptionConfig: SubscriptionConfig,
+        config: Config,
         overrideProperties: Map<String, String>
     ): Properties {
         //TODO - update the below when config task has evolved
         val consumerProps = mergeProperties(config, CONSUMER_CONF_PREFIX, overrideProperties)
         consumerProps[ConsumerConfig.GROUP_ID_CONFIG] = subscriptionConfig.groupName
+        consumerProps[ConsumerConfig.CLIENT_ID_CONFIG] = Instant.now().toString()
         return consumerProps
     }
 

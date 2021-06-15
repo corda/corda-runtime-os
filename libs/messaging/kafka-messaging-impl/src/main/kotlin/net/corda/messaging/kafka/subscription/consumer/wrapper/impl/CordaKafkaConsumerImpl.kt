@@ -146,6 +146,13 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
+    override fun getPartitions(topic: String, duration: Duration): List<TopicPartition> {
+        return consumer.partitionsFor(topic, duration)
+            .map { partitionInfo ->
+                TopicPartition(partitionInfo.topic(), partitionInfo.partition())
+            }
+    }
+
     /**
      * Handle retry logic. If max attempts have not been reached log a warning.
      * otherwise throw [CordaMessageAPIFatalException]

@@ -13,24 +13,24 @@ import org.apache.avro.message.BinaryMessageDecoder;
 import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
-public class ResponderHelloMessage extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = -2948991782583541436L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"ResponderHelloMessage\",\"namespace\":\"net.corda.p2p.crypto\",\"fields\":[{\"name\":\"header\",\"type\":{\"type\":\"record\",\"name\":\"CommonHeader\",\"fields\":[{\"name\":\"messageType\",\"type\":{\"type\":\"enum\",\"name\":\"MessageType\",\"symbols\":[\"INITIATOR_HELLO\",\"RESPONDER_HELLO\",\"INITIATOR_HANDSHAKE\",\"RESPONDER_HANDSHAKE\",\"DATA\"]}},{\"name\":\"protocolVersion\",\"type\":\"int\"},{\"name\":\"sessionId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"sequenceNo\",\"type\":\"long\"},{\"name\":\"timestamp\",\"type\":\"long\"}]}},{\"name\":\"responderPublicKey\",\"type\":\"bytes\"},{\"name\":\"selectedMode\",\"type\":{\"type\":\"enum\",\"name\":\"ProtocolMode\",\"symbols\":[\"AUTHENTICATION_ONLY\",\"AUTHENTICATED_ENCRYPTION\"]}}]}");
+public class AuthenticatedEncryptedDataMessage extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
+  private static final long serialVersionUID = -2589352847842888119L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"AuthenticatedEncryptedDataMessage\",\"namespace\":\"net.corda.p2p.crypto\",\"fields\":[{\"name\":\"header\",\"type\":{\"type\":\"record\",\"name\":\"CommonHeader\",\"fields\":[{\"name\":\"messageType\",\"type\":{\"type\":\"enum\",\"name\":\"MessageType\",\"symbols\":[\"INITIATOR_HELLO\",\"RESPONDER_HELLO\",\"INITIATOR_HANDSHAKE\",\"RESPONDER_HANDSHAKE\",\"DATA\"]}},{\"name\":\"protocolVersion\",\"type\":\"int\"},{\"name\":\"sessionId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"sequenceNo\",\"type\":\"long\"},{\"name\":\"timestamp\",\"type\":\"long\"}]}},{\"name\":\"encryptedPayload\",\"type\":\"bytes\"},{\"name\":\"authTag\",\"type\":\"bytes\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
 
-  private static final BinaryMessageEncoder<ResponderHelloMessage> ENCODER =
-      new BinaryMessageEncoder<ResponderHelloMessage>(MODEL$, SCHEMA$);
+  private static final BinaryMessageEncoder<AuthenticatedEncryptedDataMessage> ENCODER =
+      new BinaryMessageEncoder<AuthenticatedEncryptedDataMessage>(MODEL$, SCHEMA$);
 
-  private static final BinaryMessageDecoder<ResponderHelloMessage> DECODER =
-      new BinaryMessageDecoder<ResponderHelloMessage>(MODEL$, SCHEMA$);
+  private static final BinaryMessageDecoder<AuthenticatedEncryptedDataMessage> DECODER =
+      new BinaryMessageDecoder<AuthenticatedEncryptedDataMessage>(MODEL$, SCHEMA$);
 
   /**
    * Return the BinaryMessageEncoder instance used by this class.
    * @return the message encoder used by this class
    */
-  public static BinaryMessageEncoder<ResponderHelloMessage> getEncoder() {
+  public static BinaryMessageEncoder<AuthenticatedEncryptedDataMessage> getEncoder() {
     return ENCODER;
   }
 
@@ -38,7 +38,7 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
    * Return the BinaryMessageDecoder instance used by this class.
    * @return the message decoder used by this class
    */
-  public static BinaryMessageDecoder<ResponderHelloMessage> getDecoder() {
+  public static BinaryMessageDecoder<AuthenticatedEncryptedDataMessage> getDecoder() {
     return DECODER;
   }
 
@@ -47,12 +47,12 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
    * @param resolver a {@link SchemaStore} used to find schemas by fingerprint
    * @return a BinaryMessageDecoder instance for this class backed by the given SchemaStore
    */
-  public static BinaryMessageDecoder<ResponderHelloMessage> createDecoder(SchemaStore resolver) {
-    return new BinaryMessageDecoder<ResponderHelloMessage>(MODEL$, SCHEMA$, resolver);
+  public static BinaryMessageDecoder<AuthenticatedEncryptedDataMessage> createDecoder(SchemaStore resolver) {
+    return new BinaryMessageDecoder<AuthenticatedEncryptedDataMessage>(MODEL$, SCHEMA$, resolver);
   }
 
   /**
-   * Serializes this ResponderHelloMessage to a ByteBuffer.
+   * Serializes this AuthenticatedEncryptedDataMessage to a ByteBuffer.
    * @return a buffer holding the serialized data for this instance
    * @throws java.io.IOException if this instance could not be serialized
    */
@@ -61,37 +61,37 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
   }
 
   /**
-   * Deserializes a ResponderHelloMessage from a ByteBuffer.
+   * Deserializes a AuthenticatedEncryptedDataMessage from a ByteBuffer.
    * @param b a byte buffer holding serialized data for an instance of this class
-   * @return a ResponderHelloMessage instance decoded from the given buffer
+   * @return a AuthenticatedEncryptedDataMessage instance decoded from the given buffer
    * @throws java.io.IOException if the given bytes could not be deserialized into an instance of this class
    */
-  public static ResponderHelloMessage fromByteBuffer(
+  public static AuthenticatedEncryptedDataMessage fromByteBuffer(
       java.nio.ByteBuffer b) throws java.io.IOException {
     return DECODER.decode(b);
   }
 
    private net.corda.p2p.crypto.CommonHeader header;
-   private java.nio.ByteBuffer responderPublicKey;
-   private net.corda.p2p.crypto.ProtocolMode selectedMode;
+   private java.nio.ByteBuffer encryptedPayload;
+   private java.nio.ByteBuffer authTag;
 
   /**
    * Default constructor.  Note that this does not initialize fields
    * to their default values from the schema.  If that is desired then
    * one should use <code>newBuilder()</code>.
    */
-  public ResponderHelloMessage() {}
+  public AuthenticatedEncryptedDataMessage() {}
 
   /**
    * All-args constructor.
    * @param header The new value for header
-   * @param responderPublicKey The new value for responderPublicKey
-   * @param selectedMode The new value for selectedMode
+   * @param encryptedPayload The new value for encryptedPayload
+   * @param authTag The new value for authTag
    */
-  public ResponderHelloMessage(net.corda.p2p.crypto.CommonHeader header, java.nio.ByteBuffer responderPublicKey, net.corda.p2p.crypto.ProtocolMode selectedMode) {
+  public AuthenticatedEncryptedDataMessage(net.corda.p2p.crypto.CommonHeader header, java.nio.ByteBuffer encryptedPayload, java.nio.ByteBuffer authTag) {
     this.header = header;
-    this.responderPublicKey = responderPublicKey;
-    this.selectedMode = selectedMode;
+    this.encryptedPayload = encryptedPayload;
+    this.authTag = authTag;
   }
 
   public org.apache.avro.specific.SpecificData getSpecificData() { return MODEL$; }
@@ -100,8 +100,8 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
   public java.lang.Object get(int field$) {
     switch (field$) {
     case 0: return header;
-    case 1: return responderPublicKey;
-    case 2: return selectedMode;
+    case 1: return encryptedPayload;
+    case 2: return authTag;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -111,8 +111,8 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
     case 0: header = (net.corda.p2p.crypto.CommonHeader)value$; break;
-    case 1: responderPublicKey = (java.nio.ByteBuffer)value$; break;
-    case 2: selectedMode = (net.corda.p2p.crypto.ProtocolMode)value$; break;
+    case 1: encryptedPayload = (java.nio.ByteBuffer)value$; break;
+    case 2: authTag = (java.nio.ByteBuffer)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -135,84 +135,84 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
   }
 
   /**
-   * Gets the value of the 'responderPublicKey' field.
-   * @return The value of the 'responderPublicKey' field.
+   * Gets the value of the 'encryptedPayload' field.
+   * @return The value of the 'encryptedPayload' field.
    */
-  public java.nio.ByteBuffer getResponderPublicKey() {
-    return responderPublicKey;
+  public java.nio.ByteBuffer getEncryptedPayload() {
+    return encryptedPayload;
   }
 
 
   /**
-   * Sets the value of the 'responderPublicKey' field.
+   * Sets the value of the 'encryptedPayload' field.
    * @param value the value to set.
    */
-  public void setResponderPublicKey(java.nio.ByteBuffer value) {
-    this.responderPublicKey = value;
+  public void setEncryptedPayload(java.nio.ByteBuffer value) {
+    this.encryptedPayload = value;
   }
 
   /**
-   * Gets the value of the 'selectedMode' field.
-   * @return The value of the 'selectedMode' field.
+   * Gets the value of the 'authTag' field.
+   * @return The value of the 'authTag' field.
    */
-  public net.corda.p2p.crypto.ProtocolMode getSelectedMode() {
-    return selectedMode;
+  public java.nio.ByteBuffer getAuthTag() {
+    return authTag;
   }
 
 
   /**
-   * Sets the value of the 'selectedMode' field.
+   * Sets the value of the 'authTag' field.
    * @param value the value to set.
    */
-  public void setSelectedMode(net.corda.p2p.crypto.ProtocolMode value) {
-    this.selectedMode = value;
+  public void setAuthTag(java.nio.ByteBuffer value) {
+    this.authTag = value;
   }
 
   /**
-   * Creates a new ResponderHelloMessage RecordBuilder.
-   * @return A new ResponderHelloMessage RecordBuilder
+   * Creates a new AuthenticatedEncryptedDataMessage RecordBuilder.
+   * @return A new AuthenticatedEncryptedDataMessage RecordBuilder
    */
-  public static net.corda.p2p.crypto.ResponderHelloMessage.Builder newBuilder() {
-    return new net.corda.p2p.crypto.ResponderHelloMessage.Builder();
+  public static net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder newBuilder() {
+    return new net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder();
   }
 
   /**
-   * Creates a new ResponderHelloMessage RecordBuilder by copying an existing Builder.
+   * Creates a new AuthenticatedEncryptedDataMessage RecordBuilder by copying an existing Builder.
    * @param other The existing builder to copy.
-   * @return A new ResponderHelloMessage RecordBuilder
+   * @return A new AuthenticatedEncryptedDataMessage RecordBuilder
    */
-  public static net.corda.p2p.crypto.ResponderHelloMessage.Builder newBuilder(net.corda.p2p.crypto.ResponderHelloMessage.Builder other) {
+  public static net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder newBuilder(net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder other) {
     if (other == null) {
-      return new net.corda.p2p.crypto.ResponderHelloMessage.Builder();
+      return new net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder();
     } else {
-      return new net.corda.p2p.crypto.ResponderHelloMessage.Builder(other);
+      return new net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder(other);
     }
   }
 
   /**
-   * Creates a new ResponderHelloMessage RecordBuilder by copying an existing ResponderHelloMessage instance.
+   * Creates a new AuthenticatedEncryptedDataMessage RecordBuilder by copying an existing AuthenticatedEncryptedDataMessage instance.
    * @param other The existing instance to copy.
-   * @return A new ResponderHelloMessage RecordBuilder
+   * @return A new AuthenticatedEncryptedDataMessage RecordBuilder
    */
-  public static net.corda.p2p.crypto.ResponderHelloMessage.Builder newBuilder(net.corda.p2p.crypto.ResponderHelloMessage other) {
+  public static net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder newBuilder(net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage other) {
     if (other == null) {
-      return new net.corda.p2p.crypto.ResponderHelloMessage.Builder();
+      return new net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder();
     } else {
-      return new net.corda.p2p.crypto.ResponderHelloMessage.Builder(other);
+      return new net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder(other);
     }
   }
 
   /**
-   * RecordBuilder for ResponderHelloMessage instances.
+   * RecordBuilder for AuthenticatedEncryptedDataMessage instances.
    */
   @org.apache.avro.specific.AvroGenerated
-  public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<ResponderHelloMessage>
-    implements org.apache.avro.data.RecordBuilder<ResponderHelloMessage> {
+  public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<AuthenticatedEncryptedDataMessage>
+    implements org.apache.avro.data.RecordBuilder<AuthenticatedEncryptedDataMessage> {
 
     private net.corda.p2p.crypto.CommonHeader header;
     private net.corda.p2p.crypto.CommonHeader.Builder headerBuilder;
-    private java.nio.ByteBuffer responderPublicKey;
-    private net.corda.p2p.crypto.ProtocolMode selectedMode;
+    private java.nio.ByteBuffer encryptedPayload;
+    private java.nio.ByteBuffer authTag;
 
     /** Creates a new Builder */
     private Builder() {
@@ -223,7 +223,7 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
      * Creates a Builder by copying an existing Builder.
      * @param other The existing Builder to copy.
      */
-    private Builder(net.corda.p2p.crypto.ResponderHelloMessage.Builder other) {
+    private Builder(net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder other) {
       super(other);
       if (isValidValue(fields()[0], other.header)) {
         this.header = data().deepCopy(fields()[0].schema(), other.header);
@@ -232,33 +232,33 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
       if (other.hasHeaderBuilder()) {
         this.headerBuilder = net.corda.p2p.crypto.CommonHeader.newBuilder(other.getHeaderBuilder());
       }
-      if (isValidValue(fields()[1], other.responderPublicKey)) {
-        this.responderPublicKey = data().deepCopy(fields()[1].schema(), other.responderPublicKey);
+      if (isValidValue(fields()[1], other.encryptedPayload)) {
+        this.encryptedPayload = data().deepCopy(fields()[1].schema(), other.encryptedPayload);
         fieldSetFlags()[1] = other.fieldSetFlags()[1];
       }
-      if (isValidValue(fields()[2], other.selectedMode)) {
-        this.selectedMode = data().deepCopy(fields()[2].schema(), other.selectedMode);
+      if (isValidValue(fields()[2], other.authTag)) {
+        this.authTag = data().deepCopy(fields()[2].schema(), other.authTag);
         fieldSetFlags()[2] = other.fieldSetFlags()[2];
       }
     }
 
     /**
-     * Creates a Builder by copying an existing ResponderHelloMessage instance
+     * Creates a Builder by copying an existing AuthenticatedEncryptedDataMessage instance
      * @param other The existing instance to copy.
      */
-    private Builder(net.corda.p2p.crypto.ResponderHelloMessage other) {
+    private Builder(net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage other) {
       super(SCHEMA$);
       if (isValidValue(fields()[0], other.header)) {
         this.header = data().deepCopy(fields()[0].schema(), other.header);
         fieldSetFlags()[0] = true;
       }
       this.headerBuilder = null;
-      if (isValidValue(fields()[1], other.responderPublicKey)) {
-        this.responderPublicKey = data().deepCopy(fields()[1].schema(), other.responderPublicKey);
+      if (isValidValue(fields()[1], other.encryptedPayload)) {
+        this.encryptedPayload = data().deepCopy(fields()[1].schema(), other.encryptedPayload);
         fieldSetFlags()[1] = true;
       }
-      if (isValidValue(fields()[2], other.selectedMode)) {
-        this.selectedMode = data().deepCopy(fields()[2].schema(), other.selectedMode);
+      if (isValidValue(fields()[2], other.authTag)) {
+        this.authTag = data().deepCopy(fields()[2].schema(), other.authTag);
         fieldSetFlags()[2] = true;
       }
     }
@@ -277,7 +277,7 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
       * @param value The value of 'header'.
       * @return This builder.
       */
-    public net.corda.p2p.crypto.ResponderHelloMessage.Builder setHeader(net.corda.p2p.crypto.CommonHeader value) {
+    public net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder setHeader(net.corda.p2p.crypto.CommonHeader value) {
       validate(fields()[0], value);
       this.headerBuilder = null;
       this.header = value;
@@ -314,7 +314,7 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
      * @return This builder.
      */
 
-    public net.corda.p2p.crypto.ResponderHelloMessage.Builder setHeaderBuilder(net.corda.p2p.crypto.CommonHeader.Builder value) {
+    public net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder setHeaderBuilder(net.corda.p2p.crypto.CommonHeader.Builder value) {
       clearHeader();
       headerBuilder = value;
       return this;
@@ -332,7 +332,7 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
       * Clears the value of the 'header' field.
       * @return This builder.
       */
-    public net.corda.p2p.crypto.ResponderHelloMessage.Builder clearHeader() {
+    public net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder clearHeader() {
       header = null;
       headerBuilder = null;
       fieldSetFlags()[0] = false;
@@ -340,90 +340,90 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
     }
 
     /**
-      * Gets the value of the 'responderPublicKey' field.
+      * Gets the value of the 'encryptedPayload' field.
       * @return The value.
       */
-    public java.nio.ByteBuffer getResponderPublicKey() {
-      return responderPublicKey;
+    public java.nio.ByteBuffer getEncryptedPayload() {
+      return encryptedPayload;
     }
 
 
     /**
-      * Sets the value of the 'responderPublicKey' field.
-      * @param value The value of 'responderPublicKey'.
+      * Sets the value of the 'encryptedPayload' field.
+      * @param value The value of 'encryptedPayload'.
       * @return This builder.
       */
-    public net.corda.p2p.crypto.ResponderHelloMessage.Builder setResponderPublicKey(java.nio.ByteBuffer value) {
+    public net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder setEncryptedPayload(java.nio.ByteBuffer value) {
       validate(fields()[1], value);
-      this.responderPublicKey = value;
+      this.encryptedPayload = value;
       fieldSetFlags()[1] = true;
       return this;
     }
 
     /**
-      * Checks whether the 'responderPublicKey' field has been set.
-      * @return True if the 'responderPublicKey' field has been set, false otherwise.
+      * Checks whether the 'encryptedPayload' field has been set.
+      * @return True if the 'encryptedPayload' field has been set, false otherwise.
       */
-    public boolean hasResponderPublicKey() {
+    public boolean hasEncryptedPayload() {
       return fieldSetFlags()[1];
     }
 
 
     /**
-      * Clears the value of the 'responderPublicKey' field.
+      * Clears the value of the 'encryptedPayload' field.
       * @return This builder.
       */
-    public net.corda.p2p.crypto.ResponderHelloMessage.Builder clearResponderPublicKey() {
-      responderPublicKey = null;
+    public net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder clearEncryptedPayload() {
+      encryptedPayload = null;
       fieldSetFlags()[1] = false;
       return this;
     }
 
     /**
-      * Gets the value of the 'selectedMode' field.
+      * Gets the value of the 'authTag' field.
       * @return The value.
       */
-    public net.corda.p2p.crypto.ProtocolMode getSelectedMode() {
-      return selectedMode;
+    public java.nio.ByteBuffer getAuthTag() {
+      return authTag;
     }
 
 
     /**
-      * Sets the value of the 'selectedMode' field.
-      * @param value The value of 'selectedMode'.
+      * Sets the value of the 'authTag' field.
+      * @param value The value of 'authTag'.
       * @return This builder.
       */
-    public net.corda.p2p.crypto.ResponderHelloMessage.Builder setSelectedMode(net.corda.p2p.crypto.ProtocolMode value) {
+    public net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder setAuthTag(java.nio.ByteBuffer value) {
       validate(fields()[2], value);
-      this.selectedMode = value;
+      this.authTag = value;
       fieldSetFlags()[2] = true;
       return this;
     }
 
     /**
-      * Checks whether the 'selectedMode' field has been set.
-      * @return True if the 'selectedMode' field has been set, false otherwise.
+      * Checks whether the 'authTag' field has been set.
+      * @return True if the 'authTag' field has been set, false otherwise.
       */
-    public boolean hasSelectedMode() {
+    public boolean hasAuthTag() {
       return fieldSetFlags()[2];
     }
 
 
     /**
-      * Clears the value of the 'selectedMode' field.
+      * Clears the value of the 'authTag' field.
       * @return This builder.
       */
-    public net.corda.p2p.crypto.ResponderHelloMessage.Builder clearSelectedMode() {
-      selectedMode = null;
+    public net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage.Builder clearAuthTag() {
+      authTag = null;
       fieldSetFlags()[2] = false;
       return this;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public ResponderHelloMessage build() {
+    public AuthenticatedEncryptedDataMessage build() {
       try {
-        ResponderHelloMessage record = new ResponderHelloMessage();
+        AuthenticatedEncryptedDataMessage record = new AuthenticatedEncryptedDataMessage();
         if (headerBuilder != null) {
           try {
             record.header = this.headerBuilder.build();
@@ -434,8 +434,8 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
         } else {
           record.header = fieldSetFlags()[0] ? this.header : (net.corda.p2p.crypto.CommonHeader) defaultValue(fields()[0]);
         }
-        record.responderPublicKey = fieldSetFlags()[1] ? this.responderPublicKey : (java.nio.ByteBuffer) defaultValue(fields()[1]);
-        record.selectedMode = fieldSetFlags()[2] ? this.selectedMode : (net.corda.p2p.crypto.ProtocolMode) defaultValue(fields()[2]);
+        record.encryptedPayload = fieldSetFlags()[1] ? this.encryptedPayload : (java.nio.ByteBuffer) defaultValue(fields()[1]);
+        record.authTag = fieldSetFlags()[2] ? this.authTag : (java.nio.ByteBuffer) defaultValue(fields()[2]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -446,8 +446,8 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
   }
 
   @SuppressWarnings("unchecked")
-  private static final org.apache.avro.io.DatumWriter<ResponderHelloMessage>
-    WRITER$ = (org.apache.avro.io.DatumWriter<ResponderHelloMessage>)MODEL$.createDatumWriter(SCHEMA$);
+  private static final org.apache.avro.io.DatumWriter<AuthenticatedEncryptedDataMessage>
+    WRITER$ = (org.apache.avro.io.DatumWriter<AuthenticatedEncryptedDataMessage>)MODEL$.createDatumWriter(SCHEMA$);
 
   @Override public void writeExternal(java.io.ObjectOutput out)
     throws java.io.IOException {
@@ -455,8 +455,8 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
   }
 
   @SuppressWarnings("unchecked")
-  private static final org.apache.avro.io.DatumReader<ResponderHelloMessage>
-    READER$ = (org.apache.avro.io.DatumReader<ResponderHelloMessage>)MODEL$.createDatumReader(SCHEMA$);
+  private static final org.apache.avro.io.DatumReader<AuthenticatedEncryptedDataMessage>
+    READER$ = (org.apache.avro.io.DatumReader<AuthenticatedEncryptedDataMessage>)MODEL$.createDatumReader(SCHEMA$);
 
   @Override public void readExternal(java.io.ObjectInput in)
     throws java.io.IOException {
@@ -470,9 +470,9 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
   {
     this.header.customEncode(out);
 
-    out.writeBytes(this.responderPublicKey);
+    out.writeBytes(this.encryptedPayload);
 
-    out.writeEnum(this.selectedMode.ordinal());
+    out.writeBytes(this.authTag);
 
   }
 
@@ -486,9 +486,9 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
       }
       this.header.customDecode(in);
 
-      this.responderPublicKey = in.readBytes(this.responderPublicKey);
+      this.encryptedPayload = in.readBytes(this.encryptedPayload);
 
-      this.selectedMode = net.corda.p2p.crypto.ProtocolMode.values()[in.readEnum()];
+      this.authTag = in.readBytes(this.authTag);
 
     } else {
       for (int i = 0; i < 3; i++) {
@@ -501,11 +501,11 @@ public class ResponderHelloMessage extends org.apache.avro.specific.SpecificReco
           break;
 
         case 1:
-          this.responderPublicKey = in.readBytes(this.responderPublicKey);
+          this.encryptedPayload = in.readBytes(this.encryptedPayload);
           break;
 
         case 2:
-          this.selectedMode = net.corda.p2p.crypto.ProtocolMode.values()[in.readEnum()];
+          this.authTag = in.readBytes(this.authTag);
           break;
 
         default:

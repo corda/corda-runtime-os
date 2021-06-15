@@ -1,11 +1,6 @@
 package net.corda.messaging.emulation.publisher
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.doThrow
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.whenever
+import com.nhaarman.mockito_kotlin.*
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
@@ -19,7 +14,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.function.Executable
 import java.nio.ByteBuffer
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
 
 class CordaPublisherTest {
     private lateinit var cordaPublisher : CordaPublisher
@@ -27,6 +25,18 @@ class CordaPublisherTest {
     private lateinit var config: Config
     private val topicName = "topic123"
     private val record = Record(topicName, "key1", ByteBuffer.wrap("value1".toByteArray()))
+
+    @Throws(IllegalStateException::class)
+    private fun <T : Any?> getCauseOrThrow(completableFuture: CompletableFuture<T>): Executable {
+        return Executable {
+            try {
+                val value = completableFuture.get()
+                throw IllegalStateException("Unexpected $value!")
+            } catch (e: ExecutionException) {
+                throw e.cause!!
+            }
+        }
+    }
 
     @BeforeEach
     fun beforeEach() {
@@ -42,7 +52,7 @@ class CordaPublisherTest {
         verify(topicService, times(1)).addRecords(any())
         assertThat(futures.size).isEqualTo(3)
         for (future in futures) {
-            future.getOrThrow()
+            future.get()
         }
     }
 
@@ -54,7 +64,7 @@ class CordaPublisherTest {
         verify(topicService, times(1)).addRecords(any())
         assertThat(futures.size).isEqualTo(1)
         for (future in futures) {
-            future.getOrThrow()
+            future.get()
         }
     }
 
@@ -65,7 +75,7 @@ class CordaPublisherTest {
         verify(topicService, times(1)).addRecords(any())
         assertThat(futures.size).isEqualTo(3)
         for (future in futures) {
-            assertThrows(CordaMessageAPIFatalException::class.java) { future.getOrThrow() }
+            assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(future))
         }
     }
 
@@ -78,7 +88,7 @@ class CordaPublisherTest {
         verify(topicService, times(1)).addRecords(any())
         assertThat(futures.size).isEqualTo(1)
         for (future in futures) {
-            assertThrows(CordaMessageAPIFatalException::class.java) { future.getOrThrow() }
+            assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(future))
         }
     }
 
