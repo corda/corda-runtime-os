@@ -41,7 +41,7 @@ class DbAccessProviderTest {
         connection.prepareStatement(createOffsetsTableStmt).execute()
         connection.prepareStatement(createTopicsTableStmt).execute()
 
-        dbAccessProvider = DBAccessProvider(jdbcUrl, username, password)
+        dbAccessProvider = DBAccessProviderImpl(jdbcUrl, username, password)
         dbAccessProvider.start()
 
         dbAccessProvider.createTopic(topic1)

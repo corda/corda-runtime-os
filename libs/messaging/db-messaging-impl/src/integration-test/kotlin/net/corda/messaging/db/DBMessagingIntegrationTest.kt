@@ -8,6 +8,7 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.db.persistence.DBAccessProvider
+import net.corda.messaging.db.persistence.DBAccessProviderImpl
 import net.corda.messaging.db.publisher.DBPublisher
 import net.corda.messaging.db.subscription.DBDurableSubscription
 import net.corda.messaging.db.subscription.DBEventLogSubscription
@@ -78,7 +79,7 @@ class DBMessagingIntegrationTest {
         connection.prepareStatement(createOffsetsTableStmt).execute()
         connection.prepareStatement(createTopicsTableStmt).execute()
 
-        dbAccessProvider = DBAccessProvider(jdbcUrl, username, password)
+        dbAccessProvider = DBAccessProviderImpl(jdbcUrl, username, password)
         dbAccessProvider.start()
 
         dbAccessProvider.createTopic(topic1)

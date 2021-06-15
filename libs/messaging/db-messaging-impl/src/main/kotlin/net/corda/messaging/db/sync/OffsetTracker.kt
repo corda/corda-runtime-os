@@ -10,8 +10,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.UUID
-import java.util.concurrent.ConcurrentSkipListMap
-import java.util.concurrent.ConcurrentSkipListSet
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -43,10 +42,10 @@ class OffsetTracker(private val topic: String,
 
     private val maxVisibleOffset = AtomicLong(initialMaxOffset)
     private val nextOffset = AtomicLong(initialMaxOffset + 1)
-    private val releasedInvisibleOffsets = ConcurrentSkipListSet<Long>()
+    private val releasedInvisibleOffsets = ConcurrentHashMap.newKeySet<Long>()
     private val backlogProcessingLock = ReentrantLock()
 
-    private val waitingList = ConcurrentSkipListMap<WaitingIdentifier, WaitingData>()
+    private val waitingList = ConcurrentHashMap<WaitingIdentifier, WaitingData>()
 
     private lateinit var executorService : ScheduledExecutorService
 
@@ -59,8 +58,9 @@ class OffsetTracker(private val topic: String,
     override fun start() {
         startStopLock.withLock {
             if (!running) {
-                executorService = Executors.newScheduledThreadPool(1,
-                    ThreadFactoryBuilder().setNameFormat("offset-tracker-$topic-%d").build())
+                executorService = Executors.newSingleThreadScheduledExecutor(
+                    ThreadFactoryBuilder().setNameFormat("offset-tracker-$topic-%d").build()
+                )
                 executorService.scheduleAtFixedRate({
                     /**
                      * there is a very rare case where a publisher might add an offset into the [releasedInvisibleOffsets]
