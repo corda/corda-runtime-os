@@ -64,6 +64,31 @@ dependencies {
 
 Felix, embedded in the bootable JAR, exports the `org.osgi` packages to the bundles it activates.
 
+[OSGi annotations](http://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.component.html) are the preferred way 
+to declare services.
+This documents uses annotations to explain 
+[how to define the entry point of an application](#how_to_define_the_entry_point_of_an_application) and
+[how to refer to additional components in the class implementing the Application interface](#how_to_refer_to_additional_components_in_the_class_implementing_the_Application_interface).
+
+To use annotations to define services, the Corda application and its components, 
+the `build.gradle` file of the module must include the following dependencies.
+
+```groovy
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    implementation project(":osgi-framework-api")                           // Used to define a Corda application.
+
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"    // Used to declare OSGi components/services
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"  // Used to declare OSGi components/services
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"    // Used to declare OSGi components/services
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version" // Corda uses JUnit 5
+}
+```
+
 #### How to build an application
 
 To build the bootable JAR, run the Gradle task
