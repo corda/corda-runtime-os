@@ -1,6 +1,6 @@
-package net.corda.p2p.linkmanager.sessions
+package net.corda.p2p.linkmanager
 
-import net.corda.p2p.crypto.AvroHoldingIdentity
+import net.corda.p2p.HoldingIdentity
 import java.security.PublicKey
 
 /**
@@ -9,12 +9,12 @@ import java.security.PublicKey
 interface LinkManagerNetworkMap {
 
     companion object {
-        internal fun AvroHoldingIdentity.toSessionNetworkMapPeer(): NetMapHoldingIdentity {
+        internal fun HoldingIdentity.toSessionNetworkMapPeer(): NetMapHoldingIdentity {
             return NetMapHoldingIdentity(this.x500Name, this.groupId)
         }
 
-        internal fun NetMapHoldingIdentity.toAvroHoldingIdentity(): AvroHoldingIdentity {
-            return AvroHoldingIdentity(this.x500Name, this.groupId)
+        internal fun NetMapHoldingIdentity.toHoldingIdentity(): HoldingIdentity {
+            return HoldingIdentity(this.x500Name, this.groupId)
         }
 
     }

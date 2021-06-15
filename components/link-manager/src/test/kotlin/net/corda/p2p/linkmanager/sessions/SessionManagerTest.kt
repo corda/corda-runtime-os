@@ -1,33 +1,33 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.p2p.FlowMessage
+import net.corda.p2p.FlowMessageHeader
+import net.corda.p2p.LinkInMessage
+import net.corda.p2p.Step2Message
 import net.corda.p2p.crypto.AuthenticatedDataMessage
-import net.corda.p2p.crypto.FlowMessage
-import net.corda.p2p.crypto.FlowMessageHeader
-import net.corda.p2p.crypto.GatewayToLinkManagerMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
-import net.corda.p2p.crypto.Step2Message
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.linkmanager.LinkManager.Companion.getSessionKeyFromMessage
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.authenticateAuthenticatedMessage
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkManagerToGatewayMessageFromFlowMessage
-import net.corda.p2p.linkmanager.sessions.LinkManagerNetworkMap.Companion.toAvroHoldingIdentity
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.PublicKey
 import java.security.Signature
-import kotlin.collections.HashMap
 
 class SessionManagerTest {
 
@@ -110,8 +110,8 @@ class SessionManagerTest {
         )
         authenticationProtocol.receiveInitiatorHello(message)
         val responderHello = authenticationProtocol.generateResponderHello()
-        val (privateKey, publicKey) = authenticationProtocol.getDHKeyPair()
-        return Step2Message(message, responderHello, ByteBuffer.wrap(privateKey), ByteBuffer.wrap(publicKey))
+        val (privateKey, _) = authenticationProtocol.getDHKeyPair()
+        return Step2Message(message, responderHello, ByteBuffer.wrap(privateKey))
     }
 
     @Test
@@ -129,7 +129,7 @@ class SessionManagerTest {
         ) { _, _, _ -> return@SessionManager }
 
         val payload = ByteBuffer.wrap("Hello from PartyA".toByteArray())
-        val header = FlowMessageHeader(PARTY_B.toAvroHoldingIdentity(), PARTY_A.toAvroHoldingIdentity(), null, "messageId", "")
+        val header = FlowMessageHeader(PARTY_B.toHoldingIdentity(), PARTY_A.toHoldingIdentity(), null, "messageId", "")
         val message = FlowMessage(header, payload)
 
         val initiatorHelloMessage = initiatorSessionManager.beginSessionNegotiation(getSessionKeyFromMessage(message))
@@ -137,13 +137,13 @@ class SessionManagerTest {
 
         //Strip the Header from the message (as the Gateway does before sending it).
         val step2Message = mockGatewayResponse(initiatorHelloMessage.payload as InitiatorHelloMessage)
-        assertNull(responderSessionManager.processSessionMessage(GatewayToLinkManagerMessage(step2Message)))
-        val initiatorHandshakeMessage = initiatorSessionManager.processSessionMessage(GatewayToLinkManagerMessage(step2Message.responderHello))
+        assertNull(responderSessionManager.processSessionMessage(LinkInMessage(step2Message)))
+        val initiatorHandshakeMessage = initiatorSessionManager.processSessionMessage(LinkInMessage(step2Message.responderHello))
 
         assertTrue(initiatorHandshakeMessage!!.payload is InitiatorHandshakeMessage)
-        val responderHandshakeMessage = responderSessionManager.processSessionMessage(GatewayToLinkManagerMessage(initiatorHandshakeMessage.payload))
+        val responderHandshakeMessage = responderSessionManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage.payload))
         assertTrue(responderHandshakeMessage!!.payload is ResponderHandshakeMessage)
-        assertNull(initiatorSessionManager.processSessionMessage(GatewayToLinkManagerMessage(responderHandshakeMessage.payload)))
+        assertNull(initiatorSessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage.payload)))
 
         val initiatorSession = initiatorSessionManager.getInitiatorSession(getSessionKeyFromMessage(message))
         assertNotNull(initiatorSession, "Authenticated Session is not stored in the initiator's session manager.")

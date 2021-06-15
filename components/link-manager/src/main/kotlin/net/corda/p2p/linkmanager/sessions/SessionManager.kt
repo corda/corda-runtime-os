@@ -1,22 +1,23 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.p2p.crypto.GatewayToLinkManagerMessage
+import net.corda.p2p.LinkInMessage
+import net.corda.p2p.LinkOutMessage
+import net.corda.p2p.Step2Message
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
-import net.corda.p2p.crypto.LinkManagerToGatewayMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
-import net.corda.p2p.crypto.Step2Message
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkManagerToGatewayMessage
-import net.corda.p2p.linkmanager.sessions.LinkManagerNetworkMap.Companion.toAvroHoldingIdentity
-import java.util.*
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 class SessionManager(
     private val mode: ProtocolMode,
@@ -50,7 +51,7 @@ class SessionManager(
         return activeResponderSessions[uuid]
     }
 
-    fun processSessionMessage(message: GatewayToLinkManagerMessage): LinkManagerToGatewayMessage? {
+    fun processSessionMessage(message: LinkInMessage): LinkOutMessage? {
         return when(val payload = message.payload) {
             is ResponderHelloMessage -> processResponderHello(payload)
             is ResponderHandshakeMessage -> processResponderHandshake(payload)
@@ -63,18 +64,18 @@ class SessionManager(
         }
     }
 
-    fun beginSessionNegotiation(sessionKey: SessionKey): LinkManagerToGatewayMessage {
+    fun beginSessionNegotiation(sessionKey: SessionKey): LinkOutMessage {
         val sessionId = UUID.randomUUID().toString()
         val session = AuthenticationProtocolInitiator(sessionId, listOf(mode), maxMessageSize)
         pendingInitiatorSessions[sessionId] = Pair(sessionKey, session)
         return createLinkManagerToGatewayMessage(
             session.generateInitiatorHello(),
-            sessionKey.responderId.toAvroHoldingIdentity(),
+            sessionKey.responderId.toHoldingIdentity(),
             networkMap
         )
     }
 
-    private fun processResponderHello(message: ResponderHelloMessage): LinkManagerToGatewayMessage? {
+    private fun processResponderHello(message: ResponderHelloMessage): LinkOutMessage? {
         val (sessionInfo, session) = pendingInitiatorSessions[message.header.sessionId] ?: run {
             logger.warn("Received ${message::class.java::getSimpleName} with sessionId ${message.header.sessionId} " +
                     "but there is no pending session. The message was discarded.")
@@ -100,12 +101,12 @@ class SessionManager(
         val payload = session.generateOurHandshakeMessage(ourKey, responderKey, groupIdOrEmpty, signData)
         return createLinkManagerToGatewayMessage(
             payload,
-            sessionInfo.responderId.toAvroHoldingIdentity(),
+            sessionInfo.responderId.toHoldingIdentity(),
             networkMap
         )
     }
 
-    private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkManagerToGatewayMessage? {
+    private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
         val (sessionInfo, session) = pendingInitiatorSessions[message.header.sessionId] ?: run {
             logger.warn("Received ${message::class.java::getSimpleName} with sessionId = ${message.header.sessionId} " +
                 "but there is no pending session. The message was discarded.")
@@ -133,20 +134,20 @@ class SessionManager(
         return null
     }
 
-    private fun processStep2Message(message: Step2Message): LinkManagerToGatewayMessage? {
+    private fun processStep2Message(message: Step2Message): LinkOutMessage? {
         val session = AuthenticationProtocolResponder.fromStep2(message.initiatorHello.header.sessionId,
             listOf(ProtocolMode.AUTHENTICATION_ONLY),
             maxMessageSize,
             message.initiatorHello,
             message.responderHello,
             message.privateKey.toByteArray(),
-            message.publicKey.toByteArray())
+            message.responderHello.responderPublicKey.toByteArray())
         session.generateHandshakeSecrets()
         pendingResponderSessions[message.initiatorHello.header.sessionId] = session
         return null
     }
 
-    private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkManagerToGatewayMessage? {
+    private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
         val session = pendingResponderSessions[message.header.sessionId]
         if (session == null) {
             logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId = " +
@@ -173,7 +174,7 @@ class SessionManager(
 
         val signData = {it : ByteArray -> (networkMap::signData)(us.groupId, it)}
         val response = session.generateOurHandshakeMessage(ourPublicKey, signData)
-        val peer = networkMap.getPeerFromHash(identityData.initiatorPublicKeyHash)?.toAvroHoldingIdentity()
+        val peer = networkMap.getPeerFromHash(identityData.initiatorPublicKeyHash)?.toHoldingIdentity()
         if (peer == null) {
             logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId = " +
                     "${message.header.sessionId}. Initiator identity with public key hash = " +

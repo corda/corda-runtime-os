@@ -9,17 +9,16 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.p2p.FlowMessage
+import net.corda.p2p.LinkInMessage
+import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.AuthenticatedDataMessage
-import net.corda.p2p.crypto.FlowMessage
-import net.corda.p2p.crypto.GatewayToLinkManagerMessage
-import net.corda.p2p.crypto.LinkManagerToGatewayMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toSessionNetworkMapPeer
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.authenticateAuthenticatedMessage
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkManagerToGatewayMessageFromFlowMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.p2p.linkmanager.sessions.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.sessions.LinkManagerNetworkMap.Companion.toSessionNetworkMapPeer
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
@@ -51,7 +50,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     }
 
     private var outboundMessageForwarder: Subscription<String, FlowMessage>
-    private var inboundMessageForwarder: Subscription<String, GatewayToLinkManagerMessage>
+    private var inboundMessageForwarder: Subscription<String, LinkInMessage>
     private var messagesPendingSession = PendingSessionsMessageQueues(publisherFactory)
     private var sessionManager: SessionManager = SessionManager(
         ProtocolMode.AUTHENTICATION_ONLY,
@@ -73,7 +72,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         //We use an EventLogProcessor here instead of a DurableProcessor, as During [CORE-1286] we will use the
         //offset and partition.
         override fun onNext(events: List<EventLogRecord<String, FlowMessage>>): List<Record<*, *>> {
-            val records = mutableListOf<Record<String, LinkManagerToGatewayMessage>>()
+            val records = mutableListOf<Record<String, LinkOutMessage>>()
             for (event in events) {
                 val sessionKey = getSessionKeyFromMessage(event.value)
                 val session = sessionManager.getInitiatorSession(sessionKey)
@@ -96,11 +95,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     }
 
     class InboundMessageForwarder(private val sessionManager: SessionManager) :
-        EventLogProcessor<String, GatewayToLinkManagerMessage> {
+        EventLogProcessor<String, LinkInMessage> {
 
         private val logger = LoggerFactory.getLogger(this::class.java.name)
 
-        override fun onNext(events: List<EventLogRecord<String, GatewayToLinkManagerMessage>>): List<Record<*, *>> {
+        override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
             val records = mutableListOf<Record<String, *>>()
             for (event in events) {
                 if (event.value.payload is AuthenticatedDataMessage) {
@@ -123,7 +122,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         override val keyClass = String::class.java
-        override val valueClass = GatewayToLinkManagerMessage::class.java
+        override val valueClass = LinkInMessage::class.java
     }
 
     class PendingSessionsMessageQueues(publisherFactory: PublisherFactory) {
@@ -150,7 +149,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
          */
         fun sessionNegotiatedCallback(key: SessionManager.SessionKey, session: AuthenticatedSession, networkMap: LinkManagerNetworkMap) {
             val queuedMessages = queuedMessagesPendingSession[key] ?: return
-            val records = mutableListOf<Record<String, LinkManagerToGatewayMessage>>()
+            val records = mutableListOf<Record<String, LinkOutMessage>>()
             for (i in 0 until queuedMessages.size) {
                 val message = queuedMessages.remove() ?: break
                 val authenticatedDataMessage = createLinkManagerToGatewayMessageFromFlowMessage(message, session, networkMap)
@@ -161,14 +160,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     }
 
     init {
-        val outboundMessageForwarderConfig = SubscriptionConfig(INBOUND_MESSAGE_FORWARDER_GROUP, LINK_IN_TOPIC)
+        val outboundMessageForwarderConfig = SubscriptionConfig(OUTBOUND_MESSAGE_FORWARDER_GROUP, LINK_OUT_TOPIC)
         outboundMessageForwarder = subscriptionFactory.createEventLogSubscription(
             outboundMessageForwarderConfig,
             OutboundMessageForwarder(sessionManager, messagesPendingSession, linkManagerNetworkMap),
             mapOf(),
             null
         )
-        val inboundMessageForwarderConfig = SubscriptionConfig(OUTBOUND_MESSAGE_FORWARDER_GROUP, LINK_IN_TOPIC)
+        val inboundMessageForwarderConfig = SubscriptionConfig(INBOUND_MESSAGE_FORWARDER_GROUP, LINK_IN_TOPIC)
         inboundMessageForwarder = subscriptionFactory.createEventLogSubscription(
             inboundMessageForwarderConfig,
             InboundMessageForwarder(sessionManager),
