@@ -1,0 +1,32 @@
+plugins {
+    id 'corda.publish'
+    id 'corda.common-app'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    implementation "net.corda:corda-base:1.0.0-SNAPSHOT"
+    implementation "net.corda:corda-crypto-api:1.0.0-SNAPSHOT"
+    implementation "net.corda:corda-sandbox:1.0.0-SNAPSHOT"
+    implementation "net.corda:corda-install:1.0.0-SNAPSHOT"
+    implementation 'org.osgi:org.osgi.service.cm:1.6.0'
+
+    implementation project(":libs:lifecycle")
+    implementation project(":osgi-framework-api")
+
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+}
+
+description 'Test Sandbox'
