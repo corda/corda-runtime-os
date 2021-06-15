@@ -4,12 +4,12 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class ConfigRepositoryImplTest {
-    private lateinit var configRepository: ConfigRepositoryImpl
+class ConfigRepositoryTest {
+    private lateinit var configRepository: ConfigRepository
 
     @BeforeEach
     fun beforeEach() {
-        configRepository = ConfigRepositoryImpl()
+        configRepository = ConfigRepository()
     }
 
     @Test

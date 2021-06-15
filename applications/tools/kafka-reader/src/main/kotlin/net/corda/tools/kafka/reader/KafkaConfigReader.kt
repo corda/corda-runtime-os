@@ -37,14 +37,12 @@ class KafkaConfigReader @Activate constructor(
             val kafkaConnectionProperties = Properties()
             kafkaConnectionProperties.load(FileInputStream(parameters.kafkaConnection))
 
-            configReader.startSubscription(parameters.topicName, kafkaConnectionProperties)
-            logger.info("-------Sleeping for 10 seconds-------")
-            Thread.sleep(10000)
-            logger.info("-------Waking up-------")
-            val configs = configReader.getAllConfigurations()
+            configReader.startReader()
+            while (!configReader.isReady()) { Thread.sleep(100) }
+            val configs = configReader.getAllConfiguration()
 
+            logger.info("-------List of available configurations-------")
             for(config in configs) {
-                logger.info("-------List of available configurations-------")
                 logger.info("${config.key} -> ${config.value}")
             }
             shutdownOSGiFramework()

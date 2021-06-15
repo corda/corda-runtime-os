@@ -1,5 +1,7 @@
 package net.corda.libs.configuration.read.kafka
 
+import com.nhaarman.mockito_kotlin.mock
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -7,13 +9,14 @@ import org.junit.jupiter.api.Test
 class ConfigReadServiceImplTest {
 
     private lateinit var configReadService: ConfigReadServiceImpl
-    private lateinit var configRepository: ConfigRepositoryImpl
+    private lateinit var configRepository: ConfigRepository
+    private val subscriptionFactory: SubscriptionFactory = mock()
 
     @BeforeEach
     fun beforeEach() {
-        configRepository = ConfigRepositoryImpl()
+        configRepository = ConfigRepository()
         configRepository.storeConfiguration(ConfigUtil.testConfigMap())
-        configReadService = ConfigReadServiceImpl(configRepository)
+        configReadService = ConfigReadServiceImpl(configRepository, subscriptionFactory)
     }
 
     @Test
@@ -26,15 +29,4 @@ class ConfigReadServiceImplTest {
         Assertions.assertThat(config.getDouble("componentVersion")).isEqualTo(5.4)
     }
 
-//    @Test
-//    fun testParseConfiguration() {
-//        val security = configReadService.parseConfiguration("corda.security", SecurityConfiguration::class.java)
-//
-//        Assertions.assertThat(security.authService.dataSource.type).isEqualTo(AuthDataSourceType.INMEMORY)
-//        Assertions.assertThat(security.authService.dataSource.passwordEncryption).isEqualTo(PasswordEncryption.NONE)
-//        Assertions.assertThat(security.authService.dataSource.users?.size).isEqualTo(2)
-//        Assertions.assertThat(security.authService.dataSource.users!![0].username).isEqualTo("corda")
-//        Assertions.assertThat(security.authService.id).isEqualTo(AuthServiceId("NODE_CONFIG"))
-//
-//    }
 }
