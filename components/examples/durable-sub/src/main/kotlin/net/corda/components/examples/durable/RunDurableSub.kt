@@ -1,6 +1,6 @@
 package net.corda.components.examples.durable
 
-import net.corda.components.examples.durable.processor.DemoPubSubProcessor
+import net.corda.components.examples.durable.processor.DemoDurableProcessor
 import net.corda.data.demo.DemoRecord
 import net.corda.lifecycle.LifeCycle
 import net.corda.lifecycle.LifeCycleCoordinator
@@ -33,7 +33,7 @@ class RunDurableSub(
         get() = subscription?.isRunning ?: false
 
     override fun start() {
-        val processor = DemoPubSubProcessor(outputEventTopic, outputPubSubTopic, killProcessOnRecord)
+        val processor = DemoDurableProcessor(outputEventTopic, outputPubSubTopic, killProcessOnRecord)
         subscription = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig(groupName, inputTopic, instanceId),
             processor,

@@ -7,7 +7,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
 
-class DemoPubSubProcessor(
+class DemoDurableProcessor(
     private val outputEventTopic: String,
     private val outputPubSubTopic: String,
     private val killProcessOnRecord: Int? = 0
