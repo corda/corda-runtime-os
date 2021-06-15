@@ -7,6 +7,7 @@ import net.corda.components.examples.bootstrap.topics.ConfigCompleteEvent
 import net.corda.components.examples.compacted.RunCompactedSub
 import net.corda.components.examples.durable.RunDurableSub
 import net.corda.components.examples.pubsub.RunPubSub
+import net.corda.components.examples.stateevent.RunStateEventSub
 import net.corda.lifecycle.LifeCycleCoordinator
 import net.corda.lifecycle.LifeCycleEvent
 import net.corda.lifecycle.SimpleLifeCycleCoordinator
@@ -56,6 +57,7 @@ class DemoApp @Activate constructor(
             var compactedSub: RunCompactedSub? = null
             var durableSub: RunDurableSub? = null
             var pubsubSub: RunPubSub? = null
+            var stateEventSub: RunStateEventSub? = null
 
             val instanceId = parameters.instanceId.toInt()
 
@@ -69,12 +71,14 @@ class DemoApp @Activate constructor(
                         pubsubSub?.start()
                         compactedSub?.start()
                         durableSub?.start()
+                        stateEventSub?.start()
                     }
                     is StopEvent -> {
                         bootstrapConfigTopic?.stop()
                         pubsubSub?.stop()
                         compactedSub?.stop()
                         durableSub?.stop()
+                        stateEventSub?.stop()
                     }
                     else -> {
                         log.error("$event unexpected!")
@@ -86,6 +90,7 @@ class DemoApp @Activate constructor(
             durableSub =
                 RunDurableSub(lifeCycleCoordinator!!, subscriptionFactory, instanceId, parameters.durableKillProcessOnRecord.toInt())
             pubsubSub = RunPubSub(lifeCycleCoordinator!!, subscriptionFactory)
+            stateEventSub = RunStateEventSub(lifeCycleCoordinator!!, instanceId, subscriptionFactory, parameters.stateEventKillProcessOnRecord.toInt())
 
             bootstrapConfigTopic = BootstrapConfigTopic(
                 lifeCycleCoordinator!!,
@@ -136,6 +141,12 @@ class CliParameters {
         description = ["Exit process via durable processor on this record count"]
     )
     var durableKillProcessOnRecord: String = "0"
+
+    @CommandLine.Option(
+        names = ["--stateEventKillProcessOnRecord"],
+        description = ["Exit process via state plus event processor on this record count"]
+    )
+    var stateEventKillProcessOnRecord: String = "0"
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false

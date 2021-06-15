@@ -8,7 +8,7 @@ create the non config topics via commandline:
 
 `.\kafka-topics.bat --zookeeper localhost:2181 --create --topic eventTopic --partitions 3 --replication-factor 3`
 
-`.\kafka-topics.bat --zookeeper localhost:2181 --create --topic stateTopic --partitions 1 --replication-factor 3 --config cleanup.policy=compact`
+`.\kafka-topics.bat --zookeeper localhost:2181 --create --topic stateTopic --partitions 3 --replication-factor 3 --config cleanup.policy=compact`
 
 `.\kafka-topics.bat --zookeeper localhost:2181 --create --topic pubsubTopic --partitions 3 --replication-factor 3`
 
