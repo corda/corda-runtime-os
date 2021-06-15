@@ -10,12 +10,11 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.Step2Message
 import net.corda.p2p.crypto.protocol.ProtocolConstants
-import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.linkmanager.LinkManager.Companion.getSessionKeyFromMessage
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.authenticateAuthenticatedMessage
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkManagerToGatewayMessageFromFlowMessage
-import net.corda.p2p.linkmanager.sessions.SessionNetworkMap.Companion.toAvroHoldingIdentity
+import net.corda.p2p.linkmanager.sessions.LinkManagerNetworkMap.Companion.toAvroHoldingIdentity
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -34,19 +33,19 @@ class SessionManagerTest {
 
     companion object {
         private val GROUP_ID = null
-        val PARTY_A = SessionNetworkMap.NetMapHoldingIdentity("PartyA", GROUP_ID)
-        val PARTY_B = SessionNetworkMap.NetMapHoldingIdentity("PartyB", GROUP_ID)
+        val PARTY_A = LinkManagerNetworkMap.NetMapHoldingIdentity("PartyA", GROUP_ID)
+        val PARTY_B = LinkManagerNetworkMap.NetMapHoldingIdentity("PartyB", GROUP_ID)
         const val MAX_MESSAGE_SIZE = 1024 * 1024
     }
 
-    class MockNetworkMap(nodes: List<SessionNetworkMap.NetMapHoldingIdentity>) {
+    class MockNetworkMap(nodes: List<LinkManagerNetworkMap.NetMapHoldingIdentity>) {
         private val provider = BouncyCastleProvider()
         private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
         private val signature = Signature.getInstance("ECDSA", provider)
         private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
 
-        private val keys = HashMap<SessionNetworkMap.NetMapHoldingIdentity, KeyPair>()
-        private val peerForHash = HashMap<Int, SessionNetworkMap.NetMapHoldingIdentity>()
+        private val keys = HashMap<LinkManagerNetworkMap.NetMapHoldingIdentity, KeyPair>()
+        private val peerForHash = HashMap<Int, LinkManagerNetworkMap.NetMapHoldingIdentity>()
 
         private fun MessageDigest.hash(data: ByteArray): ByteArray {
             this.reset()
@@ -62,9 +61,9 @@ class SessionManagerTest {
             }
         }
 
-        fun getSessionNetworkMapForNode(node: SessionNetworkMap.NetMapHoldingIdentity): SessionNetworkMap {
-            return object : SessionNetworkMap {
-                override fun getPublicKey(holdingIdentity: SessionNetworkMap.NetMapHoldingIdentity): PublicKey? {
+        fun getSessionNetworkMapForNode(node: LinkManagerNetworkMap.NetMapHoldingIdentity): LinkManagerNetworkMap {
+            return object : LinkManagerNetworkMap {
+                override fun getPublicKey(holdingIdentity: LinkManagerNetworkMap.NetMapHoldingIdentity): PublicKey? {
                     return keys[holdingIdentity]?.public
                 }
 
@@ -73,13 +72,13 @@ class SessionManagerTest {
                     return keys[peer]!!.public
                 }
 
-                override fun getPeerFromHash(hash: ByteArray): SessionNetworkMap.NetMapHoldingIdentity? {
+                override fun getPeerFromHash(hash: ByteArray): LinkManagerNetworkMap.NetMapHoldingIdentity? {
                     return peerForHash[hash.contentHashCode()]
                 }
 
-                override fun getEndPoint(holdingIdentity: SessionNetworkMap.NetMapHoldingIdentity): SessionNetworkMap.EndPoint? {
+                override fun getEndPoint(holdingIdentity: LinkManagerNetworkMap.NetMapHoldingIdentity): LinkManagerNetworkMap.EndPoint? {
                     //This is not needed in this test as it is only used by the Gateway.
-                    return SessionNetworkMap.EndPoint("", "")
+                    return LinkManagerNetworkMap.EndPoint("", "")
                 }
 
                 override fun getOurPublicKey(groupId: String?): PublicKey? {
@@ -87,7 +86,7 @@ class SessionManagerTest {
                     return keys[node]!!.public
                 }
 
-                override fun getOurHoldingIdentity(groupId: String?): SessionNetworkMap.NetMapHoldingIdentity {
+                override fun getOurHoldingIdentity(groupId: String?): LinkManagerNetworkMap.NetMapHoldingIdentity {
                     assertNull(groupId) {"In this case the groupId should be null."}
                     return node
                 }

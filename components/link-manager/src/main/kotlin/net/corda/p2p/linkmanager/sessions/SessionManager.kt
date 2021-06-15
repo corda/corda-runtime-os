@@ -13,16 +13,16 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkManagerToGatewayMessage
-import net.corda.p2p.linkmanager.sessions.SessionNetworkMap.Companion.toAvroHoldingIdentity
+import net.corda.p2p.linkmanager.sessions.LinkManagerNetworkMap.Companion.toAvroHoldingIdentity
 import java.util.*
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
 class SessionManager(
     private val mode: ProtocolMode,
-    private val networkMap: SessionNetworkMap,
+    private val networkMap: LinkManagerNetworkMap,
     private val maxMessageSize: Int,
-    private val sessionNegotiatedCallback: (SessionKey, AuthenticatedSession, SessionNetworkMap) -> Unit
+    private val sessionNegotiatedCallback: (SessionKey, AuthenticatedSession, LinkManagerNetworkMap) -> Unit
     ) {
 
     companion object {
@@ -32,7 +32,7 @@ class SessionManager(
     }
 
     //On the Initiator side there is a single unique session per SessionKey.
-    data class SessionKey(val ourGroupId: String?, val responderId: SessionNetworkMap.NetMapHoldingIdentity)
+    data class SessionKey(val ourGroupId: String?, val responderId: LinkManagerNetworkMap.NetMapHoldingIdentity)
 
     private val pendingInitiatorSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
     private val activeInitiatorSessions = ConcurrentHashMap<SessionKey, AuthenticatedSession>()

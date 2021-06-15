@@ -1,3 +1,8 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+}
+
 description 'LinkManager for p2p communication'
 
 dependencies {
@@ -15,5 +20,5 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
     implementation "net.corda:corda-base:$cordaVersion"
-    testImplementation "org.bouncycastle:bcprov-jdk15on:1.68"
+    testImplementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
 }

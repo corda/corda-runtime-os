@@ -8,8 +8,8 @@ import net.corda.p2p.crypto.LinkManagerToGatewayMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.linkmanager.sessions.SessionManager.Companion.toByteArray
-import net.corda.p2p.linkmanager.sessions.SessionNetworkMap
-import net.corda.p2p.linkmanager.sessions.SessionNetworkMap.Companion.toSessionNetworkMapPeer
+import net.corda.p2p.linkmanager.sessions.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.sessions.LinkManagerNetworkMap.Companion.toSessionNetworkMapPeer
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.lang.IllegalArgumentException
@@ -24,7 +24,7 @@ class Messaging {
         internal fun createLinkManagerToGatewayMessage(
             payload: Any,
             dest: AvroHoldingIdentity,
-            networkMap: SessionNetworkMap
+            networkMap: LinkManagerNetworkMap
         ): LinkManagerToGatewayMessage {
             val header = generateLinkManagerToGatewayHeaderFromPeer(dest, networkMap)
                 ?: throw IllegalArgumentException("Attempted to send message to peer: which is not in the network map.")
@@ -33,7 +33,7 @@ class Messaging {
 
         private fun generateLinkManagerToGatewayHeaderFromPeer(
             peer: AvroHoldingIdentity,
-            networkMap: SessionNetworkMap
+            networkMap: LinkManagerNetworkMap
         ): LinkManagerToGatewayHeader? {
             val endPoint = networkMap.getEndPoint(peer.toSessionNetworkMapPeer()) ?: return null
             return LinkManagerToGatewayHeader(endPoint.sni, endPoint.address)
@@ -42,7 +42,7 @@ class Messaging {
         fun createLinkManagerToGatewayMessageFromFlowMessage(
             message: FlowMessage,
             session: AuthenticatedSession,
-            networkMap: SessionNetworkMap
+            networkMap: LinkManagerNetworkMap
         ) : LinkManagerToGatewayMessage {
             val payload = message.toByteBuffer()
             val result = session.createMac(payload.toByteArray())

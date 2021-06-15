@@ -18,8 +18,8 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.authenticateAuthenticatedMessage
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkManagerToGatewayMessageFromFlowMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.p2p.linkmanager.sessions.SessionNetworkMap
-import net.corda.p2p.linkmanager.sessions.SessionNetworkMap.Companion.toSessionNetworkMapPeer
+import net.corda.p2p.linkmanager.sessions.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.sessions.LinkManagerNetworkMap.Companion.toSessionNetworkMapPeer
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
@@ -29,7 +29,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   private val subscriptionFactory: SubscriptionFactory,
                   @Reference(service = PublisherFactory::class)
                   private val publisherFactory: PublisherFactory,
-                  sessionNetworkMap: SessionNetworkMap,
+                  linkManagerNetworkMap: LinkManagerNetworkMap,
                   maxMessageSize: Int)
 : LifeCycle {
 
@@ -55,7 +55,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private var messagesPendingSession = PendingSessionsMessageQueues(publisherFactory)
     private var sessionManager: SessionManager = SessionManager(
         ProtocolMode.AUTHENTICATION_ONLY,
-        sessionNetworkMap,
+        linkManagerNetworkMap,
         maxMessageSize,
         messagesPendingSession::sessionNegotiatedCallback
     )
@@ -63,7 +63,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     class OutboundMessageForwarder(
         private val sessionManager: SessionManager,
         private val pendingSessionsMessageQueues: PendingSessionsMessageQueues,
-        private val networkMap: SessionNetworkMap
+        private val networkMap: LinkManagerNetworkMap
     ) :
         EventLogProcessor<String, FlowMessage> {
 
@@ -148,7 +148,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         /**
          * Publish all the queued [FlowMessage]s to the P2P_OUT_TOPIC.
          */
-        fun sessionNegotiatedCallback(key: SessionManager.SessionKey, session: AuthenticatedSession, networkMap: SessionNetworkMap) {
+        fun sessionNegotiatedCallback(key: SessionManager.SessionKey, session: AuthenticatedSession, networkMap: LinkManagerNetworkMap) {
             val queuedMessages = queuedMessagesPendingSession[key] ?: return
             val records = mutableListOf<Record<String, LinkManagerToGatewayMessage>>()
             for (i in 0 until queuedMessages.size) {
@@ -164,7 +164,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         val outboundMessageForwarderConfig = SubscriptionConfig(INBOUND_MESSAGE_FORWARDER_GROUP, LINK_IN_TOPIC)
         outboundMessageForwarder = subscriptionFactory.createEventLogSubscription(
             outboundMessageForwarderConfig,
-            OutboundMessageForwarder(sessionManager, messagesPendingSession, sessionNetworkMap),
+            OutboundMessageForwarder(sessionManager, messagesPendingSession, linkManagerNetworkMap),
             mapOf(),
             null
         )
