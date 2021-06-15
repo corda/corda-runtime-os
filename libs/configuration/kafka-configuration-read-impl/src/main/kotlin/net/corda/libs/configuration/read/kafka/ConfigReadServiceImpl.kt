@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.read.ConfigReadService
 import net.corda.libs.configuration.read.ConfigUpdate
 import net.corda.libs.configuration.read.kafka.processor.ConfigCompactedProcessor
@@ -32,7 +33,10 @@ class ConfigReadServiceImpl @Activate constructor(
     override fun start() {
         val compactedSubscription =
             subscriptionFactory.createCompactedSubscription(
-                SubscriptionConfig(CONFIGURATION_READ_SERVICE, "default-topic"),
+                SubscriptionConfig(
+                    CONFIGURATION_READ_SERVICE,
+                    ConfigFactory.load("kafka.properties").getString("topic.name")
+                ),
                 processor,
                 mapOf()
             )
