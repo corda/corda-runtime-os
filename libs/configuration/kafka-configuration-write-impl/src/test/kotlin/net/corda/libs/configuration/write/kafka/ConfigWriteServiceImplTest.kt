@@ -5,7 +5,6 @@ import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
 import com.typesafe.config.ConfigFactory
-import net.corda.data.config.Configuration
 import net.corda.libs.configuration.write.ConfigWriteService
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
