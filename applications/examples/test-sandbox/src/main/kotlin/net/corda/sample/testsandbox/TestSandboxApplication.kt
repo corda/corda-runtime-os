@@ -83,3 +83,20 @@ class TestSandboxApplication @Activate constructor(
             }
         }
     }
+
+    override fun startup(args: Array<String>) {
+        logger.info("Start-up...")
+        if (installService != null) {
+            logger.info("Install service active.")
+            if (sandboxService != null) {
+                logger.info("Sandbox service active.")
+                coordinator.start()
+            }
+        }
+    }
+
+    override fun shutdown() {
+        logger.info("Shutdown.")
+        coordinator.stop()
+    }
+}
