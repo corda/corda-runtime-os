@@ -61,6 +61,7 @@ class DBAccessProviderImpl(private val jdbcUrl: String, private val username: St
                                         "${DbSchema.RecordsTable.TOPIC_COLUMN_NAME} = ? and " +
                                         "$PARTITION_COLUMN_NAME = ? and " +
                                         "$RECORD_OFFSET_COLUMN_NAME >= ? and $RECORD_OFFSET_COLUMN_NAME <= ? " +
+                                        "order by $RECORD_OFFSET_COLUMN_NAME asc " +
                                         "limit ?"
 
     private val selectRecordByPartitionOffsetStmt = "select $RECORD_KEY_COLUMN_NAME, $RECORD_VALUE_COLUMN_NAME " +
