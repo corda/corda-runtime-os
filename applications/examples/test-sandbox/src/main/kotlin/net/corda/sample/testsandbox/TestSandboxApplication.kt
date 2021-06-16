@@ -19,7 +19,7 @@ class TestSandboxApplication : Application {
 
         private val logger: Logger = LoggerFactory.getLogger(TestSandboxApplication::class.java)
 
-        private const val PATH = "/home/ldebiasi/IdeaProjects/flow-worker/applications/examples/test-cpk/build/libs"
+        private const val PATH = "applications/examples/test-cpk/build/libs"
 
     } //~ companion object
 
