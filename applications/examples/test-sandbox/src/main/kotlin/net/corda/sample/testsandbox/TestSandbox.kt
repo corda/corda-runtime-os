@@ -8,9 +8,25 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 
+/**
+ * This class shows how to load Cordapps and create the [net.corda.sandbox.Sandbox] for it.
+ *
+ * This class implements [LifeCycle] because it is intended to be a Corda component.
+ */
 class TestSandbox(
+    /**
+     * Path where CPK artifacts are loaded.
+     */
     private val path: Path,
+
+    /**
+     * Injected as OSGi service by [TestSandboxApplication].
+     */
     private var installService: InstallService,
+
+    /**
+     * Injected as OSGi service by [TestSandboxApplication].
+     */
     private var sandboxService: SandboxService,
 ) : LifeCycle {
 
@@ -21,11 +37,24 @@ class TestSandbox(
     } //~ companion object
 
 
+    /**
+     * `true` if this Corda component is running.
+     *
+     * @see [start]
+     * @see [stop]
+     */
     @Volatile
     private var _isRunning: Boolean = false
 
+    /**
+     * Return `true` if this Corda component is running.
+     */
     override val isRunning: Boolean get() = _isRunning
 
+    /**
+     * Scan the [path] to load the CPK artifacts found.
+     * Print info about the [net.corda.sandbox.Sandbox] created per CPK.
+     */
     fun installCpk(path: Path) {
         logger.info("Install CPKs from $path.")
         val cpiIdentifier = "unique_cpi_identifier"
@@ -46,6 +75,9 @@ class TestSandbox(
         }
     }
 
+    /**
+     * Start this Corda component, called by [TestSandboxApplication.coordinator].
+     */
     @Synchronized
     override fun start() {
         if (!isRunning) {
@@ -53,15 +85,18 @@ class TestSandbox(
             logger.info("Starting...")
             installCpk(path)
             logger.info("Started.")
-            logger.info("Press [CTRL+C] to stop the application...")
         }
     }
 
+    /**
+     * Stop this Corda component, called by [TestSandboxApplication.coordinator].
+     */
     @Synchronized
     override fun stop() {
         if (isRunning) {
-            logger.info("Stop")
+            logger.info("Stop.")
             _isRunning = false
         }
     }
+
 }
