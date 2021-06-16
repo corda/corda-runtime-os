@@ -4,6 +4,7 @@ import net.corda.install.Cpi
 import net.corda.install.InstallService
 import net.corda.lifecycle.LifeCycle
 import net.corda.sandbox.SandboxService
+import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
@@ -32,7 +33,7 @@ class TestSandbox(
 
     private companion object {
 
-        private val logger: Logger = LoggerFactory.getLogger(TestSandbox::class.java)
+        private val logger = contextLogger()
 
     } //~ companion object
 

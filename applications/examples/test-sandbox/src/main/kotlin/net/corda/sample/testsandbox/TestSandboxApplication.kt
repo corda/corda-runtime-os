@@ -6,6 +6,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.osgi.api.Application
 import net.corda.sandbox.SandboxService
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
@@ -30,7 +31,7 @@ class TestSandboxApplication : Application {
 
     private companion object {
 
-        private val logger: Logger = LoggerFactory.getLogger(TestSandboxApplication::class.java)
+        private val logger = contextLogger()
 
         /**
          * Relative path to the directory where the CPK artifact is created
