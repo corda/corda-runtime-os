@@ -25,21 +25,27 @@ class KafkaSubscriptionFactoryTest {
 
     @Test
     fun createCompactedSubcreatePubSub() {
-        factory.createCompactedSubscription<Any, Any>(subscriptionConfig, mock(),  mapOf())
+        factory.createCompactedSubscription<Any, Any>(subscriptionConfig, mock())
     }
 
     @Test
     fun createPubSub() {
-        factory.createPubSubSubscription<Any, Any>(subscriptionConfig, mock(), null,  mapOf())
+        factory.createPubSubSubscription<Any, Any>(subscriptionConfig, mock(), null)
     }
 
     @Test
     fun createDurableSub() {
-        factory.createDurableSubscription<Any, Any>(subscriptionConfig, mock(),  mapOf(), null)
+        factory.createDurableSubscription<Any, Any>(subscriptionConfig, mock(),  ConfigFactory.empty(), null)
     }
 
     @Test
     fun createDurableSubNoInstanceId() {
-        assertThrows<CordaMessageAPIFatalException> { factory.createDurableSubscription<Any, Any>( SubscriptionConfig("group1", "event"), mock(), mapOf(), null) }
+        assertThrows<CordaMessageAPIFatalException> { factory.createDurableSubscription<Any, Any>( SubscriptionConfig("group1", "event"), mock(), ConfigFactory.empty(), null) }
+    }
+
+    @Test
+    fun createStateAndEventSub() {
+        val subscriptionConfig = SubscriptionConfig("group1", "event", 1)
+        factory.createStateAndEventSubscription<Any, Any, Any>(subscriptionConfig, mock())
     }
 }

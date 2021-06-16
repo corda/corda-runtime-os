@@ -1,5 +1,6 @@
 package net.corda.libs.configuration.write.kafka.factory
 
+import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.write.ConfigWriteService
 import net.corda.libs.configuration.write.factory.ConfigWriteServiceFactory
 import net.corda.libs.configuration.write.kafka.ConfigWriteServiceImpl
@@ -23,12 +24,11 @@ class ConfigWriteServiceFactoryImpl @Activate constructor(
     private val CONFIGURATION_WRITE_SERVICE = "CONFIGURATION_WRITE_SERVICE"
 
     override fun createWriteService(destination: String, kafkaProperties: Properties): ConfigWriteService {
-        val propertiesMap = mutableMapOf<String, String>()
-        kafkaProperties.forEach{(k, v) -> propertiesMap[k.toString()] = v.toString() }
         val publisher = publisherFactory.createPublisher(
             PublisherConfig(
                 CONFIGURATION_WRITE_SERVICE
-            ), propertiesMap
+            ),
+            ConfigFactory.parseProperties(kafkaProperties)
         )
         return ConfigWriteServiceImpl(destination, publisher)
     }

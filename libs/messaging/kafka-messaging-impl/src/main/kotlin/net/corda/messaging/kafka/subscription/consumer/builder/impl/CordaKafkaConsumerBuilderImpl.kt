@@ -2,13 +2,14 @@ package net.corda.messaging.kafka.subscription.consumer.builder.impl
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.DurableConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.listener.PubSubConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
+import net.corda.messaging.kafka.toProperties
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.internal.uncheckedCast
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
@@ -17,14 +18,11 @@ import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
 
 /**
  * Generate a Kafka Consumer.
  */
 class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
-    private val kafkaConfig: Config,
-    private val consumerProperties: Properties,
     private val avroSchemaRegistry: AvroSchemaRegistry,
 ) : ConsumerBuilder<K, V> {
 
@@ -33,25 +31,30 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
     }
 
     override fun createPubSubConsumer(
-        subscriptionConfig: SubscriptionConfig,
+        config: Config,
         onError: (String, ByteArray) -> Unit
     ): CordaKafkaConsumer<K, V> {
-        val consumer = createKafkaConsumer(subscriptionConfig, onError)
-        val listener = PubSubConsumerRebalanceListener(subscriptionConfig, consumer)
-        return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
+        val consumer = createKafkaConsumer(config, onError)
+        val listener = PubSubConsumerRebalanceListener(
+            config.getString("topic"),
+            config.getString("group"),
+            consumer
+        )
+        return CordaKafkaConsumerImpl(config, consumer, listener)
     }
 
     override fun createDurableConsumer(
-        subscriptionConfig: SubscriptionConfig,
+        config: Config,
         onError: (String, ByteArray) -> Unit,
         consumerRebalanceListener: ConsumerRebalanceListener?,
     ): CordaKafkaConsumer<K, V> {
-        val consumer = createKafkaConsumer(subscriptionConfig, onError)
+        val consumer = createKafkaConsumer(config, onError)
         val listener = consumerRebalanceListener ?: DurableConsumerRebalanceListener(
-            subscriptionConfig,
+            config.getString("topic"),
+            config.getString("group"),
             consumer,
         )
-        return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
+        return CordaKafkaConsumerImpl(config, consumer, listener)
     }
 
     /**
@@ -59,25 +62,25 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
      * @throws CordaMessageAPIFatalException fatal error.
      */
     override fun createCompactedConsumer(
-        subscriptionConfig: SubscriptionConfig,
+        config: Config,
         onError: (String, ByteArray) -> Unit,
     ): CordaKafkaConsumer<K, V> {
-        val consumer = createKafkaConsumer(subscriptionConfig, onError)
-        return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, null)
+        val consumer = createKafkaConsumer(config, onError)
+        return CordaKafkaConsumerImpl(config, consumer, null)
     }
 
     private fun createKafkaConsumer(
-        subscriptionConfig: SubscriptionConfig,
+        config: Config,
         onError: (String, ByteArray) -> Unit
     ): KafkaConsumer<K, V> {
-        val topic = subscriptionConfig.eventTopic
-        val groupName = subscriptionConfig.groupName
+        val topic = config.getString("topic")
+        val groupName = config.getString("group")
         val contextClassLoader = Thread.currentThread().contextClassLoader
 
         return try {
             Thread.currentThread().contextClassLoader = null
             KafkaConsumer(
-                consumerProperties,
+                config.getConfig(KAFKA_CONSUMER).toProperties(),
                 uncheckedCast(StringDeserializer()),
                 CordaAvroDeserializer<V>(avroSchemaRegistry, onError)
             )
@@ -90,3 +93,4 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
         }
     }
 }
+
