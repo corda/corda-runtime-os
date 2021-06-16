@@ -1,6 +1,7 @@
 package net.corda.libs.configuration.write.kafka
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.write.ConfigWriteService
 import net.corda.libs.configuration.write.CordaConfigurationKey
@@ -48,7 +49,7 @@ class ConfigWriteServiceImpl(
         configKey: CordaConfigurationKey,
         config: Config
     ) {
-        val content = Configuration(config.toString(), configKey.componentVersion.version)
+        val content = Configuration(config.root().render(ConfigRenderOptions.concise()), configKey.componentVersion.version)
         val recordKey = "${configKey.packageVersion.name}.${configKey.componentVersion.name}"
         val record = Record(topicName, recordKey, content)
         log.debug { "Producing record: $recordKey\t$content" }

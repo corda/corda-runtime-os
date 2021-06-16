@@ -65,7 +65,7 @@ class KafkaConfigWrite @Activate constructor(
                     packageConfig.getString("$componentKey.componentVersion")
                 )
             val configurationKey = CordaConfigurationKey(packageKey, packageVersion, componentVersion)
-            writer.updateConfiguration(configurationKey, packageConfig.atKey(componentKey))
+            writer.updateConfiguration(configurationKey, packageConfig.getConfig(componentKey))
         } catch (e: ConfigException) {
             log.warn(
                 "Component $componentKey has no defined componentVersion. " +
