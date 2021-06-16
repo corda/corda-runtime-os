@@ -10,12 +10,13 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.protocol.ProtocolConstants
+import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.linkmanager.LinkManager.Companion.getSessionKeyFromMessage
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.messaging.Messaging.Companion.authenticateAuthenticatedMessage
-import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkManagerToGatewayMessageFromFlowMessage
+import net.corda.p2p.linkmanager.messaging.Messaging.Companion.authenticateMessage
+import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkOutMessageFromFlowMessage
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -105,7 +106,7 @@ class SessionManagerTest {
     fun mockGatewayResponse(message: InitiatorHelloMessage): Step2Message {
         val authenticationProtocol = AuthenticationProtocolResponder(
             message.header.sessionId,
-            listOf(ProtocolMode.AUTHENTICATION_ONLY),
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE
         )
         authenticationProtocol.receiveInitiatorHello(message)
@@ -118,12 +119,12 @@ class SessionManagerTest {
     fun `A session can be negotiated between two SessionManagers`() {
         val netMap = MockNetworkMap(listOf(PARTY_A, PARTY_B))
         val initiatorSessionManager = SessionManager(
-            ProtocolMode.AUTHENTICATION_ONLY,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
             netMap.getSessionNetworkMapForNode(PARTY_A),
             MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManager }
         val responderSessionManager = SessionManager(
-            ProtocolMode.AUTHENTICATION_ONLY,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
             netMap.getSessionNetworkMapForNode(PARTY_B),
             MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManager }
@@ -147,13 +148,13 @@ class SessionManagerTest {
 
         val initiatorSession = initiatorSessionManager.getInitiatorSession(getSessionKeyFromMessage(message))
         assertNotNull(initiatorSession, "Authenticated Session is not stored in the initiator's session manager.")
-        val authenticatedMessage = createLinkManagerToGatewayMessageFromFlowMessage(message, initiatorSession!!, netMap.getSessionNetworkMapForNode(PARTY_A))
+        val authenticatedMessage = createLinkOutMessageFromFlowMessage(message, initiatorSession as AuthenticatedSession, netMap.getSessionNetworkMapForNode(PARTY_A))
         assertTrue(authenticatedMessage.payload is AuthenticatedDataMessage)
         val authenticatedDataMessage = (authenticatedMessage.payload as AuthenticatedDataMessage)
 
         val responderSession = responderSessionManager.getResponderSession(authenticatedDataMessage.header.sessionId)
         assertNotNull(initiatorSession, "Authenticated Session is not stored in the responder's session manager.")
-        val responderMessage = authenticateAuthenticatedMessage(authenticatedDataMessage, responderSession!!)
+        val responderMessage = authenticateMessage(authenticatedDataMessage, responderSession as AuthenticatedSession)
         assertEquals(message.payload, responderMessage!!.payload)
     }
 }

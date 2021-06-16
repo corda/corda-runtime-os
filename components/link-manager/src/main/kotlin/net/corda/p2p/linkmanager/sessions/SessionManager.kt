@@ -7,10 +7,10 @@ import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
-import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
+import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkManagerToGatewayMessage
@@ -20,34 +20,28 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 class SessionManager(
-    private val mode: ProtocolMode,
+    private val supportedModes: Set<ProtocolMode>,
     private val networkMap: LinkManagerNetworkMap,
     private val maxMessageSize: Int,
-    private val sessionNegotiatedCallback: (SessionKey, AuthenticatedSession, LinkManagerNetworkMap) -> Unit
+    private val sessionNegotiatedCallback: (SessionKey, Session, LinkManagerNetworkMap) -> Unit
     ) {
-
-    companion object {
-        internal fun ByteBuffer.toByteArray(): ByteArray {
-            return ByteArray(this.capacity()) { this.get(it) }
-        }
-    }
 
     //On the Initiator side there is a single unique session per SessionKey.
     data class SessionKey(val ourGroupId: String?, val responderId: LinkManagerNetworkMap.NetMapHoldingIdentity)
 
     private val pendingInitiatorSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
-    private val activeInitiatorSessions = ConcurrentHashMap<SessionKey, AuthenticatedSession>()
+    private val activeInitiatorSessions = ConcurrentHashMap<SessionKey, Session>()
 
     private val pendingResponderSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
-    private val activeResponderSessions = ConcurrentHashMap<String, AuthenticatedSession>()
+    private val activeResponderSessions = ConcurrentHashMap<String, Session>()
 
     private val logger = LoggerFactory.getLogger(this::class.java.name)
 
-    fun getInitiatorSession(key: SessionKey): AuthenticatedSession? {
+    fun getInitiatorSession(key: SessionKey): Session? {
         return activeInitiatorSessions[key]
     }
 
-    fun getResponderSession(uuid: String): AuthenticatedSession? {
+    fun getResponderSession(uuid: String): Session? {
         return activeResponderSessions[uuid]
     }
 
@@ -66,7 +60,7 @@ class SessionManager(
 
     fun beginSessionNegotiation(sessionKey: SessionKey): LinkOutMessage {
         val sessionId = UUID.randomUUID().toString()
-        val session = AuthenticationProtocolInitiator(sessionId, listOf(mode), maxMessageSize)
+        val session = AuthenticationProtocolInitiator(sessionId, supportedModes, maxMessageSize)
         pendingInitiatorSessions[sessionId] = Pair(sessionKey, session)
         return createLinkManagerToGatewayMessage(
             session.generateInitiatorHello(),
@@ -136,12 +130,12 @@ class SessionManager(
 
     private fun processStep2Message(message: Step2Message): LinkOutMessage? {
         val session = AuthenticationProtocolResponder.fromStep2(message.initiatorHello.header.sessionId,
-            listOf(ProtocolMode.AUTHENTICATION_ONLY),
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
             maxMessageSize,
             message.initiatorHello,
             message.responderHello,
-            message.privateKey.toByteArray(),
-            message.responderHello.responderPublicKey.toByteArray())
+            message.privateKey.array(),
+            message.responderHello.responderPublicKey.array())
         session.generateHandshakeSecrets()
         pendingResponderSessions[message.initiatorHello.header.sessionId] = session
         return null
