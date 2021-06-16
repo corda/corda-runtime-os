@@ -6,73 +6,31 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.osgi.api.Application
 import net.corda.sandbox.SandboxService
-import net.corda.v5.base.util.contextLogger
-import org.osgi.service.cm.ConfigurationAdmin
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.nio.file.Paths
-import java.util.*
 
-/**
- * This class is the entry point of the didactic application showing how to run CordApps from a bootable JAR.
- *
- * The CordApp used in this demo application is in the module `:applications:examples:test-cpk`.
- *
- * Run
- *
- * ```
- * ./gradlew :applications:examples:test-cpk:cpk
- * ```
- *
- * to create tke CPK artifact used in this Application.
- */
 @Component(immediate = true)
-class TestSandboxApplication @Activate constructor(
-    @Reference
-    private var configAdmin: ConfigurationAdmin,
-    @Reference(service = InstallService::class)
-    private var installService: InstallService,
-    @Reference(service = SandboxService::class)
-    private var sandboxService: SandboxService
-) : Application {
+class TestSandboxApplication : Application {
 
     private companion object {
 
-        private val logger = contextLogger()
+        private val logger: Logger = LoggerFactory.getLogger(TestSandboxApplication::class.java)
 
-        /**
-         * Relative path to the directory where the CPK artifact is created
-         * from the `:applications:examples:test-cpk` module.
-         */
         private const val PATH = "applications/examples/test-cpk/build/libs"
-//        private const val PATH = "/home/ldebiasi/IdeaProjects/corda5/testing/cordapps/fungiblestate-sample/fungiblestate-contracts/build/libs"
 
     } //~ companion object
 
-//    @Reference
-//    private var configAdmin: ConfigurationAdmin? = null
+    @Reference
+    private var installService: InstallService? = null
 
-    /**
-     * Reference to the [InstallService] set automatically because both [InstallService] and
-     * this class are annotated as `@Component` and they are published OSGi services.
-     */
-//    @Reference(service = InstallService::class)
-//    private var installService: InstallService? = null
+    @Reference
+    private var sandboxService: SandboxService? = null
 
-    /**
-     * Reference to the [SandboxService] set automatically because both [SandboxService] and
-     * this class are annotated as `@Component` and they are published OSGi services.
-     */
-//    @Reference(service = SandboxService::class)
-//    private var sandboxService: SandboxService? = null
-
-    /**
-     * Coordinator used start the [TestSandbox] as a Corda component, only when [installService] and [sandboxService]
-     * are set because service publishing and wiring is done before [startup] is called.
-     */
     private val coordinator = SimpleLifeCycleCoordinator(1, 1000L) { event, _ ->
-        val testSandbox = TestSandbox(Paths.get(PATH), installService, sandboxService)
+        val testSandbox = TestSandbox(Paths.get(PATH), installService!!, sandboxService!!)
         when (event) {
             is StartEvent -> {
                 testSandbox.start()
@@ -83,36 +41,19 @@ class TestSandboxApplication @Activate constructor(
         }
     }
 
-    /**
-     * This method is called by after the OSGI framework wired all bundles and services.
-     *
-     * Properties annotated with `@Reference` are already set when this method is called.
-     */
     override fun startup(args: Array<String>) {
-        logger.info("Start-up.")
-
-            logger.info("Configuration Admin service active.")
-            val configuration = configAdmin.getConfiguration(ConfigurationAdmin::class.java.name, null)
-            val configProperties: Dictionary<String, Any> = Hashtable()
-            configProperties.put("baseDirectory", PATH)
-            configProperties.put("blacklistedKeys", emptyList<String>())
-            configProperties.put("platformVersion", 5)
-            configuration.update(configProperties)
-            logger.info("Configuration.properties ${configuration.properties} set.")
-                logger.info("Install service active.")
-                    logger.info("Sandbox service active.")
-                    coordinator.start()
-
-        logger.info("Press [CTRL+C] to stop the application...")
+        logger.info("Start-up...")
+        if (installService != null) {
+            logger.info("Install service active.")
+            if (sandboxService != null) {
+                logger.info("Sandbox service active.")
+                coordinator.start()
+            }
+        }
     }
 
-    /**
-     * This method is called when the bootable JAr is requested to terminate by the application itself or the
-     * operating system because the JVM terminates.
-     */
     override fun shutdown() {
         logger.info("Shutdown.")
         coordinator.stop()
     }
-
 }
