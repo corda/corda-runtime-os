@@ -50,16 +50,17 @@ class TestSandbox(
     override fun start() {
         if (!isRunning) {
             _isRunning = true
-            logger.info("START")
+            logger.info("Starting...")
             installCpk(path)
+            logger.info("Started.")
+            logger.info("Press [CTRL+C] to stop the application...")
         }
-
     }
 
     @Synchronized
     override fun stop() {
         if (isRunning) {
-            logger.info("STOP")
+            logger.info("Stop")
             _isRunning = false
         }
     }
