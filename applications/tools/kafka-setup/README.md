@@ -53,4 +53,4 @@ How to run locally
 
 for ease of passing in the files run the command from the resource folder
 
-- `java -jar ..\..\..\build\bin\corda-kafka-setup-5.0.0-SNAPSHOT.jar kafka.properties topic.conf config.conf`
+- `java -jar ..\..\..\build\bin\corda-kafka-setup-5.0.0-SNAPSHOT.jar --kafka kafka.properties --topic topic.conf --config config.conf`

@@ -6,15 +6,16 @@ import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.lifecycle.LifeCycle
 import net.corda.lifecycle.LifeCycleCoordinator
 import net.corda.lifecycle.LifeCycleEvent
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileInputStream
 import java.util.*
 
-object ConfigCompleteEvent : LifeCycleEvent
+object TopicsCreatedEvent : LifeCycleEvent
 
+@Suppress("LongParameterList")
 @Component
 class BootstrapConfigTopic(
     private val lifeCycleCoordinator: LifeCycleCoordinator,
@@ -26,24 +27,26 @@ class BootstrapConfigTopic(
     ) : LifeCycle {
 
     private companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
     }
 
     override var isRunning: Boolean = false
 
     override fun start() {
         isRunning = true
-
         val kafkaConnectionProperties = Properties()
         kafkaConnectionProperties.load(FileInputStream(kafkaConnection))
+        log.info("Creating config topic")
         val topic = topicAdmin.createTopic(kafkaConnectionProperties, topicTemplate.readText())
+
+        log.info("Writing config to topic")
         configWriter.updateConfig(
             topic.getString("topicName"),
             kafkaConnectionProperties,
             configurationFile.readText()
         )
-
-        lifeCycleCoordinator.postEvent(ConfigCompleteEvent)
+        log.info("Signaling topics created event")
+        lifeCycleCoordinator.postEvent(TopicsCreatedEvent)
         isRunning = false
     }
 

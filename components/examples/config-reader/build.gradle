@@ -11,12 +11,12 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base:$cordaVersion"
+    implementation project(':data:avro-schema')
+    implementation project(':libs:configuration:configuration-read')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle")
-    implementation project(':components:kafka-topic-admin')
-    implementation project(':components:kafka-config-write')
     implementation project(":osgi-framework-api")
 }
 
-description 'Bootstrapped Kafka Topics'
+description 'Config Reader'
 

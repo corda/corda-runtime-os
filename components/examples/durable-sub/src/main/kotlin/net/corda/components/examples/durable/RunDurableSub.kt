@@ -1,5 +1,6 @@
 package net.corda.components.examples.durable
 
+import com.typesafe.config.Config
 import net.corda.components.examples.durable.processor.DemoDurableProcessor
 import net.corda.data.demo.DemoRecord
 import net.corda.lifecycle.LifeCycle
@@ -7,20 +8,21 @@ import net.corda.lifecycle.LifeCycleCoordinator
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 @Component
 class RunDurableSub(
     private val lifeCycleCoordinator: LifeCycleCoordinator,
     private val subscriptionFactory: SubscriptionFactory,
+    private var config: Config,
     private val instanceId: Int,
-    private val killProcessOnRecord: Int = 0,
+    private val killProcessOnRecord: Int = 0
     ) : LifeCycle {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java)
+        val log: Logger = contextLogger()
         const val groupName = "durableGroup"
         const val inputTopic = "publisherTopic"
         const val outputEventTopic = "eventTopic"
@@ -32,20 +34,30 @@ class RunDurableSub(
     override val isRunning: Boolean
         get() = subscription?.isRunning ?: false
 
-    override fun start() {
-        val processor = DemoDurableProcessor(outputEventTopic, outputPubSubTopic, killProcessOnRecord)
-        subscription = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig(groupName, inputTopic, instanceId),
-            processor,
-            mapOf(),
-            null
-        )
+    fun reStart(newConfig: Config) {
+        log.info("Restarting durable subscription")
+        stop()
+        config = newConfig
+        start()
+    }
 
-        subscription?.start()
+    override fun start() {
+        if (!isRunning) {
+            log.info("Creating durable subscription")
+            val processor = DemoDurableProcessor(outputEventTopic, outputPubSubTopic, killProcessOnRecord)
+            subscription = subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig(groupName, inputTopic, instanceId),
+                processor,
+                mapOf(),
+                null
+            )
+            log.info("Starting durable subscription")
+            subscription?.start()
+        }
     }
 
     override fun stop() {
-        subscription?.stop()
         log.info("Stopping durable sub")
+        subscription?.stop()
     }
 }

@@ -10,7 +10,7 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
-
+    implementation "net.corda:corda-base:$cordaVersion"
     implementation project(":osgi-framework-api")
     implementation project(':components:kafka-topic-admin')
     implementation project(':components:kafka-config-write')
@@ -20,14 +20,17 @@ dependencies {
     implementation project(":data:avro-schema")
 
     implementation project(":components:examples:bootstrap-topics")
+    implementation project(":components:examples:config-reader")
     implementation project(":components:examples:publisher")
     implementation project(":components:examples:durable-sub")
     implementation project(":components:examples:pubsub-sub")
     implementation project(":components:examples:compacted-sub")
     implementation project(":components:examples:state-plus-event-sub")
+    implementation project(':libs:configuration:configuration-read')
 
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     runtimeOnly project(":libs:configuration:kafka-configuration-write-impl")
+    runtimeOnly project(":libs:configuration:kafka-configuration-read-impl")
     runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 

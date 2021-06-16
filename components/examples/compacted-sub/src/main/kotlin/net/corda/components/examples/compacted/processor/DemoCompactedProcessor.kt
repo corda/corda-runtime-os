@@ -3,13 +3,13 @@ package net.corda.components.examples.compacted.processor
 import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 class DemoCompactedProcessor : CompactedProcessor<String, DemoRecord> {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java)
+        val log: Logger = contextLogger()
     }
 
     override val keyClass: Class<String>

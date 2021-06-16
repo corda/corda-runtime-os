@@ -1,5 +1,6 @@
 package net.corda.components.examples.compacted
 
+import com.typesafe.config.Config
 import net.corda.components.examples.compacted.processor.DemoCompactedProcessor
 import net.corda.data.demo.DemoRecord
 import net.corda.lifecycle.LifeCycle
@@ -7,18 +8,19 @@ import net.corda.lifecycle.LifeCycleCoordinator
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 @Component
 class RunCompactedSub(
     private val lifeCycleCoordinator: LifeCycleCoordinator,
-    private val subscriptionFactory: SubscriptionFactory
+    private val subscriptionFactory: SubscriptionFactory,
+    private var config: Config
 ) : LifeCycle {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java)
+        val log: Logger = contextLogger()
         const val groupName = "compactedGroup"
         const val topic = "configTopic"
     }
@@ -28,19 +30,30 @@ class RunCompactedSub(
     override val isRunning: Boolean
         get() = subscription?.isRunning ?: false
 
-    override fun start() {
-        val processor = DemoCompactedProcessor()
-        subscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(groupName, topic),
-            processor,
-            mapOf()
-        )
+    fun reStart(newConfig: Config) {
+        log.info("Restarting compacted subscription")
+        stop()
+        config = newConfig
+        start()
+    }
 
-        subscription?.start()
+    override fun start() {
+        if (!isRunning) {
+            log.info("Creating compacted subscription")
+            val processor = DemoCompactedProcessor()
+            subscription = subscriptionFactory.createCompactedSubscription(
+                SubscriptionConfig(groupName, topic),
+                processor,
+                mapOf()
+            )
+
+            log.info("Starting compacted subscription")
+            subscription?.start()
+        }
     }
 
     override fun stop() {
-        subscription?.stop()
         log.info("Stopping compacted sub")
+        subscription?.stop()
     }
 }

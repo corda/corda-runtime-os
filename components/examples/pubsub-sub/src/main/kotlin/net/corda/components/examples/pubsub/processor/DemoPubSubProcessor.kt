@@ -3,12 +3,12 @@ package net.corda.components.examples.pubsub.processor
 import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
-import org.slf4j.LoggerFactory
+import net.corda.v5.base.util.contextLogger
 
 class DemoPubSubProcessor : PubSubProcessor<String, DemoRecord> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java)
+        val log = contextLogger()
     }
 
     override fun onNext(event: Record<String, DemoRecord>) {

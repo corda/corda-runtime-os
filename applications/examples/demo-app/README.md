@@ -4,13 +4,13 @@ run 3 kafka brokers with auto.create.topics.enable=false
 
 create the non config topics via commandline:
 
-`.\kafka-topics.bat --zookeeper localhost:2181 --create --topic publisherTopic --partitions 3 --replication-factor 3`
+`.\kafka-topics.bat --bootstrap-server localhost:9092 --create --topic publisherTopic --partitions 3 --replication-factor 3`
 
-`.\kafka-topics.bat --zookeeper localhost:2181 --create --topic eventTopic --partitions 3 --replication-factor 3`
+`.\kafka-topics.bat --bootstrap-server localhost:9092 --create --topic eventTopic --partitions 3 --replication-factor 3`
 
-`.\kafka-topics.bat --zookeeper localhost:2181 --create --topic stateTopic --partitions 3 --replication-factor 3 --config cleanup.policy=compact`
+`.\kafka-topics.bat --bootstrap-server localhost:9092 --create --topic stateTopic --partitions 3 --replication-factor 3 --config cleanup.policy=compact`
 
-`.\kafka-topics.bat --zookeeper localhost:2181 --create --topic pubsubTopic --partitions 3 --replication-factor 3`
+`.\kafka-topics.bat --bootstrap-server localhost:9092 --create --topic pubsubTopic --partitions 3 --replication-factor 3`
 
 
 run 3 workers from separate dirs in the resource folder. For example:

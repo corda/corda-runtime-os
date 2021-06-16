@@ -3,8 +3,8 @@ package net.corda.components.examples.durable.processor
 import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
 
 class DemoDurableProcessor(
@@ -15,7 +15,7 @@ class DemoDurableProcessor(
     DurableProcessor<String, DemoRecord> {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java)
+        val log: Logger = contextLogger()
     }
 
     var counter = 1

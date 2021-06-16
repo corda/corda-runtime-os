@@ -9,6 +9,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceReference
@@ -16,7 +17,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 @Component
@@ -26,13 +26,14 @@ class DemoPublisher @Activate constructor(
 ) : Application {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java)
+        val log: Logger = contextLogger()
         const val BATCH_SIZE: Int = 128
         const val TIMEOUT: Long = 10000L
     }
 
     private var lifeCycleCoordinator: LifeCycleCoordinator? = null
 
+    @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
@@ -87,7 +88,8 @@ class CliParameters {
     @CommandLine.Option(names = ["--instanceId"], description = ["InstanceId for this worker"])
     lateinit var instanceId: String
 
-    @CommandLine.Option(names = ["--numberOfRecords"], description = ["Batch size of records to send 4 times. 2 as async, 2 as transactional"])
+    @CommandLine.Option(names = ["--numberOfRecords"], description = ["Batch size of records to send 4 times. " +
+            "2 as async, 2 as transactional"])
     lateinit var numberOfRecords: String
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])

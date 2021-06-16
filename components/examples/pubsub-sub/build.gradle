@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-
+    implementation "net.corda:corda-base:$cordaVersion"
 
     implementation project(":libs:messaging:messaging")
     implementation project(":data:avro-schema")
