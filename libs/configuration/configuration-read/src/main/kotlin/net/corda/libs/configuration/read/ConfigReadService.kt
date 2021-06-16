@@ -5,7 +5,7 @@ import com.typesafe.config.Config
 interface ConfigReadService {
 
     /**
-     * Start the service
+     * this will go away when the implementation class makes use of lifecycle interface
      */
     fun start()
 

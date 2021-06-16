@@ -12,9 +12,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import java.io.File
-import java.io.FileInputStream
-import java.util.*
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
@@ -34,9 +31,6 @@ class KafkaConfigReader @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutdownOSGiFramework()
         } else {
-            val kafkaConnectionProperties = Properties()
-            kafkaConnectionProperties.load(FileInputStream(parameters.kafkaConnection))
-
             configReader.startReader()
             while (!configReader.isReady()) { Thread.sleep(100) }
             val configs = configReader.getAllConfiguration()
@@ -66,11 +60,6 @@ class KafkaConfigReader @Activate constructor(
 }
 
 class CliParameters {
-    @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties"])
-    lateinit var kafkaConnection: File
-
-    @CommandLine.Option(names = ["--topic"], description = ["String topic name"])
-    lateinit var topicName: String
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false
