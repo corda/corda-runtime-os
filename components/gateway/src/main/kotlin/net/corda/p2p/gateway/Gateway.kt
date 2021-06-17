@@ -36,7 +36,7 @@ class Gateway(address: NetworkHostAndPort,
     private val shutdownListener = CountDownLatch(1)
     private val closeActions = mutableListOf<() -> Unit>()
     private val httpServer = HttpServer(address, sslConfig)
-    private val connectionManager = ConnectionManager(sslConfig)
+    private val connectionManager = ConnectionManager()
     private val messageProcessor = OutboundMessageHandler()
 
     override fun start() {

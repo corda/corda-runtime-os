@@ -2,6 +2,9 @@ package net.corda.p2p.gateway.messaging
 
 import net.corda.v5.base.util.NetworkHostAndPort
 
+/**
+ * [ApplicationMessage] implementation. Used to pass a received P2P message from the transport layer to application layer.
+ */
 class ReceivedMessage(
     override var payload: ByteArray,
     override val source: NetworkHostAndPort?,

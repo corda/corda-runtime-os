@@ -131,10 +131,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
 
     private fun writeResponse(responseContent: ByteArray, ch: SocketChannel) {
         val status = HttpResponseStatus.OK
-        val response = DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, Unpooled.copiedBuffer(responseContent))
-        response.headers()[HttpHeaderNames.CONTENT_TYPE] = HttpHeaderValues.APPLICATION_JSON
-        response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes())
-        response.headers()[HttpHeaderNames.CONNECTION] = HttpHeaderValues.KEEP_ALIVE
+        val response = HttpHelper.createResponse(responseContent, status)
 
         ch.writeAndFlush(response)
     }

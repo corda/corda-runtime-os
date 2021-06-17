@@ -1,6 +1,8 @@
 package net.corda.p2p.gateway.messaging
 
+import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.p2p.gateway.messaging.http.HttpClient
+import net.corda.p2p.gateway.messaging.http.HttpHelper
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -8,6 +10,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.io.FileInputStream
+import java.net.URI
 import java.security.KeyStore
 import java.time.Instant
 import java.util.*
@@ -31,7 +34,6 @@ class HttpTest {
             it.load(FileInputStream(javaClass.classLoader.getResource("truststore.jks")!!.file), truststorePass.toCharArray())
         }
         override val trustStorePassword: String = truststorePass
-
     }
 
     @Test
@@ -56,15 +58,17 @@ class HttpTest {
                     clientReceivedResponses.countDown()
                 }
                 client.start()
-                clientReceivedResponses.await(1, TimeUnit.SECONDS)
+                clientReceivedResponses.await(5, TimeUnit.SECONDS)
                 assertTrue(responseReceived)
             }
+
+            Thread.sleep(10000)
         }
     }
 
     @Test
     fun `multiple clients multiple requests`() {
-        val requestNo = 1000
+        val requestNo = 100
         val threadNo = 2
         val threads = mutableListOf<Thread>()
         val times = mutableListOf<Long>()
@@ -159,5 +163,22 @@ class HttpTest {
 
     @Test
     fun `versioned endpoints`() {
+    }
+
+    @Test
+    fun `create response`() {
+        val r = HttpHelper.createResponse("null".toByteArray(), HttpResponseStatus.OK)
+        println(r)
+    }
+
+    @Test
+    fun `test uris`() {
+        val test = ":://caca.com:1234//ahagha/send"
+        val uri = URI(test).normalize()
+        println(uri.authority)
+        println(uri.host)
+        println(uri.path)
+        println(uri.port)
+        println(uri.scheme)
     }
 }

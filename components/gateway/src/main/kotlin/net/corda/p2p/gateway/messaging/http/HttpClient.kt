@@ -2,7 +2,6 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.bootstrap.Bootstrap
 import io.netty.buffer.ByteBuf
-import io.netty.buffer.Unpooled
 import io.netty.channel.*
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
@@ -11,7 +10,6 @@ import io.netty.handler.codec.http.*
 import io.netty.handler.ssl.SniCompletionEvent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import net.corda.messaging.api.subscription.LifeCycle
-import net.corda.p2p.gateway.messaging.ENDPOINT
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
@@ -19,7 +17,6 @@ import rx.Observable
 import rx.subjects.PublishSubject
 import java.lang.IllegalStateException
 import java.net.InetSocketAddress
-import java.net.URL
 import java.nio.channels.ClosedChannelException
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509CertSelector
@@ -152,30 +149,25 @@ class HttpClient(private val destination: NetworkHostAndPort, private val sslCon
     /**
      * Creates and sends a POST request. The body content type is JSON and will contain the [message].
      * @param message the bytes payload to be sent
+     * @throws IllegalStateException if the connectionnnn is down
      */
     fun send(message: ByteArray) {
         val channel = clientChannel
         if (channel == null || !isChannelWritable(channel)) {
             throw IllegalStateException("Connection to $destination not active")
         } else {
-            val request: FullHttpRequest = DefaultFullHttpRequest(
-                HttpVersion.HTTP_1_1,
-                HttpMethod.POST,
-                URL("http", destination.host, destination.port, ENDPOINT).toString()
-            ).apply {
-                val bbuf = Unpooled.copiedBuffer(message)
-                headers().set(HttpHeaderNames.HOST, destination.host)
-                    .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
-                    .set(HttpHeaderNames.ACCEPT_ENCODING, HttpHeaderValues.APPLICATION_JSON)
-                    .set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
-                    .set(HttpHeaderNames.CONTENT_LENGTH, bbuf.readableBytes())
-                content().clear().writeBytes(bbuf)
-            }
+            val request = HttpHelper.createRequest(message, destination)
             logger.info("Created request $request")
             channel.writeAndFlush(request)
             logger.info("Sent HTTP request")
         }
     }
+
+    val connected: Boolean
+        get() {
+            val channel = lock.withLock { clientChannel }
+            return isChannelWritable(channel)
+        }
 
     private fun restart() {
         val bootstrap = Bootstrap()
