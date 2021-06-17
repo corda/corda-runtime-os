@@ -1,6 +1,8 @@
 package net.corda.libs.configuration.read.kafka
 
 import com.nhaarman.mockito_kotlin.mock
+import com.typesafe.config.ConfigRenderOptions
+import net.corda.data.config.Configuration
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -15,18 +17,19 @@ class ConfigReadServiceImplTest {
     @BeforeEach
     fun beforeEach() {
         configRepository = ConfigRepository()
-        configRepository.storeConfiguration(ConfigUtil.testConfigMap())
         configReadService = ConfigReadServiceImpl(configRepository, subscriptionFactory)
     }
 
     @Test
-    fun testGetConfiguration() {
-        val config = configReadService.getConfiguration("corda.database")
-
-        Assertions.assertThat(config.getString("transactionIsolationLevel")).isEqualTo("READ_COMMITTED")
-        Assertions.assertThat(config.getString("schema")).isEqualTo("corda")
-        Assertions.assertThat(config.getBoolean("runMigration")).isEqualTo(true)
-        Assertions.assertThat(config.getDouble("componentVersion")).isEqualTo(5.4)
+    fun testRegisterCallback() {
+        val configUpdateUtil = ConfigListenerUtil()
+        configReadService.registerCallback(configUpdateUtil)
+        val configMap = ConfigUtil.testConfigMap()
+        val config = configMap["corda.database"]
+        val avroConfig =
+            Configuration(config?.root()?.render(ConfigRenderOptions.concise()), config?.getString("componentVersion"))
+        configReadService.onSnapshot(mapOf("corda.database" to avroConfig))
+        Assertions.assertThat(configUpdateUtil.update).isTrue
     }
 
 }

@@ -12,6 +12,7 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
+    implementation "net.corda:corda-base:$cordaVersion"
 
     implementation project(':components:kafka-topic-admin')
     implementation project(':components:kafka-config-write')

@@ -1,51 +1,54 @@
 package net.corda.comp.kafka.config.read
 
 import com.typesafe.config.Config
-import net.corda.libs.configuration.read.ConfigUpdate
+import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 @Component(immediate = true, service = [KafkaConfigRead::class])
 class KafkaConfigRead @Activate constructor(
     @Reference(service = ConfigReadServiceFactory::class)
     private val readServiceFactory: ConfigReadServiceFactory
 
-) : ConfigUpdate {
+) : ConfigListener {
+
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(KafkaConfigRead::class.java)
+        private val logger: Logger = contextLogger()
     }
 
-    var receivedSnapshot = false
+    private var receivedSnapshot = false
 
     private val configReadService = readServiceFactory.createReadService()
 
     fun startReader() {
-        configReadService.start()
         configReadService.registerCallback(this)
-    }
-
-    fun getAllConfiguration(): Map<String, Config> {
-        return configReadService.getAllConfiguration()
-    }
-
-    fun getConfiguration(key: String): Config {
-        return configReadService.getConfiguration(key)
     }
 
     fun isReady(): Boolean {
         return receivedSnapshot
     }
 
-    fun snapshotReceived() {
+    private fun snapshotReceived() {
         receivedSnapshot = true
     }
 
-    override fun onUpdate(updatedConfig: Map<String, Config>) {
+    override fun onSnapshot(currentConfigurationSnapshot: Map<String, Config>) {
         snapshotReceived()
+        logger.info("----------List of available configurations----------")
+        for(config in currentConfigurationSnapshot) {
+            logger.info("${config.key} -> ${config.value}")
+        }
+    }
+
+    override fun onUpdate(changedKey: String, currentConfigurationSnapshot: Map<String, Config>) {
+        with(logger) {
+            info("----------New configuration has been posted----------")
+            info("$changedKey -> ${currentConfigurationSnapshot[changedKey]}")
+        }
     }
 
 }

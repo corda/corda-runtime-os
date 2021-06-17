@@ -1,68 +1,88 @@
 package net.corda.libs.configuration.read.kafka
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import net.corda.data.config.Configuration
 import net.corda.libs.configuration.read.ConfigReadService
-import net.corda.libs.configuration.read.ConfigUpdate
-import net.corda.libs.configuration.read.kafka.processor.ConfigCompactedProcessor
+import net.corda.libs.configuration.read.ConfigListener
+import net.corda.libs.configuration.read.ConfigSubscription
+import net.corda.lifecycle.LifeCycle
+import net.corda.messaging.api.processor.CompactedProcessor
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import org.osgi.service.component.annotations.Component
+import java.util.*
 
 @Suppress("TooGenericExceptionCaught")
 @Component(immediate = true, service = [ConfigReadService::class])
 class ConfigReadServiceImpl(
     private val configurationRepository: ConfigRepository,
     private val subscriptionFactory: SubscriptionFactory
-) :
-    ConfigReadService {
+) : ConfigReadService, CompactedProcessor<String, Configuration>, LifeCycle {
 
+
+    @Volatile
+    private var stopped = false
     private val CONFIGURATION_READ_SERVICE = "CONFIGURATION_READ_SERVICE"
-    private val processor = ConfigCompactedProcessor(configurationRepository)
+    private var configUpdates = mutableListOf<ConfigListener>()
+    private lateinit var subscription: CompactedSubscription<String, Configuration>
 
-    companion object {
-        private val objectMapper = ObjectMapper()
-            .registerModule(KotlinModule())
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    }
+    override val isRunning: Boolean
+        get() {
+            return !stopped
+        }
 
     override fun start() {
-        val compactedSubscription =
+        configUpdates = Collections.synchronizedList(mutableListOf<ConfigListener>())
+        subscription =
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(
                     CONFIGURATION_READ_SERVICE,
                     ConfigFactory.load("kafka.properties").getString("topic.name")
                 ),
-                processor,
+                this,
                 mapOf()
             )
-        compactedSubscription.start()
+        subscription.start()
+        stopped = false
     }
 
-    override fun getConfiguration(componentName: String): Config {
-        return configurationRepository.getConfigurations()[componentName]
-            ?: throw IllegalArgumentException("Unknown component: $componentName")
+    override fun stop() {
+        configUpdates = mutableListOf()
+        subscription.stop()
+        stopped = true
     }
 
-    override fun getAllConfiguration(): Map<String, Config> {
-        return configurationRepository.getConfigurations()
+
+    override fun registerCallback(configListener: ConfigListener): ConfigSubscription {
+        configUpdates.add(configListener)
+        return ConfigSubscription()
     }
 
-    override fun <T> parseConfiguration(componentName: String, clazz: Class<T>): T {
-        return try {
-            val config = getConfiguration(componentName)
-            objectMapper.convertValue(config, clazz)
-        } catch (e: IllegalArgumentException) {
-            throw e
-        } catch (e: Throwable) {
-            throw IllegalArgumentException("Cannot deserialize configuration for $clazz", e)
+    override val keyClass: Class<String>
+        get() = String::class.java
+    override val valueClass: Class<Configuration>
+        get() = Configuration::class.java
+
+    override fun onSnapshot(currentData: Map<String, Configuration>) {
+        val configMap = mutableMapOf<String, Config>()
+        for (config in currentData) {
+            configMap[config.key] = ConfigFactory.parseString(config.value.value)
         }
+        configurationRepository.storeConfiguration(configMap)
+        configUpdates.forEach { it.onSnapshot(configurationRepository.getConfigurations()) }
     }
 
-    override fun registerCallback(configUpdate: ConfigUpdate) {
-        processor.registerCallback(configUpdate)
+    override fun onNext(
+        newRecord: Record<String, Configuration>,
+        oldValue: Configuration?,
+        currentData: Map<String, Configuration>
+    ) {
+        val config = ConfigFactory.parseString(newRecord.value?.value)
+        configurationRepository.updateConfiguration(newRecord.key, config)
+        configUpdates.forEach { it.onUpdate(newRecord.key, configurationRepository.getConfigurations()) }
+
     }
 }

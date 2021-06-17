@@ -3,6 +3,7 @@ package net.corda.tools.kafka.reader
 import net.corda.comp.kafka.config.read.KafkaConfigRead
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceReference
@@ -21,7 +22,7 @@ class KafkaConfigReader @Activate constructor(
 ) : Application {
 
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(KafkaConfigReader::class.java)
+        private val logger: Logger = contextLogger()
     }
 
     override fun startup(args: Array<String>) {
@@ -33,12 +34,6 @@ class KafkaConfigReader @Activate constructor(
         } else {
             configReader.startReader()
             while (!configReader.isReady()) { Thread.sleep(100) }
-            val configs = configReader.getAllConfiguration()
-
-            logger.info("-------List of available configurations-------")
-            for(config in configs) {
-                logger.info("${config.key} -> ${config.value}")
-            }
             shutdownOSGiFramework()
         }
     }
