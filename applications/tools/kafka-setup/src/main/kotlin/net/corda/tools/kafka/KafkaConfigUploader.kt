@@ -12,10 +12,10 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
 import java.util.*
-import picocli.CommandLine
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
@@ -31,7 +31,6 @@ class KafkaConfigUploader @Activate constructor(
     }
 
     override fun startup(args: Array<String>) {
-
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
         if (parameters.helpRequested) {
@@ -47,11 +46,11 @@ class KafkaConfigUploader @Activate constructor(
                 kafkaConnectionProperties,
                 parameters.configurationFile.readText()
             )
-            shutdownOSGiFramework()
         }
     }
 
     override fun shutdown() {
+        shutdownOSGiFramework()
         logger.info("Shutting down config uploader")
     }
 

@@ -18,11 +18,11 @@ class RunPublisher (
     private val lifeCycleCoordinator: LifeCycleCoordinator,
     private val publisherFactory: PublisherFactory,
     private val instanceId: Int?,
-    private val numberOfRecords: Int
+    private val numberOfRecords: Int,
+    private val numberOfKeys: Int
     ) : LifeCycle {
 
-    private var publisherAsync: Publisher? = null
-    private var publisherTransactional: Publisher? = null
+    private var publisher: Publisher? = null
 
     companion object {
         val log: Logger = contextLogger()
@@ -35,46 +35,21 @@ class RunPublisher (
     override fun start() {
         if (!isRunning) {
             isRunning = true
-            val pubConfigAsync = PublisherConfig(clientId)
-            val pubConfigTransactional = PublisherConfig("$clientId-transactional", instanceId)
+            val pubConfig = PublisherConfig(clientId, instanceId)
+            log.info("Instantiating publisher...")
+            publisher = publisherFactory.createPublisher(pubConfig, mutableMapOf())
 
-            val recordsAsync1 = mutableListOf<Record<*, *>>()
-            for (i in 1..numberOfRecords) {
-                recordsAsync1.add(Record(publisherTopic, "key1", DemoRecord(i)))
+
+            for (i in 1..numberOfKeys) {
+                val records = mutableListOf<Record<*, *>>()
+                val key = "key$i"
+                for (j in 1..numberOfRecords) {
+                    records.add(Record(publisherTopic, key, DemoRecord(j)))
+                }
+                log.info("Publishing records with key $key...")
+                publisher?.publish(records)
             }
 
-            val recordsTransactional1 = mutableListOf<Record<*, *>>()
-            for (i in 1..numberOfRecords) {
-                recordsTransactional1.add(Record(publisherTopic, "key2-transactional", DemoRecord(i)))
-            }
-
-            val recordsAsync2 = mutableListOf<Record<*, *>>()
-            for (i in 1..numberOfRecords) {
-                recordsAsync2.add(Record(publisherTopic, "key3", DemoRecord(i)))
-            }
-
-            val recordsTransactional2 = mutableListOf<Record<*, *>>()
-            for (i in 1..numberOfRecords) {
-                recordsTransactional2.add(Record(publisherTopic, "key4-transactional", DemoRecord(i)))
-            }
-
-            log.info("Instantiating async publisher...")
-            publisherAsync = publisherFactory.createPublisher(pubConfigAsync, mutableMapOf())
-            log.info("Instantiating transactional publisher...")
-            publisherTransactional = publisherFactory.createPublisher(pubConfigTransactional, mutableMapOf())
-            log.info("Publishing first async record batch...")
-            publisherAsync?.publish(recordsAsync1)
-
-            log.info("Publishing first transactional record batch...")
-            publisherTransactional?.publish(recordsTransactional1)
-
-            log.info("Sleeping for 2 seconds to allow for multiple polls to occur per subscription...")
-            Thread.sleep(2000)
-
-            log.info("Publishing second async record batch...")
-            publisherAsync?.publish(recordsAsync2)
-            log.info("Publishing second transactional record batch...")
-            publisherTransactional?.publish(recordsTransactional2)
             log.info("Publishing complete.")
             isRunning = false
             lifeCycleCoordinator.postEvent(StopEvent)
@@ -84,7 +59,6 @@ class RunPublisher (
     override fun stop() {
         log.info("Stopping publisher")
         isRunning = false
-        publisherAsync?.close()
-        publisherTransactional?.close()
+        publisher?.close()
     }
 }

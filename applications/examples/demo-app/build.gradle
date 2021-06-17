@@ -19,7 +19,6 @@ dependencies {
     implementation project(":libs:lifecycle")
     implementation project(":data:avro-schema")
 
-    implementation project(":components:examples:bootstrap-topics")
     implementation project(":components:examples:config-reader")
     implementation project(":components:examples:publisher")
     implementation project(":components:examples:durable-sub")

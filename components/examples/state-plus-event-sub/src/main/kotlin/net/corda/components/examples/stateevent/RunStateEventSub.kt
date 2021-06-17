@@ -19,6 +19,7 @@ class RunStateEventSub(
     private var config: Config,
     private val subscriptionFactory: SubscriptionFactory,
     private val killProcessOnRecord: Int = 0,
+    private val delayOnNext: Long = 0
 ) : LifeCycle {
 
     private companion object {
@@ -43,7 +44,7 @@ class RunStateEventSub(
     override fun start() {
         if (!isRunning) {
             log.info("Creating state and event subscription")
-            val processor = DemoStateAndEventProcessor(killProcessOnRecord)
+            val processor = DemoStateAndEventProcessor(killProcessOnRecord, delayOnNext)
             subscription = subscriptionFactory.createStateAndEventSubscription(
                 StateAndEventSubscriptionConfig(groupName, instanceId, stateTopic, eventTopic),
                 processor,

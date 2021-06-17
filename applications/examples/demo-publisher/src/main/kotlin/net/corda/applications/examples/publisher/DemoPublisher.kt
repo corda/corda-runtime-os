@@ -42,11 +42,11 @@ class DemoPublisher @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutdownOSGiFramework()
         } else {
-            val instanceId = parameters.instanceId.toInt()
+            val instanceId = parameters.instanceId?.toInt()
             var publisher: RunPublisher? = null
 
             lifeCycleCoordinator = SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
-                log.debug("processEvent $event")
+                log.info("LifecycleEvent received: $event")
                 when (event) {
                     is StartEvent -> {
                         publisher!!.start()
@@ -61,7 +61,7 @@ class DemoPublisher @Activate constructor(
                 }
             }
 
-            publisher = RunPublisher(lifeCycleCoordinator!!, publisherFactory, instanceId, parameters.numberOfRecords.toInt())
+            publisher = RunPublisher(lifeCycleCoordinator!!, publisherFactory, instanceId, parameters.numberOfRecords.toInt(), parameters.numberOfKeys.toInt())
 
             lifeCycleCoordinator!!.start()
         }
@@ -85,12 +85,14 @@ class DemoPublisher @Activate constructor(
 }
 
 class CliParameters {
-    @CommandLine.Option(names = ["--instanceId"], description = ["InstanceId for this worker"])
-    lateinit var instanceId: String
+    @CommandLine.Option(names = ["--instanceId"], description = ["InstanceId for a transactional publisher, leave blank to use async publisher"])
+    var instanceId: String? = null
 
-    @CommandLine.Option(names = ["--numberOfRecords"], description = ["Batch size of records to send 4 times. " +
-            "2 as async, 2 as transactional"])
+    @CommandLine.Option(names = ["--numberOfRecords"], description = ["Number of records to send per key."])
     lateinit var numberOfRecords: String
+
+    @CommandLine.Option(names = ["--numberOfKeys"], description = ["Number of keys to use. total records sent = numberOfKeys * numberOfRecords"])
+    lateinit var numberOfKeys: String
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false

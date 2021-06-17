@@ -8,7 +8,8 @@ import org.slf4j.Logger
 import kotlin.system.exitProcess
 
 class DemoStateAndEventProcessor(
-    private val killProcessOnRecord: Int? = 0
+    private val killProcessOnRecord: Int? = 0,
+    private val delayOnNext: Long = 0
 ) : StateAndEventProcessor<String, DemoRecord, DemoRecord> {
 
     private companion object {
@@ -32,11 +33,17 @@ class DemoStateAndEventProcessor(
             exitProcess(0)
         }
 
+        if (delayOnNext != 0L) {
+            log.error("State and event processor pausing..")
+            Thread.sleep(delayOnNext)
+        }
+
         val key = event.key
         val oldState = state?.value
         val eventRecord = event.value
         val eventRecordValue = eventRecord!!.value
-        if (expectedNextValues[key] != null && expectedNextValues[key] != eventRecordValue) {
+        val newPublisherSet = eventRecordValue == 1
+            if (expectedNextValues[key] != null && expectedNextValues[key] != eventRecordValue && !newPublisherSet) {
             log.error("Wrong record found!")
         }
 

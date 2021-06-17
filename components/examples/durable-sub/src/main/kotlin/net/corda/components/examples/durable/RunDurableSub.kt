@@ -18,7 +18,8 @@ class RunDurableSub(
     private val subscriptionFactory: SubscriptionFactory,
     private var config: Config,
     private val instanceId: Int,
-    private val killProcessOnRecord: Int = 0
+    private val killProcessOnRecord: Int = 0,
+    private val delayOnNext: Long = 0,
     ) : LifeCycle {
 
     private companion object {
@@ -44,7 +45,7 @@ class RunDurableSub(
     override fun start() {
         if (!isRunning) {
             log.info("Creating durable subscription")
-            val processor = DemoDurableProcessor(outputEventTopic, outputPubSubTopic, killProcessOnRecord)
+            val processor = DemoDurableProcessor(outputEventTopic, outputPubSubTopic, killProcessOnRecord, delayOnNext)
             subscription = subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(groupName, inputTopic, instanceId),
                 processor,

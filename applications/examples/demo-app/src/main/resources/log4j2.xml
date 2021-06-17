@@ -17,14 +17,6 @@
             <PatternLayout pattern="%d{yyyy-mm-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
         </File>
 
-        <File name="Bootstrap" fileName="logs/bootstrap.log">
-            <PatternLayout pattern="%d{yyyy-mm-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-        </File>
-
-        <File name="Publisher" fileName="logs/publisher.log">
-            <PatternLayout pattern="%d{yyyy-mm-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-        </File>
-
         <File name="PubSub" fileName="logs/pubsub.log">
             <PatternLayout pattern="%d{yyyy-mm-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
         </File>
@@ -47,16 +39,8 @@
             <appender-ref ref="DemoApp" level="info"/>
         </logger>
 
-        <logger name="net.corda.components.examples.bootstrap">
-            <appender-ref ref="Bootstrap" level="info"/>
-        </logger>
-
         <logger name="net.corda.components.examples.config">
             <appender-ref ref="Config" level="info"/>
-        </logger>
-
-        <logger name="net.corda.components.examples.publisher">
-            <appender-ref ref="Publisher" level="info"/>
         </logger>
 
         <logger name="net.corda.components.examples.pubsub">

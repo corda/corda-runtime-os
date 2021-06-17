@@ -10,7 +10,8 @@ import kotlin.system.exitProcess
 class DemoDurableProcessor(
     private val outputEventTopic: String,
     private val outputPubSubTopic: String,
-    private val killProcessOnRecord: Int? = 0
+    private val killProcessOnRecord: Int? = 0,
+    private val delayOnNext: Long = 0L
 ) :
     DurableProcessor<String, DemoRecord> {
 
@@ -33,6 +34,12 @@ class DemoDurableProcessor(
                 log.error("Killing process for test purposes!")
                 exitProcess(0)
             }
+
+            if (delayOnNext != 0L) {
+                log.error("Durable processor pausing..")
+                Thread.sleep(delayOnNext)
+            }
+
             log.info("Durable sub processing key/value  ${event.key}/${event.value}")
             outputRecords.add(Record(outputEventTopic, event.key, event.value))
             outputRecords.add(Record(outputPubSubTopic, event.key, event.value))
