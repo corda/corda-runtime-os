@@ -141,9 +141,9 @@ class HttpClient(private val destination: NetworkHostAndPort, private val sslCon
             if (sharedThreadPool == null) {
                 workerGroup?.shutdownGracefully()
                 workerGroup?.terminationFuture()?.sync()
-            } else {
-                clientChannel?.closeFuture()?.sync()
             }
+
+            clientChannel?.close()
             clientChannel = null
             workerGroup = null
             logger.info("Stopped connection to $destination")
