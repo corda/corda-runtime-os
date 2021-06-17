@@ -18,7 +18,6 @@ import org.slf4j.Logger
 class KafkaConfigRead @Activate constructor(
     @Reference(service = ConfigReadServiceFactory::class)
     private val readServiceFactory: ConfigReadServiceFactory
-
 ) : ConfigListener {
 
     private companion object {
