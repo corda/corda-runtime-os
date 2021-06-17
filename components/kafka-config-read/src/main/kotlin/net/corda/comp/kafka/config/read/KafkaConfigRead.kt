@@ -9,6 +9,11 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
+/**
+ * Used in conjunction with the KafkaConfigReader application to sanity check the implementation of the
+ * configuration read logic
+ */
+
 @Component(immediate = true, service = [KafkaConfigRead::class])
 class KafkaConfigRead @Activate constructor(
     @Reference(service = ConfigReadServiceFactory::class)
