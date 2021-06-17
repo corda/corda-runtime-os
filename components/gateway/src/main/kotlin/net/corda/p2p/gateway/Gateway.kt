@@ -2,15 +2,19 @@ package net.corda.p2p.gateway
 
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.LifeCycle
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpServer
+import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
+import net.corda.p2p.gateway.messaging.internal.PartitionAssignmentListenerImpl
 import net.corda.v5.base.util.NetworkHostAndPort
+import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.lang.Exception
-import java.util.concurrent.CountDownLatch
 
 /**
  * The Gateway is a light component which facilitates the sending and receiving of P2P messages.
@@ -25,31 +29,51 @@ import java.util.concurrent.CountDownLatch
  *
  */
 class Gateway(address: NetworkHostAndPort,
-//              kafkaBrokers: List<NetworkHostAndPort>,
-//              partitionNumber: Int = 1,
               sslConfig: SslConfiguration,
-//              subscriptionFactory: SubscriptionFactory, // Inject manually for testing until OSGIfication happens
-//              publisherFactory: PublisherFactory // Inject manually for testing unti OSGIfication happens
+              @Reference(service = SubscriptionFactory::class)
+              subscriptionFactory: SubscriptionFactory, // Inject manually for testing until OSGIfication happens
+              @Reference(service = PublisherFactory::class)
+              publisherFactory: PublisherFactory // Inject manually for testing unti OSGIfication happens
 ) : LifeCycle {
+
+    companion object {
+        /**
+         * Topic names used to communicate with upstream services, specifically Link Manager
+         *
+         */
+        const val P2P_IN_TOPIC = "p2p.in"
+        const val P2P_OUT_TOPIC = "p2p.out"
+        const val CONSUMER_GROUP_ID = "gateway"
+        const val PUBLISHER_ID = "gateway"
+    }
+
     private val logger = LoggerFactory.getLogger(Gateway::class.java)
 
-    private val shutdownListener = CountDownLatch(1)
     private val closeActions = mutableListOf<() -> Unit>()
     private val httpServer = HttpServer(address, sslConfig)
-    private val connectionManager = ConnectionManager()
-    private val messageProcessor = OutboundMessageHandler()
+    private val connectionManager = ConnectionManager(sslConfig)
+    private var p2pMessageSubscription: Subscription<String, String>
+    private val inboundMessageProcessor = InboundMessageHandler(httpServer.onReceive, publisherFactory, httpServer::write)
+
+    init {
+        val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, P2P_OUT_TOPIC)
+        p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
+            OutboundMessageHandler(connectionManager),
+            emptyMap(),
+            PartitionAssignmentListenerImpl())
+    }
 
     override fun start() {
         logger.info("Starting Gateway service")
-        closeActions += { shutdownListener.countDown() }
+        p2pMessageSubscription.start()
+        closeActions += { p2pMessageSubscription.close() }
         httpServer.start()
         closeActions += { httpServer.close() }
+        inboundMessageProcessor.start()
+        closeActions += { inboundMessageProcessor.close() }
         connectionManager.start()
         closeActions += { connectionManager.close() }
-        messageProcessor.start()
-        closeActions += { messageProcessor.close() }
         logger.info("Gateway started")
-        shutdownListener.await()
     }
 
     override fun stop() {

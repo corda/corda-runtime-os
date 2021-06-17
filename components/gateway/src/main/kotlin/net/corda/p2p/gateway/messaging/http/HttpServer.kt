@@ -116,8 +116,12 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
     /**
      * Writes the given message to the channel corresponding to the recipient address. This method should be called
      * by upstream services in order to send an HTTP response
-     *
+     * @param message
+     * @param destination
+     * @throws IllegalStateException if the connection to the peer is not active. This can happen because either the peer
+     * has closed it or the server is stopped
      */
+    @Throws(IllegalStateException::class)
     fun write(message: ByteArray, destination: NetworkHostAndPort) {
         val channel = clientChannels[InetSocketAddress(destination.host, destination.port)]
         if (channel == null) {

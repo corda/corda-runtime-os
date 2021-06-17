@@ -26,4 +26,6 @@ dependencies {
     testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
     }
+
+    testImplementation project(":libs:messaging:inmemory-messaging-impl")
 }

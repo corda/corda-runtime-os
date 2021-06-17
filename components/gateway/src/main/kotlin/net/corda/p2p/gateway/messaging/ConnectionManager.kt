@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging
 
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.RemovalListener
+import io.netty.channel.ConnectTimeoutException
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.messaging.api.subscription.LifeCycle
@@ -25,7 +26,8 @@ import java.util.stream.Collectors
  * TODO: need to figure out how to handle situations where pool is maxed out and no stale connections can be evicted
  *
  */
-class ConnectionManager(private val config: ConnectionManagerConfig = ConnectionManagerConfig(MAX_CONNECTIONS, ACQUIRE_TIMEOUT, CONNECTION_MAX_IDLE_TIME)) : LifeCycle {
+class ConnectionManager(private val sslConfiguration: SslConfiguration,
+                        private val config: ConnectionManagerConfig = ConnectionManagerConfig(MAX_CONNECTIONS, ACQUIRE_TIMEOUT, CONNECTION_MAX_IDLE_TIME)) : LifeCycle {
 
     companion object {
         /**
@@ -81,13 +83,13 @@ class ConnectionManager(private val config: ConnectionManagerConfig = Connection
      * @param sslConfig the transport configuration
      * @throws [TimeoutException] if a successful connection cannot established
      */
-    @Throws(TimeoutException::class)
-    fun acquire(remoteAddress: NetworkHostAndPort, sslConfig: SslConfiguration): HttpClient {
+    @Throws(ConnectTimeoutException::class)
+    fun acquire(remoteAddress: NetworkHostAndPort): HttpClient {
         logger.info("Acquiring connection for remote address $remoteAddress")
         return connectionPool.get(remoteAddress) {
             logger.info("Creating new connection to $remoteAddress")
             // Try to connect. If unsuccessful in the specified time, return something...
-            val client = HttpClient(remoteAddress, sslConfig, sharedEventLoopGroup)
+            val client = HttpClient(remoteAddress, sslConfiguration, sharedEventLoopGroup)
             val connectionLock = CountDownLatch(1)
             val connectionSub = client.onConnection.subscribe { evt ->
                 if (evt.connected) {
@@ -98,7 +100,7 @@ class ConnectionManager(private val config: ConnectionManagerConfig = Connection
             val connected = connectionLock.await(config.acquireTimeout, TimeUnit.MILLISECONDS)
             connectionSub.unsubscribe()
             if (!connected) {
-                throw TimeoutException("Could not acquire connection to $remoteAddress in ${config.acquireTimeout} milliseconds")
+                throw ConnectTimeoutException("Could not acquire connection to $remoteAddress in ${config.acquireTimeout} milliseconds")
             }
             client
         }!!
