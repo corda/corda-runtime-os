@@ -5,7 +5,6 @@ import com.typesafe.config.ConfigFactory
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReadService
-import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -19,7 +18,7 @@ import java.util.*
 class ConfigReadServiceImpl(
     private val configurationRepository: ConfigRepository,
     private val subscriptionFactory: SubscriptionFactory,
-) : ConfigReadService, CompactedProcessor<String, Configuration>, LifeCycle {
+) : ConfigReadService, CompactedProcessor<String, Configuration> {
 
 
     @Volatile

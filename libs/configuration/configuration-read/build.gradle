@@ -7,4 +7,6 @@ description 'Configuration Read API'
 
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    implementation project(":libs:lifecycle")
 }
