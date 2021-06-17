@@ -6,7 +6,6 @@ plugins {
 description 'Kafka Configuration Read API Impl'
 
 dependencies {
-    api "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base:$cordaVersion"
