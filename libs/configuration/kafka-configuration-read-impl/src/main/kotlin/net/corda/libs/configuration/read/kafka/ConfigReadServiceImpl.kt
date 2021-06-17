@@ -53,9 +53,11 @@ class ConfigReadServiceImpl(
         stopped = true
     }
 
-
-    override fun registerCallback(configListener: ConfigListener) {
+    override fun registerCallback(configListener: ConfigListener): Map<String, Config>? {
         configUpdates.add(configListener)
+        return if (isRunning) {
+            configurationRepository.getConfigurations()
+        } else null
     }
 
     override val keyClass: Class<String>
