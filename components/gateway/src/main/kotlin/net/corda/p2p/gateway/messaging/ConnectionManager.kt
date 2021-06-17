@@ -5,7 +5,7 @@ import com.github.benmanes.caffeine.cache.RemovalListener
 import io.netty.channel.ConnectTimeoutException
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
-import net.corda.messaging.api.subscription.LifeCycle
+import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
@@ -27,7 +27,8 @@ import java.util.stream.Collectors
  *
  */
 class ConnectionManager(private val sslConfiguration: SslConfiguration,
-                        private val config: ConnectionManagerConfig = ConnectionManagerConfig(MAX_CONNECTIONS, ACQUIRE_TIMEOUT, CONNECTION_MAX_IDLE_TIME)) : LifeCycle {
+                        private val config: ConnectionManagerConfig = ConnectionManagerConfig(MAX_CONNECTIONS, ACQUIRE_TIMEOUT, CONNECTION_MAX_IDLE_TIME)) :
+    LifeCycle {
 
     companion object {
         /**
@@ -61,12 +62,17 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
 
     private var sharedEventLoopGroup: EventLoopGroup? = null
 
+    private var started = false
+    override val isRunning: Boolean
+        get() = started
+
     override fun start() {
         sharedEventLoopGroup = NioEventLoopGroup(4)
     }
 
     override fun stop() {
         logger.info("Stopping")
+        started = false
         connectionPool.invalidateAll()
         connectionPool.cleanUp()
         sharedEventLoopGroup?.shutdownGracefully()

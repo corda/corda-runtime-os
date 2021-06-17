@@ -1,10 +1,10 @@
 package net.corda.p2p.gateway.messaging.internal
 
+import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.LifeCycle
 import net.corda.p2p.gateway.Gateway.Companion.P2P_IN_TOPIC
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.ReceivedMessage
@@ -19,10 +19,15 @@ import rx.Subscription
  */
 class InboundMessageHandler(private val inboundReceiverObservable: Observable<ReceivedMessage>,
                             private val publisherFactory: PublisherFactory,
-                            private val responseSender: (message: ByteArray, peer: NetworkHostAndPort) -> Unit) : LifeCycle {
+                            private val responseSender: (message: ByteArray, peer: NetworkHostAndPort) -> Unit) :
+    LifeCycle {
     private var logger = LoggerFactory.getLogger(InboundMessageHandler::class.java)
     private var inboundMessageListener: Subscription? = null
     private var p2pInPublisher: Publisher? = null
+
+    private var started = false
+    override val isRunning: Boolean
+        get() = started
 
     override fun start() {
         logger.info("Starting P2P message receiver")
@@ -38,11 +43,12 @@ class InboundMessageHandler(private val inboundReceiverObservable: Observable<Re
             msg.release()
             responseSender("RECEIVED".toByteArray(), getDestination(String(msg.payload)))
         }
-
+        started = true
         logger.info("Started P2P message receiver")
     }
 
     override fun stop() {
+        started = false
         inboundMessageListener?.unsubscribe()
         inboundMessageListener = null
         p2pInPublisher?.close()

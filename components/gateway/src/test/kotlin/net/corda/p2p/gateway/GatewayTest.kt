@@ -2,7 +2,6 @@ package net.corda.p2p.gateway
 
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
-import net.corda.messaging.emulation.topic.model.Topic
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpClient

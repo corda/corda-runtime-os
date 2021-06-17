@@ -9,7 +9,7 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.*
 import io.netty.handler.ssl.SniCompletionEvent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
-import net.corda.messaging.api.subscription.LifeCycle
+import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
@@ -44,7 +44,8 @@ import kotlin.math.min
  *
  * @param destination the target address; TODO: will probably become some URL in the future like https://bankofcorda.net:6666
  */
-class HttpClient(private val destination: NetworkHostAndPort, private val sslConfiguration: SslConfiguration, private val sharedThreadPool: EventLoopGroup? = null) : LifeCycle {
+class HttpClient(private val destination: NetworkHostAndPort, private val sslConfiguration: SslConfiguration, private val sharedThreadPool: EventLoopGroup? = null) :
+    LifeCycle {
 
     companion object {
         private const val MIN_RETRY_INTERVAL = 1000L
@@ -73,6 +74,9 @@ class HttpClient(private val destination: NetworkHostAndPort, private val sslCon
 
     @Volatile
     private var httpChannelHandler: ChannelHandler? = null
+
+    override val isRunning: Boolean
+        get() = started
 
     //TODO: should send a better type upstream, perhaps encapsulating response status (and body if applicable)
     private val _onReceive = PublishSubject.create<ByteArray>().toSerialized()

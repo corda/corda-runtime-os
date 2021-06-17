@@ -10,7 +10,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.*
 import io.netty.handler.ssl.SniCompletionEvent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
-import net.corda.messaging.api.subscription.LifeCycle
+import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.ReceivedMessage
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.toHostAndPort
@@ -61,6 +61,10 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
     private var serverChannel: Channel? = null
     private val clientChannels = ConcurrentHashMap<InetSocketAddress, SocketChannel>()
 
+    private var started = false
+    override val isRunning: Boolean
+        get() = started
+
     private val _onReceive = PublishSubject.create<ReceivedMessage>().toSerialized()
     val onReceive: Observable<ReceivedMessage>
         get() = _onReceive
@@ -72,7 +76,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
     /**
      * @throws BindException if the server cannot bind to the address provided in the constructor
      */
-    override  fun start() {
+    override fun start() {
         lock.withLock {
             logger.info("Starting HTTP Server")
             bossGroup = NioEventLoopGroup(1)
@@ -87,10 +91,11 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
             val channelFuture = server.bind(hostAddress.host, hostAddress.port).sync()
             logger.info("Listening on port ${hostAddress.port}")
             serverChannel = channelFuture.channel()
+            started = true
         }
     }
 
-    override  fun stop() {
+    override fun stop() {
         lock.withLock {
             try {
                 logger.info("Stopping HTTP server")
@@ -108,6 +113,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
                 bossGroup = null
             } finally {
                 stopping = false
+                started = false
                 logger.info("HTTP server stopped")
             }
         }

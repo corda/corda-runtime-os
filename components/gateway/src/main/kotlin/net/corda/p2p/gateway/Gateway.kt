@@ -1,7 +1,7 @@
 package net.corda.p2p.gateway
 
+import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.LifeCycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -54,6 +54,10 @@ class Gateway(address: NetworkHostAndPort,
     private val connectionManager = ConnectionManager(sslConfig)
     private var p2pMessageSubscription: Subscription<String, String>
     private val inboundMessageProcessor = InboundMessageHandler(httpServer.onReceive, publisherFactory, httpServer::write)
+
+    private var started = false
+    override val isRunning: Boolean
+        get() = started
 
     init {
         val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, P2P_OUT_TOPIC)
