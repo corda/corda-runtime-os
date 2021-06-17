@@ -12,11 +12,10 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
 import java.util.*
-import picocli.CommandLine
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)

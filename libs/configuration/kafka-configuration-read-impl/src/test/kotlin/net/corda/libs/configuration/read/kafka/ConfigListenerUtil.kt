@@ -10,7 +10,7 @@ class ConfigListenerUtil : ConfigListener {
         update = true
     }
 
-    override fun onUpdate(changedKey: String, updatedConfig: Map<String, Config>) {
+    override fun onUpdate(changedKey: String, currentConfigurationSnapshot: Map<String, Config>) {
         update = true
     }
 }

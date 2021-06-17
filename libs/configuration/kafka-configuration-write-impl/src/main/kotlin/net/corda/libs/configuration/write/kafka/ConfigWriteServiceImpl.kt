@@ -11,7 +11,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 /**
  * Kafka implementation of the [ConfigWriteService]

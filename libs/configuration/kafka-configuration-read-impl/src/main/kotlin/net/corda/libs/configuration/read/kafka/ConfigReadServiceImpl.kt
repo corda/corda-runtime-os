@@ -3,9 +3,8 @@ package net.corda.libs.configuration.read.kafka
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.data.config.Configuration
-import net.corda.libs.configuration.read.ConfigReadService
 import net.corda.libs.configuration.read.ConfigListener
-import net.corda.libs.configuration.read.ConfigSubscription
+import net.corda.libs.configuration.read.ConfigReadService
 import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -19,7 +18,7 @@ import java.util.*
 @Component(immediate = true, service = [ConfigReadService::class])
 class ConfigReadServiceImpl(
     private val configurationRepository: ConfigRepository,
-    private val subscriptionFactory: SubscriptionFactory
+    private val subscriptionFactory: SubscriptionFactory,
 ) : ConfigReadService, CompactedProcessor<String, Configuration>, LifeCycle {
 
 
@@ -56,9 +55,8 @@ class ConfigReadServiceImpl(
     }
 
 
-    override fun registerCallback(configListener: ConfigListener): ConfigSubscription {
+    override fun registerCallback(configListener: ConfigListener) {
         configUpdates.add(configListener)
-        return ConfigSubscription()
     }
 
     override val keyClass: Class<String>
