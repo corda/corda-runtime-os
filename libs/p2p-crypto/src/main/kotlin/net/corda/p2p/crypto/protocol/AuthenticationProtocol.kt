@@ -1,6 +1,7 @@
 package net.corda.p2p.crypto.protocol
 
 import net.corda.p2p.crypto.InitiatorHelloMessage
+import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_KEY_SIZE_BYTES
@@ -23,6 +24,7 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSI
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.SIGNATURE_ALGO
 import net.corda.p2p.crypto.util.convertToBCDigest
 import net.corda.p2p.crypto.util.generateKey
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.ByteBuffer
@@ -51,6 +53,7 @@ abstract class AuthenticationProtocol {
     protected var myPublicDHKey: ByteArray? = null
     protected var peerPublicDHKey: PublicKey? = null
     protected var sharedDHSecret: ByteArray? = null
+    protected var selectedMode: ProtocolMode? = null
     protected var sharedHandshakeSecrets: SharedHandshakeSecrets? = null
 
     protected var initiatorHelloMessage: InitiatorHelloMessage? = null
@@ -58,6 +61,7 @@ abstract class AuthenticationProtocol {
     protected var initiatorHelloToResponderHelloBytes: ByteArray? = null
     protected var initiatorHandshakePayloadBytes: ByteArray? = null
     protected var responderHandshakePayloadBytes: ByteArray? = null
+    protected var agreedMaxMessageSize: Int? = null
 
     protected val secureRandom = SecureRandom()
     protected val provider = BouncyCastleProvider()
@@ -189,5 +193,9 @@ abstract class AuthenticationProtocol {
 
 }
 
-internal fun Int.toByteArray(): ByteArray = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(this).array()
-internal fun Long.toByteArray(): ByteArray = ByteBuffer.allocate(Long.SIZE_BITS).putLong(this).array()
+internal fun Long.toByteArray(): ByteArray = ByteBuffer.allocate(Long.SIZE_BYTES).putLong(this).array()
+
+/**
+ * Thrown when the max message size proposed by our peer was invalid.
+ */
+class InvalidMaxMessageSizeProposedError(msg: String): CordaRuntimeException(msg)

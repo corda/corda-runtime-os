@@ -1,5 +1,6 @@
 package net.corda.p2p.crypto
 
+import net.corda.p2p.crypto.protocol.NoCommonModeError
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
@@ -23,12 +24,14 @@ class AuthenticationProtocolFailureTest {
     private val sessionId = UUID.randomUUID().toString()
 
     // party A
+    private val partyAMaxMessageSize = 1_000_000
     private val partyAIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, listOf(ProtocolMode.AUTHENTICATION_ONLY))
+    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyAMaxMessageSize)
 
     // party B
+    private val partyBMaxMessageSize = 1_500_000
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, listOf(ProtocolMode.AUTHENTICATION_ONLY))
+    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
 
     private val groupId = "some-group-id"
 
@@ -119,6 +122,20 @@ class AuthenticationProtocolFailureTest {
 
         assertThatThrownBy { authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public) }
                 .isInstanceOf(InvalidHandshakeMessageException::class.java)
+    }
+
+    @Test
+    fun `session authentication fails if two parties do not share a common supported protocol mode`() {
+        val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyAMaxMessageSize)
+        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize)
+
+        // Step 1: initiator sending hello message to responder.
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
+
+        // Step 2: responder sending hello message to initiator.
+        assertThatThrownBy { authenticationProtocolB.generateResponderHello() }
+            .isInstanceOf(NoCommonModeError::class.java)
     }
 
 

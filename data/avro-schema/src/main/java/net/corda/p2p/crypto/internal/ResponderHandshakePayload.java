@@ -14,8 +14,8 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class ResponderHandshakePayload extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 7746603619919497172L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"ResponderHandshakePayload\",\"namespace\":\"net.corda.p2p.crypto.internal\",\"fields\":[{\"name\":\"responderPublicKeyHash\",\"type\":\"bytes\"},{\"name\":\"responderPartyVerify\",\"type\":\"bytes\"},{\"name\":\"responderFinished\",\"type\":\"bytes\"}]}");
+  private static final long serialVersionUID = 7451827784662834875L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"ResponderHandshakePayload\",\"namespace\":\"net.corda.p2p.crypto.internal\",\"fields\":[{\"name\":\"responderEncryptedExtensions\",\"type\":{\"type\":\"record\",\"name\":\"ResponderEncryptedExtensions\",\"fields\":[{\"name\":\"maxMessageSize\",\"type\":\"int\"}]}},{\"name\":\"responderPublicKeyHash\",\"type\":\"bytes\"},{\"name\":\"responderPartyVerify\",\"type\":\"bytes\"},{\"name\":\"responderFinished\",\"type\":\"bytes\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -71,6 +71,7 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
     return DECODER.decode(b);
   }
 
+   private net.corda.p2p.crypto.internal.ResponderEncryptedExtensions responderEncryptedExtensions;
    private java.nio.ByteBuffer responderPublicKeyHash;
    private java.nio.ByteBuffer responderPartyVerify;
    private java.nio.ByteBuffer responderFinished;
@@ -84,11 +85,13 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
 
   /**
    * All-args constructor.
+   * @param responderEncryptedExtensions The new value for responderEncryptedExtensions
    * @param responderPublicKeyHash The new value for responderPublicKeyHash
    * @param responderPartyVerify The new value for responderPartyVerify
    * @param responderFinished The new value for responderFinished
    */
-  public ResponderHandshakePayload(java.nio.ByteBuffer responderPublicKeyHash, java.nio.ByteBuffer responderPartyVerify, java.nio.ByteBuffer responderFinished) {
+  public ResponderHandshakePayload(net.corda.p2p.crypto.internal.ResponderEncryptedExtensions responderEncryptedExtensions, java.nio.ByteBuffer responderPublicKeyHash, java.nio.ByteBuffer responderPartyVerify, java.nio.ByteBuffer responderFinished) {
+    this.responderEncryptedExtensions = responderEncryptedExtensions;
     this.responderPublicKeyHash = responderPublicKeyHash;
     this.responderPartyVerify = responderPartyVerify;
     this.responderFinished = responderFinished;
@@ -99,9 +102,10 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
   // Used by DatumWriter.  Applications should not call.
   public java.lang.Object get(int field$) {
     switch (field$) {
-    case 0: return responderPublicKeyHash;
-    case 1: return responderPartyVerify;
-    case 2: return responderFinished;
+    case 0: return responderEncryptedExtensions;
+    case 1: return responderPublicKeyHash;
+    case 2: return responderPartyVerify;
+    case 3: return responderFinished;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -110,11 +114,29 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
   @SuppressWarnings(value="unchecked")
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
-    case 0: responderPublicKeyHash = (java.nio.ByteBuffer)value$; break;
-    case 1: responderPartyVerify = (java.nio.ByteBuffer)value$; break;
-    case 2: responderFinished = (java.nio.ByteBuffer)value$; break;
+    case 0: responderEncryptedExtensions = (net.corda.p2p.crypto.internal.ResponderEncryptedExtensions)value$; break;
+    case 1: responderPublicKeyHash = (java.nio.ByteBuffer)value$; break;
+    case 2: responderPartyVerify = (java.nio.ByteBuffer)value$; break;
+    case 3: responderFinished = (java.nio.ByteBuffer)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
+  }
+
+  /**
+   * Gets the value of the 'responderEncryptedExtensions' field.
+   * @return The value of the 'responderEncryptedExtensions' field.
+   */
+  public net.corda.p2p.crypto.internal.ResponderEncryptedExtensions getResponderEncryptedExtensions() {
+    return responderEncryptedExtensions;
+  }
+
+
+  /**
+   * Sets the value of the 'responderEncryptedExtensions' field.
+   * @param value the value to set.
+   */
+  public void setResponderEncryptedExtensions(net.corda.p2p.crypto.internal.ResponderEncryptedExtensions value) {
+    this.responderEncryptedExtensions = value;
   }
 
   /**
@@ -209,6 +231,8 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
   public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<ResponderHandshakePayload>
     implements org.apache.avro.data.RecordBuilder<ResponderHandshakePayload> {
 
+    private net.corda.p2p.crypto.internal.ResponderEncryptedExtensions responderEncryptedExtensions;
+    private net.corda.p2p.crypto.internal.ResponderEncryptedExtensions.Builder responderEncryptedExtensionsBuilder;
     private java.nio.ByteBuffer responderPublicKeyHash;
     private java.nio.ByteBuffer responderPartyVerify;
     private java.nio.ByteBuffer responderFinished;
@@ -224,17 +248,24 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
      */
     private Builder(net.corda.p2p.crypto.internal.ResponderHandshakePayload.Builder other) {
       super(other);
-      if (isValidValue(fields()[0], other.responderPublicKeyHash)) {
-        this.responderPublicKeyHash = data().deepCopy(fields()[0].schema(), other.responderPublicKeyHash);
+      if (isValidValue(fields()[0], other.responderEncryptedExtensions)) {
+        this.responderEncryptedExtensions = data().deepCopy(fields()[0].schema(), other.responderEncryptedExtensions);
         fieldSetFlags()[0] = other.fieldSetFlags()[0];
       }
-      if (isValidValue(fields()[1], other.responderPartyVerify)) {
-        this.responderPartyVerify = data().deepCopy(fields()[1].schema(), other.responderPartyVerify);
+      if (other.hasResponderEncryptedExtensionsBuilder()) {
+        this.responderEncryptedExtensionsBuilder = net.corda.p2p.crypto.internal.ResponderEncryptedExtensions.newBuilder(other.getResponderEncryptedExtensionsBuilder());
+      }
+      if (isValidValue(fields()[1], other.responderPublicKeyHash)) {
+        this.responderPublicKeyHash = data().deepCopy(fields()[1].schema(), other.responderPublicKeyHash);
         fieldSetFlags()[1] = other.fieldSetFlags()[1];
       }
-      if (isValidValue(fields()[2], other.responderFinished)) {
-        this.responderFinished = data().deepCopy(fields()[2].schema(), other.responderFinished);
+      if (isValidValue(fields()[2], other.responderPartyVerify)) {
+        this.responderPartyVerify = data().deepCopy(fields()[2].schema(), other.responderPartyVerify);
         fieldSetFlags()[2] = other.fieldSetFlags()[2];
+      }
+      if (isValidValue(fields()[3], other.responderFinished)) {
+        this.responderFinished = data().deepCopy(fields()[3].schema(), other.responderFinished);
+        fieldSetFlags()[3] = other.fieldSetFlags()[3];
       }
     }
 
@@ -244,18 +275,99 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
      */
     private Builder(net.corda.p2p.crypto.internal.ResponderHandshakePayload other) {
       super(SCHEMA$);
-      if (isValidValue(fields()[0], other.responderPublicKeyHash)) {
-        this.responderPublicKeyHash = data().deepCopy(fields()[0].schema(), other.responderPublicKeyHash);
+      if (isValidValue(fields()[0], other.responderEncryptedExtensions)) {
+        this.responderEncryptedExtensions = data().deepCopy(fields()[0].schema(), other.responderEncryptedExtensions);
         fieldSetFlags()[0] = true;
       }
-      if (isValidValue(fields()[1], other.responderPartyVerify)) {
-        this.responderPartyVerify = data().deepCopy(fields()[1].schema(), other.responderPartyVerify);
+      this.responderEncryptedExtensionsBuilder = null;
+      if (isValidValue(fields()[1], other.responderPublicKeyHash)) {
+        this.responderPublicKeyHash = data().deepCopy(fields()[1].schema(), other.responderPublicKeyHash);
         fieldSetFlags()[1] = true;
       }
-      if (isValidValue(fields()[2], other.responderFinished)) {
-        this.responderFinished = data().deepCopy(fields()[2].schema(), other.responderFinished);
+      if (isValidValue(fields()[2], other.responderPartyVerify)) {
+        this.responderPartyVerify = data().deepCopy(fields()[2].schema(), other.responderPartyVerify);
         fieldSetFlags()[2] = true;
       }
+      if (isValidValue(fields()[3], other.responderFinished)) {
+        this.responderFinished = data().deepCopy(fields()[3].schema(), other.responderFinished);
+        fieldSetFlags()[3] = true;
+      }
+    }
+
+    /**
+      * Gets the value of the 'responderEncryptedExtensions' field.
+      * @return The value.
+      */
+    public net.corda.p2p.crypto.internal.ResponderEncryptedExtensions getResponderEncryptedExtensions() {
+      return responderEncryptedExtensions;
+    }
+
+
+    /**
+      * Sets the value of the 'responderEncryptedExtensions' field.
+      * @param value The value of 'responderEncryptedExtensions'.
+      * @return This builder.
+      */
+    public net.corda.p2p.crypto.internal.ResponderHandshakePayload.Builder setResponderEncryptedExtensions(net.corda.p2p.crypto.internal.ResponderEncryptedExtensions value) {
+      validate(fields()[0], value);
+      this.responderEncryptedExtensionsBuilder = null;
+      this.responderEncryptedExtensions = value;
+      fieldSetFlags()[0] = true;
+      return this;
+    }
+
+    /**
+      * Checks whether the 'responderEncryptedExtensions' field has been set.
+      * @return True if the 'responderEncryptedExtensions' field has been set, false otherwise.
+      */
+    public boolean hasResponderEncryptedExtensions() {
+      return fieldSetFlags()[0];
+    }
+
+    /**
+     * Gets the Builder instance for the 'responderEncryptedExtensions' field and creates one if it doesn't exist yet.
+     * @return This builder.
+     */
+    public net.corda.p2p.crypto.internal.ResponderEncryptedExtensions.Builder getResponderEncryptedExtensionsBuilder() {
+      if (responderEncryptedExtensionsBuilder == null) {
+        if (hasResponderEncryptedExtensions()) {
+          setResponderEncryptedExtensionsBuilder(net.corda.p2p.crypto.internal.ResponderEncryptedExtensions.newBuilder(responderEncryptedExtensions));
+        } else {
+          setResponderEncryptedExtensionsBuilder(net.corda.p2p.crypto.internal.ResponderEncryptedExtensions.newBuilder());
+        }
+      }
+      return responderEncryptedExtensionsBuilder;
+    }
+
+    /**
+     * Sets the Builder instance for the 'responderEncryptedExtensions' field
+     * @param value The builder instance that must be set.
+     * @return This builder.
+     */
+
+    public net.corda.p2p.crypto.internal.ResponderHandshakePayload.Builder setResponderEncryptedExtensionsBuilder(net.corda.p2p.crypto.internal.ResponderEncryptedExtensions.Builder value) {
+      clearResponderEncryptedExtensions();
+      responderEncryptedExtensionsBuilder = value;
+      return this;
+    }
+
+    /**
+     * Checks whether the 'responderEncryptedExtensions' field has an active Builder instance
+     * @return True if the 'responderEncryptedExtensions' field has an active Builder instance
+     */
+    public boolean hasResponderEncryptedExtensionsBuilder() {
+      return responderEncryptedExtensionsBuilder != null;
+    }
+
+    /**
+      * Clears the value of the 'responderEncryptedExtensions' field.
+      * @return This builder.
+      */
+    public net.corda.p2p.crypto.internal.ResponderHandshakePayload.Builder clearResponderEncryptedExtensions() {
+      responderEncryptedExtensions = null;
+      responderEncryptedExtensionsBuilder = null;
+      fieldSetFlags()[0] = false;
+      return this;
     }
 
     /**
@@ -273,9 +385,9 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
       * @return This builder.
       */
     public net.corda.p2p.crypto.internal.ResponderHandshakePayload.Builder setResponderPublicKeyHash(java.nio.ByteBuffer value) {
-      validate(fields()[0], value);
+      validate(fields()[1], value);
       this.responderPublicKeyHash = value;
-      fieldSetFlags()[0] = true;
+      fieldSetFlags()[1] = true;
       return this;
     }
 
@@ -284,7 +396,7 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
       * @return True if the 'responderPublicKeyHash' field has been set, false otherwise.
       */
     public boolean hasResponderPublicKeyHash() {
-      return fieldSetFlags()[0];
+      return fieldSetFlags()[1];
     }
 
 
@@ -294,7 +406,7 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
       */
     public net.corda.p2p.crypto.internal.ResponderHandshakePayload.Builder clearResponderPublicKeyHash() {
       responderPublicKeyHash = null;
-      fieldSetFlags()[0] = false;
+      fieldSetFlags()[1] = false;
       return this;
     }
 
@@ -313,9 +425,9 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
       * @return This builder.
       */
     public net.corda.p2p.crypto.internal.ResponderHandshakePayload.Builder setResponderPartyVerify(java.nio.ByteBuffer value) {
-      validate(fields()[1], value);
+      validate(fields()[2], value);
       this.responderPartyVerify = value;
-      fieldSetFlags()[1] = true;
+      fieldSetFlags()[2] = true;
       return this;
     }
 
@@ -324,7 +436,7 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
       * @return True if the 'responderPartyVerify' field has been set, false otherwise.
       */
     public boolean hasResponderPartyVerify() {
-      return fieldSetFlags()[1];
+      return fieldSetFlags()[2];
     }
 
 
@@ -334,7 +446,7 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
       */
     public net.corda.p2p.crypto.internal.ResponderHandshakePayload.Builder clearResponderPartyVerify() {
       responderPartyVerify = null;
-      fieldSetFlags()[1] = false;
+      fieldSetFlags()[2] = false;
       return this;
     }
 
@@ -353,9 +465,9 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
       * @return This builder.
       */
     public net.corda.p2p.crypto.internal.ResponderHandshakePayload.Builder setResponderFinished(java.nio.ByteBuffer value) {
-      validate(fields()[2], value);
+      validate(fields()[3], value);
       this.responderFinished = value;
-      fieldSetFlags()[2] = true;
+      fieldSetFlags()[3] = true;
       return this;
     }
 
@@ -364,7 +476,7 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
       * @return True if the 'responderFinished' field has been set, false otherwise.
       */
     public boolean hasResponderFinished() {
-      return fieldSetFlags()[2];
+      return fieldSetFlags()[3];
     }
 
 
@@ -374,7 +486,7 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
       */
     public net.corda.p2p.crypto.internal.ResponderHandshakePayload.Builder clearResponderFinished() {
       responderFinished = null;
-      fieldSetFlags()[2] = false;
+      fieldSetFlags()[3] = false;
       return this;
     }
 
@@ -383,9 +495,19 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
     public ResponderHandshakePayload build() {
       try {
         ResponderHandshakePayload record = new ResponderHandshakePayload();
-        record.responderPublicKeyHash = fieldSetFlags()[0] ? this.responderPublicKeyHash : (java.nio.ByteBuffer) defaultValue(fields()[0]);
-        record.responderPartyVerify = fieldSetFlags()[1] ? this.responderPartyVerify : (java.nio.ByteBuffer) defaultValue(fields()[1]);
-        record.responderFinished = fieldSetFlags()[2] ? this.responderFinished : (java.nio.ByteBuffer) defaultValue(fields()[2]);
+        if (responderEncryptedExtensionsBuilder != null) {
+          try {
+            record.responderEncryptedExtensions = this.responderEncryptedExtensionsBuilder.build();
+          } catch (org.apache.avro.AvroMissingFieldException e) {
+            e.addParentField(record.getSchema().getField("responderEncryptedExtensions"));
+            throw e;
+          }
+        } else {
+          record.responderEncryptedExtensions = fieldSetFlags()[0] ? this.responderEncryptedExtensions : (net.corda.p2p.crypto.internal.ResponderEncryptedExtensions) defaultValue(fields()[0]);
+        }
+        record.responderPublicKeyHash = fieldSetFlags()[1] ? this.responderPublicKeyHash : (java.nio.ByteBuffer) defaultValue(fields()[1]);
+        record.responderPartyVerify = fieldSetFlags()[2] ? this.responderPartyVerify : (java.nio.ByteBuffer) defaultValue(fields()[2]);
+        record.responderFinished = fieldSetFlags()[3] ? this.responderFinished : (java.nio.ByteBuffer) defaultValue(fields()[3]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -418,6 +540,8 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
   @Override public void customEncode(org.apache.avro.io.Encoder out)
     throws java.io.IOException
   {
+    this.responderEncryptedExtensions.customEncode(out);
+
     out.writeBytes(this.responderPublicKeyHash);
 
     out.writeBytes(this.responderPartyVerify);
@@ -431,6 +555,11 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
   {
     org.apache.avro.Schema.Field[] fieldOrder = in.readFieldOrderIfDiff();
     if (fieldOrder == null) {
+      if (this.responderEncryptedExtensions == null) {
+        this.responderEncryptedExtensions = new net.corda.p2p.crypto.internal.ResponderEncryptedExtensions();
+      }
+      this.responderEncryptedExtensions.customDecode(in);
+
       this.responderPublicKeyHash = in.readBytes(this.responderPublicKeyHash);
 
       this.responderPartyVerify = in.readBytes(this.responderPartyVerify);
@@ -438,17 +567,24 @@ public class ResponderHandshakePayload extends org.apache.avro.specific.Specific
       this.responderFinished = in.readBytes(this.responderFinished);
 
     } else {
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < 4; i++) {
         switch (fieldOrder[i].pos()) {
         case 0:
-          this.responderPublicKeyHash = in.readBytes(this.responderPublicKeyHash);
+          if (this.responderEncryptedExtensions == null) {
+            this.responderEncryptedExtensions = new net.corda.p2p.crypto.internal.ResponderEncryptedExtensions();
+          }
+          this.responderEncryptedExtensions.customDecode(in);
           break;
 
         case 1:
-          this.responderPartyVerify = in.readBytes(this.responderPartyVerify);
+          this.responderPublicKeyHash = in.readBytes(this.responderPublicKeyHash);
           break;
 
         case 2:
+          this.responderPartyVerify = in.readBytes(this.responderPartyVerify);
+          break;
+
+        case 3:
           this.responderFinished = in.readBytes(this.responderFinished);
           break;
 

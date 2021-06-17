@@ -11,12 +11,13 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.internal.uncheckedCast
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.Properties
+import java.util.*
 
 /**
  * Generate a Kafka Consumer.
@@ -42,10 +43,14 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
 
     override fun createDurableConsumer(
         subscriptionConfig: SubscriptionConfig,
-        onError: (String, ByteArray) -> Unit
+        onError: (String, ByteArray) -> Unit,
+        consumerRebalanceListener: ConsumerRebalanceListener?,
     ): CordaKafkaConsumer<K, V> {
         val consumer = createKafkaConsumer(subscriptionConfig, onError)
-        val listener = DurableConsumerRebalanceListener(subscriptionConfig, consumer)
+        val listener = consumerRebalanceListener ?: DurableConsumerRebalanceListener(
+            subscriptionConfig,
+            consumer,
+        )
         return CordaKafkaConsumerImpl(kafkaConfig, subscriptionConfig, consumer, listener)
     }
 
