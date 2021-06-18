@@ -19,7 +19,7 @@ import org.slf4j.Logger
 class KafkaConfigRead @Activate constructor(
     @Reference(service = ConfigReadServiceFactory::class)
     private val readServiceFactory: ConfigReadServiceFactory
-) : ConfigListener, LifeCycle {
+) : LifeCycle {
 
     private companion object {
         private val logger: Logger = contextLogger()
@@ -30,20 +30,19 @@ class KafkaConfigRead @Activate constructor(
     private val configReadService = readServiceFactory.createReadService()
     private var sub: AutoCloseable? = null
 
-    override fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config>) {
-        logger.info("----------New configuration has been posted----------")
-        for (key in changedKeys) {
-            logger.info("$key -> ${currentConfigurationSnapshot[key]}")
-        }
-
-        receivedSnapshot = true
-    }
-
     override val isRunning: Boolean
         get() = receivedSnapshot
 
     override fun start() {
-        sub = configReadService.registerCallback(this)
+        val lister = ConfigListener { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
+            logger.info("----------New configuration has been posted----------")
+            for (key in changedKeys) {
+                logger.info("$key -> ${currentConfigurationSnapshot[key]}")
+            }
+
+            receivedSnapshot = true
+        }
+        sub = configReadService.registerCallback(lister)
         configReadService.start()
     }
 

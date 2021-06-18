@@ -34,7 +34,6 @@ class KafkaConfigReader @Activate constructor(
             configReader.start()
             logger.info("____________________________SLEEP______________________________________")
             while (!configReader.isRunning) { Thread.sleep(100) }
-            shutdownOSGiFramework()
         }
     }
 
