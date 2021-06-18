@@ -83,4 +83,39 @@ class ConfigReadServiceImplTest {
         Assertions.assertThat(configRepository.getConfigurations()["corda.security"])
             .isEqualTo(configMap["corda.security"])
     }
+
+    @Test
+    fun `test unregister callback`() {
+        val id = configReadService.registerCallback(configUpdateUtil)
+
+        val configMap = ConfigUtil.testConfigMap()
+        val databaseConfig = configMap["corda.database"]!!
+        val avroDatabaseConfig =
+            Configuration(
+                databaseConfig.root()?.render(ConfigRenderOptions.concise()),
+                databaseConfig.getString("componentVersion")
+            )
+
+        val topicMap = mutableMapOf("corda.database" to avroDatabaseConfig)
+
+        configReadService.onSnapshot(topicMap)
+
+        Assertions.assertThat(configUpdateUtil.update).isTrue
+        Assertions.assertThat(configUpdateUtil.lastSnapshot["corda.database"])
+            .isEqualTo(configMap["corda.database"])
+
+        configReadService.unregisterCallback(id)
+
+        val securityConfig = configMap["corda.security"]!!
+        val avroSecurityConfig =
+            Configuration(
+                securityConfig.root()?.render(ConfigRenderOptions.concise()),
+                securityConfig.getString("componentVersion")
+            )
+
+        topicMap["corda.security"] = avroSecurityConfig
+        configReadService.onNext(Record("", "corda.security", avroSecurityConfig), null, topicMap)
+
+        Assertions.assertThat(configUpdateUtil.lastSnapshot["corda.security"]).isNull()
+    }
 }

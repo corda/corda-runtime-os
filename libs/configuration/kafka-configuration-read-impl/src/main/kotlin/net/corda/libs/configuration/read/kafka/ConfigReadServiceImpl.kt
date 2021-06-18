@@ -53,9 +53,14 @@ class ConfigReadServiceImpl(
         stopped = true
     }
 
-    override fun registerCallback(configListener: ConfigListener) {
+    override fun registerCallback(configListener: ConfigListener): Int {
         configUpdates.add(configListener)
         configListener.onUpdate(setOf(), configurationRepository.getConfigurations())
+        return configUpdates.lastIndex
+    }
+
+    override fun unregisterCallback(callbackId: Int) {
+        configUpdates.removeAt(callbackId)
     }
 
     override val keyClass: Class<String>
