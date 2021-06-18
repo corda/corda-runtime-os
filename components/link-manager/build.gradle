@@ -21,6 +21,7 @@ dependencies {
 
     implementation "net.corda:corda-base:$cordaVersion"
     testImplementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testCompile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     testCompile "org.apache.logging.log4j:log4j-core:$log4jVersion"
 }

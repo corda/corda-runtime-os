@@ -14,6 +14,8 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkOutMessage
+import net.corda.v5.base.annotations.VisibleForTesting
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -34,7 +36,12 @@ class SessionManager(
     private val pendingResponderSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
     private val activeResponderSessions = ConcurrentHashMap<String, Session>()
 
-    private val logger = LoggerFactory.getLogger(this::class.java.name)
+    private var logger = LoggerFactory.getLogger(this::class.java.name)
+
+    @VisibleForTesting
+    fun setLogger(newLogger: Logger) {
+        logger = newLogger
+    }
 
     fun getInitiatorSession(key: SessionKey): Session? {
         return activeInitiatorSessions[key]
@@ -70,8 +77,7 @@ class SessionManager(
 
     private fun processResponderHello(message: ResponderHelloMessage): LinkOutMessage? {
         val (sessionInfo, session) = pendingInitiatorSessions[message.header.sessionId] ?: run {
-            logger.warn("Received ${message::class.java::getSimpleName} with sessionId ${message.header.sessionId} " +
-                    "but there is no pending session. The message was discarded.")
+            printNoSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
 
@@ -85,7 +91,7 @@ class SessionManager(
 
         val responderKey = networkMap.getPublicKey(sessionInfo.responderId)
         if (responderKey == null) {
-            logger.warn("Received ${ResponderHelloMessage::class.java.simpleName} from peer " +
+            logger.warn("Received ${message::class.java.simpleName} from peer " +
                 "(${sessionInfo}) which is not in the network map. The message was discarded.")
             return null
         }
@@ -101,22 +107,21 @@ class SessionManager(
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
         val (sessionInfo, session) = pendingInitiatorSessions[message.header.sessionId] ?: run {
-            logger.warn("Received ${message::class.java::getSimpleName} with sessionId = ${message.header.sessionId} " +
-                "but there is no pending session. The message was discarded.")
+            printNoSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
 
         val responderKey = networkMap.getPublicKey(sessionInfo.responderId)
         if (responderKey == null) {
-            logger.warn("Received ${ResponderHandshakeMessage::class.java.simpleName} from peer " +
-                    "(${sessionInfo.responderId}) which is not in the network map. The message was discarded.")
+            logger.warn("Received ${message::class.java.simpleName} from peer ${sessionInfo.responderId} with sessionId " +
+                    "${message.header.sessionId} which is not in the network map. The message was discarded.")
             return null
         }
         try {
             session.validatePeerHandshakeMessage(message, responderKey)
         } catch (exception: InvalidHandshakeResponderKeyHash) {
             logger.warn("Received ${ResponderHandshakeMessage::class.java.simpleName} from peer " +
-                "${sessionInfo.responderId} with sessionId = ${message.header.sessionId} which failed validation. " +
+                "${sessionInfo.responderId} with sessionId ${message.header.sessionId} which failed validation. " +
                  "The message was discarded.")
             return null
         }
@@ -143,8 +148,7 @@ class SessionManager(
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
         val session = pendingResponderSessions[message.header.sessionId]
         if (session == null) {
-            logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId = " +
-                    "${message.header.sessionId} but there is no pending session with this id. The message was discarded.")
+            printNoSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
 
@@ -152,7 +156,7 @@ class SessionManager(
         //Find the correct Holding Identity to use (using the public key hash).
         val us = networkMap.getPeerFromHash(identityData.responderPublicKeyHash)
         if (us == null) {
-            logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId = " +
+            logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId " +
                 "${message.header.sessionId}. Our identity (responder) with public key hash = " +
                 "${identityData.initiatorPublicKeyHash} is not in the network map. The message was discarded.")
             return null
@@ -169,7 +173,7 @@ class SessionManager(
         val response = session.generateOurHandshakeMessage(ourPublicKey, signData)
         val peer = networkMap.getPeerFromHash(identityData.initiatorPublicKeyHash)?.toHoldingIdentity()
         if (peer == null) {
-            logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId = " +
+            logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId " +
                 "${message.header.sessionId}. Initiator identity with public key hash = " +
                 "${identityData.initiatorPublicKeyHash} is not in the network map. The message was discarded.")
             return null
@@ -178,5 +182,10 @@ class SessionManager(
         activeResponderSessions[message.header.sessionId] = session.getSession()
         pendingResponderSessions.remove(message.header.sessionId)
         return createLinkOutMessage(response, peer, networkMap)
+    }
+
+    private fun printNoSessionWarning(messageName: String, sessionId: String) {
+        logger.warn("Received $messageName with sessionId $sessionId but there is no pending session with this id." +
+                " The message was discarded.")
     }
 }

@@ -6,10 +6,12 @@ import net.corda.p2p.LinkInMessage
 import net.corda.p2p.Step2Message
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
+import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
+import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
@@ -28,6 +30,8 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
+import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -275,4 +279,66 @@ class SessionManagerTest {
         )
         assertSame(sessionFromCallback, initiatorSession)
     }
+
+    @Test
+    fun `Session messages are dropped (with appropriate logging) if there is no pending session`() {
+        val netMap = MockNetworkMap(listOf(PARTY_A, PARTY_B))
+        val supportedMode =  setOf(ProtocolMode.AUTHENTICATION_ONLY)
+        val sessionManager = SessionManager(
+            supportedMode,
+            netMap.getSessionNetworkMapForNode(PARTY_A),
+            MAX_MESSAGE_SIZE
+        ) { _, _, _ -> return@SessionManager }
+
+        val mockHeader = Mockito.mock(CommonHeader::class.java)
+
+        val mockResponderHelloMessage = Mockito.mock(ResponderHelloMessage::class.java)
+        val mockResponderHandshakeMessage = Mockito.mock(ResponderHandshakeMessage::class.java)
+        val mockInitiatorHandshakeMessage = Mockito.mock(InitiatorHandshakeMessage::class.java)
+
+        Mockito.`when`(mockResponderHelloMessage.header).thenReturn(mockHeader)
+        Mockito.`when`(mockResponderHandshakeMessage.header).thenReturn(mockHeader)
+        Mockito.`when`(mockInitiatorHandshakeMessage.header).thenReturn(mockHeader)
+
+        val fakeSession = "Fake Session"
+        Mockito.`when`(mockHeader.sessionId).thenReturn(fakeSession)
+
+        val mockMessages = listOf(mockResponderHelloMessage,
+            mockResponderHandshakeMessage,
+            mockInitiatorHandshakeMessage)
+
+        val mockLogger = Mockito.mock(Logger::class.java)
+        sessionManager.setLogger(mockLogger)
+
+        for (mockMessage in mockMessages) {
+            assertNull(sessionManager.processSessionMessage(LinkInMessage(mockMessage)))
+            Mockito.verify(mockLogger).warn("Received ${mockMessage::class.java.simpleName} with sessionId" +
+                    " $fakeSession but there is no pending session. The message was discarded.")
+
+        }
+    }
+
+    @Test
+    fun `ResponderHandshakeMessage is dropped if there is no pending session`() {
+        val netMap = MockNetworkMap(listOf(PARTY_A, PARTY_B))
+        val supportedMode =  setOf(ProtocolMode.AUTHENTICATION_ONLY)
+        val sessionManager = SessionManager(
+            supportedMode,
+            netMap.getSessionNetworkMapForNode(PARTY_A),
+            MAX_MESSAGE_SIZE
+        ) { _, _, _ -> return@SessionManager }
+
+        val mockHandshake = Mockito.mock(ResponderHandshakeMessage::class.java)
+        val mockHeader = Mockito.mock(CommonHeader::class.java)
+        val mockLogger = Mockito.mock(Logger::class.java)
+        val fakeSession = "Fake Session"
+
+        sessionManager.setLogger(mockLogger)
+        Mockito.`when`(mockHandshake.header).thenReturn(mockHeader)
+        Mockito.`when`(mockHeader.sessionId).thenReturn(fakeSession)
+        assertNull(sessionManager.processSessionMessage(LinkInMessage(mockHandshake)))
+        Mockito.verify(mockLogger).warn("Received ${mockHandshake::class.java.simpleName} with sessionId" +
+                " $fakeSession but there is no pending session with this id. The message was discarded.")
+    }
+
 }

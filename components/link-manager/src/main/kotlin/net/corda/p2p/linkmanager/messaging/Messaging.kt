@@ -14,6 +14,8 @@ import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toSessionNetworkMapPeer
+import net.corda.v5.base.annotations.VisibleForTesting
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -22,7 +24,12 @@ class Messaging {
 
     companion object {
 
-        private val logger = LoggerFactory.getLogger(this::class.java.name)
+        private var logger = LoggerFactory.getLogger(this::class.java.name)
+
+        @VisibleForTesting
+        fun setLogger(newLogger: Logger) {
+            logger = newLogger
+        }
 
         internal fun createLinkOutMessage(
             payload: Any,
@@ -30,7 +37,7 @@ class Messaging {
             networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
             val header = generateLinkOutHeaderFromPeer(dest, networkMap)
-            if (header == null ){
+            if (header == null) {
                 logger.warn("Attempted to send message to peer $dest which is not in the network map. The message was discarded.")
                 return null
             }
