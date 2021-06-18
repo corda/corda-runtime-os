@@ -86,7 +86,7 @@ class ConfigReadServiceImplTest {
 
     @Test
     fun `test unregister callback`() {
-        val id = configReadService.registerCallback(configUpdateUtil)
+        val listenerSubscription = configReadService.registerCallback(configUpdateUtil)
 
         val configMap = ConfigUtil.testConfigMap()
         val databaseConfig = configMap["corda.database"]!!
@@ -104,7 +104,7 @@ class ConfigReadServiceImplTest {
         Assertions.assertThat(configUpdateUtil.lastSnapshot["corda.database"])
             .isEqualTo(configMap["corda.database"])
 
-        configReadService.unregisterCallback(id)
+        listenerSubscription.close()
 
         val securityConfig = configMap["corda.security"]!!
         val avroSecurityConfig =

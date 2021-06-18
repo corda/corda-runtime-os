@@ -9,10 +9,10 @@ interface ConfigReadService : LifeCycle {
      * Register a callback for any configuration changes
      * If the service is already running, you will receive a snapshot of all available configurations
      */
-    fun registerCallback(configListener: ConfigListener): UUID
+    fun registerCallback(configListener: ConfigListener): ConfigListenerSubscription
 
     /**
-     * Unregister your callback from the config service so you no longer receive updates
+     * Used by ConfigListenerSubscription.close() to unregister callbacks
      */
     fun unregisterCallback(callbackUUID: UUID)
 }

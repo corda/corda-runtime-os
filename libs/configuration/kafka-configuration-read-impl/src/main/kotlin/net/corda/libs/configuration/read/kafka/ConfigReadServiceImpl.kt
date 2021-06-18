@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.read.ConfigListener
+import net.corda.libs.configuration.read.ConfigListenerSubscription
 import net.corda.libs.configuration.read.ConfigReadService
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -23,8 +24,9 @@ class ConfigReadServiceImpl(
 
     @Volatile
     private var stopped = false
+    private var snapshotReceived = false
     private val CONFIGURATION_READ_SERVICE = "CONFIGURATION_READ_SERVICE"
-    private var configUpdates = mutableMapOf<UUID,ConfigListener>()
+    private var configUpdates = mutableMapOf<UUID, ConfigListener>()
     private lateinit var subscription: CompactedSubscription<String, Configuration>
 
     override val isRunning: Boolean
@@ -33,7 +35,7 @@ class ConfigReadServiceImpl(
         }
 
     override fun start() {
-        configUpdates = Collections.synchronizedMap(mutableMapOf<UUID,ConfigListener>())
+        configUpdates = Collections.synchronizedMap(mutableMapOf<UUID, ConfigListener>())
         subscription =
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(
@@ -53,11 +55,14 @@ class ConfigReadServiceImpl(
         stopped = true
     }
 
-    override fun registerCallback(configListener: ConfigListener): UUID {
+    override fun registerCallback(configListener: ConfigListener): ConfigListenerSubscription {
         val uuid = UUID.randomUUID()
         configUpdates[uuid] = configListener
-        configListener.onUpdate(setOf(), configurationRepository.getConfigurations())
-        return uuid
+        if (snapshotReceived) {
+            val configs = configurationRepository.getConfigurations()
+            configListener.onUpdate(configs.keys, configs)
+        }
+        return ConfigListenerSubscription(this, uuid)
     }
 
     override fun unregisterCallback(callbackUUID: UUID) {
@@ -75,6 +80,7 @@ class ConfigReadServiceImpl(
             configMap[config.key] = ConfigFactory.parseString(config.value.value)
         }
         configurationRepository.storeConfiguration(configMap)
+        snapshotReceived = true
         configUpdates.forEach { it.value.onUpdate(setOf(), configurationRepository.getConfigurations()) }
     }
 
