@@ -13,7 +13,6 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import org.osgi.service.component.annotations.Component
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 @Suppress("TooGenericExceptionCaught")
