@@ -31,17 +31,11 @@ class KafkaConfigRead @Activate constructor(
     private var sub: AutoCloseable? = null
 
     override fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config>) {
-        if (changedKeys.size == currentConfigurationSnapshot.keys.size) {
-            logger.info("----------List of available configurations----------")
-            for (config in currentConfigurationSnapshot) {
-                logger.info("${config.key} -> ${config.value}")
-            }
-        } else {
-            logger.info("----------New configuration has been posted----------")
-            for (key in changedKeys) {
-                logger.info("$key -> ${currentConfigurationSnapshot[key]}")
-            }
+        logger.info("----------New configuration has been posted----------")
+        for (key in changedKeys) {
+            logger.info("$key -> ${currentConfigurationSnapshot[key]}")
         }
+
         receivedSnapshot = true
     }
 

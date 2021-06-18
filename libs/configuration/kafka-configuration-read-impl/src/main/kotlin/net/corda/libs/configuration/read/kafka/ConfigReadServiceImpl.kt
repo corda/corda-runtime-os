@@ -23,9 +23,10 @@ class ConfigReadServiceImpl(
 
     @Volatile
     private var stopped = false
+    @Volatile
     private var snapshotReceived = false
     private val CONFIGURATION_READ_SERVICE = "CONFIGURATION_READ_SERVICE"
-    private var configUpdates = mutableMapOf<ConfigListenerSubscription, ConfigListener>()
+    private val configUpdates = Collections.synchronizedMap(mutableMapOf<ConfigListenerSubscription, ConfigListener>())
     private var subscription: CompactedSubscription<String, Configuration>? = null
 
     override val isRunning: Boolean
@@ -34,7 +35,6 @@ class ConfigReadServiceImpl(
         }
 
     override fun start() {
-        configUpdates = Collections.synchronizedMap(mutableMapOf<ConfigListenerSubscription, ConfigListener>())
         subscription =
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(
@@ -49,7 +49,6 @@ class ConfigReadServiceImpl(
     }
 
     override fun stop() {
-        configUpdates = mutableMapOf()
         subscription?.stop()
         stopped = true
     }
