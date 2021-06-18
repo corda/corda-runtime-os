@@ -13,9 +13,8 @@ import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkManagerToGatewayMessage
+import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkOutMessage
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -52,17 +51,17 @@ class SessionManager(
             is InitiatorHandshakeMessage -> processInitiatorHandshake(payload)
             is Step2Message -> processStep2Message(payload)
             else -> {
-                logger.warn("Cannot process message of type: ${payload::class.java}.")
+                logger.warn("Cannot process message of type: ${payload::class.java}. The message was discarded.")
                 null
             }
         }
     }
 
-    fun beginSessionNegotiation(sessionKey: SessionKey): LinkOutMessage {
+    fun getSessionInitMessage(sessionKey: SessionKey): LinkOutMessage? {
         val sessionId = UUID.randomUUID().toString()
         val session = AuthenticationProtocolInitiator(sessionId, supportedModes, maxMessageSize)
         pendingInitiatorSessions[sessionId] = Pair(sessionKey, session)
-        return createLinkManagerToGatewayMessage(
+        return createLinkOutMessage(
             session.generateInitiatorHello(),
             sessionKey.responderId.toHoldingIdentity(),
             networkMap
@@ -80,7 +79,7 @@ class SessionManager(
         session.generateHandshakeSecrets()
         val ourKey = networkMap.getOurPublicKey(sessionInfo.ourGroupId)
         if (ourKey == null) {
-            logger.warn("Cannot find public key for our Holding Identity ${sessionInfo.ourGroupId}.")
+            logger.warn("Cannot find public key for our Holding Identity ${sessionInfo.ourGroupId}. The message was discarded.")
             return null
         }
 
@@ -93,7 +92,7 @@ class SessionManager(
         val signData = {it : ByteArray -> (networkMap::signData)(sessionInfo.ourGroupId, it)}
         val groupIdOrEmpty = sessionInfo.ourGroupId ?: ""
         val payload = session.generateOurHandshakeMessage(ourKey, responderKey, groupIdOrEmpty, signData)
-        return createLinkManagerToGatewayMessage(
+        return createLinkOutMessage(
             payload,
             sessionInfo.responderId.toHoldingIdentity(),
             networkMap
@@ -130,7 +129,7 @@ class SessionManager(
 
     private fun processStep2Message(message: Step2Message): LinkOutMessage? {
         val session = AuthenticationProtocolResponder.fromStep2(message.initiatorHello.header.sessionId,
-            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            supportedModes,
             maxMessageSize,
             message.initiatorHello,
             message.responderHello,
@@ -154,15 +153,15 @@ class SessionManager(
         val us = networkMap.getPeerFromHash(identityData.responderPublicKeyHash)
         if (us == null) {
             logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId = " +
-                    "${message.header.sessionId}. Our identity (responder) with public key hash = " +
-                    "${identityData.initiatorPublicKeyHash} is not in the network map.")
+                "${message.header.sessionId}. Our identity (responder) with public key hash = " +
+                "${identityData.initiatorPublicKeyHash} is not in the network map. The message was discarded.")
             return null
         }
 
         val ourPublicKey = networkMap.getOurPublicKey(us.groupId)
         if (ourPublicKey == null) {
             logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} from peer. Our key (for " +
-                    "${us.groupId} is not in the networkMap.")
+                    "${us.groupId}) is not in the networkMap. The message was discarded.")
             return null
         }
 
@@ -171,13 +170,13 @@ class SessionManager(
         val peer = networkMap.getPeerFromHash(identityData.initiatorPublicKeyHash)?.toHoldingIdentity()
         if (peer == null) {
             logger.warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId = " +
-                    "${message.header.sessionId}. Initiator identity with public key hash = " +
-                    "${identityData.initiatorPublicKeyHash} is not in the network map.")
+                "${message.header.sessionId}. Initiator identity with public key hash = " +
+                "${identityData.initiatorPublicKeyHash} is not in the network map. The message was discarded.")
             return null
         }
 
         activeResponderSessions[message.header.sessionId] = session.getSession()
         pendingResponderSessions.remove(message.header.sessionId)
-        return createLinkManagerToGatewayMessage(response, peer, networkMap)
+        return createLinkOutMessage(response, peer, networkMap)
     }
 }

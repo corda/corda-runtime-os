@@ -1,4 +1,4 @@
-{
+    {
   "type": "record",
   "name": "InitiatorHandshakeMessage",
   "namespace": "net.corda.p2p.crypto",

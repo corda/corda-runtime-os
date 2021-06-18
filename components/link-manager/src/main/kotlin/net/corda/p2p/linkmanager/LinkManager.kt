@@ -18,7 +18,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toSessionNetworkMapPeer
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkOutMessageFromFlowMessage
-import net.corda.p2p.linkmanager.messaging.Messaging.Companion.processMessageWithSession
+import net.corda.p2p.linkmanager.messaging.Messaging.Companion.convertToFlowMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
@@ -44,16 +44,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         const val KEY = "key"
 
         const val LINK_MANAGER_PUBLISHER_CLIENT_ID = "linkmanager"
-        const val INBOUND_MESSAGE_FORWARDER_GROUP = "inbound_message_forwarder_group"
-        const val OUTBOUND_MESSAGE_FORWARDER_GROUP = "outbound_message_forwarder_group"
+        const val INBOUND_MESSAGE_PROCESSOR_GROUP = "inbound_message_processor_group"
+        const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
 
         fun getSessionKeyFromMessage(message: FlowMessage): SessionManager.SessionKey {
             return SessionManager.SessionKey(message.header.source.groupId, message.header.destination.toSessionNetworkMapPeer())
         }
     }
 
-    private var outboundMessageForwarder: Subscription<String, FlowMessage>
-    private var inboundMessageForwarder: Subscription<String, LinkInMessage>
+    private var outboundMessageSubscription: Subscription<String, FlowMessage>
+    private var inboundMessageSubscription: Subscription<String, LinkInMessage>
     private var messagesPendingSession = PendingSessionsMessageQueues(publisherFactory)
     private var sessionManager: SessionManager = SessionManager(
         protocolModes,
@@ -62,12 +62,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         messagesPendingSession::sessionNegotiatedCallback
     )
 
-    class OutboundMessageForwarder(
+    class OutboundMessageProcessor(
         private val sessionManager: SessionManager,
         private val pendingSessionsMessageQueues: PendingSessionsMessageQueues,
         private val networkMap: LinkManagerNetworkMap
-    ) :
-        EventLogProcessor<String, FlowMessage> {
+    ) : EventLogProcessor<String, FlowMessage> {
 
         override val keyClass = String::class.java
         override val valueClass = FlowMessage::class.java
@@ -77,27 +76,27 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         override fun onNext(events: List<EventLogRecord<String, FlowMessage>>): List<Record<*, *>> {
             val records = mutableListOf<Record<String, LinkOutMessage>>()
             for (event in events) {
-                val sessionKey = getSessionKeyFromMessage(event.value)
-                val session = sessionManager.getInitiatorSession(sessionKey)
-                val message = if (session == null) {
-                    val newSessionNeeded = pendingSessionsMessageQueues.queueMessage(event.value)
-                    if (newSessionNeeded) {
-                        sessionManager.beginSessionNegotiation(sessionKey)
-                    } else {
-                        null
-                    }
-                } else {
-                    createLinkOutMessageFromFlowMessage(event.value, session, networkMap)
-                }
-                if (message != null) {
-                    records.add(Record(P2P_OUT_TOPIC, KEY, message))
-                }
+                processEvent(event)?.let { records.add(Record(LINK_OUT_TOPIC, KEY, it)) }
             }
             return records
         }
+
+        private fun processEvent(event: EventLogRecord<String, FlowMessage>): LinkOutMessage? {
+            val sessionKey = getSessionKeyFromMessage(event.value)
+            val session = sessionManager.getInitiatorSession(sessionKey)
+            if (session == null) {
+                val newSessionNeeded = pendingSessionsMessageQueues.queueMessage(event.value)
+                if (newSessionNeeded) {
+                    return sessionManager.getSessionInitMessage(sessionKey)
+                }
+            } else {
+                return createLinkOutMessageFromFlowMessage(event.value, session, networkMap)
+            }
+            return null
+        }
     }
 
-    class InboundMessageForwarder(private val sessionManager: SessionManager) :
+    class InboundMessageProcessor(private val sessionManager: SessionManager) :
         EventLogProcessor<String, LinkInMessage> {
 
         private val logger = LoggerFactory.getLogger(this::class.java.name)
@@ -106,22 +105,28 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             val records = mutableListOf<Record<String, *>>()
             for (event in events) {
                 if (event.value.payload is AuthenticatedDataMessage || event.value.payload is AuthenticatedEncryptedDataMessage) {
-                    val sessionId = getSessionFromDataMessage(event.value)
-                    val session =  sessionManager.getResponderSession(sessionId)
-                    if (session == null) {
-                        logger.warn("Received message with SessionId = $sessionId for which there is no active session.")
-                    } else {
-                        val flowMessage = processMessageWithSession(session, sessionId, event.value)
-                        if (flowMessage != null) {
-                            records.add(Record(LINK_OUT_TOPIC, KEY, flowMessage))
-                        }
-                    }
+                    extractMessageAndCheckMessage(event.value)?.let { records.add(Record(P2P_OUT_TOPIC, KEY, it)) }
                 } else {
-                    val gatewayMessage = sessionManager.processSessionMessage(event.value)
-                    records.add(Record(P2P_OUT_TOPIC, KEY, gatewayMessage))
+                    sessionManager.processSessionMessage(event.value)?.let { records.add(Record(LINK_OUT_TOPIC, KEY, it)) }
                 }
             }
             return records
+        }
+
+        /**
+         * This function extracts (decrypts if nessary) the payload from the message.
+         * It checks we have negotiated a session with the sender and checks Authentication
+         */
+        private fun extractMessageAndCheckMessage(message: LinkInMessage): FlowMessage? {
+            val sessionId = getSessionFromDataMessage(message)
+            val session =  sessionManager.getResponderSession(sessionId)
+            if (session == null) {
+                logger.warn("Received message with SessionId = $sessionId for which there is no active session." +
+                        " The message was discarded.")
+            } else {
+                return convertToFlowMessage(session, sessionId, message)
+            }
+            return null
         }
 
         private fun getSessionFromDataMessage(message: LinkInMessage): String {
@@ -162,8 +167,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         fun sessionNegotiatedCallback(key: SessionManager.SessionKey, session: Session, networkMap: LinkManagerNetworkMap) {
             val queuedMessages = queuedMessagesPendingSession[key] ?: return
             val records = mutableListOf<Record<String, LinkOutMessage>>()
-            for (i in 0 until queuedMessages.size) {
-                val message = queuedMessages.remove() ?: break
+            while (queuedMessages.isNotEmpty()) {
+                val message = queuedMessages.poll()
                 val authenticatedDataMessage = createLinkOutMessageFromFlowMessage(message, session, networkMap)
                 records.add(Record(P2P_OUT_TOPIC, KEY, authenticatedDataMessage))
             }
@@ -172,32 +177,32 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     }
 
     init {
-        val outboundMessageForwarderConfig = SubscriptionConfig(OUTBOUND_MESSAGE_FORWARDER_GROUP, LINK_OUT_TOPIC)
-        outboundMessageForwarder = subscriptionFactory.createEventLogSubscription(
+        val outboundMessageForwarderConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, P2P_OUT_TOPIC)
+        outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             outboundMessageForwarderConfig,
-            OutboundMessageForwarder(sessionManager, messagesPendingSession, linkManagerNetworkMap),
+            OutboundMessageProcessor(sessionManager, messagesPendingSession, linkManagerNetworkMap),
             mapOf(),
             null
         )
-        val inboundMessageForwarderConfig = SubscriptionConfig(INBOUND_MESSAGE_FORWARDER_GROUP, LINK_IN_TOPIC)
-        inboundMessageForwarder = subscriptionFactory.createEventLogSubscription(
+        val inboundMessageForwarderConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC)
+        inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             inboundMessageForwarderConfig,
-            InboundMessageForwarder(sessionManager),
+            InboundMessageProcessor(sessionManager),
             mapOf(),
             null
         )
     }
 
     override fun start() {
-        outboundMessageForwarder.start()
-        inboundMessageForwarder.start()
+        outboundMessageSubscription.start()
+        inboundMessageSubscription.start()
     }
 
     override fun stop() {
-        outboundMessageForwarder.stop()
-        inboundMessageForwarder.stop()
+        outboundMessageSubscription.stop()
+        inboundMessageSubscription.stop()
     }
 
     override val isRunning: Boolean
-        get() = outboundMessageForwarder.isRunning && inboundMessageForwarder.isRunning
+        get() = outboundMessageSubscription.isRunning && inboundMessageSubscription.isRunning
 }

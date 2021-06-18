@@ -18,7 +18,7 @@ import kotlin.concurrent.withLock
  *
  * This class is thread-safe, which means multiple threads can try to create & validate MACs concurrently using the same session.
  */
-class AuthenticatedSession(val sessionId: String,
+class AuthenticatedSession(private val sessionId: String,
                            nextSequenceNo: Long,
                            private val outboundSecretKey: SecretKey,
                            private val inboundSecretKey: SecretKey,

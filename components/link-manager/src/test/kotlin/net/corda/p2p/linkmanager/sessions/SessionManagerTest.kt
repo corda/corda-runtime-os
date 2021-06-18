@@ -5,22 +5,27 @@ import net.corda.p2p.FlowMessageHeader
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.Step2Message
 import net.corda.p2p.crypto.AuthenticatedDataMessage
+import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.protocol.ProtocolConstants
+import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager.Companion.getSessionKeyFromMessage
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.messaging.Messaging.Companion.authenticateMessage
+import net.corda.p2p.linkmanager.messaging.Messaging.Companion.convertAuthenticatedEncryptedMessageToFlowMessage
+import net.corda.p2p.linkmanager.messaging.Messaging.Companion.convertAuthenticatedMessageToFlowMessage
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkOutMessageFromFlowMessage
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
@@ -78,8 +83,12 @@ class SessionManagerTest {
                 }
 
                 override fun getEndPoint(holdingIdentity: LinkManagerNetworkMap.NetMapHoldingIdentity): LinkManagerNetworkMap.EndPoint? {
-                    //This is not needed in this test as it is only used by the Gateway.
-                    return LinkManagerNetworkMap.EndPoint("", "")
+                    //The actual end point does not need to be meaningful in this test as it is only used by the Gateway.
+                    return if (keys[holdingIdentity] != null) {
+                        LinkManagerNetworkMap.EndPoint("", "")
+                    } else {
+                        null
+                    }
                 }
 
                 override fun getOurPublicKey(groupId: String?): PublicKey? {
@@ -103,10 +112,10 @@ class SessionManagerTest {
 
     }
 
-    fun mockGatewayResponse(message: InitiatorHelloMessage): Step2Message {
+    fun mockGatewayResponse(message: InitiatorHelloMessage, supportedModes: Set<ProtocolMode>): Step2Message {
         val authenticationProtocol = AuthenticationProtocolResponder(
             message.header.sessionId,
-            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            supportedModes,
             MAX_MESSAGE_SIZE
         )
         authenticationProtocol.receiveInitiatorHello(message)
@@ -115,46 +124,155 @@ class SessionManagerTest {
         return Step2Message(message, responderHello, ByteBuffer.wrap(privateKey))
     }
 
+    fun negotiateSession(key: SessionManager.SessionKey,
+                         initiatorSessionManager: SessionManager,
+                         responderSessionManager: SessionManager,
+                         responderSupportedMode: Set<ProtocolMode>): Pair<Session, Session> {
+        val initiatorHelloMessage = initiatorSessionManager.getSessionInitMessage(key)
+        assertTrue(initiatorHelloMessage?.payload is InitiatorHelloMessage)
+
+        //Strip the Header from the message (as the Gateway does before sending it).
+        val step2Message = mockGatewayResponse(initiatorHelloMessage?.payload as InitiatorHelloMessage, responderSupportedMode)
+        assertNull(responderSessionManager.processSessionMessage(LinkInMessage(step2Message)))
+        val initiatorHandshakeMessage = initiatorSessionManager.processSessionMessage(LinkInMessage(step2Message.responderHello))
+
+        assertTrue(initiatorHandshakeMessage?.payload is InitiatorHandshakeMessage)
+        val sessionId = (initiatorHandshakeMessage?.payload as InitiatorHandshakeMessage).header.sessionId
+
+        val responderHandshakeMessage = responderSessionManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage.payload))
+        assertTrue(responderHandshakeMessage?.payload is ResponderHandshakeMessage)
+        assertNull(initiatorSessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage?.payload)))
+
+        val initiatorSession = initiatorSessionManager.getInitiatorSession(key)
+        assertNotNull(initiatorSession, "Authenticated Session is not stored in the initiator's session manager.")
+
+        val responderSession = responderSessionManager.getResponderSession(sessionId)
+        assertNotNull(responderSession, "Authenticated Session is not stored in the responder's session manager.")
+
+        return Pair(initiatorSession!!, responderSession!!)
+    }
+
     @Test
-    fun `A session can be negotiated between two SessionManagers`() {
+    fun `A session can be negotiated between two SessionManagers and a message can be sent (in AUTHENTICATION_ONLY mode)`() {
         val netMap = MockNetworkMap(listOf(PARTY_A, PARTY_B))
+        val supportedMode =  setOf(ProtocolMode.AUTHENTICATION_ONLY)
         val initiatorSessionManager = SessionManager(
-            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_A),
             MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManager }
         val responderSessionManager = SessionManager(
-            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_B),
             MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManager }
 
         val payload = ByteBuffer.wrap("Hello from PartyA".toByteArray())
-        val header = FlowMessageHeader(PARTY_B.toHoldingIdentity(), PARTY_A.toHoldingIdentity(), null, "messageId", "")
-        val message = FlowMessage(header, payload)
+        val message = FlowMessage(FlowMessageHeader(
+            PARTY_B.toHoldingIdentity(),
+            PARTY_A.toHoldingIdentity(),
+            null,
+            "messageId",
+            ""), payload)
 
-        val initiatorHelloMessage = initiatorSessionManager.beginSessionNegotiation(getSessionKeyFromMessage(message))
-        assertTrue(initiatorHelloMessage.payload is InitiatorHelloMessage)
+        val (initiatorSession, responderSession) = negotiateSession(
+            getSessionKeyFromMessage(message),
+            initiatorSessionManager,
+            responderSessionManager,
+            supportedMode
+        )
 
-        //Strip the Header from the message (as the Gateway does before sending it).
-        val step2Message = mockGatewayResponse(initiatorHelloMessage.payload as InitiatorHelloMessage)
-        assertNull(responderSessionManager.processSessionMessage(LinkInMessage(step2Message)))
-        val initiatorHandshakeMessage = initiatorSessionManager.processSessionMessage(LinkInMessage(step2Message.responderHello))
+        assertTrue(initiatorSession is AuthenticatedSession)
+        assertTrue(responderSession is AuthenticatedSession)
 
-        assertTrue(initiatorHandshakeMessage!!.payload is InitiatorHandshakeMessage)
-        val responderHandshakeMessage = responderSessionManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage.payload))
-        assertTrue(responderHandshakeMessage!!.payload is ResponderHandshakeMessage)
-        assertNull(initiatorSessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage.payload)))
-
-        val initiatorSession = initiatorSessionManager.getInitiatorSession(getSessionKeyFromMessage(message))
-        assertNotNull(initiatorSession, "Authenticated Session is not stored in the initiator's session manager.")
         val authenticatedMessage = createLinkOutMessageFromFlowMessage(message, initiatorSession as AuthenticatedSession, netMap.getSessionNetworkMapForNode(PARTY_A))
-        assertTrue(authenticatedMessage.payload is AuthenticatedDataMessage)
-        val authenticatedDataMessage = (authenticatedMessage.payload as AuthenticatedDataMessage)
+        assertTrue(authenticatedMessage?.payload is AuthenticatedDataMessage)
+        val authenticatedDataMessage = (authenticatedMessage?.payload as AuthenticatedDataMessage)
 
-        val responderSession = responderSessionManager.getResponderSession(authenticatedDataMessage.header.sessionId)
-        assertNotNull(initiatorSession, "Authenticated Session is not stored in the responder's session manager.")
-        val responderMessage = authenticateMessage(authenticatedDataMessage, responderSession as AuthenticatedSession)
+        val responderMessage = convertAuthenticatedMessageToFlowMessage(authenticatedDataMessage, responderSession as AuthenticatedSession)
         assertEquals(message.payload, responderMessage!!.payload)
+    }
+
+    @Test
+    fun `A session can be negotiated between two SessionManagers and a message can be sent and decrypted (in AUTHENTICATED_ENCRYPTION mode)`() {
+        val netMap = MockNetworkMap(listOf(PARTY_A, PARTY_B))
+        val supportedMode =  setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
+        val initiatorSessionManager = SessionManager(
+            supportedMode,
+            netMap.getSessionNetworkMapForNode(PARTY_A),
+            MAX_MESSAGE_SIZE
+        ) { _, _, _ -> return@SessionManager }
+        val responderSessionManager = SessionManager(
+            supportedMode,
+            netMap.getSessionNetworkMapForNode(PARTY_B),
+            MAX_MESSAGE_SIZE
+        ) { _, _, _ -> return@SessionManager }
+
+        val payload = ByteBuffer.wrap("Hello from PartyA".toByteArray())
+        val message = FlowMessage(FlowMessageHeader(
+            PARTY_B.toHoldingIdentity(),
+            PARTY_A.toHoldingIdentity(),
+            null,
+            "messageId",
+            ""), payload)
+
+        val (initiatorSession, responderSession) = negotiateSession(
+            getSessionKeyFromMessage(message),
+            initiatorSessionManager,
+            responderSessionManager,
+            supportedMode
+        )
+
+        assertTrue(initiatorSession is AuthenticatedEncryptionSession)
+        assertTrue(responderSession is AuthenticatedEncryptionSession)
+
+        val authenticatedMessage = createLinkOutMessageFromFlowMessage(message, initiatorSession, netMap.getSessionNetworkMapForNode(PARTY_A))
+        assertTrue(authenticatedMessage?.payload is AuthenticatedEncryptedDataMessage)
+        val encryptedDataMessage = (authenticatedMessage?.payload as AuthenticatedEncryptedDataMessage)
+
+        val responderMessage = convertAuthenticatedEncryptedMessageToFlowMessage(encryptedDataMessage, responderSession as AuthenticatedEncryptionSession)
+        assertEquals(message.payload, responderMessage!!.payload)
+    }
+
+    @Test
+    fun `The callback function is called with the correct arguments after a session is negotiation`() {
+        val payload = ByteBuffer.wrap("Hello from PartyA".toByteArray())
+        val message = FlowMessage(FlowMessageHeader(
+            PARTY_B.toHoldingIdentity(),
+            PARTY_A.toHoldingIdentity(),
+            null,
+            "messageId",
+            ""), payload)
+
+        val netMap = MockNetworkMap(listOf(PARTY_A, PARTY_B))
+        val netMapPartyA = netMap.getSessionNetworkMapForNode(PARTY_A)
+
+        var sessionFromCallback : Session? = null
+        fun testCallBack(key: SessionManager.SessionKey, session: Session, map: LinkManagerNetworkMap) {
+            assertSame(map, netMapPartyA)
+            assertEquals(key, getSessionKeyFromMessage(message))
+            sessionFromCallback = session
+            return
+        }
+        val supportedMode =  setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
+        val initiatorSessionManager = SessionManager(
+            supportedMode,
+            netMapPartyA,
+            MAX_MESSAGE_SIZE,
+            ::testCallBack
+        )
+        val responderSessionManager = SessionManager(
+            supportedMode,
+            netMap.getSessionNetworkMapForNode(PARTY_B),
+            MAX_MESSAGE_SIZE
+        ) { _, _, _ -> return@SessionManager }
+
+        val (initiatorSession, _) = negotiateSession(
+            getSessionKeyFromMessage(message),
+            initiatorSessionManager,
+            responderSessionManager,
+            supportedMode
+        )
+        assertSame(sessionFromCallback, initiatorSession)
     }
 }

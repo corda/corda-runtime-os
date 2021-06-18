@@ -24,17 +24,20 @@ class Messaging {
 
         private val logger = LoggerFactory.getLogger(this::class.java.name)
 
-        internal fun createLinkManagerToGatewayMessage(
+        internal fun createLinkOutMessage(
             payload: Any,
             dest: HoldingIdentity,
             networkMap: LinkManagerNetworkMap
-        ): LinkOutMessage {
-            val header = generateLinkManagerToGatewayHeaderFromPeer(dest, networkMap)
-                ?: throw IllegalArgumentException("Attempted to send message to peer: which is not in the network map.")
+        ): LinkOutMessage? {
+            val header = generateLinkOutHeaderFromPeer(dest, networkMap)
+            if (header == null ){
+                logger.warn("Attempted to send message to peer $dest which is not in the network map. The message was discarded.")
+                return null
+            }
             return LinkOutMessage(header, payload)
         }
 
-        private fun generateLinkManagerToGatewayHeaderFromPeer(
+        private fun generateLinkOutHeaderFromPeer(
             peer: HoldingIdentity,
             networkMap: LinkManagerNetworkMap
         ): LinkOutHeader? {
@@ -46,7 +49,7 @@ class Messaging {
             message: FlowMessage,
             session: Session,
             networkMap: LinkManagerNetworkMap
-        ): LinkOutMessage {
+        ): LinkOutMessage? {
             val payload = message.toByteBuffer()
             val result = when (session) {
                 is AuthenticatedSession -> {
@@ -55,66 +58,71 @@ class Messaging {
                 }
                 is AuthenticatedEncryptionSession -> {
                     val result = session.encryptData(payload.array())
-                    AuthenticatedEncryptedDataMessage(result.header, ByteBuffer.wrap(result.encryptedPayload), ByteBuffer.wrap(result.authTag))
+                    AuthenticatedEncryptedDataMessage(
+                        result.header,
+                        ByteBuffer.wrap(result.encryptedPayload),
+                        ByteBuffer.wrap(result.authTag)
+                    )
                 }
-                else -> IllegalArgumentException("Session must be either ${AuthenticatedSession::class.java} " +
-                        "or ${AuthenticatedEncryptionSession::class.java}")
+                else -> {
+                    logger.warn("Session must be either ${AuthenticatedSession::class.java} " +
+                        "or ${AuthenticatedEncryptionSession::class.java}. The message was discarded.")
+                    return null
+                }
             }
-            return createLinkManagerToGatewayMessage(
+            return createLinkOutMessage(
                 result,
                 message.header.destination,
                 networkMap
             )
         }
 
-        fun processMessageWithSession(session: Session, sessionId: String, message: LinkInMessage): FlowMessage? {
+        fun convertToFlowMessage(session: Session, sessionId: String, message: LinkInMessage): FlowMessage? {
             val innerMessage = message.payload
-            return when (session) {
+            when (session) {
                 is AuthenticatedSession -> {
                     if (innerMessage is AuthenticatedDataMessage) {
-                        authenticateMessage(innerMessage, session)
+                        return convertAuthenticatedMessageToFlowMessage(innerMessage, session)
                     } else {
-                        logger.warn("Received encrypted message for session with SessionId = $sessionId for which is Authentication only." +
-                                " The message was discarded.")
-                        null
+                        logger.warn("Received encrypted message for session with SessionId = $sessionId for which is " +
+                                "Authentication only. The message was discarded.")
                     }
                 }
                 is AuthenticatedEncryptionSession -> {
                     if (innerMessage is AuthenticatedEncryptedDataMessage) {
-                        authenticateAndDecryptMessage(innerMessage, session)
+                        return convertAuthenticatedEncryptedMessageToFlowMessage(innerMessage, session)
                     } else {
-                        logger.warn("Received encrypted message for session with SessionId = $sessionId for which is AuthenticationAndEncryption" +
-                                " The message was discarded.")
-                        null
+                        logger.warn("Received encrypted message for session with SessionId = $sessionId for which is " +
+                                "AuthenticationAndEncryption. The message was discarded.")
                     }
                 }
                 else -> {
-                    logger.warn("Received encrypted message for session with SessionId = $sessionId for which is Authentication only." +
-                            " The message was discarded.")
-                    null
+                    logger.warn("Invalid session type ${session::class.java} SessionId = $sessionId. The message was discarded.")
                 }
             }
+            return null
         }
 
-        private fun authenticateAndDecryptMessage(
+        fun convertAuthenticatedEncryptedMessageToFlowMessage(
             message: AuthenticatedEncryptedDataMessage,
             session: AuthenticatedEncryptionSession
-        ): FlowMessage?{
+        ): FlowMessage? {
             val decryptedData = try {
                 session.decryptData(message.header, message.encryptedPayload.array(), message.authTag.array())
             } catch (exception: DecryptionFailedError) {
-                logger.warn("Decryption failed for message for session ${message.header.sessionId}. Reason: ${exception.message} ")
+                logger.warn("Decryption failed for message for session ${message.header.sessionId}. Reason: ${exception.message}." +
+                        "The message was discarded.")
                 return null
             }
             return try {
                 FlowMessage.fromByteBuffer(ByteBuffer.wrap(decryptedData))
             } catch (exception: IOException) {
-                logger.warn("Could not deserialize message for session ${message.header.sessionId}.")
+                logger.warn("Could not deserialize message for session ${message.header.sessionId}. The message was discarded.")
                 null
             }
         }
 
-        fun authenticateMessage(message: AuthenticatedDataMessage, session: AuthenticatedSession): FlowMessage? {
+        fun convertAuthenticatedMessageToFlowMessage(message: AuthenticatedDataMessage, session: AuthenticatedSession): FlowMessage? {
             try {
                 session.validateMac(message.header, message.payload.array(), message.authTag.array())
             } catch (exception: InvalidMac) {
