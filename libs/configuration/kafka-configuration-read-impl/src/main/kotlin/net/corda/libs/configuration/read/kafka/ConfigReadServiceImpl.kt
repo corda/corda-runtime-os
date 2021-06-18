@@ -50,6 +50,7 @@ class ConfigReadServiceImpl(
 
     override fun stop() {
         subscription?.stop()
+        configUpdates.clear()
         stopped = true
     }
 
