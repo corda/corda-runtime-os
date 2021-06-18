@@ -12,6 +12,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import org.osgi.service.component.annotations.Component
 import java.util.*
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.thread
+import kotlin.concurrent.withLock
 
 @Suppress("TooGenericExceptionCaught")
 @Component(immediate = true, service = [ConfigReadService::class])
@@ -25,6 +28,8 @@ class ConfigReadServiceImpl(
     private var stopped = false
     @Volatile
     private var snapshotReceived = false
+
+    private val lock = ReentrantLock()
     private val CONFIGURATION_READ_SERVICE = "CONFIGURATION_READ_SERVICE"
     private val configUpdates = Collections.synchronizedMap(mutableMapOf<ConfigListenerSubscription, ConfigListener>())
     private var subscription: CompactedSubscription<String, Configuration>? = null
@@ -35,23 +40,31 @@ class ConfigReadServiceImpl(
         }
 
     override fun start() {
-        subscription =
-            subscriptionFactory.createCompactedSubscription(
-                SubscriptionConfig(
-                    CONFIGURATION_READ_SERVICE,
-                    ConfigFactory.load("kafka.properties").getString("topic.name")
-                ),
-                this,
-                mapOf()
-            )
-        subscription!!.start()
-        stopped = false
+        lock.withLock {
+            if (subscription == null) {
+                subscription =
+                    subscriptionFactory.createCompactedSubscription(
+                        SubscriptionConfig(
+                            CONFIGURATION_READ_SERVICE,
+                            ConfigFactory.load("kafka.properties").getString("topic.name")
+                        ),
+                        this,
+                        mapOf()
+                    )
+                subscription!!.start()
+                stopped = false
+            }
+        }
     }
 
     override fun stop() {
-        subscription?.stop()
-        configUpdates.clear()
-        stopped = true
+        if (!stopped) {
+            subscription?.stop()
+            subscription = null
+            configUpdates.clear()
+            stopped = true
+            snapshotReceived = false
+        }
     }
 
     override fun registerCallback(configListener: ConfigListener): AutoCloseable {
