@@ -49,7 +49,8 @@ class ConfigReadServiceImplTest {
         configReadService.onSnapshot(mapOf("corda.database" to avroConfig))
 
         configReadService.registerCallback(configUpdateUtil)
-        Assertions.assertThat(configRepository.getConfigurations()["corda.database"]).isEqualTo(configMap["corda.database"])
+        Assertions.assertThat(configRepository.getConfigurations()["corda.database"])
+            .isEqualTo(configMap["corda.database"])
     }
 
     @Test
@@ -125,14 +126,18 @@ class ConfigReadServiceImplTest {
     fun `test registerCallback with lambda`() {
         var lambdaFlag = false
         var changedKeys = setOf<String>()
-        var configSnapshot = mapOf<String,Config>()
-        val listener = ConfigListener{ keys: Set<String>, config: Map<String, Config> ->
+        var configSnapshot = mapOf<String, Config>()
+        val listener = ConfigListener { keys: Set<String>, config: Map<String, Config> ->
             lambdaFlag = true
             changedKeys = keys
             configSnapshot = config
-
         }
+
         configReadService.registerCallback(listener)
+
+        Assertions.assertThat(lambdaFlag).isFalse
+        Assertions.assertThat(changedKeys).isEmpty()
+        Assertions.assertThat(configSnapshot).isEmpty()
 
         val configMap = ConfigUtil.testConfigMap()
         val config = configMap["corda.database"]!!
