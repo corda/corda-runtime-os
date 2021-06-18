@@ -24,7 +24,7 @@ class ConfigReadServiceImpl(
     @Volatile
     private var stopped = false
     private val CONFIGURATION_READ_SERVICE = "CONFIGURATION_READ_SERVICE"
-    private var configUpdates = mutableListOf<ConfigListener>()
+    private var configUpdates = mutableMapOf<UUID,ConfigListener>()
     private lateinit var subscription: CompactedSubscription<String, Configuration>
 
     override val isRunning: Boolean
@@ -33,7 +33,7 @@ class ConfigReadServiceImpl(
         }
 
     override fun start() {
-        configUpdates = Collections.synchronizedList(mutableListOf<ConfigListener>())
+        configUpdates = Collections.synchronizedMap(mutableMapOf<UUID,ConfigListener>())
         subscription =
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(
@@ -48,19 +48,20 @@ class ConfigReadServiceImpl(
     }
 
     override fun stop() {
-        configUpdates = mutableListOf()
+        configUpdates = mutableMapOf()
         subscription.stop()
         stopped = true
     }
 
-    override fun registerCallback(configListener: ConfigListener): Int {
-        configUpdates.add(configListener)
+    override fun registerCallback(configListener: ConfigListener): UUID {
+        val uuid = UUID.randomUUID()
+        configUpdates[uuid] = configListener
         configListener.onUpdate(setOf(), configurationRepository.getConfigurations())
-        return configUpdates.lastIndex
+        return uuid
     }
 
-    override fun unregisterCallback(callbackId: Int) {
-        configUpdates.removeAt(callbackId)
+    override fun unregisterCallback(callbackUUID: UUID) {
+        configUpdates.remove(callbackUUID)
     }
 
     override val keyClass: Class<String>
@@ -74,7 +75,7 @@ class ConfigReadServiceImpl(
             configMap[config.key] = ConfigFactory.parseString(config.value.value)
         }
         configurationRepository.storeConfiguration(configMap)
-        configUpdates.forEach { it.onUpdate(setOf(), configurationRepository.getConfigurations()) }
+        configUpdates.forEach { it.value.onUpdate(setOf(), configurationRepository.getConfigurations()) }
     }
 
     override fun onNext(
@@ -84,7 +85,7 @@ class ConfigReadServiceImpl(
     ) {
         val config = ConfigFactory.parseString(newRecord.value?.value)
         configurationRepository.updateConfiguration(newRecord.key, config)
-        configUpdates.forEach { it.onUpdate(setOf(newRecord.key), configurationRepository.getConfigurations()) }
+        configUpdates.forEach { it.value.onUpdate(setOf(newRecord.key), configurationRepository.getConfigurations()) }
 
     }
 }
