@@ -53,9 +53,9 @@ class ConfigReadServiceImpl(
         stopped = true
     }
 
-    override fun registerCallback(configListener: ConfigListener): Map<String, Config> {
+    override fun registerCallback(configListener: ConfigListener) {
         configUpdates.add(configListener)
-        return configurationRepository.getConfigurations()
+        configListener.onUpdate(setOf(), configurationRepository.getConfigurations())
     }
 
     override val keyClass: Class<String>
@@ -69,7 +69,7 @@ class ConfigReadServiceImpl(
             configMap[config.key] = ConfigFactory.parseString(config.value.value)
         }
         configurationRepository.storeConfiguration(configMap)
-        configUpdates.forEach { it.onSnapshot(configurationRepository.getConfigurations()) }
+        configUpdates.forEach { it.onUpdate(setOf(), configurationRepository.getConfigurations()) }
     }
 
     override fun onNext(
@@ -79,7 +79,7 @@ class ConfigReadServiceImpl(
     ) {
         val config = ConfigFactory.parseString(newRecord.value?.value)
         configurationRepository.updateConfiguration(newRecord.key, config)
-        configUpdates.forEach { it.onUpdate(newRecord.key, configurationRepository.getConfigurations()) }
+        configUpdates.forEach { it.onUpdate(setOf(newRecord.key), configurationRepository.getConfigurations()) }
 
     }
 }

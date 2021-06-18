@@ -40,19 +40,17 @@ class KafkaConfigRead @Activate constructor(
         receivedSnapshot = true
     }
 
-    override fun onSnapshot(currentConfigurationSnapshot: Map<String, Config>) {
-        snapshotReceived()
-        logger.info("----------List of available configurations----------")
-        for(config in currentConfigurationSnapshot) {
-            logger.info("${config.key} -> ${config.value}")
+    override fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config>) {
+        if (changedKeys.isEmpty()) {
+            logger.info("----------List of available configurations----------")
+            for (config in currentConfigurationSnapshot) {
+                logger.info("${config.key} -> ${config.value}")
+            }
+        } else {
+            logger.info("----------New configuration has been posted----------")
+            for (key in changedKeys) {
+                logger.info("$key -> ${currentConfigurationSnapshot[key]}")
+            }
         }
     }
-
-    override fun onUpdate(changedKey: String, currentConfigurationSnapshot: Map<String, Config>) {
-        with(logger) {
-            info("----------New configuration has been posted----------")
-            info("$changedKey -> ${currentConfigurationSnapshot[changedKey]}")
-        }
-    }
-
 }

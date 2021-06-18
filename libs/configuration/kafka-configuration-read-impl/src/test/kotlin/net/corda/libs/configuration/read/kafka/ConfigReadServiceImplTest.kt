@@ -25,9 +25,7 @@ class ConfigReadServiceImplTest {
 
     @Test
     fun `test register callback before onSnapshot is called`() {
-        val callbackMap = configReadService.registerCallback(configUpdateUtil)
-        Assertions.assertThat(callbackMap).isEmpty()
-        Assertions.assertThat(configUpdateUtil.update).isFalse
+        configReadService.registerCallback(configUpdateUtil)
 
         val configMap = ConfigUtil.testConfigMap()
         val config = configMap["corda.database"]!!
@@ -48,15 +46,13 @@ class ConfigReadServiceImplTest {
             Configuration(config.root()?.render(ConfigRenderOptions.concise()), config.getString("componentVersion"))
         configReadService.onSnapshot(mapOf("corda.database" to avroConfig))
 
-        val callbackMap = configReadService.registerCallback(configUpdateUtil)
-        Assertions.assertThat(callbackMap["corda.database"]).isEqualTo(configMap["corda.database"])
+        configReadService.registerCallback(configUpdateUtil)
+        Assertions.assertThat(configRepository.getConfigurations()["corda.database"]).isEqualTo(configMap["corda.database"])
     }
 
     @Test
     fun `test callback for onNext`() {
-        val callbackMap = configReadService.registerCallback(configUpdateUtil)
-        Assertions.assertThat(callbackMap).isEmpty()
-        Assertions.assertThat(configUpdateUtil.update).isFalse
+        configReadService.registerCallback(configUpdateUtil)
 
         val configMap = ConfigUtil.testConfigMap()
         val databaseConfig = configMap["corda.database"]!!
