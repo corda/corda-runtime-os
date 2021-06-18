@@ -31,8 +31,9 @@ class KafkaConfigReader @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutdownOSGiFramework()
         } else {
-            configReader.startReader()
-            while (!configReader.isReady()) { Thread.sleep(100) }
+            configReader.start()
+            logger.info("____________________________SLEEP______________________________________")
+            while (!configReader.isRunning) { Thread.sleep(100) }
             shutdownOSGiFramework()
         }
     }

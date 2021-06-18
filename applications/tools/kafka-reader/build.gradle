@@ -16,6 +16,7 @@ dependencies {
 
     implementation project(':components:kafka-config-read')
     implementation project(":libs:configuration:configuration-read")
+    implementation project(":libs:lifecycle")
     implementation project(":osgi-framework-api")
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"

@@ -4,7 +4,6 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.read.ConfigListener
-import net.corda.libs.configuration.read.ConfigListenerSubscription
 import net.corda.libs.configuration.read.ConfigReadService
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -26,8 +25,8 @@ class ConfigReadServiceImpl(
     private var stopped = false
     private var snapshotReceived = false
     private val CONFIGURATION_READ_SERVICE = "CONFIGURATION_READ_SERVICE"
-    private var configUpdates = mutableMapOf<UUID, ConfigListener>()
-    private lateinit var subscription: CompactedSubscription<String, Configuration>
+    private var configUpdates = mutableMapOf<ConfigListenerSubscription, ConfigListener>()
+    private var subscription: CompactedSubscription<String, Configuration>? = null
 
     override val isRunning: Boolean
         get() {
@@ -35,7 +34,7 @@ class ConfigReadServiceImpl(
         }
 
     override fun start() {
-        configUpdates = Collections.synchronizedMap(mutableMapOf<UUID, ConfigListener>())
+        configUpdates = Collections.synchronizedMap(mutableMapOf<ConfigListenerSubscription, ConfigListener>())
         subscription =
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(
@@ -45,28 +44,28 @@ class ConfigReadServiceImpl(
                 this,
                 mapOf()
             )
-        subscription.start()
+        subscription!!.start()
         stopped = false
     }
 
     override fun stop() {
         configUpdates = mutableMapOf()
-        subscription.stop()
+        subscription?.stop()
         stopped = true
     }
 
-    override fun registerCallback(configListener: ConfigListener): ConfigListenerSubscription {
-        val uuid = UUID.randomUUID()
-        configUpdates[uuid] = configListener
+    override fun registerCallback(configListener: ConfigListener): AutoCloseable {
+        val sub = ConfigListenerSubscription(this)
+        configUpdates[sub] = configListener
         if (snapshotReceived) {
             val configs = configurationRepository.getConfigurations()
             configListener.onUpdate(configs.keys, configs)
         }
-        return ConfigListenerSubscription(this, uuid)
+        return sub
     }
 
-    override fun unregisterCallback(callbackUUID: UUID) {
-        configUpdates.remove(callbackUUID)
+    private fun unregisterCallback(sub: ConfigListenerSubscription) {
+        configUpdates.remove(sub)
     }
 
     override val keyClass: Class<String>
@@ -81,7 +80,8 @@ class ConfigReadServiceImpl(
         }
         configurationRepository.storeConfiguration(configMap)
         snapshotReceived = true
-        configUpdates.forEach { it.value.onUpdate(setOf(), configurationRepository.getConfigurations()) }
+        val tempConfigMap = configurationRepository.getConfigurations()
+        configUpdates.forEach { it.value.onUpdate(tempConfigMap.keys, tempConfigMap) }
     }
 
     override fun onNext(
@@ -91,7 +91,16 @@ class ConfigReadServiceImpl(
     ) {
         val config = ConfigFactory.parseString(newRecord.value?.value)
         configurationRepository.updateConfiguration(newRecord.key, config)
-        configUpdates.forEach { it.value.onUpdate(setOf(newRecord.key), configurationRepository.getConfigurations()) }
+        val tempConfigMap = configurationRepository.getConfigurations()
+        configUpdates.forEach { it.value.onUpdate(setOf(newRecord.key), tempConfigMap) }
 
     }
+
+    private class ConfigListenerSubscription(private val configReadService: ConfigReadServiceImpl) : AutoCloseable {
+        override fun close() {
+            configReadService.unregisterCallback(this)
+        }
+    }
 }
+
+

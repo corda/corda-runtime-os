@@ -3,6 +3,7 @@ package net.corda.comp.kafka.config.read
 import com.typesafe.config.Config
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
+import net.corda.lifecycle.LifeCycle
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -18,7 +19,7 @@ import org.slf4j.Logger
 class KafkaConfigRead @Activate constructor(
     @Reference(service = ConfigReadServiceFactory::class)
     private val readServiceFactory: ConfigReadServiceFactory
-) : ConfigListener {
+) : ConfigListener, LifeCycle {
 
     private companion object {
         private val logger: Logger = contextLogger()
@@ -27,21 +28,10 @@ class KafkaConfigRead @Activate constructor(
     private var receivedSnapshot = false
 
     private val configReadService = readServiceFactory.createReadService()
-
-    fun startReader() {
-        configReadService.registerCallback(this)
-    }
-
-    fun isReady(): Boolean {
-        return receivedSnapshot
-    }
-
-    private fun snapshotReceived() {
-        receivedSnapshot = true
-    }
+    private var sub: AutoCloseable? = null
 
     override fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config>) {
-        if (changedKeys.isEmpty()) {
+        if (changedKeys.size == currentConfigurationSnapshot.keys.size) {
             logger.info("----------List of available configurations----------")
             for (config in currentConfigurationSnapshot) {
                 logger.info("${config.key} -> ${config.value}")
@@ -52,5 +42,19 @@ class KafkaConfigRead @Activate constructor(
                 logger.info("$key -> ${currentConfigurationSnapshot[key]}")
             }
         }
+        receivedSnapshot = true
+    }
+
+    override val isRunning: Boolean
+        get() = receivedSnapshot
+
+    override fun start() {
+        sub = configReadService.registerCallback(this)
+        configReadService.start()
+    }
+
+    override fun stop() {
+        sub?.close()
+        sub = null
     }
 }
