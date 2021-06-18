@@ -1,8 +1,10 @@
 package net.corda.libs.configuration.read.kafka
 
 import com.nhaarman.mockito_kotlin.mock
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.data.config.Configuration
+import net.corda.libs.configuration.read.ConfigListener
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.assertj.core.api.Assertions
@@ -117,5 +119,31 @@ class ConfigReadServiceImplTest {
         configReadService.onNext(Record("", "corda.security", avroSecurityConfig), null, topicMap)
 
         Assertions.assertThat(configUpdateUtil.lastSnapshot["corda.security"]).isNull()
+    }
+
+    @Test
+    fun `test registerCallback with lambda`() {
+        var lambdaFlag = false
+        var changedKeys = setOf<String>()
+        var configSnapshot = mapOf<String,Config>()
+        val listener = ConfigListener{ keys: Set<String>, config: Map<String, Config> ->
+            lambdaFlag = true
+            changedKeys = keys
+            configSnapshot = config
+
+        }
+        configReadService.registerCallback(listener)
+
+        val configMap = ConfigUtil.testConfigMap()
+        val config = configMap["corda.database"]!!
+        val avroConfig =
+            Configuration(config.root()?.render(ConfigRenderOptions.concise()), config.getString("componentVersion"))
+        configReadService.onSnapshot(mapOf("corda.database" to avroConfig))
+
+        Assertions.assertThat(lambdaFlag).isTrue
+        Assertions.assertThat(changedKeys.size)
+            .isEqualTo(1)
+        Assertions.assertThat(configSnapshot["corda.database"])
+            .isEqualTo(configRepository.getConfigurations()["corda.database"])
     }
 }
