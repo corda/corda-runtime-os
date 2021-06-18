@@ -26,6 +26,7 @@ class ConfigReadServiceImpl(
 
     @Volatile
     private var stopped = false
+
     @Volatile
     private var snapshotReceived = false
 
@@ -58,12 +59,14 @@ class ConfigReadServiceImpl(
     }
 
     override fun stop() {
-        if (!stopped) {
-            subscription?.stop()
-            subscription = null
-            configUpdates.clear()
-            stopped = true
-            snapshotReceived = false
+        lock.withLock {
+            if (!stopped) {
+                subscription?.stop()
+                subscription = null
+                configUpdates.clear()
+                stopped = true
+                snapshotReceived = false
+            }
         }
     }
 
