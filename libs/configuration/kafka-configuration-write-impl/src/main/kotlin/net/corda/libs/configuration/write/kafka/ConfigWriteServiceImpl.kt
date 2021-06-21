@@ -7,10 +7,10 @@ import net.corda.libs.configuration.write.ConfigWriteService
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 /**
  * Kafka implementation of the [ConfigWriteService]
@@ -23,7 +23,7 @@ class ConfigWriteServiceImpl(
 ) : ConfigWriteService {
 
     private companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
     }
 
     /**

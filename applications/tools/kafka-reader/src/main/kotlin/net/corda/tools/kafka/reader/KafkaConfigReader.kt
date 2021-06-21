@@ -3,6 +3,7 @@ package net.corda.tools.kafka.reader
 import net.corda.comp.kafka.config.read.KafkaConfigRead
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceReference
@@ -10,11 +11,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import java.io.File
-import java.io.FileInputStream
-import java.util.*
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
@@ -24,7 +21,7 @@ class KafkaConfigReader @Activate constructor(
 ) : Application {
 
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(KafkaConfigReader::class.java)
+        private val logger: Logger = contextLogger()
     }
 
     override fun startup(args: Array<String>) {
@@ -34,18 +31,9 @@ class KafkaConfigReader @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutdownOSGiFramework()
         } else {
-            val kafkaConnectionProperties = Properties()
-            kafkaConnectionProperties.load(FileInputStream(parameters.kafkaConnection))
-
-            configReader.startReader()
-            while (!configReader.isReady()) { Thread.sleep(100) }
-            val configs = configReader.getAllConfiguration()
-
-            logger.info("-------List of available configurations-------")
-            for(config in configs) {
-                logger.info("${config.key} -> ${config.value}")
-            }
-            shutdownOSGiFramework()
+            configReader.start()
+            logger.info("____________________________SLEEP______________________________________")
+            while (!configReader.isRunning) { Thread.sleep(100) }
         }
     }
 
@@ -66,11 +54,6 @@ class KafkaConfigReader @Activate constructor(
 }
 
 class CliParameters {
-    @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties"])
-    lateinit var kafkaConnection: File
-
-    @CommandLine.Option(names = ["--topic"], description = ["String topic name"])
-    lateinit var topicName: String
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false

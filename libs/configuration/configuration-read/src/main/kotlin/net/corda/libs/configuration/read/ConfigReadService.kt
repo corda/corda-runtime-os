@@ -1,34 +1,12 @@
 package net.corda.libs.configuration.read
 
-import com.typesafe.config.Config
+import net.corda.lifecycle.LifeCycle
 
-interface ConfigReadService {
 
-    /**
-     * Start the service
-     */
-    fun start()
-
-    /**
-     * Retrieve the configuration associated with the given
-     * @param componentName
-     */
-    fun getConfiguration(componentName: String): Config
-
-    /**
-     * Retrieve all available configurations
-     */
-    fun getAllConfiguration(): Map<String,Config>
-
-    /**
-     * Retrieve the configuration associated with the given [componentName] and parse it to the given [clazz]
-     * @param componentName
-     * @param clazz The class you want the retrieved information to be cast as
-     */
-    fun <T> parseConfiguration(componentName: String, clazz: Class<T>): T
-
+interface ConfigReadService : LifeCycle {
     /**
      * Register a callback for any configuration changes
+     * If the service is already running, you will receive a snapshot of all available configurations
      */
-    fun registerCallback(configUpdate: ConfigUpdate)
+    fun registerCallback(configListener: ConfigListener): AutoCloseable
 }

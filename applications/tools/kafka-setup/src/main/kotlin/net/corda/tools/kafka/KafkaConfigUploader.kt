@@ -4,6 +4,7 @@ import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceReference
@@ -27,7 +28,7 @@ class KafkaConfigUploader @Activate constructor(
 ) : Application {
 
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(KafkaConfigUploader::class.java)
+        private val logger: Logger = contextLogger()
     }
 
     override fun startup(args: Array<String>) {

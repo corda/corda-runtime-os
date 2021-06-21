@@ -1,13 +1,14 @@
 package net.corda.libs.configuration.read.kafka
 
 import com.typesafe.config.Config
+import java.util.*
 
 class ConfigRepository {
 
-    private var configurationMap: Map<String, Config> = mutableMapOf()
+    private var configurationMap: Map<String, Config> = Collections.synchronizedMap(mutableMapOf())
 
     fun getConfigurations(): Map<String, Config> {
-        return configurationMap
+        return configurationMap.toMap()
     }
 
     fun storeConfiguration(configuration: Map<String, Config>) {
