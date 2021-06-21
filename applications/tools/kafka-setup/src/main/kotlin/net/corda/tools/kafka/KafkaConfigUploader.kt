@@ -5,6 +5,7 @@ import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
+import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -105,7 +106,10 @@ class KafkaConfigUploader @Activate constructor(
     }
 
     private fun shutdownOSGiFramework() {
-        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
+        val bundleContext: BundleContext? = FrameworkUtil.getBundle(this::class.java).bundleContext
+        if (bundleContext != null) {
+            shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
+        }
     }
 }
 

@@ -20,6 +20,7 @@ import kotlin.concurrent.withLock
 class ConfigReadServiceImpl(
     private val configurationRepository: ConfigRepository,
     private val subscriptionFactory: SubscriptionFactory,
+    private val boostrapConfig: Config
 ) : ConfigReadService, CompactedProcessor<String, Configuration> {
 
 
@@ -46,7 +47,7 @@ class ConfigReadServiceImpl(
                     subscriptionFactory.createCompactedSubscription(
                         SubscriptionConfig(
                             CONFIGURATION_READ_SERVICE,
-                            ConfigFactory.load("kafka.properties").getString("topic.name")
+                            boostrapConfig.getString("corda.kafka.topic.name")
                         ),
                         this,
                         mapOf()
@@ -108,6 +109,7 @@ class ConfigReadServiceImpl(
         configurationRepository.updateConfiguration(newRecord.key, config)
         val tempConfigMap = configurationRepository.getConfigurations()
         configUpdates.forEach { it.value.onUpdate(setOf(newRecord.key), tempConfigMap) }
+
     }
 
     private class ConfigListenerSubscription(private val configReadService: ConfigReadServiceImpl) : AutoCloseable {

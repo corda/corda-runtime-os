@@ -2,27 +2,49 @@ package net.corda.libs.configuration.read.kafka
 
 import com.nhaarman.mockito_kotlin.mock
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
+import java.io.BufferedReader
 
 class ConfigReadServiceImplTest {
 
     private lateinit var configReadService: ConfigReadServiceImpl
     private lateinit var configRepository: ConfigRepository
-    private val subscriptionFactory: SubscriptionFactory = mock()
     private lateinit var configUpdateUtil: ConfigListenerTestUtil
+    private val subscriptionFactory: SubscriptionFactory = mock()
+    private val subscription: CompactedSubscription<String, Configuration> = mock()
 
     @BeforeEach
     fun beforeEach() {
+        val configReader = BufferedReader(this::class.java.classLoader.getResourceAsStream("kafka.conf").reader())
+        val config = ConfigFactory.parseString(configReader.readText())
+        configReader.close()
+
         configUpdateUtil = ConfigListenerTestUtil()
         configRepository = ConfigRepository()
-        configReadService = ConfigReadServiceImpl(configRepository, subscriptionFactory)
+        configReadService = ConfigReadServiceImpl(configRepository, subscriptionFactory, config)
+        Mockito.`when`(
+            subscriptionFactory.createCompactedSubscription(
+                SubscriptionConfig("CONFIGURATION_READ_SERVICE", "default-topic"),
+                configReadService,
+                mapOf()
+            )
+        ).thenReturn(subscription)
+
+        Mockito.doNothing().`when`(subscription).start()
+        Mockito.doNothing().`when`(subscription).stop()
+
+
     }
 
     @Test
@@ -150,5 +172,44 @@ class ConfigReadServiceImplTest {
             .isEqualTo(1)
         Assertions.assertThat(configSnapshot["corda.database"])
             .isEqualTo(configRepository.getConfigurations()["corda.database"])
+    }
+
+    @Test
+    fun `test that listeners get unregistered correctly when service stops`() {
+        configReadService.start()
+        Assertions.assertThat(configReadService.isRunning).isTrue
+        configReadService.registerCallback(configUpdateUtil)
+
+        val configMap = ConfigUtil.testConfigMap()
+        val databaseConfig = configMap["corda.database"]!!
+        val avroDatabaseConfig =
+            Configuration(
+                databaseConfig.root()?.render(ConfigRenderOptions.concise()),
+                databaseConfig.getString("componentVersion")
+            )
+
+        val topicMap = mutableMapOf("corda.database" to avroDatabaseConfig)
+
+        configReadService.onSnapshot(topicMap)
+
+        Assertions.assertThat(configUpdateUtil.update).isTrue
+        Assertions.assertThat(configUpdateUtil.lastSnapshot["corda.database"])
+            .isEqualTo(configMap["corda.database"])
+
+        configReadService.stop()
+        configReadService.start()
+
+        val securityConfig = configMap["corda.security"]!!
+        val avroSecurityConfig =
+            Configuration(
+                securityConfig.root()?.render(ConfigRenderOptions.concise()),
+                securityConfig.getString("componentVersion")
+            )
+
+        topicMap["corda.security"] = avroSecurityConfig
+        configReadService.onNext(Record("", "corda.security", avroSecurityConfig), null, topicMap)
+
+        Assertions.assertThat(configUpdateUtil.lastSnapshot["corda.security"]).isNull()
+
     }
 }

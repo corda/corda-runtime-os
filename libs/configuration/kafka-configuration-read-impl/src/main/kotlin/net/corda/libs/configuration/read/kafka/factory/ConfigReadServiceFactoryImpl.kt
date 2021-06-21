@@ -1,5 +1,6 @@
 package net.corda.libs.configuration.read.kafka.factory
 
+import com.typesafe.config.Config
 import net.corda.libs.configuration.read.ConfigReadService
 import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
 import net.corda.libs.configuration.read.kafka.ConfigReadServiceImpl
@@ -15,7 +16,7 @@ class ConfigReadServiceFactoryImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory
 ) : ConfigReadServiceFactory {
 
-    override fun createReadService(): ConfigReadService {
-        return ConfigReadServiceImpl(ConfigRepository(), subscriptionFactory)
+    override fun createReadService(bootstrapConfig: Config): ConfigReadService {
+        return ConfigReadServiceImpl(ConfigRepository(), subscriptionFactory, bootstrapConfig)
     }
 }
