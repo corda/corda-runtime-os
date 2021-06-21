@@ -15,6 +15,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.KafkaException
+import org.apache.kafka.common.PartitionInfo
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.errors.AuthenticationException
 import org.apache.kafka.common.errors.AuthorizationException
@@ -94,25 +95,31 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             try {
                 consumer.commitSync(offsets)
                 attemptCommit = false
-            }
-            catch (ex: Exception) {
+            } catch (ex: Exception) {
                 when (ex) {
                     is InterruptException,
                     is TimeoutException -> {
                         attempts++
-                        handleErrorRetry("Failed to commitSync offsets for record $event on topic $topic",
-                            attempts, consumerCommitOffsetMaxRetries, ex)
+                        handleErrorRetry(
+                            "Failed to commitSync offsets for record $event on topic $topic",
+                            attempts, consumerCommitOffsetMaxRetries, ex
+                        )
                     }
                     is CommitFailedException,
                     is AuthenticationException,
                     is AuthorizationException,
                     is IllegalArgumentException,
                     is FencedInstanceIdException -> {
-                        logErrorAndThrowFatalException("Error attempting to commitSync offsets for record $event on topic $topic", ex)
+                        throw logErrorAndReturnFatalException(
+                            "Error attempting to commitSync offsets for record $event on topic $topic",
+                            ex
+                        )
                     }
                     else -> {
-                        logErrorAndThrowFatalException("Unexpected error attempting to commitSync offsets " +
-                                "for record $event on topic $topic", ex)
+                        throw logErrorAndReturnFatalException(
+                            "Unexpected error attempting to commitSync offsets " +
+                                    "for record $event on topic $topic", ex
+                        )
                     }
                 }
             }
@@ -131,33 +138,32 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
                 when (ex) {
                     is IllegalStateException -> {
-                        logErrorAndThrowFatalException("$message. Consumer is already subscribed to this topic. Closing subscription.", ex)
+                        throw logErrorAndReturnFatalException(
+                            "$message. Consumer is already subscribed to this topic. Closing subscription.",
+                            ex
+                        )
                     }
                     is IllegalArgumentException -> {
-                        logErrorAndThrowFatalException("$message. Illegal args provided. Closing subscription.", ex)
+                        throw logErrorAndReturnFatalException("$message. Illegal args provided. Closing subscription.", ex)
                     }
                     is KafkaException -> {
                         attempts++
                         handleErrorRetry(message, attempts, consumerSubscribeMaxRetries, ex)
                     }
                     else -> {
-                        logErrorAndThrowFatalException("$message. Unexpected error.", ex)
+                        throw logErrorAndReturnFatalException("$message. Unexpected error.", ex)
                     }
                 }
             }
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun getPartitions(topic: String, duration: Duration): List<TopicPartition> {
-        try {
-            return consumer.partitionsFor(topic, duration)
-                .map { partitionInfo ->
-                    TopicPartition(partitionInfo.topic(), partitionInfo.partition())
-                }
+        val listOfPartitions: List<PartitionInfo> = try {
+            consumer.partitionsFor(topic, duration)
         } catch (ex: Exception) {
             when (ex) {
-                //TODO - this is a workaround for kafka issue whereby NPE thrown when getPartitions is called during broker startup
-                is NullPointerException,
                 is InterruptException,
                 is WakeupException,
                 is KafkaException,
@@ -166,14 +172,17 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 }
                 is AuthenticationException,
                 is AuthorizationException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to get partitions on topic $topic", ex)
+                    throw logErrorAndReturnFatalException("Fatal error attempting to get partitions on topic $topic", ex)
                 }
                 else -> {
-                    logErrorAndThrowFatalException("Unexpected error attempting to get partitions on topic $topic", ex)
+                    throw logErrorAndReturnFatalException("Unexpected error attempting to get partitions on topic $topic", ex)
                 }
             }
+        } ?: throw CordaMessageAPIIntermittentException("Partitions for topic $topic are null. Kafka may not have completed startup.")
+
+        return listOfPartitions.map { partitionInfo ->
+            TopicPartition(partitionInfo.topic(), partitionInfo.partition())
         }
-        return emptyList()
     }
 
     /**
@@ -184,15 +193,16 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         if (currentAttempt < maxRetries) {
             log.warn("$errorMessage. Retrying.", ex)
         } else {
-            logErrorAndThrowFatalException("$errorMessage. Max Retries exceeded.", ex)
+            throw logErrorAndReturnFatalException("$errorMessage. Max Retries exceeded.", ex)
         }
     }
 
     /**
-     * Log error and throw [CordaMessageAPIFatalException]
+     * Log error and return [CordaMessageAPIFatalException]
+     * @return CordaMessageAPIFatalException
      */
-    private fun logErrorAndThrowFatalException(errorMessage: String, ex: Exception) {
+    private fun logErrorAndReturnFatalException(errorMessage: String, ex: Exception): CordaMessageAPIFatalException {
         log.error(errorMessage, ex)
-        throw CordaMessageAPIFatalException(errorMessage, ex)
+        return CordaMessageAPIFatalException(errorMessage, ex)
     }
 }
