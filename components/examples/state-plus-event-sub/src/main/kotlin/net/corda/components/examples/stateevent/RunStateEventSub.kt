@@ -4,7 +4,6 @@ import com.typesafe.config.Config
 import net.corda.components.examples.stateevent.processor.DemoStateAndEventProcessor
 import net.corda.data.demo.DemoRecord
 import net.corda.lifecycle.LifeCycle
-import net.corda.lifecycle.LifeCycleCoordinator
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
@@ -14,7 +13,6 @@ import org.slf4j.Logger
 
 @Component
 class RunStateEventSub(
-    private val lifeCycleCoordinator: LifeCycleCoordinator,
     private val instanceId: Int,
     private var config: Config,
     private val subscriptionFactory: SubscriptionFactory,

@@ -76,9 +76,9 @@ class DemoApp @Activate constructor(
                         is ConfigReceivedEvent -> {
                             if (state == LifeCycleState.STARTINGCONFIG) {
                                 state = LifeCycleState.STARTINGMESSAGING
-                                val config = configReader!!.getConfiguration(KAFKA_CONFIG)
+                                val config = event.currentConfigurationSnapshot[KAFKA_CONFIG]!!
 
-                                compactedSub = RunCompactedSub(lifeCycleCoordinator, subscriptionFactory, config)
+                                compactedSub = RunCompactedSub(subscriptionFactory, config)
                                 durableSub =
                                     RunDurableSub(
                                         lifeCycleCoordinator,
@@ -89,14 +89,13 @@ class DemoApp @Activate constructor(
                                         parameters.durableProcessorDelay.toLong()
                                     )
                                 stateEventSub = RunStateEventSub(
-                                    lifeCycleCoordinator,
                                     instanceId,
                                     config,
                                     subscriptionFactory,
                                     parameters.stateEventKillProcessOnRecord.toInt(),
                                     parameters.stateEventProcessorDelay.toLong()
                                 )
-                                pubsubSub = RunPubSub(lifeCycleCoordinator, subscriptionFactory, config)
+                                pubsubSub = RunPubSub(subscriptionFactory, config)
 
                                 compactedSub?.start()
                                 durableSub?.start()
@@ -106,7 +105,7 @@ class DemoApp @Activate constructor(
                         }
                         is KafkaConfigUpdateEvent -> {
                             state = LifeCycleState.REINITMESSAGING
-                            val config = configReader!!.getConfiguration(KAFKA_CONFIG)
+                            val config = event.currentConfigurationSnapshot[KAFKA_CONFIG]!!
                             compactedSub?.reStart(config)
                             durableSub?.reStart(config)
                             stateEventSub?.reStart(config)

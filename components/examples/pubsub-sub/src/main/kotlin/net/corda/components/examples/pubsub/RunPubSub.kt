@@ -14,7 +14,6 @@ import org.slf4j.Logger
 
 @Component
 class RunPubSub(
-    private val lifeCycleCoordinator: LifeCycleCoordinator,
     private val subscriptionFactory: SubscriptionFactory,
     private var config: Config
 ) : LifeCycle {
