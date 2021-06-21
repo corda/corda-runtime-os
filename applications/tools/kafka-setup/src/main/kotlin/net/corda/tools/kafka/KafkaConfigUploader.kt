@@ -12,10 +12,10 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
 import java.util.*
-import picocli.CommandLine
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
@@ -27,7 +27,8 @@ class KafkaConfigUploader @Activate constructor(
 ) : Application {
 
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(KafkaConfigWrite::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+        const val configTopic = "topic.name"
     }
 
     override fun startup(args: Array<String>) {
@@ -41,12 +42,22 @@ class KafkaConfigUploader @Activate constructor(
             val kafkaConnectionProperties = Properties()
             kafkaConnectionProperties.load(FileInputStream(parameters.kafkaConnection))
 
-            val topic = topicAdmin.createTopic(kafkaConnectionProperties, parameters.topicTemplate.readText())
-            configWriter.updateConfig(
-                topic.getString("topicName"),
-                kafkaConnectionProperties,
-                parameters.configurationFile.readText()
-            )
+            val topicTemplate = parameters.topicTemplate
+            var configTopicName = kafkaConnectionProperties[configTopic].toString()
+            if (topicTemplate != null) {
+                logger.info("Creating topics")
+                topicAdmin.createTopics(kafkaConnectionProperties, topicTemplate.readText())
+            }
+
+            val configurationFile = parameters.configurationFile
+            if (configurationFile != null) {
+                logger.info("Writing config to topic")
+                configWriter.updateConfig(
+                    configTopicName,
+                    kafkaConnectionProperties,
+                    configurationFile.readText()
+                )
+            }
             shutdownOSGiFramework()
         }
     }
@@ -72,10 +83,10 @@ class CliParameters {
     lateinit var kafkaConnection: File
 
     @CommandLine.Option(names = ["--topic"], description = ["File containing the topic template"])
-    lateinit var topicTemplate: File
+    var topicTemplate: File? = null
 
     @CommandLine.Option(names = ["--config"], description = ["File containing configuration to be stored"])
-    lateinit var configurationFile: File
+    var configurationFile: File? = null
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false

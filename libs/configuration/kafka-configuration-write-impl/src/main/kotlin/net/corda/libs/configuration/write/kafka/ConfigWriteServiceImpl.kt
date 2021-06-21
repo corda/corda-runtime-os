@@ -6,6 +6,7 @@ import net.corda.libs.configuration.write.ConfigWriteService
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
@@ -52,6 +53,6 @@ class ConfigWriteServiceImpl(
         val recordKey = "${configKey.packageVersion.name}.${configKey.componentVersion.name}"
         val record = Record(topicName, recordKey, content)
         log.debug { "Producing record: $recordKey\t$content" }
-        publisher.publish(listOf(record))
+        publisher.publish(listOf(record)).forEach { it.getOrThrow() }
     }
 }

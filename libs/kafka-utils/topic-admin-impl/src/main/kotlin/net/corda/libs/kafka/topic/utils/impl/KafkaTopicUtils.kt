@@ -24,30 +24,41 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    override fun createTopic(topicTemplate: Config) {
+    override fun createTopics(topicsTemplate: Config) {
         try {
-            topicTemplate.checkValid(referenceTopicConfig())
+            topicsTemplate.checkValid(referenceTopicsConfig())
         } catch (e: ConfigException) {
             log.error("Error validating topic configuration")
         }
 
-        val newTopic =
-            NewTopic(
-                topicTemplate.getString("topicName"),
-                topicTemplate.getInt("numPartitions"),
-                topicTemplate.getInt("replicationFactor").toShort()
-            )
-        val topicConfigOption = topicTemplate.getConfig("config").entrySet()
-            .map { entry -> Pair<String, String>(entry.key, entry.value.unwrapped().toString()) }.toMap()
-        newTopic.configs(topicConfigOption)
+        val topicTemplateList = topicsTemplate.getObjectList("topics")
+        val topics = mutableListOf<NewTopic>()
+
+        topicTemplateList.forEach { topicTemplateItem ->
+            val topicTemplate = topicTemplateItem.toConfig()
+            val newTopic =
+                NewTopic(
+                    topicTemplate.getString("topicName"),
+                    topicTemplate.getInt("numPartitions"),
+                    topicTemplate.getInt("replicationFactor").toShort()
+                )
+
+            if (topicTemplate.hasPath("config")) {
+                val topicConfigOption = topicTemplate.getConfig("config").entrySet()
+                    .associate { entry -> Pair<String, String>(entry.key, entry.value.unwrapped().toString()) }
+                newTopic.configs(topicConfigOption)
+            }
+            topics.add(newTopic)
+        }
+
         try {
-            log.info("Attempting to create topic: $newTopic")
-            adminClient.createTopics(listOf(newTopic)).all().get()
-            log.info("$newTopic created successfully")
+            log.info("Attempting to create topics: $topics")
+            adminClient.createTopics(topics).all().get()
+            log.info("$topics created successfully")
         } catch (e: ExecutionException) {
             when (val cause = e.cause) {
                 is TopicExistsException -> {
-                    log.info("$newTopic already exists")
+                    log.info("$topics already exists")
                 }
                 null -> throw e
                 else -> throw cause
@@ -55,12 +66,18 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
         }
     }
 
-    private fun referenceTopicConfig(): Config = ConfigFactory.parseString(
+    private fun referenceTopicsConfig(): Config = ConfigFactory.parseString(
         """
-        topicName = "dummyName"
-        numPartitions = 1
-        replicationFactor = 1
-        config {}
-    """.trimIndent()
+        topics = [
+            {
+                topicName = "configTopic"
+                numPartitions = 1
+                replicationFactor = 3
+                config {
+                    cleanup.policy=compact
+                }
+            }
+        ]
+        """.trimIndent()
     )
 }
