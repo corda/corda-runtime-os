@@ -189,6 +189,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     /**
      * Log error and throw [CordaMessageAPIFatalException]
+     * @return Nothing to allow compiler to know that this method won't return a value in the catch blocks of the above exception handling.
      */
     private fun logErrorAndThrowFatalException(errorMessage: String, ex: Exception) : Nothing {
         log.error(errorMessage, ex)
