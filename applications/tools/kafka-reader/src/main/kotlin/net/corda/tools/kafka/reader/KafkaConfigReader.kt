@@ -17,7 +17,9 @@ import picocli.CommandLine
 @Component(immediate = true)
 class KafkaConfigReader @Activate constructor(
     @Reference(service = KafkaConfigRead::class)
-    private var configReader: KafkaConfigRead
+    private var configReader: KafkaConfigRead,
+    @Reference(service = Shutdown::class)
+    private var shutdown: Shutdown
 ) : Application {
 
     private companion object {
@@ -34,6 +36,7 @@ class KafkaConfigReader @Activate constructor(
             configReader.start()
             logger.info("____________________________SLEEP______________________________________")
             while (!configReader.isRunning) { Thread.sleep(100) }
+            shutdownOSGiFramework()
         }
     }
 
@@ -44,11 +47,7 @@ class KafkaConfigReader @Activate constructor(
     private fun shutdownOSGiFramework() {
         val bundleContext: BundleContext? = FrameworkUtil.getBundle(KafkaConfigReader::class.java).bundleContext
         if (bundleContext != null) {
-            val shutdownServiceReference: ServiceReference<Shutdown>? =
-                bundleContext.getServiceReference(Shutdown::class.java)
-            if (shutdownServiceReference != null) {
-                bundleContext.getService(shutdownServiceReference)?.shutdown(bundleContext.bundle)
-            }
+                shutdown.shutdown(bundleContext.bundle)
         }
     }
 }
