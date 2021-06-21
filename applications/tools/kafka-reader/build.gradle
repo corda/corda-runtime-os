@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-app'
 }
 
-description "Bootstrapping Tools"
+description "Configuration Reader"
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
@@ -14,18 +14,17 @@ dependencies {
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "net.corda:corda-base:$cordaVersion"
 
-    implementation project(':components:kafka-topic-admin')
-    implementation project(':components:kafka-config-write')
+    implementation project(':components:kafka-config-read')
+    implementation project(":libs:configuration:configuration-read")
+    implementation project(":libs:lifecycle")
     implementation project(":osgi-framework-api")
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
-    runtimeOnly project(':components:kafka-topic-admin')
-    runtimeOnly project(':components:kafka-config-write')
-    runtimeOnly project(":libs:configuration:kafka-configuration-write-impl")
-    runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
+    runtimeOnly project(':components:kafka-config-read')
+    runtimeOnly project(":libs:configuration:kafka-configuration-read-impl")
     runtimeOnly project(":libs:lifecycle")
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     runtimeOnly project(":libs:messaging:messaging")

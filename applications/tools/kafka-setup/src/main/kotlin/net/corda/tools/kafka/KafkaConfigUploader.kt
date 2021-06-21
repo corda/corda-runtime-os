@@ -4,6 +4,7 @@ import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceReference
@@ -11,11 +12,10 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
 import java.util.*
+import picocli.CommandLine
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
@@ -27,7 +27,7 @@ class KafkaConfigUploader @Activate constructor(
 ) : Application {
 
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+        private val logger: Logger = contextLogger()
         const val KAFKA_CONFIG_TOPIC_NAME = "kafka.config.topic.name"
         const val KAFKA_BOOTSTRAP_SERVER = "kafka.bootstrap.servers"
         const val BOOTSTRAP_SERVER = "bootstrap.servers"
