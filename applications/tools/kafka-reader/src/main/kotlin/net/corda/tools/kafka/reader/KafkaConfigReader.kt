@@ -4,9 +4,7 @@ import net.corda.comp.kafka.config.read.KafkaConfigRead
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
-import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
-import org.osgi.framework.ServiceReference
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -17,7 +15,9 @@ import picocli.CommandLine
 @Component(immediate = true)
 class KafkaConfigReader @Activate constructor(
     @Reference(service = KafkaConfigRead::class)
-    private var configReader: KafkaConfigRead
+    private var configReader: KafkaConfigRead,
+    @Reference(service = Shutdown::class)
+    private val shutDownService: Shutdown
 ) : Application {
 
     private companion object {
@@ -42,14 +42,7 @@ class KafkaConfigReader @Activate constructor(
     }
 
     private fun shutdownOSGiFramework() {
-        val bundleContext: BundleContext? = FrameworkUtil.getBundle(KafkaConfigReader::class.java).bundleContext
-        if (bundleContext != null) {
-            val shutdownServiceReference: ServiceReference<Shutdown>? =
-                bundleContext.getServiceReference(Shutdown::class.java)
-            if (shutdownServiceReference != null) {
-                bundleContext.getService(shutdownServiceReference)?.shutdown(bundleContext.bundle)
-            }
-        }
+        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
 }
 

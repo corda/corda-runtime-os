@@ -1,6 +1,5 @@
 package net.corda.applications.examples.demo
 
-import net.corda.components.examples.compacted.RunCompactedSub
 import net.corda.components.examples.config.reader.ConfigReader
 import net.corda.components.examples.config.reader.ConfigReader.Companion.KAFKA_CONFIG
 import net.corda.components.examples.config.reader.ConfigReceivedEvent
@@ -18,9 +17,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
-import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
-import org.osgi.framework.ServiceReference
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -35,6 +32,8 @@ enum class LifeCycleState {
 class DemoApp @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = Shutdown::class)
+    private val shutDownService: Shutdown,
     @Reference(service = ConfigReadServiceFactory::class)
     private var configReadServiceFactory: ConfigReadServiceFactory
 ) : Application {
@@ -54,9 +53,8 @@ class DemoApp @Activate constructor(
 
         if (parameters.helpRequested) {
             CommandLine.usage(CliParameters(), System.out)
-            shutdownOSGiFramework()
+            shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
-            var compactedSub: RunCompactedSub? = null
             var durableSub: RunDurableSub? = null
             var pubsubSub: RunPubSub? = null
             var stateEventSub: RunStateEventSub? = null
@@ -66,7 +64,7 @@ class DemoApp @Activate constructor(
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
-                SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, lifeCycleCoordinator: LifeCycleCoordinator ->
+                SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
                     log.info("LifecycleEvent received: $event")
                     when (event) {
                         is StartEvent -> {
@@ -77,11 +75,8 @@ class DemoApp @Activate constructor(
                             if (state == LifeCycleState.STARTINGCONFIG) {
                                 state = LifeCycleState.STARTINGMESSAGING
                                 val config = event.currentConfigurationSnapshot[KAFKA_CONFIG]!!
-
-                                compactedSub = RunCompactedSub(subscriptionFactory, config)
                                 durableSub =
                                     RunDurableSub(
-                                        lifeCycleCoordinator,
                                         subscriptionFactory,
                                         config,
                                         instanceId,
@@ -97,7 +92,6 @@ class DemoApp @Activate constructor(
                                 )
                                 pubsubSub = RunPubSub(subscriptionFactory, config)
 
-                                compactedSub?.start()
                                 durableSub?.start()
                                 stateEventSub?.start()
                                 pubsubSub?.start()
@@ -106,14 +100,12 @@ class DemoApp @Activate constructor(
                         is KafkaConfigUpdateEvent -> {
                             state = LifeCycleState.REINITMESSAGING
                             val config = event.currentConfigurationSnapshot[KAFKA_CONFIG]!!
-                            compactedSub?.reStart(config)
                             durableSub?.reStart(config)
                             stateEventSub?.reStart(config)
                             pubsubSub?.reStart(config)
                         }
                         is StopEvent -> {
                             configReader?.stop()
-                            compactedSub?.stop()
                             durableSub?.stop()
                             stateEventSub?.stop()
                             pubsubSub?.stop()
@@ -133,17 +125,6 @@ class DemoApp @Activate constructor(
     override fun shutdown() {
         lifeCycleCoordinator?.stop()
         log.info("Stopping application")
-    }
-
-    private fun shutdownOSGiFramework() {
-        val bundleContext: BundleContext? = FrameworkUtil.getBundle(this::class.java).bundleContext
-        if (bundleContext != null) {
-            val shutdownServiceReference: ServiceReference<Shutdown>? =
-                bundleContext.getServiceReference(Shutdown::class.java)
-            if (shutdownServiceReference != null) {
-                bundleContext.getService(shutdownServiceReference)?.shutdown(bundleContext.bundle)
-            }
-        }
     }
 }
 

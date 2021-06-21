@@ -108,7 +108,6 @@ class ConfigReadServiceImpl(
         configurationRepository.updateConfiguration(newRecord.key, config)
         val tempConfigMap = configurationRepository.getConfigurations()
         configUpdates.forEach { it.value.onUpdate(setOf(newRecord.key), tempConfigMap) }
-
     }
 
     private class ConfigListenerSubscription(private val configReadService: ConfigReadServiceImpl) : AutoCloseable {

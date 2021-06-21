@@ -23,7 +23,6 @@ dependencies {
     implementation project(":components:examples:publisher")
     implementation project(":components:examples:durable-sub")
     implementation project(":components:examples:pubsub-sub")
-    implementation project(":components:examples:compacted-sub")
     implementation project(":components:examples:state-plus-event-sub")
     implementation project(':libs:configuration:configuration-read')
 

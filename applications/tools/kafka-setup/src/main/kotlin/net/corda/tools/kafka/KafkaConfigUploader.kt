@@ -5,15 +5,11 @@ import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.contextLogger
-import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
-import org.osgi.framework.ServiceReference
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
@@ -25,7 +21,9 @@ class KafkaConfigUploader @Activate constructor(
     @Reference(service = KafkaTopicAdmin::class)
     private var topicAdmin: KafkaTopicAdmin,
     @Reference(service = KafkaConfigWrite::class)
-    private var configWriter: KafkaConfigWrite
+    private var configWriter: KafkaConfigWrite,
+    @Reference(service = Shutdown::class)
+    private val shutDownService: Shutdown
 ) : Application {
 
     private companion object {
@@ -107,14 +105,7 @@ class KafkaConfigUploader @Activate constructor(
     }
 
     private fun shutdownOSGiFramework() {
-        val bundleContext: BundleContext? = FrameworkUtil.getBundle(KafkaConfigUploader::class.java).bundleContext
-        if (bundleContext != null) {
-            val shutdownServiceReference: ServiceReference<Shutdown>? =
-                bundleContext.getServiceReference(Shutdown::class.java)
-            if (shutdownServiceReference != null) {
-                bundleContext.getService(shutdownServiceReference)?.shutdown(bundleContext.bundle)
-            }
-        }
+        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
 }
 

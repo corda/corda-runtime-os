@@ -4,7 +4,6 @@ import com.typesafe.config.Config
 import net.corda.components.examples.durable.processor.DemoDurableProcessor
 import net.corda.data.demo.DemoRecord
 import net.corda.lifecycle.LifeCycle
-import net.corda.lifecycle.LifeCycleCoordinator
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -14,7 +13,6 @@ import org.slf4j.Logger
 
 @Component
 class RunDurableSub(
-    private val lifeCycleCoordinator: LifeCycleCoordinator,
     private val subscriptionFactory: SubscriptionFactory,
     private var config: Config,
     private val instanceId: Int,

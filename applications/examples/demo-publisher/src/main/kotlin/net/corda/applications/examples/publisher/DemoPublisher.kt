@@ -10,9 +10,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
-import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
-import org.osgi.framework.ServiceReference
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -23,6 +21,8 @@ import picocli.CommandLine
 class DemoPublisher @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
+    @Reference(service = Shutdown::class)
+    private val shutDownService: Shutdown
 ) : Application {
 
     private companion object {
@@ -61,7 +61,13 @@ class DemoPublisher @Activate constructor(
                 }
             }
 
-            publisher = RunPublisher(lifeCycleCoordinator!!, publisherFactory, instanceId, parameters.numberOfRecords.toInt(), parameters.numberOfKeys.toInt())
+            publisher = RunPublisher(
+                lifeCycleCoordinator!!,
+                publisherFactory,
+                instanceId,
+                parameters.numberOfRecords.toInt(),
+                parameters.numberOfKeys.toInt()
+            )
 
             lifeCycleCoordinator!!.start()
         }
@@ -73,25 +79,24 @@ class DemoPublisher @Activate constructor(
     }
 
     private fun shutdownOSGiFramework() {
-        val bundleContext: BundleContext? = FrameworkUtil.getBundle(this::class.java).bundleContext
-        if (bundleContext != null) {
-            val shutdownServiceReference: ServiceReference<Shutdown>? =
-                bundleContext.getServiceReference(Shutdown::class.java)
-            if (shutdownServiceReference != null) {
-                bundleContext.getService(shutdownServiceReference)?.shutdown(bundleContext.bundle)
-            }
-        }
+        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
 }
 
 class CliParameters {
-    @CommandLine.Option(names = ["--instanceId"], description = ["InstanceId for a transactional publisher, leave blank to use async publisher"])
+    @CommandLine.Option(
+        names = ["--instanceId"],
+        description = ["InstanceId for a transactional publisher, leave blank to use async publisher"]
+    )
     var instanceId: String? = null
 
     @CommandLine.Option(names = ["--numberOfRecords"], description = ["Number of records to send per key."])
     lateinit var numberOfRecords: String
 
-    @CommandLine.Option(names = ["--numberOfKeys"], description = ["Number of keys to use. total records sent = numberOfKeys * numberOfRecords"])
+    @CommandLine.Option(
+        names = ["--numberOfKeys"],
+        description = ["Number of keys to use. total records sent = numberOfKeys * numberOfRecords"]
+    )
     lateinit var numberOfKeys: String
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
