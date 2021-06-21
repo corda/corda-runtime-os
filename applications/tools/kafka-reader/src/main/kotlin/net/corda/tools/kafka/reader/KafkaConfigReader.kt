@@ -1,5 +1,6 @@
 package net.corda.tools.kafka.reader
 
+import com.typesafe.config.ConfigFactory
 import net.corda.comp.kafka.config.read.KafkaConfigRead
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -11,6 +12,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import picocli.CommandLine
+import java.io.File
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
@@ -32,7 +34,7 @@ class KafkaConfigReader @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutdownOSGiFramework()
         } else {
-            configReader.start()
+            configReader.start(ConfigFactory.parseFile(parameters.configurationFile))
             logger.info("____________________________SLEEP______________________________________")
             while (!configReader.isRunning) { Thread.sleep(100) }
             shutdownOSGiFramework()
@@ -55,4 +57,7 @@ class CliParameters {
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false
+
+    @CommandLine.Option(names = ["--config"], description = ["File containing configuration to be stored"])
+    lateinit var configurationFile: File
 }
