@@ -188,7 +188,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
     /**
-     * Log error and return [CordaMessageAPIFatalException]
+     * Log error and throw [CordaMessageAPIFatalException]
      */
     private fun logErrorAndThrowFatalException(errorMessage: String, ex: Exception) : Nothing {
         log.error(errorMessage, ex)
