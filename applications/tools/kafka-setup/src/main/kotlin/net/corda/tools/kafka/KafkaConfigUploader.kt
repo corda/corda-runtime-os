@@ -5,6 +5,7 @@ import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceReference
@@ -29,6 +30,9 @@ class KafkaConfigUploader @Activate constructor(
 
     private companion object {
         private val logger: Logger = contextLogger()
+        const val KAFKA_CONFIG_TOPIC_NAME = "kafka.config.topic.name"
+        const val KAFKA_BOOTSTRAP_SERVER = "kafka.bootstrap.servers"
+        const val BOOTSTRAP_SERVER = "bootstrap.servers"
     }
 
     override fun startup(args: Array<String>) {
@@ -39,14 +43,61 @@ class KafkaConfigUploader @Activate constructor(
             shutdownOSGiFramework()
         } else {
             val kafkaConnectionProperties = Properties()
-            kafkaConnectionProperties.load(FileInputStream(parameters.kafkaConnection))
+            val kafkaPropertiesFile = parameters.kafkaConnection
+            if (kafkaPropertiesFile != null) {
+                kafkaConnectionProperties.load(FileInputStream(kafkaPropertiesFile))
+            }
 
-            val topic = topicAdmin.createTopic(kafkaConnectionProperties, parameters.topicTemplate.readText())
-            configWriter.updateConfig(
-                topic.getString("topicName"),
-                kafkaConnectionProperties,
-                parameters.configurationFile.readText()
-            )
+            setBootstrapServersProperty(kafkaConnectionProperties)
+
+            val topicTemplate = parameters.topicTemplate
+            if (topicTemplate != null) {
+                logger.info("Creating topics")
+                topicAdmin.createTopics(kafkaConnectionProperties, topicTemplate.readText())
+                logger.info("Topics created")
+            }
+
+            val configurationFile = parameters.configurationFile
+            if (configurationFile != null) {
+                logger.info("Writing config to topic")
+                configWriter.updateConfig(
+                    getConfigTopicName(kafkaConnectionProperties),
+                    kafkaConnectionProperties,
+                    configurationFile.readText()
+                )
+                logger.info("Write complete")
+            }
+            shutdownOSGiFramework()
+        }
+    }
+
+    private fun getConfigTopicName(kafkaConnectionProperties: Properties): String {
+        var configTopicName = System.getProperty(KAFKA_CONFIG_TOPIC_NAME)
+        if (configTopicName == null) {
+            val configTopicNameProperty = kafkaConnectionProperties[KAFKA_CONFIG_TOPIC_NAME]
+            if (configTopicNameProperty == null) {
+                logger.error(
+                    "No config topic defined! " +
+                            "Pass config topic name in via kafka.properties file or via -Dkafka.config.topic.name"
+                )
+                shutdownOSGiFramework()
+            } else {
+                configTopicName = configTopicNameProperty.toString()
+            }
+        }
+        return configTopicName
+    }
+
+    private fun setBootstrapServersProperty(kafkaConnectionProperties : Properties) {
+        val kafkaBootStrapServers = System.getProperty(KAFKA_BOOTSTRAP_SERVER)
+        if (kafkaBootStrapServers != null) {
+            kafkaConnectionProperties[BOOTSTRAP_SERVER] = kafkaBootStrapServers
+        }
+
+        if (kafkaConnectionProperties[BOOTSTRAP_SERVER] == null) {
+            logger.error("No bootstrap.servers property found! " +
+                    "Pass property in via kafka.properties file or via -Dkafka.bootstrap.servers")
+            shutdownOSGiFramework()
         }
     }
 
@@ -68,14 +119,15 @@ class KafkaConfigUploader @Activate constructor(
 }
 
 class CliParameters {
-    @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties"])
-    lateinit var kafkaConnection: File
+    @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties" +
+            " OR pass in -Dkafka.bootstrap.servers and -Dkafka.config.topic.name"])
+    var kafkaConnection: File? = null
 
     @CommandLine.Option(names = ["--topic"], description = ["File containing the topic template"])
-    lateinit var topicTemplate: File
+    var topicTemplate: File? = null
 
     @CommandLine.Option(names = ["--config"], description = ["File containing configuration to be stored"])
-    lateinit var configurationFile: File
+    var configurationFile: File? = null
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false
