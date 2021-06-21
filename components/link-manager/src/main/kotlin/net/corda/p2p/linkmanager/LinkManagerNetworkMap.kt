@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.p2p.HoldingIdentity
+import java.security.PrivateKey
 import java.security.PublicKey
 
 /**
@@ -9,12 +9,12 @@ import java.security.PublicKey
 interface LinkManagerNetworkMap {
 
     companion object {
-        internal fun HoldingIdentity.toSessionNetworkMapPeer(): NetMapHoldingIdentity {
-            return NetMapHoldingIdentity(this.x500Name, this.groupId)
+        internal fun net.corda.p2p.HoldingIdentity.toSessionNetworkMapPeer(): HoldingIdentity {
+            return HoldingIdentity(x500Name, groupId)
         }
 
-        internal fun NetMapHoldingIdentity.toHoldingIdentity(): HoldingIdentity {
-            return HoldingIdentity(this.x500Name, this.groupId)
+        internal fun HoldingIdentity.toHoldingIdentity(): net.corda.p2p.HoldingIdentity {
+            return net.corda.p2p.HoldingIdentity(this.x500Name, this.groupId)
         }
 
     }
@@ -22,7 +22,7 @@ interface LinkManagerNetworkMap {
     /**
      * Returns the [PublicKey] belonging a specific [holdingIdentity]
      */
-    fun getPublicKey(holdingIdentity: NetMapHoldingIdentity): PublicKey?
+    fun getPublicKey(holdingIdentity: HoldingIdentity): PublicKey?
 
     /**
      * Returns the [PublicKey] in the NetworkMap with SHA-256 hash [hash].
@@ -30,29 +30,30 @@ interface LinkManagerNetworkMap {
     fun getPublicKeyFromHash(hash: ByteArray): PublicKey
 
     /**
-     * Returns the [NetMapHoldingIdentity] in the NetworkMap. Which public key SHA-256 hashes to [hash].
+     * Returns the [HoldingIdentity] in the NetworkMap. Which public key SHA-256 hashes to [hash].
      * Returns [null] if there is no such key.
      */
-    fun getPeerFromHash(hash: ByteArray): NetMapHoldingIdentity?
+    fun getPeerFromHash(hash: ByteArray): HoldingIdentity?
 
-    fun getEndPoint(holdingIdentity: NetMapHoldingIdentity): EndPoint?
+    fun getEndPoint(holdingIdentity: HoldingIdentity): EndPoint?
 
     /**
-     * Returns our PublicKey belonging to [groupId]
+     * Returns our [PublicKey] belonging to [groupId]
      */
     fun getOurPublicKey(groupId: String?): PublicKey?
 
     /**
-     * Returns our [NetMapHoldingIdentity] belonging to [groupId]
+     * Returns our [PrivateKey] belonging to [groupId]
      */
-    fun getOurHoldingIdentity(groupId: String?): NetMapHoldingIdentity?
+    fun getOurPrivateKey(groupId: String?): PrivateKey?
+
 
     /**
-     * SignData with our private-key belonging to [groupId]
+     * Returns our [HoldingIdentity] belonging to [groupId]
      */
-    fun signData(groupId: String?, data: ByteArray): ByteArray
+    fun getOurHoldingIdentity(groupId: String?): HoldingIdentity?
 
     data class EndPoint(val sni: String, val address: String)
 
-    data class NetMapHoldingIdentity(val x500Name: String, val groupId: String?)
+    data class HoldingIdentity(val x500Name: String, val groupId: String?)
 }

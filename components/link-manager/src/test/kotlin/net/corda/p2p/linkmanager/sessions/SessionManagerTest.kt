@@ -18,6 +18,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager.Companion.getSessionKeyFromMessage
+import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.convertAuthenticatedEncryptedMessageToFlowMessage
@@ -36,6 +37,7 @@ import java.nio.ByteBuffer
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
+import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
 
@@ -43,19 +45,18 @@ class SessionManagerTest {
 
     companion object {
         private val GROUP_ID = null
-        val PARTY_A = LinkManagerNetworkMap.NetMapHoldingIdentity("PartyA", GROUP_ID)
-        val PARTY_B = LinkManagerNetworkMap.NetMapHoldingIdentity("PartyB", GROUP_ID)
+        val PARTY_A = LinkManagerNetworkMap.HoldingIdentity("PartyA", GROUP_ID)
+        val PARTY_B = LinkManagerNetworkMap.HoldingIdentity("PartyB", GROUP_ID)
         const val MAX_MESSAGE_SIZE = 1024 * 1024
     }
 
-    class MockNetworkMap(nodes: List<LinkManagerNetworkMap.NetMapHoldingIdentity>) {
+    class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
         private val provider = BouncyCastleProvider()
         private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-        private val signature = Signature.getInstance("ECDSA", provider)
         private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
 
-        private val keys = HashMap<LinkManagerNetworkMap.NetMapHoldingIdentity, KeyPair>()
-        private val peerForHash = HashMap<Int, LinkManagerNetworkMap.NetMapHoldingIdentity>()
+        private val keys = HashMap<LinkManagerNetworkMap.HoldingIdentity, KeyPair>()
+        private val peerForHash = HashMap<Int, LinkManagerNetworkMap.HoldingIdentity>()
 
         private fun MessageDigest.hash(data: ByteArray): ByteArray {
             this.reset()
@@ -71,9 +72,9 @@ class SessionManagerTest {
             }
         }
 
-        fun getSessionNetworkMapForNode(node: LinkManagerNetworkMap.NetMapHoldingIdentity): LinkManagerNetworkMap {
+        fun getSessionNetworkMapForNode(node: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap {
             return object : LinkManagerNetworkMap {
-                override fun getPublicKey(holdingIdentity: LinkManagerNetworkMap.NetMapHoldingIdentity): PublicKey? {
+                override fun getPublicKey(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): PublicKey? {
                     return keys[holdingIdentity]?.public
                 }
 
@@ -82,11 +83,11 @@ class SessionManagerTest {
                     return keys[peer]!!.public
                 }
 
-                override fun getPeerFromHash(hash: ByteArray): LinkManagerNetworkMap.NetMapHoldingIdentity? {
+                override fun getPeerFromHash(hash: ByteArray): LinkManagerNetworkMap.HoldingIdentity? {
                     return peerForHash[hash.contentHashCode()]
                 }
 
-                override fun getEndPoint(holdingIdentity: LinkManagerNetworkMap.NetMapHoldingIdentity): LinkManagerNetworkMap.EndPoint? {
+                override fun getEndPoint(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.EndPoint? {
                     //The actual end point does not need to be meaningful in this test as it is only used by the Gateway.
                     return if (keys[holdingIdentity] != null) {
                         LinkManagerNetworkMap.EndPoint("", "")
@@ -100,20 +101,29 @@ class SessionManagerTest {
                     return keys[node]!!.public
                 }
 
-                override fun getOurHoldingIdentity(groupId: String?): LinkManagerNetworkMap.NetMapHoldingIdentity {
+                override fun getOurPrivateKey(groupId: String?): PrivateKey? {
                     assertNull(groupId) {"In this case the groupId should be null."}
-                    return node
+                    return keys[node]!!.private
                 }
 
-                override fun signData(groupId: String?, data: ByteArray): ByteArray {
+                override fun getOurHoldingIdentity(groupId: String?): LinkManagerNetworkMap.HoldingIdentity {
                     assertNull(groupId) {"In this case the groupId should be null."}
-                    signature.initSign(keys[node]?.private)
-                    signature.update(data)
-                    return signature.sign()
+                    return node
                 }
             }
         }
 
+    }
+
+    class MockCryptoService : LinkManagerCryptoService {
+        private val provider = BouncyCastleProvider()
+        private val signature = Signature.getInstance("ECDSA", provider)
+
+        override fun signData(key: PrivateKey, data: ByteArray): ByteArray {
+            signature.initSign(key)
+            signature.update(data)
+            return signature.sign()
+        }
     }
 
     fun mockGatewayResponse(message: InitiatorHelloMessage, supportedModes: Set<ProtocolMode>): Step2Message {
@@ -128,10 +138,10 @@ class SessionManagerTest {
         return Step2Message(message, responderHello, ByteBuffer.wrap(privateKey))
     }
 
-    fun negotiateSession(key: SessionManager.SessionKey,
-                         initiatorSessionManager: SessionManager,
-                         responderSessionManager: SessionManager,
-                         responderSupportedMode: Set<ProtocolMode>): Pair<Session, Session> {
+    private fun negotiateSession(key: SessionManager.SessionKey,
+                                 initiatorSessionManager: SessionManager,
+                                 responderSessionManager: SessionManager,
+                                 responderSupportedMode: Set<ProtocolMode>): Pair<Session, Session> {
         val initiatorHelloMessage = initiatorSessionManager.getSessionInitMessage(key)
         assertTrue(initiatorHelloMessage?.payload is InitiatorHelloMessage)
 
@@ -163,11 +173,13 @@ class SessionManagerTest {
         val initiatorSessionManager = SessionManager(
             supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_A),
+            MockCryptoService(),
             MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManager }
         val responderSessionManager = SessionManager(
             supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_B),
+            MockCryptoService(),
             MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManager }
 
@@ -204,11 +216,13 @@ class SessionManagerTest {
         val initiatorSessionManager = SessionManager(
             supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_A),
+            MockCryptoService(),
             MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManager }
         val responderSessionManager = SessionManager(
             supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_B),
+            MockCryptoService(),
             MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManager }
 
@@ -262,12 +276,14 @@ class SessionManagerTest {
         val initiatorSessionManager = SessionManager(
             supportedMode,
             netMapPartyA,
+            MockCryptoService(),
             MAX_MESSAGE_SIZE,
             ::testCallBack
         )
         val responderSessionManager = SessionManager(
             supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_B),
+            MockCryptoService(),
             MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManager }
 
@@ -287,6 +303,7 @@ class SessionManagerTest {
         val sessionManager = SessionManager(
             supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_A),
+            MockCryptoService(),
             MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManager }
 
@@ -313,32 +330,9 @@ class SessionManagerTest {
         for (mockMessage in mockMessages) {
             assertNull(sessionManager.processSessionMessage(LinkInMessage(mockMessage)))
             Mockito.verify(mockLogger).warn("Received ${mockMessage::class.java.simpleName} with sessionId" +
-                    " $fakeSession but there is no pending session. The message was discarded.")
+                    " $fakeSession but there is no pending session with this id. The message was discarded.")
 
         }
-    }
-
-    @Test
-    fun `ResponderHandshakeMessage is dropped if there is no pending session`() {
-        val netMap = MockNetworkMap(listOf(PARTY_A, PARTY_B))
-        val supportedMode =  setOf(ProtocolMode.AUTHENTICATION_ONLY)
-        val sessionManager = SessionManager(
-            supportedMode,
-            netMap.getSessionNetworkMapForNode(PARTY_A),
-            MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManager }
-
-        val mockHandshake = Mockito.mock(ResponderHandshakeMessage::class.java)
-        val mockHeader = Mockito.mock(CommonHeader::class.java)
-        val mockLogger = Mockito.mock(Logger::class.java)
-        val fakeSession = "Fake Session"
-
-        sessionManager.setLogger(mockLogger)
-        Mockito.`when`(mockHandshake.header).thenReturn(mockHeader)
-        Mockito.`when`(mockHeader.sessionId).thenReturn(fakeSession)
-        assertNull(sessionManager.processSessionMessage(LinkInMessage(mockHandshake)))
-        Mockito.verify(mockLogger).warn("Received ${mockHandshake::class.java.simpleName} with sessionId" +
-                " $fakeSession but there is no pending session with this id. The message was discarded.")
     }
 
 }

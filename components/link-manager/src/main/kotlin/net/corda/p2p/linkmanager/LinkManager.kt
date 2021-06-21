@@ -31,6 +31,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   @Reference(service = PublisherFactory::class)
                   private val publisherFactory: PublisherFactory,
                   linkManagerNetworkMap: LinkManagerNetworkMap,
+                  linkManagerCryptoService: LinkManagerCryptoService,
                   maxMessageSize: Int,
                   protocolModes: Set<ProtocolMode>)
 : LifeCycle {
@@ -58,6 +59,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private var sessionManager: SessionManager = SessionManager(
         protocolModes,
         linkManagerNetworkMap,
+        linkManagerCryptoService,
         maxMessageSize,
         messagesPendingSession::sessionNegotiatedCallback
     )
