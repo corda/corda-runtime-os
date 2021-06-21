@@ -12,6 +12,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
@@ -31,6 +32,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers.anyMap
 import org.mockito.Mockito
 import java.nio.ByteBuffer
@@ -242,6 +244,13 @@ class CordaKafkaConsumerImplTest {
 
         val positionAfterReset = consumer.position(partition)
         assertThat(positionAfterReset).isEqualTo(0L)
+    }
+
+
+    @Test
+    fun testGetPartitionsNullPointerException() {
+        //NPE converted to CordaMessageAPIIntermittentException
+        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaConsumer.getPartitions("topic", Duration.ZERO) }
     }
 
     private fun commitOffsetForConsumer(offsetCommit: Long) {

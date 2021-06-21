@@ -2,6 +2,7 @@ package net.corda.messaging.kafka.subscription.consumer.wrapper.impl
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
@@ -20,6 +21,7 @@ import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.FencedInstanceIdException
 import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.TimeoutException
+import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -147,10 +149,31 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
     override fun getPartitions(topic: String, duration: Duration): List<TopicPartition> {
-        return consumer.partitionsFor(topic, duration)
-            .map { partitionInfo ->
-                TopicPartition(partitionInfo.topic(), partitionInfo.partition())
+        try {
+            return consumer.partitionsFor(topic, duration)
+                .map { partitionInfo ->
+                    TopicPartition(partitionInfo.topic(), partitionInfo.partition())
+                }
+        } catch (ex: Exception) {
+            when (ex) {
+                //TODO - this is a workaround for kafka issue whereby NPE thrown when getPartitions is called during broker startup
+                is NullPointerException,
+                is InterruptException,
+                is WakeupException,
+                is KafkaException,
+                is TimeoutException -> {
+                    throw CordaMessageAPIIntermittentException("Intermittent error attempting to get partitions on topic $topic", ex)
+                }
+                is AuthenticationException,
+                is AuthorizationException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to get partitions on topic $topic", ex)
+                }
+                else -> {
+                    logErrorAndThrowFatalException("Unexpected error attempting to get partitions on topic $topic", ex)
+                }
             }
+        }
+        return emptyList()
     }
 
     /**
