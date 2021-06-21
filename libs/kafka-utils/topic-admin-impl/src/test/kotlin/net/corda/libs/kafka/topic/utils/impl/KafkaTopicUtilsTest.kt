@@ -32,10 +32,10 @@ class KafkaTopicUtilsTest {
     }
 
     @Test
-    fun testCreateTopic() {
+    fun testCreateTopics() {
         Mockito.`when`(adminClient.createTopics(any())).thenReturn(topicResult)
         Mockito.`when`(topicResult.all()).thenReturn(kafkaFuture)
-        kafkaTopicUtils.createTopic(dummyTopicConfig())
+        kafkaTopicUtils.createTopics(dummyTopicConfig())
         verify(adminClient, times(1)).createTopics(any())
     }
 
@@ -43,11 +43,11 @@ class KafkaTopicUtilsTest {
     fun testCreateTopicAlreadyExists() {
         Mockito.`when`(adminClient.createTopics(any())).thenReturn(topicResult)
         Mockito.`when`(topicResult.all()).thenReturn(kafkaFuture)
-        kafkaTopicUtils.createTopic(dummyTopicConfig())
+        kafkaTopicUtils.createTopics(dummyTopicConfig())
         verify(adminClient, times(1)).createTopics(any())
 
         Mockito.`when`(kafkaFuture.get()).thenThrow(ExecutionException(TopicExistsException("already exists")))
-        kafkaTopicUtils.createTopic(dummyTopicConfig())
+        kafkaTopicUtils.createTopics(dummyTopicConfig())
         verify(adminClient, times(2)).createTopics(any())
     }
 
@@ -56,20 +56,24 @@ class KafkaTopicUtilsTest {
         Mockito.`when`(adminClient.createTopics(any())).thenReturn(topicResult)
         Mockito.`when`(topicResult.all()).thenReturn(kafkaFuture)
         Mockito.`when`(kafkaFuture.get()).thenThrow(ExecutionException(InterruptedException("something bad happened")))
-        assertThrows<InterruptedException> { kafkaTopicUtils.createTopic(dummyTopicConfig()) }
+        assertThrows<InterruptedException> { kafkaTopicUtils.createTopics(dummyTopicConfig()) }
 
         verify(adminClient, times(1)).createTopics(any())
     }
 
     private fun dummyTopicConfig(): Config = ConfigFactory.parseString(
         """
-        topicName = "dummyName"
-        numPartitions = 1
-        replicationFactor = 1
-        config {
-            first.key = "firstValue",
-            second.key = "secondValue"
-        }
+        topics = [
+            {
+                topicName = "dummyName"
+                numPartitions = 1
+                replicationFactor = 1
+                config {
+                    first.key = "firstValue",
+                    second.key = "secondValue"
+                }
+            }
+        ]
     """.trimIndent()
     )
 }

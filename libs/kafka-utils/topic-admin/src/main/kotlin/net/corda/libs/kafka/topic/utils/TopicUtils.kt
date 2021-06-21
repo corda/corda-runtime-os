@@ -13,5 +13,4 @@ interface TopicUtils {
      * Create new topics based on [topicsTemplate]
      */
     fun createTopics(topicsTemplate: Config)
-
 }
