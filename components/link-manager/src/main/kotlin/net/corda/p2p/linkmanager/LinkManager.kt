@@ -14,7 +14,6 @@ import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
-import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toSessionNetworkMapPeer
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkOutMessageFromFlowMessage
@@ -32,8 +31,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   private val publisherFactory: PublisherFactory,
                   linkManagerNetworkMap: LinkManagerNetworkMap,
                   linkManagerCryptoService: LinkManagerCryptoService,
-                  maxMessageSize: Int,
-                  protocolModes: Set<ProtocolMode>)
+                  config: LinkManagerConfig
+)
 : LifeCycle {
 
     companion object {
@@ -57,10 +56,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private var inboundMessageSubscription: Subscription<String, LinkInMessage>
     private var messagesPendingSession = PendingSessionsMessageQueues(publisherFactory)
     private var sessionManager: SessionManager = SessionManager(
-        protocolModes,
+        config.protocolModes,
         linkManagerNetworkMap,
         linkManagerCryptoService,
-        maxMessageSize,
+        config.maxMessageSize,
         messagesPendingSession::sessionNegotiatedCallback
     )
 
@@ -107,7 +106,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             val records = mutableListOf<Record<String, *>>()
             for (event in events) {
                 if (event.value.payload is AuthenticatedDataMessage || event.value.payload is AuthenticatedEncryptedDataMessage) {
-                    extractMessageAndCheckMessage(event.value)?.let { records.add(Record(P2P_OUT_TOPIC, KEY, it)) }
+                    extractMessageAndCheckMessage(event.value)?.let { records.add(Record(P2P_IN_TOPIC, KEY, it)) }
                 } else {
                     sessionManager.processSessionMessage(event.value)?.let { records.add(Record(LINK_OUT_TOPIC, KEY, it)) }
                 }
@@ -179,16 +178,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     }
 
     init {
-        val outboundMessageForwarderConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, P2P_OUT_TOPIC)
+        val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, P2P_OUT_TOPIC)
         outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            outboundMessageForwarderConfig,
+            outboundMessageSubscriptionConfig,
             OutboundMessageProcessor(sessionManager, messagesPendingSession, linkManagerNetworkMap),
             mapOf(),
             null
         )
-        val inboundMessageForwarderConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC)
+        val inboundMessageSubscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC)
         inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            inboundMessageForwarderConfig,
+            inboundMessageSubscriptionConfig,
             InboundMessageProcessor(sessionManager),
             mapOf(),
             null

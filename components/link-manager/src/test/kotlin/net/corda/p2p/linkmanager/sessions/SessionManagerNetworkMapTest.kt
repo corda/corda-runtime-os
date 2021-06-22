@@ -1,3 +1,5 @@
+package net.corda.p2p.linkmanager.sessions
+
 import com.nhaarman.mockito_kotlin.*
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
@@ -11,8 +13,6 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.Messaging
-import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.p2p.linkmanager.sessions.SessionManagerTest
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
