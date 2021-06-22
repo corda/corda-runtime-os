@@ -6,18 +6,15 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.kafka.mergeProperties
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CONF_PREFIX
-import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_CLIENT_ID
-import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_INSTANCE_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CLIENT_ID_COUNTER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBLISHER
 import net.corda.messaging.kafka.publisher.CordaKafkaPublisherImpl
+import net.corda.messaging.kafka.toConfig
 import net.corda.schema.registry.AvroSchemaRegistry
-import org.apache.kafka.clients.producer.ProducerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.Properties
 
 /**
  * Kafka implementation for Publisher Factory.
@@ -26,48 +23,32 @@ import java.util.Properties
 @Component
 class CordaKafkaPublisherFactory @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
-    private val avroSchemaRegistry: AvroSchemaRegistry) : PublisherFactory {
+    private val avroSchemaRegistry: AvroSchemaRegistry
+) : PublisherFactory {
+
+    private val enforced = ConfigFactory.parseResourcesAnySyntax("messaging-enforced.conf")
+    private val defaults = ConfigFactory.parseResourcesAnySyntax("messaging-defaults.conf")
 
     override fun createPublisher(
         publisherConfig: PublisherConfig,
-        properties: Map<String, String>
+        nodeConfig: Config
     ): Publisher {
-        //TODO - replace this with a  call to OSGi ConfigService, possibly multiple configs required
-        val defaultKafkaConfig = ConfigFactory.load("tmpKafkaDefaults")
-        var config = defaultKafkaConfig
-            .withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
-
-        val instanceId = publisherConfig.instanceId
-        if (instanceId != null) {
-            config = config.withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId))
-        }
-
-        val producerProperties = getProducerProps(config, properties)
-        val producer = KafkaProducerBuilderImpl(config, avroSchemaRegistry, producerProperties).createProducer()
-
-        return CordaKafkaPublisherImpl(publisherConfig, defaultKafkaConfig, producer)
+        val config = resolveConfiguration(publisherConfig.toConfig(), nodeConfig, PATTERN_PUBLISHER)
+        val producer = KafkaProducerBuilderImpl(avroSchemaRegistry).createProducer(config)
+        return CordaKafkaPublisherImpl(config, producer)
     }
 
-    /**
-     * Generate producer properties with default values from [config] unless overridden by the given [overrideProperties].
-     * @param config config
-     * @param overrideProperties Properties to override default config.
-     * @return Kafka Producer properties.
-     */
-    private fun getProducerProps(config: Config,
-                                 overrideProperties: Map<String, String>): Properties {
-        val clientId = config.getString(PUBLISHER_CLIENT_ID)
-        val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getString(PUBLISHER_INSTANCE_ID) else null
-
-        //TODO - update the below when config task  has evolved
-        val producerProps = mergeProperties(config, PRODUCER_CONF_PREFIX, overrideProperties)
-        producerProps[ProducerConfig.CLIENT_ID_CONFIG] = clientId
-
-        if (instanceId != null) {
-            producerProps[ProducerConfig.TRANSACTIONAL_ID_CONFIG] =
-                "publishing-producer-$clientId-$instanceId"
-        }
-
-        return producerProps
+    private fun resolveConfiguration(
+        subscriptionConfiguration: Config,
+        nodeConfig: Config,
+        pattern: String
+    ): Config {
+        return enforced
+            .withFallback(subscriptionConfiguration)
+            .withValue(CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(1))
+            .withFallback(nodeConfig)
+            .withFallback(defaults)
+            .resolve()
+            .getConfig(pattern)
     }
 }
