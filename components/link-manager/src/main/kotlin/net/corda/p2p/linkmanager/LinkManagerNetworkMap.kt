@@ -53,7 +53,7 @@ interface LinkManagerNetworkMap {
      */
     fun getOurHoldingIdentity(groupId: String?): HoldingIdentity?
 
-    data class EndPoint(val sni: String, val address: String)
+    data class EndPoint(val address: String)
 
     data class HoldingIdentity(val x500Name: String, val groupId: String?)
 }

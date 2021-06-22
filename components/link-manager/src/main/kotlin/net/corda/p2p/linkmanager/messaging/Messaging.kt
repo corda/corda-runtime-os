@@ -14,6 +14,7 @@ import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toSessionNetworkMapPeer
+import net.corda.p2p.linkmanager.messaging.SniCalculator.Companion.calculateSni
 import net.corda.v5.base.annotations.VisibleForTesting
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -49,7 +50,7 @@ class Messaging {
             networkMap: LinkManagerNetworkMap
         ): LinkOutHeader? {
             val endPoint = networkMap.getEndPoint(peer.toSessionNetworkMapPeer()) ?: return null
-            return LinkOutHeader(endPoint.sni, endPoint.address)
+            return LinkOutHeader(calculateSni(peer, endPoint.address) , endPoint.address)
         }
 
         fun createLinkOutMessageFromFlowMessage(

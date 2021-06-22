@@ -30,7 +30,7 @@ class SessionManagerNetworkMapTest {
         val PARTY_A = LinkManagerNetworkMap.HoldingIdentity("PartyA", GROUP_ID)
         val PARTY_B = LinkManagerNetworkMap.HoldingIdentity("PartyB", GROUP_ID)
         val PARTY_NOT_IN_NETMAP = LinkManagerNetworkMap.HoldingIdentity("PartyImposter", GROUP_ID)
-        const val MAX_MESSAGE_SIZE = 1024 * 1024
+        val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("10.0.0.1:hello")
     }
 
     @Test
@@ -161,7 +161,7 @@ class SessionManagerNetworkMapTest {
     @Test
     fun `Responder hello message is dropped if we are not in the network map`() {
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(netMap.getEndPoint(any())).thenReturn(LinkManagerNetworkMap.EndPoint("", ""))
+        Mockito.`when`(netMap.getEndPoint(any())).thenReturn(FAKE_ENDPOINT)
         Mockito.`when`(netMap.getOurPublicKey(any())).thenReturn(null)
         val mockLogger = Mockito.mock(Logger::class.java)
 
@@ -177,7 +177,7 @@ class SessionManagerNetworkMapTest {
     fun `Responder hello message is dropped if the receiver is not in the network map`() {
         val publicKey = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair().public
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(netMap.getEndPoint(any())).thenReturn(LinkManagerNetworkMap.EndPoint("", ""))
+        Mockito.`when`(netMap.getEndPoint(any())).thenReturn(FAKE_ENDPOINT)
         Mockito.`when`(netMap.getOurPublicKey(anyOrNull())).thenReturn(publicKey)
 
         val mockLogger = Mockito.mock(Logger::class.java)
@@ -194,7 +194,7 @@ class SessionManagerNetworkMapTest {
     fun `Responder hello message is dropped if we are removed from the network map during processSessionMessage`() {
         val publicKey = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair().public
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(netMap.getEndPoint(any())).thenReturn(LinkManagerNetworkMap.EndPoint("", ""))
+        Mockito.`when`(netMap.getEndPoint(any())).thenReturn(FAKE_ENDPOINT)
         Mockito.`when`(netMap.getOurPublicKey(anyOrNull())).thenReturn(publicKey)
         Mockito.`when`(netMap.getPublicKey(anyOrNull())).thenReturn(publicKey)
         Mockito.`when`(netMap.getOurPrivateKey(anyOrNull())).thenReturn(null)
@@ -211,7 +211,7 @@ class SessionManagerNetworkMapTest {
     fun `Responder hello message is dropped if the receiver is removed from the network map during processSessionMessage`() {
         val keyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(netMap.getEndPoint(PARTY_B)).thenReturn(LinkManagerNetworkMap.EndPoint("", "")).thenReturn(null)
+        Mockito.`when`(netMap.getEndPoint(PARTY_B)).thenReturn(FAKE_ENDPOINT).thenReturn(null)
         Mockito.`when`(netMap.getOurPublicKey(anyOrNull())).thenReturn(keyPair.public)
         Mockito.`when`(netMap.getPublicKey(anyOrNull())).thenReturn(keyPair.public)
         Mockito.`when`(netMap.getOurPrivateKey(anyOrNull())).thenReturn(keyPair.private)
@@ -227,7 +227,7 @@ class SessionManagerNetworkMapTest {
     fun makeMockNetworkMap(): LinkManagerNetworkMap {
         val keyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(netMap.getEndPoint(PARTY_B)).thenReturn(LinkManagerNetworkMap.EndPoint("", ""))
+        Mockito.`when`(netMap.getEndPoint(PARTY_B)).thenReturn(FAKE_ENDPOINT)
         Mockito.`when`(netMap.getOurPublicKey(anyOrNull())).thenReturn(keyPair.public)
         Mockito.`when`(netMap.getPublicKey(anyOrNull())).thenReturn(keyPair.public)
         Mockito.`when`(netMap.getOurPrivateKey(anyOrNull())).thenReturn(keyPair.private)
@@ -379,7 +379,7 @@ class SessionManagerNetworkMapTest {
 
         val initiatorKeyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
         val initiatorNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(initiatorNetMap.getEndPoint(PARTY_B)).thenReturn(LinkManagerNetworkMap.EndPoint("", ""))
+        Mockito.`when`(initiatorNetMap.getEndPoint(PARTY_B)).thenReturn(LinkManagerNetworkMap.EndPoint(""))
         Mockito.`when`(initiatorNetMap.getOurPublicKey(anyOrNull())).thenReturn(initiatorKeyPair.public)
         //Called for the first time in `processResponderHello` and the second time in processResponderHandshake.
         Mockito.`when`(initiatorNetMap.getPublicKey(anyOrNull())).thenReturn(initiatorKeyPair.public).thenReturn(null)
@@ -395,7 +395,7 @@ class SessionManagerNetworkMapTest {
         Mockito.`when`(responderNetMap.getPeerFromHash(anyOrNull())).thenReturn(PARTY_B)
         Mockito.`when`(responderNetMap.getOurPublicKey(anyOrNull())).thenReturn(responderKeyPair.public)
         Mockito.`when`(responderNetMap.getOurPrivateKey(anyOrNull())).thenReturn(responderKeyPair.private)
-        Mockito.`when`(responderNetMap.getEndPoint(anyOrNull())).thenReturn(LinkManagerNetworkMap.EndPoint("", ""))
+        Mockito.`when`(responderNetMap.getEndPoint(anyOrNull())).thenReturn(LinkManagerNetworkMap.EndPoint(""))
 
         val mockLogger = Mockito.mock(Logger::class.java)
 

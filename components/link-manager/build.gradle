@@ -20,7 +20,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
     implementation "net.corda:corda-base:$cordaVersion"
-    testImplementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'

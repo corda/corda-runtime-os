@@ -47,6 +47,7 @@ class SessionManagerTest {
         private val GROUP_ID = null
         val PARTY_A = LinkManagerNetworkMap.HoldingIdentity("PartyA", GROUP_ID)
         val PARTY_B = LinkManagerNetworkMap.HoldingIdentity("PartyB", GROUP_ID)
+        val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("10.0.0.1:hello")
         const val MAX_MESSAGE_SIZE = 1024 * 1024
     }
 
@@ -90,7 +91,7 @@ class SessionManagerTest {
                 override fun getEndPoint(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.EndPoint? {
                     //The actual end point does not need to be meaningful in this test as it is only used by the Gateway.
                     return if (keys[holdingIdentity] != null) {
-                        LinkManagerNetworkMap.EndPoint("", "")
+                        FAKE_ENDPOINT
                     } else {
                         null
                     }
