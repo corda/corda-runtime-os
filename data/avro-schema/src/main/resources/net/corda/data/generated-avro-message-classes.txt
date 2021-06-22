@@ -3,6 +3,7 @@ net.corda.data.client.rpc.flow.RPCFlowStart
 net.corda.data.config.Configuration
 net.corda.data.crypto.SecureHash
 net.corda.data.demo.DemoRecord
+net.corda.data.demo.DemoStateRecord
 net.corda.data.test.EvolvedMessage
 net.corda.p2p.crypto.AuthenticatedDataMessage
 net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
