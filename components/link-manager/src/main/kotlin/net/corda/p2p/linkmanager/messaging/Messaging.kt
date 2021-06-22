@@ -72,8 +72,9 @@ class Messaging {
                     )
                 }
                 else -> {
-                    logger.warn("Session must be either ${AuthenticatedSession::class.java} " +
-                        "or ${AuthenticatedEncryptionSession::class.java}. The message was discarded.")
+                    logger.warn("Invalid Session type ${session::class.java.simpleName}.Session must be either " +
+                        "${AuthenticatedSession::class.java.simpleName} or ${AuthenticatedEncryptionSession::class.java.simpleName}." +
+                        " The message was discarded.")
                     return null
                 }
             }
@@ -133,13 +134,13 @@ class Messaging {
             try {
                 session.validateMac(message.header, message.payload.array(), message.authTag.array())
             } catch (exception: InvalidMac) {
-                logger.warn("MAC check failed for message for session ${message.header.sessionId}.")
+                logger.warn("MAC check failed for message for session ${message.header.sessionId}. The message was discarded.")
                 return null
             }
             return try {
                 FlowMessage.fromByteBuffer(message.payload)
             } catch (exception: IOException) {
-                logger.warn("Could not deserialize message for session ${message.header.sessionId}.")
+                logger.warn("Could not deserialize message for session ${message.header.sessionId}. The message was discarded.")
                 null
             }
         }
