@@ -106,7 +106,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             val records = mutableListOf<Record<String, *>>()
             for (event in events) {
                 if (event.value.payload is AuthenticatedDataMessage || event.value.payload is AuthenticatedEncryptedDataMessage) {
-                    extractMessageAndCheckMessage(event.value)?.let { records.add(Record(P2P_IN_TOPIC, KEY, it)) }
+                    extractAndCheckMessage(event.value)?.let { records.add(Record(P2P_IN_TOPIC, KEY, it)) }
                 } else {
                     sessionManager.processSessionMessage(event.value)?.let { records.add(Record(LINK_OUT_TOPIC, KEY, it)) }
                 }
@@ -115,10 +115,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         /**
-         * This function extracts (decrypts if nessary) the payload from the message.
-         * It checks we have negotiated a session with the sender and checks Authentication
+         * This function extracts (decrypts if necessary) the payload from the message.
+         * It checks we have negotiated a session with the sender and authenticates the message.
          */
-        private fun extractMessageAndCheckMessage(message: LinkInMessage): FlowMessage? {
+        private fun extractAndCheckMessage(message: LinkInMessage): FlowMessage? {
             val sessionId = getSessionFromDataMessage(message)
             val session =  sessionManager.getResponderSession(sessionId)
             if (session == null) {
