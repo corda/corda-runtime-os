@@ -20,7 +20,7 @@ class RunPubSub(
     companion object {
         val log: Logger = contextLogger()
         const val groupName = "pubsubGroup"
-        const val pubsubTopic = "pubsubTopic"
+        const val pubsubTopic = "PubsubTopic"
     }
 
     private var subscription: Subscription<String, DemoRecord>? = null

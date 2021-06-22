@@ -23,9 +23,9 @@ class RunDurableSub(
     private companion object {
         val log: Logger = contextLogger()
         const val groupName = "durableGroup"
-        const val inputTopic = "publisherTopic"
-        const val outputEventTopic = "eventTopic"
-        const val outputPubSubTopic = "pubsubTopic"
+        const val inputTopic = "PublisherTopic"
+        const val outputEventTopic = "EventTopic"
+        const val outputPubSubTopic = "PubsubTopic"
     }
 
     private var subscription: Subscription<String, DemoRecord>? = null

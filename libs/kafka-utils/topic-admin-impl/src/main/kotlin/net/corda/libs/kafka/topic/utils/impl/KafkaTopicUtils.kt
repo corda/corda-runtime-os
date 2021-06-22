@@ -70,7 +70,7 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
         """
         topics = [
             {
-                topicName = "configTopic"
+                topicName = "ConfigTopic"
                 numPartitions = 1
                 replicationFactor = 3
                 config {

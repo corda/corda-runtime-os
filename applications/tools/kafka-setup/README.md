@@ -13,12 +13,16 @@ bootstrap.servers=localhost:9092
 The `topicTemplateFile` contains the typesafe definition for the topic you wish to create. For example
 
 ```text
-topicName = "topicName"
-numPartitions = 1
-replicationFactor = 1
-config {
-    cleanup.policy=compact
-}
+topics = [
+    {
+        topicName = "ConfigTopic"
+        numPartitions = 1
+        replicationFactor = 3
+        config {
+            cleanup.policy=compact
+        }
+    }
+]
 ```
 
 The `typesafeConfigurationFile` should contain a JSON/HOCON representation of the configuration you want to save on the

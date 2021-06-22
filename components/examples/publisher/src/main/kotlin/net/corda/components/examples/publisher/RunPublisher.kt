@@ -27,7 +27,7 @@ class RunPublisher (
     companion object {
         val log: Logger = contextLogger()
         const val clientId = "publisher"
-        const val publisherTopic = "publisherTopic"
+        const val publisherTopic = "PublisherTopic"
     }
 
     override var isRunning: Boolean = false

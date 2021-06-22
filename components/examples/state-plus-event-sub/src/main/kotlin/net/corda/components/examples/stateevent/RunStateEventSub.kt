@@ -24,8 +24,8 @@ class RunStateEventSub(
     private companion object {
         val log: Logger = contextLogger()
         const val groupName = "stateEventGroup"
-        const val eventTopic = "eventTopic"
-        const val stateTopic = "stateTopic"
+        const val eventTopic = "EventTopic"
+        const val stateTopic = "StateTopic"
     }
 
     private var subscription: StateAndEventSubscription<String, DemoStateRecord, DemoRecord>? = null

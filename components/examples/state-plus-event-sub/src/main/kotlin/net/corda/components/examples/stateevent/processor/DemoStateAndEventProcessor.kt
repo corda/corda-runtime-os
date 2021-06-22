@@ -15,7 +15,7 @@ class DemoStateAndEventProcessor(
 
     private companion object {
         val log: Logger = contextLogger()
-        const val outputTopic = "stateEventOutputTopic"
+        const val outputTopic = "StateEventOutputTopic"
     }
 
     private var counter = 1
