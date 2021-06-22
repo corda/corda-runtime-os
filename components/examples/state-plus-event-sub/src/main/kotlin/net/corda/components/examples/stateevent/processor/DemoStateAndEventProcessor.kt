@@ -15,10 +15,10 @@ class DemoStateAndEventProcessor(
 
     private companion object {
         val log: Logger = contextLogger()
+        const val outputTopic = "stateEventOutputTopic"
     }
 
     private var counter = 1
-
     private var expectedNextValues = mutableMapOf<String, Int>()
 
     override val keyClass: Class<String>
@@ -54,10 +54,11 @@ class DemoStateAndEventProcessor(
             DemoStateRecord(eventRecordValue)
         }
 
+        val responseEvent = Record(outputTopic, key, DemoRecord(updatedState.value))
+
         log.info("Key: $key, Old State: $oldState, new event value: $eventRecordValue, new state value: ${updatedState.value}")
         expectedNextValues[key] = eventRecordValue + 1
         counter++
-        return StateAndEventProcessor.Response(updatedState, emptyList())
+        return StateAndEventProcessor.Response(updatedState, listOf(responseEvent))
     }
-
 }
