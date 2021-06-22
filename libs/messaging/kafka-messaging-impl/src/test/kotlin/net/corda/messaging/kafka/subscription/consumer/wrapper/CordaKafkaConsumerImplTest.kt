@@ -32,7 +32,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers.anyMap
 import org.mockito.Mockito
 import java.nio.ByteBuffer
@@ -249,8 +248,9 @@ class CordaKafkaConsumerImplTest {
 
     @Test
     fun testGetPartitionsNullPointerException() {
-        //NPE converted to CordaMessageAPIIntermittentException
-        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaConsumer.getPartitions("topic", Duration.ZERO) }
+        assertThatExceptionOfType(CordaMessageAPIIntermittentException::class.java).isThrownBy {
+            cordaKafkaConsumer.getPartitions("topic", Duration.ZERO)
+        }.withMessageContaining("Partitions for topic topic are null. Kafka may not have completed startup.")
     }
 
     private fun commitOffsetForConsumer(offsetCommit: Long) {
