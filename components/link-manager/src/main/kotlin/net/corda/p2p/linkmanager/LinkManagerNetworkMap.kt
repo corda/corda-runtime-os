@@ -27,7 +27,7 @@ interface LinkManagerNetworkMap {
     /**
      * Returns the [PublicKey] in the NetworkMap with SHA-256 hash [hash].
      */
-    fun getPublicKeyFromHash(hash: ByteArray): PublicKey
+    fun getPublicKeyFromHash(hash: ByteArray): PublicKey?
 
     /**
      * Returns the [HoldingIdentity] in the NetworkMap. Which public key SHA-256 hashes to [hash].

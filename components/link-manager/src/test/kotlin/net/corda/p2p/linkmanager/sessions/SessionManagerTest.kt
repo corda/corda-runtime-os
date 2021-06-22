@@ -78,9 +78,9 @@ class SessionManagerTest {
                     return keys[holdingIdentity]?.public
                 }
 
-                override fun getPublicKeyFromHash(hash: ByteArray): PublicKey {
+                override fun getPublicKeyFromHash(hash: ByteArray): PublicKey? {
                     val peer = getPeerFromHash(hash)
-                    return keys[peer]!!.public
+                    return keys[peer]?.public
                 }
 
                 override fun getPeerFromHash(hash: ByteArray): LinkManagerNetworkMap.HoldingIdentity? {

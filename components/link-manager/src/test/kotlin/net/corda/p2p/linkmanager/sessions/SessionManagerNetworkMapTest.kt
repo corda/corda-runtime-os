@@ -2,9 +2,12 @@ import com.nhaarman.mockito_kotlin.*
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.Step2Message
+import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
+import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.Messaging
@@ -16,6 +19,9 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.slf4j.Logger
 import java.security.KeyPairGenerator
+import java.security.MessageDigest
+import java.security.PublicKey
+import java.util.*
 
 class SessionManagerNetworkMapTest {
 
@@ -81,27 +87,75 @@ class SessionManagerNetworkMapTest {
         return Pair(step2Message, sessionManager.processSessionMessage(LinkInMessage(step2Message.responderHello)))
     }
 
-    private fun negotiateToInitiatorHelloMessage(netMap: LinkManagerNetworkMap, mockLogger: Logger): Pair<String, LinkOutMessage?> {
+    private fun negotiateToInitiatorHandshakeMessage(
+        initiatorNetMap: LinkManagerNetworkMap,
+        responderNetMap: LinkManagerNetworkMap,
+        mockLogger: Logger
+    ): Pair<String, LinkOutMessage?> {
         val supportedMode = setOf(ProtocolMode.AUTHENTICATION_ONLY)
         val initiatorSessionManager = SessionManager(
             supportedMode,
-            netMap,
+            initiatorNetMap,
             SessionManagerTest.MockCryptoService(),
             SessionManagerTest.MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManager }
-        val (step2Message, _) = negotiateToResponderHelloMessage(initiatorSessionManager, supportedMode, mockLogger)
-
         val responderSessionManager = SessionManager(
-        supportedMode,
-        netMap,
-        SessionManagerTest.MockCryptoService(),
-        SessionManagerTest.MAX_MESSAGE_SIZE
+            supportedMode,
+            responderNetMap,
+            SessionManagerTest.MockCryptoService(),
+            SessionManagerTest.MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManager }
+
+        responderSessionManager.setLogger(mockLogger)
+        initiatorSessionManager.setLogger(mockLogger)
+
+        return negotiateToInitiatorHandshakeMessage(initiatorSessionManager, responderSessionManager, mockLogger)
+    }
+
+    private fun negotiateToInitiatorHandshakeMessage(
+        initiatorSessionManager: SessionManager,
+        responderSessionManager: SessionManager,
+        mockLogger: Logger
+    ): Pair<String, LinkOutMessage?> {
+        val supportedMode = setOf(ProtocolMode.AUTHENTICATION_ONLY)
+
+        responderSessionManager.setLogger(mockLogger)
+        val (step2Message, initiatorHandshake) = negotiateToResponderHelloMessage(initiatorSessionManager, supportedMode, mockLogger)
+        responderSessionManager.processSessionMessage(LinkInMessage(step2Message))
 
         return Pair(
             step2Message.initiatorHello.header.sessionId,
-            responderSessionManager.processSessionMessage(LinkInMessage(step2Message.initiatorHello))
+            responderSessionManager.processSessionMessage(LinkInMessage(initiatorHandshake!!.payload))
         )
+    }
+
+    private fun negotiateToResponderHandshakeMessage(
+        initiatorNetMap: LinkManagerNetworkMap,
+        responderNetMap: LinkManagerNetworkMap,
+        mockLogger: Logger
+    ): String {
+        val supportedMode = setOf(ProtocolMode.AUTHENTICATION_ONLY)
+
+        val initiatorSessionManager = SessionManager(
+            supportedMode,
+            initiatorNetMap,
+            SessionManagerTest.MockCryptoService(),
+            SessionManagerTest.MAX_MESSAGE_SIZE
+        ) { _, _, _ -> return@SessionManager }
+        val responderSessionManager = SessionManager(
+            supportedMode,
+            responderNetMap,
+            SessionManagerTest.MockCryptoService(),
+            SessionManagerTest.MAX_MESSAGE_SIZE
+        ) { _, _, _ -> return@SessionManager }
+
+        val (sessionId, responderHandshakeMessage) = negotiateToInitiatorHandshakeMessage(
+            initiatorSessionManager,
+            responderSessionManager,
+            mockLogger
+        )
+        initiatorSessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage!!.payload))
+        return sessionId
     }
 
     @Test
@@ -170,8 +224,184 @@ class SessionManagerNetworkMapTest {
                 " The message was discarded.")
     }
 
+    fun makeMockNetworkMap(): LinkManagerNetworkMap {
+        val keyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
+        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        Mockito.`when`(netMap.getEndPoint(PARTY_B)).thenReturn(LinkManagerNetworkMap.EndPoint("", ""))
+        Mockito.`when`(netMap.getOurPublicKey(anyOrNull())).thenReturn(keyPair.public)
+        Mockito.`when`(netMap.getPublicKey(anyOrNull())).thenReturn(keyPair.public)
+        Mockito.`when`(netMap.getOurPrivateKey(anyOrNull())).thenReturn(keyPair.private)
+        return netMap
+    }
+
+    private fun hashKey(key: PublicKey): ByteArray {
+        val provider = BouncyCastleProvider()
+        val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
+        messageDigest.reset()
+        messageDigest.update(key.encoded)
+        return messageDigest.digest()
+    }
+
+    private fun hashKeyToBase64(key: PublicKey): String {
+        return Base64.getEncoder().encodeToString(hashKey(key))
+    }
+
+    @Test
+    fun `Initiator handshake message is dropped if the sender public key hash is not in the network map`() {
+        val initiatorNetMap = makeMockNetworkMap()
+        val responderNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+
+        val mockLogger = Mockito.mock(Logger::class.java)
+
+        val (sessionId, response) = negotiateToInitiatorHandshakeMessage(initiatorNetMap, responderNetMap, mockLogger)
+        Assertions.assertNull(response)
+
+        val keyHash = hashKeyToBase64(initiatorNetMap.getPublicKey(LinkManagerNetworkMap.HoldingIdentity("", ""))!!)
+        Mockito.verify(mockLogger).warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
+                " Could not find the public key in the network map by hash = $keyHash. The message was discarded.")
+    }
+
+    @Test
+    fun `Initiator handshake message is dropped if the receiver public key hash is not in the network map`() {
+        val initiatorNetMap = makeMockNetworkMap()
+        val responderNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+
+        val initiatorPublicKey = initiatorNetMap.getPublicKey(LinkManagerNetworkMap.HoldingIdentity("", ""))
+        Mockito.`when`(responderNetMap.getPublicKeyFromHash(anyOrNull())).thenReturn(initiatorPublicKey)
+        Mockito.`when`(responderNetMap.getPeerFromHash(anyOrNull())).thenReturn(null)
+
+        val mockLogger = Mockito.mock(Logger::class.java)
+
+        val (sessionId, response) = negotiateToInitiatorHandshakeMessage(initiatorNetMap, responderNetMap, mockLogger)
+        Assertions.assertNull(response)
+
+        val keyHash = hashKeyToBase64(initiatorPublicKey!!)
+        Mockito.verify(mockLogger).warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
+                " The received public key hash ($keyHash) corresponding to one of our holding identities is not in the network map." +
+                " The message was discarded.")
+    }
+
+    @Test
+    fun `Initiator handshake message is dropped if the receiver is removed from the network map`() {
+        val initiatorNetMap = makeMockNetworkMap()
+        val responderNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+
+        val initiatorPublicKey = initiatorNetMap.getPublicKey(LinkManagerNetworkMap.HoldingIdentity("", ""))
+        Mockito.`when`(responderNetMap.getPublicKeyFromHash(anyOrNull())).thenReturn(initiatorPublicKey)
+        Mockito.`when`(responderNetMap.getPeerFromHash(anyOrNull())).thenReturn(PARTY_B)
+        Mockito.`when`(responderNetMap.getOurPublicKey(anyOrNull())).thenReturn(null)
+
+        val mockLogger = Mockito.mock(Logger::class.java)
+
+        val (sessionId, response) = negotiateToInitiatorHandshakeMessage(initiatorNetMap, responderNetMap, mockLogger)
+        Assertions.assertNull(response)
+
+        Mockito.verify(mockLogger).warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId" +
+                " but cannot find public key for our group identity null. The message was discarded.")
+    }
+
+    @Test
+    fun `Initiator handshake message is dropped if the sender is removed from the network map`() {
+        val initiatorNetMap = makeMockNetworkMap()
+        val responderNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+
+        val initiatorPublicKey = initiatorNetMap.getPublicKey(LinkManagerNetworkMap.HoldingIdentity("", ""))
+        val initiatorKeyHash = hashKey(initiatorPublicKey!!)
+        val responderPublicKey = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair().public
+
+        Mockito.`when`(responderNetMap.getPublicKeyFromHash(initiatorKeyHash)).thenReturn(initiatorPublicKey)
+        Mockito.`when`(responderNetMap.getPeerFromHash(anyOrNull())).thenReturn(PARTY_B)
+        Mockito.`when`(responderNetMap.getOurPublicKey(anyOrNull())).thenReturn(responderPublicKey)
+
+        val mockLogger = Mockito.mock(Logger::class.java)
+
+        val (sessionId, response) = negotiateToInitiatorHandshakeMessage(initiatorNetMap, responderNetMap, mockLogger)
+        Assertions.assertNull(response)
+
+        Mockito.verify(mockLogger).warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
+                " Could not find (our) private key in the network map for group = null. The message was discarded.")
+    }
+
+    @Test
+    fun `Initiator handshake message is dropped if the sender is removed from the network map before the second last step`() {
+        val initiatorNetMap = makeMockNetworkMap()
+        val responderNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+
+        val initiatorPublicKey = initiatorNetMap.getPublicKey(LinkManagerNetworkMap.HoldingIdentity("", ""))
+        val initiatorKeyHash = hashKey(initiatorPublicKey!!)
+        val responderKeyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
+        val responderKeyHash = hashKey(responderKeyPair!!.public)
+
+        Mockito.`when`(responderNetMap.getPublicKeyFromHash(initiatorKeyHash)).thenReturn(initiatorPublicKey)
+        Mockito.`when`(responderNetMap.getPublicKeyFromHash(responderKeyHash)).thenReturn(responderKeyPair.public)
+        Mockito.`when`(responderNetMap.getPeerFromHash(initiatorKeyHash)).thenReturn(PARTY_B).thenReturn(null)
+        Mockito.`when`(responderNetMap.getOurPublicKey(anyOrNull())).thenReturn(responderKeyPair.public)
+        Mockito.`when`(responderNetMap.getOurPrivateKey(anyOrNull())).thenReturn(responderKeyPair.private)
+
+        val mockLogger = Mockito.mock(Logger::class.java)
+
+        val (sessionId, response) = negotiateToInitiatorHandshakeMessage(initiatorNetMap, responderNetMap, mockLogger)
+        Assertions.assertNull(response)
+
+        Mockito.verify(mockLogger).warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
+                " The received public key hash (${hashKeyToBase64(initiatorPublicKey)}) corresponding to one of the senders holding" +
+                " identities is not in the network map. The message was discarded.")
+    }
+
+    @Test
+    fun `Initiator handshake message is dropped if the sender is removed from the network map before the last step`() {
+        val initiatorNetMap = makeMockNetworkMap()
+        val responderNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+
+        val initiatorPublicKey = initiatorNetMap.getPublicKey(LinkManagerNetworkMap.HoldingIdentity("", ""))
+        val initiatorKeyHash = hashKey(initiatorPublicKey!!)
+        val responderKeyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
+        val responderKeyHash = hashKey(responderKeyPair.public!!)
+
+        Mockito.`when`(responderNetMap.getPublicKeyFromHash(initiatorKeyHash)).thenReturn(initiatorPublicKey)
+        Mockito.`when`(responderNetMap.getPublicKeyFromHash(responderKeyHash)).thenReturn(responderKeyPair.public)
+        Mockito.`when`(responderNetMap.getPeerFromHash(anyOrNull())).thenReturn(PARTY_B)
+        Mockito.`when`(responderNetMap.getOurPublicKey(anyOrNull())).thenReturn(responderKeyPair.public)
+        Mockito.`when`(responderNetMap.getOurPrivateKey(anyOrNull())).thenReturn(responderKeyPair.private)
+
+        val mockLogger = Mockito.mock(Logger::class.java)
+
+        val (_, response) = negotiateToInitiatorHandshakeMessage(initiatorNetMap, responderNetMap, mockLogger)
+        Assertions.assertNull(response)
+
+        Mockito.verify(mockLogger).warn("Attempted to send message to peer ${PARTY_B.toHoldingIdentity()} which is not in the network map." +
+                " The message was discarded.")
+    }
+
+
     @Test
     fun `Responder handshake message is dropped if the sender is not in the network map`() {
-        TODO()
+
+        val initiatorKeyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
+        val initiatorNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        Mockito.`when`(initiatorNetMap.getEndPoint(PARTY_B)).thenReturn(LinkManagerNetworkMap.EndPoint("", ""))
+        Mockito.`when`(initiatorNetMap.getOurPublicKey(anyOrNull())).thenReturn(initiatorKeyPair.public)
+        //Called for the first time in `processResponderHello` and the second time in processResponderHandshake.
+        Mockito.`when`(initiatorNetMap.getPublicKey(anyOrNull())).thenReturn(initiatorKeyPair.public).thenReturn(null)
+        Mockito.`when`(initiatorNetMap.getOurPrivateKey(anyOrNull())).thenReturn(initiatorKeyPair.private)
+
+        val initiatorKeyHash = hashKey(initiatorKeyPair.public)
+        val responderKeyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
+        val responderKeyHash = hashKey(responderKeyPair.public)
+
+        val responderNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        Mockito.`when`(responderNetMap.getPublicKeyFromHash(initiatorKeyHash)).thenReturn(initiatorKeyPair.public)
+        Mockito.`when`(responderNetMap.getPublicKeyFromHash(responderKeyHash)).thenReturn(responderKeyPair.public)
+        Mockito.`when`(responderNetMap.getPeerFromHash(anyOrNull())).thenReturn(PARTY_B)
+        Mockito.`when`(responderNetMap.getOurPublicKey(anyOrNull())).thenReturn(responderKeyPair.public)
+        Mockito.`when`(responderNetMap.getOurPrivateKey(anyOrNull())).thenReturn(responderKeyPair.private)
+        Mockito.`when`(responderNetMap.getEndPoint(anyOrNull())).thenReturn(LinkManagerNetworkMap.EndPoint("", ""))
+
+        val mockLogger = Mockito.mock(Logger::class.java)
+
+        val sessionId = negotiateToResponderHandshakeMessage(initiatorNetMap, responderNetMap, mockLogger)
+        Mockito.verify(mockLogger).warn("Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId. From peer " +
+                "$PARTY_B which is not in the network map. The message was discarded.")
     }
+
 }
