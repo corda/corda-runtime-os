@@ -7,6 +7,7 @@ import net.corda.libs.configuration.write.ConfigWriteService
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component

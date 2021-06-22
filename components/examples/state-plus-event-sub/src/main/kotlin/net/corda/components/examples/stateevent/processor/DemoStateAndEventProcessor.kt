@@ -1,6 +1,7 @@
 package net.corda.components.examples.stateevent.processor
 
 import net.corda.data.demo.DemoRecord
+import net.corda.data.demo.DemoStateRecord
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
@@ -10,7 +11,7 @@ import kotlin.system.exitProcess
 class DemoStateAndEventProcessor(
     private val killProcessOnRecord: Int? = 0,
     private val delayOnNext: Long = 0
-) : StateAndEventProcessor<String, DemoRecord, DemoRecord> {
+) : StateAndEventProcessor<String, DemoStateRecord, DemoRecord> {
 
     private companion object {
         val log: Logger = contextLogger()
@@ -24,10 +25,10 @@ class DemoStateAndEventProcessor(
         get() = String::class.java
     override val eventValueClass: Class<DemoRecord>
         get() = DemoRecord::class.java
-    override val stateValueClass: Class<DemoRecord>
-        get() = DemoRecord::class.java
+    override val stateValueClass: Class<DemoStateRecord>
+        get() = DemoStateRecord::class.java
 
-    override fun onNext(state: DemoRecord?, event: Record<String, DemoRecord>): StateAndEventProcessor.Response<DemoRecord> {
+    override fun onNext(state: DemoStateRecord?, event: Record<String, DemoRecord>): StateAndEventProcessor.Response<DemoStateRecord> {
         if (counter == killProcessOnRecord) {
             log.error("Killing process for test purposes!")
             exitProcess(0)
@@ -48,9 +49,9 @@ class DemoStateAndEventProcessor(
         }
 
         val updatedState = if (state != null) {
-            DemoRecord(state.value + eventRecordValue)
+            DemoStateRecord(state.value + eventRecordValue)
         } else {
-            DemoRecord(eventRecordValue)
+            DemoStateRecord(eventRecordValue)
         }
 
         log.info("Key: $key, Old State: $oldState, new event value: $eventRecordValue, new state value: ${updatedState.value}")

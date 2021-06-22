@@ -3,6 +3,7 @@ package net.corda.components.examples.stateevent
 import com.typesafe.config.Config
 import net.corda.components.examples.stateevent.processor.DemoStateAndEventProcessor
 import net.corda.data.demo.DemoRecord
+import net.corda.data.demo.DemoStateRecord
 import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -27,7 +28,7 @@ class RunStateEventSub(
         const val stateTopic = "stateTopic"
     }
 
-    private var subscription: StateAndEventSubscription<String, DemoRecord, DemoRecord>? = null
+    private var subscription: StateAndEventSubscription<String, DemoStateRecord, DemoRecord>? = null
 
     override val isRunning: Boolean
         get() = subscription?.isRunning ?: false

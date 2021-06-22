@@ -5,32 +5,30 @@
  */
 package net.corda.data.demo;
 
-import org.apache.avro.generic.GenericArray;
-import org.apache.avro.specific.SpecificData;
-import org.apache.avro.util.Utf8;
-import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
+import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.SchemaStore;
+import org.apache.avro.specific.SpecificData;
 
 @org.apache.avro.specific.AvroGenerated
-public class DemoRecord extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 259035713631054589L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"DemoRecord\",\"namespace\":\"net.corda.data.demo\",\"fields\":[{\"name\":\"value\",\"type\":\"int\"}]}");
+public class DemoStateRecord extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
+  private static final long serialVersionUID = -1840391835805697157L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"DemoStateRecord\",\"namespace\":\"net.corda.data.demo\",\"fields\":[{\"name\":\"value\",\"type\":\"int\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
 
-  private static final BinaryMessageEncoder<DemoRecord> ENCODER =
-      new BinaryMessageEncoder<DemoRecord>(MODEL$, SCHEMA$);
+  private static final BinaryMessageEncoder<DemoStateRecord> ENCODER =
+      new BinaryMessageEncoder<DemoStateRecord>(MODEL$, SCHEMA$);
 
-  private static final BinaryMessageDecoder<DemoRecord> DECODER =
-      new BinaryMessageDecoder<DemoRecord>(MODEL$, SCHEMA$);
+  private static final BinaryMessageDecoder<DemoStateRecord> DECODER =
+      new BinaryMessageDecoder<DemoStateRecord>(MODEL$, SCHEMA$);
 
   /**
    * Return the BinaryMessageEncoder instance used by this class.
    * @return the message encoder used by this class
    */
-  public static BinaryMessageEncoder<DemoRecord> getEncoder() {
+  public static BinaryMessageEncoder<DemoStateRecord> getEncoder() {
     return ENCODER;
   }
 
@@ -38,7 +36,7 @@ public class DemoRecord extends org.apache.avro.specific.SpecificRecordBase impl
    * Return the BinaryMessageDecoder instance used by this class.
    * @return the message decoder used by this class
    */
-  public static BinaryMessageDecoder<DemoRecord> getDecoder() {
+  public static BinaryMessageDecoder<DemoStateRecord> getDecoder() {
     return DECODER;
   }
 
@@ -47,12 +45,12 @@ public class DemoRecord extends org.apache.avro.specific.SpecificRecordBase impl
    * @param resolver a {@link SchemaStore} used to find schemas by fingerprint
    * @return a BinaryMessageDecoder instance for this class backed by the given SchemaStore
    */
-  public static BinaryMessageDecoder<DemoRecord> createDecoder(SchemaStore resolver) {
-    return new BinaryMessageDecoder<DemoRecord>(MODEL$, SCHEMA$, resolver);
+  public static BinaryMessageDecoder<DemoStateRecord> createDecoder(SchemaStore resolver) {
+    return new BinaryMessageDecoder<DemoStateRecord>(MODEL$, SCHEMA$, resolver);
   }
 
   /**
-   * Serializes this DemoRecord to a ByteBuffer.
+   * Serializes this DemoStateRecord to a ByteBuffer.
    * @return a buffer holding the serialized data for this instance
    * @throws java.io.IOException if this instance could not be serialized
    */
@@ -61,12 +59,12 @@ public class DemoRecord extends org.apache.avro.specific.SpecificRecordBase impl
   }
 
   /**
-   * Deserializes a DemoRecord from a ByteBuffer.
+   * Deserializes a DemoStateRecord from a ByteBuffer.
    * @param b a byte buffer holding serialized data for an instance of this class
-   * @return a DemoRecord instance decoded from the given buffer
+   * @return a DemoStateRecord instance decoded from the given buffer
    * @throws java.io.IOException if the given bytes could not be deserialized into an instance of this class
    */
-  public static DemoRecord fromByteBuffer(
+  public static DemoStateRecord fromByteBuffer(
       java.nio.ByteBuffer b) throws java.io.IOException {
     return DECODER.decode(b);
   }
@@ -78,13 +76,13 @@ public class DemoRecord extends org.apache.avro.specific.SpecificRecordBase impl
    * to their default values from the schema.  If that is desired then
    * one should use <code>newBuilder()</code>.
    */
-  public DemoRecord() {}
+  public DemoStateRecord() {}
 
   /**
    * All-args constructor.
    * @param value The new value for value
    */
-  public DemoRecord(java.lang.Integer value) {
+  public DemoStateRecord(java.lang.Integer value) {
     this.value = value;
   }
 
@@ -125,45 +123,45 @@ public class DemoRecord extends org.apache.avro.specific.SpecificRecordBase impl
   }
 
   /**
-   * Creates a new DemoRecord RecordBuilder.
-   * @return A new DemoRecord RecordBuilder
+   * Creates a new DemoStateRecord RecordBuilder.
+   * @return A new DemoStateRecord RecordBuilder
    */
-  public static net.corda.data.demo.DemoRecord.Builder newBuilder() {
-    return new net.corda.data.demo.DemoRecord.Builder();
+  public static net.corda.data.demo.DemoStateRecord.Builder newBuilder() {
+    return new net.corda.data.demo.DemoStateRecord.Builder();
   }
 
   /**
-   * Creates a new DemoRecord RecordBuilder by copying an existing Builder.
+   * Creates a new DemoStateRecord RecordBuilder by copying an existing Builder.
    * @param other The existing builder to copy.
-   * @return A new DemoRecord RecordBuilder
+   * @return A new DemoStateRecord RecordBuilder
    */
-  public static net.corda.data.demo.DemoRecord.Builder newBuilder(net.corda.data.demo.DemoRecord.Builder other) {
+  public static net.corda.data.demo.DemoStateRecord.Builder newBuilder(net.corda.data.demo.DemoStateRecord.Builder other) {
     if (other == null) {
-      return new net.corda.data.demo.DemoRecord.Builder();
+      return new net.corda.data.demo.DemoStateRecord.Builder();
     } else {
-      return new net.corda.data.demo.DemoRecord.Builder(other);
+      return new net.corda.data.demo.DemoStateRecord.Builder(other);
     }
   }
 
   /**
-   * Creates a new DemoRecord RecordBuilder by copying an existing DemoRecord instance.
+   * Creates a new DemoStateRecord RecordBuilder by copying an existing DemoStateRecord instance.
    * @param other The existing instance to copy.
-   * @return A new DemoRecord RecordBuilder
+   * @return A new DemoStateRecord RecordBuilder
    */
-  public static net.corda.data.demo.DemoRecord.Builder newBuilder(net.corda.data.demo.DemoRecord other) {
+  public static net.corda.data.demo.DemoStateRecord.Builder newBuilder(net.corda.data.demo.DemoStateRecord other) {
     if (other == null) {
-      return new net.corda.data.demo.DemoRecord.Builder();
+      return new net.corda.data.demo.DemoStateRecord.Builder();
     } else {
-      return new net.corda.data.demo.DemoRecord.Builder(other);
+      return new net.corda.data.demo.DemoStateRecord.Builder(other);
     }
   }
 
   /**
-   * RecordBuilder for DemoRecord instances.
+   * RecordBuilder for DemoStateRecord instances.
    */
   @org.apache.avro.specific.AvroGenerated
-  public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<DemoRecord>
-    implements org.apache.avro.data.RecordBuilder<DemoRecord> {
+  public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<DemoStateRecord>
+    implements org.apache.avro.data.RecordBuilder<DemoStateRecord> {
 
     private int value;
 
@@ -176,7 +174,7 @@ public class DemoRecord extends org.apache.avro.specific.SpecificRecordBase impl
      * Creates a Builder by copying an existing Builder.
      * @param other The existing Builder to copy.
      */
-    private Builder(net.corda.data.demo.DemoRecord.Builder other) {
+    private Builder(net.corda.data.demo.DemoStateRecord.Builder other) {
       super(other);
       if (isValidValue(fields()[0], other.value)) {
         this.value = data().deepCopy(fields()[0].schema(), other.value);
@@ -185,10 +183,10 @@ public class DemoRecord extends org.apache.avro.specific.SpecificRecordBase impl
     }
 
     /**
-     * Creates a Builder by copying an existing DemoRecord instance
+     * Creates a Builder by copying an existing DemoStateRecord instance
      * @param other The existing instance to copy.
      */
-    private Builder(net.corda.data.demo.DemoRecord other) {
+    private Builder(net.corda.data.demo.DemoStateRecord other) {
       super(SCHEMA$);
       if (isValidValue(fields()[0], other.value)) {
         this.value = data().deepCopy(fields()[0].schema(), other.value);
@@ -210,7 +208,7 @@ public class DemoRecord extends org.apache.avro.specific.SpecificRecordBase impl
       * @param value The value of 'value'.
       * @return This builder.
       */
-    public net.corda.data.demo.DemoRecord.Builder setValue(int value) {
+    public net.corda.data.demo.DemoStateRecord.Builder setValue(int value) {
       validate(fields()[0], value);
       this.value = value;
       fieldSetFlags()[0] = true;
@@ -230,16 +228,16 @@ public class DemoRecord extends org.apache.avro.specific.SpecificRecordBase impl
       * Clears the value of the 'value' field.
       * @return This builder.
       */
-    public net.corda.data.demo.DemoRecord.Builder clearValue() {
+    public net.corda.data.demo.DemoStateRecord.Builder clearValue() {
       fieldSetFlags()[0] = false;
       return this;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public DemoRecord build() {
+    public DemoStateRecord build() {
       try {
-        DemoRecord record = new DemoRecord();
+        DemoStateRecord record = new DemoStateRecord();
         record.value = fieldSetFlags()[0] ? this.value : (java.lang.Integer) defaultValue(fields()[0]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
@@ -251,8 +249,8 @@ public class DemoRecord extends org.apache.avro.specific.SpecificRecordBase impl
   }
 
   @SuppressWarnings("unchecked")
-  private static final org.apache.avro.io.DatumWriter<DemoRecord>
-    WRITER$ = (org.apache.avro.io.DatumWriter<DemoRecord>)MODEL$.createDatumWriter(SCHEMA$);
+  private static final org.apache.avro.io.DatumWriter<DemoStateRecord>
+    WRITER$ = (org.apache.avro.io.DatumWriter<DemoStateRecord>)MODEL$.createDatumWriter(SCHEMA$);
 
   @Override public void writeExternal(java.io.ObjectOutput out)
     throws java.io.IOException {
@@ -260,8 +258,8 @@ public class DemoRecord extends org.apache.avro.specific.SpecificRecordBase impl
   }
 
   @SuppressWarnings("unchecked")
-  private static final org.apache.avro.io.DatumReader<DemoRecord>
-    READER$ = (org.apache.avro.io.DatumReader<DemoRecord>)MODEL$.createDatumReader(SCHEMA$);
+  private static final org.apache.avro.io.DatumReader<DemoStateRecord>
+    READER$ = (org.apache.avro.io.DatumReader<DemoStateRecord>)MODEL$.createDatumReader(SCHEMA$);
 
   @Override public void readExternal(java.io.ObjectInput in)
     throws java.io.IOException {
