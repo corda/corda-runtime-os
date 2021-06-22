@@ -44,9 +44,10 @@ class DemoStateAndEventProcessor(
         val eventRecord = event.value
         val eventRecordValue = eventRecord!!.value
         val newPublisherSet = eventRecordValue == 1
-            if (expectedNextValues[key] != null && expectedNextValues[key] != eventRecordValue && !newPublisherSet) {
+        if (expectedNextValues[key] != null && expectedNextValues[key] != eventRecordValue && !newPublisherSet) {
             log.error("Wrong record found!")
         }
+        expectedNextValues[key] = eventRecordValue + 1
 
         val updatedState = if (state != null) {
             DemoStateRecord(state.value + eventRecordValue)
@@ -57,7 +58,6 @@ class DemoStateAndEventProcessor(
         val responseEvent = Record(outputTopic, key, DemoRecord(updatedState.value))
 
         log.info("Key: $key, Old State: $oldState, new event value: $eventRecordValue, new state value: ${updatedState.value}")
-        expectedNextValues[key] = eventRecordValue + 1
         counter++
         return StateAndEventProcessor.Response(updatedState, listOf(responseEvent))
     }

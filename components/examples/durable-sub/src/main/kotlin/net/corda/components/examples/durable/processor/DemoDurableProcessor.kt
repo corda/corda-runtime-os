@@ -20,6 +20,7 @@ class DemoDurableProcessor(
     }
 
     var counter = 1
+    private var expectedNextValues = mutableMapOf<String, Int>()
 
     override val keyClass: Class<String>
         get() = String::class.java
@@ -40,9 +41,18 @@ class DemoDurableProcessor(
                 Thread.sleep(delayOnNext)
             }
 
-            log.info("Durable sub processing key/value  ${event.key}/${event.value}")
-            outputRecords.add(Record(outputEventTopic, event.key, event.value))
-            outputRecords.add(Record(outputPubSubTopic, event.key, event.value))
+            val key = event.key
+            val eventRecord = event.value
+            val eventRecordValue = eventRecord!!.value
+            val newPublisherSet = eventRecordValue == 1
+            if (expectedNextValues[key] != null && expectedNextValues[key] != eventRecordValue && !newPublisherSet) {
+                log.error("Wrong record found!")
+            }
+            expectedNextValues[key] = eventRecordValue + 1
+
+            log.info("Durable sub processing key/value  ${key}/${eventRecord}")
+            outputRecords.add(Record(outputEventTopic, key, eventRecord))
+            outputRecords.add(Record(outputPubSubTopic, key, eventRecord))
             counter++
         }
 
