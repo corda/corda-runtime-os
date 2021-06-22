@@ -12,6 +12,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
@@ -242,6 +243,14 @@ class CordaKafkaConsumerImplTest {
 
         val positionAfterReset = consumer.position(partition)
         assertThat(positionAfterReset).isEqualTo(0L)
+    }
+
+
+    @Test
+    fun testGetPartitionsNullPointerException() {
+        assertThatExceptionOfType(CordaMessageAPIIntermittentException::class.java).isThrownBy {
+            cordaKafkaConsumer.getPartitions("topic", Duration.ZERO)
+        }.withMessageContaining("Partitions for topic topic are null. Kafka may not have completed startup.")
     }
 
     private fun commitOffsetForConsumer(offsetCommit: Long) {
