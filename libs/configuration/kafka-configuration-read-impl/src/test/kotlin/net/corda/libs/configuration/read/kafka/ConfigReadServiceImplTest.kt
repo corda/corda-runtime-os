@@ -37,7 +37,6 @@ class ConfigReadServiceImplTest {
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig("CONFIGURATION_READ_SERVICE", "default-topic"),
                 configReadService,
-                mapOf()
             )
         ).thenReturn(subscription)
 

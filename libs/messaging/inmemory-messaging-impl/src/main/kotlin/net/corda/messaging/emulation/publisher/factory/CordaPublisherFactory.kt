@@ -1,5 +1,6 @@
 package net.corda.messaging.emulation.publisher.factory
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.Publisher
@@ -28,11 +29,11 @@ class CordaPublisherFactory @Activate constructor(
 
     override fun createPublisher(
         publisherConfig: PublisherConfig,
-        properties: Map<String, String>
+        nodeConfig: Config
     ): Publisher {
-        //TODO - replace with config service
-        val defaultKafkaConfig = ConfigFactory.load("tmpInMemDefaults")
-        var config = defaultKafkaConfig.withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
+        var config = nodeConfig
+            .withFallback(ConfigFactory.load("tmpInMemDefaults"))
+            .withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
 
         val instanceId = publisherConfig.instanceId
         if (instanceId != null) {

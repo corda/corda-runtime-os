@@ -50,7 +50,6 @@ class ConfigReadServiceImpl(
                             boostrapConfig.getString("corda.kafka.topic.name")
                         ),
                         this,
-                        mapOf()
                     )
                 subscription!!.start()
                 stopped = false

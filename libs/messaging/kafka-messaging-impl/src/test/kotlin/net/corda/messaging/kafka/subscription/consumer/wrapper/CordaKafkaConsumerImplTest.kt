@@ -9,15 +9,14 @@ import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBSUB
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
 import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordsList
+import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
@@ -53,13 +52,9 @@ class CordaKafkaConsumerImplTest {
     fun beforeEach() {
         doReturn(ByteBuffer::class.java).whenever(avroSchemaRegistry).getClassType(any())
         doReturn(consumerRecord.value()).whenever(avroSchemaRegistry).deserialize(any(), any(), anyOrNull())
-        subscriptionConfig = SubscriptionConfig("groupName1", eventTopic )
-        kafkaConfig = ConfigFactory.empty()
-            .withValue(KafkaProperties.CONSUMER_POLL_TIMEOUT, ConfigValueFactory.fromAnyRef(1))
-            .withValue(KafkaProperties.CONSUMER_SUBSCRIBE_MAX_RETRIES, ConfigValueFactory.fromAnyRef(3))
-            .withValue(KafkaProperties.CONSUMER_CLOSE_TIMEOUT, ConfigValueFactory.fromAnyRef(1))
-            .withValue(KafkaProperties.KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("prefix"))
-            .withValue(KafkaProperties.CONSUMER_COMMIT_OFFSET_MAX_RETRIES, ConfigValueFactory.fromAnyRef(3))
+        subscriptionConfig = SubscriptionConfig("groupName1", eventTopic)
+
+        kafkaConfig = createStandardTestConfig().getConfig(PATTERN_PUBSUB)
 
         val (mockConsumer, mockTopicPartition) = createMockConsumerAndAddRecords(
             eventTopic,
@@ -70,7 +65,6 @@ class CordaKafkaConsumerImplTest {
         partition = mockTopicPartition
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
             kafkaConfig,
-            subscriptionConfig,
             consumer,
             listener
         )
@@ -84,7 +78,6 @@ class CordaKafkaConsumerImplTest {
         doReturn(consumerRecords).whenever(consumer).poll(Mockito.any(Duration::class.java))
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
             kafkaConfig,
-            subscriptionConfig,
             consumer,
             listener
         )
@@ -98,7 +91,6 @@ class CordaKafkaConsumerImplTest {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
             kafkaConfig,
-            subscriptionConfig,
             consumer,
             listener
         )
@@ -113,7 +105,6 @@ class CordaKafkaConsumerImplTest {
         doThrow(KafkaException()).whenever(consumer).close(any())
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
             kafkaConfig,
-            subscriptionConfig,
             consumer,
             listener
         )
@@ -137,7 +128,6 @@ class CordaKafkaConsumerImplTest {
         consumer = mock()
         val cordaKafkaConsumer = CordaKafkaConsumerImpl<String, ByteBuffer>(
             kafkaConfig,
-            subscriptionConfig,
             consumer,
             listener
         )
@@ -155,7 +145,6 @@ class CordaKafkaConsumerImplTest {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
             kafkaConfig,
-            subscriptionConfig,
             consumer,
             listener
         )
@@ -174,7 +163,6 @@ class CordaKafkaConsumerImplTest {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
             kafkaConfig,
-            subscriptionConfig,
             consumer,
             listener
         )
@@ -187,7 +175,6 @@ class CordaKafkaConsumerImplTest {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
             kafkaConfig,
-            subscriptionConfig,
             consumer,
             listener
         )
@@ -203,7 +190,6 @@ class CordaKafkaConsumerImplTest {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
             kafkaConfig,
-            subscriptionConfig,
             consumer,
             listener
         )

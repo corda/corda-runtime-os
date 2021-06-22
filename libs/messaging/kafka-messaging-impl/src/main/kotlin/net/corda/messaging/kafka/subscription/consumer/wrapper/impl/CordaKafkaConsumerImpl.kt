@@ -3,9 +3,10 @@ package net.corda.messaging.kafka.subscription.consumer.wrapper.impl
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_TIMEOUT
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import org.apache.kafka.clients.consumer.CommitFailedException
@@ -31,8 +32,7 @@ import java.time.Duration
  * Wrapper for a Kafka Consumer.
  */
 class CordaKafkaConsumerImpl<K : Any, V : Any>(
-    kafkaConfig: Config,
-    subscriptionConfig: SubscriptionConfig,
+    config: Config,
     private val consumer: Consumer<K, V>,
     private val listener: ConsumerRebalanceListener?,
 ) : CordaKafkaConsumer<K, V>, Consumer<K, V> by consumer {
@@ -41,13 +41,13 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    private val consumerPollTimeout = Duration.ofMillis(kafkaConfig.getLong(CONSUMER_POLL_TIMEOUT))
-    private val consumerCloseTimeout = Duration.ofMillis(kafkaConfig.getLong(KafkaProperties.CONSUMER_CLOSE_TIMEOUT))
-    private val consumerSubscribeMaxRetries = kafkaConfig.getLong(KafkaProperties.CONSUMER_SUBSCRIBE_MAX_RETRIES)
-    private val consumerCommitOffsetMaxRetries = kafkaConfig.getLong(KafkaProperties.CONSUMER_COMMIT_OFFSET_MAX_RETRIES)
-    private val groupName = subscriptionConfig.groupName
-    private val topicPrefix = kafkaConfig.getString(KafkaProperties.KAFKA_TOPIC_PREFIX)
-    private val topic = subscriptionConfig.eventTopic
+    private val consumerPollTimeout = Duration.ofMillis(config.getLong(CONSUMER_POLL_TIMEOUT))
+    private val consumerCloseTimeout = Duration.ofMillis(config.getLong(KafkaProperties.CONSUMER_CLOSE_TIMEOUT))
+    private val consumerSubscribeMaxRetries = config.getLong(KafkaProperties.CONSUMER_SUBSCRIBE_MAX_RETRIES)
+    private val consumerCommitOffsetMaxRetries = config.getLong(KafkaProperties.CONSUMER_COMMIT_OFFSET_MAX_RETRIES)
+    private val topicPrefix = config.getString(KafkaProperties.TOPIC_PREFIX)
+    private val topic = config.getString(TOPIC_NAME)
+    private val groupName = config.getString(CONSUMER_GROUP_ID)
 
     @Suppress("TooGenericExceptionCaught")
     override fun close() {
