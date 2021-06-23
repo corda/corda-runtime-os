@@ -20,6 +20,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PU
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TRANSACTIONAL_ID
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.v5.base.internal.uncheckedCast
 import org.apache.kafka.clients.producer.MockProducer
@@ -216,6 +217,7 @@ class CordaKafkaPublisherImplTest {
         } else {
             kafkaConfig
                 .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
+                .withoutPath(TRANSACTIONAL_ID)
         }
         cordaKafkaPublisherImpl = CordaKafkaPublisherImpl(publisherConfig, producer)
 
