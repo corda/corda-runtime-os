@@ -2,11 +2,23 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.bootstrap.Bootstrap
 import io.netty.buffer.ByteBuf
-import io.netty.channel.*
+import io.netty.channel.Channel
+import io.netty.channel.ChannelFutureListener
+import io.netty.channel.ChannelHandler
+import io.netty.channel.ChannelHandlerContext
+import io.netty.channel.ChannelInitializer
+import io.netty.channel.EventLoopGroup
+import io.netty.channel.SimpleChannelInboundHandler
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
-import io.netty.handler.codec.http.*
+import io.netty.handler.codec.http.HttpClientCodec
+import io.netty.handler.codec.http.HttpContent
+import io.netty.handler.codec.http.HttpContentDecompressor
+import io.netty.handler.codec.http.HttpHeaderNames
+import io.netty.handler.codec.http.HttpObject
+import io.netty.handler.codec.http.HttpResponse
+import io.netty.handler.codec.http.LastHttpContent
 import io.netty.handler.ssl.SniCompletionEvent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import net.corda.lifecycle.LifeCycle
@@ -44,7 +56,9 @@ import kotlin.math.min
  *
  * @param destination the target address; TODO: will probably become some URL in the future like https://bankofcorda.net:6666
  */
-class HttpClient(private val destination: NetworkHostAndPort, private val sslConfiguration: SslConfiguration, private val sharedThreadPool: EventLoopGroup? = null) :
+class HttpClient(private val destination: NetworkHostAndPort,
+                 private val sslConfiguration: SslConfiguration,
+                 private val sharedThreadPool: EventLoopGroup? = null) :
     LifeCycle {
 
     companion object {

@@ -80,6 +80,7 @@ class Gateway(address: NetworkHostAndPort,
         logger.info("Gateway started")
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun stop() {
         logger.info("Shutting down")
         for (closeAction in closeActions.reversed()) {

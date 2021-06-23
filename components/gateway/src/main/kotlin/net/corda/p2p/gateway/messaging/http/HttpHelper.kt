@@ -71,7 +71,8 @@ class HttpHelper {
          * @return an [HttpResponse] containing the status code and potentially an error message in the response body should
          * there be a need
          */
-        //TODO: after endpoint is validated, specific validations on request headers should be done for that endpoint; this is to future proof the code
+        //TODO: after endpoint is validated, specific validations on request headers should be done for that endpoint;
+        // this is to future proof the code
         fun HttpRequest.validate(): HttpResponse {
             try {
                 val uri = URI.create(this.uri()).normalize()

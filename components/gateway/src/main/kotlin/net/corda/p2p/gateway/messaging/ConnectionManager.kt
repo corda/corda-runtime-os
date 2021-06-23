@@ -27,8 +27,11 @@ import java.util.stream.Collectors
  *
  */
 class ConnectionManager(private val sslConfiguration: SslConfiguration,
-                        private val config: ConnectionManagerConfig = ConnectionManagerConfig(MAX_CONNECTIONS, ACQUIRE_TIMEOUT, CONNECTION_MAX_IDLE_TIME)) :
+                        private val config: ConnectionManagerConfig) :
     LifeCycle {
+
+    constructor(sslConfiguration: SslConfiguration) :
+            this(sslConfiguration, ConnectionManagerConfig(MAX_CONNECTIONS, ACQUIRE_TIMEOUT, CONNECTION_MAX_IDLE_TIME))
 
     companion object {
         /**
@@ -116,6 +119,7 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
      * Clears the cached connections corresponding to the given remote address
      * @param remoteAddress the [NetworkHostAndPort] of the peer
      */
+    @Suppress("TooGenericExceptionCaught")
     fun dispose(remoteAddress: NetworkHostAndPort) {
         val toDispose = connectionPool.asMap()
             .entries

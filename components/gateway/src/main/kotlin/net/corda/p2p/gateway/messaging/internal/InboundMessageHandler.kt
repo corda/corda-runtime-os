@@ -40,8 +40,8 @@ class InboundMessageHandler(private val inboundReceiverObservable: Observable<Re
             val records = mutableListOf<Record<String, String>>()
             records.add(Record(P2P_IN_TOPIC, "sessionID", String(msg.payload)))
             p2pInPublisher?.publish(records)
+            responseSender("RECEIVED".toByteArray(), msg.source!!)
             msg.release()
-            responseSender("RECEIVED".toByteArray(), getDestination(String(msg.payload)))
         }
         started = true
         logger.info("Started P2P message receiver")
@@ -53,9 +53,5 @@ class InboundMessageHandler(private val inboundReceiverObservable: Observable<Re
         inboundMessageListener = null
         p2pInPublisher?.close()
         p2pInPublisher = null
-    }
-
-    private fun getDestination(msg: String): NetworkHostAndPort {
-        return NetworkHostAndPort.parse(msg.split(";").first())
     }
 }

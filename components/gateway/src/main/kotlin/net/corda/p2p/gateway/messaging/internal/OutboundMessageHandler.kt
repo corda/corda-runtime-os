@@ -16,11 +16,12 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager) : Ev
 
     private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
 
+    @Suppress("TooGenericExceptionCaught")
     override fun onNext(events: List<EventLogRecord<String, String>>): List<Record<*, *>> {
         events.forEach { evt ->
             logger.info("Processing event")
             //TODO: until messaging library is ready, will use some simple Strings which contain destination and random payload
-            //Format: "address;payload" Example: "localhost:1000;localhost:10001;PING
+            //Format: "address;payload" Example: "localhost:1000;localhost:10001;PING"
             val peerMessage = evt.value
             //Get peer address from message header
             val destination = getDestination(peerMessage)
