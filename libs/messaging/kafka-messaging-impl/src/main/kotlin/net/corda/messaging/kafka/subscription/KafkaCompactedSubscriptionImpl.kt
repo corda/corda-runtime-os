@@ -6,6 +6,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.render
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
@@ -88,7 +89,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
         while (!stopped) {
             attempts++
             try {
-                consumerBuilder.createCompactedConsumer(config).use {
+                consumerBuilder.createCompactedConsumer(config.getConfig(KAFKA_CONSUMER)).use {
                     val partitions = it.getPartitions(
                         topicPrefix + topic,
                         Duration.ofSeconds(consumerThreadStopTimeout)
