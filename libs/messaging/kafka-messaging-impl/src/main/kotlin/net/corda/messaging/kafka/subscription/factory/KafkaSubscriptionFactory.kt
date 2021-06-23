@@ -1,8 +1,6 @@
 package net.corda.messaging.kafka.subscription.factory
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
@@ -17,11 +15,11 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CLIENT_ID_COUNTER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_COMPACTED
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_DURABLE
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBSUB
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_STATEANDEVENT
+import net.corda.messaging.kafka.resolveSubscriptionConfiguration
 import net.corda.messaging.kafka.subscription.KafkaCompactedSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
@@ -50,9 +48,6 @@ class KafkaSubscriptionFactory @Activate constructor(
     // Used to ensure that each subscription has a unique client.id
     private val clientIdCounter = AtomicInteger()
 
-    private val enforced = ConfigFactory.parseResourcesAnySyntax("messaging-enforced.conf")
-    private val defaults = ConfigFactory.parseResourcesAnySyntax("messaging-defaults.conf")
-
     override fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
@@ -60,7 +55,12 @@ class KafkaSubscriptionFactory @Activate constructor(
         nodeConfig: Config
     ): Subscription<K, V> {
 
-        val config = resolveConfiguration(subscriptionConfig.toConfig(), nodeConfig, PATTERN_PUBSUB)
+        val config = resolveSubscriptionConfiguration(
+            subscriptionConfig.toConfig(),
+            nodeConfig,
+            clientIdCounter.getAndIncrement(),
+            PATTERN_PUBSUB
+        )
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
 
         return KafkaPubSubSubscriptionImpl(
@@ -83,7 +83,12 @@ class KafkaSubscriptionFactory @Activate constructor(
             )
         }
 
-        val config = resolveConfiguration(subscriptionConfig.toConfig(), nodeConfig, PATTERN_DURABLE)
+        val config = resolveSubscriptionConfiguration(
+            subscriptionConfig.toConfig(),
+            nodeConfig,
+            clientIdCounter.getAndIncrement(),
+            PATTERN_DURABLE
+        )
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
         val producerBuilder = KafkaProducerBuilderImpl(avroSchemaRegistry)
 
@@ -101,7 +106,12 @@ class KafkaSubscriptionFactory @Activate constructor(
         nodeConfig: Config
     ): CompactedSubscription<K, V> {
 
-        val config = resolveConfiguration(subscriptionConfig.toConfig(), nodeConfig, PATTERN_COMPACTED)
+        val config = resolveSubscriptionConfiguration(
+            subscriptionConfig.toConfig(),
+            nodeConfig,
+            clientIdCounter.getAndIncrement(),
+            PATTERN_COMPACTED
+        )
         val mapFactory = object : SubscriptionMapFactory<K, V> {
             override fun createMap(): MutableMap<K, V> = ConcurrentHashMap<K, V>()
             override fun destroyMap(map: MutableMap<K, V>) { map.clear() }
@@ -123,7 +133,12 @@ class KafkaSubscriptionFactory @Activate constructor(
     ): StateAndEventSubscription<K, S, E> {
 
         val subscriptionConfiguration = subscriptionConfig.toConfig()
-        val config = resolveConfiguration(subscriptionConfiguration, nodeConfig, PATTERN_STATEANDEVENT)
+        val config = resolveSubscriptionConfiguration(
+            subscriptionConfiguration,
+            nodeConfig,
+            clientIdCounter.getAndIncrement(),
+            PATTERN_STATEANDEVENT
+        )
         val producerBuilder = KafkaProducerBuilderImpl(avroSchemaRegistry)
         val eventConsumerBuilder = CordaKafkaConsumerBuilderImpl<K, E>(avroSchemaRegistry)
         val stateConsumerBuilder = CordaKafkaConsumerBuilderImpl<K, S>(avroSchemaRegistry)
@@ -161,19 +176,5 @@ class KafkaSubscriptionFactory @Activate constructor(
         nodeConfig: Config
     ): RandomAccessSubscription<K, V> {
         TODO("Not yet implemented")
-    }
-
-    private fun resolveConfiguration(
-        subscriptionConfiguration: Config,
-        nodeConfig: Config,
-        pattern: String
-    ): Config {
-        return enforced
-            .withFallback(subscriptionConfiguration)
-            .withValue(CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter.getAndIncrement()))
-            .withFallback(nodeConfig)
-            .withFallback(defaults)
-            .resolve()
-            .getConfig(pattern)
     }
 }

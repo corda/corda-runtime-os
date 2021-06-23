@@ -6,6 +6,7 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CLIENT_ID_COUNTER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.GROUP
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.INSTANCE_ID
@@ -45,7 +46,9 @@ fun mergeProperties(
 }
 
 fun Config.toProperties(): Properties = mergeProperties(this, null, emptyMap())
-fun Config.render(): String = root().render(ConfigRenderOptions.defaults().setOriginComments(false).setComments(false).setJson(false))
+fun Config.render(): String =
+    root().render(ConfigRenderOptions.defaults().setOriginComments(false).setComments(false).setJson(false))
+
 fun Config.toPatternProperties(pattern: String, clientType: String? = null): String {
     val pathEnd = if (clientType != null) {
         "$pattern.$clientType"
@@ -53,7 +56,7 @@ fun Config.toPatternProperties(pattern: String, clientType: String? = null): Str
         pattern
     }
     return getConfig("messaging.pattern.$pathEnd")
-            .toProperties().entries.sortedBy { it.key.toString() }.joinToString("\n")
+        .toProperties().entries.sortedBy { it.key.toString() }.joinToString("\n")
 }
 
 fun SubscriptionConfig.toConfig(): Config {
@@ -64,7 +67,53 @@ fun SubscriptionConfig.toConfig(): Config {
 }
 
 fun PublisherConfig.toConfig(): Config {
-    return ConfigFactory.empty()
-        .withValue(CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientId))
-        .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId))
+    var config = ConfigFactory.empty()
+        .withValue(GROUP, ConfigValueFactory.fromAnyRef(clientId))
+    if (instanceId != null) {
+        config = config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId))
+    }
+    return config
+}
+
+fun resolvePublisherConfiguration(
+    subscriptionConfiguration: Config,
+    nodeConfig: Config,
+    clientIdCounter: Int,
+    pattern: String
+): Config {
+    val enforced = ConfigFactory.parseResourcesAnySyntax("messaging-enforced.conf")
+    val defaults = ConfigFactory.parseResourcesAnySyntax("messaging-defaults.conf")
+
+    val config = enforced
+        .withFallback(subscriptionConfiguration)
+        .withValue(CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
+        .withFallback(nodeConfig)
+        .withFallback(defaults)
+        .resolve()
+        .getConfig(pattern)
+
+    return if (!subscriptionConfiguration.hasPath(INSTANCE_ID)) {
+        // No instance id - remove the transactional Id as we don't want to do transactions
+        config.withoutPath(KafkaProperties.TRANSACTIONAL_ID)
+    } else {
+        config
+    }
+}
+
+fun resolveSubscriptionConfiguration(
+    subscriptionConfiguration: Config,
+    nodeConfig: Config,
+    clientIdCounter: Int,
+    pattern: String
+): Config {
+    val enforced = ConfigFactory.parseResourcesAnySyntax("messaging-enforced.conf")
+    val defaults = ConfigFactory.parseResourcesAnySyntax("messaging-defaults.conf")
+
+    return enforced
+        .withFallback(subscriptionConfiguration)
+        .withValue(CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
+        .withFallback(nodeConfig)
+        .withFallback(defaults)
+        .resolve()
+        .getConfig(pattern)
 }
