@@ -137,7 +137,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         while (!stopped) {
             attempts++
             try {
-                producer = builder.createProducer(config.getConfig(KAFKA_PRODUCER))
+                producer = builder.createProducer(config)
                 stateConsumer = builder.createStateConsumer(config.getConfig(STATE_CONSUMER))
                 eventConsumer = builder.createEventConsumer(config.getConfig(EVENT_CONSUMER), this)
                 validateConsumers(stateConsumer, eventConsumer)
