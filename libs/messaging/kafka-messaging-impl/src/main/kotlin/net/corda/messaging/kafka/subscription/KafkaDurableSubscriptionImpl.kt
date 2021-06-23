@@ -10,6 +10,8 @@ import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.render
@@ -120,8 +122,8 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 log.debug { "Attempt: $attempts" }
-                consumer = consumerBuilder.createDurableConsumer(config)
-                producer = producerBuilder.createProducer(config)
+                consumer = consumerBuilder.createDurableConsumer(config.getConfig(KAFKA_CONSUMER))
+                producer = producerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribeToTopic()
                     producer.use { cordaProducer ->

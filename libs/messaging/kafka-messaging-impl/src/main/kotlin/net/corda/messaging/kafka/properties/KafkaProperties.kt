@@ -24,8 +24,9 @@ class KafkaProperties {
         const val PATTERN_EVENTLOG = "messaging.pattern.eventLog"
         const val PATTERN_RANDOMACCESS = "messaging.pattern.randomAccess"
 
-        const val PRODUCER_CLOSE_TIMEOUT = "producer.close.timeout"
-        const val CONSUMER_CLOSE_TIMEOUT = "consumer.close.timeout"
+        const val CLOSE_TIMEOUT = "close.timeout"
+        const val PRODUCER_CLOSE_TIMEOUT = "producer.$CLOSE_TIMEOUT"
+        const val CONSUMER_CLOSE_TIMEOUT = "consumer.$CLOSE_TIMEOUT"
         const val CONSUMER_THREAD_STOP_TIMEOUT = "consumer.thread.stop.timeout"
         const val CONSUMER_POLL_AND_PROCESS_RETRIES = "consumer.processor.retries"
         const val CONSUMER_POLL_TIMEOUT = "consumer.poll.timeout"

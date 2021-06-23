@@ -5,11 +5,12 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.kafka.getStringOrNull
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.GROUP_INSTANCE_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TRANSACTIONAL_ID
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -50,17 +51,12 @@ class CordaKafkaPublisherImpl(
 
     private val closeTimeout = kafkaConfig.getLong(PRODUCER_CLOSE_TIMEOUT)
     private val topicPrefix = kafkaConfig.getString(TOPIC_PREFIX)
-    private val instanceId =
-        if (kafkaConfig.hasPath(GROUP_INSTANCE_ID)) {
-            kafkaConfig.getInt(GROUP_INSTANCE_ID)
-        } else {
-            null
-        }
+    private val transactionalId = kafkaConfig.getStringOrNull(TRANSACTIONAL_ID)
     private val clientId = kafkaConfig.getString(PRODUCER_CLIENT_ID)
 
     /**
      * Publish a record.
-     * Records are published via transactions if an [instanceId] is configured
+     * Records are published via transactions if an [transactionalId] is configured
      * Publish will retry recoverable transaction related errors based on [kafkaConfig]
      * Any fatal errors are returned in the future as [CordaMessageAPIFatalException]
      * Any intermittent errors are returned in the future as [CordaMessageAPIIntermittentException]
@@ -77,7 +73,7 @@ class CordaKafkaPublisherImpl(
         }
 
         val futures = mutableListOf<CompletableFuture<Unit>>()
-        if (instanceId != null) {
+        if (transactionalId != null) {
             futures.add(publishTransaction(records))
         } else {
             publishRecordsAsync(records, futures)
@@ -120,13 +116,13 @@ class CordaKafkaPublisherImpl(
             when (ex) {
                 is CordaMessageAPIIntermittentException -> {
                     logErrorAndSetFuture(
-                        "Kafka producer clientId $clientId, instanceId $instanceId, " +
+                        "Kafka producer clientId $clientId, instanceId $transactionalId, " +
                                 "failed to send", ex, fut, false
                     )
                 }
                 else -> {
                     logErrorAndSetFuture(
-                        "Kafka producer clientId $clientId, instanceId $instanceId, " +
+                        "Kafka producer clientId $clientId, instanceId $transactionalId, " +
                                 "failed to send", ex, fut, true
                     )
                 }
@@ -140,12 +136,12 @@ class CordaKafkaPublisherImpl(
      * Helper function to set a [future] result based on the presence of an [exception]
      */
     private fun setFutureFromResponse(exception: Exception?, future: CompletableFuture<Unit>, topic: String) {
-        val message = "Kafka producer clientId $clientId, instanceId $instanceId, " +
+        val message = "Kafka producer clientId $clientId, instanceId $transactionalId, " +
                 "for topic $topic failed to send"
         when {
             (exception == null) -> {
                 //transaction operation can still fail at commit stage  so do not set to true until it is committed
-                if (instanceId == null) {
+                if (transactionalId == null) {
                     future.complete(Unit)
                 } else {
                     log.debug { "Asynchronous send completed completed successfully." }

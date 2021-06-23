@@ -7,6 +7,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TRANSACTIONAL_ID
@@ -136,7 +137,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         while (!stopped) {
             attempts++
             try {
-                producer = builder.createProducer(config)
+                producer = builder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 stateConsumer = builder.createStateConsumer(config.getConfig(STATE_CONSUMER))
                 eventConsumer = builder.createEventConsumer(config.getConfig(EVENT_CONSUMER), this)
                 validateConsumers(stateConsumer, eventConsumer)

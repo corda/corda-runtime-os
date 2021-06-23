@@ -8,6 +8,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.render
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
@@ -120,7 +121,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
         while (!stopped) {
             attempts++
             try {
-                consumerBuilder.createPubSubConsumer(config, ::logFailedDeserialize).use {
+                consumerBuilder.createPubSubConsumer(config.getConfig(KAFKA_CONSUMER), ::logFailedDeserialize).use {
                     it.subscribeToTopic()
                     pollAndProcessRecords(it)
                 }

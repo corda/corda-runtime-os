@@ -5,7 +5,6 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.producer.wrapper.impl.CordaKafkaProducerImpl
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.toProperties
@@ -32,17 +31,17 @@ class KafkaProducerBuilderImpl(
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    override fun createProducer(config: Config): CordaKafkaProducer {
+    override fun createProducer(producerConfig: Config): CordaKafkaProducer {
         val contextClassLoader = Thread.currentThread().contextClassLoader
         val producer = try {
             Thread.currentThread().contextClassLoader = null;
             KafkaProducer<Any, Any>(
-                config.getConfig(KAFKA_PRODUCER).toProperties(),
+                producerConfig.toProperties(),
                 uncheckedCast(StringSerializer()),
                 CordaAvroSerializer(avroSchemaRegistry)
             )
         } catch (ex: KafkaException) {
-            val clientId = config.getString(PRODUCER_CLIENT_ID)
+            val clientId = producerConfig.getString(PRODUCER_CLIENT_ID)
             val message = "SubscriptionSubscriptionProducerBuilderImpl failed to producer with clientId $clientId."
             log.error(message, ex)
             throw CordaMessageAPIFatalException(message, ex)
@@ -50,6 +49,6 @@ class KafkaProducerBuilderImpl(
             Thread.currentThread().contextClassLoader = contextClassLoader
         }
 
-        return CordaKafkaProducerImpl(config, producer)
+        return CordaKafkaProducerImpl(producerConfig, producer)
     }
 }
