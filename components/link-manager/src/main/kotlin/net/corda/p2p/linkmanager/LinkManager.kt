@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import com.typesafe.config.ConfigFactory
 import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -147,7 +146,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     open class PendingSessionsMessageQueues(publisherFactory: PublisherFactory) {
         private val queuedMessagesPendingSession = ConcurrentHashMap<SessionManager.SessionKey, ConcurrentLinkedQueue<FlowMessage>>()
         private val config = PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, null)
-        private val publisher = publisherFactory.createPublisher(config, ConfigFactory.empty())
+        private val publisher = publisherFactory.createPublisher(config)
 
         /**
          * Either adds a [FlowMessage] to a queue for a session which is pending (has started but hasn't finished
