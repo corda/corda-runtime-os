@@ -21,6 +21,8 @@ dependencies {
 
     implementation "net.corda:corda-base:$cordaVersion"
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'

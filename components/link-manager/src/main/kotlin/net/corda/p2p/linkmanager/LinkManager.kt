@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import com.typesafe.config.ConfigFactory
 import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -143,17 +144,17 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         override val valueClass = LinkInMessage::class.java
     }
 
-    class PendingSessionsMessageQueues(publisherFactory: PublisherFactory) {
+    open class PendingSessionsMessageQueues(publisherFactory: PublisherFactory) {
         private val queuedMessagesPendingSession = ConcurrentHashMap<SessionManager.SessionKey, ConcurrentLinkedQueue<FlowMessage>>()
         private val config = PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, null)
-        private val publisher = publisherFactory.createPublisher(config, emptyMap())
+        private val publisher = publisherFactory.createPublisher(config, ConfigFactory.empty())
 
         /**
          * Either adds a [FlowMessage] to a queue for a session which is pending (has started but hasn't finished
          * negotiation with the destination) or adds the message to a new queue if we need to negotiate a new session.
          * Returns [true] if we need to start session negotiation and [false] if we don't (if the session is pending).
         */
-        fun queueMessage(message: FlowMessage): Boolean {
+        open fun queueMessage(message: FlowMessage): Boolean {
             val key = getSessionKeyFromMessage(message)
             val newQueue = ConcurrentLinkedQueue<FlowMessage>()
             newQueue.add(message)
@@ -182,15 +183,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             outboundMessageSubscriptionConfig,
             OutboundMessageProcessor(sessionManager, messagesPendingSession, linkManagerNetworkMap),
-            mapOf(),
-            null
+            partitionAssignmentListener = null
         )
         val inboundMessageSubscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC)
         inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             inboundMessageSubscriptionConfig,
             InboundMessageProcessor(sessionManager),
-            mapOf(),
-            null
+            partitionAssignmentListener = null
         )
     }
 

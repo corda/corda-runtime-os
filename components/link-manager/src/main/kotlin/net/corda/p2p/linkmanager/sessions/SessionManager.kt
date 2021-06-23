@@ -28,7 +28,7 @@ import java.security.PublicKey
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
-class SessionManager(
+open class SessionManager(
     private val supportedModes: Set<ProtocolMode>,
     private val networkMap: LinkManagerNetworkMap,
     private val cryptoService: LinkManagerCryptoService,
@@ -52,7 +52,7 @@ class SessionManager(
         logger = newLogger
     }
 
-    fun getInitiatorSession(key: SessionKey): Session? {
+    open fun getInitiatorSession(key: SessionKey): Session? {
         return activeInitiatorSessions[key]
     }
 
@@ -73,7 +73,7 @@ class SessionManager(
         }
     }
 
-    fun getSessionInitMessage(sessionKey: SessionKey): LinkOutMessage? {
+    open fun getSessionInitMessage(sessionKey: SessionKey): LinkOutMessage? {
         val sessionId = UUID.randomUUID().toString()
         val session = AuthenticationProtocolInitiator(sessionId, supportedModes, maxMessageSize)
         pendingInitiatorSessions[sessionId] = Pair(sessionKey, session)
