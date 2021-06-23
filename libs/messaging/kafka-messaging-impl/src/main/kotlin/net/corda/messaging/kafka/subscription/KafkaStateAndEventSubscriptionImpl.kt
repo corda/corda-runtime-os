@@ -179,8 +179,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun validateConsumers(stateConsumer: CordaKafkaConsumer<K, S>, eventConsumer: CordaKafkaConsumer<K, E>) {
-        val statePartitions = stateConsumer.getPartitions(stateTopic.suffix, Duration.ofSeconds(consumerThreadStopTimeout))
-        val eventPartitions = eventConsumer.getPartitions(eventTopic.suffix, Duration.ofSeconds(consumerThreadStopTimeout))
+        val statePartitions = stateConsumer.getPartitions(stateTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
+        val eventPartitions = eventConsumer.getPartitions(eventTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
         if (statePartitions.size != eventPartitions.size) {
             val errorMsg = "Mismatch between state and event partitions."
             log.debug {
