@@ -10,7 +10,7 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 interface ConsumerBuilder<K : Any, V : Any> {
 
     /**
-     * Generate a Corda Kafka PubSub Consumer based on the [config].
+     * Generate a Corda Kafka PubSub Consumer based on the [consumerConfig].
      * This function will handle all retry logic and kafka error handling
      * @param onError a callback to receive messages that fail to deserialize.  In the consumer feed these will
      * show up as records with a null value, which means they should be removed from any maps.
@@ -18,12 +18,12 @@ interface ConsumerBuilder<K : Any, V : Any> {
      * @throws CordaMessageAPIFatalException if fatal error occurs during construction of the consumer
      */
     fun createPubSubConsumer(
-        config: Config,
+        consumerConfig: Config,
         onError: (String, ByteArray) -> Unit = {_, _ ->}
     ) : CordaKafkaConsumer<K, V>
 
     /**
-     * Generate a Corda Kafka Consumer based on the [config] for a [DurableSubscription].
+     * Generate a Corda Kafka Consumer based on the [consumerConfig] for a [DurableSubscription].
      * This function will handle all retry logic and kafka error handling
      * @param consumerRebalanceListener when not null, an override for the default rebalance handling for
      * the subscription.
@@ -31,19 +31,19 @@ interface ConsumerBuilder<K : Any, V : Any> {
      * @throws CordaMessageAPIFatalException if fatal error occurs during construction of the consumer
      */
     fun createDurableConsumer(
-        config: Config,
+        consumerConfig: Config,
         onError: (String, ByteArray) -> Unit = {_, _ ->},
         consumerRebalanceListener: ConsumerRebalanceListener? = null,
     ) : CordaKafkaConsumer<K, V>
 
     /**
-     * Generate a Corda Kafka Compacted topic Consumer based on the [config].
+     * Generate a Corda Kafka Compacted topic Consumer based on the [consumerConfig].
      * This function will handle all retry logic and kafka error handling
      * @return CordaKafkaConsumer
      * @throws CordaMessageAPIFatalException if fatal error occurs during construction of the consumer
      */
     fun createCompactedConsumer(
-        config: Config,
+        consumerConfig: Config,
         onError: (String, ByteArray) -> Unit = {_, _ ->},
     ) : CordaKafkaConsumer<K, V>
 

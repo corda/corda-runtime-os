@@ -45,6 +45,7 @@ fun mergeProperties(
     return properties
 }
 
+fun Config.getStringOrNull(path: String) = if (hasPath(path)) getString(path) else null
 fun Config.toProperties(): Properties = mergeProperties(this, null, emptyMap())
 fun Config.render(): String =
     root().render(ConfigRenderOptions.defaults().setOriginComments(false).setComments(false).setJson(false))

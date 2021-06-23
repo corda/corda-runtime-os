@@ -5,6 +5,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBLISHER
 import net.corda.messaging.kafka.publisher.CordaKafkaPublisherImpl
 import net.corda.messaging.kafka.resolvePublisherConfiguration
@@ -38,7 +39,7 @@ class CordaKafkaPublisherFactory @Activate constructor(
             clientIdCounter.getAndIncrement(),
             PATTERN_PUBLISHER
         )
-        val producer = KafkaProducerBuilderImpl(avroSchemaRegistry).createProducer(config)
+        val producer = KafkaProducerBuilderImpl(avroSchemaRegistry).createProducer(config.getConfig(KAFKA_PRODUCER))
         return CordaKafkaPublisherImpl(config, producer)
     }
 }
