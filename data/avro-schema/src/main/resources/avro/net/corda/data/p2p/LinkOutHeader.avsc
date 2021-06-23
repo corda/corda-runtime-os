@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "LinkOutHeader",
+  "namespace": "net.corda.p2p",
+  "fields": [
+    {
+      "name": "sni",
+      "type": "string"
+    },
+    {
+      "name": "address",
+      "type": "string"
+    }
+  ]
+}
