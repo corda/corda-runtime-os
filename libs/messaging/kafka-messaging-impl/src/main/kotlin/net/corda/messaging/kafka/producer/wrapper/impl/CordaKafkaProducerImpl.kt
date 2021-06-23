@@ -5,10 +5,10 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_TOPIC_PREFIX
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.GROUP_INSTANCE_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
-import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_CLIENT_ID
-import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_INSTANCE_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
@@ -39,9 +39,9 @@ class CordaKafkaProducerImpl(
     private val producer: Producer<Any, Any>
 ) : CordaKafkaProducer, Producer<Any, Any> by producer {
     private val closeTimeout = config.getLong(PRODUCER_CLOSE_TIMEOUT)
-    private val topicPrefix = config.getString(KAFKA_TOPIC_PREFIX)
-    private val clientId = config.getString(PUBLISHER_CLIENT_ID)
-    private val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getString(PUBLISHER_INSTANCE_ID) else null
+    private val topicPrefix = config.getString(TOPIC_PREFIX)
+    private val clientId = config.getString(PRODUCER_CLIENT_ID)
+    private val instanceId = if (config.hasPath(GROUP_INSTANCE_ID)) config.getString(GROUP_INSTANCE_ID) else null
 
     init {
         if (instanceId != null) {

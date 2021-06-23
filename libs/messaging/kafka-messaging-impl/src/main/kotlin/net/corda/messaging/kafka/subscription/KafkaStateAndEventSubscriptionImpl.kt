@@ -5,19 +5,20 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
-import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.PublisherConfigProperties
-import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventConsumerBuilder
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TRANSACTIONAL_ID
+import net.corda.messaging.kafka.render
+import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
@@ -29,36 +30,34 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
-
-fun StateAndEventSubscriptionConfig.asEventSubscriptionConfig() = SubscriptionConfig(groupName, eventTopic, instanceId)
-fun StateAndEventSubscriptionConfig.asStateSubscriptionConfig() = SubscriptionConfig("$groupName-state", stateTopic, instanceId)
-
 class Topic(val prefix: String, val suffix: String) {
     val topic
         get() = prefix + suffix
 }
 
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("TooManyFunctions")
 class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
-    subscriptionConfig: StateAndEventSubscriptionConfig,
-    config: Config,
+    private val config: Config,
     private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
-    private val consumerBuilder: StateAndEventConsumerBuilder<K, S, E>,
-    private val producerBuilder: ProducerBuilder,
+    private val builder: StateAndEventBuilder<K, S, E>,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventSubscription<K, S, E>, ConsumerRebalanceListener {
 
+    companion object {
+        private const val STATE_CONSUMER = "stateConsumer"
+        private const val EVENT_CONSUMER = "eventConsumer"
+        private const val STATE_TOPIC_NAME = "$STATE_CONSUMER.$TOPIC_NAME"
+        private const val EVENT_GROUP_ID = "$EVENT_CONSUMER.${CommonClientConfigs.GROUP_ID_CONFIG}"
+        private val CONSUMER_THREAD_STOP_TIMEOUT = KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT.replace("consumer", "eventConsumer")
+        private val CONSUMER_CLOSE_TIMEOUT = KafkaProperties.CONSUMER_CLOSE_TIMEOUT.replace("consumer", "eventConsumer")
+    }
     private val log: Logger = LoggerFactory.getLogger(
-        "${subscriptionConfig.groupName}.${subscriptionConfig.instanceId}")
+        "${config.getString(EVENT_GROUP_ID)}.${config.getString(TRANSACTIONAL_ID)}")
 
     private lateinit var producer: CordaKafkaProducer
     private lateinit var eventConsumer: CordaKafkaConsumer<K, E>
     private lateinit var stateConsumer: CordaKafkaConsumer<K, S>
-    private val topicPrefix = config.getString(KafkaProperties.KAFKA_TOPIC_PREFIX)
-    private val consumerThreadStopTimeout = config.getLong(KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT)
-    private val producerCloseTimeout = Duration.ofMillis(config.getLong(KafkaProperties.PRODUCER_CLOSE_TIMEOUT))
-    private val consumerCloseTimeout = Duration.ofMillis(config.getLong(KafkaProperties.CONSUMER_CLOSE_TIMEOUT))
     private var currentStates: MutableMap<K, Pair<Long, S>>? = null
 
     @Volatile
@@ -66,10 +65,14 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
 
-    private val eventTopic = Topic(topicPrefix, subscriptionConfig.eventTopic)
-    private val stateTopic = Topic(topicPrefix, subscriptionConfig.stateTopic)
-    private val groupName = subscriptionConfig.groupName
-    private val producerClientId: String = config.getString(PublisherConfigProperties.PUBLISHER_CLIENT_ID)
+    private val topicPrefix = config.getString(KafkaProperties.TOPIC_PREFIX)
+    private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
+    private val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
+    private val groupName = config.getString(EVENT_GROUP_ID)
+    private val producerClientId: String = config.getString(PRODUCER_CLIENT_ID)
+    private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
+    private val producerCloseTimeout = Duration.ofMillis(config.getLong(KafkaProperties.PRODUCER_CLOSE_TIMEOUT))
+    private val consumerCloseTimeout = Duration.ofMillis(config.getLong(CONSUMER_CLOSE_TIMEOUT))
 
     // When syncing up new partitions gives us the (partition, endOffset) for a given new partition
     private val statePartitionsToSync: MutableMap<Int, Long> = ConcurrentHashMap<Int, Long>()
@@ -83,6 +86,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
 
     override fun start() {
+        log.debug { "Starting subscription with config:\n${config.render()}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
@@ -132,9 +136,9 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         while (!stopped) {
             attempts++
             try {
-                producer = producerBuilder.createProducer()
-                stateConsumer = consumerBuilder.createStateConsumer()
-                eventConsumer = consumerBuilder.createEventConsumer(this)
+                producer = builder.createProducer(config)
+                stateConsumer = builder.createStateConsumer(config.getConfig(STATE_CONSUMER))
+                eventConsumer = builder.createEventConsumer(config.getConfig(EVENT_CONSUMER), this)
                 validateConsumers(stateConsumer, eventConsumer)
 
                 stateConsumer.assign(emptyList())

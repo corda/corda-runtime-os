@@ -1,0 +1,20 @@
+plugins {
+    id 'corda.publish'
+    id 'corda.common-library'
+}
+
+description "Kafka Config Read Component"
+
+dependencies {
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation project(':data:avro-schema')
+    implementation project(':libs:configuration:configuration-read')
+    implementation project(":libs:lifecycle")
+    implementation project(":libs:messaging:messaging")
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
+}

@@ -38,12 +38,16 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'flow-worker'
+include 'applications:tools:kafka-reader'
 include 'applications:tools:kafka-setup'
 include 'applications:examples:goodbyeworld'
+include 'components:kafka-config-read'
 include 'components:kafka-config-write'
 include 'components:kafka-topic-admin'
 include 'data:avro-schema'
+include 'libs:configuration:configuration-read'
 include 'libs:configuration:configuration-write'
+include 'libs:configuration:kafka-configuration-read-impl'
 include 'libs:configuration:kafka-configuration-write-impl'
 include 'libs:examples:helloworld'
 include 'libs:examples:helloworld-impl'
