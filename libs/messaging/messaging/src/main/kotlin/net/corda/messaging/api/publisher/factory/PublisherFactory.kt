@@ -1,6 +1,7 @@
 package net.corda.messaging.api.publisher.factory
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 
@@ -17,6 +18,6 @@ interface PublisherFactory {
      */
     fun createPublisher(
         publisherConfig: PublisherConfig,
-        nodeConfig: Config
+        nodeConfig: Config = ConfigFactory.empty()
     ): Publisher
 }
