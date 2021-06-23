@@ -1,14 +1,15 @@
 package net.corda.messaging.kafka.publisher.factory
 
 import com.nhaarman.mockito_kotlin.mock
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class CordaKafkaPublisherImplFactoryTest {
-    private lateinit var cordaKafkaPublisherFactory : CordaKafkaPublisherFactory
+    private lateinit var cordaKafkaPublisherFactory: CordaKafkaPublisherFactory
     private val publisherConfig = PublisherConfig("clientId")
 
     @BeforeEach
@@ -18,7 +19,9 @@ class CordaKafkaPublisherImplFactoryTest {
 
     @Test
     fun testCreatePublisher() {
-        val publisher = cordaKafkaPublisherFactory.createPublisher(publisherConfig, createStandardTestConfig())
+        val nodeConfig = ConfigFactory.empty()
+            .withValue("messaging.topic.prefix", ConfigValueFactory.fromAnyRef("demo"))
+        val publisher = cordaKafkaPublisherFactory.createPublisher(publisherConfig, nodeConfig)
         assertNotNull(publisher)
     }
 }

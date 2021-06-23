@@ -2,7 +2,9 @@ package net.corda.messaging.kafka.subscription.consumer.builder.impl
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.DurableConsumerRebalanceListener
@@ -36,8 +38,8 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
     ): CordaKafkaConsumer<K, V> {
         val consumer = createKafkaConsumer(config, onError)
         val listener = PubSubConsumerRebalanceListener(
-            config.getString("topic"),
-            config.getString("group"),
+            config.getString(TOPIC_NAME),
+            config.getString(CONSUMER_GROUP_ID),
             consumer
         )
         return CordaKafkaConsumerImpl(config, consumer, listener)
@@ -50,8 +52,8 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
     ): CordaKafkaConsumer<K, V> {
         val consumer = createKafkaConsumer(config, onError)
         val listener = consumerRebalanceListener ?: DurableConsumerRebalanceListener(
-            config.getString("topic"),
-            config.getString("group"),
+            config.getString(TOPIC_NAME),
+            config.getString(CONSUMER_GROUP_ID),
             consumer,
         )
         return CordaKafkaConsumerImpl(config, consumer, listener)
@@ -73,8 +75,8 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
         config: Config,
         onError: (String, ByteArray) -> Unit
     ): KafkaConsumer<K, V> {
-        val topic = config.getString("topic")
-        val groupName = config.getString("group")
+        val topic = config.getString(TOPIC_NAME)
+        val groupName = config.getString(CONSUMER_GROUP_ID)
         val contextClassLoader = Thread.currentThread().contextClassLoader
 
         return try {
