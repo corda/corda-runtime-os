@@ -11,6 +11,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CLIENT_ID_
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.GROUP
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.INSTANCE_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
+import org.osgi.framework.Bundle
 import java.util.*
 
 /**
@@ -77,13 +78,16 @@ fun PublisherConfig.toConfig(): Config {
 }
 
 fun resolvePublisherConfiguration(
+    bundle: Bundle,
     subscriptionConfiguration: Config,
     nodeConfig: Config,
     clientIdCounter: Int,
     pattern: String
 ): Config {
-    val enforced = ConfigFactory.parseResourcesAnySyntax("messaging-enforced.conf")
-    val defaults = ConfigFactory.parseResourcesAnySyntax("messaging-defaults.conf")
+    val enforcedResource = bundle.getResource("messaging-enforced.conf")
+    val defaultsResource = bundle.getResource("messaging-defaults.conf")
+    val enforced = ConfigFactory.parseURL(enforcedResource)
+    val defaults = ConfigFactory.parseURL(defaultsResource)
 
     val config = enforced
         .withFallback(subscriptionConfiguration)
@@ -102,13 +106,16 @@ fun resolvePublisherConfiguration(
 }
 
 fun resolveSubscriptionConfiguration(
+    bundle: Bundle,
     subscriptionConfiguration: Config,
     nodeConfig: Config,
     clientIdCounter: Int,
     pattern: String
 ): Config {
-    val enforced = ConfigFactory.parseResourcesAnySyntax("messaging-enforced.conf")
-    val defaults = ConfigFactory.parseResourcesAnySyntax("messaging-defaults.conf")
+    val enforcedResource = bundle.getResource("messaging-enforced.conf")
+    val defaultsResource = bundle.getResource("messaging-defaults.conf")
+    val enforced = ConfigFactory.parseURL(enforcedResource)
+    val defaults = ConfigFactory.parseURL(defaultsResource)
 
     return enforced
         .withFallback(subscriptionConfiguration)

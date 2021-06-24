@@ -75,7 +75,10 @@ class KafkaConfigUploader @Activate constructor(
 
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
         return ConfigFactory.empty()
-            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER)))
+            .withValue(
+                KAFKA_COMMON_BOOTSTRAP_SERVER,
+                ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER))
+            )
             .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX)))
     }
@@ -107,8 +110,10 @@ class KafkaConfigUploader @Activate constructor(
 }
 
 class CliParameters {
-    @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties" +
-            " OR pass in -Dbootstrap.servers and -Dconfig.topic.name"])
+    @CommandLine.Option(
+        names = ["--kafka"], description = ["File containing Kafka connection properties" +
+                " OR pass in -Dbootstrap.servers and -Dconfig.topic.name"]
+    )
     var kafkaConnection: File? = null
 
     @CommandLine.Option(names = ["--topic"], description = ["File containing the topic template"])

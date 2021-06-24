@@ -28,6 +28,7 @@ import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaCo
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.StateAndEventBuilderImpl
 import net.corda.messaging.kafka.toConfig
 import net.corda.schema.registry.AvroSchemaRegistry
+import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -56,6 +57,7 @@ class KafkaSubscriptionFactory @Activate constructor(
     ): Subscription<K, V> {
 
         val config = resolveSubscriptionConfiguration(
+            FrameworkUtil.getBundle(this::class.java),
             subscriptionConfig.toConfig(),
             nodeConfig,
             clientIdCounter.getAndIncrement(),
@@ -84,6 +86,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         }
 
         val config = resolveSubscriptionConfiguration(
+            FrameworkUtil.getBundle(this::class.java),
             subscriptionConfig.toConfig(),
             nodeConfig,
             clientIdCounter.getAndIncrement(),
@@ -105,8 +108,8 @@ class KafkaSubscriptionFactory @Activate constructor(
         processor: CompactedProcessor<K, V>,
         nodeConfig: Config
     ): CompactedSubscription<K, V> {
-
         val config = resolveSubscriptionConfiguration(
+            FrameworkUtil.getBundle(this::class.java),
             subscriptionConfig.toConfig(),
             nodeConfig,
             clientIdCounter.getAndIncrement(),
@@ -134,6 +137,7 @@ class KafkaSubscriptionFactory @Activate constructor(
 
         val subscriptionConfiguration = subscriptionConfig.toConfig()
         val config = resolveSubscriptionConfiguration(
+            FrameworkUtil.getBundle(this::class.java),
             subscriptionConfiguration,
             nodeConfig,
             clientIdCounter.getAndIncrement(),
