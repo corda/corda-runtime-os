@@ -1,5 +1,12 @@
-gradlew clean appJar
+build 
+`gradlew clean appJar`
 
-run kafka broker(3)
+run from resources dir
+`java -jar ..\..\..\build\bin\corda-demo-app-5.0.0-SNAPSHOT.jar --kafka kafka.properties --instanceId 1`
 
-java -jar applications\examples\demo-app\build\bin\corda-demo-app-5.0.0-SNAPSHOT.jar --instanceId 1 --kafka kafka.properties --topic topic.conf --config config.conf
+or run using command line args/system properties instead kafka.properties file
+
+`java -jar -Dbootstrap.servers=localhost:9092 -Dmessaging.topic.prefix=demo ..\..\..\build\bin\corda-demo-publisher-5.0.0-SNAPSHOT.jar --instanceId 1`
+
+for async publisher remove instanceId
+`java -jar -Dbootstrap.servers=localhost:9092 -Dmessaging.topic.prefix=demo ..\..\..\build\bin\corda-demo-publisher-5.0.0-SNAPSHOT.jar`

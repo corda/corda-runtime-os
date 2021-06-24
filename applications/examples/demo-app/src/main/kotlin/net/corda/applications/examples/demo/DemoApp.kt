@@ -1,7 +1,10 @@
 package net.corda.applications.examples.demo
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.components.examples.config.reader.ConfigReader
-import net.corda.components.examples.config.reader.ConfigReader.Companion.KAFKA_CONFIG
+import net.corda.components.examples.config.reader.ConfigReader.Companion.MESSAGING_CONFIG
 import net.corda.components.examples.config.reader.ConfigReceivedEvent
 import net.corda.components.examples.config.reader.KafkaConfigUpdateEvent
 import net.corda.components.examples.durable.RunDurableSub
@@ -23,6 +26,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import picocli.CommandLine
+import java.io.File
+import java.io.FileInputStream
+import java.util.*
 
 enum class LifeCycleState {
     UNINITIALIZED, STARTINGCONFIG, STARTINGMESSAGING, REINITMESSAGING
@@ -42,6 +48,10 @@ class DemoApp @Activate constructor(
         val log: Logger = contextLogger()
         const val BATCH_SIZE: Int = 128
         const val TIMEOUT: Long = 10000L
+        const val TOPIC_PREFIX = "messaging.topic.prefix"
+        const val CONFIG_TOPIC_NAME = "config.topic.name"
+        const val BOOTSTRAP_SERVERS = "bootstrap.servers"
+        const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
     private var lifeCycleCoordinator: LifeCycleCoordinator? = null
@@ -61,6 +71,8 @@ class DemoApp @Activate constructor(
             var configReader: ConfigReader? = null
 
             val instanceId = parameters.instanceId.toInt()
+            val kafkaProperties = getKafkaPropertiesFromFile(parameters.kafkaProperties)
+            val bootstrapConfig = getBootstrapConfig(kafkaProperties)
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
@@ -69,12 +81,12 @@ class DemoApp @Activate constructor(
                     when (event) {
                         is StartEvent -> {
                             state = LifeCycleState.STARTINGCONFIG
-                            configReader?.start()
+                            configReader?.start(bootstrapConfig)
                         }
                         is ConfigReceivedEvent -> {
                             if (state == LifeCycleState.STARTINGCONFIG) {
                                 state = LifeCycleState.STARTINGMESSAGING
-                                val config = event.currentConfigurationSnapshot[KAFKA_CONFIG]!!
+                                val config = bootstrapConfig.withFallback(event.currentConfigurationSnapshot[MESSAGING_CONFIG]!!)
                                 durableSub =
                                     RunDurableSub(
                                         subscriptionFactory,
@@ -99,16 +111,17 @@ class DemoApp @Activate constructor(
                         }
                         is KafkaConfigUpdateEvent -> {
                             state = LifeCycleState.REINITMESSAGING
-                            val config = event.currentConfigurationSnapshot[KAFKA_CONFIG]!!
-                            durableSub?.reStart(config)
+                            val config = bootstrapConfig.withFallback(event.currentConfigurationSnapshot[MESSAGING_CONFIG]!!)
                             stateEventSub?.reStart(config)
                             pubsubSub?.reStart(config)
+                            durableSub?.reStart(config)
                         }
                         is StopEvent -> {
                             configReader?.stop()
                             durableSub?.stop()
                             stateEventSub?.stop()
                             pubsubSub?.stop()
+                            shutdown()
                         }
                         else -> {
                             log.error("$event unexpected!")
@@ -122,16 +135,55 @@ class DemoApp @Activate constructor(
         }
     }
 
+    private fun getKafkaPropertiesFromFile(kafkaPropertiesFile: File?): Properties? {
+        if (kafkaPropertiesFile == null) {
+            return null
+        }
+
+        val kafkaConnectionProperties = Properties()
+        kafkaConnectionProperties.load(FileInputStream(kafkaPropertiesFile))
+        return kafkaConnectionProperties
+    }
+
+    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
+        val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
+        return ConfigFactory.empty()
+            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
+            .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
+    }
+
+    private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
+        var configValue = System.getProperty(path)
+        if (configValue == null && kafkaConnectionProperties != null) {
+            configValue = kafkaConnectionProperties[path].toString()
+        }
+
+        if (configValue == null) {
+            if (default != null) {
+                return default
+            }
+            log.error(
+                "No $path property found! " +
+                        "Pass property in via --kafka properties file or via -D$path"
+            )
+            shutdown()
+        }
+        return configValue
+    }
+
     override fun shutdown() {
         lifeCycleCoordinator?.stop()
         log.info("Stopping application")
     }
 }
 
-
 class CliParameters {
     @CommandLine.Option(names = ["--instanceId"], description = ["InstanceId for this worker"])
     lateinit var instanceId: String
+
+    @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties"])
+    var kafkaProperties: File? = null
 
     @CommandLine.Option(
         names = ["--durableKillProcessOnRecord"],

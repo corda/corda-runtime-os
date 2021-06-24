@@ -47,7 +47,7 @@ class RunDurableSub(
             subscription = subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(groupName, inputTopic, instanceId),
                 processor,
-                mapOf(),
+                config,
                 null
             )
             log.info("Starting durable subscription")

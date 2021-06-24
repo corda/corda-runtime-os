@@ -24,7 +24,7 @@ private val readServiceFactory: ConfigReadServiceFactory
 
     companion object {
         private val log: Logger = contextLogger()
-        const val KAFKA_CONFIG: String = "corda.kafka"
+        const val MESSAGING_CONFIG: String = "messaging.subscription"
     }
 
     private var receivedSnapshot = false
@@ -36,6 +36,11 @@ private val readServiceFactory: ConfigReadServiceFactory
     override val isRunning: Boolean
     get() = receivedSnapshot
 
+    fun start(bootstrapConfig: Config) {
+        this.bootstrapConfig = bootstrapConfig
+        this.start()
+    }
+
     override fun start() {
         if(bootstrapConfig != null){
             configReadService = readServiceFactory.createReadService(bootstrapConfig!!)
@@ -46,7 +51,7 @@ private val readServiceFactory: ConfigReadServiceFactory
                     lifeCycleCoordinator.postEvent(ConfigReceivedEvent(currentConfigurationSnapshot))
                 } else {
                     log.info("Config read service config update received")
-                    if (changedKeys.contains(KAFKA_CONFIG)) {
+                    if (changedKeys.contains(MESSAGING_CONFIG)) {
                         log.info("Config update contains kafka config")
                         lifeCycleCoordinator.postEvent(KafkaConfigUpdateEvent(currentConfigurationSnapshot))
                     }
@@ -57,7 +62,9 @@ private val readServiceFactory: ConfigReadServiceFactory
             sub = configReadService!!.registerCallback(lister)
             configReadService!!.start()
         } else {
-            throw CordaRuntimeException("Use the other start method available and pass in the bootstrap configuration")
+            val message = "Use the other start method available and pass in the bootstrap configuration"
+            log.error(message)
+            throw CordaRuntimeException(message)
         }
     }
 

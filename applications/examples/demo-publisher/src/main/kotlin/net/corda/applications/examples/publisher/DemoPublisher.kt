@@ -1,5 +1,8 @@
 package net.corda.applications.examples.publisher
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.components.examples.publisher.RunPublisher
 import net.corda.lifecycle.LifeCycleCoordinator
 import net.corda.lifecycle.LifeCycleEvent
@@ -16,6 +19,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import picocli.CommandLine
+import java.io.File
+import java.io.FileInputStream
+import java.util.*
 
 @Component
 class DemoPublisher @Activate constructor(
@@ -29,6 +35,9 @@ class DemoPublisher @Activate constructor(
         val log: Logger = contextLogger()
         const val BATCH_SIZE: Int = 128
         const val TIMEOUT: Long = 10000L
+        const val TOPIC_PREFIX = "messaging.topic.prefix"
+        const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
+        const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
     private var lifeCycleCoordinator: LifeCycleCoordinator? = null
@@ -66,7 +75,8 @@ class DemoPublisher @Activate constructor(
                 publisherFactory,
                 instanceId,
                 parameters.numberOfRecords.toInt(),
-                parameters.numberOfKeys.toInt()
+                parameters.numberOfKeys.toInt(),
+                getBootstrapConfig(getKafkaPropertiesFromFile(parameters.kafkaProperties))
             )
 
             lifeCycleCoordinator!!.start()
@@ -81,6 +91,43 @@ class DemoPublisher @Activate constructor(
     private fun shutdownOSGiFramework() {
         shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
+
+    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
+        val bootstrapServer = getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER)
+        return ConfigFactory.empty()
+            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
+    }
+
+    private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
+        var configValue = System.getProperty(path)
+        if (configValue == null && kafkaConnectionProperties != null) {
+            configValue = kafkaConnectionProperties[path].toString()
+        }
+
+        if (configValue == null) {
+            if (default != null) {
+                return default
+            }
+            log.error(
+                "No $path property found! " +
+                        "Pass property in via --kafka properties file or via -D$path"
+            )
+            shutdown()
+        }
+        return configValue
+    }
+
+    private fun getKafkaPropertiesFromFile(kafkaPropertiesFile: File?): Properties? {
+        if (kafkaPropertiesFile == null) {
+            return null
+        }
+
+        val kafkaConnectionProperties = Properties()
+        kafkaConnectionProperties.load(FileInputStream(kafkaPropertiesFile))
+        return kafkaConnectionProperties
+    }
+
 }
 
 class CliParameters {
@@ -101,4 +148,7 @@ class CliParameters {
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false
+
+    @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties"])
+    var kafkaProperties: File? = null
 }

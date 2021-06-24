@@ -23,6 +23,9 @@ class ConfigReadServiceImpl(
     private val boostrapConfig: Config
 ) : ConfigReadService, CompactedProcessor<String, Configuration> {
 
+    private companion object {
+        const val CONFIG_TOPIC_PATH = "config.topic.name"
+    }
 
     @Volatile
     private var stopped = false
@@ -47,9 +50,10 @@ class ConfigReadServiceImpl(
                     subscriptionFactory.createCompactedSubscription(
                         SubscriptionConfig(
                             CONFIGURATION_READ_SERVICE,
-                            boostrapConfig.getString("corda.kafka.topic.name")
+                            boostrapConfig.getString(CONFIG_TOPIC_PATH)
                         ),
                         this,
+                        boostrapConfig
                     )
                 subscription!!.start()
                 stopped = false

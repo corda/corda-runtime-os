@@ -1,5 +1,8 @@
 package net.corda.tools.kafka
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.osgi.api.Application
@@ -28,9 +31,10 @@ class KafkaConfigUploader @Activate constructor(
 
     private companion object {
         private val logger: Logger = contextLogger()
-        const val KAFKA_CONFIG_TOPIC_NAME = "kafka.config.topic.name"
-        const val KAFKA_BOOTSTRAP_SERVER = "kafka.bootstrap.servers"
-        const val BOOTSTRAP_SERVER = "bootstrap.servers"
+        const val TOPIC_PREFIX = "messaging.topic.prefix"
+        const val CONFIG_TOPIC_NAME = "config.topic.name"
+        const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
+        const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
     override fun startup(args: Array<String>) {
@@ -46,7 +50,7 @@ class KafkaConfigUploader @Activate constructor(
                 kafkaConnectionProperties.load(FileInputStream(kafkaPropertiesFile))
             }
 
-            setBootstrapServersProperty(kafkaConnectionProperties)
+            kafkaConnectionProperties[KAFKA_BOOTSTRAP_SERVER] = getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER)
 
             val topicTemplate = parameters.topicTemplate
             if (topicTemplate != null) {
@@ -59,8 +63,8 @@ class KafkaConfigUploader @Activate constructor(
             if (configurationFile != null) {
                 logger.info("Writing config to topic")
                 configWriter.updateConfig(
-                    getConfigTopicName(kafkaConnectionProperties),
-                    kafkaConnectionProperties,
+                    getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME),
+                    getBootstrapConfig(kafkaConnectionProperties),
                     configurationFile.readText()
                 )
                 logger.info("Write complete")
@@ -69,34 +73,27 @@ class KafkaConfigUploader @Activate constructor(
         }
     }
 
-    private fun getConfigTopicName(kafkaConnectionProperties: Properties): String {
-        var configTopicName = System.getProperty(KAFKA_CONFIG_TOPIC_NAME)
-        if (configTopicName == null) {
-            val configTopicNameProperty = kafkaConnectionProperties[KAFKA_CONFIG_TOPIC_NAME]
-            if (configTopicNameProperty == null) {
-                logger.error(
-                    "No config topic defined! " +
-                            "Pass config topic name in via kafka.properties file or via -Dkafka.config.topic.name"
-                )
-                shutdownOSGiFramework()
-            } else {
-                configTopicName = configTopicNameProperty.toString()
-            }
-        }
-        return configTopicName
+    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
+        return ConfigFactory.empty()
+            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER)))
+            .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX)))
     }
 
-    private fun setBootstrapServersProperty(kafkaConnectionProperties : Properties) {
-        val kafkaBootStrapServers = System.getProperty(KAFKA_BOOTSTRAP_SERVER)
-        if (kafkaBootStrapServers != null) {
-            kafkaConnectionProperties[BOOTSTRAP_SERVER] = kafkaBootStrapServers
+    private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String): String {
+        var configValue = System.getProperty(path)
+        if (configValue == null && kafkaConnectionProperties != null) {
+            configValue = kafkaConnectionProperties[path].toString()
         }
 
-        if (kafkaConnectionProperties[BOOTSTRAP_SERVER] == null) {
-            logger.error("No bootstrap.servers property found! " +
-                    "Pass property in via kafka.properties file or via -Dkafka.bootstrap.servers")
-            shutdownOSGiFramework()
+        if (configValue == null) {
+            logger.error(
+                "No $path property found! " +
+                        "Pass property in via --kafka properties file or via -D$path"
+            )
+            shutdown()
         }
+        return configValue
     }
 
     override fun shutdown() {
@@ -111,7 +108,7 @@ class KafkaConfigUploader @Activate constructor(
 
 class CliParameters {
     @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties" +
-            " OR pass in -Dkafka.bootstrap.servers and -Dkafka.config.topic.name"])
+            " OR pass in -Dbootstrap.servers and -Dconfig.topic.name"])
     var kafkaConnection: File? = null
 
     @CommandLine.Option(names = ["--topic"], description = ["File containing the topic template"])

@@ -1,5 +1,6 @@
 package net.corda.components.examples.publisher
 
+import com.typesafe.config.Config
 import net.corda.data.demo.DemoRecord
 import net.corda.lifecycle.LifeCycle
 import net.corda.lifecycle.LifeCycleCoordinator
@@ -19,7 +20,8 @@ class RunPublisher (
     private val publisherFactory: PublisherFactory,
     private val instanceId: Int?,
     private val numberOfRecords: Int,
-    private val numberOfKeys: Int
+    private val numberOfKeys: Int,
+    private val config: Config
     ) : LifeCycle {
 
     private var publisher: Publisher? = null
@@ -37,8 +39,7 @@ class RunPublisher (
             isRunning = true
             val pubConfig = PublisherConfig(clientId, instanceId)
             log.info("Instantiating publisher...")
-            publisher = publisherFactory.createPublisher(pubConfig, mutableMapOf())
-
+            publisher = publisherFactory.createPublisher(pubConfig, config)
 
             for (i in 1..numberOfKeys) {
                 val records = mutableListOf<Record<*, *>>()

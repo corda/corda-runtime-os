@@ -43,7 +43,7 @@ class RunPubSub(
                 SubscriptionConfig(groupName, pubsubTopic),
                 processor,
                 null,
-                mapOf()
+                config
             )
 
             log.info("Starting pubsub subscription")
