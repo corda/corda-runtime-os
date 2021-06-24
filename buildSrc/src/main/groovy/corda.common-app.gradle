@@ -23,6 +23,7 @@ dependencies {
 
     systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    systemPackages "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
     systemPackages project(":osgi-framework-api")
 }
 

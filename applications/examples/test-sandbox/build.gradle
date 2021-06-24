@@ -17,7 +17,7 @@ dependencies {
     implementation "net.corda:corda-crypto-api:1.0.0-SNAPSHOT"
     implementation "net.corda:corda-sandbox:1.0.0-SNAPSHOT"
     implementation "net.corda:corda-install:1.0.0-SNAPSHOT"
-    implementation 'org.osgi:org.osgi.service.cm:1.6.0'
+    implementation "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
     implementation project(":libs:lifecycle")
     implementation project(":osgi-framework-api")

@@ -497,7 +497,7 @@ class OSGiFrameworkWrap(
                         "Check if the class implementing ${Application::class.java}" +
                         " has properties annotated with @Reference(service = <class>).\n" +
                         "Each referred <class> must be annotated as @Component(service = [<class>])" +
-                        " else the class implementing ${Application::class.java} can't be found at bootstrap." )
+                        " else the class implementing ${Application::class.java} can't be found at bootstrap" )
         }
         return this
     }
