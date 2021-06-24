@@ -1,6 +1,8 @@
 package net.corda.p2p.gateway
 
+import io.netty.channel.ConnectTimeoutException
 import net.corda.p2p.gateway.messaging.ConnectionManager
+import net.corda.p2p.gateway.messaging.ConnectionManagerConfig
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.v5.base.util.NetworkHostAndPort
@@ -10,7 +12,6 @@ import org.junit.jupiter.api.Timeout
 import java.io.FileInputStream
 import java.security.KeyStore
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeoutException
 
 class ConnectionManagerTest {
 
@@ -78,10 +79,10 @@ class ConnectionManagerTest {
     fun `acquire times out`() {
         var gotException = false
         try {
-            ConnectionManager(sslConfiguration).acquire(serverAddresses.first())
+            val config = ConnectionManagerConfig(10, 100, 1000)
+            ConnectionManager(sslConfiguration, config).acquire(serverAddresses.first())
         } catch (e: Exception) {
-            assert(e is TimeoutException)
-            println(e.message)
+            assert(e is ConnectTimeoutException)
             gotException = true
         }
         assert(gotException)

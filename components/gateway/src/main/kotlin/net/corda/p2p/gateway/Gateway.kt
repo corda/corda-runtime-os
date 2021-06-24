@@ -69,14 +69,14 @@ class Gateway(address: NetworkHostAndPort,
 
     override fun start() {
         logger.info("Starting Gateway service")
+        connectionManager.start()
+        closeActions += { connectionManager.close() }
         p2pMessageSubscription.start()
         closeActions += { p2pMessageSubscription.close() }
         httpServer.start()
         closeActions += { httpServer.close() }
         inboundMessageProcessor.start()
         closeActions += { inboundMessageProcessor.close() }
-        connectionManager.start()
-        closeActions += { connectionManager.close() }
         logger.info("Gateway started")
     }
 
