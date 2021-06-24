@@ -7,11 +7,11 @@ import net.corda.lifecycle.StopEvent
 import net.corda.osgi.api.Application
 import net.corda.sandbox.SandboxService
 import net.corda.v5.base.util.contextLogger
+import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.nio.file.Paths
+import java.util.*
 
 /**
  * This class is the entry point of the didactic application showing how to run CordApps from a bootable JAR.
@@ -29,6 +29,7 @@ import java.nio.file.Paths
 @Component(immediate = true)
 class TestSandboxApplication : Application {
 
+    @Suppress("MaxLineLength")
     private companion object {
 
         private val logger = contextLogger()
@@ -38,21 +39,25 @@ class TestSandboxApplication : Application {
          * from the `:applications:examples:test-cpk` module.
          */
         private const val PATH = "applications/examples/test-cpk/build/libs"
+//        private const val PATH = "/home/ldebiasi/IdeaProjects/corda5/testing/cordapps/fungiblestate-sample/fungiblestate-contracts/build/libs"
 
     } //~ companion object
+
+    @Reference
+    private var configAdmin: ConfigurationAdmin? = null
 
     /**
      * Reference to the [InstallService] set automatically because both [InstallService] and
      * this class are annotated as `@Component` and they are published OSGi services.
      */
-    @Reference
+    @Reference(service = InstallService::class)
     private var installService: InstallService? = null
 
     /**
      * Reference to the [SandboxService] set automatically because both [SandboxService] and
      * this class are annotated as `@Component` and they are published OSGi services.
      */
-    @Reference
+    @Reference(service = SandboxService::class)
     private var sandboxService: SandboxService? = null
 
     /**
@@ -77,15 +82,36 @@ class TestSandboxApplication : Application {
      * Properties annotated with `@Reference` are already set when this method is called.
      */
     override fun startup(args: Array<String>) {
-        logger.info("Start-up($args).")
+        logger.info("Start-up.")
+
+        if (configAdmin != null) {
+            logger.info("Configuration Admin active.")
+            val configuration = configAdmin!!.getConfiguration(ConfigurationAdmin::class.java.name, null)
+            logger.info("Configuration $configuration")
+            val configProperties: Dictionary<String, Any> = Hashtable()
+            configProperties.put("baseDirectory", PATH)
+            val blacklistedKeys: List<String> = emptyList()
+            configProperties.put("blacklistedKeys", blacklistedKeys)
+            configProperties.put("platformVersion", 5)
+            configuration.update(configProperties)
+            logger.info("Configuration.properties ${configuration.properties}")
+        } else {
+            logger.warn("Configuration Admin not found.")
+        }
         if (installService != null) {
             logger.info("Install service active.")
             if (sandboxService != null) {
                 logger.info("Sandbox service active.")
-                coordinator.start()
-                logger.info("Press [CTRL+C] to stop the application...")
+                //coordinator.start()
+                val path = Paths.get(PATH)
+                TestSandbox(path, installService!!, sandboxService!!).installCpk(path)
+            } else {
+                logger.warn("Sandbox service not found.")
             }
+        } else {
+            logger.warn("Install service not found.")
         }
+        logger.info("Press [CTRL+C] to stop the application...")
     }
 
     /**
