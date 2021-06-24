@@ -84,10 +84,8 @@ fun resolvePublisherConfiguration(
     clientIdCounter: Int,
     pattern: String
 ): Config {
-    val enforcedResource = bundle.getResource("messaging-enforced.conf")
-    val defaultsResource = bundle.getResource("messaging-defaults.conf")
-    val enforced = ConfigFactory.parseURL(enforcedResource)
-    val defaults = ConfigFactory.parseURL(defaultsResource)
+    val enforced = ConfigFactory.parseURL(bundle.getResource("messaging-enforced.conf"))
+    val defaults = ConfigFactory.parseURL(bundle.getResource("messaging-defaults.conf"))
 
     val config = enforced
         .withFallback(subscriptionConfiguration)
@@ -112,10 +110,8 @@ fun resolveSubscriptionConfiguration(
     clientIdCounter: Int,
     pattern: String
 ): Config {
-    val enforcedResource = bundle.getResource("messaging-enforced.conf")
-    val defaultsResource = bundle.getResource("messaging-defaults.conf")
-    val enforced = ConfigFactory.parseURL(enforcedResource)
-    val defaults = ConfigFactory.parseURL(defaultsResource)
+    val enforced = ConfigFactory.parseURL(bundle.getResource("messaging-enforced.conf"))
+    val defaults = ConfigFactory.parseURL(bundle.getResource("messaging-defaults.conf"))
 
     return enforced
         .withFallback(subscriptionConfiguration)
