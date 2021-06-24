@@ -10,14 +10,12 @@ import net.corda.messaging.api.records.Record
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 
 /**
  * Kafka implementation of the [ConfigWriteService]
  * @property topicName the topic configurations will be published to
  */
-@Component(immediate = true, service = [ConfigWriteService::class])
 class ConfigWriteServiceImpl(
     private val topicName: String,
     private val publisher: Publisher

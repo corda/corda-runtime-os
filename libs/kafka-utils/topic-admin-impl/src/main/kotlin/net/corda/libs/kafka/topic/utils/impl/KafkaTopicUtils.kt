@@ -7,7 +7,6 @@ import net.corda.libs.kafka.topic.utils.TopicUtils
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.errors.TopicExistsException
-import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ExecutionException
@@ -17,7 +16,6 @@ import java.util.concurrent.ExecutionException
  * Used to create new topics on kafka
  * Any [ExecutionException]s apart from [TopicExistsException]s are thrown back to the user
  */
-@Component(immediate = true, service = [TopicUtils::class])
 class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
 
     private companion object {
