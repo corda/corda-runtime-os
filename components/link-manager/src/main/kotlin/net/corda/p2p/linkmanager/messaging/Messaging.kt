@@ -119,7 +119,7 @@ class Messaging {
             val decryptedData = try {
                 session.decryptData(message.header, message.encryptedPayload.array(), message.authTag.array())
             } catch (exception: DecryptionFailedError) {
-                logger.warn("Decryption failed for message for session ${message.header.sessionId}. Reason: ${exception.message}." +
+                logger.warn("Decryption failed for message for session ${message.header.sessionId}. Reason: ${exception.message} " +
                         "The message was discarded.")
                 return null
             }

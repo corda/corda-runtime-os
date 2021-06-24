@@ -47,6 +47,50 @@ class LinkManagerTest {
         const val GROUP_ID = "myGroup"
         const val KEY = "Key"
         const val TOPIC = "Topic"
+
+        data class SessionPair(val initiatorSession: Session, val responderSession: Session)
+
+        //We can't use Mockito as Session is final
+        fun createSessionPair(mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY): SessionPair {
+            val provider = BouncyCastleProvider()
+            val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
+            val partyAIdentityKey = keyPairGenerator.generateKeyPair()
+            val partyBIdentityKey = keyPairGenerator.generateKeyPair()
+            val signature = Signature.getInstance("ECDSA", provider)
+
+            val initiator = AuthenticationProtocolInitiator(SESSION_ID, setOf(mode), MAX_MESSAGE_SIZE)
+            val responder = AuthenticationProtocolResponder(SESSION_ID, setOf(mode), MAX_MESSAGE_SIZE)
+
+            val initiatorHelloMsg = initiator.generateInitiatorHello()
+            responder.receiveInitiatorHello(initiatorHelloMsg)
+
+            val responderHelloMsg = responder.generateResponderHello()
+            initiator.receiveResponderHello(responderHelloMsg)
+
+            initiator.generateHandshakeSecrets()
+            responder.generateHandshakeSecrets()
+
+            val signingCallbackForA = { data: ByteArray ->
+                signature.initSign(partyAIdentityKey.private)
+                signature.update(data)
+                signature.sign()
+            }
+            val initiatorHandshakeMessage = initiator.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, GROUP_ID, signingCallbackForA)
+
+            responder.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public }
+
+            val signingCallbackForB = { data: ByteArray ->
+                signature.initSign(partyBIdentityKey.private)
+                signature.update(data)
+                signature.sign()
+            }
+            val responderHandshakeMessage = responder.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
+
+            initiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
+            return SessionPair(initiator.getSession(), responder.getSession())
+        }
+
+
     }
 
     class TestListBasedPublisher: Publisher {
@@ -89,48 +133,6 @@ class LinkManagerTest {
     private fun initiatorHelloLinkInMessage() : LinkInMessage {
         val session =  AuthenticationProtocolInitiator(SESSION_ID, setOf(ProtocolMode.AUTHENTICATION_ONLY), MAX_MESSAGE_SIZE)
         return LinkInMessage(session.generateInitiatorHello())
-    }
-
-    private data class SessionPair(val initiatorSession: Session, val responderSession: Session)
-
-    //We can't use Mockito as Session is final
-    private fun createSessionPair(mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY): SessionPair {
-        val provider = BouncyCastleProvider()
-        val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-        val partyAIdentityKey = keyPairGenerator.generateKeyPair()
-        val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-        val signature = Signature.getInstance("ECDSA", provider)
-
-        val initiator = AuthenticationProtocolInitiator(SESSION_ID, setOf(mode), MAX_MESSAGE_SIZE)
-        val responder = AuthenticationProtocolResponder(SESSION_ID, setOf(mode), MAX_MESSAGE_SIZE)
-
-        val initiatorHelloMsg = initiator.generateInitiatorHello()
-        responder.receiveInitiatorHello(initiatorHelloMsg)
-
-        val responderHelloMsg = responder.generateResponderHello()
-        initiator.receiveResponderHello(responderHelloMsg)
-
-        initiator.generateHandshakeSecrets()
-        responder.generateHandshakeSecrets()
-
-        val signingCallbackForA = { data: ByteArray ->
-            signature.initSign(partyAIdentityKey.private)
-            signature.update(data)
-            signature.sign()
-        }
-        val initiatorHandshakeMessage = initiator.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, GROUP_ID, signingCallbackForA)
-
-        responder.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public }
-
-        val signingCallbackForB = { data: ByteArray ->
-            signature.initSign(partyBIdentityKey.private)
-            signature.update(data)
-            signature.sign()
-        }
-        val responderHandshakeMessage = responder.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
-
-        initiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
-        return SessionPair(initiator.getSession(), responder.getSession())
     }
 
     private fun extractPayloadFromLinkOutMessage(message: LinkOutMessage): ByteBuffer {
