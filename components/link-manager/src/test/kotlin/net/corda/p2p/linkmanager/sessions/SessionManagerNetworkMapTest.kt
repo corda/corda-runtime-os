@@ -37,14 +37,14 @@ class SessionManagerNetworkMapTest {
     fun `Cannot generate a session init message for a party not in the network map`() {
         val netMap = SessionManagerTest.MockNetworkMap(listOf(PARTY_A, PARTY_B))
         val supportedMode = setOf(ProtocolMode.AUTHENTICATION_ONLY)
-        val initiatorSessionManager = SessionManager(
+        val initiatorSessionManager = SessionManagerImpl(
             supportedMode,
             netMap.getSessionNetworkMapForNode(SessionManagerTest.PARTY_A),
             SessionManagerTest.MockCryptoService(),
             SessionManagerTest.MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManager }
+        ) { _, _, _ -> return@SessionManagerImpl }
 
-        val sessionKey = SessionManager.SessionKey(null, PARTY_NOT_IN_NETMAP)
+        val sessionKey = SessionManagerImpl.SessionKey(null, PARTY_NOT_IN_NETMAP)
 
         val mockLogger = Mockito.mock(Logger::class.java)
         initiatorSessionManager.setLogger(mockLogger)
@@ -60,22 +60,22 @@ class SessionManagerNetworkMapTest {
 
     private fun negotiateToResponderHelloMessage(netMap: LinkManagerNetworkMap, mockLogger: Logger): Pair<String, LinkOutMessage?> {
         val supportedMode = setOf(ProtocolMode.AUTHENTICATION_ONLY)
-        val sessionManager = SessionManager(
+        val sessionManager = SessionManagerImpl(
             supportedMode,
             netMap,
             SessionManagerTest.MockCryptoService(),
             SessionManagerTest.MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManager }
+        ) { _, _, _ -> return@SessionManagerImpl }
         val (step2Message, responderHello) = negotiateToResponderHelloMessage(sessionManager, supportedMode, mockLogger)
         return Pair(step2Message.initiatorHello.header.sessionId, responderHello)
     }
 
     private fun negotiateToResponderHelloMessage(
-        sessionManager: SessionManager,
+        sessionManager: SessionManagerImpl,
         supportedModes: Set<ProtocolMode>,
         mockLogger: Logger): Pair<Step2Message, LinkOutMessage?> {
 
-        val sessionKey = SessionManager.SessionKey(null, PARTY_B)
+        val sessionKey = SessionManagerImpl.SessionKey(null, PARTY_B)
         sessionManager.setLogger(mockLogger)
         Messaging.setLogger(mockLogger)
 
@@ -93,18 +93,18 @@ class SessionManagerNetworkMapTest {
         mockLogger: Logger
     ): Pair<String, LinkOutMessage?> {
         val supportedMode = setOf(ProtocolMode.AUTHENTICATION_ONLY)
-        val initiatorSessionManager = SessionManager(
+        val initiatorSessionManager = SessionManagerImpl(
             supportedMode,
             initiatorNetMap,
             SessionManagerTest.MockCryptoService(),
             SessionManagerTest.MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManager }
-        val responderSessionManager = SessionManager(
+        ) { _, _, _ -> return@SessionManagerImpl }
+        val responderSessionManager = SessionManagerImpl(
             supportedMode,
             responderNetMap,
             SessionManagerTest.MockCryptoService(),
             SessionManagerTest.MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManager }
+        ) { _, _, _ -> return@SessionManagerImpl }
 
         responderSessionManager.setLogger(mockLogger)
         initiatorSessionManager.setLogger(mockLogger)
@@ -113,8 +113,8 @@ class SessionManagerNetworkMapTest {
     }
 
     private fun negotiateToInitiatorHandshakeMessage(
-        initiatorSessionManager: SessionManager,
-        responderSessionManager: SessionManager,
+        initiatorSessionManager: SessionManagerImpl,
+        responderSessionManager: SessionManagerImpl,
         mockLogger: Logger
     ): Pair<String, LinkOutMessage?> {
         val supportedMode = setOf(ProtocolMode.AUTHENTICATION_ONLY)
@@ -136,18 +136,18 @@ class SessionManagerNetworkMapTest {
     ): String {
         val supportedMode = setOf(ProtocolMode.AUTHENTICATION_ONLY)
 
-        val initiatorSessionManager = SessionManager(
+        val initiatorSessionManager = SessionManagerImpl(
             supportedMode,
             initiatorNetMap,
             SessionManagerTest.MockCryptoService(),
             SessionManagerTest.MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManager }
-        val responderSessionManager = SessionManager(
+        ) { _, _, _ -> return@SessionManagerImpl }
+        val responderSessionManager = SessionManagerImpl(
             supportedMode,
             responderNetMap,
             SessionManagerTest.MockCryptoService(),
             SessionManagerTest.MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManager }
+        ) { _, _, _ -> return@SessionManagerImpl }
 
         val (sessionId, responderHandshakeMessage) = negotiateToInitiatorHandshakeMessage(
             initiatorSessionManager,

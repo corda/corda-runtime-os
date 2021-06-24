@@ -139,9 +139,9 @@ class SessionManagerTest {
         return Step2Message(message, responderHello, ByteBuffer.wrap(privateKey))
     }
 
-    private fun negotiateSession(key: SessionManager.SessionKey,
-                                 initiatorSessionManager: SessionManager,
-                                 responderSessionManager: SessionManager,
+    private fun negotiateSession(key: SessionManagerImpl.SessionKey,
+                                 initiatorSessionManager: SessionManagerImpl,
+                                 responderSessionManager: SessionManagerImpl,
                                  responderSupportedMode: Set<ProtocolMode>): Pair<Session, Session> {
         val initiatorHelloMessage = initiatorSessionManager.getSessionInitMessage(key)
         assertTrue(initiatorHelloMessage?.payload is InitiatorHelloMessage)
@@ -171,18 +171,18 @@ class SessionManagerTest {
     fun `A session can be negotiated between two SessionManagers and a message can be sent (in AUTHENTICATION_ONLY mode)`() {
         val netMap = MockNetworkMap(listOf(PARTY_A, PARTY_B))
         val supportedMode =  setOf(ProtocolMode.AUTHENTICATION_ONLY)
-        val initiatorSessionManager = SessionManager(
+        val initiatorSessionManager = SessionManagerImpl(
             supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_A),
             MockCryptoService(),
             MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManager }
-        val responderSessionManager = SessionManager(
+        ) { _, _, _ -> return@SessionManagerImpl }
+        val responderSessionManager = SessionManagerImpl(
             supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_B),
             MockCryptoService(),
             MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManager }
+        ) { _, _, _ -> return@SessionManagerImpl }
 
         val payload = ByteBuffer.wrap("Hello from PartyA".toByteArray())
         val message = FlowMessage(FlowMessageHeader(
@@ -214,18 +214,18 @@ class SessionManagerTest {
     fun `A session can be negotiated between two SessionManagers and a message can be sent and decrypted (in AUTHENTICATED_ENCRYPTION mode)`() {
         val netMap = MockNetworkMap(listOf(PARTY_A, PARTY_B))
         val supportedMode =  setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
-        val initiatorSessionManager = SessionManager(
+        val initiatorSessionManager = SessionManagerImpl(
             supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_A),
             MockCryptoService(),
             MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManager }
-        val responderSessionManager = SessionManager(
+        ) { _, _, _ -> return@SessionManagerImpl }
+        val responderSessionManager = SessionManagerImpl(
             supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_B),
             MockCryptoService(),
             MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManager }
+        ) { _, _, _ -> return@SessionManagerImpl }
 
         val payload = ByteBuffer.wrap("Hello from PartyA".toByteArray())
         val message = FlowMessage(FlowMessageHeader(
@@ -267,26 +267,26 @@ class SessionManagerTest {
         val netMapPartyA = netMap.getSessionNetworkMapForNode(PARTY_A)
 
         var sessionFromCallback : Session? = null
-        fun testCallBack(key: SessionManager.SessionKey, session: Session, map: LinkManagerNetworkMap) {
+        fun testCallBack(key: SessionManagerImpl.SessionKey, session: Session, map: LinkManagerNetworkMap) {
             assertSame(map, netMapPartyA)
             assertEquals(key, getSessionKeyFromMessage(message))
             sessionFromCallback = session
             return
         }
         val supportedMode =  setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
-        val initiatorSessionManager = SessionManager(
+        val initiatorSessionManager = SessionManagerImpl(
             supportedMode,
             netMapPartyA,
             MockCryptoService(),
             MAX_MESSAGE_SIZE,
             ::testCallBack
         )
-        val responderSessionManager = SessionManager(
+        val responderSessionManager = SessionManagerImpl(
             supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_B),
             MockCryptoService(),
             MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManager }
+        ) { _, _, _ -> return@SessionManagerImpl }
 
         val (initiatorSession, _) = negotiateSession(
             getSessionKeyFromMessage(message),
@@ -301,12 +301,12 @@ class SessionManagerTest {
     fun `Session messages are dropped (with appropriate logging) if there is no pending session`() {
         val netMap = MockNetworkMap(listOf(PARTY_A, PARTY_B))
         val supportedMode =  setOf(ProtocolMode.AUTHENTICATION_ONLY)
-        val sessionManager = SessionManager(
+        val sessionManager = SessionManagerImpl(
             supportedMode,
             netMap.getSessionNetworkMapForNode(PARTY_A),
             MockCryptoService(),
             MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManager }
+        ) { _, _, _ -> return@SessionManagerImpl }
 
         val mockHeader = Mockito.mock(CommonHeader::class.java)
 
@@ -335,5 +335,4 @@ class SessionManagerTest {
 
         }
     }
-
 }
