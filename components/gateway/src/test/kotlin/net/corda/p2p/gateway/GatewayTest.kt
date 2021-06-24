@@ -1,8 +1,9 @@
 package net.corda.p2p.gateway
 
-import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
-import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.records.Record
+import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
+import net.corda.p2p.gateway.Gateway.Companion.P2P_OUT_TOPIC
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.v5.base.util.NetworkHostAndPort
@@ -29,9 +30,9 @@ class GatewayTest {
         override val trustStorePassword: String = truststorePass
     }
 
-    private val topicService = TopicServiceImpl()
-    private val subscriptionFactory = InMemSubscriptionFactory(topicService)
-    private val publisherFactory = CordaPublisherFactory(topicService)
+    private val topicService = TopicServiceStub()
+    private val subscriptionFactory = SubscriptionFactoryStub(topicService)
+    private val publisherFactory = PublisherFactoryStub(topicService)
 
     @Test
     fun `http client to gateway`() {
@@ -43,7 +44,7 @@ class GatewayTest {
                 val responseReceived = CountDownLatch(1)
                 client.onConnection.subscribe { evt ->
                     if (evt.connected) {
-                        client.send(clientMessageContent.toByteArray())
+                        client.send("localhost:10001;localhost:10000;PING".toByteArray())
                     }
                 }
                 client.onReceive.subscribe { msg ->
@@ -54,4 +55,22 @@ class GatewayTest {
             }
         }
     }
+
+    @Test
+    fun `gateway to gateway`() {
+
+    }
+
+    @Test
+    fun `test stubs`() {
+        val pubConfig = PublisherConfig("pub")
+        val publisher = PublisherFactoryStub(topicService).createPublisher(pubConfig, emptyMap())
+        val records = (1..10).map { Record(P2P_OUT_TOPIC, "$it", "Message $it") }
+        publisher.publish(records)
+
+        topicService.getRecords(P2P_OUT_TOPIC, CONSUMER_GROUP_ID, -1, false).forEach {
+            println(it.record)
+        }
+    }
+
 }

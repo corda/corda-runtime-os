@@ -8,7 +8,6 @@ import net.corda.v5.base.util.NetworkHostAndPort
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import java.io.FileInputStream
 import java.net.URI
 import java.security.KeyStore
@@ -169,16 +168,5 @@ class HttpTest {
     fun `create response`() {
         val r = HttpHelper.createResponse("null".toByteArray(), HttpResponseStatus.OK)
         println(r)
-    }
-
-    @Test
-    fun `test uris`() {
-        val test = ":://caca.com:1234//ahagha/send"
-        val uri = URI(test).normalize()
-        println(uri.authority)
-        println(uri.host)
-        println(uri.path)
-        println(uri.port)
-        println(uri.scheme)
     }
 }
