@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway
 
+import com.typesafe.config.Config
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -16,7 +17,6 @@ import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
@@ -100,7 +100,7 @@ class SubscriptionFactoryStub(private val topicService: TopicService) : Subscrip
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
-        properties: Map<String, String>
+        nodeConfig: Config
     ): Subscription<K, V> {
         TODO("Not yet implemented")
     }
@@ -108,7 +108,7 @@ class SubscriptionFactoryStub(private val topicService: TopicService) : Subscrip
     override fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
-        properties: Map<String, String>,
+        nodeConfig: Config,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         TODO("Not yet implemented")
@@ -117,15 +117,15 @@ class SubscriptionFactoryStub(private val topicService: TopicService) : Subscrip
     override fun <K : Any, V : Any> createCompactedSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
-        properties: Map<String, String>
+        nodeConfig: Config
     ): CompactedSubscription<K, V> {
         TODO("Not yet implemented")
     }
 
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
-        subscriptionConfig: StateAndEventSubscriptionConfig,
+        subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        properties: Map<String, String>
+        nodeConfig: Config
     ): StateAndEventSubscription<K, S, E> {
         TODO("Not yet implemented")
     }
@@ -133,7 +133,7 @@ class SubscriptionFactoryStub(private val topicService: TopicService) : Subscrip
     override fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
-        properties: Map<String, String>,
+        nodeConfig: Config,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         return EventLogSubscriptionStub(subscriptionConfig, processor, topicService)
@@ -141,7 +141,7 @@ class SubscriptionFactoryStub(private val topicService: TopicService) : Subscrip
 
     override fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
-        properties: Map<String, String>
+        nodeConfig: Config
     ): RandomAccessSubscription<K, V> {
         TODO("Not yet implemented")
     }
@@ -168,7 +168,7 @@ class PublisherStub(private val topicService: TopicService) : Publisher {
  * Basic implementation of a [PublisherFactory]
  */
 class PublisherFactoryStub(private val topicService: TopicService) : PublisherFactory {
-    override fun createPublisher(publisherConfig: PublisherConfig, properties: Map<String, String>): Publisher {
+    override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
         return PublisherStub(topicService)
     }
 }

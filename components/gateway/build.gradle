@@ -10,6 +10,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle")
 
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "io.reactivex:rxjava:$rxjavaVersion"
     implementation "io.netty:netty-transport:$nettyVersion"
     implementation "io.netty:netty-codec-http:$nettyVersion"

@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway
 
+import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
@@ -64,7 +65,7 @@ class GatewayTest {
     @Test
     fun `test stubs`() {
         val pubConfig = PublisherConfig("pub")
-        val publisher = PublisherFactoryStub(topicService).createPublisher(pubConfig, emptyMap())
+        val publisher = PublisherFactoryStub(topicService).createPublisher(pubConfig, ConfigFactory.empty())
         val records = (1..10).map { Record(P2P_OUT_TOPIC, "$it", "Message $it") }
         publisher.publish(records)
 

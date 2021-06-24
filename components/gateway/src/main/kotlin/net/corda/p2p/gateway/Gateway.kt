@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway
 
+import com.typesafe.config.ConfigFactory
 import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.Subscription
@@ -31,9 +32,9 @@ import java.lang.Exception
 class Gateway(address: NetworkHostAndPort,
               sslConfig: SslConfiguration,
               @Reference(service = SubscriptionFactory::class)
-              subscriptionFactory: SubscriptionFactory, // Inject manually for testing until OSGIfication happens
+              subscriptionFactory: SubscriptionFactory,
               @Reference(service = PublisherFactory::class)
-              publisherFactory: PublisherFactory // Inject manually for testing unti OSGIfication happens
+              publisherFactory: PublisherFactory
 ) : LifeCycle {
 
     companion object {
@@ -63,7 +64,7 @@ class Gateway(address: NetworkHostAndPort,
         val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, P2P_OUT_TOPIC)
         p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
             OutboundMessageHandler(connectionManager),
-            emptyMap(),
+            ConfigFactory.empty(),
             PartitionAssignmentListenerImpl())
     }
 
