@@ -8,13 +8,13 @@ import net.corda.messaging.kafka.getStringOrNull
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TRANSACTIONAL_ID
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Producer
+import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
@@ -42,7 +42,7 @@ class CordaKafkaProducerImpl(
     private val closeTimeout = config.getLong(CLOSE_TIMEOUT)
     private val topicPrefix = config.getString(TOPIC_PREFIX)
     private val clientId = config.getString(CommonClientConfigs.CLIENT_ID_CONFIG)
-    private val transactionalId = config.getStringOrNull(TRANSACTIONAL_ID)
+    private val transactionalId = config.getStringOrNull(ProducerConfig.TRANSACTIONAL_ID_CONFIG)
 
     init {
         if (transactionalId != null) {
