@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.kafka.mergeProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBLISHER
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TRANSACTIONAL_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.resolvePublisherConfiguration
 import net.corda.messaging.kafka.toConfig
 import org.assertj.core.api.Assertions.assertThat
@@ -44,7 +44,7 @@ class UtilsTest {
             1,
             PATTERN_PUBLISHER
         )
-        assertThat(publisherConfig.getString(TRANSACTIONAL_ID)).isEqualTo("clientId-1")
+        assertThat(publisherConfig.getString(PRODUCER_TRANSACTIONAL_ID)).isEqualTo("clientId-1")
     }
 
     @Test
@@ -57,6 +57,6 @@ class UtilsTest {
             1,
             PATTERN_PUBLISHER
         )
-        assertThat(!publisherConfig.hasPath(TRANSACTIONAL_ID))
+        assertThat(!publisherConfig.hasPath(PRODUCER_TRANSACTIONAL_ID))
     }
 }

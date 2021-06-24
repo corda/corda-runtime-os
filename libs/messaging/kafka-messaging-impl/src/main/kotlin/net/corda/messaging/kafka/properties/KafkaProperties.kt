@@ -39,6 +39,6 @@ class KafkaProperties {
         const val GROUP_INSTANCE_ID = CommonClientConfigs.GROUP_INSTANCE_ID_CONFIG
         const val PRODUCER_CLIENT_ID = "producer.${CommonClientConfigs.CLIENT_ID_CONFIG}"
         const val CONSUMER_GROUP_ID = "consumer.${CommonClientConfigs.GROUP_ID_CONFIG}"
-        const val TRANSACTIONAL_ID = "producer.${ProducerConfig.TRANSACTIONAL_ID_CONFIG}"
+        const val PRODUCER_TRANSACTIONAL_ID = "producer.${ProducerConfig.TRANSACTIONAL_ID_CONFIG}"
     }
 }
