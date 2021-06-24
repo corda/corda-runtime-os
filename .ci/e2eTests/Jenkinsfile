@@ -62,6 +62,25 @@ pipeline {
                 sh "./gradlew build -Dmaven.repo.local=/tmp/artifacts/mavenLocal -PcordaVersion=1.0.${params.UPSTREAM_VERSION_SUFFIX}"
             }
         }
-        // TODO: Add more stages
+    }
+    post {
+        cleanup {
+            junit allowEmptyResults: true, testResults: '**/build/test-results/**/TEST-*.xml'
+            archiveArtifacts artifacts: '**/build/test-results/**/TEST-*.xml', fingerprint: true
+            recordIssues(
+                enabledForFailure: true, aggregatingResults: true,
+                tools: [kotlin(), java(), detekt(pattern: '**/build/detekt-report.xml')]
+            )
+            jacoco(
+                execPattern: '**/build/**/*.exec',
+                runAlways: true,
+                sourcePattern: '**/src/main/java,**/src/main/kotlin',
+                classPattern: "**/build/classes/kotlin/main,**/build/classes/java/main",
+                inclusionPattern: "net/corda/**,com/corda/**"
+            )
+        }
+        success {
+            sh 'rm -rf **/build/test-results/**/TEST-*.xml'
+        }
     }
 }

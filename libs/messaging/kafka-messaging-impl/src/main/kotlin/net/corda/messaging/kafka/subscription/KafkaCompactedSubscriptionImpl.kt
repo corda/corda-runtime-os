@@ -4,13 +4,17 @@ import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.render
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
+import net.corda.v5.base.util.debug
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -20,8 +24,7 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
-    private val subscriptionConfig: SubscriptionConfig,
-    kafkaConfig: Config,
+    private val config: Config,
     private val mapFactory: SubscriptionMapFactory<K, V>,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val processor: CompactedProcessor<K, V>,
@@ -30,11 +33,12 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    private val consumerThreadStopTimeout = kafkaConfig.getLong(KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT)
-    private val topicPrefix = kafkaConfig.getString(KafkaProperties.KAFKA_TOPIC_PREFIX)
+    private val consumerThreadStopTimeout = config.getLong(KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT)
+    private val topicPrefix = config.getString(KafkaProperties.TOPIC_PREFIX)
+    private val groupName = config.getString(CONSUMER_GROUP_ID)
+    private val topic = config.getString(TOPIC_NAME)
 
-    private val errorMsg =
-        "Failed to read records from group ${subscriptionConfig.groupName}, topic ${subscriptionConfig.eventTopic}"
+    private val errorMsg = "Failed to read records from group $groupName, topic $topic"
 
     @Volatile
     private var stopped = false
@@ -58,6 +62,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     }
 
     override fun start() {
+        log.debug { "Starting subscription with config:\n${config.render()}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
@@ -65,7 +70,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                     start = true,
                     isDaemon = true,
                     contextClassLoader = null,
-                    name = "compacted subscription thread ${subscriptionConfig.groupName}-${subscriptionConfig.eventTopic}",
+                    name = "compacted subscription thread $groupName-$topic",
                     priority = -1,
                     block = ::runConsumeLoop
                 )
@@ -84,9 +89,9 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
         while (!stopped) {
             attempts++
             try {
-                consumerBuilder.createCompactedConsumer(subscriptionConfig).use {
+                consumerBuilder.createCompactedConsumer(config.getConfig(KAFKA_CONSUMER)).use {
                     val partitions = it.getPartitions(
-                        topicPrefix + subscriptionConfig.eventTopic,
+                        topicPrefix + topic,
                         Duration.ofSeconds(consumerThreadStopTimeout)
                     )
                     it.assign(partitions)

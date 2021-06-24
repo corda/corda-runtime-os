@@ -8,16 +8,16 @@ import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_COMPACTED
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
+import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
+import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
@@ -32,8 +32,6 @@ class KafkaCompactedSubscriptionImplTest {
 
     companion object {
         private const val TEST_TIMEOUT_SECONDS = 5L
-        private const val TOPIC_PREFIX = "test"
-        private const val TOPIC = "topic"
     }
 
     private val mapFactory = object : SubscriptionMapFactory<String, String> {
@@ -41,10 +39,7 @@ class KafkaCompactedSubscriptionImplTest {
         override fun destroyMap(map: MutableMap<String, String>) { }
     }
 
-    private val subscriptionConfig = SubscriptionConfig("group", TOPIC)
-    private val config: Config = ConfigFactory.empty()
-        .withValue(KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT, ConfigValueFactory.fromAnyRef(1000))
-        .withValue(KafkaProperties.KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TOPIC_PREFIX))
+    private val config: Config = createStandardTestConfig().getConfig(PATTERN_COMPACTED)
 
     private val initialSnapshotResult = List(10) {
         ConsumerRecordAndMeta<String, String>(
@@ -130,7 +125,6 @@ class KafkaCompactedSubscriptionImplTest {
         }.whenever(kafkaConsumer).getPartitions(any(), any())
 
         val subscription = KafkaCompactedSubscriptionImpl(
-            subscriptionConfig,
             config,
             mapFactory,
             consumerBuilder,
@@ -183,7 +177,6 @@ class KafkaCompactedSubscriptionImplTest {
         }.whenever(kafkaConsumer).poll()
 
         val subscription = KafkaCompactedSubscriptionImpl(
-            subscriptionConfig,
             config,
             mapFactory,
             consumerBuilder,
@@ -213,7 +206,6 @@ class KafkaCompactedSubscriptionImplTest {
 
         processor.failSnapshot = true
         val subscription = KafkaCompactedSubscriptionImpl(
-            subscriptionConfig,
             config,
             mapFactory,
             consumerBuilder,
@@ -240,7 +232,6 @@ class KafkaCompactedSubscriptionImplTest {
         }.whenever(kafkaConsumer).poll()
 
         val subscription = KafkaCompactedSubscriptionImpl(
-            subscriptionConfig,
             config,
             mapFactory,
             consumerBuilder,
@@ -281,7 +272,6 @@ class KafkaCompactedSubscriptionImplTest {
 
         processor.failNext = true
         val subscription = KafkaCompactedSubscriptionImpl(
-            subscriptionConfig,
             config,
             mapFactory,
             consumerBuilder,

@@ -11,6 +11,7 @@ import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFacto
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.internal.uncheckedCast
+import net.corda.v5.base.util.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ExecutorService
@@ -59,6 +60,7 @@ class PubSubSubscription<K : Any, V : Any>(
      * with the given [processor].
      */
     override fun start() {
+        log.debug { "Starting subscription with config: $config" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
