@@ -13,5 +13,5 @@ cordapp {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    cordaProvided "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
 }

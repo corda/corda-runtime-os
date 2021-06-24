@@ -1,13 +1,14 @@
 package net.corda.sample.testsandbox
 
 import net.corda.install.Cpi
+import net.corda.install.Cpk
+import net.corda.install.CpiIdentifier
 import net.corda.install.InstallService
 import net.corda.lifecycle.LifeCycle
 import net.corda.sandbox.SandboxService
 import net.corda.v5.base.util.contextLogger
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.nio.file.Path
+import java.util.*
 
 /**
  * This class shows how to load Cordapps and create the [net.corda.sandbox.Sandbox] for it.
@@ -58,7 +59,7 @@ class TestSandbox(
      */
     fun installCpk(path: Path) {
         logger.info("Install CPKs from $path.")
-        val cpiIdentifier = "unique_cpi_identifier"
+        val cpiIdentifier = CpiIdentifier(UUID.randomUUID().toString())
         val cpkUris = installService.scanForCpks(setOf(path.toUri()))
         val cpis = if (cpkUris.isNotEmpty()) {
             val cpkUriList = cpkUris.toList()
@@ -67,12 +68,15 @@ class TestSandbox(
             emptyList()
         }
         cpis.forEach { cpi ->
-            installService.installCpi(cpi)
-            val loadedCpi = installService.getCpi(cpiIdentifier)
-                ?: throw IllegalArgumentException("CPI $cpiIdentifier has not been installed.")
-            logger.info("CPI $loadedCpi loaded.")
-            val sandbox = sandboxService.createSandbox(cpiIdentifier)
+            val cpkSet = installService.loadCpi(cpi)
+            val sandbox = sandboxService.createSandboxes(cpiIdentifier)
             logger.info("Sandbox $sandbox active.")
+            //val clazz = sandbox.loadClass("net.corda.fungiblestatesample.contracts.ShareContract", Any::class.java)
+            val cpk: Cpk? = cpkSet.find { it.id.cordappSymbolicName == "net.corda.test-cpk" }
+            if (cpk != null) {
+                val cls = sandbox.loadClass(cpk.id, "net.corda.sample.testcpk.TestCPK")
+                logger.info("Class $cls.")
+            }
         }
     }
 
