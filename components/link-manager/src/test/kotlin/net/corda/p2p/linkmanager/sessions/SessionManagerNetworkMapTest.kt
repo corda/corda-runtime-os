@@ -13,6 +13,7 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.Messaging
+import net.corda.p2p.linkmanager.sessions.SessionManagerTest.Companion.sessionManager
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -31,6 +32,99 @@ class SessionManagerNetworkMapTest {
         val PARTY_B = LinkManagerNetworkMap.HoldingIdentity("PartyB", GROUP_ID)
         val PARTY_NOT_IN_NETMAP = LinkManagerNetworkMap.HoldingIdentity("PartyImposter", GROUP_ID)
         val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("10.0.0.1:hello")
+    }
+
+    private fun negotiateToResponderHelloMessage(netMap: LinkManagerNetworkMap, mockLogger: Logger): Pair<String, LinkOutMessage?> {
+        val sessionManager = sessionManager(netMap)
+        val (step2Message, responderHello) = negotiateToResponderHelloMessage(sessionManager, mockLogger)
+        return Pair(step2Message.initiatorHello.header.sessionId, responderHello)
+    }
+
+    private fun negotiateToResponderHelloMessage(
+        sessionManager: SessionManagerImpl,
+        mockLogger: Logger,
+        supportedMode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY,
+    ): Pair<Step2Message, LinkOutMessage?> {
+
+        val sessionKey = SessionManagerImpl.SessionKey(null, PARTY_B)
+        sessionManager.setLogger(mockLogger)
+        Messaging.setLogger(mockLogger)
+
+        val initiatorHelloMessage = sessionManager.getSessionInitMessage(sessionKey)
+        val step2Message = SessionManagerTest().mockGatewayResponse(
+            initiatorHelloMessage?.payload as InitiatorHelloMessage,
+            supportedMode
+        )
+        return Pair(step2Message, sessionManager.processSessionMessage(LinkInMessage(step2Message.responderHello)))
+    }
+
+    private fun negotiateToInitiatorHandshakeMessage(
+        initiatorNetMap: LinkManagerNetworkMap,
+        responderNetMap: LinkManagerNetworkMap,
+        mockLogger: Logger
+    ): Pair<String, LinkOutMessage?> {
+        val initiatorSessionManager = sessionManager(initiatorNetMap)
+        val responderSessionManager = sessionManager(responderNetMap)
+
+        responderSessionManager.setLogger(mockLogger)
+        initiatorSessionManager.setLogger(mockLogger)
+
+        return negotiateToInitiatorHandshakeMessage(initiatorSessionManager, responderSessionManager, mockLogger)
+    }
+
+    private fun negotiateToInitiatorHandshakeMessage(
+        initiatorSessionManager: SessionManagerImpl,
+        responderSessionManager: SessionManagerImpl,
+        mockLogger: Logger
+    ): Pair<String, LinkOutMessage?> {
+
+        responderSessionManager.setLogger(mockLogger)
+        val (step2Message, initiatorHandshake) = negotiateToResponderHelloMessage(initiatorSessionManager, mockLogger)
+        responderSessionManager.processSessionMessage(LinkInMessage(step2Message))
+
+        return Pair(
+            step2Message.initiatorHello.header.sessionId,
+            responderSessionManager.processSessionMessage(LinkInMessage(initiatorHandshake!!.payload))
+        )
+    }
+
+    private fun negotiateToResponderHandshakeMessage(
+        initiatorNetMap: LinkManagerNetworkMap,
+        responderNetMap: LinkManagerNetworkMap,
+        mockLogger: Logger
+    ): String {
+        val initiatorSessionManager = sessionManager(initiatorNetMap)
+        val responderSessionManager = sessionManager(responderNetMap)
+
+        val (sessionId, responderHandshakeMessage) = negotiateToInitiatorHandshakeMessage(
+            initiatorSessionManager,
+            responderSessionManager,
+            mockLogger
+        )
+        initiatorSessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage!!.payload))
+        return sessionId
+    }
+
+    fun makeMockNetworkMap(): LinkManagerNetworkMap {
+        val keyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
+        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        Mockito.`when`(netMap.getEndPoint(PARTY_B)).thenReturn(FAKE_ENDPOINT)
+        Mockito.`when`(netMap.getOurPublicKey(anyOrNull())).thenReturn(keyPair.public)
+        Mockito.`when`(netMap.getPublicKey(anyOrNull())).thenReturn(keyPair.public)
+        Mockito.`when`(netMap.getOurPrivateKey(anyOrNull())).thenReturn(keyPair.private)
+        return netMap
+    }
+
+    private fun hashKey(key: PublicKey): ByteArray {
+        val provider = BouncyCastleProvider()
+        val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
+        messageDigest.reset()
+        messageDigest.update(key.encoded)
+        return messageDigest.digest()
+    }
+
+    private fun hashKeyToBase64(key: PublicKey): String {
+        return Base64.getEncoder().encodeToString(hashKey(key))
     }
 
     @Test
@@ -56,106 +150,6 @@ class SessionManagerNetworkMapTest {
             "Attempted to send message to peer ${PARTY_NOT_IN_NETMAP.toHoldingIdentity()} which is" +
                     " not in the network map. The message was discarded."
         )
-    }
-
-    private fun negotiateToResponderHelloMessage(netMap: LinkManagerNetworkMap, mockLogger: Logger): Pair<String, LinkOutMessage?> {
-        val supportedMode = setOf(ProtocolMode.AUTHENTICATION_ONLY)
-        val sessionManager = SessionManagerImpl(
-            supportedMode,
-            netMap,
-            SessionManagerTest.MockCryptoService(),
-            SessionManagerTest.MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManagerImpl }
-        val (step2Message, responderHello) = negotiateToResponderHelloMessage(sessionManager, supportedMode, mockLogger)
-        return Pair(step2Message.initiatorHello.header.sessionId, responderHello)
-    }
-
-    private fun negotiateToResponderHelloMessage(
-        sessionManager: SessionManagerImpl,
-        supportedModes: Set<ProtocolMode>,
-        mockLogger: Logger): Pair<Step2Message, LinkOutMessage?> {
-
-        val sessionKey = SessionManagerImpl.SessionKey(null, PARTY_B)
-        sessionManager.setLogger(mockLogger)
-        Messaging.setLogger(mockLogger)
-
-        val initiatorHelloMessage = sessionManager.getSessionInitMessage(sessionKey)
-        val step2Message = SessionManagerTest().mockGatewayResponse(
-            initiatorHelloMessage?.payload as InitiatorHelloMessage,
-            supportedModes
-        )
-        return Pair(step2Message, sessionManager.processSessionMessage(LinkInMessage(step2Message.responderHello)))
-    }
-
-    private fun negotiateToInitiatorHandshakeMessage(
-        initiatorNetMap: LinkManagerNetworkMap,
-        responderNetMap: LinkManagerNetworkMap,
-        mockLogger: Logger
-    ): Pair<String, LinkOutMessage?> {
-        val supportedMode = setOf(ProtocolMode.AUTHENTICATION_ONLY)
-        val initiatorSessionManager = SessionManagerImpl(
-            supportedMode,
-            initiatorNetMap,
-            SessionManagerTest.MockCryptoService(),
-            SessionManagerTest.MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManagerImpl }
-        val responderSessionManager = SessionManagerImpl(
-            supportedMode,
-            responderNetMap,
-            SessionManagerTest.MockCryptoService(),
-            SessionManagerTest.MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManagerImpl }
-
-        responderSessionManager.setLogger(mockLogger)
-        initiatorSessionManager.setLogger(mockLogger)
-
-        return negotiateToInitiatorHandshakeMessage(initiatorSessionManager, responderSessionManager, mockLogger)
-    }
-
-    private fun negotiateToInitiatorHandshakeMessage(
-        initiatorSessionManager: SessionManagerImpl,
-        responderSessionManager: SessionManagerImpl,
-        mockLogger: Logger
-    ): Pair<String, LinkOutMessage?> {
-        val supportedMode = setOf(ProtocolMode.AUTHENTICATION_ONLY)
-
-        responderSessionManager.setLogger(mockLogger)
-        val (step2Message, initiatorHandshake) = negotiateToResponderHelloMessage(initiatorSessionManager, supportedMode, mockLogger)
-        responderSessionManager.processSessionMessage(LinkInMessage(step2Message))
-
-        return Pair(
-            step2Message.initiatorHello.header.sessionId,
-            responderSessionManager.processSessionMessage(LinkInMessage(initiatorHandshake!!.payload))
-        )
-    }
-
-    private fun negotiateToResponderHandshakeMessage(
-        initiatorNetMap: LinkManagerNetworkMap,
-        responderNetMap: LinkManagerNetworkMap,
-        mockLogger: Logger
-    ): String {
-        val supportedMode = setOf(ProtocolMode.AUTHENTICATION_ONLY)
-
-        val initiatorSessionManager = SessionManagerImpl(
-            supportedMode,
-            initiatorNetMap,
-            SessionManagerTest.MockCryptoService(),
-            SessionManagerTest.MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManagerImpl }
-        val responderSessionManager = SessionManagerImpl(
-            supportedMode,
-            responderNetMap,
-            SessionManagerTest.MockCryptoService(),
-            SessionManagerTest.MAX_MESSAGE_SIZE
-        ) { _, _, _ -> return@SessionManagerImpl }
-
-        val (sessionId, responderHandshakeMessage) = negotiateToInitiatorHandshakeMessage(
-            initiatorSessionManager,
-            responderSessionManager,
-            mockLogger
-        )
-        initiatorSessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage!!.payload))
-        return sessionId
     }
 
     @Test
@@ -222,28 +216,6 @@ class SessionManagerNetworkMapTest {
         Assertions.assertNull(response)
         Mockito.verify(mockLogger).warn("Attempted to send message to peer ${PARTY_B.toHoldingIdentity()} which is not in the network map." +
                 " The message was discarded.")
-    }
-
-    fun makeMockNetworkMap(): LinkManagerNetworkMap {
-        val keyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
-        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(netMap.getEndPoint(PARTY_B)).thenReturn(FAKE_ENDPOINT)
-        Mockito.`when`(netMap.getOurPublicKey(anyOrNull())).thenReturn(keyPair.public)
-        Mockito.`when`(netMap.getPublicKey(anyOrNull())).thenReturn(keyPair.public)
-        Mockito.`when`(netMap.getOurPrivateKey(anyOrNull())).thenReturn(keyPair.private)
-        return netMap
-    }
-
-    private fun hashKey(key: PublicKey): ByteArray {
-        val provider = BouncyCastleProvider()
-        val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
-        messageDigest.reset()
-        messageDigest.update(key.encoded)
-        return messageDigest.digest()
-    }
-
-    private fun hashKeyToBase64(key: PublicKey): String {
-        return Base64.getEncoder().encodeToString(hashKey(key))
     }
 
     @Test
@@ -376,11 +348,11 @@ class SessionManagerNetworkMapTest {
 
     @Test
     fun `Responder handshake message is dropped if the sender is not in the network map`() {
-
         val initiatorKeyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
         val initiatorNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(initiatorNetMap.getEndPoint(PARTY_B)).thenReturn(LinkManagerNetworkMap.EndPoint(""))
         Mockito.`when`(initiatorNetMap.getOurPublicKey(anyOrNull())).thenReturn(initiatorKeyPair.public)
+
         //Called for the first time in `processResponderHello` and the second time in processResponderHandshake.
         Mockito.`when`(initiatorNetMap.getPublicKey(anyOrNull())).thenReturn(initiatorKeyPair.public).thenReturn(null)
         Mockito.`when`(initiatorNetMap.getOurPrivateKey(anyOrNull())).thenReturn(initiatorKeyPair.private)

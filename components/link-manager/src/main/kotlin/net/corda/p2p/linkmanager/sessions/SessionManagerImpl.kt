@@ -9,6 +9,7 @@ import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.IncorrectAPIUsageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
@@ -108,9 +109,15 @@ open class SessionManagerImpl(
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
-
-        session.receiveResponderHello(message)
+        try {
+            session.receiveResponderHello(message)
+        } catch (exception: IncorrectAPIUsageException) {
+            logger.warn("Already received a ${ResponderHelloMessage::class.java.simpleName} for ${message.header.sessionId}. " +
+                    "The message was discarded.")
+            return null
+        }
         session.generateHandshakeSecrets()
+
         val ourKey = networkMap.getOurPublicKey(sessionInfo.ourGroupId)
         if (ourKey == null) {
             logger.groupIdNotInNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.ourGroupId)
