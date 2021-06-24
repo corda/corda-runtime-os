@@ -6,7 +6,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.components.examples.config.reader.ConfigReader
 import net.corda.components.examples.config.reader.ConfigReader.Companion.MESSAGING_CONFIG
 import net.corda.components.examples.config.reader.ConfigReceivedEvent
-import net.corda.components.examples.config.reader.KafkaConfigUpdateEvent
+import net.corda.components.examples.config.reader.MessagingConfigUpdateEvent
 import net.corda.components.examples.durable.RunDurableSub
 import net.corda.components.examples.pubsub.RunPubSub
 import net.corda.components.examples.stateevent.RunStateEventSub
@@ -109,7 +109,7 @@ class DemoApp @Activate constructor(
                                 pubsubSub?.start()
                             }
                         }
-                        is KafkaConfigUpdateEvent -> {
+                        is MessagingConfigUpdateEvent -> {
                             state = LifeCycleState.REINITMESSAGING
                             val config = bootstrapConfig.withFallback(event.currentConfigurationSnapshot[MESSAGING_CONFIG]!!)
                             stateEventSub?.reStart(config)

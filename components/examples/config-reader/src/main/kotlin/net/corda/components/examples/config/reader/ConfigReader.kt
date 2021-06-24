@@ -14,7 +14,7 @@ import org.slf4j.Logger
 
 
 class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifeCycleEvent
-class KafkaConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifeCycleEvent
+class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifeCycleEvent
 
 class ConfigReader(
     private val lifeCycleCoordinator: LifeCycleCoordinator,
@@ -53,7 +53,7 @@ private val readServiceFactory: ConfigReadServiceFactory
                     log.info("Config read service config update received")
                     if (changedKeys.contains(MESSAGING_CONFIG)) {
                         log.info("Config update contains kafka config")
-                        lifeCycleCoordinator.postEvent(KafkaConfigUpdateEvent(currentConfigurationSnapshot))
+                        lifeCycleCoordinator.postEvent(MessagingConfigUpdateEvent(currentConfigurationSnapshot))
                     }
                 }
 
