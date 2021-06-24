@@ -21,6 +21,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.hashN
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.initiatorHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noSessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.Logger
@@ -159,10 +160,8 @@ open class SessionManagerImpl(
         }
         try {
             session.validatePeerHandshakeMessage(message, responderKey)
-        } catch (exception: InvalidHandshakeResponderKeyHash) {
-            logger.warn("Received ${ResponderHandshakeMessage::class.java.simpleName} from peer " +
-                "${sessionInfo.responderId} with sessionId ${message.header.sessionId} which failed validation. " +
-                 "The message was discarded.")
+        } catch (exception: CordaRuntimeException) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
         val authenticatedSession = session.getSession()
@@ -196,9 +195,13 @@ open class SessionManagerImpl(
             session.validatePeerHandshakeMessage(message, ::getPublicKeyFromHash)
         } catch (exception: NoPublicKeyForHash) {
             logger.warn("Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
-                    " The message was discarded.")
+                " The message was discarded.")
+            return null
+        } catch (exception: CordaRuntimeException) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
+
         //Find the correct Holding Identity to use (using the public key hash).
         val us = networkMap.getPeerFromHash(identityData.responderPublicKeyHash)
         if (us == null) {

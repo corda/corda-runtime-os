@@ -33,5 +33,10 @@ class SessionManagerWarnings {
             this.warn("Received $messageName with sessionId $sessionId. From peer $responderId which is not in the network map." +
                 " The message was discarded.")
         }
+
+        internal fun Logger.validationFailedWarning(messageName: String, sessionId: String) {
+            this.warn("Received $messageName with sessionId $sessionId. Which failed validation. The message was discarded.")
+        }
+
     }
 }

@@ -94,7 +94,7 @@ class LinkManagerTest {
     private data class SessionPair(val initiatorSession: Session, val responderSession: Session)
 
     //We can't use Mockito as Session is final
-    private fun createSession(mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY): SessionPair {
+    private fun createSessionPair(mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY): SessionPair {
         val provider = BouncyCastleProvider()
         val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
         val partyAIdentityKey = keyPairGenerator.generateKeyPair()
@@ -197,7 +197,7 @@ class LinkManagerTest {
         assertFalse(queue.queueMessage(message5))
 
         //Session is ready for messages 3, 4, 5
-        queue.sessionNegotiatedCallback(getSessionKeyFromMessage(message3), createSession().initiatorSession, mockNetworkMap)
+        queue.sessionNegotiatedCallback(getSessionKeyFromMessage(message3), createSessionPair().initiatorSession, mockNetworkMap)
         assertEquals(publisher.list.size, 3)
         assertEquals(payload3, extractPayloadFromLinkOutMessage(publisher.list[0].value as LinkOutMessage))
         assertEquals(payload4, extractPayloadFromLinkOutMessage(publisher.list[1].value as LinkOutMessage))
@@ -205,7 +205,7 @@ class LinkManagerTest {
         publisher.list = mutableListOf()
 
         //Session is ready for messages 1, 2
-        queue.sessionNegotiatedCallback(getSessionKeyFromMessage(message1), createSession().initiatorSession, mockNetworkMap)
+        queue.sessionNegotiatedCallback(getSessionKeyFromMessage(message1), createSessionPair().initiatorSession, mockNetworkMap)
         assertEquals(publisher.list.size, 2)
         assertEquals(payload1, extractPayloadFromLinkOutMessage(publisher.list[0].value as LinkOutMessage))
         assertEquals(payload2, extractPayloadFromLinkOutMessage(publisher.list[1].value as LinkOutMessage))
@@ -275,7 +275,7 @@ class LinkManagerTest {
     @Test
     fun `OutboundMessageProcessor processes messages straight away if there is an authenticated session`() {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
-        Mockito.`when`(mockSessionManager.getInitiatorSession(any())).thenReturn(createSession().initiatorSession)
+        Mockito.`when`(mockSessionManager.getInitiatorSession(any())).thenReturn(createSessionPair().initiatorSession)
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(LinkManagerNetworkMap.EndPoint("10.0.0.1:fake"))
 
@@ -345,19 +345,19 @@ class LinkManagerTest {
 
     @Test
     fun `InboundMessageProcessor authenticates AuthenticatedDataMessages and routes to the statemachine`() {
-        val session = createSession()
+        val session = createSessionPair()
         testDataMessagesWithInboundMessageProcessor(session)
     }
 
     @Test
     fun `InboundMessageProcessor authenticates and decrypts AuthenticatedEncryptedDataMessages and routes to the statemachine`() {
-        val session = createSession(ProtocolMode.AUTHENTICATED_ENCRYPTION)
+        val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
         testDataMessagesWithInboundMessageProcessor(session)
     }
 
     @Test
     fun `InboundMessageProcessor discards messages with unknown sessionId`() {
-        val session = createSession()
+        val session = createSessionPair()
         val payload = ByteBuffer.wrap("PAYLOAD".toByteArray())
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(LinkManagerNetworkMap.EndPoint("10.0.0.1:fake"))

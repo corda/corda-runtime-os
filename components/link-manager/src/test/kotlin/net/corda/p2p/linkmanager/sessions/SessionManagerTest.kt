@@ -24,7 +24,6 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdenti
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.convertAuthenticatedEncryptedMessageToFlowMessage
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.convertAuthenticatedMessageToFlowMessage
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkOutMessageFromFlowMessage
-import net.corda.p2p.linkmanager.sessions.SessionManagerTest.Companion.MAX_MESSAGE_SIZE
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -343,5 +342,71 @@ class SessionManagerTest {
 
         val responderSession = responderSessionManager.getResponderSession(sessionId)
         assertNotNull(responderSession, "Authenticated Session is not stored in the responder's session manager.")
+    }
+
+    @Test
+    fun `InitiatorHandshakeMessage is dropped (with appropriate logging) if authentication fails`() {
+        val initiatorSessionManager = sessionManager(PARTY_A)
+        val responderSessionManager = sessionManager(PARTY_B)
+
+        val key = getSessionKeyFromMessage(message)
+
+        val initiatorHelloMessage = initiatorSessionManager.getSessionInitMessage(key)
+        assertTrue(initiatorHelloMessage?.payload is InitiatorHelloMessage)
+
+        val step2Message = mockGatewayResponse(initiatorHelloMessage?.payload as InitiatorHelloMessage)
+        assertNull(responderSessionManager.processSessionMessage(LinkInMessage(step2Message)))
+
+        val sessionId = (initiatorHelloMessage.payload as InitiatorHelloMessage).header.sessionId
+
+        val mockHeader = Mockito.mock(CommonHeader::class.java)
+        Mockito.`when`(mockHeader.sessionId).thenReturn(sessionId)
+        Mockito.`when`(mockHeader.toByteBuffer()).thenReturn(ByteBuffer.wrap("HEADER".toByteArray()))
+
+        val mockInitiatorHandshakeMessage = Mockito.mock(InitiatorHandshakeMessage::class.java)
+        Mockito.`when`(mockInitiatorHandshakeMessage.header).thenReturn(mockHeader)
+        Mockito.`when`(mockInitiatorHandshakeMessage.authTag).thenReturn(ByteBuffer.wrap("AuthTag".toByteArray()))
+        Mockito.`when`(mockInitiatorHandshakeMessage.encryptedData).thenReturn(ByteBuffer.wrap("EncryptedData".toByteArray()))
+
+        val mockLogger = Mockito.mock(Logger::class.java)
+        responderSessionManager.setLogger(mockLogger)
+
+        responderSessionManager.processSessionMessage(LinkInMessage(mockInitiatorHandshakeMessage))
+        Mockito.verify(mockLogger).warn("Received ${mockInitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
+                " Which failed validation. The message was discarded.")
+    }
+
+    @Test
+    fun `ResponderHandshakeMessage is dropped (with appropriate logging) if authentication fails`() {
+        val initiatorSessionManager = sessionManager(PARTY_A)
+        val responderSessionManager = sessionManager(PARTY_B)
+
+        val key = getSessionKeyFromMessage(message)
+
+        val initiatorHelloMessage = initiatorSessionManager.getSessionInitMessage(key)
+        assertTrue(initiatorHelloMessage?.payload is InitiatorHelloMessage)
+
+        //Strip the Header from the message (as the Gateway does before sending it).
+        val step2Message = mockGatewayResponse(initiatorHelloMessage?.payload as InitiatorHelloMessage)
+        assertNull(responderSessionManager.processSessionMessage(LinkInMessage(step2Message)))
+        val initiatorHandshakeMessage = initiatorSessionManager.processSessionMessage(LinkInMessage(step2Message.responderHello))
+
+        assertTrue(initiatorHandshakeMessage?.payload is InitiatorHandshakeMessage)
+        val sessionId = (initiatorHandshakeMessage?.payload as InitiatorHandshakeMessage).header.sessionId
+
+        val mockHeader = Mockito.mock(CommonHeader::class.java)
+        Mockito.`when`(mockHeader.sessionId).thenReturn(sessionId)
+        Mockito.`when`(mockHeader.toByteBuffer()).thenReturn(ByteBuffer.wrap("HEADER".toByteArray()))
+
+        val mockResponderHandshakeMessage = Mockito.mock(ResponderHandshakeMessage::class.java)
+        Mockito.`when`(mockResponderHandshakeMessage.header).thenReturn(mockHeader)
+        Mockito.`when`(mockResponderHandshakeMessage.authTag).thenReturn(ByteBuffer.wrap("AuthTag".toByteArray()))
+        Mockito.`when`(mockResponderHandshakeMessage.encryptedData).thenReturn(ByteBuffer.wrap("EncryptedData".toByteArray()))
+
+        val mockLogger = Mockito.mock(Logger::class.java)
+        initiatorSessionManager.setLogger(mockLogger)
+        assertNull(initiatorSessionManager.processSessionMessage(LinkInMessage(mockResponderHandshakeMessage)) )
+        Mockito.verify(mockLogger).warn("Received ${mockResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
+                " Which failed validation. The message was discarded.")
     }
 }
