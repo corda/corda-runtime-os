@@ -81,10 +81,10 @@ for ease of passing in the files run the command from the resource folder
 
 
 To run topic creator:
-- `java -jar ..\..\..\build\bin\corda-kafka-setup-5.0.0-SNAPSHOT.jar --kafka kafka.properties --topic topic.conf`
+- `java -jar ..\..\..\build\bin\corda-kafka-setup-5.0.0-SNAPSHOT.jar --kafka kafka.properties --topic topics.conf`
 
 To send config to config topic:
 - `java -jar ..\..\..\build\bin\corda-kafka-setup-5.0.0-SNAPSHOT.jar --kafka kafka.properties --config config.conf`
 
 To do both in one run
-- `java -jar ..\..\..\build\bin\corda-kafka-setup-5.0.0-SNAPSHOT.jar --kafka kafka.properties --topic topic.conf --config config.conf`
+- `java -jar ..\..\..\build\bin\corda-kafka-setup-5.0.0-SNAPSHOT.jar --kafka kafka.properties --topic topics.conf --config config.conf`

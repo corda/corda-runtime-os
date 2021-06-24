@@ -24,7 +24,7 @@ private val readServiceFactory: ConfigReadServiceFactory
 
     companion object {
         private val log: Logger = contextLogger()
-        const val MESSAGING_CONFIG: String = "messaging.subscription"
+        const val MESSAGING_CONFIG: String = "corda.messaging"
     }
 
     private var receivedSnapshot = false
