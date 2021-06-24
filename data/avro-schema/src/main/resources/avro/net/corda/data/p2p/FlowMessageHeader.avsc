@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "FlowMessageHeader",
+  "namespace": "net.corda.p2p",
+  "fields": [
+    {
+      "name": "destination",
+      "type": "net.corda.p2p.HoldingIdentity"
+    },
+    {
+      "name": "source",
+      "type": "net.corda.p2p.HoldingIdentity"
+    },
+    {
+      "name": "ttl",
+      "type": ["null", "long"]
+    },
+    {
+      "name": "messageId",
+      "type": "string"
+    },
+    {
+      "name": "traceId",
+      "type": "string"
+    }
+  ]
+}

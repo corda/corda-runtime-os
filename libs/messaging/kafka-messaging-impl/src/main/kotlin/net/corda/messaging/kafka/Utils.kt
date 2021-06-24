@@ -45,6 +45,7 @@ fun mergeProperties(
     return properties
 }
 
+fun Config.getStringOrNull(path: String) = if (hasPath(path)) getString(path) else null
 fun Config.toProperties(): Properties = mergeProperties(this, null, emptyMap())
 fun Config.render(): String =
     root().render(ConfigRenderOptions.defaults().setOriginComments(false).setComments(false).setJson(false))
@@ -94,7 +95,7 @@ fun resolvePublisherConfiguration(
 
     return if (!subscriptionConfiguration.hasPath(INSTANCE_ID)) {
         // No instance id - remove the transactional Id as we don't want to do transactions
-        config.withoutPath(KafkaProperties.TRANSACTIONAL_ID)
+        config.withoutPath(KafkaProperties.PRODUCER_TRANSACTIONAL_ID)
     } else {
         config
     }
