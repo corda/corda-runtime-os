@@ -34,22 +34,24 @@ The `typesafeConfigurationFile` should contain a JSON/HOCON representation of th
 topic that was created from the `topicTemplateFile`
 
 ```text
-messaging {
-    subscription {
-            componentVersion="5.1"
-            consumer {
-                close.timeout = 6000
-                poll.timeout = 6000
-                thread.stop.timeout = 6000
-                processor.retries = 3
-                subscribe.retries = 3
-                commit.retries = 3
-            }
+corda {
+    messaging {
+        componentVersion="5.1"
+        subscription {
+                consumer {
+                    close.timeout = 6000
+                    poll.timeout = 6000
+                    thread.stop.timeout = 6000
+                    processor.retries = 3
+                    subscribe.retries = 3
+                    commit.retries = 3
+                }
 
-            producer {
-                close.timeout = 6000
+                producer {
+                    close.timeout = 6000
+                }
             }
-        }
+    }
     packageVersion="5.1"
 }
 ```
