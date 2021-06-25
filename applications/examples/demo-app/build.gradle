@@ -12,8 +12,6 @@ dependencies {
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "net.corda:corda-base:$cordaVersion"
     implementation project(":osgi-framework-api")
-    implementation project(':components:kafka-topic-admin')
-    implementation project(':components:kafka-config-write')
 
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle")
