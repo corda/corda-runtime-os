@@ -58,6 +58,7 @@ class DemoApp @Activate constructor(
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
+        println("Starting demo application...")
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
 
@@ -132,6 +133,7 @@ class DemoApp @Activate constructor(
 
             log.info("Starting life cycle coordinator")
             lifeCycleCoordinator!!.start()
+            println("Demo application started")
         }
     }
 
@@ -173,6 +175,7 @@ class DemoApp @Activate constructor(
     }
 
     override fun shutdown() {
+        println("Stopping application")
         lifeCycleCoordinator?.stop()
         log.info("Stopping application")
     }

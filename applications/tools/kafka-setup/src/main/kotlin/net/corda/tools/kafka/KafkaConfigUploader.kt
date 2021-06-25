@@ -38,6 +38,8 @@ class KafkaConfigUploader @Activate constructor(
     }
 
     override fun startup(args: Array<String>) {
+        println("Starting kafka setup tool...")
+
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
         if (parameters.helpRequested) {
@@ -57,6 +59,7 @@ class KafkaConfigUploader @Activate constructor(
                 logger.info("Creating topics")
                 topicAdmin.createTopics(kafkaConnectionProperties, topicTemplate.readText())
                 logger.info("Topics created")
+                println("Topic creation completed")
             }
 
             val configurationFile = parameters.configurationFile
@@ -68,6 +71,7 @@ class KafkaConfigUploader @Activate constructor(
                     configurationFile.readText()
                 )
                 logger.info("Write complete")
+                println("Write of config to topic completed")
             }
             shutdownOSGiFramework()
         }
@@ -100,6 +104,7 @@ class KafkaConfigUploader @Activate constructor(
     }
 
     override fun shutdown() {
+        println("Shutting down kafka setup tool")
         shutdownOSGiFramework()
         logger.info("Shutting down config uploader")
     }

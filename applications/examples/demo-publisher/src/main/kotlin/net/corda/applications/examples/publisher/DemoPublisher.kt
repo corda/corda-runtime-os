@@ -44,6 +44,8 @@ class DemoPublisher @Activate constructor(
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
+        println("Starting publisher...")
+
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
 
@@ -80,10 +82,12 @@ class DemoPublisher @Activate constructor(
             )
 
             lifeCycleCoordinator!!.start()
+            println("Finished publishing")
         }
     }
 
     override fun shutdown() {
+        println("Stopping publisher")
         log.info("Stopping application")
         lifeCycleCoordinator?.stop()
     }
