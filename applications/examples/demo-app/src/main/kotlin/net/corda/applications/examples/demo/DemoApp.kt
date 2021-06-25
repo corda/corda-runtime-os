@@ -81,6 +81,7 @@ class DemoApp @Activate constructor(
                     log.info("LifecycleEvent received: $event")
                     when (event) {
                         is StartEvent -> {
+                            println("Starting kafka config reader")
                             state = LifeCycleState.STARTINGCONFIG
                             configReader?.start(bootstrapConfig)
                         }
@@ -108,6 +109,7 @@ class DemoApp @Activate constructor(
                                 durableSub?.start()
                                 stateEventSub?.start()
                                 pubsubSub?.start()
+                                println("Received config from kafka, started subscriptions")
                             }
                         }
                         is MessagingConfigUpdateEvent -> {
@@ -116,6 +118,7 @@ class DemoApp @Activate constructor(
                             stateEventSub?.reStart(config)
                             pubsubSub?.reStart(config)
                             durableSub?.reStart(config)
+                            println("Received config update from kafka, restarted subscriptions")
                         }
                         is StopEvent -> {
                             configReader?.stop()
