@@ -47,7 +47,8 @@ class DemoDurableProcessor(
             val newPublisherSet = eventRecordValue == 1
             if (expectedNextValues[key] != null && expectedNextValues[key] != eventRecordValue && !newPublisherSet) {
                 log.error("Wrong record found! Expected to find ${expectedNextValues[key]} but found $eventRecordValue")
-                println("Wrong record received by Durable processor! Expected to find ${expectedNextValues[key]} but found $eventRecordValue")
+                println("Wrong record received by Durable processor! " +
+                        "Expected to find ${expectedNextValues[key]} but found $eventRecordValue")
             }
             expectedNextValues[key] = eventRecordValue + 1
 
