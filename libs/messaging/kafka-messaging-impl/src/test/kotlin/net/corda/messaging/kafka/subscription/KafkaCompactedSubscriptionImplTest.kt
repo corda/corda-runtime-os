@@ -18,6 +18,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
+import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
@@ -36,7 +37,7 @@ class KafkaCompactedSubscriptionImplTest {
 
     private val mapFactory = object : SubscriptionMapFactory<String, String> {
         override fun createMap(): MutableMap<String, String> = ConcurrentHashMap<String, String>()
-        override fun destroyMap(map: MutableMap<String, String>) { }
+        override fun destroyMap(map: MutableMap<String, String>) {}
     }
 
     private val config: Config = createStandardTestConfig().getConfig(PATTERN_COMPACTED)
@@ -62,13 +63,15 @@ class KafkaCompactedSubscriptionImplTest {
         ).whenever(kafkaConsumer).beginningOffsets(any())
         doReturn(
             mutableMapOf(
-                TopicPartition(TOPIC, 0) to initialSnapshotResult.size.toLong()-1,
+                TopicPartition(TOPIC, 0) to initialSnapshotResult.size.toLong() - 1,
                 TopicPartition(TOPIC, 1) to 0,
             )
         ).whenever(kafkaConsumer).endOffsets(any())
     }
 
     private class TestProcessor : CompactedProcessor<String, String> {
+        val log = contextLogger()
+
         override val keyClass: Class<String>
             get() = String::class.java
         override val valueClass: Class<String>
@@ -77,6 +80,7 @@ class KafkaCompactedSubscriptionImplTest {
         var failSnapshot = false
         val snapshotMap = mutableMapOf<String, String>()
         override fun onSnapshot(currentData: Map<String, String>) {
+            log.info("Processing snapshot: $currentData")
             if (failSnapshot) {
                 throw RuntimeException("Abandon Ship!")
             }
@@ -87,6 +91,7 @@ class KafkaCompactedSubscriptionImplTest {
         val incomingRecords = mutableListOf<Record<String, String>>()
         var latestCurrentData: Map<String, String>? = null
         override fun onNext(newRecord: Record<String, String>, oldValue: String?, currentData: Map<String, String>) {
+            log.info("Processing new record: $newRecord")
             if (failNext) {
                 throw RuntimeException("Abandon Ship!")
             }
@@ -212,7 +217,7 @@ class KafkaCompactedSubscriptionImplTest {
             processor,
         )
         subscription.start()
-        
+
         while (subscription.isRunning) {
             Thread.sleep(500)
         }
@@ -251,9 +256,15 @@ class KafkaCompactedSubscriptionImplTest {
         val processor = TestProcessor()
 
         doAnswer {
+            mutableMapOf(
+                TopicPartition(TOPIC, 0) to 0L,
+                TopicPartition(TOPIC, 1) to 0L
+            )
+        }.whenever(kafkaConsumer).beginningOffsets(any())
+        doAnswer {
             val iteration = latch.count
             when (iteration) {
-                4L -> {
+                6L, 4L, 2L -> {
                     initialSnapshotResult
                 }
                 0L -> emptyList() // Don't return anything on errant extra polls
