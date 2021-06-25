@@ -18,6 +18,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
@@ -33,6 +34,7 @@ class DemoPublisher @Activate constructor(
 
     private companion object {
         val log: Logger = contextLogger()
+        val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val BATCH_SIZE: Int = 128
         const val TIMEOUT: Long = 10000L
         const val TOPIC_PREFIX = "messaging.topic.prefix"
@@ -44,7 +46,7 @@ class DemoPublisher @Activate constructor(
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
-        println("Starting publisher...")
+        consoleLogger.info("Starting publisher...")
 
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
@@ -82,12 +84,12 @@ class DemoPublisher @Activate constructor(
             )
 
             lifeCycleCoordinator!!.start()
-            println("Finished publishing")
+            consoleLogger.info("Finished publishing")
         }
     }
 
     override fun shutdown() {
-        println("Stopping publisher")
+        consoleLogger.info("Stopping publisher")
         log.info("Stopping application")
         lifeCycleCoordinator?.stop()
     }

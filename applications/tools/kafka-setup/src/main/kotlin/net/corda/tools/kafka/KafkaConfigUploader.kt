@@ -13,6 +13,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
@@ -31,6 +32,7 @@ class KafkaConfigUploader @Activate constructor(
 
     private companion object {
         private val logger: Logger = contextLogger()
+        val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val TOPIC_PREFIX = "messaging.topic.prefix"
         const val CONFIG_TOPIC_NAME = "config.topic.name"
         const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
@@ -38,7 +40,7 @@ class KafkaConfigUploader @Activate constructor(
     }
 
     override fun startup(args: Array<String>) {
-        println("Starting kafka setup tool...")
+        consoleLogger.info("Starting kafka setup tool...")
 
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
@@ -59,7 +61,7 @@ class KafkaConfigUploader @Activate constructor(
                 logger.info("Creating topics")
                 topicAdmin.createTopics(kafkaConnectionProperties, topicTemplate.readText())
                 logger.info("Topics created")
-                println("Topic creation completed")
+                consoleLogger.info("Topic creation completed")
             }
 
             val configurationFile = parameters.configurationFile
@@ -71,7 +73,7 @@ class KafkaConfigUploader @Activate constructor(
                     configurationFile.readText()
                 )
                 logger.info("Write complete")
-                println("Write of config to topic completed")
+                consoleLogger.info("Write of config to topic completed")
             }
             shutdownOSGiFramework()
         }
@@ -104,7 +106,7 @@ class KafkaConfigUploader @Activate constructor(
     }
 
     override fun shutdown() {
-        println("Shutting down kafka setup tool")
+        consoleLogger.info("Shutting down kafka setup tool")
         shutdownOSGiFramework()
         logger.info("Shutting down config uploader")
     }

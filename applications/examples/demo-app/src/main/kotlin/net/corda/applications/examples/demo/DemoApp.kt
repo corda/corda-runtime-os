@@ -25,6 +25,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
@@ -46,6 +47,7 @@ class DemoApp @Activate constructor(
 
     private companion object {
         val log: Logger = contextLogger()
+        val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val BATCH_SIZE: Int = 128
         const val TIMEOUT: Long = 10000L
         const val TOPIC_PREFIX = "messaging.topic.prefix"
@@ -58,7 +60,7 @@ class DemoApp @Activate constructor(
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
-        println("Starting demo application...")
+        consoleLogger.info("Starting demo application...")
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
 
@@ -81,7 +83,7 @@ class DemoApp @Activate constructor(
                     log.info("LifecycleEvent received: $event")
                     when (event) {
                         is StartEvent -> {
-                            println("Starting kafka config reader")
+                            consoleLogger.info("Starting kafka config reader")
                             state = LifeCycleState.STARTINGCONFIG
                             configReader?.start(bootstrapConfig)
                         }
@@ -109,7 +111,7 @@ class DemoApp @Activate constructor(
                                 durableSub?.start()
                                 stateEventSub?.start()
                                 pubsubSub?.start()
-                                println("Received config from kafka, started subscriptions")
+                                consoleLogger.info("Received config from kafka, started subscriptions")
                             }
                         }
                         is MessagingConfigUpdateEvent -> {
@@ -118,7 +120,7 @@ class DemoApp @Activate constructor(
                             stateEventSub?.reStart(config)
                             pubsubSub?.reStart(config)
                             durableSub?.reStart(config)
-                            println("Received config update from kafka, restarted subscriptions")
+                            consoleLogger.info("Received config update from kafka, restarted subscriptions")
                         }
                         is StopEvent -> {
                             configReader?.stop()
@@ -136,7 +138,7 @@ class DemoApp @Activate constructor(
 
             log.info("Starting life cycle coordinator")
             lifeCycleCoordinator!!.start()
-            println("Demo application started")
+            consoleLogger.info("Demo application started")
         }
     }
 
@@ -178,7 +180,7 @@ class DemoApp @Activate constructor(
     }
 
     override fun shutdown() {
-        println("Stopping application")
+        consoleLogger.info("Stopping application")
         lifeCycleCoordinator?.stop()
         log.info("Stopping application")
     }
