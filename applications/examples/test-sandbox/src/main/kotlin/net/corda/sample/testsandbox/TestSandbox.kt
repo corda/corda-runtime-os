@@ -71,11 +71,13 @@ class TestSandbox(
             val cpkSet = installService.loadCpi(cpi)
             val sandbox = sandboxService.createSandboxes(cpiIdentifier)
             logger.info("Sandbox $sandbox active.")
-            //val clazz = sandbox.loadClass("net.corda.fungiblestatesample.contracts.ShareContract", Any::class.java)
             val cpk: Cpk? = cpkSet.find { it.id.cordappSymbolicName == "net.corda.test-cpk" }
             if (cpk != null) {
                 val cls = sandbox.loadClass(cpk.id, "net.corda.sample.testcpk.TestCPK")
                 logger.info("Class $cls.")
+                val obj = cls.getDeclaredConstructor().newInstance()
+                val method = cls.getMethod("test")
+                method.invoke(obj)
             }
         }
     }
