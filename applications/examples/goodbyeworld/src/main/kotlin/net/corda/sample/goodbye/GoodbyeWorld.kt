@@ -5,15 +5,18 @@ import net.corda.osgi.api.Shutdown
 import org.osgi.framework.BundleActivator
 import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
-import org.osgi.framework.ServiceReference
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
+import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Component(immediate = true)
-class GoodbyeWorld : BundleActivator, Application {
+class GoodbyeWorld @Activate constructor(
+    @Reference(service = Shutdown::class)
+    private val shutDownService: Shutdown
+) : BundleActivator, Application {
 
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(GoodbyeWorld::class.java)
@@ -41,14 +44,7 @@ class GoodbyeWorld : BundleActivator, Application {
     }
 
     private fun shutdownOSGiFramework() {
-        val bundleContext: BundleContext? = FrameworkUtil.getBundle(GoodbyeWorld::class.java).bundleContext
-        if (bundleContext != null) {
-            val shutdownServiceReference: ServiceReference<Shutdown>? =
-                bundleContext.getServiceReference(Shutdown::class.java)
-            if (shutdownServiceReference != null) {
-                bundleContext.getService(shutdownServiceReference)?.shutdown(bundleContext.bundle)
-            }
-        }
+        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
 
     @Deactivate
