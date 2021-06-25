@@ -7,12 +7,69 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CLIENT_ID_COUNTER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.GROUP
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.INSTANCE_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
 import org.osgi.framework.Bundle
+import org.osgi.framework.FrameworkUtil
+import java.net.URL
 import java.util.*
+
+
+class Utils {
+
+    companion object {
+        private val enforced = ConfigFactory.parseURL(getResourceURL("messaging-enforced.conf"))
+        private val defaults = ConfigFactory.parseURL(getResourceURL("messaging-defaults.conf"))
+
+        fun resolvePublisherConfiguration(
+            subscriptionConfiguration: Config,
+            nodeConfig: Config,
+            clientIdCounter: Int,
+            pattern: String
+        ): Config {
+            val config = enforced
+                .withFallback(subscriptionConfiguration)
+                .withValue(KafkaProperties.CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
+                .withFallback(nodeConfig)
+                .withFallback(defaults)
+                .resolve()
+                .getConfig(pattern)
+
+            return if (!subscriptionConfiguration.hasPath(INSTANCE_ID)) {
+                // No instance id - remove the transactional Id as we don't want to do transactions
+                config.withoutPath(KafkaProperties.PRODUCER_TRANSACTIONAL_ID)
+            } else {
+                config
+            }
+        }
+
+        fun resolveSubscriptionConfiguration(
+            subscriptionConfiguration: Config,
+            nodeConfig: Config,
+            clientIdCounter: Int,
+            pattern: String
+        ): Config {
+            return enforced
+                .withFallback(subscriptionConfiguration)
+                .withValue(KafkaProperties.CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
+                .withFallback(nodeConfig)
+                .withFallback(defaults)
+                .resolve()
+                .getConfig(pattern)
+        }
+
+        /**
+         * Try get [resource] via osgi.
+         * If that's null we're in a unit test so use the classes classloader.
+         */
+        private fun getResourceURL(resource: String) : URL? {
+            val bundle: Bundle? = FrameworkUtil.getBundle(this::class.java)
+            return bundle?.getResource(resource)
+                ?: this::class.java.classLoader.getResource(resource)
+        }
+    }
+}
 
 /**
  * Read content of a [config] at a given [configPrefix] and its subsections as Java properties.
@@ -46,6 +103,7 @@ fun mergeProperties(
     return properties
 }
 
+
 fun Config.getStringOrNull(path: String) = if (hasPath(path)) getString(path) else null
 fun Config.toProperties(): Properties = mergeProperties(this, null, emptyMap())
 fun Config.render(): String =
@@ -77,47 +135,3 @@ fun PublisherConfig.toConfig(): Config {
     return config
 }
 
-fun resolvePublisherConfiguration(
-    bundle: Bundle,
-    subscriptionConfiguration: Config,
-    nodeConfig: Config,
-    clientIdCounter: Int,
-    pattern: String
-): Config {
-    val enforced = ConfigFactory.parseURL(bundle.getResource("messaging-enforced.conf"))
-    val defaults = ConfigFactory.parseURL(bundle.getResource("messaging-defaults.conf"))
-
-    val config = enforced
-        .withFallback(subscriptionConfiguration)
-        .withValue(CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
-        .withFallback(nodeConfig)
-        .withFallback(defaults)
-        .resolve()
-        .getConfig(pattern)
-
-    return if (!subscriptionConfiguration.hasPath(INSTANCE_ID)) {
-        // No instance id - remove the transactional Id as we don't want to do transactions
-        config.withoutPath(KafkaProperties.PRODUCER_TRANSACTIONAL_ID)
-    } else {
-        config
-    }
-}
-
-fun resolveSubscriptionConfiguration(
-    bundle: Bundle,
-    subscriptionConfiguration: Config,
-    nodeConfig: Config,
-    clientIdCounter: Int,
-    pattern: String
-): Config {
-    val enforced = ConfigFactory.parseURL(bundle.getResource("messaging-enforced.conf"))
-    val defaults = ConfigFactory.parseURL(bundle.getResource("messaging-defaults.conf"))
-
-    return enforced
-        .withFallback(subscriptionConfiguration)
-        .withValue(CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
-        .withFallback(nodeConfig)
-        .withFallback(defaults)
-        .resolve()
-        .getConfig(pattern)
-}

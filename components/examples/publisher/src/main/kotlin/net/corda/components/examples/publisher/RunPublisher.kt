@@ -15,6 +15,7 @@ import org.slf4j.Logger
 
 
 @Component
+@Suppress("LongParameterList")
 class RunPublisher (
     private val lifeCycleCoordinator: LifeCycleCoordinator,
     private val publisherFactory: PublisherFactory,
