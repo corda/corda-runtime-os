@@ -5,6 +5,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
 
 class DemoDurableProcessor(
@@ -17,6 +18,7 @@ class DemoDurableProcessor(
 
     private companion object {
         val log: Logger = contextLogger()
+        val consoleLogger: Logger = LoggerFactory.getLogger("Console")
     }
 
     var counter = 1
@@ -47,7 +49,7 @@ class DemoDurableProcessor(
             val newPublisherSet = eventRecordValue == 1
             if (expectedNextValues[key] != null && expectedNextValues[key] != eventRecordValue && !newPublisherSet) {
                 log.error("Wrong record found! Expected to find ${expectedNextValues[key]} but found $eventRecordValue")
-                println("Wrong record received by Durable processor! " +
+                consoleLogger.info("Wrong record received by Durable processor! " +
                         "Expected to find ${expectedNextValues[key]} but found $eventRecordValue")
             }
             expectedNextValues[key] = eventRecordValue + 1
