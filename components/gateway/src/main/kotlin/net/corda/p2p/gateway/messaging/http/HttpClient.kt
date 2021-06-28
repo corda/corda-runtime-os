@@ -207,7 +207,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
         init {
             parent.sslConfiguration.run {
                 val pkixParams = PKIXBuilderParameters(this.trustStore, X509CertSelector())
-                // TODO: what do we do for CRL checking? Allow all for now
+                // T0DO: what do we do for CRL checking? Allow all for now
                 pkixParams.addCertPathChecker(AllowAllRevocationChecker)
                 trustManagerFactory.init(CertPathTrustManagerParameters(pkixParams))
             }
@@ -248,7 +248,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
         }
     }
 
-    // TODO: need to do some validation here I think
+    // T0DO: need to do some validation here I think
     private class HttpClientChannelHandler(
         private val onOpen: (SocketChannel, ConnectionChangeEvent) -> Unit,
         private val onClose: (SocketChannel, ConnectionChangeEvent) -> Unit,

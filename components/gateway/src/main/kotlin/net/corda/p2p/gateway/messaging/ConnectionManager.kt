@@ -61,7 +61,7 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
             logger.info("Removing entry for key $key. Reason: $cause")
             value?.close()
         })
-        //TODO: replace with scheduled task to do clean-up every now and then. With Runnable::run, clean-up happens when cache is used
+        //T0DO: replace with scheduled task to do clean-up every now and then. With Runnable::run, clean-up happens when cache is used
         .executor(Runnable::run) //Specify an executor thread for async background tasks such as clean-up of expired connections
         .build<NetworkHostAndPort, HttpClient>()
 
@@ -91,7 +91,6 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
      * Return an existing or new [HttpClient]. The client will be started connected to the specified remote address. This
      * method blocks until either it returns or throws.
      * @param remoteAddress the [NetworkHostAndPort] to connect to
-     * @param sslConfig the transport configuration
      * @throws [TimeoutException] if a successful connection cannot established
      */
     @Throws(ConnectTimeoutException::class)

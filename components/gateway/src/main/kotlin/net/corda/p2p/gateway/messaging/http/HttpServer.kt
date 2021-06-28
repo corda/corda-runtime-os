@@ -97,7 +97,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
         lock.withLock {
             logger.info("Starting HTTP Server")
             bossGroup = NioEventLoopGroup(1)
-            //TODO: should allow an arbitrary value read from Corda config perhaps
+            //T0DO: should allow an arbitrary value read from Corda config perhaps
             workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS)
 
             val server = ServerBootstrap()
@@ -112,7 +112,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
         }
     }
 
-    //TODO: on a polite shutdown, perhaps it's a good idea to tell all clients so that they can clean-up their connection;
+    //T0DO: on a polite shutdown, perhaps it's a good idea to tell all clients so that they can clean-up their connection;
     // could send 408 Request Timeout
     override fun stop() {
         lock.withLock {
@@ -204,9 +204,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
         private var requestBodyBuf: ByteBuf? = null
         private var validationResult: HttpResponse? = null
 
-        /**
-         * TODO: need to add validation of request headers and also payload. Build response based on that
-         */
+        @Suppress("ComplexMethod", "TooGenericExceptionCaught")
         override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
             if (msg is HttpRequest) {
                 validationResult = msg.validate()
@@ -242,11 +240,11 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
             if (msg is LastHttpContent) {
                 logger.info("Read end of request body")
                 val channel = ctx.channel()
-                val sourceAddress = channel.remoteAddress() as InetSocketAddress
-                val targetAddress = channel.localAddress() as InetSocketAddress
+                val sourceAddress = (channel.remoteAddress() as InetSocketAddress).toHostAndPort()
+                val targetAddress = (channel.localAddress() as InetSocketAddress).toHostAndPort()
                 val returnByteArray = ByteArray(requestBodyBuf?.readableBytes() ?: 0)
                 requestBodyBuf!!.readBytes(returnByteArray)
-                onReceive(ReceivedMessage(validationResult!!, returnByteArray, sourceAddress.toHostAndPort(), targetAddress.toHostAndPort()))
+                onReceive(ReceivedMessage(validationResult!!, returnByteArray, sourceAddress, targetAddress))
                 // Normally response would be sent right after but that operation is now delegated to upstream
                 requestBodyBuf?.release()
                 validationResult = null
@@ -270,7 +268,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
             ctx.fireChannelInactive()
         }
 
-        //TODO: a bunch of this code (except channel read) is duplicated and should probably be reused
+        //T0DO: a bunch of this code (except channel read) is duplicated and should probably be reused
         override fun userEventTriggered(ctx: ChannelHandlerContext, evt: Any) {
             when (evt) {
                 is SniCompletionEvent -> {

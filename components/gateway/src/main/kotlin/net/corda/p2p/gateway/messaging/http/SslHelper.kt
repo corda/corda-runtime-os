@@ -15,7 +15,7 @@ import javax.net.ssl.X509ExtendedTrustManager
 
 fun createClientSslHandler(target: NetworkHostAndPort,
                            trustManagerFactory: TrustManagerFactory): SslHandler {
-    //TODO: netty has a nice builder for this, consider using it instead
+    //T0DO: netty has a nice builder for this, consider using it instead
     val sslContext = SSLContext.getInstance("TLS")
     val trustManagers = trustManagerFactory.trustManagers.filterIsInstance(X509ExtendedTrustManager::class.java).toTypedArray()
     sslContext.init(null, trustManagers, SecureRandom())
