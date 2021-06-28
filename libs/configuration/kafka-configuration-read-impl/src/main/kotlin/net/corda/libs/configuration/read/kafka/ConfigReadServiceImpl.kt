@@ -10,19 +10,20 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import org.osgi.service.component.annotations.Component
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 @Suppress("TooGenericExceptionCaught")
-@Component(immediate = true, service = [ConfigReadService::class])
 class ConfigReadServiceImpl(
     private val configurationRepository: ConfigRepository,
     private val subscriptionFactory: SubscriptionFactory,
     private val boostrapConfig: Config
 ) : ConfigReadService, CompactedProcessor<String, Configuration> {
 
+    private companion object {
+        const val CONFIG_TOPIC_PATH = "config.topic.name"
+    }
 
     @Volatile
     private var stopped = false
@@ -47,9 +48,10 @@ class ConfigReadServiceImpl(
                     subscriptionFactory.createCompactedSubscription(
                         SubscriptionConfig(
                             CONFIGURATION_READ_SERVICE,
-                            boostrapConfig.getString("corda.kafka.topic.name")
+                            boostrapConfig.getString(CONFIG_TOPIC_PATH)
                         ),
                         this,
+                        boostrapConfig
                     )
                 subscription!!.start()
                 stopped = false

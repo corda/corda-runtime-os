@@ -1,0 +1,22 @@
+plugins {
+    id 'corda.publish'
+    id 'corda.common-library'
+}
+
+dependencies {
+
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation project(':data:avro-schema')
+    implementation project(':libs:configuration:configuration-read')
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:lifecycle")
+    implementation project(":osgi-framework-api")
+}
+
+description 'Config Reader'
+

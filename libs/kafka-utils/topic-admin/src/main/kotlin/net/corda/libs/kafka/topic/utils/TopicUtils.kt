@@ -10,8 +10,7 @@ import com.typesafe.config.Config
 interface TopicUtils {
 
     /**
-     * Create new topic based on [topicTemplate]
+     * Create new topics based on [topicsTemplate]
      */
-    fun createTopic(topicTemplate: Config)
-
+    fun createTopics(topicsTemplate: Config)
 }

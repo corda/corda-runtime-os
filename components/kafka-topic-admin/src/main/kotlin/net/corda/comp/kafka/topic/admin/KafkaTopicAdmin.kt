@@ -14,10 +14,10 @@ class KafkaTopicAdmin @Activate constructor(
     private val topicUtilsFactory: TopicUtilsFactory
 ) {
 
-    fun createTopic(kafkaConnectionProperties: Properties, topicTemplate: String): Config {
+    fun createTopics(kafkaConnectionProperties: Properties, topicTemplate: String): Config {
         val topicUtils = topicUtilsFactory.createTopicUtils(kafkaConnectionProperties)
         val template = ConfigFactory.parseString(topicTemplate)
-        topicUtils.createTopic(template)
+        topicUtils.createTopics(template)
 
         return template
     }

@@ -3,10 +3,10 @@ package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.kafka.Utils.Companion.resolvePublisherConfiguration
 import net.corda.messaging.kafka.mergeProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBLISHER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
-import net.corda.messaging.kafka.resolvePublisherConfiguration
 import net.corda.messaging.kafka.toConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
