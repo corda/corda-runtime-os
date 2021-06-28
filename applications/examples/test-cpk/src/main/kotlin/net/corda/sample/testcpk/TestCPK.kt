@@ -1,7 +1,5 @@
 package net.corda.sample.testcpk
 
-//import org.slf4j.LoggerFactory
-
 /**
  * Dummy CordApp used in the `:applications:examples:test-sandbox`.
  */
