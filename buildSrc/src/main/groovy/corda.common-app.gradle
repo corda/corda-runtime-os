@@ -176,9 +176,12 @@ def cordaAssembleSystemPackagesExtraTask = tasks.register("cordaAssembleSystemPa
     }
 }
 
+
+def appJarBaseName = "corda-" + project.name
+
 task appJar(type: Jar) {
     dependsOn cordaAssembleSystemPackagesExtraTask
-    archivesBaseName = "corda-" + project.name
+    archivesBaseName = appJarBaseName
     destinationDirectory = new File(project.buildDir, "bin")
     from(
             configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) },
@@ -197,7 +200,7 @@ afterEvaluate {
 publishing {
     publications {
         maven(MavenPublication) {
-            artifactId "corda-" + project.name
+            artifactId appJarBaseName
 
             afterEvaluate {
                 groupId project.group
@@ -206,8 +209,4 @@ publishing {
             }
         }
     }
-}
-
-artifacts {
-    archives appJar
 }
