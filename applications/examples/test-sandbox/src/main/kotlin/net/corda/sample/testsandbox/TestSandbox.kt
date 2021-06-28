@@ -1,8 +1,8 @@
 package net.corda.sample.testsandbox
 
 import net.corda.install.Cpi
-import net.corda.install.Cpk
 import net.corda.install.CpiIdentifier
+import net.corda.install.Cpk
 import net.corda.install.InstallService
 import net.corda.lifecycle.LifeCycle
 import net.corda.sandbox.SandboxService
@@ -70,14 +70,14 @@ class TestSandbox(
         cpis.forEach { cpi ->
             val cpkSet = installService.loadCpi(cpi)
             val sandbox = sandboxService.createSandboxes(cpiIdentifier)
+
             logger.info("Sandbox $sandbox active.")
             val cpk: Cpk? = cpkSet.find { it.id.cordappSymbolicName == "net.corda.test-cpk" }
             if (cpk != null) {
                 val cls = sandbox.loadClass(cpk.id, "net.corda.sample.testcpk.TestCPK")
-                logger.info("Class $cls.")
-                val obj = cls.getDeclaredConstructor().newInstance()
-                val method = cls.getMethod("test")
-                method.invoke(obj)
+                logger.info("Class $cls loaded.")
+                val runnable = cls.getDeclaredConstructor().newInstance() as Runnable
+                runnable.run()
             }
         }
     }
