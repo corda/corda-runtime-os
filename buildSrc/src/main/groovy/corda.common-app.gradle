@@ -190,4 +190,18 @@ tasks.register('appJar', Jar) {
     }
 }
 
+afterEvaluate {
+    artifactoryPublish.dependsOn(appJar)
+}
 
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifact appJar
+        }
+    }
+}
+
+artifacts {
+    archives appJar
+}
