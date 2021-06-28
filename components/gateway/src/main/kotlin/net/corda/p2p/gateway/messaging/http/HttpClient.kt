@@ -18,11 +18,14 @@ import io.netty.handler.codec.http.HttpContentDecompressor
 import io.netty.handler.codec.http.HttpHeaderNames
 import io.netty.handler.codec.http.HttpObject
 import io.netty.handler.codec.http.HttpResponse
+import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.LastHttpContent
 import io.netty.handler.ssl.SniCompletionEvent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import net.corda.lifecycle.LifeCycle
+import net.corda.p2p.gateway.messaging.ResponseMessage
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.toHostAndPort
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
 import rx.Observable
@@ -92,9 +95,8 @@ class HttpClient(private val destination: NetworkHostAndPort,
     override val isRunning: Boolean
         get() = started
 
-    //TODO: should send a better type upstream, perhaps encapsulating response status (and body if applicable)
-    private val _onReceive = PublishSubject.create<ByteArray>().toSerialized()
-    val onReceive: Observable<ByteArray>
+    private val _onReceive = PublishSubject.create<ResponseMessage>().toSerialized()
+    val onReceive: Observable<ResponseMessage>
         get() = _onReceive
 
     private val _onConnection = PublishSubject.create<ConnectionChangeEvent>().toSerialized()
@@ -104,8 +106,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
     private val connectListener = ChannelFutureListener { future ->
         httpActive = false
         if (!future.isSuccess) {
-            logger.warn("Failed to connect to $destination", future.cause())
-
+            logger.warn("Failed to connect. ${future.cause().message}")
             if (started) {
                 workerGroup?.schedule({
                     logger.info("Retry connect to $destination")
@@ -251,20 +252,21 @@ class HttpClient(private val destination: NetworkHostAndPort,
     private class HttpClientChannelHandler(
         private val onOpen: (SocketChannel, ConnectionChangeEvent) -> Unit,
         private val onClose: (SocketChannel, ConnectionChangeEvent) -> Unit,
-        private val onReceive: (ByteArray?) -> Unit
+        private val onReceive: (ResponseMessage) -> Unit
     ) : SimpleChannelInboundHandler<HttpObject>() {
 
         private val logger = LoggerFactory.getLogger(HttpClientChannelHandler::class.java)
         private var responseBodyBuf: ByteBuf? = null
+        private var responseCode: HttpResponseStatus? = null
 
         /**
          * Reads the responses into a [ByteBuf] and forwards them to an event processor
          */
         override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
-            // TODO: Should do some checks over response header
             if (msg is HttpResponse) {
                 logger.info("Received response $msg")
                 responseBodyBuf = ctx.alloc().buffer(msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
+                responseCode = msg.status()
             }
 
             if (msg is HttpContent) {
@@ -279,9 +281,12 @@ class HttpClient(private val destination: NetworkHostAndPort,
             // the event processor. No trailing headers should exist
             if (msg is LastHttpContent) {
                 logger.info("Read end of response body")
+                val sourceAddress = ctx.channel().remoteAddress() as InetSocketAddress
+                val targetAddress = ctx.channel().localAddress() as InetSocketAddress
                 val returnByteArray = ByteArray(responseBodyBuf!!.readableBytes())
                 responseBodyBuf!!.readBytes(returnByteArray)
-                onReceive(returnByteArray)
+                onReceive(ResponseMessage(responseCode!!, returnByteArray,
+                    sourceAddress.toHostAndPort(), targetAddress.toHostAndPort()))
                 responseBodyBuf?.release()
             }
         }

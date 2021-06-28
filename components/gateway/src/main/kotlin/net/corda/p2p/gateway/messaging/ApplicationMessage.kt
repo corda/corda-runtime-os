@@ -8,8 +8,8 @@ import net.corda.v5.base.util.NetworkHostAndPort
  */
 interface ApplicationMessage {
     var payload: ByteArray
-    val source: NetworkHostAndPort?
-    val destination: NetworkHostAndPort?
+    val source: NetworkHostAndPort
+    val destination: NetworkHostAndPort
 
     /**
      * Releases the memory used by this message

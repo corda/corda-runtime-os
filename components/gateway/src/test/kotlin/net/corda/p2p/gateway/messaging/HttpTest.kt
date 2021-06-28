@@ -2,17 +2,15 @@ package net.corda.p2p.gateway.messaging
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.p2p.gateway.messaging.http.HttpHelper
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.FileInputStream
-import java.net.URI
 import java.security.KeyStore
 import java.time.Instant
-import java.util.*
+import java.util.Arrays
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -40,7 +38,7 @@ class HttpTest {
         HttpServer(serverAddress, sslConfiguration).use { server ->
             server.onReceive.subscribe {
                 assertEquals(clientMessageContent, String(it.payload))
-                server.write(serverResponseContent.toByteArray(Charsets.UTF_8), it.source!!)
+                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
             }
             server.start()
             HttpClient(serverAddress, sslConfiguration).use { client ->
@@ -52,7 +50,7 @@ class HttpTest {
                 }
                 var responseReceived = false
                 client.onReceive.subscribe {
-                    assertEquals(serverResponseContent, String(it))
+                    assertEquals(serverResponseContent, String(it.payload))
                     responseReceived = true
                     clientReceivedResponses.countDown()
                 }
@@ -75,7 +73,7 @@ class HttpTest {
         httpServer.use { server ->
             server.onReceive.subscribe {
                 assertEquals(clientMessageContent, String(it.payload))
-                server.write(serverResponseContent.toByteArray(Charsets.UTF_8), it.source!!)
+                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
             }
             server.start()
             repeat(threadNo) {
@@ -86,7 +84,7 @@ class HttpTest {
                     val clientReceivedResponses = CountDownLatch(requestNo)
                     httpClient.use {
                         httpClient.onReceive.subscribe {
-                            assertEquals(serverResponseContent, String(it))
+                            assertEquals(serverResponseContent, String(it.payload))
                             clientReceivedResponses.countDown()
                         }
                         httpClient.onConnection.subscribe {
@@ -122,7 +120,7 @@ class HttpTest {
         HttpServer(serverAddress, sslConfiguration).use { server ->
             server.onReceive.subscribe {
                 assert(Arrays.equals(hugePayload, it.payload))
-                server.write(serverResponseContent.toByteArray(Charsets.UTF_8), it.source!!)
+                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
             }
             server.start()
             HttpClient(serverAddress, sslConfiguration).use { client ->
@@ -134,7 +132,7 @@ class HttpTest {
                 }
                 var responseReceived = false
                 client.onReceive.subscribe {
-                    assertEquals(serverResponseContent, String(it))
+                    assertEquals(serverResponseContent, String(it.payload))
                     responseReceived = true
                     clientReceivedResponses.countDown()
                 }
@@ -143,30 +141,5 @@ class HttpTest {
                 assertTrue(responseReceived)
             }
         }
-    }
-
-    @Test
-    fun `server receives invalid request - wrong endpoint URL`() {
-
-    }
-
-    @Test
-    fun `server receives invalid request - wrong request method`() {
-
-    }
-
-    @Test
-    fun `client server with SNI`() {
-
-    }
-
-    @Test
-    fun `versioned endpoints`() {
-    }
-
-    @Test
-    fun `create response`() {
-        val r = HttpHelper.createResponse("null".toByteArray(), HttpResponseStatus.OK)
-        println(r)
     }
 }

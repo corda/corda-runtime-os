@@ -9,6 +9,7 @@ dependencies {
     implementation "net.corda:corda-base:$cordaVersion"
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle")
+    implementation project(":data:avro-schema")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "io.reactivex:rxjava:$rxjavaVersion"

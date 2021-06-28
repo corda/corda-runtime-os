@@ -9,6 +9,8 @@ import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
+import rx.Observable
+import rx.subjects.PublishSubject
 import java.lang.NullPointerException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -111,6 +113,8 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
             if (!connected) {
                 throw ConnectTimeoutException("Could not acquire connection to $remoteAddress in ${config.acquireTimeout} milliseconds")
             }
+            //Publish event that connection was established
+            _onNewConnection.onNext(client.onReceive)
             client
         }!!
     }
@@ -153,6 +157,15 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
             .entries
             .filter { e -> e.key == remoteAddress }
             .size
+
+    private val _onNewConnection = PublishSubject.create<Observable<ResponseMessage>>().toSerialized()
+
+    /**
+     * Returns an observable to which services can subscribe and receive client request response messages. Used due to
+     * having this manager as an intermediary for HTTP clients
+     */
+    val onNewConnection: Observable<Observable<ResponseMessage>>
+        get() = _onNewConnection
 }
 
 data class ConnectionManagerConfig(val connectionPoolSize: Long, val acquireTimeout: Long, val maxIdleTime: Long)

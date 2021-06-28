@@ -1,6 +1,7 @@
 package net.corda.p2p.gateway
 
 import io.netty.channel.ConnectTimeoutException
+import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.ConnectionManagerConfig
 import net.corda.p2p.gateway.messaging.SslConfiguration
@@ -38,14 +39,14 @@ class ConnectionManagerTest {
         HttpServer(serverAddresses.first(), sslConfiguration).use { server ->
             server.onReceive.subscribe {
                 assertEquals(clientMessageContent, String(it.payload))
-                server.write(serverResponseContent.toByteArray(), it.source!!)
+                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), it.source)
             }
             server.start()
             manager.acquire(serverAddresses.first()).use { client ->
                 // Client is connected at this point
                 val responseReceived = CountDownLatch(1)
                 client.onReceive.subscribe {
-                    assertEquals(serverResponseContent, String(it))
+                    assertEquals(serverResponseContent, String(it.payload))
                     responseReceived.countDown()
                 }
                 client.send(clientMessageContent.toByteArray())

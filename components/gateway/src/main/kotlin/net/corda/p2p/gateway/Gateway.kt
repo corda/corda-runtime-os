@@ -6,6 +6,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpServer
@@ -53,8 +54,8 @@ class Gateway(address: NetworkHostAndPort,
     private val closeActions = mutableListOf<() -> Unit>()
     private val httpServer = HttpServer(address, sslConfig)
     private val connectionManager = ConnectionManager(sslConfig)
-    private var p2pMessageSubscription: Subscription<String, String>
-    private val inboundMessageProcessor = InboundMessageHandler(httpServer.onReceive, publisherFactory, httpServer::write)
+    private var p2pMessageSubscription: Subscription<String, LinkOutMessage>
+    private val inboundMessageProcessor = InboundMessageHandler(httpServer, connectionManager, publisherFactory)
 
     private var started = false
     override val isRunning: Boolean
@@ -72,12 +73,12 @@ class Gateway(address: NetworkHostAndPort,
         logger.info("Starting Gateway service")
         connectionManager.start()
         closeActions += { connectionManager.close() }
-        p2pMessageSubscription.start()
-        closeActions += { p2pMessageSubscription.close() }
         httpServer.start()
         closeActions += { httpServer.close() }
         inboundMessageProcessor.start()
         closeActions += { inboundMessageProcessor.close() }
+        p2pMessageSubscription.start()
+        closeActions += { p2pMessageSubscription.close() }
         logger.info("Gateway started")
     }
 

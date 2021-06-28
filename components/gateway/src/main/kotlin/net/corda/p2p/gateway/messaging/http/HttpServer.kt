@@ -17,6 +17,7 @@ import io.netty.handler.codec.http.HttpHeaderNames
 import io.netty.handler.codec.http.HttpObject
 import io.netty.handler.codec.http.HttpRequest
 import io.netty.handler.codec.http.HttpRequestDecoder
+import io.netty.handler.codec.http.HttpResponse
 import io.netty.handler.codec.http.HttpResponseEncoder
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpUtil
@@ -27,12 +28,14 @@ import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.ReceivedMessage
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.http.HttpHelper.Companion.validate
 import net.corda.p2p.gateway.messaging.toHostAndPort
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
 import java.lang.IllegalStateException
+import java.lang.IndexOutOfBoundsException
 import java.net.BindException
 import java.net.InetSocketAddress
 import java.nio.channels.ClosedChannelException
@@ -109,6 +112,8 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
         }
     }
 
+    //TODO: on a polite shutdown, perhaps it's a good idea to tell all clients so that they can clean-up their connection;
+    // could send 408 Request Timeout
     override fun stop() {
         lock.withLock {
             try {
@@ -142,22 +147,16 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
      * has closed it or the server is stopped
      */
     @Throws(IllegalStateException::class)
-    fun write(message: ByteArray, destination: NetworkHostAndPort) {
+    fun write(statusCode: HttpResponseStatus, message: ByteArray, destination: NetworkHostAndPort) {
         val channel = clientChannels[InetSocketAddress(destination.host, destination.port)]
         if (channel == null) {
             throw IllegalStateException("Connection to $destination not active")
         } else {
             logger.info("Writing HTTP response to channel $channel")
-            writeResponse(message, channel)
+            val response = HttpHelper.createResponse(message, statusCode)
+            channel.writeAndFlush(response)
             logger.info("Done writing HTTP response to channel $channel")
         }
-    }
-
-    private fun writeResponse(responseContent: ByteArray, ch: SocketChannel) {
-        val status = HttpResponseStatus.OK
-        val response = HttpHelper.createResponse(responseContent, status)
-
-        ch.writeAndFlush(response)
     }
 
     private class ServerChannelInitializer(private val parent: HttpServer) : ChannelInitializer<SocketChannel>() {
@@ -203,12 +202,15 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
         private val logger = LoggerFactory.getLogger(HttpServerChannelHandler::class.java)
 
         private var requestBodyBuf: ByteBuf? = null
+        private var validationResult: HttpResponse? = null
 
         /**
          * TODO: need to add validation of request headers and also payload. Build response based on that
          */
         override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
             if (msg is HttpRequest) {
+                validationResult = msg.validate()
+                println(validationResult)
                 // This logging will be moved to debug or removed once everything is nice and done
                 logger.info("Received HTTP request from ${ctx.channel().remoteAddress()}")
                 logger.info("Protocol version: ${msg.protocolVersion()}")
@@ -216,7 +218,9 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
                 logger.info("Request URI: ${msg.uri()}")
                 logger.info("Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]?:"unknown"}")
                 // initialise byte array to read the request into
-                requestBodyBuf = ctx.alloc().buffer(msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
+                if (validationResult!!.status() != HttpResponseStatus.LENGTH_REQUIRED) {
+                    requestBodyBuf = ctx.alloc().buffer(msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
+                }
 
                 if (HttpUtil.is100ContinueExpected(msg)) {
                     send100Continue(ctx)
@@ -227,8 +231,11 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
                 val content = msg.content()
                 if (content.isReadable) {
                     logger.info("Reading request content into local buffer of size ${content.readableBytes()}")
-                    content.readBytes(requestBodyBuf, content.readableBytes())
-//                    logger.info(requestBodyBuf!!.toString(Charsets.UTF_8))
+                    try {
+                        content.readBytes(requestBodyBuf, content.readableBytes())
+                    } catch (e: IndexOutOfBoundsException) {
+                        logger.error("Cannot read request body into buffer. Space not allocated")
+                    }
                 }
             }
 
@@ -237,11 +244,12 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
                 val channel = ctx.channel()
                 val sourceAddress = channel.remoteAddress() as InetSocketAddress
                 val targetAddress = channel.localAddress() as InetSocketAddress
-                val returnByteArray = ByteArray(requestBodyBuf!!.readableBytes())
+                val returnByteArray = ByteArray(requestBodyBuf?.readableBytes() ?: 0)
                 requestBodyBuf!!.readBytes(returnByteArray)
-                onReceive(ReceivedMessage(returnByteArray, sourceAddress.toHostAndPort(), targetAddress.toHostAndPort()))
+                onReceive(ReceivedMessage(validationResult!!, returnByteArray, sourceAddress.toHostAndPort(), targetAddress.toHostAndPort()))
                 // Normally response would be sent right after but that operation is now delegated to upstream
                 requestBodyBuf?.release()
+                validationResult = null
             }
         }
 

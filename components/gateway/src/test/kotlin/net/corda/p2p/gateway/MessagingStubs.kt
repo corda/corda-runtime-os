@@ -21,7 +21,10 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
+import net.corda.p2p.gateway.messaging.ResponseMessage
 import net.corda.v5.base.internal.uncheckedCast
+import rx.Observable
+import rx.subjects.PublishSubject
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.locks.ReentrantLock
@@ -40,6 +43,11 @@ class TopicServiceStub : TopicService {
             val existingRecords = topics.getOrDefault(topicName, mutableListOf())
             topics[topicName] = existingRecords + listOf(it)
         }
+
+        // Notify subscribers that new records have been published
+        topics.keys.forEach {
+            _onPublish.onNext(topics[it])
+        }
     }
 
     override fun getRecords(
@@ -54,6 +62,10 @@ class TopicServiceStub : TopicService {
     override fun commitOffset(topicName: String, consumerGroup: String, offset: Long) = Unit
 
     override fun subscribe(topicName: String, consumerGroup: String, offsetStrategy: OffsetStrategy) = Unit
+
+    private val _onPublish = PublishSubject.create<List<Record<*, *>>>().toSerialized()
+    val onPublish: Observable<List<Record<*, *>>>
+        get() = _onPublish
 }
 
 /**

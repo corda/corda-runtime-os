@@ -71,8 +71,6 @@ class HttpHelper {
          * @return an [HttpResponse] containing the status code and potentially an error message in the response body should
          * there be a need
          */
-        //TODO: after endpoint is validated, specific validations on request headers should be done for that endpoint;
-        // this is to future proof the code
         fun HttpRequest.validate(): HttpResponse {
             try {
                 val uri = URI.create(this.uri()).normalize()
@@ -80,7 +78,6 @@ class HttpHelper {
                     return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST)
                 }
 
-                //TODO: check authority against server address?
                 if (uri.path != ENDPOINT) {
                     return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
                 }
@@ -102,7 +99,7 @@ class HttpHelper {
                 return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.LENGTH_REQUIRED)
             }
 
-            if (HttpHeaderValues.APPLICATION_JSON.contentEqualsIgnoreCase(this.headers()[HttpHeaderNames.CONTENT_TYPE]))
+            if (!HttpHeaderValues.APPLICATION_JSON.contentEqualsIgnoreCase(this.headers()[HttpHeaderNames.CONTENT_TYPE]))
             {
                 return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE)
             }
