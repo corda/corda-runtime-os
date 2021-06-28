@@ -85,31 +85,27 @@ class TestSandboxApplication : Application {
         logger.info("Start-up.")
 
         if (configAdmin != null) {
-            logger.info("Configuration Admin active.")
+            logger.info("Configuration Admin service active.")
             val configuration = configAdmin!!.getConfiguration(ConfigurationAdmin::class.java.name, null)
-            logger.info("Configuration $configuration")
             val configProperties: Dictionary<String, Any> = Hashtable()
             configProperties.put("baseDirectory", PATH)
-            val blacklistedKeys: List<String> = emptyList()
-            configProperties.put("blacklistedKeys", blacklistedKeys)
+            configProperties.put("blacklistedKeys", emptyList<String>())
             configProperties.put("platformVersion", 5)
             configuration.update(configProperties)
-            logger.info("Configuration.properties ${configuration.properties}")
-        } else {
-            logger.warn("Configuration Admin not found.")
-        }
-        if (installService != null) {
-            logger.info("Install service active.")
-            if (sandboxService != null) {
-                logger.info("Sandbox service active.")
-                //coordinator.start()
-                val path = Paths.get(PATH)
-                TestSandbox(path, installService!!, sandboxService!!).installCpk(path)
+            logger.info("Configuration.properties ${configuration.properties} set.")
+            if (installService != null) {
+                logger.info("Install service active.")
+                if (sandboxService != null) {
+                    logger.info("Sandbox service active.")
+                    coordinator.start()
+                } else {
+                    logger.warn("Sandbox service not found!")
+                }
             } else {
-                logger.warn("Sandbox service not found.")
+                logger.warn("Install service not found!")
             }
         } else {
-            logger.warn("Install service not found.")
+            logger.warn("Configuration Admin service not found!")
         }
         logger.info("Press [CTRL+C] to stop the application...")
     }
