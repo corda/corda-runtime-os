@@ -67,7 +67,13 @@ class SimpleLifeCycleCoordinator(
      *
      * Exceptions thrown by the [lifeCycleProcessor] are wrapped in an [ErrorEvent] instance,
      * notified immediately to the [lifeCycleProcessor], then this coordinator [stop].
+     *
+     * @throws RejectedExecutionException if [eventQueue] is not empty and next execution of this method can't
+     *      be scheduled by [scheduleIfRequired].
      */
+    @Throws(
+        RejectedExecutionException::class
+    )
     @Suppress("TooGenericExceptionCaught")
     private fun processEvents() {
         val eventList = ArrayList<LifeCycleEvent>(batchSize)
