@@ -2,13 +2,7 @@ package net.corda.lifecycle
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedDeque
-import java.util.concurrent.Executors
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -70,13 +64,7 @@ class SimpleLifeCycleCoordinator(
      *
      * To improve performance, events are buffered in an array list of [batchSize] length
      * to be accessed by the [lifeCycleProcessor].
-     *
-     * @throws RejectedExecutionException if [eventQueue] is not empty and next execution of this method can't
-     *      be scheduled by [scheduleIfRequired].
      */
-    @Throws(
-        RejectedExecutionException::class
-    )
     private fun processEvents() {
         val eventList = ArrayList<LifeCycleEvent>(batchSize)
         for (i in 0 until batchSize) {
@@ -84,7 +72,13 @@ class SimpleLifeCycleCoordinator(
             eventList.add(lifeCycleEvent)
         }
         for (lifeCycleEvent in eventList) {
-            lifeCycleProcessor(lifeCycleEvent, this)
+            try {
+                lifeCycleProcessor(lifeCycleEvent, this)
+            } catch (cause: Throwable) {
+                logger.error("Life-Cycle coordinator caught `${cause.message}` processing ${lifeCycleEvent::class.java}!")
+                lifeCycleProcessor(ErrorEvent(cause), this)
+                stop()
+            }
         }
         isScheduled.set(false)
         if (eventQueue.isNotEmpty()) {

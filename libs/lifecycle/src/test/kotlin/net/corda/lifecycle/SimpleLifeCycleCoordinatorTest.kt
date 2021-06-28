@@ -129,6 +129,28 @@ internal class SimpleLifeCycleCoordinatorTest {
     }
 
     @Test
+    fun postErrorEvent() {
+        val expected = Exception("test exception")
+        val errorLatch = CountDownLatch(1)
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+            when (event) {
+                is PostEvent -> {
+                    throw expected
+                }
+                is ErrorEvent -> {
+                    assertEquals(expected, event.cause)
+                    errorLatch.countDown()
+                }
+            }
+        }.use { coordinator ->
+            coordinator.start()
+            coordinator.postEvent(object : PostEvent {})
+            errorLatch.await()
+            assertTrue(errorLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+        }
+    }
+
+    @Test
     fun postEvent() {
         val postLatch = CountDownLatch(1)
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
@@ -220,4 +242,6 @@ internal class SimpleLifeCycleCoordinatorTest {
                 assertEquals(TIMEOUT, coordinator.timeout)
             }
     }
+
+
 }
