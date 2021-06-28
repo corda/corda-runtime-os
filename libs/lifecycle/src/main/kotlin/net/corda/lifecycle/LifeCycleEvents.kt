@@ -10,6 +10,9 @@ package net.corda.lifecycle
  */
 interface LifeCycleEvent
 
+/**
+ * Define an error event wrapping the [cause] submitted by a [LifeCycleCoordinator]
+ */
 class ErrorEvent(val cause: Throwable) : LifeCycleEvent
 
 /**

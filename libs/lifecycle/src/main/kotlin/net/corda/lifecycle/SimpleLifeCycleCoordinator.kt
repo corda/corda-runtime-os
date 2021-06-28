@@ -64,7 +64,11 @@ class SimpleLifeCycleCoordinator(
      *
      * To improve performance, events are buffered in an array list of [batchSize] length
      * to be accessed by the [lifeCycleProcessor].
+     *
+     * Exceptions thrown by the [lifeCycleProcessor] are wrapped in an [ErrorEvent] instance,
+     * notified immediately to the [lifeCycleProcessor], then this coordinator [stop].
      */
+    @Suppress("TooGenericExceptionCaught")
     private fun processEvents() {
         val eventList = ArrayList<LifeCycleEvent>(batchSize)
         for (i in 0 until batchSize) {

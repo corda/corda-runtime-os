@@ -15,6 +15,9 @@ SimpleLifeCycleCoordinator(64, 1000L) { event: LifeCycleEvent, coordinator: Life
         is StartEvent -> {
             // START THE COMPONENT 
         }
+        is ErrorEvent -> {
+            // HANDLE THE event.cause IF AN ERROR IS NOTIFIED
+        }
         is PostEvent -> {
             // DO SOMETHING
         }
