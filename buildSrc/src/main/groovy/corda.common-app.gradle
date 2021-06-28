@@ -176,7 +176,7 @@ def cordaAssembleSystemPackagesExtraTask = tasks.register("cordaAssembleSystemPa
     }
 }
 
-tasks.register('appJar', Jar) {
+task appJar(type: Jar) {
     dependsOn cordaAssembleSystemPackagesExtraTask
     archivesBaseName = "corda-" + project.name
     destinationDirectory = new File(project.buildDir, "bin")
@@ -197,7 +197,13 @@ afterEvaluate {
 publishing {
     publications {
         maven(MavenPublication) {
-            artifact appJar
+            artifactId "corda-" + project.name
+
+            afterEvaluate {
+                groupId project.group
+                version project.version
+                artifact appJar
+            }
         }
     }
 }
