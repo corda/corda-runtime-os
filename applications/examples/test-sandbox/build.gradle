@@ -13,10 +13,10 @@ dependencies {
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 
-    implementation "net.corda:corda-base:1.0.0-SNAPSHOT"
-    implementation "net.corda:corda-crypto-api:1.0.0-SNAPSHOT"
-    implementation "net.corda:corda-sandbox:1.0.0-SNAPSHOT"
-    implementation "net.corda:corda-install:1.0.0-SNAPSHOT"
+    implementation "net.corda:corda-base:$cordaSandboxVersion"
+    implementation "net.corda:corda-crypto-api:$cordaSandboxVersion"
+    implementation "net.corda:corda-sandbox:$cordaSandboxVersion"
+    implementation "net.corda:corda-install:$cordaSandboxVersion"
     implementation "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
     implementation project(":libs:lifecycle")
