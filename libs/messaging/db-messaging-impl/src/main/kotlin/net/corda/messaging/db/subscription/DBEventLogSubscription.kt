@@ -1,6 +1,5 @@
 package net.corda.messaging.db.subscription
 
-import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -31,7 +30,7 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
                                              private val offsetTrackersManager: OffsetTrackersManager,
                                              private val dbAccessProvider: DBAccessProvider,
                                              private val pollingTimeout: Duration = 1.seconds,
-                                             private val batchSize: Int = 100): Subscription<K, V>, LifeCycle {
+                                             private val batchSize: Int = 100): Subscription<K, V> {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
