@@ -13,6 +13,7 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "net.corda:corda-base:$cordaVersion"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 
     implementation project(':components:kafka-config-read')
     implementation project(":libs:configuration:configuration-read")
