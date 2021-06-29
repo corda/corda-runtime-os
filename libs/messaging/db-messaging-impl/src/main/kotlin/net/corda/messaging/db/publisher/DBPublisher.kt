@@ -27,7 +27,7 @@ class DBPublisher(private val publisherConfig: PublisherConfig,
                   private val schemaRegistry: AvroSchemaRegistry,
                   private val dbAccessProvider: DBAccessProvider,
                   private val offsetTrackersManager: OffsetTrackersManager,
-                  private val threadPoolSize: Int = 25): Publisher, LifeCycle {
+                  private val threadPoolSize: Int = 5): Publisher, LifeCycle {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
