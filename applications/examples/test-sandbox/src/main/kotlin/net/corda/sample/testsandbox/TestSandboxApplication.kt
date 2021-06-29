@@ -37,8 +37,6 @@ class TestSandboxApplication @Activate constructor(
     private var sandboxService: SandboxService
 ) : Application {
 
-
-
     private companion object {
 
         private val logger = contextLogger()
