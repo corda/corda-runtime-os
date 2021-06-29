@@ -40,6 +40,7 @@ pipeline {
     stages {
         stage('Prepare') {
             steps {
+                echo "PATH1 is: $PATH"
                sh 'mkdir -p "${GRADLE_USER_HOME}"'
                sh 'sudo chmod -R ugo+w ${GRADLE_USER_HOME}'
                sh 'docker login engineering-docker.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD'
@@ -61,7 +62,7 @@ pipeline {
         }
         stage('Setup Kafka') {
             steps {
-                echo "PATH is: $PATH"
+                echo "PATH2 is: $PATH"
                 sh 'docker-compose -f kafka-docker/single-kafka-cluster.yml up -d'
             }
         }
