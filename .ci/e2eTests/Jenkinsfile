@@ -36,6 +36,8 @@ pipeline {
         timestamps()
     }
 
+    def workspace = pwd()
+
     stages {
         stage('Prepare') {
             steps {
@@ -46,6 +48,7 @@ pipeline {
         }
         stage('Setup Kafka') {
             steps {
+                echo "workspace is ${workspace}"
                 sh 'docker-compose -f kafka-docker/single-kafka-cluster.yml up -d'
             }
         }
