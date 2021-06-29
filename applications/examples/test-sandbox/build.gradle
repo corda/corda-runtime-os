@@ -1,6 +1,7 @@
 plugins {
     id 'corda.publish'
     id 'corda.common-app'
+    id 'net.corda.plugins.flask' apply false
 }
 
 repositories {
@@ -30,3 +31,11 @@ dependencies {
 }
 
 description 'Test Sandbox'
+
+project.tasks.register("flaskJar", net.corda.gradle.flask.FlaskJarTask) {
+    includeLibraries(project.tasks.named("appJar").map { it.outputs })
+    mainClassName = "net.corda.osgi.framework.OSGiFrameworkMain"
+    archiveBaseName = "x"
+}
+
+
