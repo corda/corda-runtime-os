@@ -9,7 +9,7 @@
 -resolve.effective: active
 
 -runproperties: \
-    org.osgi.framework.bootdelegation=sun.reflect',\
+    org.osgi.framework.bootdelegation='sun.reflect',\
     org.slf4j.api.defaultLogLevel=info,\
     org.slf4j.api.showShortLogName=true,\
     org.slf4j.api.showThreadName=false,\

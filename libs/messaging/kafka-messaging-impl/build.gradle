@@ -15,8 +15,11 @@ dependencies {
     implementation project(":libs:lifecycle")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
     }
+
+    testRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
 }

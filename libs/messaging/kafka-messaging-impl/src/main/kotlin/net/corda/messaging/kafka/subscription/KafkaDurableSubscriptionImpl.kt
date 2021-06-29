@@ -227,6 +227,10 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
         producer: CordaKafkaProducer,
         consumer: CordaKafkaConsumer<K, V>
     ) {
+        if (consumerRecords.isEmpty()) {
+            return
+        }
+
         try {
             producer.beginTransaction()
             producer.sendRecords(processor.onNext(consumerRecords.map { it.asRecord() }))

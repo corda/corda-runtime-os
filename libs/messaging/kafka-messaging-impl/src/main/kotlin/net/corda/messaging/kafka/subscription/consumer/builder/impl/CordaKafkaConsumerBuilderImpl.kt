@@ -2,7 +2,6 @@ package net.corda.messaging.kafka.subscription.consumer.builder.impl
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
@@ -13,6 +12,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaCo
 import net.corda.messaging.kafka.toProperties
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.internal.uncheckedCast
+import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.KafkaException
@@ -38,7 +38,7 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
         val consumer = createKafkaConsumer(consumerConfig, onError)
         val listener = PubSubConsumerRebalanceListener(
             consumerConfig.getString(TOPIC_NAME),
-            consumerConfig.getString(CONSUMER_GROUP_ID),
+            consumerConfig.getString(CommonClientConfigs.GROUP_ID_CONFIG),
             consumer
         )
         return CordaKafkaConsumerImpl(consumerConfig, consumer, listener)
@@ -52,7 +52,7 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
         val consumer = createKafkaConsumer(consumerConfig, onError)
         val listener = consumerRebalanceListener ?: DurableConsumerRebalanceListener(
             consumerConfig.getString(TOPIC_NAME),
-            consumerConfig.getString(CONSUMER_GROUP_ID),
+            consumerConfig.getString(CommonClientConfigs.GROUP_ID_CONFIG),
             consumer,
         )
         return CordaKafkaConsumerImpl(consumerConfig, consumer, listener)
@@ -75,7 +75,7 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
         onError: (String, ByteArray) -> Unit
     ): KafkaConsumer<K, V> {
         val topic = consumerConfig.getString(TOPIC_NAME)
-        val groupName = consumerConfig.getString(CONSUMER_GROUP_ID)
+        val groupName = consumerConfig.getString(CommonClientConfigs.GROUP_ID_CONFIG)
         val contextClassLoader = Thread.currentThread().contextClassLoader
 
         return try {

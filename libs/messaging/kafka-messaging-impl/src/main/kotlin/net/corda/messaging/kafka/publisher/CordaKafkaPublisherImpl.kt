@@ -9,8 +9,8 @@ import net.corda.messaging.kafka.getStringOrNull
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TRANSACTIONAL_ID
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -51,7 +51,7 @@ class CordaKafkaPublisherImpl(
 
     private val closeTimeout = kafkaConfig.getLong(PRODUCER_CLOSE_TIMEOUT)
     private val topicPrefix = kafkaConfig.getString(TOPIC_PREFIX)
-    private val transactionalId = kafkaConfig.getStringOrNull(TRANSACTIONAL_ID)
+    private val transactionalId = kafkaConfig.getStringOrNull(PRODUCER_TRANSACTIONAL_ID)
     private val clientId = kafkaConfig.getString(PRODUCER_CLIENT_ID)
 
     /**
