@@ -32,10 +32,5 @@ dependencies {
 
 description 'Test Sandbox'
 
-project.tasks.register("flaskJar", net.corda.gradle.flask.FlaskJarTask) {
-    includeLibraries(project.tasks.named("appJar").map { it.outputs })
-    mainClassName = "net.corda.osgi.framework.OSGiFrameworkMain"
-    archiveBaseName = "x"
-}
 
 

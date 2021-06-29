@@ -1,3 +1,4 @@
+
 package net.corda.sample.testsandbox
 
 import net.corda.install.InstallService
@@ -82,37 +83,3 @@ class TestSandboxApplication @Activate constructor(
             }
         }
     }
-
-    /**
-     * This method is called by after the OSGI framework wired all bundles and services.
-     *
-     * Properties annotated with `@Reference` are already set when this method is called.
-     */
-    override fun startup(args: Array<String>) {
-        logger.info("Start-up.")
-
-            logger.info("Configuration Admin service active.")
-            val configuration = configAdmin.getConfiguration(ConfigurationAdmin::class.java.name, null)
-            val configProperties: Dictionary<String, Any> = Hashtable()
-            configProperties.put("baseDirectory", PATH)
-            configProperties.put("blacklistedKeys", emptyList<String>())
-            configProperties.put("platformVersion", 5)
-            configuration.update(configProperties)
-            logger.info("Configuration.properties ${configuration.properties} set.")
-                logger.info("Install service active.")
-                    logger.info("Sandbox service active.")
-                    coordinator.start()
-
-        logger.info("Press [CTRL+C] to stop the application...")
-    }
-
-    /**
-     * This method is called when the bootable JAr is requested to terminate by the application itself or the
-     * operating system because the JVM terminates.
-     */
-    override fun shutdown() {
-        logger.info("Shutdown.")
-        coordinator.stop()
-    }
-
-}

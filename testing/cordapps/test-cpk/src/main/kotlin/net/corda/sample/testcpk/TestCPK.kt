@@ -6,11 +6,11 @@ package net.corda.sample.testcpk
 class TestCPK: Runnable {
 
     init {
-        println("net.corda.sample.testcpk.TestCPK INIT.")
+        println("TestCPK INIT.")
     }
 
 
     override fun run() {
-        println("net.corda.sample.testcpk.TestCPK RUN.")
+        println("TestCPK RUN.")
     }
 }

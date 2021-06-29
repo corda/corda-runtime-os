@@ -3,7 +3,7 @@ plugins {
 }
 
 cordapp {
-    targetPlatformVersion platformVersion as Integer
+    targetPlatformVersion 999
     minimumPlatformVersion 1
     contract {
         name "test-cpk"
