@@ -1,4 +1,15 @@
 pipeline {
+    agent {
+        docker {
+            // Out custom docker image
+            image 'dind-zulu-openjdk:latest'
+            label 'docker'
+            registryUrl 'https://engineering-docker.software.r3.com/'
+            registryCredentialsId 'artifactory-credentials'
+            // Used to mount storage from the host as a volume to persist the cache between builds
+            args '-v /tmp:/host_tmp --privileged=true --entrypoint=\'\''
+        }
+    }
 
     parameters {
         // TODO: Change this when the version in gradle.properties had changed
@@ -27,17 +38,6 @@ pipeline {
     }
 
     stages {
-        agent {
-            docker {
-                // Out custom docker image
-                image 'dind-zulu-openjdk:latest'
-                label 'docker'
-                registryUrl 'https://engineering-docker.software.r3.com/'
-                registryCredentialsId 'artifactory-credentials'
-                // Used to mount storage from the host as a volume to persist the cache between builds
-                args '-v /tmp:/host_tmp --privileged=true --entrypoint=\'\''
-            }
-        }
         stage('Prepare') {
             steps {
                echo "PATH1 is: $PATH"
