@@ -46,20 +46,9 @@ pipeline {
             }
         }
         stage('Setup Kafka') {
-            agent {
-                docker {
-                    // Out custom docker image
-                    image 'dind-zulu-openjdk:latest'
-                    label 'docker'
-                    registryUrl 'https://engineering-docker.software.r3.com/'
-                    registryCredentialsId 'artifactory-credentials'
-                    // Used to mount storage from the host as a volume to persist the cache between builds
-                    args '-v /tmp:/host_tmp --privileged=true --entrypoint=\'\''
-                }
-            }
             steps {
                 echo "workspace is ${WORKSPACE}"
-                sh 'docker-compose -f ${WORKSPACE}/kafka-docker/single-kafka-cluster.yml up -d'
+                sh 'docker -f ${WORKSPACE}/kafka-docker/single-kafka-cluster.yml up -d'
             }
         }
         stage('Download Corda maven artifacts') {
