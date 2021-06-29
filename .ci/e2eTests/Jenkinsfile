@@ -1,14 +1,13 @@
 pipeline {
     agent {
         docker {
-            image 'build-zulu-openjdk:11'
+            // Out custom docker image
+            image 'dind-zulu-openjdk:latest'
             label 'docker'
             registryUrl 'https://engineering-docker.software.r3.com/'
             registryCredentialsId 'artifactory-credentials'
             // Used to mount storage from the host as a volume to persist the cache between builds
-            args '-v /tmp:/host_tmp'
-            // make sure build image is always fresh
-            alwaysPull true
+            args '-v /tmp:/host_tmp --privileged=true --entrypoint=\'\''
         }
     }
 
@@ -40,9 +39,14 @@ pipeline {
     stages {
         stage('Prepare') {
             steps {
-                echo "PATH1 is: $PATH"
+               echo "PATH1 is: $PATH"
                sh 'mkdir -p "${GRADLE_USER_HOME}"'
                sh 'docker login engineering-docker.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD'
+            }
+        }
+        stage('Setup Kafka') {
+            steps {
+                sh 'docker-compose -f kafka-docker/single-kafka-cluster.yml up -d'
             }
         }
         stage('Download Corda maven artifacts') {
@@ -59,12 +63,7 @@ pipeline {
                 sh 'rm -rf mavenLocal.tar.gz'
             }
         }
-        stage('Setup Kafka') {
-            steps {
-                echo "PATH2 is: $PATH"
-                sh 'docker-compose -f kafka-docker/single-kafka-cluster.yml up -d'
-            }
-        }
+
     }
     post {
         cleanup {
