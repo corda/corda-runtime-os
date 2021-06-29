@@ -16,8 +16,12 @@ interface LinkManagerNetworkMap {
         internal fun HoldingIdentity.toHoldingIdentity(): net.corda.p2p.HoldingIdentity {
             return net.corda.p2p.HoldingIdentity(this.x500Name, this.groupId)
         }
-
     }
+
+    /**
+     * Return the hash of the [PublicKey]
+     */
+    fun hashPublicKey(publicKey: PublicKey): ByteArray
 
     /**
      * Returns the [PublicKey] belonging a specific [holdingIdentity]
@@ -25,7 +29,8 @@ interface LinkManagerNetworkMap {
     fun getPublicKey(holdingIdentity: HoldingIdentity): PublicKey?
 
     /**
-     * Returns the [PublicKey] in the NetworkMap with SHA-256 hash [hash].
+     * Returns the [PublicKey] in the NetworkMap [hash].
+     * The hash algorithm should be the same as used in [LinkManagerNetworkMap.PublicKey.toHash]
      */
     fun getPublicKeyFromHash(hash: ByteArray): PublicKey?
 
@@ -41,12 +46,6 @@ interface LinkManagerNetworkMap {
      * Returns our [PublicKey] belonging to [groupId]
      */
     fun getOurPublicKey(groupId: String?): PublicKey?
-
-    /**
-     * Returns our [PrivateKey] belonging to [groupId]
-     */
-    fun getOurPrivateKey(groupId: String?): PrivateKey?
-
 
     /**
      * Returns our [HoldingIdentity] belonging to [groupId]

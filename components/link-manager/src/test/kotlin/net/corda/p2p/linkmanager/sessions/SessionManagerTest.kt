@@ -50,15 +50,15 @@ class SessionManagerTest {
         val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("10.0.0.1:hello")
         const val MAX_MESSAGE_SIZE = 1024 * 1024
 
-        fun sessionManager(
-            netMap: LinkManagerNetworkMap,
+        private fun sessionManager(
+            netMap: MockNetworkMap.MockLinkManagerNetworkMap,
             mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY,
             sessionNegotiatedCallback: (SessionManagerImpl.SessionKey, Session, LinkManagerNetworkMap) -> Unit = { _, _, _ -> }
         ): SessionManagerImpl {
             return SessionManagerImpl(
                 setOf(mode),
                 netMap,
-                MockCryptoService(),
+                MockCryptoService(netMap),
                 MAX_MESSAGE_SIZE,
                 sessionNegotiatedCallback
             )
@@ -70,7 +70,7 @@ class SessionManagerTest {
         private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
         private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
 
-        private val keys = HashMap<LinkManagerNetworkMap.HoldingIdentity, KeyPair>()
+        val keys = HashMap<LinkManagerNetworkMap.HoldingIdentity, KeyPair>()
         private val peerForHash = HashMap<Int, LinkManagerNetworkMap.HoldingIdentity>()
 
         private fun MessageDigest.hash(data: ByteArray): ByteArray {
@@ -87,8 +87,16 @@ class SessionManagerTest {
             }
         }
 
-        fun getSessionNetworkMapForNode(node: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap {
-            return object : LinkManagerNetworkMap {
+        interface MockLinkManagerNetworkMap : LinkManagerNetworkMap {
+            fun getPrivateKeyFromHash(hash: ByteArray): PrivateKey
+        }
+
+        fun getSessionNetworkMapForNode(node: LinkManagerNetworkMap.HoldingIdentity): MockLinkManagerNetworkMap {
+            return object : MockLinkManagerNetworkMap {
+                override fun hashPublicKey(publicKey: PublicKey): ByteArray {
+                    return messageDigest.hash(publicKey.encoded)
+                }
+
                 override fun getPublicKey(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): PublicKey? {
                     return keys[holdingIdentity]?.public
                 }
@@ -116,25 +124,25 @@ class SessionManagerTest {
                     return keys[node]!!.public
                 }
 
-                override fun getOurPrivateKey(groupId: String?): PrivateKey? {
-                    assertNull(groupId) {"In this case the groupId should be null."}
-                    return keys[node]!!.private
-                }
-
                 override fun getOurHoldingIdentity(groupId: String?): LinkManagerNetworkMap.HoldingIdentity {
                     assertNull(groupId) {"In this case the groupId should be null."}
                     return node
+                }
+
+                override fun getPrivateKeyFromHash(hash: ByteArray): PrivateKey {
+                    return keys[node]!!.private
                 }
             }
         }
 
     }
 
-    class MockCryptoService : LinkManagerCryptoService {
+    class MockCryptoService(private val mockNetworkMap: MockNetworkMap.MockLinkManagerNetworkMap) : LinkManagerCryptoService {
         private val provider = BouncyCastleProvider()
         private val signature = Signature.getInstance("ECDSA", provider)
 
-        override fun signData(key: PrivateKey, data: ByteArray): ByteArray {
+        override fun signData(hash: ByteArray, data: ByteArray): ByteArray {
+            val key = mockNetworkMap.getPrivateKeyFromHash(hash)
             signature.initSign(key)
             signature.update(data)
             return signature.sign()
@@ -291,7 +299,6 @@ class SessionManagerTest {
             assertNull(sessionManager.processSessionMessage(LinkInMessage(mockMessage)))
             Mockito.verify(mockLogger).warn("Received ${mockMessage::class.java.simpleName} with sessionId" +
                     " $fakeSession but there is no pending session with this id. The message was discarded.")
-
         }
     }
 

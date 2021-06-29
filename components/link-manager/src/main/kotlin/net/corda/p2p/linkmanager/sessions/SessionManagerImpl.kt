@@ -85,11 +85,6 @@ open class SessionManagerImpl(
         )
     }
 
-    private fun signData(groupId: String?, data: ByteArray): ByteArray {
-        val privateKey = networkMap.getOurPrivateKey(groupId) ?: throw NoPrivateKeyForGroupExceptions(groupId)
-        return cryptoService.signData(privateKey, data)
-    }
-
     private fun ByteArray.toBase64(): String {
         return Base64.getEncoder().encodeToString(this)
     }
@@ -97,9 +92,6 @@ open class SessionManagerImpl(
     private fun getPublicKeyFromHash(hash: ByteArray): PublicKey {
         return networkMap.getPublicKeyFromHash(hash) ?: throw NoPublicKeyForHash(hash.toBase64())
     }
-
-    class NoPrivateKeyForGroupExceptions(groupId: String?):
-        CordaRuntimeException("Could not find (our) private key in the network map for group = $groupId")
 
     class NoPublicKeyForHash(hash: String):
         CordaRuntimeException("Could not find the public key in the network map by hash = $hash")
@@ -130,11 +122,11 @@ open class SessionManagerImpl(
             return null
         }
 
-        val signWithOurGroupId = { data: ByteArray -> signData(sessionInfo.ourGroupId, data) }
+        val signWithOurGroupId = { data: ByteArray -> cryptoService.signData(networkMap.hashPublicKey(ourKey), data) }
         val groupIdOrEmpty = sessionInfo.ourGroupId ?: ""
         val payload = try {
             session.generateOurHandshakeMessage(ourKey, responderKey, groupIdOrEmpty, signWithOurGroupId)
-        } catch (exception: NoPrivateKeyForGroupExceptions) {
+        } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
             logger.warn("${exception.message}. The ${message::class.java.simpleName} was discarded.")
             return null
         }
@@ -218,10 +210,10 @@ open class SessionManagerImpl(
             return null
         }
 
-        val signData = {data: ByteArray -> signData(us.groupId, data)}
+        val signData = {data: ByteArray -> cryptoService.signData(identityData.responderPublicKeyHash, data)}
         val response = try {
             session.generateOurHandshakeMessage(ourPublicKey, signData)
-        } catch (exception: NoPrivateKeyForGroupExceptions) {
+        } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
             logger.warn("Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
                     " The message was discarded.")
             return null
