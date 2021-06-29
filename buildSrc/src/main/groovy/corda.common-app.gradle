@@ -197,6 +197,10 @@ afterEvaluate {
     artifactoryPublish.dependsOn(appJar)
 }
 
+artifactoryPublish {
+    publications('mavenAppJar')
+}
+
 publishing {
     publications {
         mavenAppJar(MavenPublication) {
