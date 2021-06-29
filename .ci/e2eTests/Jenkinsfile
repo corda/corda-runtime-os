@@ -37,7 +37,6 @@ pipeline {
         timestamps()
     }
 
-
     stages {
         stage('Prepare') {
             steps {
