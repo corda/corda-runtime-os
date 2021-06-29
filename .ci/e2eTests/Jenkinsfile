@@ -28,6 +28,7 @@ pipeline {
         CORDA_USE_CACHE = "corda-remotes"
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
+        WORKSPACE = pwd()
     }
 
     options {
@@ -36,7 +37,6 @@ pipeline {
         timestamps()
     }
 
-    def workspace = pwd()
 
     stages {
         stage('Prepare') {
@@ -48,8 +48,8 @@ pipeline {
         }
         stage('Setup Kafka') {
             steps {
-                echo "workspace is ${workspace}"
-                sh 'docker-compose -f kafka-docker/single-kafka-cluster.yml up -d'
+                echo "workspace is ${WORKSPACE}"
+                sh 'docker-compose -f ./kafka-docker/single-kafka-cluster.yml up -d'
             }
         }
         stage('Download Corda maven artifacts') {
