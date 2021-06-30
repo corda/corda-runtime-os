@@ -93,7 +93,7 @@ class Messaging {
                     if (innerMessage is AuthenticatedDataMessage) {
                         return convertAuthenticatedMessageToFlowMessage(innerMessage, session)
                     } else {
-                        logger.warn("Received encrypted message for session with SessionId = $sessionId for which is " +
+                        logger.warn("Received encrypted message for session with SessionId = $sessionId which is " +
                                 "Authentication only. The message was discarded.")
                     }
                 }
@@ -101,7 +101,7 @@ class Messaging {
                     if (innerMessage is AuthenticatedEncryptedDataMessage) {
                         return convertAuthenticatedEncryptedMessageToFlowMessage(innerMessage, session)
                     } else {
-                        logger.warn("Received encrypted message for session with SessionId = $sessionId for which is " +
+                        logger.warn("Received encrypted message for session with SessionId = $sessionId which is " +
                                 "AuthenticationAndEncryption. The message was discarded.")
                     }
                 }

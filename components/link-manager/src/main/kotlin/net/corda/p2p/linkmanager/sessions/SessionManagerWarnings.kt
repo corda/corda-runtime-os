@@ -30,12 +30,12 @@ class SessionManagerWarnings {
             sessionId: String,
             responderId: LinkManagerNetworkMap.HoldingIdentity
         ) {
-            this.warn("Received $messageName with sessionId $sessionId. From peer $responderId which is not in the network map." +
+            this.warn("Received $messageName with sessionId $sessionId from peer $responderId which is not in the network map." +
                 " The message was discarded.")
         }
 
         internal fun Logger.validationFailedWarning(messageName: String, sessionId: String) {
-            this.warn("Received $messageName with sessionId $sessionId. Which failed validation. The message was discarded.")
+            this.warn("Received $messageName with sessionId $sessionId, which failed validation. The message was discarded.")
         }
 
     }
