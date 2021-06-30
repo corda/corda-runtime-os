@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'standard' }
+    agent none
 
     parameters {
         // TODO: Change this when the version in gradle.properties had changed
