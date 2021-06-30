@@ -51,21 +51,6 @@ pipeline {
                 sh 'docker-compose -f kafka-docker/single-kafka-cluster.yml up -d'
             }
         }
-        stage('Download Corda maven artifacts') {
-            when {
-                expression { return !params.UPSTREAM_PROJECT_NAME.isEmpty() }
-            }
-            steps {
-                sh 'mkdir -p /tmp/artifacts/mavenLocal'
-                copyArtifacts projectName: params.UPSTREAM_PROJECT_NAME,
-                    selector: upstream(),
-                    fingerprintArtifacts: true,
-                    filter: 'mavenLocal.tar.gz'
-                sh 'tar -xvf mavenLocal.tar.gz -C /tmp/artifacts/mavenLocal'
-                sh 'rm -rf mavenLocal.tar.gz'
-            }
-        }
-
     }
     post {
         cleanup {
@@ -74,13 +59,6 @@ pipeline {
             recordIssues(
                 enabledForFailure: true, aggregatingResults: true,
                 tools: [kotlin(), java(), detekt(pattern: '**/build/detekt-report.xml')]
-            )
-            jacoco(
-                execPattern: '**/build/**/*.exec',
-                runAlways: true,
-                sourcePattern: '**/src/main/java,**/src/main/kotlin',
-                classPattern: "**/build/classes/kotlin/main,**/build/classes/java/main",
-                inclusionPattern: "net/corda/**,com/corda/**"
             )
         }
         success {
