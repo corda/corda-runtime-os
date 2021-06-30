@@ -20,6 +20,8 @@ import net.corda.p2p.linkmanager.LinkManager.Companion.getSessionKeyFromMessage
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkOutMessageFromFlowMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
+import net.corda.p2p.schema.Topics.Companion.LINK_OUT_TOPIC
+import net.corda.p2p.schema.Topics.Companion.P2P_IN_TOPIC
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -265,7 +267,7 @@ class LinkManagerTest {
         //We get a dummySessionInit message for each message (as each message requested a new session).
         for (record in records) {
             assertSame(dummySessionInitMessage, record.value)
-            assertEquals(LinkManager.LINK_OUT_TOPIC, record.topic)
+            assertEquals(LINK_OUT_TOPIC, record.topic)
         }
 
         for (message in messages) {
@@ -295,7 +297,7 @@ class LinkManagerTest {
         for (record in records) {
             val payload = (record.value as LinkOutMessage).payload
             assert(payload is AuthenticatedDataMessage)
-            assertEquals(LinkManager.LINK_OUT_TOPIC, record.topic)
+            assertEquals(LINK_OUT_TOPIC, record.topic)
         }
     }
 
@@ -313,7 +315,7 @@ class LinkManagerTest {
 
         assertEquals(records.size, messages.size)
         for (record in records) {
-            assertEquals(LinkManager.LINK_OUT_TOPIC, record.topic)
+            assertEquals(LINK_OUT_TOPIC, record.topic)
             assertSame(response, record.value)
         }
     }
@@ -340,7 +342,7 @@ class LinkManagerTest {
         val records = processor.onNext(messages)
         assertEquals(records.size, messages.size)
         for (record in records) {
-            assertEquals(LinkManager.P2P_IN_TOPIC, record.topic)
+            assertEquals(P2P_IN_TOPIC, record.topic)
             assertArrayEquals(flowMessage.payload.array(), (record.value as FlowMessage).payload.array())
         }
     }
