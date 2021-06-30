@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.messaging
 import net.corda.p2p.HoldingIdentity
 import java.security.MessageDigest
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import java.net.URI
 
 class SniCalculator {
 
@@ -10,7 +11,6 @@ class SniCalculator {
 
         private const val HASH_ALGO = "SHA-256"
         private const val HASH_TRUNCATION_SIZE = 63 //Truncate to 63 characters (as RCF 1035)
-        private const val ADDRESS_DELIMITER = ":"
         private const val CLASSIC_CORDA_SNI_SUFFIX = ".p2p.corda.net" //This is intentionally different to Corda 4
 
         fun calculateSni(peer: HoldingIdentity, address: String): String {
@@ -18,8 +18,7 @@ class SniCalculator {
             return if (peer.groupId == null) {
                 sha256Hash(peer.x500Name.toByteArray()).toString().take(HASH_TRUNCATION_SIZE).toLowerCase() + CLASSIC_CORDA_SNI_SUFFIX
             } else {
-                //We assume address is made up of the HostName and Port e.g. MyNode:80
-                address.split(ADDRESS_DELIMITER)[0]
+                URI.create(address).host
             }
         }
 
