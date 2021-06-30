@@ -1,0 +1,27 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+    id 'corda.osgi-test-conventions'
+}
+
+description 'Kafka integration tests'
+
+dependencies {
+    integrationTestImplementation project(":libs:messaging:messaging")
+    integrationTestImplementation project(":libs:lifecycle")
+    integrationTestImplementation project(":libs:schema-registry:schema-registry")
+    integrationTestImplementation project(":data:avro-schema")
+    integrationTestImplementation project(":components:kafka-topic-admin")
+    integrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
+    integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
+
+
+    integrationTestRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
+    //implementation bundles
+    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:kafka-messaging-impl")
+    integrationTestRuntimeOnly project(":libs:kafka-utils:topic-admin-impl")
+
+}

@@ -1,0 +1,86 @@
+pipeline {
+    agent {
+        docker {
+            image 'build-zulu-openjdk:11'
+            label 'docker'
+            registryUrl 'https://engineering-docker.software.r3.com/'
+            registryCredentialsId 'artifactory-credentials'
+            // Used to mount storage from the host as a volume to persist the cache between builds
+            args '-v /tmp:/host_tmp'
+            // make sure build image is always fresh
+            alwaysPull true
+        }
+    }
+
+    parameters {
+        // TODO: Change this when the version in gradle.properties had changed
+        string(defaultValue: "1617266069749-rc",
+            description: 'The corda version suffix',
+            name: 'UPSTREAM_VERSION_SUFFIX')
+        string(defaultValue: "",
+            description: 'Up String project name',
+            name: 'UPSTREAM_PROJECT_NAME')
+    }
+
+    environment {
+        ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
+        CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
+        CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
+        CORDA_USE_CACHE = "corda-remotes"
+        GRADLE_USER_HOME = "/host_tmp/gradle"
+        CORDA_REVISION = "${env.GIT_COMMIT}"
+    }
+
+    options {
+        buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
+        timeout(time: 120, unit: 'MINUTES')
+        timestamps()
+    }
+
+    stages {
+        stage('Prepare') {
+            steps {
+               sh 'mkdir -p "${GRADLE_USER_HOME}"'
+            }
+        }
+        stage('Download Corda maven artifacts') {
+            when {
+                expression { return !params.UPSTREAM_PROJECT_NAME.isEmpty() }
+            }
+            steps {
+                sh 'mkdir -p /tmp/artifacts/mavenLocal'
+                copyArtifacts projectName: params.UPSTREAM_PROJECT_NAME,
+                    selector: upstream(),
+                    fingerprintArtifacts: true,
+                    filter: 'mavenLocal.tar.gz'
+                sh 'tar -xvf mavenLocal.tar.gz -C /tmp/artifacts/mavenLocal'
+                sh 'rm -rf mavenLocal.tar.gz'
+            }
+        }
+        stage('Build') {
+            steps {
+                sh "./gradlew build -Dmaven.repo.local=/tmp/artifacts/mavenLocal -PcordaVersion=1.0.${params.UPSTREAM_VERSION_SUFFIX}"
+            }
+        }
+    }
+    post {
+        cleanup {
+            junit allowEmptyResults: true, testResults: '**/build/test-results/**/TEST-*.xml'
+            archiveArtifacts artifacts: '**/build/test-results/**/TEST-*.xml', fingerprint: true
+            recordIssues(
+                enabledForFailure: true, aggregatingResults: true,
+                tools: [kotlin(), java(), detekt(pattern: '**/build/detekt-report.xml')]
+            )
+            jacoco(
+                execPattern: '**/build/**/*.exec',
+                runAlways: true,
+                sourcePattern: '**/src/main/java,**/src/main/kotlin',
+                classPattern: "**/build/classes/kotlin/main,**/build/classes/java/main",
+                inclusionPattern: "net/corda/**,com/corda/**"
+            )
+        }
+        success {
+            sh 'rm -rf **/build/test-results/**/TEST-*.xml'
+        }
+    }
+}
