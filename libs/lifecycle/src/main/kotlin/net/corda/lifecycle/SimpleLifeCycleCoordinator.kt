@@ -32,6 +32,12 @@ class SimpleLifeCycleCoordinator(
     private val lock = ReentrantLock()
 
     /**
+     * Set to the value of the [Thread.getId] of the thread running [processEvents],
+     * `null` if [processEvents] is not running.
+     */
+    private var executorThreadID: Long? = null
+
+    /**
      * It owns [processEvents] when this coordinator is running.
      *
      * Must be synchronized with [lock].
@@ -66,7 +72,9 @@ class SimpleLifeCycleCoordinator(
      * to be accessed by the [lifeCycleProcessor].
      *
      * Exceptions thrown by the [lifeCycleProcessor] are wrapped in an [ErrorEvent] instance,
-     * notified immediately to the [lifeCycleProcessor], then this coordinator [stop].
+     * notified immediately to the [lifeCycleProcessor].
+     *
+     * If [lifeCycleProcessor] thrown an exception handing an [ErrorEvent], this coordinator stops.
      *
      * @throws RejectedExecutionException if [eventQueue] is not empty and next execution of this method can't
      *      be scheduled by [scheduleIfRequired].
@@ -76,23 +84,39 @@ class SimpleLifeCycleCoordinator(
     )
     @Suppress("TooGenericExceptionCaught")
     private fun processEvents() {
+        executorThreadID = Thread.currentThread().id
         val eventList = ArrayList<LifeCycleEvent>(batchSize)
         for (i in 0 until batchSize) {
             val lifeCycleEvent = eventQueue.poll() ?: break
             eventList.add(lifeCycleEvent)
         }
+        var shutdown = false
         for (lifeCycleEvent in eventList) {
             try {
                 lifeCycleProcessor(lifeCycleEvent, this)
             } catch (cause: Throwable) {
+                val errorEvent = ErrorEvent(cause)
                 logger.error("Life-Cycle coordinator caught `${cause.message}` processing ${lifeCycleEvent::class.java}!")
-                lifeCycleProcessor(ErrorEvent(cause), this)
-                stop()
+                try {
+                    lifeCycleProcessor(errorEvent, this)
+                } catch (cause: Throwable) {
+                    logger.error("Life-Cycle coordinator caught `${cause.message}` processing ${lifeCycleEvent::class.java}!")
+                    errorEvent.isHandled = false
+                }
+                if (!errorEvent.isHandled) {
+                    shutdown = true
+                }
             }
         }
         isScheduled.set(false)
-        if (eventQueue.isNotEmpty()) {
-            scheduleIfRequired()
+        if (shutdown) {
+            logger.warn("Unhandled error event! Life-Cycle coordinator stops.")
+            stop()
+        } else {
+            executorThreadID = null
+            if (eventQueue.isNotEmpty()) {
+                scheduleIfRequired()
+            }
         }
     }
 
@@ -155,7 +179,6 @@ class SimpleLifeCycleCoordinator(
             logger.warn("Life-Cycle coordinator not running: posted event ignored!")
         }
     }
-
 
     /**
      * Schedule the [onTime] event to be processed after [delay] ms.
@@ -232,7 +255,6 @@ class SimpleLifeCycleCoordinator(
      *
      */
     override fun stop() {
-        val self = this
         val executor = lock.withLock {
             val exec = executorService
             executorService = null
@@ -240,21 +262,34 @@ class SimpleLifeCycleCoordinator(
         }
         executor?.apply {
             eventQueue.offer(StopEvent)
-            submit {
-                timerMap.forEach { (key, _) -> cancelTimer(key) }
-                timerMap.clear()
-                while (!eventQueue.isEmpty()) {
-                    val event = eventQueue.poll()
-                    lifeCycleProcessor(event, self)
-                    if (event is StopEvent) break
+            if (Thread.currentThread().id != executorThreadID) {
+                submit { stopNow() }
+                shutdown()
+                if (!awaitTermination(timeout, TimeUnit.MILLISECONDS)) {
+                    logger.warn("Stop: timeout after $timeout ms.")
                 }
-                eventQueue.clear()
-            }
-            shutdown()
-            if (!awaitTermination(timeout, TimeUnit.MILLISECONDS)) {
-                logger.warn("Stop: timeout after $timeout ms.")
+            } else {
+                stopNow()
+                shutdown()
             }
         }
+    }
+
+    /**
+     * Cancel all pending timer, notify to the [lifeCycleProcessor] all pending events and clear the [eventQueue].
+     *
+     * Called by [stop] in a parallel thread if the current thread isn't the [executorService]'s thread.
+     */
+    private fun stopNow() {
+        val self = this
+        timerMap.forEach { (key, _) -> cancelTimer(key) }
+        timerMap.clear()
+        while (!eventQueue.isEmpty()) {
+            val event = eventQueue.poll()
+            lifeCycleProcessor(event, self)
+            if (event is StopEvent) break
+        }
+        eventQueue.clear()
     }
 
 }

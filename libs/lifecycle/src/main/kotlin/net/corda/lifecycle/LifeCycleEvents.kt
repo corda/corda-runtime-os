@@ -12,8 +12,12 @@ interface LifeCycleEvent
 
 /**
  * Define an error event wrapping the [cause] submitted by a [LifeCycleCoordinator]
+ *
+ * @param cause caused the error.
+ * @param isHandled, `false` if this error event is not handled then the [SimpleLifeCycleCoordinator] stops;
+ *  else `true` it means [SimpleLifeCycleCoordinator.lifeCycleProcessor] handled it, the coordinator still runs.
  */
-class ErrorEvent(val cause: Throwable) : LifeCycleEvent
+class ErrorEvent(val cause: Throwable, var isHandled: Boolean = false) : LifeCycleEvent
 
 /**
  * Define an event submitted by a [LifeCycleCoordinator] when it starts:

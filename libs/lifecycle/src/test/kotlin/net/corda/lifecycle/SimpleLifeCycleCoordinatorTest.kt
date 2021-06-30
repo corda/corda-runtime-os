@@ -138,6 +138,7 @@ internal class SimpleLifeCycleCoordinatorTest {
                     throw expected
                 }
                 is ErrorEvent -> {
+                    event.isHandled
                     assertEquals(expected, event.cause)
                     errorLatch.countDown()
                 }
@@ -225,7 +226,10 @@ internal class SimpleLifeCycleCoordinatorTest {
             assertTrue(stopLatch.await(TIMEOUT * 2, TimeUnit.MILLISECONDS))
             assertFalse(coordinator.isRunning)
         }
+        // start again
     }
+
+    // create events. stop, check all events are processed.
 
     @Test
     fun getBatchSize() {
