@@ -1,5 +1,6 @@
 package net.corda.messaging.emulation.subscription.factory
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -8,12 +9,11 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
+import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.StateAndEventSubscriptionConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -40,7 +40,7 @@ class InMemSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
-        properties: Map<String, String>
+        nodeConfig: Config
     ): Subscription<K, V> {
         //TODO - replace with config service
         val config = ConfigFactory.load("tmpInMemDefaults")
@@ -52,7 +52,7 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
-        properties: Map<String, String>,
+        nodeConfig: Config,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         TODO("Not yet implemented")
@@ -61,15 +61,15 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createCompactedSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
-        properties: Map<String, String>
+        nodeConfig: Config
     ): CompactedSubscription<K, V> {
         TODO("Not yet implemented")
     }
 
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
-        subscriptionConfig: StateAndEventSubscriptionConfig,
+        subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        properties: Map<String, String>
+        nodeConfig: Config
     ): StateAndEventSubscription<K, S, E> {
         TODO("Not yet implemented")
     }
@@ -77,7 +77,7 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
-        properties: Map<String, String>,
+        nodeConfig: Config,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         TODO("Not yet implemented")
@@ -85,7 +85,7 @@ class InMemSubscriptionFactory @Activate constructor(
 
     override fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
-        properties: Map<String, String>
+        nodeConfig: Config
     ): RandomAccessSubscription<K, V> {
         TODO("Not yet implemented")
     }

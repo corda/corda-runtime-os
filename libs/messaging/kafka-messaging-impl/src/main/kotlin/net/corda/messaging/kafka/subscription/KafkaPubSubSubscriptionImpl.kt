@@ -5,14 +5,18 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.render
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.v5.base.types.toHexString
+import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -23,12 +27,12 @@ import kotlin.concurrent.withLock
 
 /**
  * Kafka implementation of a PubSubSubscription.
- * Subscription will continuously try connect to Kafka based on the [subscriptionConfig] and [kafkaConfig].
+ * Subscription will continuously try connect to Kafka based on the [subscriptionConfig] and [config].
  * After connection is successful subscription will attempt to poll and process records until subscription is stopped.
  * Records are processed using the [executor] if it is not null. Otherwise they are processed on the same thread.
  * [executor] will be shutdown when the subscription is stopped.
  * @property subscriptionConfig Describes what topic to poll from and what the consumer group name should be.
- * @property kafkaConfig kafka configuration
+ * @property config kafka configuration
  * @property consumerBuilder builder to generate a kafka consumer.
  * @property processor processes records from kafka topic. Does not produce any outputs.
  * @property executor if not null, processor is executed using the executor synchronously.
@@ -36,8 +40,7 @@ import kotlin.concurrent.withLock
  *
  */
 class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
-    private val subscriptionConfig: SubscriptionConfig,
-    private val kafkaConfig: Config,
+    private val config: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val processor: PubSubProcessor<K, V>,
     private val executor: ExecutorService?
@@ -47,15 +50,15 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    private val consumerThreadStopTimeout = kafkaConfig.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val consumerPollAndProcessRetries = kafkaConfig.getLong(CONSUMER_POLL_AND_PROCESS_RETRIES)
+    private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
+    private val consumerPollAndProcessRetries = config.getLong(CONSUMER_POLL_AND_PROCESS_RETRIES)
 
     @Volatile
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private val topic = subscriptionConfig.eventTopic
-    private val groupName = subscriptionConfig.groupName
+    private val topic = config.getString(TOPIC_NAME)
+    private val groupName = config.getString(CONSUMER_GROUP_ID)
 
     /**
      * Is the subscription running.
@@ -71,6 +74,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
      * @throws CordaMessageAPIFatalException if unrecoverable error occurs
      */
     override fun start() {
+        log.debug { "Starting subscription with config:\n${config.render()}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
@@ -78,7 +82,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
                     true,
                     isDaemon = true,
                     contextClassLoader = null,
-                    name = "pubsub processing thread ${subscriptionConfig.groupName}-${subscriptionConfig.eventTopic}",
+                    name = "pubsub processing thread $groupName-$topic",
                     priority = -1,
                     block = ::runConsumeLoop
                 )
@@ -103,7 +107,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
     }
 
     /**
-     * Create a Consumer for the given [subscriptionConfig] and [kafkaConfig] and subscribe to the topic.
+     * Create a Consumer for the given [subscriptionConfig] and [config] and subscribe to the topic.
      * Attempt to create this connection until it is successful while subscription is active.
      * After connection is made begin to process records indefinitely. Mark each record and committed after processing.
      * If an error occurs while processing reset the consumers position on the topic to the last committed position.
@@ -117,7 +121,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
         while (!stopped) {
             attempts++
             try {
-                consumerBuilder.createPubSubConsumer(subscriptionConfig, ::logFailedDeserialize).use {
+                consumerBuilder.createPubSubConsumer(config.getConfig(KAFKA_CONSUMER), ::logFailedDeserialize).use {
                     it.subscribeToTopic()
                     pollAndProcessRecords(it)
                 }

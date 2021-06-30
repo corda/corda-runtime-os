@@ -8,16 +8,17 @@ import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_COMPACTED
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
+import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
+import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
+import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
@@ -32,19 +33,14 @@ class KafkaCompactedSubscriptionImplTest {
 
     companion object {
         private const val TEST_TIMEOUT_SECONDS = 5L
-        private const val TOPIC_PREFIX = "test"
-        private const val TOPIC = "topic"
     }
 
     private val mapFactory = object : SubscriptionMapFactory<String, String> {
         override fun createMap(): MutableMap<String, String> = ConcurrentHashMap<String, String>()
-        override fun destroyMap(map: MutableMap<String, String>) { }
+        override fun destroyMap(map: MutableMap<String, String>) {}
     }
 
-    private val subscriptionConfig = SubscriptionConfig("group", TOPIC)
-    private val config: Config = ConfigFactory.empty()
-        .withValue(KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT, ConfigValueFactory.fromAnyRef(1000))
-        .withValue(KafkaProperties.KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TOPIC_PREFIX))
+    private val config: Config = createStandardTestConfig().getConfig(PATTERN_COMPACTED)
 
     private val initialSnapshotResult = List(10) {
         ConsumerRecordAndMeta<String, String>(
@@ -67,13 +63,15 @@ class KafkaCompactedSubscriptionImplTest {
         ).whenever(kafkaConsumer).beginningOffsets(any())
         doReturn(
             mutableMapOf(
-                TopicPartition(TOPIC, 0) to initialSnapshotResult.size.toLong()-1,
+                TopicPartition(TOPIC, 0) to initialSnapshotResult.size.toLong() - 1,
                 TopicPartition(TOPIC, 1) to 0,
             )
         ).whenever(kafkaConsumer).endOffsets(any())
     }
 
     private class TestProcessor : CompactedProcessor<String, String> {
+        val log = contextLogger()
+
         override val keyClass: Class<String>
             get() = String::class.java
         override val valueClass: Class<String>
@@ -82,6 +80,7 @@ class KafkaCompactedSubscriptionImplTest {
         var failSnapshot = false
         val snapshotMap = mutableMapOf<String, String>()
         override fun onSnapshot(currentData: Map<String, String>) {
+            log.info("Processing snapshot: $currentData")
             if (failSnapshot) {
                 throw RuntimeException("Abandon Ship!")
             }
@@ -92,6 +91,7 @@ class KafkaCompactedSubscriptionImplTest {
         val incomingRecords = mutableListOf<Record<String, String>>()
         var latestCurrentData: Map<String, String>? = null
         override fun onNext(newRecord: Record<String, String>, oldValue: String?, currentData: Map<String, String>) {
+            log.info("Processing new record: $newRecord")
             if (failNext) {
                 throw RuntimeException("Abandon Ship!")
             }
@@ -130,7 +130,6 @@ class KafkaCompactedSubscriptionImplTest {
         }.whenever(kafkaConsumer).getPartitions(any(), any())
 
         val subscription = KafkaCompactedSubscriptionImpl(
-            subscriptionConfig,
             config,
             mapFactory,
             consumerBuilder,
@@ -183,7 +182,6 @@ class KafkaCompactedSubscriptionImplTest {
         }.whenever(kafkaConsumer).poll()
 
         val subscription = KafkaCompactedSubscriptionImpl(
-            subscriptionConfig,
             config,
             mapFactory,
             consumerBuilder,
@@ -213,14 +211,13 @@ class KafkaCompactedSubscriptionImplTest {
 
         processor.failSnapshot = true
         val subscription = KafkaCompactedSubscriptionImpl(
-            subscriptionConfig,
             config,
             mapFactory,
             consumerBuilder,
             processor,
         )
         subscription.start()
-        
+
         while (subscription.isRunning) {
             Thread.sleep(500)
         }
@@ -240,7 +237,6 @@ class KafkaCompactedSubscriptionImplTest {
         }.whenever(kafkaConsumer).poll()
 
         val subscription = KafkaCompactedSubscriptionImpl(
-            subscriptionConfig,
             config,
             mapFactory,
             consumerBuilder,
@@ -260,9 +256,15 @@ class KafkaCompactedSubscriptionImplTest {
         val processor = TestProcessor()
 
         doAnswer {
+            mutableMapOf(
+                TopicPartition(TOPIC, 0) to 0L,
+                TopicPartition(TOPIC, 1) to 0L
+            )
+        }.whenever(kafkaConsumer).beginningOffsets(any())
+        doAnswer {
             val iteration = latch.count
             when (iteration) {
-                4L -> {
+                6L, 4L, 2L -> {
                     initialSnapshotResult
                 }
                 0L -> emptyList() // Don't return anything on errant extra polls
@@ -281,7 +283,6 @@ class KafkaCompactedSubscriptionImplTest {
 
         processor.failNext = true
         val subscription = KafkaCompactedSubscriptionImpl(
-            subscriptionConfig,
             config,
             mapFactory,
             consumerBuilder,

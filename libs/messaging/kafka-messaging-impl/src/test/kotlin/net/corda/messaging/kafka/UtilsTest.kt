@@ -2,7 +2,12 @@ package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.kafka.Utils.Companion.resolvePublisherConfiguration
 import net.corda.messaging.kafka.mergeProperties
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBLISHER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
+import net.corda.messaging.kafka.toConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -27,5 +32,31 @@ class UtilsTest {
         assertThat(properties["key4"]).isEqualTo(null)
         assertThat(properties["a.key5"]).isEqualTo(null)
         assertThat(properties["key5"]).isEqualTo(null)
+    }
+
+    @Test
+    fun `check resolved publisher configuration is correct`() {
+        val nodeConfig = ConfigFactory.empty()
+            .withValue("messaging.topic.prefix", ConfigValueFactory.fromAnyRef("demo"))
+        val publisherConfig = resolvePublisherConfiguration(
+            PublisherConfig("clientId", 1).toConfig(),
+            nodeConfig,
+            1,
+            PATTERN_PUBLISHER
+        )
+        assertThat(publisherConfig.getString(PRODUCER_TRANSACTIONAL_ID)).isEqualTo("clientId-1")
+    }
+
+    @Test
+    fun `check resolved publisher configuration without instance id doesn't have transactional id`() {
+        val nodeConfig = ConfigFactory.empty()
+            .withValue("messaging.topic.prefix", ConfigValueFactory.fromAnyRef("demo"))
+        val publisherConfig = resolvePublisherConfiguration(
+            PublisherConfig("clientId").toConfig(),
+            nodeConfig,
+            1,
+            PATTERN_PUBLISHER
+        )
+        assertThat(!publisherConfig.hasPath(PRODUCER_TRANSACTIONAL_ID))
     }
 }

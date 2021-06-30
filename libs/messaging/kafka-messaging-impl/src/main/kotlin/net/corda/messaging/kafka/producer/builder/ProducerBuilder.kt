@@ -1,5 +1,6 @@
 package net.corda.messaging.kafka.producer.builder
 
+import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 
@@ -13,5 +14,5 @@ interface ProducerBuilder {
     * @return Kafka Producer capable of publishing records of any type to any topic.
     * @throws CordaMessageAPIFatalException thrown if producer cannot be created.
     */
-    fun createProducer(): CordaKafkaProducer
+    fun createProducer(producerConfig: Config): CordaKafkaProducer
 }

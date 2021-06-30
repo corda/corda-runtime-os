@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "LinkInMessage",
+  "namespace": "net.corda.p2p",
+  "fields": [
+    {
+      "name": "payload",
+      "type": [
+        "net.corda.p2p.crypto.AuthenticatedDataMessage",
+        "net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage",
+        "net.corda.p2p.crypto.InitiatorHelloMessage",
+        "net.corda.p2p.crypto.InitiatorHandshakeMessage",
+        "net.corda.p2p.crypto.ResponderHelloMessage",
+        "net.corda.p2p.crypto.ResponderHandshakeMessage",
+        "net.corda.p2p.Step2Message"
+      ]
+    }
+  ]
+}

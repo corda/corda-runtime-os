@@ -1,8 +1,12 @@
 package net.corda.messaging.kafka.publisher
 
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.doThrow
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.times
+import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.whenever
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -10,9 +14,14 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.producer.wrapper.impl.CordaKafkaProducerImpl
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_TOPIC_PREFIX
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.GROUP_INSTANCE_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBLISHER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
-import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_CLIENT_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.v5.base.internal.uncheckedCast
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.errors.AuthorizationException
@@ -54,10 +63,10 @@ class CordaKafkaPublisherImplTest {
     fun beforeEach() {
         producer = mock()
         publisherConfig = PublisherConfig("clientId")
-        kafkaConfig = ConfigFactory.empty()
+        kafkaConfig = createStandardTestConfig().getConfig(PATTERN_PUBLISHER)
             .withValue(PRODUCER_CLOSE_TIMEOUT, ConfigValueFactory.fromAnyRef(1))
-            .withValue(KAFKA_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("prefix"))
-            .withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef("clientId1"))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("prefix"))
+            .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("clientId1"))
     }
 
     @Test
@@ -77,7 +86,7 @@ class CordaKafkaPublisherImplTest {
     @Test
     fun testPublishFatalError() {
         mockProducer = MockProducer(false, StringSerializer(), ByteBufferSerializer())
-        producer = CordaKafkaProducerImpl(kafkaConfig, uncheckedCast(mockProducer))
+        producer = CordaKafkaProducerImpl(kafkaConfig.getConfig(KAFKA_PRODUCER), uncheckedCast(mockProducer))
         val futures = publish(false, listOf(record))
         mockProducer.errorNext(IllegalStateException(""))
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
@@ -86,7 +95,7 @@ class CordaKafkaPublisherImplTest {
     @Test
     fun testPublishIntermittentError() {
         mockProducer = MockProducer(false, StringSerializer(), ByteBufferSerializer())
-        producer = CordaKafkaProducerImpl(kafkaConfig, uncheckedCast(mockProducer))
+        producer = CordaKafkaProducerImpl(kafkaConfig.getConfig(KAFKA_PRODUCER), uncheckedCast(mockProducer))
         val futures = publish(false, listOf(record))
         mockProducer.errorNext(InterruptException(""))
         assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
@@ -96,7 +105,7 @@ class CordaKafkaPublisherImplTest {
     @Test
     fun testPublishUnknownError() {
         mockProducer = MockProducer(false, StringSerializer(), ByteBufferSerializer())
-        producer = CordaKafkaProducerImpl(kafkaConfig, uncheckedCast(mockProducer))
+        producer = CordaKafkaProducerImpl(kafkaConfig.getConfig(KAFKA_PRODUCER), uncheckedCast(mockProducer))
         val futures = publish(false, listOf(record))
         mockProducer.errorNext(IllegalArgumentException(""))
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
@@ -194,19 +203,23 @@ class CordaKafkaPublisherImplTest {
 
     @Test
     fun testSafeClose() {
-        cordaKafkaPublisherImpl = CordaKafkaPublisherImpl(publisherConfig, kafkaConfig, producer)
+        cordaKafkaPublisherImpl = CordaKafkaPublisherImpl(kafkaConfig, producer)
 
         cordaKafkaPublisherImpl.close()
         verify(producer, times(1)).close(Mockito.any(Duration::class.java))
     }
 
     private fun publish(isTransaction: Boolean = false, records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-        publisherConfig = if (isTransaction) {
-            PublisherConfig("clientId", 1)
+        val publisherConfig = if (isTransaction) {
+            kafkaConfig
+                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
+                .withValue(GROUP_INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         } else {
-            PublisherConfig("clientId")
+            kafkaConfig
+                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
+                .withoutPath(PRODUCER_TRANSACTIONAL_ID)
         }
-        cordaKafkaPublisherImpl = CordaKafkaPublisherImpl(publisherConfig, kafkaConfig, producer)
+        cordaKafkaPublisherImpl = CordaKafkaPublisherImpl(publisherConfig, producer)
 
         return cordaKafkaPublisherImpl.publish(records)
     }

@@ -4,16 +4,17 @@ import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.kafka.getStringOrNull
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_TOPIC_PREFIX
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
-import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_CLIENT_ID
-import net.corda.messaging.kafka.properties.PublisherConfigProperties.Companion.PUBLISHER_INSTANCE_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CLOSE_TIMEOUT
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
 import net.corda.v5.base.util.contextLogger
+import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Producer
+import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
@@ -38,13 +39,13 @@ class CordaKafkaProducerImpl(
     config: Config,
     private val producer: Producer<Any, Any>
 ) : CordaKafkaProducer, Producer<Any, Any> by producer {
-    private val closeTimeout = config.getLong(PRODUCER_CLOSE_TIMEOUT)
-    private val topicPrefix = config.getString(KAFKA_TOPIC_PREFIX)
-    private val clientId = config.getString(PUBLISHER_CLIENT_ID)
-    private val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getString(PUBLISHER_INSTANCE_ID) else null
+    private val closeTimeout = config.getLong(CLOSE_TIMEOUT)
+    private val topicPrefix = config.getString(TOPIC_PREFIX)
+    private val clientId = config.getString(CommonClientConfigs.CLIENT_ID_CONFIG)
+    private val transactionalId = config.getStringOrNull(ProducerConfig.TRANSACTIONAL_ID_CONFIG)
 
     init {
-        if (instanceId != null) {
+        if (transactionalId != null) {
             initTransactionForProducer()
         }
     }
@@ -227,7 +228,7 @@ class CordaKafkaProducerImpl(
             producer.initTransactions()
         } catch (ex: Exception) {
             val message = "Failed to initialize producer with " +
-                    "transactionId $instanceId for transactions"
+                    "transactionId $transactionalId for transactions"
             when (ex) {
                 is IllegalStateException,
                 is UnsupportedVersionException,

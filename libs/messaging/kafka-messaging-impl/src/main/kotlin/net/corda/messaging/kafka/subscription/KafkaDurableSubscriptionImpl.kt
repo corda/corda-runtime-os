@@ -5,16 +5,21 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.PublisherConfigProperties
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.render
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
+import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -36,16 +41,13 @@ import kotlin.concurrent.withLock
  *
  */
 class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
-    private val subscriptionConfig: SubscriptionConfig,
     private val config: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val producerBuilder: ProducerBuilder,
     private val processor: DurableProcessor<K, V>
 ) : Subscription<K, V> {
 
-    companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
-    }
+    private val log: Logger = LoggerFactory.getLogger(config.getString(PRODUCER_CLIENT_ID))
 
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
     private val consumerPollAndProcessRetries = config.getLong(CONSUMER_POLL_AND_PROCESS_RETRIES)
@@ -54,9 +56,9 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private val topic = subscriptionConfig.eventTopic
-    private val groupName = subscriptionConfig.groupName
-    private val producerClientId: String = config.getString(PublisherConfigProperties.PUBLISHER_CLIENT_ID)
+    private val topic = config.getString(TOPIC_NAME)
+    private val groupName = config.getString(CONSUMER_GROUP_ID)
+    private val producerClientId: String = config.getString(PRODUCER_CLIENT_ID)
 
     /**
      * Is the subscription running.
@@ -72,6 +74,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
      * @throws CordaMessageAPIFatalException if unrecoverable error occurs
      */
     override fun start() {
+        log.debug { "Starting subscription with config:\n${config.render()}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
@@ -118,8 +121,9 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
         while (!stopped) {
             attempts++
             try {
-                consumer = consumerBuilder.createDurableConsumer(subscriptionConfig)
-                producer = producerBuilder.createProducer()
+                log.debug { "Attempt: $attempts" }
+                consumer = consumerBuilder.createDurableConsumer(config.getConfig(KAFKA_CONSUMER))
+                producer = producerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribeToTopic()
                     producer.use { cordaProducer ->
@@ -223,6 +227,10 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
         producer: CordaKafkaProducer,
         consumer: CordaKafkaConsumer<K, V>
     ) {
+        if (consumerRecords.isEmpty()) {
+            return
+        }
+
         try {
             producer.beginTransaction()
             producer.sendRecords(processor.onNext(consumerRecords.map { it.asRecord() }))

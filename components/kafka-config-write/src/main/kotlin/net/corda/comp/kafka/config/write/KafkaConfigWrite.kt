@@ -7,12 +7,11 @@ import net.corda.libs.configuration.write.ConfigWriteService
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
 import net.corda.libs.configuration.write.factory.ConfigWriteServiceFactory
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import java.util.*
 
 @Component(immediate = true, service = [KafkaConfigWrite::class])
 class KafkaConfigWrite @Activate constructor(
@@ -22,12 +21,12 @@ class KafkaConfigWrite @Activate constructor(
     private lateinit var writer: ConfigWriteService
 
     private companion object {
-        private val log: Logger = LoggerFactory.getLogger(KafkaConfigWrite::class.java)
+        private val log: Logger = contextLogger()
     }
 
-    fun updateConfig(destination: String, kafkaProperties: Properties, config: String) {
-        writer = configWriteServiceFactory.createWriteService(destination, kafkaProperties)
-        val configuration = ConfigFactory.parseString(config)
+    fun updateConfig(destination: String, appConfig: Config, configurationFile: String) {
+        writer = configWriteServiceFactory.createWriteService(destination, appConfig)
+        val configuration = ConfigFactory.parseString(configurationFile)
 
         for (packageKey in configuration.root().keys) {
             var packageVersion: CordaConfigurationVersion
@@ -65,7 +64,7 @@ class KafkaConfigWrite @Activate constructor(
                     packageConfig.getString("$componentKey.componentVersion")
                 )
             val configurationKey = CordaConfigurationKey(packageKey, packageVersion, componentVersion)
-            writer.updateConfiguration(configurationKey, packageConfig.atKey(componentKey))
+            writer.updateConfiguration(configurationKey, packageConfig.getConfig(componentKey))
         } catch (e: ConfigException) {
             log.warn(
                 "Component $componentKey has no defined componentVersion. " +
