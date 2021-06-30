@@ -50,7 +50,7 @@ class CordaKafkaIntegrationTest {
     }
 
     @Test
-    fun testPublish() {
+    fun testPublishAndDurableConsume() {
         publisherConfig = PublisherConfig(CLIENT_ID)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val futures = publisher.publish(getRecords(PUBLISHER_TOPIC1, 5, 2))
