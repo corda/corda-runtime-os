@@ -20,8 +20,8 @@ import net.corda.p2p.linkmanager.LinkManager.Companion.getSessionKeyFromMessage
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkOutMessageFromFlowMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
-import net.corda.p2p.schema.Topics.Companion.LINK_OUT_TOPIC
-import net.corda.p2p.schema.Topics.Companion.P2P_IN_TOPIC
+import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
+import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals

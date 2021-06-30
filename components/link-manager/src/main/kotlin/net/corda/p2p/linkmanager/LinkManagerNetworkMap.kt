@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import java.security.PrivateKey
 import java.security.PublicKey
 
 /**

@@ -20,11 +20,12 @@ import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkOutMess
 import net.corda.p2p.linkmanager.messaging.Messaging.Companion.convertToFlowMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
-import net.corda.p2p.schema.Topics
+import net.corda.p2p.schema.Schema
 import net.corda.v5.base.annotations.VisibleForTesting
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 
@@ -48,6 +49,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         fun getSessionKeyFromMessage(message: FlowMessage): SessionManagerImpl.SessionKey {
             return SessionManagerImpl.SessionKey(message.header.source.groupId, message.header.destination.toSessionNetworkMapPeer())
         }
+
+        fun generateKey(): String {
+            return UUID.randomUUID().toString()
+        }
     }
 
     private var outboundMessageSubscription: Subscription<String, FlowMessage>
@@ -60,6 +65,34 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         config.maxMessageSize,
         messagesPendingSession::sessionNegotiatedCallback
     )
+
+    init {
+        val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC)
+        outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
+            outboundMessageSubscriptionConfig,
+            OutboundMessageProcessor(sessionManager, messagesPendingSession, linkManagerNetworkMap),
+            partitionAssignmentListener = null
+        )
+        val inboundMessageSubscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC)
+        inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
+            inboundMessageSubscriptionConfig,
+            InboundMessageProcessor(sessionManager),
+            partitionAssignmentListener = null
+        )
+    }
+
+    override fun start() {
+        outboundMessageSubscription.start()
+        inboundMessageSubscription.start()
+    }
+
+    override fun stop() {
+        outboundMessageSubscription.stop()
+        inboundMessageSubscription.stop()
+    }
+
+    override val isRunning: Boolean
+        get() = outboundMessageSubscription.isRunning && inboundMessageSubscription.isRunning
 
     class OutboundMessageProcessor(
         private val sessionManager: SessionManager,
@@ -75,7 +108,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         override fun onNext(events: List<EventLogRecord<String, FlowMessage>>): List<Record<*, *>> {
             val records = mutableListOf<Record<String, LinkOutMessage>>()
             for (event in events) {
-                processEvent(event)?.let { records.add(Record(Topics.LINK_OUT_TOPIC, KEY, it)) }
+                processEvent(event)?.let { records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), it)) }
             }
             return records
         }
@@ -109,9 +142,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             val records = mutableListOf<Record<String, *>>()
             for (event in events) {
                 if (event.value.payload is AuthenticatedDataMessage || event.value.payload is AuthenticatedEncryptedDataMessage) {
-                    extractAndCheckMessage(event.value)?.let { records.add(Record(Topics.P2P_IN_TOPIC, KEY, it)) }
+                    extractAndCheckMessage(event.value)?.let { records.add(Record(Schema.P2P_IN_TOPIC, KEY, it)) }
                 } else {
-                    sessionManager.processSessionMessage(event.value)?.let { records.add(Record(Topics.LINK_OUT_TOPIC, KEY, it)) }
+                    sessionManager.processSessionMessage(event.value)?.let { records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), it)) }
                 }
             }
             return records
@@ -179,37 +212,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             while (queuedMessages.isNotEmpty()) {
                 val message = queuedMessages.poll()
                 val authenticatedDataMessage = createLinkOutMessageFromFlowMessage(message, session, networkMap)
-                records.add(Record(Topics.P2P_OUT_TOPIC, KEY, authenticatedDataMessage))
+                records.add(Record(Schema.P2P_OUT_TOPIC, KEY, authenticatedDataMessage))
             }
             publisher.publish(records)
         }
     }
-
-    init {
-        val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Topics.P2P_OUT_TOPIC)
-        outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            outboundMessageSubscriptionConfig,
-            OutboundMessageProcessor(sessionManager, messagesPendingSession, linkManagerNetworkMap),
-            partitionAssignmentListener = null
-        )
-        val inboundMessageSubscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Topics.LINK_IN_TOPIC)
-        inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            inboundMessageSubscriptionConfig,
-            InboundMessageProcessor(sessionManager),
-            partitionAssignmentListener = null
-        )
-    }
-
-    override fun start() {
-        outboundMessageSubscription.start()
-        inboundMessageSubscription.start()
-    }
-
-    override fun stop() {
-        outboundMessageSubscription.stop()
-        inboundMessageSubscription.stop()
-    }
-
-    override val isRunning: Boolean
-        get() = outboundMessageSubscription.isRunning && inboundMessageSubscription.isRunning
 }
