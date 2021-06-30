@@ -48,7 +48,7 @@ pipeline {
         stage('Setup Kafka') {
             steps {
                 echo "workspace is ${WORKSPACE}"
-                sh 'docker-compose -f kafka-docker/single-kafka-cluster.yml up -d'
+                sh 'docker-compose -f kafka-docker/single-kaa-cluster.yml up -d'
             }
         }
     }
