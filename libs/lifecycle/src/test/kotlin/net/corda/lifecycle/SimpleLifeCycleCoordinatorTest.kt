@@ -1,6 +1,7 @@
 package net.corda.lifecycle
 
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -145,13 +146,49 @@ internal class SimpleLifeCycleCoordinatorTest {
         }.use { coordinator ->
             coordinator.start()
             coordinator.postEvent(object : PostEvent {})
-            errorLatch.await()
+            assertTrue(errorLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+        }
+    }
+
+    @Disabled("Debugger problems? To check...")
+    @Test
+    fun postHandledErrorEvent() {
+        val expected = Exception("test exception")
+        val toHandle = Exception("test to handle")
+        val errorLatch = CountDownLatch(1)
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+            when (event) {
+                is PostEvent -> {
+                    throw expected
+                }
+                is ErrorEvent -> {
+                    when (event.cause) {
+                        expected -> {
+                            event.isHandled = true
+                            throw toHandle
+                        }
+                        toHandle -> {
+                            event.isHandled = true
+                            errorLatch.countDown()
+                        }
+                        else -> {
+                            fail("Error event unexpected!")
+                        }
+                    }
+                }
+                is StopEvent -> {
+                    fail("Stop event unexpected!")
+                }
+            }
+        }.use { coordinator ->
+            coordinator.start()
+            coordinator.postEvent(object : PostEvent {})
             assertTrue(errorLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         }
     }
 
     @Test
-    fun postErrorEventUnhandled() {
+    fun postUnhandledErrorEvent() {
         val expected = Exception("test exception")
         val unexpected = Exception("test unhandled")
         val stopLatch = CountDownLatch(1)
@@ -171,7 +208,6 @@ internal class SimpleLifeCycleCoordinatorTest {
         }.use { coordinator ->
             coordinator.start()
             coordinator.postEvent(object : PostEvent {})
-            stopLatch.await()
             assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         }
     }
