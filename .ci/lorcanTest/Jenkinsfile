@@ -42,7 +42,7 @@ pipeline {
             steps {
                 sh 'mkdir -p ${GRADLE_USER_HOME}'
                 sh 'sudo chmod -R ugo+w ${GRADLE_USER_HOME}'
-                sh 'docker login engineering-docker.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD'
+                sh 'gradlew clean'
             }
         }
         stage('Setup Kafka') {
