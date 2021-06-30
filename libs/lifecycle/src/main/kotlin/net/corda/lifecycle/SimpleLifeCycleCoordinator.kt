@@ -263,13 +263,13 @@ class SimpleLifeCycleCoordinator(
         executor?.apply {
             eventQueue.offer(StopEvent)
             if (Thread.currentThread().id != executorThreadID) {
-                submit { stopNow() }
+                submit { cleanUpAndCloseEvents() }
                 shutdown()
                 if (!awaitTermination(timeout, TimeUnit.MILLISECONDS)) {
                     logger.warn("Stop: timeout after $timeout ms.")
                 }
             } else {
-                stopNow()
+                cleanUpAndCloseEvents()
                 shutdown()
             }
         }
@@ -280,7 +280,7 @@ class SimpleLifeCycleCoordinator(
      *
      * Called by [stop] in a parallel thread if the current thread isn't the [executorService]'s thread.
      */
-    private fun stopNow() {
+    private fun cleanUpAndCloseEvents() {
         val self = this
         timerMap.forEach { (key, _) -> cancelTimer(key) }
         timerMap.clear()
