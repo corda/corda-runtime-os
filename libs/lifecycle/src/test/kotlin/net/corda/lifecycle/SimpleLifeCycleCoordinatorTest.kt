@@ -25,7 +25,7 @@ internal class SimpleLifeCycleCoordinatorTest {
     fun burstEvents() {
         val n = BATCH_SIZE * 2
         val startLatch = CountDownLatch(1)
-        val countDownLatch = CountDownLatch(n)
+        val countDownLatch = CountDownLatch(n)  // Used to test all posted events are processed when coordinator stopped.
         val stopLatch = CountDownLatch(1)
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT * n) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             logger.debug("processEvent $event")
@@ -59,7 +59,7 @@ internal class SimpleLifeCycleCoordinatorTest {
     fun burstTimers() {
         val n = BATCH_SIZE / 2
         val startLatch = CountDownLatch(1)
-        val countDownLatch = CountDownLatch(n)
+        val countDownLatch = CountDownLatch(n)  // Used to test all posted events are processed when coordinator stopped.
         val stopLatch = CountDownLatch(1)
         SimpleLifeCycleCoordinator(BATCH_SIZE,
             TIMEOUT * n) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
@@ -138,7 +138,6 @@ internal class SimpleLifeCycleCoordinatorTest {
                     throw expected
                 }
                 is ErrorEvent -> {
-                    event.isHandled
                     assertEquals(expected, event.cause)
                     errorLatch.countDown()
                 }
@@ -148,6 +147,32 @@ internal class SimpleLifeCycleCoordinatorTest {
             coordinator.postEvent(object : PostEvent {})
             errorLatch.await()
             assertTrue(errorLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+        }
+    }
+
+    @Test
+    fun postErrorEventUnhandled() {
+        val expected = Exception("test exception")
+        val unexpected = Exception("test unhandled")
+        val stopLatch = CountDownLatch(1)
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+            when (event) {
+                is PostEvent -> {
+                    throw expected
+                }
+                is ErrorEvent -> {
+                    assertEquals(expected, event.cause)
+                    throw unexpected
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
+                }
+            }
+        }.use { coordinator ->
+            coordinator.start()
+            coordinator.postEvent(object : PostEvent {})
+            stopLatch.await()
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         }
     }
 
@@ -210,8 +235,8 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     @Test
     fun stop() {
-        val startLatch = CountDownLatch(1)
-        val stopLatch = CountDownLatch(1)
+        var startLatch = CountDownLatch(1)
+        var stopLatch = CountDownLatch(1)
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             logger.debug("processEvent $event")
             when (event) {
@@ -219,14 +244,18 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is StopEvent -> stopLatch.countDown()
             }
         }.use { coordinator ->
-            coordinator.start()
-            assertTrue(startLatch.await(TIMEOUT * 2, TimeUnit.MILLISECONDS))
-            assertTrue(coordinator.isRunning)
-            coordinator.stop()
-            assertTrue(stopLatch.await(TIMEOUT * 2, TimeUnit.MILLISECONDS))
-            assertFalse(coordinator.isRunning)
+            for (i in 0..3) {
+                coordinator.start()
+                assertTrue(startLatch.await(TIMEOUT * 2, TimeUnit.MILLISECONDS))
+                assertTrue(coordinator.isRunning)
+                coordinator.stop()
+                assertTrue(stopLatch.await(TIMEOUT * 2, TimeUnit.MILLISECONDS))
+                assertFalse(coordinator.isRunning)
+                startLatch = CountDownLatch(1)
+                stopLatch = CountDownLatch(1)
+            }
+            // start again
         }
-        // start again
     }
 
     // create events. stop, check all events are processed.
