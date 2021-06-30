@@ -42,7 +42,7 @@ pipeline {
             steps {
                 sh 'mkdir -p ${GRADLE_USER_HOME}'
                 sh 'sudo chmod -R ugo+w ${GRADLE_USER_HOME}'
-                sh 'gradlew clean'
+                sh './gradlew clean'
             }
         }
         stage('Setup Kafka') {
