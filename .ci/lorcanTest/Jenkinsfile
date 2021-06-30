@@ -38,11 +38,11 @@ pipeline {
     }
 
     stages {
-        stage('Prepare') {
+        stage('Prep') {
             steps {
-               echo "PATH1 is: $PATH"
-               sh 'mkdir -p "${GRADLE_USER_HOME}"'
-               sh 'docker login engineering-docker.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD'
+                sh 'mkdir -p ${GRADLE_USER_HOME}'
+                sh 'sudo chmod -R ugo+w ${GRADLE_USER_HOME}'
+                sh 'docker login engineering-docker.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD'
             }
         }
         stage('Setup Kafka') {
