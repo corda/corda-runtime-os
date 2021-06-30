@@ -16,6 +16,7 @@ pipeline {
         CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
         CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
         CORDA_REVISION = "${env.GIT_COMMIT}"
+        GRADLE_USER_HOME = "/host_tmp/gradle"
         WORKSPACE = pwd()
     }
 
@@ -27,8 +28,21 @@ pipeline {
 
     stages {
         stage('Prep') {
+            agent {
+                docker {
+                    // Out custom docker image
+                    image 'dind-zulu-openjdk:latest'
+                    label 'docker'
+                    registryUrl 'https://engineering-docker.software.r3.com/'
+                    registryCredentialsId 'artifactory-credentials'
+                    // Used to mount storage from the host as a volume to persist the cache between builds
+                    args '-v /tmp:/host_tmp --privileged=true --entrypoint=\'\''
+                }
+            }
             steps {
-                sh 'gradlew clean'
+                sh 'mkdir -p ${GRADLE_USER_HOME}'
+                sh 'sudo chmod -R ugo+w ${GRADLE_USER_HOME}'
+                sh 'docker login engineering-docker.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD'
             }
         }
         stage('Setup Kafka') {
