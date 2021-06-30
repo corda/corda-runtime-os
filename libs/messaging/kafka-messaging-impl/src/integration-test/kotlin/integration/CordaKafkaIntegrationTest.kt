@@ -1,9 +1,8 @@
-package net.corda.messaging.integration
+package integration
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -11,14 +10,13 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.integration.processors.TestDurableProcessor
+import integration.processors.TestDurableProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -28,7 +26,6 @@ class CordaKafkaIntegrationTest {
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
     private lateinit var kafkaConfig: Config
-    private val kafkaProperties = getKafkaProperties()
 
     private companion object {
         const val CLIENT_ID = "integrationTestPublisher"
@@ -37,13 +34,6 @@ class CordaKafkaIntegrationTest {
         const val TOPIC_PREFIX = "messaging.topic.prefix"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
         const val PUBLISHER_TOPIC1 = "PublisherTopic1"
-        const val PUBLISHER_TOPIC_TEMPLATE = "topics = [" +
-                "    {\n" +
-                "         topicName = \"$PUBLISHER_TOPIC1\"\n" +
-                "         numPartitions = 3\n" +
-                "         replicationFactor = 3\n" +
-                "     }\n" +
-                "]"
     }
 
     @InjectService(timeout = 4000)
@@ -52,9 +42,6 @@ class CordaKafkaIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
 
-
-    @InjectService(timeout = 4000)
-    lateinit var topicAdmin: KafkaTopicAdmin
 
     @BeforeEach
     fun beforeEach() {
@@ -65,8 +52,6 @@ class CordaKafkaIntegrationTest {
 
     @Test
     fun testPublish() {
-        topicAdmin.createTopics(kafkaProperties, PUBLISHER_TOPIC_TEMPLATE)
-
         publisherConfig = PublisherConfig(CLIENT_ID)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val futures = publisher.publish(getRecords(PUBLISHER_TOPIC1, 5, 2))
@@ -87,13 +72,6 @@ class CordaKafkaIntegrationTest {
         durableSub.stop()
         assertThat(durableSub.isRunning).isEqualTo(false)
     }
-
-    private fun getKafkaProperties(): Properties {
-        val kafkaProperties = Properties()
-        kafkaProperties[BOOTSTRAP_SERVERS] = BOOTSTRAP_SERVERS_VALUE
-        return kafkaProperties
-    }
-
 
     private fun getRecords(topic: String, recordCount: Int, keyCount: Int): List<Record<*, *>> {
         val records = mutableListOf<Record<*, *>>()

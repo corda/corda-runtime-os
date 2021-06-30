@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-library'
     id 'corda.publish'
+    id 'corda.osgi-test-conventions'
 }
 
 description 'Kafka Messaging API Impl'
@@ -22,4 +23,7 @@ dependencies {
     }
 
     testRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
+
+    integrationTestImplementation project(":data:avro-schema")
+    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
 }

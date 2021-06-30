@@ -1,4 +1,4 @@
-package net.corda.messaging.integration.processors
+package integration.processors
 
 import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.processor.DurableProcessor
