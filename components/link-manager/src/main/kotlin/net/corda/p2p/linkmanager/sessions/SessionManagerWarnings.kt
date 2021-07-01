@@ -34,8 +34,8 @@ class SessionManagerWarnings {
                 " The message was discarded.")
         }
 
-        internal fun Logger.validationFailedWarning(messageName: String, sessionId: String) {
-            this.warn("Received $messageName with sessionId $sessionId, which failed validation. The message was discarded.")
+        internal fun Logger.validationFailedWarning(messageName: String, sessionId: String, error: String?) {
+            this.warn("Received $messageName with sessionId $sessionId, which failed validation with: $error The message was discarded.")
         }
 
     }

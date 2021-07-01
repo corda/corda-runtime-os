@@ -379,7 +379,7 @@ class SessionManagerTest {
 
         responderSessionManager.processSessionMessage(LinkInMessage(mockInitiatorHandshakeMessage))
         Mockito.verify(mockLogger).warn("Received ${mockInitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId," +
-                " which failed validation. The message was discarded.")
+                " which failed validation with: The handshake message was invalid. The message was discarded.")
     }
 
     @Test
@@ -413,6 +413,6 @@ class SessionManagerTest {
         initiatorSessionManager.setLogger(mockLogger)
         assertNull(initiatorSessionManager.processSessionMessage(LinkInMessage(mockResponderHandshakeMessage)) )
         Mockito.verify(mockLogger).warn("Received ${mockResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId," +
-                " which failed validation. The message was discarded.")
+                " which failed validation with: The handshake message was invalid. The message was discarded.")
     }
 }

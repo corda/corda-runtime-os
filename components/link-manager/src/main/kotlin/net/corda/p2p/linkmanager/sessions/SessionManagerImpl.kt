@@ -9,7 +9,8 @@ import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
-import net.corda.p2p.crypto.protocol.api.IncorrectAPIUsageException
+import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
+import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
@@ -89,10 +90,10 @@ open class SessionManagerImpl(
     }
 
     private fun getPublicKeyFromHash(hash: ByteArray): PublicKey {
-        return networkMap.getPublicKeyFromHash(hash) ?: throw NoPublicKeyForHash(hash.toBase64())
+        return networkMap.getPublicKeyFromHash(hash) ?: throw NoPublicKeyForHashException(hash.toBase64())
     }
 
-    class NoPublicKeyForHash(hash: String):
+    class NoPublicKeyForHashException(hash: String):
         CordaRuntimeException("Could not find the public key in the network map by hash = $hash")
 
     private fun processResponderHello(message: ResponderHelloMessage): LinkOutMessage? {
@@ -100,13 +101,12 @@ open class SessionManagerImpl(
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
-        try {
-            session.receiveResponderHello(message)
-        } catch (exception: IncorrectAPIUsageException) {
+        if (session.step != AuthenticationProtocolInitiator.Step.SENT_MY_DH_KEY) {
             logger.warn("Already received a ${ResponderHelloMessage::class.java.simpleName} for ${message.header.sessionId}. " +
                     "The message was discarded.")
             return null
         }
+        session.receiveResponderHello(message)
         session.generateHandshakeSecrets()
 
         val ourKey = networkMap.getOurPublicKey(sessionInfo.ourGroupId)
@@ -149,8 +149,11 @@ open class SessionManagerImpl(
         }
         try {
             session.validatePeerHandshakeMessage(message, responderKey)
-        } catch (exception: CordaRuntimeException) {
-            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId)
+        } catch (exception: InvalidHandshakeResponderKeyHash) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            return null
+        } catch (exception: InvalidHandshakeMessageException) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
         }
         val authenticatedSession = session.getSession()
@@ -182,12 +185,12 @@ open class SessionManagerImpl(
 
         val identityData = try {
             session.validatePeerHandshakeMessage(message, ::getPublicKeyFromHash)
-        } catch (exception: NoPublicKeyForHash) {
+        } catch (exception: NoPublicKeyForHashException) {
             logger.warn("Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
                 " The message was discarded.")
             return null
-        } catch (exception: CordaRuntimeException) {
-            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId)
+        } catch (exception: InvalidHandshakeMessageException) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
         }
 
