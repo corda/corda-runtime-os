@@ -1,3 +1,6 @@
+// TODO: Change this when the version in gradle.properties had changed
+def cordaVersion = '1.0.1623074066759-rc'
+
 pipeline {
     agent {
         docker {
@@ -13,13 +16,9 @@ pipeline {
     }
 
     parameters {
-        // TODO: Change this when the version in gradle.properties had changed
         string(defaultValue: "1623074066759-rc",
-            description: 'The corda version suffix',
+            description: 'The corda version suffix - This will be ignored',
             name: 'UPSTREAM_VERSION_SUFFIX')
-        string(defaultValue: "1.0",
-            description: 'The corda version suffix',
-            name: 'UPSTREAM_VERSION_PREFIX')
         string(defaultValue: "",
             description: 'Up String project name',
             name: 'UPSTREAM_PROJECT_NAME')
@@ -58,11 +57,20 @@ pipeline {
                     filter: 'mavenLocal.tar.gz'
                 sh 'tar -xvf mavenLocal.tar.gz -C /tmp/artifacts/mavenLocal'
                 sh 'rm -rf mavenLocal.tar.gz'
+                script {
+                    cordaVersion = Arrays.stream(
+                                          new File("/tmp/mavenlocal/net/corda/corda-base-internal")
+                                                   .listFiles())
+                                           .filter(File::isDirectory)
+                                           .findFirst()
+                                           .map(File::getName)
+                                           .get();
+                }
             }
         }
         stage('Build') {
             steps {
-                sh "./gradlew clean build -Dmaven.repo.local=/tmp/artifacts/mavenLocal -PcordaVersion=${params.UPSTREAM_VERSION_PREFIX}.${params.UPSTREAM_VERSION_SUFFIX}"
+                sh "./gradlew clean build -Dmaven.repo.local=/tmp/artifacts/mavenLocal -PcordaVersion=${cordaVersion}"
             }
         }
     }
