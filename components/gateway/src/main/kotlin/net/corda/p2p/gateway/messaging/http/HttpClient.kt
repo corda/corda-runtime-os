@@ -23,6 +23,8 @@ import io.netty.handler.codec.http.LastHttpContent
 import io.netty.handler.ssl.SniCompletionEvent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import net.corda.lifecycle.LifeCycle
+import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfig
+import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfigImpl
 import net.corda.p2p.gateway.messaging.ResponseMessage
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.toHostAndPort
@@ -33,8 +35,6 @@ import rx.subjects.PublishSubject
 import java.lang.IllegalStateException
 import java.net.InetSocketAddress
 import java.nio.channels.ClosedChannelException
-import java.security.cert.PKIXBuilderParameters
-import java.security.cert.X509CertSelector
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.CertPathTrustManagerParameters
@@ -206,10 +206,9 @@ class HttpClient(private val destination: NetworkHostAndPort,
 
         init {
             parent.sslConfiguration.run {
-                val pkixParams = PKIXBuilderParameters(this.trustStore, X509CertSelector())
-                // T0DO: what do we do for CRL checking? Allow all for now
-                pkixParams.addCertPathChecker(AllowAllRevocationChecker)
-                trustManagerFactory.init(CertPathTrustManagerParameters(pkixParams))
+                // TODO: get mode from config
+                val pkixParams = getCertCheckingParameters(trustStore, RevocationConfigImpl(RevocationConfig.Mode.SOFT_FAIL))
+                trustManagerFactory.init(pkixParams)
             }
         }
 

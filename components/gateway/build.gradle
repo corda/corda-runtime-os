@@ -7,6 +7,7 @@ description 'P2P gateway component'
 
 dependencies {
     implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-node-api:$cordaVersion"
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle")
     implementation project(":data:avro-schema")
@@ -16,6 +17,8 @@ dependencies {
     implementation "io.netty:netty-transport:$nettyVersion"
     implementation "io.netty:netty-codec-http:$nettyVersion"
     implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
 
     // Log4J: logging framework (with SLF4J bindings) - TEMPORARY UNTIL I FIGURE OUT LOGGING IN THIS PROJECT
     compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
