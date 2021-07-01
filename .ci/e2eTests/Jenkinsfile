@@ -57,18 +57,11 @@ pipeline {
                     filter: 'mavenLocal.tar.gz'
                 sh 'tar -xvf mavenLocal.tar.gz -C /tmp/artifacts/mavenLocal'
                 sh 'rm -rf mavenLocal.tar.gz'
+                echo "Before: $cordaVersion"
                 script {
-                    cordaVersion = Arrays.stream(
-                                          new File("/tmp/mavenlocal/net/corda/corda-base-internal")
-                                                   .listFiles())
-                                          .filter {
-                                            it.isDirectory()
-                                          }.findFirst()
-                                          .map {
-                                            it.getName()
-                                          }.get();
-
+                    cordaVersion = sh (script: 'find /tmp/mavenlocal/net/corda/corda-base-internal/* -type d | awk -F/ \'{print $NF}\'', returnStdout: true).trim()
                 }
+                echo "After: $cordaVersion"
             }
         }
         stage('Build') {
