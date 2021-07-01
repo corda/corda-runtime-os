@@ -61,10 +61,13 @@ pipeline {
                     cordaVersion = Arrays.stream(
                                           new File("/tmp/mavenlocal/net/corda/corda-base-internal")
                                                    .listFiles())
-                                           .filter(File::isDirectory)
-                                           .findFirst()
-                                           .map(File::getName)
-                                           .get();
+                                          .filter {
+                                            it.isDirectory()
+                                          }.findFirst()
+                                          .map {
+                                            it.getName()
+                                          }.get();
+
                 }
             }
         }
