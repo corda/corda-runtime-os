@@ -8,6 +8,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.db.partition.PartitionAllocator
+import net.corda.messaging.db.partition.PartitionAssignor
 import net.corda.messaging.db.persistence.DBAccessProvider
 import net.corda.messaging.db.sync.OffsetTrackersManager
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -20,13 +22,15 @@ class DBDurableSubscription<K: Any, V: Any>(subscriptionConfig: SubscriptionConf
                                             partitionAssignmentListener: PartitionAssignmentListener?,
                                             avroSchemaRegistry: AvroSchemaRegistry,
                                             offsetTrackersManager: OffsetTrackersManager,
+                                            partitionAllocator: PartitionAllocator,
+                                            partitionAssignor: PartitionAssignor,
                                             dbAccessProvider: DBAccessProvider,
                                             pollingTimeout: Duration = 1.seconds,
                                             batchSize: Int = 100): Subscription<K, V>, LifeCycle {
 
     private val eventLogSubscription = DBEventLogSubscription(subscriptionConfig,
         ForwardingEventLogProcessor(durableProcessor), partitionAssignmentListener, avroSchemaRegistry,
-        offsetTrackersManager, dbAccessProvider, pollingTimeout, batchSize)
+        offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout, batchSize)
 
     override fun start() {
         eventLogSubscription.start()

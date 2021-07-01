@@ -1,6 +1,5 @@
 package net.corda.messaging.db.sync
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.subscription.Subscription
@@ -12,7 +11,6 @@ import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
@@ -29,11 +27,14 @@ import kotlin.concurrent.withLock
  * to retrieve records up to this offset.
  *
  * @param initialMaxOffset is the maximum offset in the database, as retrieved during the startup.
- * @param periodicChecksInterval the interval at which a background thread will check for lingering
- *                               offsets that block max visible offset from being advanced. Applicable mostly to idle periods.
+ * @param executorService an executor service used to execute a background task that will check for lingering
+ *                        offsets that block max visibile offset from being advanced. Applicable mostly to idle periods.
+ * @param periodicChecksInterval the interval at which the background task will execute.
  */
 class OffsetTracker(private val topic: String,
+                    private val partition: Int,
                     initialMaxOffset: Long,
+                    private val executorService: ScheduledExecutorService,
                     private val periodicChecksInterval: Duration = 2.seconds): LifeCycle {
 
     companion object {
@@ -47,8 +48,6 @@ class OffsetTracker(private val topic: String,
 
     private val waitingList = ConcurrentHashMap<WaitingIdentifier, WaitingData>()
 
-    private lateinit var executorService : ScheduledExecutorService
-
     private var running = false
     private val startStopLock = ReentrantLock()
 
@@ -58,10 +57,7 @@ class OffsetTracker(private val topic: String,
     override fun start() {
         startStopLock.withLock {
             if (!running) {
-                executorService = Executors.newSingleThreadScheduledExecutor(
-                    ThreadFactoryBuilder().setNameFormat("offset-tracker-$topic-%d").build()
-                )
-                executorService.scheduleAtFixedRate({
+                executorService.scheduleWithFixedDelay({
                     /**
                      * there is a very rare case where a publisher might add an offset into the [releasedInvisibleOffsets]
                      * and not advance the offset even though it would be possible
@@ -74,7 +70,7 @@ class OffsetTracker(private val topic: String,
                     processOffsetsBacklogAndNotifyWaiters(maxVisibleOffset() + 1)
                 }, periodicChecksInterval.toMillis(), periodicChecksInterval.toMillis(), TimeUnit.MILLISECONDS)
                 running = true
-                log.debug { "Offset tracker for topic $topic started with max visible offset " +
+                log.debug { "Offset tracker for (topic $topic, partition $partition) started with max visible offset " +
                         "${maxVisibleOffset.get()} and next offset ${nextOffset.get()}." }
             }
         }
@@ -86,7 +82,7 @@ class OffsetTracker(private val topic: String,
                 executorService.shutdown()
                 executorService.awaitTermination(periodicChecksInterval.toMillis() * 2, TimeUnit.MILLISECONDS)
                 running = false
-                log.debug { "Offset tracker for topic $topic stopped." }
+                log.debug { "Offset tracker for (topic $topic, partition $partition) stopped." }
             }
         }
     }

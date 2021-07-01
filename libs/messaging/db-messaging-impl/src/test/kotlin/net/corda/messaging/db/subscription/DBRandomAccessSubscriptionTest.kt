@@ -37,7 +37,10 @@ class DBRandomAccessSubscriptionTest {
     }
 
     private val offsetTrackersManager = mock(OffsetTrackersManager::class.java).apply {
-        `when`(maxVisibleOffset(topic)).thenReturn(dbRecords.last().offset)
+        `when`(maxVisibleOffset(anyString(), anyInt())).thenAnswer { invocation ->
+            val partition = invocation.arguments[1] as Int
+            dbRecords.last { it.partition == partition }.offset
+        }
     }
 
     private val avroSchemaRegistry = mock(AvroSchemaRegistry::class.java).apply {
