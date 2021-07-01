@@ -17,7 +17,7 @@ interface LifeCycleEvent
  * @param isHandled flag if the error event is handled by the processor.
  *  If [isHandled] is `false` on return from the processor, this will trigger the coordinator to stop.
  */
-class ErrorEvent(val cause: Throwable, var isHandled: Boolean = false) : LifeCycleEvent
+class ErrorEvent internal constructor(val cause: Throwable, var isHandled: Boolean = false) : LifeCycleEvent
 
 /**
  * Define an event submitted by a [LifeCycleCoordinator] when it starts:
