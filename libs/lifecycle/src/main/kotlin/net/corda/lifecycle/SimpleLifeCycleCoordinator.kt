@@ -66,7 +66,7 @@ class SimpleLifeCycleCoordinator(
     private val timerMap = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
     /**
-     * Process the events in [eventQueue]. //014321567
+     * Process the events in [eventQueue].
      *
      * To improve performance, events are buffered in an array list of [batchSize] length
      * to be accessed by the [lifeCycleProcessor].
