@@ -14,7 +14,7 @@ pipeline {
 
     parameters {
         // TODO: Change this when the version in gradle.properties had changed
-        string(defaultValue: "1617266069749-rc",
+        string(defaultValue: "1623074066759-rc",
             description: 'The corda version suffix',
             name: 'UPSTREAM_VERSION_SUFFIX')
         string(defaultValue: "1.0",
