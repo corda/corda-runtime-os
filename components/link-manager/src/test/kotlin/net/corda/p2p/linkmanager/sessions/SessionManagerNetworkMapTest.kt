@@ -69,7 +69,7 @@ class SessionManagerNetworkMapTest {
         supportedMode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY,
     ): Pair<Step2Message, LinkOutMessage?> {
 
-        val sessionKey = SessionKey(null, PARTY_B)
+        val sessionKey = SessionKey(PARTY_A.groupId, PARTY_A.type, PARTY_B)
         sessionManager.setLogger(mockLogger)
         MessageConverter.setLogger(mockLogger)
 
@@ -192,7 +192,7 @@ class SessionManagerNetworkMapTest {
             SessionManagerTest.MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManagerImpl }
 
-        val sessionKey = SessionKey(null, PARTY_NOT_IN_NETMAP)
+        val sessionKey = SessionKey("ourGroup", LinkManagerNetworkMap.IdentityType.CORDA_5, PARTY_NOT_IN_NETMAP)
 
         val mockLogger = Mockito.mock(Logger::class.java)
         initiatorSessionManager.setLogger(mockLogger)
@@ -222,7 +222,7 @@ class SessionManagerNetworkMapTest {
         Assertions.assertNull(response)
         Mockito.verify(mockLogger)
             .warn("Received ${ResponderHelloMessage::class.java.simpleName} with sessionId $sessionId" +
-                    " but cannot find public key for our group identity null. The message was discarded.")
+                    " but cannot find public key for our group identity $GROUP_ID. The message was discarded.")
     }
 
     @Test

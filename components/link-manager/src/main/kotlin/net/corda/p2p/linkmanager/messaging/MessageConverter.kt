@@ -23,7 +23,7 @@ import java.nio.ByteBuffer
 
 /**
  * This class contains code which can be used to convert between [LinkOutMessage]/[LinkInMessage] and
- * [FlowMessage] and vice-versa. It is also used to covert 
+ * [FlowMessage] and vice-versa. It is also used to wrap session negotiation messages into [LinkOutMessage].
  */
 class MessageConverter {
 

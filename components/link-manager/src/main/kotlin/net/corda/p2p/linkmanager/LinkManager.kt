@@ -49,7 +49,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         fun getSessionKeyFromMessage(message: FlowMessage): SessionKey? {
             val peer = message.header.destination.toHoldingIdentity() ?: return null
-            return SessionKey(message.header.source.groupId, peer)
+            val us = message.header.source.toHoldingIdentity() ?: return null
+            return SessionKey(us.groupId, us.type, peer)
         }
 
         fun generateKey(): String {
@@ -119,7 +120,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private fun processEvent(event: EventLogRecord<String, FlowMessage>): LinkOutMessage? {
             val sessionKey = getSessionKeyFromMessage(event.value)
             if (sessionKey == null) {
-                logger.error("Invalid peer identity read from Avro. The message was discarded.")
+                logger.error("Invalid identity read from Avro. The message was discarded.")
                 return null
             }
             val session = sessionManager.getInitiatorSession(sessionKey)

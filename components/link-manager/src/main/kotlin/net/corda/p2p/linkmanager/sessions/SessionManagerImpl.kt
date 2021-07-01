@@ -122,9 +122,8 @@ open class SessionManagerImpl(
         }
 
         val signWithOurGroupId = { data: ByteArray -> cryptoService.signData(networkMap.hashPublicKey(ourKey), data) }
-        val groupIdOrEmpty = sessionInfo.ourGroupId ?: ""
         val payload = try {
-            session.generateOurHandshakeMessage(ourKey, responderKey, groupIdOrEmpty, signWithOurGroupId)
+            session.generateOurHandshakeMessage(ourKey, responderKey, sessionInfo.ourGroupId, signWithOurGroupId)
         } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
             logger.warn("${exception.message}. The ${message::class.java.simpleName} was discarded.")
             return null

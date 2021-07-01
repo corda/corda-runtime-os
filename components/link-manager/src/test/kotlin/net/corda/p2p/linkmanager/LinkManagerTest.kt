@@ -150,8 +150,8 @@ class LinkManagerTest {
     fun `PendingSessionsMessageQueues queueMessage returns true if a new session is needed`() {
         val message = simpleMockFlowMessage(FIRST_SOURCE, FIRST_DEST, "0-0")
 
-        val key1 = SessionManager.SessionKey("id", FIRST_DEST.toHoldingIdentity()!!)
-        val key2 = SessionManager.SessionKey("id", SECOND_DEST.toHoldingIdentity()!!)
+        val key1 = SessionManager.SessionKey("id", LinkManagerNetworkMap.IdentityType.CORDA_5, FIRST_DEST.toHoldingIdentity()!!)
+        val key2 = SessionManager.SessionKey("id", LinkManagerNetworkMap.IdentityType.CORDA_5, SECOND_DEST.toHoldingIdentity()!!)
 
         val mockPublisherFactory = Mockito.mock(PublisherFactory::class.java)
         val queue = LinkManager.PendingSessionsMessageQueuesImpl(mockPublisherFactory)
@@ -256,7 +256,7 @@ class LinkManagerTest {
 
         val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, mockQueue, mockNetworkMap)
 
-        val key = SessionManager.SessionKey(FIRST_SOURCE.groupId, FIRST_DEST.toHoldingIdentity()!!)
+        val key = SessionManager.SessionKey(FIRST_SOURCE.groupId, LinkManagerNetworkMap.IdentityType.CORDA_5, FIRST_DEST.toHoldingIdentity()!!)
         val messages = listOf(EventLogRecord(TOPIC, KEY, simpleMockFlowMessage(FIRST_SOURCE, FIRST_DEST, "0"), 0, 0),
             EventLogRecord(TOPIC, KEY, simpleMockFlowMessage(FIRST_SOURCE, FIRST_DEST, "1"), 0, 0 ),
             EventLogRecord(TOPIC, KEY, simpleMockFlowMessage(FIRST_SOURCE, FIRST_DEST, "2"), 0, 0))

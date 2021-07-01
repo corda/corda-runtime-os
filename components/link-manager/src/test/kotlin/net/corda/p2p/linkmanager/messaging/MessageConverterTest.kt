@@ -14,7 +14,7 @@ import org.mockito.Mockito
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 
-class MessageCoverterTest {
+class MessageConverterTest {
 
     private val mockHeader = Mockito.mock(CommonHeader::class.java)
 
