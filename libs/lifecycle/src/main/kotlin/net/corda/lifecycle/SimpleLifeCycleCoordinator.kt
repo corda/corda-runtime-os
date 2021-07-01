@@ -66,7 +66,7 @@ class SimpleLifeCycleCoordinator(
     private val timerMap = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
     /**
-     * Process the events in [eventQueue].
+     * Process the events in [eventQueue]. //014321567
      *
      * To improve performance, events are buffered in an array list of [batchSize] length
      * to be accessed by the [lifeCycleProcessor].
@@ -75,6 +75,11 @@ class SimpleLifeCycleCoordinator(
      * notified immediately to the [lifeCycleProcessor].
      *
      * If [lifeCycleProcessor] thrown an exception handing an [ErrorEvent], this coordinator stops.
+     *
+     * **NOTE!**
+     * **Exception thrown in the processor always stop the coordinator.**
+     * **The processor can handle error events and re-post them to the coordinator**
+     * **but if they the processor throw an exception, the coordinator stops.**
      *
      * @throws RejectedExecutionException if [eventQueue] is not empty and next execution of this method can't
      *      be scheduled by [scheduleIfRequired].

@@ -1,7 +1,6 @@
 package net.corda.lifecycle
 
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -26,7 +25,8 @@ internal class SimpleLifeCycleCoordinatorTest {
     fun burstEvents() {
         val n = BATCH_SIZE * 2
         val startLatch = CountDownLatch(1)
-        val countDownLatch = CountDownLatch(n)  // Used to test all posted events are processed when coordinator stopped.
+        val countDownLatch =
+            CountDownLatch(n)  // Used to test all posted events are processed when coordinator stopped.
         val stopLatch = CountDownLatch(1)
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT * n) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             logger.debug("processEvent $event")
@@ -60,7 +60,8 @@ internal class SimpleLifeCycleCoordinatorTest {
     fun burstTimers() {
         val n = BATCH_SIZE / 2
         val startLatch = CountDownLatch(1)
-        val countDownLatch = CountDownLatch(n)  // Used to test all posted events are processed when coordinator stopped.
+        val countDownLatch =
+            CountDownLatch(n)  // Used to test all posted events are processed when coordinator stopped.
         val stopLatch = CountDownLatch(1)
         SimpleLifeCycleCoordinator(BATCH_SIZE,
             TIMEOUT * n) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
@@ -150,40 +151,25 @@ internal class SimpleLifeCycleCoordinatorTest {
         }
     }
 
-    @Disabled("Debugger problems? To check...")
     @Test
     fun postHandledErrorEvent() {
-        val expected = Exception("test exception")
         val toHandle = Exception("test to handle")
-        val errorLatch = CountDownLatch(1)
-        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+        val stopLatch = CountDownLatch(1)
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, coordinator: LifeCycleCoordinator ->
             when (event) {
-                is PostEvent -> {
-                    throw expected
-                }
                 is ErrorEvent -> {
-                    when (event.cause) {
-                        expected -> {
-                            event.isHandled = true
-                            throw toHandle
-                        }
-                        toHandle -> {
-                            event.isHandled = true
-                            errorLatch.countDown()
-                        }
-                        else -> {
-                            fail("Error event unexpected!")
-                        }
+                    if (event.isHandled) {
+                        stopLatch.countDown()
+                    } else {
+                        event.isHandled = true
+                        coordinator.postEvent(event)
                     }
-                }
-                is StopEvent -> {
-                    fail("Stop event unexpected!")
                 }
             }
         }.use { coordinator ->
             coordinator.start()
-            coordinator.postEvent(object : PostEvent {})
-            assertTrue(errorLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            coordinator.postEvent(ErrorEvent(toHandle))
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         }
     }
 
