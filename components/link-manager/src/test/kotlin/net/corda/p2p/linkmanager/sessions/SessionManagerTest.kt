@@ -21,9 +21,10 @@ import net.corda.p2p.linkmanager.LinkManager.Companion.getSessionKeyFromMessage
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.messaging.Messaging.Companion.convertAuthenticatedEncryptedMessageToFlowMessage
-import net.corda.p2p.linkmanager.messaging.Messaging.Companion.convertAuthenticatedMessageToFlowMessage
-import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkOutMessageFromFlowMessage
+import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.convertAuthenticatedEncryptedMessageToFlowMessage
+import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.convertAuthenticatedMessageToFlowMessage
+import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessageFromFlowMessage
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -44,16 +45,16 @@ import java.security.Signature
 class SessionManagerTest {
 
     companion object {
-        private val GROUP_ID = null
-        val PARTY_A = LinkManagerNetworkMap.HoldingIdentity("PartyA", GROUP_ID)
-        val PARTY_B = LinkManagerNetworkMap.HoldingIdentity("PartyB", GROUP_ID)
+        private const val GROUP_ID = "myGroup"
+        val PARTY_A = LinkManagerNetworkMap.HoldingIdentity("PartyA", GROUP_ID, LinkManagerNetworkMap.IdentityType.CORDA_5)
+        val PARTY_B = LinkManagerNetworkMap.HoldingIdentity("PartyB", GROUP_ID,  LinkManagerNetworkMap.IdentityType.CORDA_5)
         val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("http://10.0.0.1/")
         const val MAX_MESSAGE_SIZE = 1024 * 1024
 
         private fun sessionManager(
             netMap: MockNetworkMap.MockLinkManagerNetworkMap,
             mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY,
-            sessionNegotiatedCallback: (SessionManagerImpl.SessionKey, Session, LinkManagerNetworkMap) -> Unit = { _, _, _ -> }
+            sessionNegotiatedCallback: (SessionKey, Session, LinkManagerNetworkMap) -> Unit = { _, _, _ -> }
         ): SessionManagerImpl {
             return SessionManagerImpl(
                 setOf(mode),
@@ -120,12 +121,10 @@ class SessionManagerTest {
                 }
 
                 override fun getOurPublicKey(groupId: String?): PublicKey? {
-                    assertNull(groupId) {"In this case the groupId should be null."}
                     return keys[node]!!.public
                 }
 
                 override fun getOurHoldingIdentity(groupId: String?): LinkManagerNetworkMap.HoldingIdentity {
-                    assertNull(groupId) {"In this case the groupId should be null."}
                     return node
                 }
 
@@ -170,7 +169,7 @@ class SessionManagerTest {
         return Step2Message(message, responderHello, ByteBuffer.wrap(privateKey))
     }
 
-    private fun negotiateSession(key: SessionManagerImpl.SessionKey,
+    private fun negotiateSession(key: SessionKey,
                                  initiatorSessionManager: SessionManagerImpl,
                                  responderSessionManager: SessionManagerImpl,
                                  responderSupportedMode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY): Pair<Session, Session> {
@@ -210,7 +209,7 @@ class SessionManagerTest {
         val initiatorSessionManager = sessionManager(PARTY_A)
         val responderSessionManager = sessionManager(PARTY_B)
 
-        val (initiatorSession, responderSession) = negotiateSession(getSessionKeyFromMessage(message), initiatorSessionManager, responderSessionManager)
+        val (initiatorSession, responderSession) = negotiateSession(getSessionKeyFromMessage(message)!!, initiatorSessionManager, responderSessionManager)
 
         assertTrue(initiatorSession is AuthenticatedSession)
         assertTrue(responderSession is AuthenticatedSession)
@@ -230,7 +229,7 @@ class SessionManagerTest {
         val responderSessionManager = sessionManager(PARTY_B, mode)
 
         val (initiatorSession, responderSession) = negotiateSession(
-            getSessionKeyFromMessage(message),
+            getSessionKeyFromMessage(message)!!,
             initiatorSessionManager,
             responderSessionManager,
             mode
@@ -253,7 +252,7 @@ class SessionManagerTest {
         val netMapPartyA = networkMap.getSessionNetworkMapForNode(PARTY_A)
 
         var sessionFromCallback : Session? = null
-        fun testCallBack(key: SessionManagerImpl.SessionKey, session: Session, map: LinkManagerNetworkMap) {
+        fun testCallBack(key: SessionKey, session: Session, map: LinkManagerNetworkMap) {
             assertSame(map, netMapPartyA)
             assertEquals(key, getSessionKeyFromMessage(message))
             sessionFromCallback = session
@@ -264,7 +263,7 @@ class SessionManagerTest {
         val responderSessionManager = sessionManager(networkMap.getSessionNetworkMapForNode(PARTY_B), mode)
 
         val (initiatorSession, _) = negotiateSession(
-            getSessionKeyFromMessage(message),
+            getSessionKeyFromMessage(message)!!,
             initiatorSessionManager,
             responderSessionManager,
             mode
@@ -307,7 +306,7 @@ class SessionManagerTest {
         val initiatorSessionManager = sessionManager(PARTY_A)
         val responderSessionManager = sessionManager(PARTY_B)
 
-        val key = getSessionKeyFromMessage(message)
+        val key = getSessionKeyFromMessage(message)!!
 
         val initiatorHelloMessage = initiatorSessionManager.getSessionInitMessage(key)
         assertTrue(initiatorHelloMessage?.payload is InitiatorHelloMessage)
@@ -356,7 +355,7 @@ class SessionManagerTest {
         val initiatorSessionManager = sessionManager(PARTY_A)
         val responderSessionManager = sessionManager(PARTY_B)
 
-        val key = getSessionKeyFromMessage(message)
+        val key = getSessionKeyFromMessage(message)!!
 
         val initiatorHelloMessage = initiatorSessionManager.getSessionInitMessage(key)
         assertTrue(initiatorHelloMessage?.payload is InitiatorHelloMessage)
@@ -388,7 +387,7 @@ class SessionManagerTest {
         val initiatorSessionManager = sessionManager(PARTY_A)
         val responderSessionManager = sessionManager(PARTY_B)
 
-        val key = getSessionKeyFromMessage(message)
+        val key = getSessionKeyFromMessage(message)!!
 
         val initiatorHelloMessage = initiatorSessionManager.getSessionInitMessage(key)
         assertTrue(initiatorHelloMessage?.payload is InitiatorHelloMessage)

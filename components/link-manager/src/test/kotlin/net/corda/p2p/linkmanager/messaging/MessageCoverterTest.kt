@@ -14,7 +14,7 @@ import org.mockito.Mockito
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 
-class MessagingTest {
+class MessageCoverterTest {
 
     private val mockHeader = Mockito.mock(CommonHeader::class.java)
 
@@ -33,8 +33,8 @@ class MessagingTest {
         Mockito.`when`(mockMessage.header).thenReturn(mockHeader)
 
         val mockLogger = Mockito.mock(Logger::class.java)
-        Messaging.setLogger(mockLogger)
-        assertNull(Messaging.convertAuthenticatedEncryptedMessageToFlowMessage(mockMessage, session as AuthenticatedEncryptionSession))
+        MessageConverter.setLogger(mockLogger)
+        assertNull(MessageConverter.convertAuthenticatedEncryptedMessageToFlowMessage(mockMessage, session as AuthenticatedEncryptionSession))
         Mockito.verify(mockLogger).warn("Decryption failed for message for session null. Reason: Decryption failed due to bad authentication tag. The message was discarded.")
     }
 
@@ -47,8 +47,8 @@ class MessagingTest {
         Mockito.`when`(mockMessage.header).thenReturn(mockHeader)
 
         val mockLogger = Mockito.mock(Logger::class.java)
-        Messaging.setLogger(mockLogger)
-        assertNull(Messaging.convertAuthenticatedMessageToFlowMessage(mockMessage, session as AuthenticatedSession))
+        MessageConverter.setLogger(mockLogger)
+        assertNull(MessageConverter.convertAuthenticatedMessageToFlowMessage(mockMessage, session as AuthenticatedSession))
         Mockito.verify(mockLogger).warn("MAC check failed for message for session null. The message was discarded.")
     }
 }

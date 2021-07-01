@@ -13,7 +13,7 @@ import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toSessionNetworkMapPeer
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.SniCalculator.Companion.calculateSni
 import net.corda.v5.base.annotations.VisibleForTesting
 import org.slf4j.Logger
@@ -21,7 +21,11 @@ import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.ByteBuffer
 
-class Messaging {
+/**
+ * This class contains code which can be used to convert between [LinkOutMessage]/[LinkInMessage] and
+ * [FlowMessage] and vice-versa. It is also used to covert 
+ */
+class MessageConverter {
 
     companion object {
 
@@ -37,19 +41,24 @@ class Messaging {
             dest: HoldingIdentity,
             networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
-            val header = generateLinkOutHeaderFromPeer(dest, networkMap)
-            if (header == null) {
-                logger.warn("Attempted to send message to peer $dest which is not in the network map. The message was discarded.")
-                return null
-            }
+            val header = generateLinkOutHeaderFromPeer(dest, networkMap) ?: return null
             return LinkOutMessage(header, payload)
         }
 
         private fun generateLinkOutHeaderFromPeer(
-            peer: HoldingIdentity,
+            peerFromAvro: HoldingIdentity,
             networkMap: LinkManagerNetworkMap
         ): LinkOutHeader? {
-            val endPoint = networkMap.getEndPoint(peer.toSessionNetworkMapPeer()) ?: return null
+            val peer = peerFromAvro.toHoldingIdentity()
+            if (peer == null) {
+                logger.error("Invalid peer identity read from Avro. The message was discarded.")
+                return null
+            }
+            val endPoint = networkMap.getEndPoint(peer)
+            if (endPoint == null) {
+                logger.warn("Attempted to send message to peer $peerFromAvro which is not in the network map. The message was discarded.")
+                return null
+            }
             return LinkOutHeader(calculateSni(peer, endPoint.address) , endPoint.address)
         }
 

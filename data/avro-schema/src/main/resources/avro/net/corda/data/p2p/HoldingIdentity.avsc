@@ -9,7 +9,11 @@
     },
     {
       "name": "groupId",
-      "type": ["null", "string"]
+      "type": "string"
+    },
+    {
+      "type": "net.corda.p2p.IdentityType",
+      "name": "identityType"
     }
   ]
 }

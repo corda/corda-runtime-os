@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.p2p.HoldingIdentity
 import java.security.PublicKey
 
 /**
@@ -8,12 +9,19 @@ import java.security.PublicKey
 interface LinkManagerNetworkMap {
 
     companion object {
-        internal fun net.corda.p2p.HoldingIdentity.toSessionNetworkMapPeer(): HoldingIdentity {
-            return HoldingIdentity(x500Name, groupId)
+        internal fun net.corda.p2p.HoldingIdentity.toHoldingIdentity(): HoldingIdentity? {
+            return when (this.identityType) {
+                net.corda.p2p.IdentityType.CLASSIC_CORDA -> HoldingIdentity(x500Name, groupId, IdentityType.CLASSIC_CORDA)
+                net.corda.p2p.IdentityType.CORDA_5 -> HoldingIdentity(x500Name, groupId, IdentityType.CORDA_5)
+                null -> null
+            }
         }
 
         internal fun HoldingIdentity.toHoldingIdentity(): net.corda.p2p.HoldingIdentity {
-            return net.corda.p2p.HoldingIdentity(this.x500Name, this.groupId)
+            return when (this.type) {
+                IdentityType.CLASSIC_CORDA -> HoldingIdentity(this.x500Name, this.groupId, net.corda.p2p.IdentityType.CLASSIC_CORDA)
+                IdentityType.CORDA_5 -> HoldingIdentity(this.x500Name, this.groupId, net.corda.p2p.IdentityType.CORDA_5)
+            }
         }
     }
 
@@ -53,5 +61,9 @@ interface LinkManagerNetworkMap {
 
     data class EndPoint(val address: String)
 
-    data class HoldingIdentity(val x500Name: String, val groupId: String?)
+    data class HoldingIdentity(val x500Name: String, val groupId: String, val type: IdentityType)
+
+    enum class IdentityType {
+        CLASSIC_CORDA, CORDA_5
+    }
 }

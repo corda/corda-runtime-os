@@ -14,7 +14,8 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.messaging.Messaging
+import net.corda.p2p.linkmanager.messaging.MessageConverter
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -30,10 +31,10 @@ import java.util.*
 class SessionManagerNetworkMapTest {
 
     companion object {
-        private val GROUP_ID = null
-        val PARTY_A = LinkManagerNetworkMap.HoldingIdentity("PartyA", GROUP_ID)
-        val PARTY_B = LinkManagerNetworkMap.HoldingIdentity("PartyB", GROUP_ID)
-        val PARTY_NOT_IN_NETMAP = LinkManagerNetworkMap.HoldingIdentity("PartyImposter", GROUP_ID)
+        private val GROUP_ID = "myGroup"
+        val PARTY_A = LinkManagerNetworkMap.HoldingIdentity("PartyA", GROUP_ID, LinkManagerNetworkMap.IdentityType.CORDA_5)
+        val PARTY_B = LinkManagerNetworkMap.HoldingIdentity("PartyB", GROUP_ID, LinkManagerNetworkMap.IdentityType.CORDA_5)
+        val PARTY_NOT_IN_NETMAP = LinkManagerNetworkMap.HoldingIdentity("PartyImposter", GROUP_ID, LinkManagerNetworkMap.IdentityType.CORDA_5)
         val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("http://10.0.0.1/")
     }
 
@@ -41,7 +42,7 @@ class SessionManagerNetworkMapTest {
         netMap: LinkManagerNetworkMap,
         cryptoService: LinkManagerCryptoService,
         mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY,
-        sessionNegotiatedCallback: (SessionManagerImpl.SessionKey, Session, LinkManagerNetworkMap) -> Unit = { _, _, _ -> }
+        sessionNegotiatedCallback: (SessionKey, Session, LinkManagerNetworkMap) -> Unit = { _, _, _ -> }
     ): SessionManagerImpl {
         return SessionManagerImpl(
             setOf(mode),
@@ -68,9 +69,9 @@ class SessionManagerNetworkMapTest {
         supportedMode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY,
     ): Pair<Step2Message, LinkOutMessage?> {
 
-        val sessionKey = SessionManagerImpl.SessionKey(null, PARTY_B)
+        val sessionKey = SessionKey(null, PARTY_B)
         sessionManager.setLogger(mockLogger)
-        Messaging.setLogger(mockLogger)
+        MessageConverter.setLogger(mockLogger)
 
         val initiatorHelloMessage = sessionManager.getSessionInitMessage(sessionKey)
         val step2Message = SessionManagerTest().mockGatewayResponse(
@@ -191,11 +192,11 @@ class SessionManagerNetworkMapTest {
             SessionManagerTest.MAX_MESSAGE_SIZE
         ) { _, _, _ -> return@SessionManagerImpl }
 
-        val sessionKey = SessionManagerImpl.SessionKey(null, PARTY_NOT_IN_NETMAP)
+        val sessionKey = SessionKey(null, PARTY_NOT_IN_NETMAP)
 
         val mockLogger = Mockito.mock(Logger::class.java)
         initiatorSessionManager.setLogger(mockLogger)
-        Messaging.setLogger(mockLogger)
+        MessageConverter.setLogger(mockLogger)
 
         val initiatorHelloMessage = initiatorSessionManager.getSessionInitMessage(sessionKey)
         Assertions.assertNull(initiatorHelloMessage)
@@ -296,7 +297,7 @@ class SessionManagerNetworkMapTest {
 
         Assertions.assertNull(response)
 
-        val keyHash = hashKeyToBase64(initiatorNetMap.getPublicKey(LinkManagerNetworkMap.HoldingIdentity("", ""))!!)
+        val keyHash = hashKeyToBase64(initiatorNetMap.getPublicKey(PARTY_A)!!)
         Mockito.verify(mockLogger).warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
                 " Could not find the public key in the network map by hash = $keyHash. The message was discarded.")
     }
@@ -306,7 +307,7 @@ class SessionManagerNetworkMapTest {
         val (initiatorNetMap, initiatorCryptoService) = makeMockNetworkMap()
         val responderNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
 
-        val initiatorPublicKey = initiatorNetMap.getPublicKey(LinkManagerNetworkMap.HoldingIdentity("", ""))
+        val initiatorPublicKey = initiatorNetMap.getPublicKey(PARTY_A)
         Mockito.`when`(responderNetMap.getPublicKeyFromHash(anyOrNull())).thenReturn(initiatorPublicKey)
         Mockito.`when`(responderNetMap.getPeerFromHash(anyOrNull())).thenReturn(null)
 
@@ -332,7 +333,7 @@ class SessionManagerNetworkMapTest {
         val (initiatorNetMap, initiatorCryptoService) = makeMockNetworkMap()
         val responderNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
 
-        val initiatorPublicKey = initiatorNetMap.getPublicKey(LinkManagerNetworkMap.HoldingIdentity("", ""))
+        val initiatorPublicKey = initiatorNetMap.getPublicKey(PARTY_A)
         Mockito.`when`(responderNetMap.getPublicKeyFromHash(anyOrNull())).thenReturn(initiatorPublicKey)
         Mockito.`when`(responderNetMap.getPeerFromHash(anyOrNull())).thenReturn(PARTY_B)
         Mockito.`when`(responderNetMap.getOurPublicKey(anyOrNull())).thenReturn(null)
@@ -349,7 +350,7 @@ class SessionManagerNetworkMapTest {
         Assertions.assertNull(response)
 
         Mockito.verify(mockLogger).warn("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId" +
-                " but cannot find public key for our group identity null. The message was discarded.")
+                " but cannot find public key for our group identity $GROUP_ID. The message was discarded.")
     }
 
     @Test
@@ -357,7 +358,7 @@ class SessionManagerNetworkMapTest {
         val (initiatorNetMap, initiatorCryptoService)  = makeMockNetworkMap()
         val responderNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
 
-        val initiatorPublicKey = initiatorNetMap.getPublicKey(LinkManagerNetworkMap.HoldingIdentity("", ""))
+        val initiatorPublicKey = initiatorNetMap.getPublicKey(PARTY_A)
         val initiatorKeyHash = hashKey(initiatorPublicKey!!)
         val responderKeyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair().public
 
@@ -386,7 +387,7 @@ class SessionManagerNetworkMapTest {
         val (initiatorNetMap, initiatorCryptoService) = makeMockNetworkMap()
         val responderNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
 
-        val initiatorPublicKey = initiatorNetMap.getPublicKey(LinkManagerNetworkMap.HoldingIdentity("", ""))
+        val initiatorPublicKey = initiatorNetMap.getPublicKey(PARTY_A)
         val initiatorKeyHash = hashKey(initiatorPublicKey!!)
         val responderKeyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
         val responderKeyHash = hashKey(responderKeyPair!!.public)
@@ -418,7 +419,7 @@ class SessionManagerNetworkMapTest {
         val (initiatorNetMap, initiatorCryptoService) =  makeMockNetworkMap()
         val responderNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
 
-        val initiatorPublicKey = initiatorNetMap.getPublicKey(LinkManagerNetworkMap.HoldingIdentity("", ""))
+        val initiatorPublicKey = initiatorNetMap.getPublicKey(PARTY_A)
         val initiatorKeyHash = hashKey(initiatorPublicKey!!)
         val responderKeyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
         val responderKeyHash = hashKey(responderKeyPair.public!!)
@@ -447,7 +448,7 @@ class SessionManagerNetworkMapTest {
     fun `Responder handshake message is dropped if the sender is not in the network map`() {
         val initiatorKeyPair = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).generateKeyPair()
         val initiatorNetMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(initiatorNetMap.getEndPoint(PARTY_B)).thenReturn(LinkManagerNetworkMap.EndPoint(""))
+        Mockito.`when`(initiatorNetMap.getEndPoint(PARTY_B)).thenReturn(FAKE_ENDPOINT)
         Mockito.`when`(initiatorNetMap.getOurPublicKey(anyOrNull())).thenReturn(initiatorKeyPair.public)
 
         //Called for the first time in `processResponderHello` and the second time in processResponderHandshake.
@@ -464,7 +465,7 @@ class SessionManagerNetworkMapTest {
         Mockito.`when`(responderNetMap.getPublicKeyFromHash(responderKeyHash)).thenReturn(responderKeyPair.public)
         Mockito.`when`(responderNetMap.getPeerFromHash(anyOrNull())).thenReturn(PARTY_B)
         Mockito.`when`(responderNetMap.getOurPublicKey(anyOrNull())).thenReturn(responderKeyPair.public)
-        Mockito.`when`(responderNetMap.getEndPoint(anyOrNull())).thenReturn(LinkManagerNetworkMap.EndPoint(""))
+        Mockito.`when`(responderNetMap.getEndPoint(anyOrNull())).thenReturn(FAKE_ENDPOINT)
         Mockito.`when`(responderNetMap.hashPublicKey(anyOrNull())).thenReturn(hashKey(responderKeyPair.public))
 
         val mockLogger = Mockito.mock(Logger::class.java)

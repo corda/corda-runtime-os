@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.messaging
 
-import net.corda.p2p.HoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import java.security.MessageDigest
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.net.URI
@@ -13,12 +13,16 @@ class SniCalculator {
         private const val HASH_TRUNCATION_SIZE = 63 //Truncate to 63 characters (as RCF 1035)
         private const val CLASSIC_CORDA_SNI_SUFFIX = ".p2p.corda.net" //This is intentionally different to Corda 4
 
-        fun calculateSni(peer: HoldingIdentity, address: String): String {
-            //Classic Corda Identity
-            return if (peer.groupId == null) {
-                sha256Hash(peer.x500Name.toByteArray()).toString().take(HASH_TRUNCATION_SIZE).toLowerCase() + CLASSIC_CORDA_SNI_SUFFIX
-            } else {
-                URI.create(address).host
+        fun calculateSni(peer: LinkManagerNetworkMap.HoldingIdentity, address: String): String {
+
+            return when (peer.type) {
+                LinkManagerNetworkMap.IdentityType.CLASSIC_CORDA -> {
+                    sha256Hash(peer.x500Name.toByteArray()).toString().take(HASH_TRUNCATION_SIZE)
+                        .toLowerCase() + CLASSIC_CORDA_SNI_SUFFIX
+                }
+                LinkManagerNetworkMap.IdentityType.CORDA_5 -> {
+                    URI.create(address).host
+                }
             }
         }
 

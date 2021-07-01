@@ -14,7 +14,8 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkOutMessage
+import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.groupIdNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.hashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.initiatorHashNotInNetworkMapWarning
@@ -37,8 +38,6 @@ open class SessionManagerImpl(
     private val sessionNegotiatedCallback: (SessionKey, Session, LinkManagerNetworkMap) -> Unit
     ): SessionManager {
 
-    //On the Initiator side there is a single unique session per SessionKey.
-    data class SessionKey(val ourGroupId: String?, val responderId: LinkManagerNetworkMap.HoldingIdentity)
 
     private val pendingInitiatorSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
     private val activeInitiatorSessions = ConcurrentHashMap<SessionKey, Session>()

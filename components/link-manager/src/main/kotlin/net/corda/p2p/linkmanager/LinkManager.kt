@@ -15,10 +15,11 @@ import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toSessionNetworkMapPeer
-import net.corda.p2p.linkmanager.messaging.Messaging.Companion.createLinkOutMessageFromFlowMessage
-import net.corda.p2p.linkmanager.messaging.Messaging.Companion.convertToFlowMessage
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessageFromFlowMessage
+import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.convertToFlowMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.schema.Schema
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -46,8 +47,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         const val INBOUND_MESSAGE_PROCESSOR_GROUP = "inbound_message_processor_group"
         const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
 
-        fun getSessionKeyFromMessage(message: FlowMessage): SessionManagerImpl.SessionKey {
-            return SessionManagerImpl.SessionKey(message.header.source.groupId, message.header.destination.toSessionNetworkMapPeer())
+        fun getSessionKeyFromMessage(message: FlowMessage): SessionKey? {
+            val peer = message.header.destination.toHoldingIdentity() ?: return null
+            return SessionKey(message.header.source.groupId, peer)
         }
 
         fun generateKey(): String {
@@ -102,6 +104,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         override val keyClass = String::class.java
         override val valueClass = FlowMessage::class.java
+        private var logger = LoggerFactory.getLogger(this::class.java.name)
 
         //We use an EventLogProcessor here instead of a DurableProcessor, as During [CORE-1286] we will use the
         //offset and partition.
@@ -115,9 +118,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun processEvent(event: EventLogRecord<String, FlowMessage>): LinkOutMessage? {
             val sessionKey = getSessionKeyFromMessage(event.value)
+            if (sessionKey == null) {
+                logger.error("Invalid peer identity read from Avro. The message was discarded.")
+                return null
+            }
             val session = sessionManager.getInitiatorSession(sessionKey)
             if (session == null) {
-                val newSessionNeeded = pendingSessionsMessageQueues.queueMessage(event.value)
+                val newSessionNeeded = pendingSessionsMessageQueues.queueMessage(event.value, sessionKey)
                 if (newSessionNeeded) {
                     return sessionManager.getSessionInitMessage(sessionKey)
                 }
@@ -180,12 +187,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     }
 
     interface PendingSessionsMessageQueues {
-        fun queueMessage(message: FlowMessage): Boolean
-        fun sessionNegotiatedCallback(key: SessionManagerImpl.SessionKey, session: Session, networkMap: LinkManagerNetworkMap)
+        fun queueMessage(message: FlowMessage, key: SessionKey): Boolean
+        fun sessionNegotiatedCallback(key: SessionKey, session: Session, networkMap: LinkManagerNetworkMap)
     }
 
     class PendingSessionsMessageQueuesImpl(publisherFactory: PublisherFactory): PendingSessionsMessageQueues {
-        private val queuedMessagesPendingSession = ConcurrentHashMap<SessionManagerImpl.SessionKey, ConcurrentLinkedQueue<FlowMessage>>()
+        private val queuedMessagesPendingSession = ConcurrentHashMap<SessionKey, ConcurrentLinkedQueue<FlowMessage>>()
         private val config = PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, null)
         private val publisher = publisherFactory.createPublisher(config)
 
@@ -194,8 +201,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
          * negotiation with the destination) or adds the message to a new queue if we need to negotiate a new session.
          * Returns [true] if we need to start session negotiation and [false] if we don't (if the session is pending).
         */
-        override fun queueMessage(message: FlowMessage): Boolean {
-            val key = getSessionKeyFromMessage(message)
+        override fun queueMessage(message: FlowMessage, key: SessionKey): Boolean {
             val newQueue = ConcurrentLinkedQueue<FlowMessage>()
             newQueue.add(message)
             val oldQueue = queuedMessagesPendingSession.putIfAbsent(key, newQueue)
@@ -206,7 +212,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         /**
          * Publish all the queued [FlowMessage]s to the P2P_OUT_TOPIC.
          */
-        override fun sessionNegotiatedCallback(key: SessionManagerImpl.SessionKey, session: Session, networkMap: LinkManagerNetworkMap) {
+        override fun sessionNegotiatedCallback(key: SessionKey, session: Session, networkMap: LinkManagerNetworkMap) {
             val queuedMessages = queuedMessagesPendingSession[key] ?: return
             val records = mutableListOf<Record<String, LinkOutMessage>>()
             while (queuedMessages.isNotEmpty()) {
