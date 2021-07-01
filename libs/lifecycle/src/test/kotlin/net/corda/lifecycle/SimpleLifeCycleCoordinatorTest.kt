@@ -155,20 +155,19 @@ internal class SimpleLifeCycleCoordinatorTest {
     fun postHandledErrorEvent() {
         val toHandle = Exception("test to handle")
         val stopLatch = CountDownLatch(1)
-        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, coordinator: LifeCycleCoordinator ->
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             when (event) {
                 is ErrorEvent -> {
                     if (event.isHandled) {
                         stopLatch.countDown()
                     } else {
-                        event.isHandled = true
-                        coordinator.postEvent(event)
+                        fail()
                     }
                 }
             }
         }.use { coordinator ->
             coordinator.start()
-            coordinator.postEvent(ErrorEvent(toHandle))
+            coordinator.postEvent(ErrorEvent(toHandle, true))
             assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         }
     }

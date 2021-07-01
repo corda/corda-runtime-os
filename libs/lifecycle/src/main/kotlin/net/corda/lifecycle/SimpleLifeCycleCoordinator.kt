@@ -241,7 +241,7 @@ class SimpleLifeCycleCoordinator(
                     thread
                 }
                 isScheduled.set(false)
-                postEvent(StartEvent)
+                postEvent(StartEvent())
             }
         }
     }
@@ -266,7 +266,7 @@ class SimpleLifeCycleCoordinator(
             exec
         }
         executor?.apply {
-            eventQueue.offer(StopEvent)
+            eventQueue.offer(StopEvent())
             if (Thread.currentThread().id != executorThreadID) {
                 submit { cleanUpAndCloseEvents() }
                 shutdown()
