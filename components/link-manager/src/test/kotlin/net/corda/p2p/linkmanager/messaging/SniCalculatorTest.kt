@@ -27,6 +27,13 @@ class SniCalculatorTest {
     }
 
     @Test
+    fun `sni is future proof for a corda5 identity`() {
+        val hostName = "nodea.r3.com"
+        val address = "amqp://$hostName:443/somepath"
+        assertEquals(hostName, SniCalculator.calculateSni(FIRST_SOURCE, address))
+    }
+
+    @Test
     fun `sni is correctly calculated from an address for a corda5 identity`() {
         val ip = "10.0.0.5"
         val address = "http://$ip/"
