@@ -229,8 +229,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             val records = mutableListOf<Record<String, LinkOutMessage>>()
             while (queuedMessages.isNotEmpty()) {
                 val message = queuedMessages.poll()
-                val authenticatedDataMessage = createLinkOutMessageFromFlowMessage(message, session, networkMap)
-                records.add(Record(Schema.P2P_OUT_TOPIC, KEY, authenticatedDataMessage))
+                val dataMessage = createLinkOutMessageFromFlowMessage(message, session, networkMap)
+                records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), dataMessage))
             }
             publisher.publish(records)
         }
