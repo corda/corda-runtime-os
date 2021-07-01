@@ -17,6 +17,9 @@ pipeline {
         string(defaultValue: "1617266069749-rc",
             description: 'The corda version suffix',
             name: 'UPSTREAM_VERSION_SUFFIX')
+        string(defaultValue: "1.0",
+            description: 'The corda version suffix',
+            name: 'UPSTREAM_VERSION_PREFIX')
         string(defaultValue: "",
             description: 'Up String project name',
             name: 'UPSTREAM_PROJECT_NAME')
@@ -59,7 +62,7 @@ pipeline {
         }
         stage('Build') {
             steps {
-                sh "./gradlew build -Dmaven.repo.local=/tmp/artifacts/mavenLocal -PcordaVersion=1.0.${params.UPSTREAM_VERSION_SUFFIX}"
+                sh "./gradlew build -Dmaven.repo.local=/tmp/artifacts/mavenLocal -PcordaVersion=${params.UPSTREAM_VERSION_PREFIX}.${params.UPSTREAM_VERSION_SUFFIX}"
             }
         }
     }
