@@ -59,7 +59,7 @@ pipeline {
                 sh 'rm -rf mavenLocal.tar.gz'
                 echo "Before: $cordaVersion"
                 script {
-                    cordaVersion = sh (script: 'find /tmp/mavenlocal/net/corda/corda-base-internal/* -type d | awk -F/ \'{print $NF}\'', returnStdout: true).trim()
+                    cordaVersion = sh (script: 'find /tmp/artifacts/mavenLocal/net/corda/corda-base-internal/* -type d | awk -F/ \'{print $NF}\'', returnStdout: true).trim()
                 }
                 echo "After: $cordaVersion"
             }
