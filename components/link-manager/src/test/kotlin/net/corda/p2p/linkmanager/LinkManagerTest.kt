@@ -28,6 +28,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -237,7 +238,8 @@ class LinkManagerTest {
         assertEquals(records.size, 0)
 
         for (message in messages) {
-            Mockito.verify(mockQueue).queueMessage(message.value, key)
+            assertNotNull(message.value) {"Message should not be null."}
+            Mockito.verify(mockQueue).queueMessage(message.value!!, key)
         }
     }
 
@@ -272,7 +274,8 @@ class LinkManagerTest {
         }
 
         for (message in messages) {
-            Mockito.verify(mockQueue).queueMessage(message.value, key)
+            assertNotNull(message.value) {"Message should not be null."}
+            Mockito.verify(mockQueue).queueMessage(message.value!!, key)
         }
     }
 

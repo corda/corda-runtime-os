@@ -5,6 +5,9 @@ net.corda.data.crypto.SecureHash
 net.corda.data.demo.DemoRecord
 net.corda.data.demo.DemoStateRecord
 net.corda.data.test.EvolvedMessage
+net.corda.p2p.FlowMessage
+net.corda.p2p.FlowMessageHeader
+net.corda.p2p.HoldingIdentity
 net.corda.p2p.LinkInMessage
 net.corda.p2p.LinkOutHeader
 net.corda.p2p.LinkOutMessage

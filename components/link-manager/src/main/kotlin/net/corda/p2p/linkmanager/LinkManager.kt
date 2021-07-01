@@ -118,19 +118,25 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun processEvent(event: EventLogRecord<String, FlowMessage>): LinkOutMessage? {
-            val sessionKey = getSessionKeyFromMessage(event.value)
+            val message = event.value
+            if (message == null) {
+                logger.error("Received null message. The message was discarded.")
+                return null
+            }
+
+            val sessionKey = getSessionKeyFromMessage(message)
             if (sessionKey == null) {
                 logger.error("Invalid identity read from Avro. The message was discarded.")
                 return null
             }
             val session = sessionManager.getInitiatorSession(sessionKey)
             if (session == null) {
-                val newSessionNeeded = pendingSessionsMessageQueues.queueMessage(event.value, sessionKey)
+                val newSessionNeeded = pendingSessionsMessageQueues.queueMessage(message, sessionKey)
                 if (newSessionNeeded) {
                     return sessionManager.getSessionInitMessage(sessionKey)
                 }
             } else {
-                return createLinkOutMessageFromFlowMessage(event.value, session, networkMap)
+                return createLinkOutMessageFromFlowMessage(message, session, networkMap)
             }
             return null
         }
@@ -149,10 +155,15 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
             val records = mutableListOf<Record<String, *>>()
             for (event in events) {
-                if (event.value.payload is AuthenticatedDataMessage || event.value.payload is AuthenticatedEncryptedDataMessage) {
-                    extractAndCheckMessage(event.value)?.let { records.add(Record(Schema.P2P_IN_TOPIC, KEY, it)) }
+                val message = event.value
+                if (message == null) {
+                    logger.error("Received null message. The message was discarded.")
+                    continue
+                }
+                if (message.payload is AuthenticatedDataMessage || message.payload is AuthenticatedEncryptedDataMessage) {
+                    extractAndCheckMessage(message)?.let { records.add(Record(Schema.P2P_IN_TOPIC, KEY, it)) }
                 } else {
-                    sessionManager.processSessionMessage(event.value)?.let { records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), it)) }
+                    sessionManager.processSessionMessage(message)?.let { records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), it)) }
                 }
             }
             return records
