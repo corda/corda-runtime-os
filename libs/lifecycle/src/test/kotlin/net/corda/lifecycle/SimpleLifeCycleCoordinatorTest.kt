@@ -174,6 +174,29 @@ internal class SimpleLifeCycleCoordinatorTest {
     }
 
     @Test
+    fun postHandledErrorEventAndStop() {
+        val toHandle = Exception("test to handle")
+        var stopLatch = CountDownLatch(1)
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, coordinator: LifeCycleCoordinator ->
+            when (event) {
+                is ErrorEvent -> {
+                    coordinator.stop()
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
+                }
+            }
+        }.use { coordinator ->
+            for(i in 0..5) {
+                coordinator.start()
+                coordinator.postEvent(ErrorEvent(toHandle))
+                assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+                stopLatch = CountDownLatch(1)
+            }
+        }
+    }
+
+    @Test
     fun postUnhandledErrorEvent() {
         val expected = Exception("test exception")
         val unexpected = Exception("test unhandled")

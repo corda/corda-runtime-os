@@ -24,14 +24,14 @@ class ErrorEvent(val cause: Throwable, var isHandled: Boolean = false) : LifeCyc
  *
  * @see [LifeCycleCoordinator.start]
  */
-object StartEvent : LifeCycleEvent
+internal object StartEvent : LifeCycleEvent
 
 /**
  * Define an event submitted by a [LifeCycleCoordinator] when it stops.
  *
  * @see [LifeCycleCoordinator.stop]
  */
-object StopEvent : LifeCycleEvent
+internal object StopEvent : LifeCycleEvent
 
 /**
  * Define a scheduled event submitted by a [LifeCycleCoordinator] when the event happens.

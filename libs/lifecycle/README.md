@@ -18,7 +18,8 @@ SimpleLifeCycleCoordinator(64, 1000L) { event: LifeCycleEvent, coordinator: Life
         is ErrorEvent -> {
             // HANDLE THE event.cause IF AN ERROR IS NOTIFIED
             // NOTE!
-            // Error events can be flagged `event.isHandled = true` and reposted with `coordinator.postEvent(event)`.
+            // Error events can be handled and then flagged `event.isHandled = true` 
+            // and reposted with `coordinator.postEvent(event)`.
             // Exception thrown here, in the processor, will stop the coordinator. 
         }
         is PostEvent -> {
