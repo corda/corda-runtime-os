@@ -62,7 +62,7 @@ pipeline {
         }
         stage('Build') {
             steps {
-                sh "./gradlew build -Dmaven.repo.local=/tmp/artifacts/mavenLocal -PcordaVersion=${params.UPSTREAM_VERSION_PREFIX}.${params.UPSTREAM_VERSION_SUFFIX}"
+                sh "./gradlew clean build -Dmaven.repo.local=/tmp/artifacts/mavenLocal -PcordaVersion=${params.UPSTREAM_VERSION_PREFIX}.${params.UPSTREAM_VERSION_SUFFIX}"
             }
         }
     }
