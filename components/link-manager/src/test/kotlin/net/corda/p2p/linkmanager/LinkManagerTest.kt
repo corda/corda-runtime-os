@@ -44,6 +44,9 @@ class LinkManagerTest {
         val SECOND_SOURCE = HoldingIdentity("PartyA", "AnotherGroup")
         val FIRST_DEST = HoldingIdentity("PartyB", "Group")
         val SECOND_DEST = HoldingIdentity("PartyC", "Group")
+        const val FAKE_ADDRESS = "http://10.0.0.1/"
+        val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint(FAKE_ADDRESS)
+
         const val SESSION_ID = "testSession"
         const val MAX_MESSAGE_SIZE = 1000000
         const val GROUP_ID = "myGroup"
@@ -189,7 +192,7 @@ class LinkManagerTest {
         Mockito.`when`(mockPublisherFactory.createPublisher(any(), any())).thenReturn(publisher)
 
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(LinkManagerNetworkMap.EndPoint("10.0.0.1:fake"))
+        Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(FAKE_ENDPOINT)
 
         val queue = LinkManager.PendingSessionsMessageQueuesImpl(mockPublisherFactory)
 
@@ -281,7 +284,7 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
         Mockito.`when`(mockSessionManager.getInitiatorSession(any())).thenReturn(createSessionPair().initiatorSession)
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(LinkManagerNetworkMap.EndPoint("10.0.0.1:fake"))
+        Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(FAKE_ENDPOINT)
 
         val mockQueue = Mockito.mock(LinkManager.PendingSessionsMessageQueues::class.java)
 
@@ -305,7 +308,7 @@ class LinkManagerTest {
     fun `InboundMessageProcessor routes session messages to the session manager and sends the response to the gateway`() {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         //Respond to initiator hello message with an initiator hello message (as this response is easy to mock).
-        val response = LinkOutMessage(LinkOutHeader("", "10.0.0.1:fake"), initiatorHelloLinkInMessage().payload)
+        val response = LinkOutMessage(LinkOutHeader("", FAKE_ADDRESS), initiatorHelloLinkInMessage().payload)
         Mockito.`when`(mockSessionManager.processSessionMessage(any())).thenReturn(response)
 
         val processor = LinkManager.InboundMessageProcessor(mockSessionManager)
@@ -323,7 +326,7 @@ class LinkManagerTest {
     private fun testDataMessagesWithInboundMessageProcessor(session: SessionPair) {
         val payload = ByteBuffer.wrap("PAYLOAD".toByteArray())
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(LinkManagerNetworkMap.EndPoint("10.0.0.1:fake"))
+        Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(FAKE_ENDPOINT)
 
         val header = FlowMessageHeader(FIRST_DEST, FIRST_SOURCE, null, "", "")
         val flowMessage = FlowMessage(header, payload)
@@ -364,7 +367,7 @@ class LinkManagerTest {
         val session = createSessionPair()
         val payload = ByteBuffer.wrap("PAYLOAD".toByteArray())
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(LinkManagerNetworkMap.EndPoint("10.0.0.1:fake"))
+        Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(FAKE_ENDPOINT)
 
         val header = FlowMessageHeader(FIRST_DEST, FIRST_SOURCE, null, "", "")
         val flowMessage = FlowMessage(header, payload)

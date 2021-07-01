@@ -47,7 +47,7 @@ class SessionManagerTest {
         private val GROUP_ID = null
         val PARTY_A = LinkManagerNetworkMap.HoldingIdentity("PartyA", GROUP_ID)
         val PARTY_B = LinkManagerNetworkMap.HoldingIdentity("PartyB", GROUP_ID)
-        val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("10.0.0.1:hello")
+        val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("http://10.0.0.1/")
         const val MAX_MESSAGE_SIZE = 1024 * 1024
 
         private fun sessionManager(
@@ -379,8 +379,8 @@ class SessionManagerTest {
         responderSessionManager.setLogger(mockLogger)
 
         responderSessionManager.processSessionMessage(LinkInMessage(mockInitiatorHandshakeMessage))
-        Mockito.verify(mockLogger).warn("Received ${mockInitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
-                " Which failed validation. The message was discarded.")
+        Mockito.verify(mockLogger).warn("Received ${mockInitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId," +
+                " which failed validation. The message was discarded.")
     }
 
     @Test
@@ -413,7 +413,7 @@ class SessionManagerTest {
         val mockLogger = Mockito.mock(Logger::class.java)
         initiatorSessionManager.setLogger(mockLogger)
         assertNull(initiatorSessionManager.processSessionMessage(LinkInMessage(mockResponderHandshakeMessage)) )
-        Mockito.verify(mockLogger).warn("Received ${mockResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
-                " Which failed validation. The message was discarded.")
+        Mockito.verify(mockLogger).warn("Received ${mockResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId," +
+                " which failed validation. The message was discarded.")
     }
 }

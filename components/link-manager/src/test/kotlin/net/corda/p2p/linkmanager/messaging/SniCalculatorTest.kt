@@ -16,17 +16,17 @@ class SniCalculatorTest {
     }
 
     @Test
-    fun `sni is correctly calculated from a hostname for a corda5 identity`() {
+    fun `sni is correctly calculated from a base url for a corda5 identity`() {
         val hostName = "mydepartment.mycorp.com"
-        val address = "http://$hostName/myendpoint"
+        val address = "http://$hostName/"
         assertEquals(hostName, SniCalculator.calculateSni(FIRST_SOURCE, address))
     }
 
     @Test
-    fun `sni is correctly calculated from a hostname and port for a corda5 identity`() {
-        val hostName = "mydepartment.mycorp.com"
-        val address = "http://$hostName:8080/myendpoint"
-        assertEquals(hostName, SniCalculator.calculateSni(FIRST_SOURCE, address))
+    fun `sni is correctly calculated from an address for a corda5 identity`() {
+        val ip = "10.0.0.5"
+        val address = "http://$ip/"
+        assertEquals(ip, SniCalculator.calculateSni(FIRST_SOURCE, address))
     }
 
     @Test
@@ -37,6 +37,5 @@ class SniCalculatorTest {
         for (label in sni.split(LABEL_DELIMITER)) {
             assertTrue(label.length < MAX_SNI_LABEL_SIZE)
         }
-
     }
 }

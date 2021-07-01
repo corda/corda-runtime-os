@@ -34,7 +34,7 @@ class SessionManagerNetworkMapTest {
         val PARTY_A = LinkManagerNetworkMap.HoldingIdentity("PartyA", GROUP_ID)
         val PARTY_B = LinkManagerNetworkMap.HoldingIdentity("PartyB", GROUP_ID)
         val PARTY_NOT_IN_NETMAP = LinkManagerNetworkMap.HoldingIdentity("PartyImposter", GROUP_ID)
-        val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("10.0.0.1:hello")
+        val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("http://10.0.0.1/")
     }
 
     private fun sessionManager(
@@ -240,7 +240,7 @@ class SessionManagerNetworkMapTest {
 
         Assertions.assertNull(response)
         Mockito.verify(mockLogger).warn(
-            "Received ResponderHelloMessage with sessionId ${sessionId}. From peer $PARTY_B which is not" +
+            "Received ResponderHelloMessage with sessionId $sessionId from peer $PARTY_B which is not" +
             " in the network map. The message was discarded."
         )
     }
@@ -476,7 +476,7 @@ class SessionManagerNetworkMapTest {
             makeSameKeyCryptoService(responderKeyPair.private),
             mockLogger
         )
-        Mockito.verify(mockLogger).warn("Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId. From peer " +
+        Mockito.verify(mockLogger).warn("Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId from peer " +
                 "$PARTY_B which is not in the network map. The message was discarded.")
     }
 
