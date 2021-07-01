@@ -14,7 +14,8 @@ interface LifeCycleEvent
  * Define an error event wrapping the [cause] submitted by a [LifeCycleCoordinator]
  *
  * @param cause caused the error.
- * @param isHandled flag if the error event is handled by the ??? (coordinator or processor?) TO BE DEFINED.
+ * @param isHandled flag if the error event is handled by the processor.
+ *  If [isHandled] is `false` on return from the processor, this will trigger the coordinator to stop.
  */
 class ErrorEvent(val cause: Throwable, var isHandled: Boolean = false) : LifeCycleEvent
 
