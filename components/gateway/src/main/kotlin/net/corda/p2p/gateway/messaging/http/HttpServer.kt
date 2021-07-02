@@ -23,7 +23,6 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpUtil
 import io.netty.handler.codec.http.HttpVersion
 import io.netty.handler.codec.http.LastHttpContent
-import io.netty.handler.ssl.SniCompletionEvent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.ReceivedMessage
@@ -97,7 +96,6 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
         lock.withLock {
             logger.info("Starting HTTP Server")
             bossGroup = NioEventLoopGroup(1)
-            //T0DO: should allow an arbitrary value read from Corda config perhaps
             workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS)
 
             val server = ServerBootstrap()
@@ -152,10 +150,10 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
         if (channel == null) {
             throw IllegalStateException("Connection to $destination not active")
         } else {
-            logger.info("Writing HTTP response to channel $channel")
+            logger.debug("Writing HTTP response to channel $channel")
             val response = HttpHelper.createResponse(message, statusCode)
             channel.writeAndFlush(response)
-            logger.info("Done writing HTTP response to channel $channel")
+            logger.debug("Done writing HTTP response to channel $channel")
         }
     }
 
@@ -208,13 +206,11 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
         override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
             if (msg is HttpRequest) {
                 validationResult = msg.validate()
-                println(validationResult)
-                // This logging will be moved to debug or removed once everything is nice and done
-                logger.info("Received HTTP request from ${ctx.channel().remoteAddress()}")
-                logger.info("Protocol version: ${msg.protocolVersion()}")
-                logger.info("Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}")
-                logger.info("Request URI: ${msg.uri()}")
-                logger.info("Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]?:"unknown"}")
+                logger.debug("Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
+                    "Protocol version: ${msg.protocolVersion()}\n" +
+                    "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
+                    "Request URI: ${msg.uri()}\n" +
+                    "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n")
                 // initialise byte array to read the request into
                 if (validationResult!!.status() != HttpResponseStatus.LENGTH_REQUIRED) {
                     requestBodyBuf = ctx.alloc().buffer(msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
@@ -228,7 +224,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
             if (msg is HttpContent) {
                 val content = msg.content()
                 if (content.isReadable) {
-                    logger.info("Reading request content into local buffer of size ${content.readableBytes()}")
+                    logger.debug("Reading request content into local buffer of size ${content.readableBytes()}")
                     try {
                         content.readBytes(requestBodyBuf, content.readableBytes())
                     } catch (e: IndexOutOfBoundsException) {
@@ -238,7 +234,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
             }
 
             if (msg is LastHttpContent) {
-                logger.info("Read end of request body")
+                logger.debug("Read end of request body")
                 val channel = ctx.channel()
                 val sourceAddress = (channel.remoteAddress() as InetSocketAddress).toHostAndPort()
                 val targetAddress = (channel.localAddress() as InetSocketAddress).toHostAndPort()
@@ -271,10 +267,6 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
         //T0DO: a bunch of this code (except channel read) is duplicated and should probably be reused
         override fun userEventTriggered(ctx: ChannelHandlerContext, evt: Any) {
             when (evt) {
-                is SniCompletionEvent -> {
-                    logger.warn("NOT YET IMPLEMENTED LOL")
-                }
-
                 is SslHandshakeCompletionEvent -> {
                     if (evt.isSuccess) {
                         val ch = ctx.channel()

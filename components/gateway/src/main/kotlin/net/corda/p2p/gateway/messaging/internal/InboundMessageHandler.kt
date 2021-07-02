@@ -61,10 +61,14 @@ class InboundMessageHandler(private val server: HttpServer,
         p2pInPublisher = null
     }
 
+    /**
+     * Handler for direct P2P messages. The payload is deserialized and then published to the ingress topic
+     */
     private fun handleRequestMessage(message: ReceivedMessage) {
         val responseBytes = ByteArray(0)
         var statusCode = message.response.status()
         try {
+            logger.info("Processing request message from ${message.source}")
             val p2pMessage = LinkOutMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
             logger.info("Received message of type ${p2pMessage.schema.name}")
             val record = Record(P2P_IN_TOPIC, "key", LinkInMessage(p2pMessage.payload))
@@ -79,7 +83,13 @@ class InboundMessageHandler(private val server: HttpServer,
         }
     }
 
+    /**
+     * Handler for P2P messages sent back as a result of a request. Typically, these responses have no payloads and serve
+     * as an indication of successful receipt on the other end. In case of a session request message, the response will
+     * contain information which then needs to be forwarded to the LinkManager
+     */
     private fun responseMessageHandler(message: ResponseMessage) {
+        logger.info("Processing response message from ${message.source} with status $${message.statusCode}")
         if (HttpResponseStatus.OK == message.statusCode) {
             // response messages should have empty payloads unless they are part of the initial session handshake
             if (message.payload.isNotEmpty()) {

@@ -7,7 +7,7 @@ import java.security.SecureRandom
 import java.security.cert.CertPathValidatorException
 import java.security.cert.Certificate
 import java.security.cert.PKIXRevocationChecker
-import java.util.*
+import java.util.LinkedList
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
@@ -15,7 +15,6 @@ import javax.net.ssl.X509ExtendedTrustManager
 
 fun createClientSslHandler(target: NetworkHostAndPort,
                            trustManagerFactory: TrustManagerFactory): SslHandler {
-    //T0DO: netty has a nice builder for this, consider using it instead
     val sslContext = SSLContext.getInstance("TLS")
     val trustManagers = trustManagerFactory.trustManagers.filterIsInstance(X509ExtendedTrustManager::class.java).toTypedArray()
     sslContext.init(null, trustManagers, SecureRandom())

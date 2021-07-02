@@ -58,7 +58,7 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
         .maximumSize(config.connectionPoolSize)
         .expireAfterAccess(config.maxIdleTime, TimeUnit.MILLISECONDS)
         .removalListener(RemovalListener<NetworkHostAndPort, HttpClient> { key, value, cause ->
-            logger.info("Removing entry for key $key. Reason: $cause")
+            logger.debug("Removing connection for target $key. Reason: $cause")
             value?.close()
         })
         //T0DO: replace with scheduled task to do clean-up every now and then. With Runnable::run, clean-up happens when cache is used
@@ -98,7 +98,6 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
         logger.info("Acquiring connection for remote address $remoteAddress")
         return connectionPool.get(remoteAddress) {
             logger.info("Creating new connection to $remoteAddress")
-            // Try to connect. If unsuccessful in the specified time, return something...
             val client = HttpClient(remoteAddress, sslConfiguration, sharedEventLoopGroup)
             val connectionLock = CountDownLatch(1)
             val connectionSub = client.onConnection.subscribe { evt ->

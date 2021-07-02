@@ -40,7 +40,7 @@ class HttpHelper {
             return DefaultFullHttpRequest(
                 HttpVersion.HTTP_1_1,
                 HttpMethod.POST,
-                URL("https", destination.host, destination.port, ENDPOINT).toString()
+                URL(SCHEME, destination.host, destination.port, ENDPOINT).toString()
             ).apply {
                 val bbuf = Unpooled.copiedBuffer(message)
                 headers().set(HttpHeaderNames.HOST, destination.host)

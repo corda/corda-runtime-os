@@ -20,8 +20,8 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager) : Ev
     @Suppress("TooGenericExceptionCaught")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
         events.forEach { evt ->
-            logger.info("Processing P2P outbound message")
             val peerMessage = evt.value
+            logger.info("Processing P2P outbound message for ${peerMessage.header.address}")
             try {
                 val destination = NetworkHostAndPort.parse(peerMessage.header.address)
                 connectionPool.acquire(destination).send(peerMessage.toByteBuffer().array())
