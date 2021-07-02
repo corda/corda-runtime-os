@@ -3,9 +3,11 @@ package net.corda.messaging.db.persistence
 import net.corda.messaging.db.util.DbUtils.Companion.createOffsetsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicRecordsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicsTableStmt
+import org.junit.jupiter.api.Disabled
 import org.testcontainers.containers.PostgreSQLContainer
 import java.sql.DriverManager
 
+@Disabled("Disabled for CI until we have a shared database hosted by the infrastructure team. See INFRA-1485")
 class DbAccessProviderPostgresTest: DbAccessProviderTestBase() {
 
     private val postgresqlServer = PostgreSQLContainer<Nothing>("postgres:9.6")

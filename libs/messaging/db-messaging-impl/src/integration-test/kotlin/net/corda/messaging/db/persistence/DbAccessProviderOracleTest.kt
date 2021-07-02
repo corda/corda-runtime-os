@@ -1,10 +1,11 @@
 package net.corda.messaging.db.persistence
 
 import net.corda.messaging.db.util.DbUtils
+import org.junit.jupiter.api.Disabled
 import org.testcontainers.containers.OracleContainer
 import java.sql.DriverManager
 
-
+@Disabled("Disabled for CI until we have a shared database hosted by the infrastructure team. See INFRA-1485")
 class DbAccessProviderOracleTest: DbAccessProviderTestBase() {
 
     private val oracleServer = OracleContainer("oracleinanutshell/oracle-xe-11g")

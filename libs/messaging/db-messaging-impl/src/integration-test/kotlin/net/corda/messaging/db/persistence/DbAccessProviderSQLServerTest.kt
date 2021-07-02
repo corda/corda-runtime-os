@@ -1,9 +1,11 @@
 package net.corda.messaging.db.persistence
 
 import net.corda.messaging.db.util.DbUtils
+import org.junit.jupiter.api.Disabled
 import org.testcontainers.containers.MSSQLServerContainer
 import java.sql.DriverManager
 
+@Disabled("Disabled for CI until we have a shared database hosted by the infrastructure team. See INFRA-1485")
 class DbAccessProviderSQLServerTest: DbAccessProviderTestBase() {
 
     private val sqlServer = MSSQLServerContainer<Nothing>("mcr.microsoft.com/mssql/server:2017-latest").apply { this.acceptLicense() }
