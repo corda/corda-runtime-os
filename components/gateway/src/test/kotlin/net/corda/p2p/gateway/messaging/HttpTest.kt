@@ -142,4 +142,14 @@ class HttpTest {
             }
         }
     }
+
+    @Test
+    fun `server presents invalid certificate - OCSP`() {
+
+    }
+
+    @Test
+    fun `server presents invalid certificate - CRL`() {
+
+    }
 }

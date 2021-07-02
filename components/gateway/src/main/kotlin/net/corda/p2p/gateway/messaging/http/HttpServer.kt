@@ -271,10 +271,6 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
         //T0DO: a bunch of this code (except channel read) is duplicated and should probably be reused
         override fun userEventTriggered(ctx: ChannelHandlerContext, evt: Any) {
             when (evt) {
-                is SniCompletionEvent -> {
-                    logger.warn("NOT YET IMPLEMENTED LOL")
-                }
-
                 is SslHandshakeCompletionEvent -> {
                     if (evt.isSuccess) {
                         val ch = ctx.channel()

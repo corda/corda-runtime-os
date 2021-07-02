@@ -1,8 +1,10 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.ssl.SslHandler
+import net.corda.nodeapi.internal.config.CertificateStore
 import net.corda.nodeapi.internal.protonwrapper.netty.LoggingTrustManagerWrapper
 import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfig
+import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
 import java.security.KeyStore
@@ -17,6 +19,7 @@ import java.util.LinkedList
 import javax.net.ssl.CertPathTrustManagerParameters
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.ManagerFactoryParameters
+import javax.net.ssl.SNIHostName
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509ExtendedTrustManager
@@ -27,6 +30,7 @@ val CIPHER_SUITES = arrayOf("TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384")
 
 
 fun createClientSslHandler(target: NetworkHostAndPort,
+                           targetServerName: String,
                            trustManagerFactory: TrustManagerFactory): SslHandler {
     val sslContext = SSLContext.getInstance("TLS")
     val trustManagers = trustManagerFactory.trustManagers.filterIsInstance(X509ExtendedTrustManager::class.java)
@@ -38,13 +42,15 @@ fun createClientSslHandler(target: NetworkHostAndPort,
         it.enabledProtocols = arrayOf(TLS_VERSION)
         it.enabledCipherSuites = CIPHER_SUITES
         it.enableSessionCreation = true
+        it.sslParameters.serverNames = listOf(SNIHostName(targetServerName))
     }
     val sslHandler = SslHandler(sslEngine)
     sslHandler.handshakeTimeoutMillis = HANDSHAKE_TIMEOUT
     return sslHandler
 }
 
-fun createServerSslHandler(keyManagerFactory: KeyManagerFactory): SslHandler {
+fun createServerSslHandler(keyStore: CertificateStore,
+                           keyManagerFactory: KeyManagerFactory): SslHandler {
     val sslContext = SSLContext.getInstance("TLS")
     val keyManagers = keyManagerFactory.keyManagers
     sslContext.init(keyManagers, null, SecureRandom()) //May need to use secure random from crypto-api module
@@ -55,12 +61,17 @@ fun createServerSslHandler(keyManagerFactory: KeyManagerFactory): SslHandler {
         it.enabledProtocols = arrayOf(TLS_VERSION)
         it.enabledCipherSuites = CIPHER_SUITES
         it.enableSessionCreation = true
+        it.sslParameters.sniMatchers = listOf(HostnameMatcher(keyStore))
     }
-
     val sslHandler = SslHandler(sslEngine)
     sslHandler.handshakeTimeoutMillis = HANDSHAKE_TIMEOUT
     return sslHandler
 }
+
+/**
+ * Extension to convert Corda names into String representing SNI values to be used for TLS handshakes
+ */
+fun CordaX500Name.toSNI() = ""
 
 fun getCertCheckingParameters(trustStore: KeyStore, revocationConfig: RevocationConfig): ManagerFactoryParameters {
     val pkixParams = PKIXBuilderParameters(trustStore, X509CertSelector())

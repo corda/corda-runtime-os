@@ -309,10 +309,6 @@ class HttpClient(private val destination: NetworkHostAndPort,
 
         override fun userEventTriggered(ctx: ChannelHandlerContext, evt: Any) {
             when (evt) {
-                is SniCompletionEvent -> {
-                    logger.warn("This shouldn't happen. NOT YET IMPLEMENTED")
-                }
-
                 is SslHandshakeCompletionEvent -> {
                     if (evt.isSuccess) {
                         val ch = ctx.channel()

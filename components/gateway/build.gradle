@@ -8,6 +8,7 @@ description 'P2P gateway component'
 dependencies {
     implementation "net.corda:corda-base:$cordaVersion"
     implementation "net.corda:corda-node-api:$cordaVersion"
+    implementation "net.corda:corda-application:$cordaVersion"
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle")
     implementation project(":data:avro-schema")
