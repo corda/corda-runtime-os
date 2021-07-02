@@ -87,7 +87,7 @@ class SimpleLifeCycleCoordinator(
     @Throws(
         RejectedExecutionException::class
     )
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("ComplexMethod", "TooGenericExceptionCaught")
     private fun processEvents() {
         executorThreadID = Thread.currentThread().id
         val eventList = ArrayList<LifeCycleEvent>(batchSize)
