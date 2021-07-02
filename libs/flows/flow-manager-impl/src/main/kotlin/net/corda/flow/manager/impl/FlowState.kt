@@ -7,6 +7,7 @@ import net.corda.internal.application.context.InvocationContext
 import net.corda.v5.application.identity.Party
 import net.corda.v5.base.context.Trace
 
+@Suppress("LongParameterList")
 class FlowState(
     val suspendCount: Int,
     val context: InvocationContext,

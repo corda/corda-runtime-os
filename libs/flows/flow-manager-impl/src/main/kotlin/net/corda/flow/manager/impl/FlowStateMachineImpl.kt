@@ -9,7 +9,15 @@ import com.esotericsoftware.kryo.KryoSerializable
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import net.corda.ext.internal.logging.context.pushToLoggingContext
-import net.corda.flow.manager.*
+import net.corda.flow.manager.Checkpoint
+import net.corda.flow.manager.FlowEvent
+import net.corda.flow.manager.FlowFactory
+import net.corda.flow.manager.FlowIORequest
+import net.corda.flow.manager.FlowSession
+import net.corda.flow.manager.FlowStateMachine
+import net.corda.flow.manager.SubFlow
+import net.corda.flow.manager.SubFlowVersion
+import net.corda.flow.manager.errorAndTerminate
 import net.corda.internal.application.context.InvocationContext
 import net.corda.internal.di.DependencyInjectionService
 import net.corda.internal.di.FlowStateMachineInjectable
@@ -127,6 +135,7 @@ class FlowStateMachineImpl<R>(
 
     }
 
+    @Suppress("TooGenericExceptionCaught")
     @Suspendable
     override fun run() {
         //openThreadLocalWormhole()
@@ -147,7 +156,8 @@ class FlowStateMachineImpl<R>(
         } catch (t: Throwable) {
             if (t.isUnrecoverable()) {
                 errorAndTerminate(
-                    "Caught unrecoverable error from flow. Forcibly terminating the JVM, this might leave resources open, and most likely will.",
+                    "Caught unrecoverable error from flow. Forcibly terminating the JVM, this might leave " +
+                            "resources open, and most likely will.",
                     t
                 )
             }
@@ -195,6 +205,7 @@ class FlowStateMachineImpl<R>(
         transientValues.suspended.set(null)
     }
 
+    @Suppress("ComplexMethod")
     private fun sendEvents(
         ioRequest: FlowIORequest<*>
     ) {
@@ -255,6 +266,7 @@ class FlowStateMachineImpl<R>(
         return null
     }
 
+    @Suppress("ThrowsCount", "ComplexMethod", "NestedBlockDepth")
     private fun processEvent(
         ioRequest: FlowIORequest<*>
     ): Pair<Any?, Boolean> {

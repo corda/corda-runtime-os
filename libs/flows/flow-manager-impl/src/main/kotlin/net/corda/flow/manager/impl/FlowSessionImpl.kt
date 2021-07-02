@@ -66,7 +66,8 @@ class FlowSessionImpl(
         val payloadData =
             flowStateMachine.serializationService.deserialize(responseForCurrentSession.bytes, receiveType)
         val cast = receiveType.castIfPossible(payloadData)
-            ?: throw IllegalArgumentException("We were expecting a ${receiveType.name} but we instead got a ${payloadData.javaClass.name} ($payloadData)")
+            ?: throw IllegalArgumentException("We were expecting a ${receiveType.name} but we instead got a " +
+                    "${payloadData.javaClass.name} ($payloadData)")
         return UntrustworthyData(cast)
     }
 
@@ -81,7 +82,8 @@ class FlowSessionImpl(
         return flowStateMachine.suspend(request, maySkipCheckpoint).getValue(this).let {
             val payloadData = flowStateMachine.serializationService.deserialize(it.bytes, receiveType)
             val cast = receiveType.castIfPossible(payloadData)
-                ?: throw IllegalArgumentException("We were expecting a ${receiveType.name} but we instead got a ${payloadData.javaClass.name} ($payloadData)")
+                ?: throw IllegalArgumentException("We were expecting a ${receiveType.name} but we instead got a " +
+                        "${payloadData.javaClass.name} ($payloadData)")
             UntrustworthyData(cast)
         }
     }
