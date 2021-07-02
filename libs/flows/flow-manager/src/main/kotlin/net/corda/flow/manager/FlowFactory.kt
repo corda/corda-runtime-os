@@ -2,7 +2,6 @@ package net.corda.flow.manager
 
 import net.corda.internal.application.cordapp.Cordapp
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.FlowSession
 
 
 interface FlowFactory {

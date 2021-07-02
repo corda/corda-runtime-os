@@ -3,8 +3,17 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Kafka Config Read Component"
+description "Flow Manager Implemenation"
 
 dependencies {
+    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
+    implementation "com.esotericsoftware:kryo:$kryoVersion"
+    implementation "net.corda:corda-application:$cordaVersion"
+    implementation "net.corda:corda-application-internal:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-crypto-api:$cordaVersion"
+    implementation "net.corda:corda-extensions-api:$cordaVersion"
+    implementation "net.corda:corda-serialization-kryo:$cordaVersion"
 
+    implementation project(':libs:flows:flow-manager')
 }
