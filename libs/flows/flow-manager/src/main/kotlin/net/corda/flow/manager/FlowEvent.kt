@@ -46,6 +46,7 @@ sealed class FlowEvent(val flowId: StateMachineRunId) {
         val sequenceNo: Int
     ) : FlowEvent(flowId)
 
+    @Suppress("LongParameterList")
     @CordaSerializable
     class P2PMessage(
         flowId: StateMachineRunId,
@@ -57,10 +58,12 @@ sealed class FlowEvent(val flowId: StateMachineRunId) {
         val message: SerializedBytes<*>
     ) : RoutableEvent(flowId, source, destination, sessionId, sequenceNo) {
         override fun toString(): String {
-            return "P2PMessage[flowId=$flowId, source=$source, destination=$destination, sessionId=$sessionId,seqNo=$sequenceNo, messageSize=${message.summary}]"
+            return "P2PMessage[flowId=$flowId, source=$source, destination=$destination, sessionId=$sessionId, " +
+                    "seqNo=$sequenceNo, messageSize=${message.summary}]"
         }
     }
 
+    @Suppress("LongParameterList")
     @CordaSerializable
     class RemoteFlowError(
         flowId: StateMachineRunId,
@@ -71,7 +74,8 @@ sealed class FlowEvent(val flowId: StateMachineRunId) {
         val errorMessage: String
     ) : RoutableEvent(flowId, source, destination, sessionId, sequenceNo) {
         override fun toString(): String {
-            return "RemoteFlowError[flowId=$flowId, source=$source, destination=$destination, sessionId=$sessionId,seqNo=$sequenceNo, errorMessage=$errorMessage]"
+            return "RemoteFlowError[flowId=$flowId, source=$source, destination=$destination, sessionId=$sessionId, " +
+                    "seqNo=$sequenceNo, errorMessage=$errorMessage]"
         }
     }
 

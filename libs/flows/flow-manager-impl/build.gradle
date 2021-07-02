@@ -13,7 +13,6 @@ dependencies {
     implementation "net.corda:corda-base:$cordaVersion"
     implementation "net.corda:corda-crypto-api:$cordaVersion"
     implementation "net.corda:corda-extensions-api:$cordaVersion"
-    implementation "net.corda:corda-serialization-kryo:$cordaVersion"
 
     implementation project(':libs:flows:flow-manager')
 }
