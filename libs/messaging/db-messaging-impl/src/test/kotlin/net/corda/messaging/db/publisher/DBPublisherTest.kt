@@ -19,12 +19,13 @@ import org.mockito.Mockito.mock
 import java.nio.ByteBuffer
 import java.sql.SQLNonTransientException
 import java.sql.SQLTransientException
+import java.util.Collections
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.atomic.AtomicLong
 
 class DBPublisherTest {
 
-    private val writtenDbRecords = mutableListOf<RecordDbEntry>()
+    private val writtenDbRecords = Collections.synchronizedList(ArrayList<RecordDbEntry>())
     private val offset = AtomicLong(1)
     private val releasedOffsets = mutableListOf<Long>()
 
@@ -40,7 +41,7 @@ class DBPublisherTest {
                     throw failureToSimulateForDbWrite!!
                 }
 
-                writtenDbRecords.addAll(invocation.arguments.first() as List<RecordDbEntry>)
+                writtenDbRecords.addAll(records)
             } finally {
                 postTxFn(records)
             }
@@ -78,8 +79,8 @@ class DBPublisherTest {
 
             assertThat(writtenDbRecords).hasSize(2)
             val writtenRecords = writtenDbRecords.map { Record(it.topic, String(it.key), String(it.value!!)) }
-            assertThat(writtenRecords).containsExactlyElementsOf(records)
-            assertThat(releasedOffsets).containsExactly(1, 2)
+            assertThat(writtenRecords).containsExactlyInAnyOrderElementsOf(records)
+            assertThat(releasedOffsets).containsExactlyInAnyOrder(1, 2)
         }
     }
 
@@ -99,8 +100,8 @@ class DBPublisherTest {
 
             assertThat(writtenDbRecords).hasSize(2)
             val writtenRecords = writtenDbRecords.map { Record(it.topic, String(it.key), String(it.value!!)) }
-            assertThat(writtenRecords).containsExactlyElementsOf(records)
-            assertThat(releasedOffsets).containsExactly(1, 2)
+            assertThat(writtenRecords).containsExactlyInAnyOrderElementsOf(records)
+            assertThat(releasedOffsets).containsExactlyInAnyOrder(1, 2)
         }
     }
 
@@ -120,11 +121,11 @@ class DBPublisherTest {
 
             assertThat(writtenDbRecords).hasSize(2)
             val keyValueEntries = writtenDbRecords.map { String(it.key) to Pair(it.partition, String(it.value!!)) }.toMap()
-            assertThat(keyValueEntries).containsExactlyEntriesOf(mapOf(
+            assertThat(keyValueEntries).containsAllEntriesOf(mapOf(
                 "key1" to Pair(1, "value1"),
                 "key2" to Pair(2, "value2")
             ))
-            assertThat(releasedOffsets).containsExactly(1, 2)
+            assertThat(releasedOffsets).containsExactlyInAnyOrder(1, 2)
         }
     }
 
@@ -144,11 +145,11 @@ class DBPublisherTest {
 
             assertThat(writtenDbRecords).hasSize(2)
             val keyValueEntries = writtenDbRecords.map { String(it.key) to it.value }.toMap()
-            assertThat(keyValueEntries).containsExactlyEntriesOf(mapOf(
+            assertThat(keyValueEntries).containsAllEntriesOf(mapOf(
                 "key1" to null,
                 "key2" to null
             ))
-            assertThat(releasedOffsets).containsExactly(1, 2)
+            assertThat(releasedOffsets).containsExactlyInAnyOrder(1, 2)
         }
     }
 
@@ -169,7 +170,7 @@ class DBPublisherTest {
             assertThatThrownBy { results.first().get() }
                 .isInstanceOf(ExecutionException::class.java)
                 .hasCauseInstanceOf(CordaMessageAPIIntermittentException::class.java)
-            assertThat(releasedOffsets).containsExactly(1, 2)
+            assertThat(releasedOffsets).containsExactlyInAnyOrder(1, 2)
             assertThat(writtenDbRecords).isEmpty()
         }
     }
@@ -191,7 +192,7 @@ class DBPublisherTest {
             assertThatThrownBy { results.first().get() }
                 .isInstanceOf(ExecutionException::class.java)
                 .hasCauseInstanceOf(CordaMessageAPIFatalException::class.java)
-            assertThat(releasedOffsets).containsExactly(1, 2)
+            assertThat(releasedOffsets).containsExactlyInAnyOrder(1, 2)
             assertThat(writtenDbRecords).isEmpty()
         }
     }
