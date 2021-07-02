@@ -1,0 +1,10 @@
+plugins {
+    id 'corda.publish'
+    id 'corda.common-library'
+}
+
+description "Kafka Config Read Component"
+
+dependencies {
+
+}
