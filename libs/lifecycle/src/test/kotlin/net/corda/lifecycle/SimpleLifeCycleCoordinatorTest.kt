@@ -16,7 +16,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
         const val BATCH_SIZE: Int = 128
 
-        const val TIMEOUT: Long = 2000L
+        const val TIMEOUT: Long = 1000L
 
         val logger: Logger = LoggerFactory.getLogger(SimpleLifeCycleCoordinatorTest::class.java)
     }
@@ -255,7 +255,7 @@ internal class SimpleLifeCycleCoordinatorTest {
                 }
             }
         }.use { coordinator ->
-            for (i in 0..n) {
+            for(i in 0 .. n) {
                 coordinator.start()
                 coordinator.postEvent(object : ThrowException {})
                 assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
