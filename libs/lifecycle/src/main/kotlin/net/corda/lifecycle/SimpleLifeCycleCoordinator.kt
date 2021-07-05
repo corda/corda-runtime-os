@@ -87,7 +87,7 @@ class SimpleLifeCycleCoordinator(
     @Throws(
         RejectedExecutionException::class
     )
-    @Suppress("ComplexMethod", "MaxLineLength", "TooGenericExceptionCaught")
+    @Suppress("ComplexMethod", "TooGenericExceptionCaught")
     private fun processEvents() {
         executorThreadID = Thread.currentThread().id
         val eventList = ArrayList<LifeCycleEvent>(batchSize)
@@ -106,7 +106,8 @@ class SimpleLifeCycleCoordinator(
                 try {
                     lifeCycleProcessor(errorEvent, this)
                 } catch (cause: Throwable) {
-                    logger.error("Life-Cycle coordinator caught unexpected ${cause.message} during ErrorEvent processing. Will now stop coordinator!",
+                    logger.error("Life-Cycle coordinator caught unexpected ${cause.message}" +
+                            " during ErrorEvent processing. Will now stop coordinator!",
                         cause)
                     errorEvent.isHandled = false
                 }
