@@ -6,11 +6,6 @@ plugins {
 
 description 'Kafka Messaging API Impl'
 
-//Kafka isn't available on CI, To execute tests locally remove this closure and start kafka docker containers
-test {
-    exclude 'net/corda/messaging/kafka/integration/**'
-}
-
 dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:schema-registry:schema-registry")
