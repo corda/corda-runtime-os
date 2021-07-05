@@ -4,7 +4,7 @@ cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
     runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
-    runE2eTests: true,
+    runE2eTests: false,
     e2eTestName: 'flowworker-e2e-tests',
     )
 
