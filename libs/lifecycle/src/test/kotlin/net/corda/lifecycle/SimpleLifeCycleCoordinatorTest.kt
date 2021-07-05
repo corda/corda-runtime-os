@@ -2,6 +2,8 @@ package net.corda.lifecycle
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CountDownLatch
@@ -21,7 +23,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     interface PostEvent : LifeCycleEvent
 
-    interface ThrowException: LifeCycleEvent
+    interface ThrowException : LifeCycleEvent
 
     @Test
     fun burstEvents() {
@@ -148,9 +150,9 @@ internal class SimpleLifeCycleCoordinatorTest {
         }
     }
 
-    @Test
-    fun postHandledErrorEvent() {
-        var n = Random.nextInt(11) + 2
+    @ParameterizedTest
+    @ValueSource(ints = [13])
+    fun postHandledErrorEvent(n: Int) {
         var stopLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, coordinator: LifeCycleCoordinator ->
@@ -162,9 +164,9 @@ internal class SimpleLifeCycleCoordinatorTest {
                     throw expectedException
                 }
                 is ErrorEvent -> {
-                    assertEquals(expectedException, event)
+                    assertEquals(expectedException, event.cause)
                     event.isHandled = true
-                    coordinator.postEvent(object: PostEvent {})
+                    coordinator.postEvent(object : PostEvent {})
                 }
                 is PostEvent -> {
                     coordinator.stop()
@@ -175,7 +177,7 @@ internal class SimpleLifeCycleCoordinatorTest {
                 }
             }
         }.use { coordinator ->
-            while(n -- > 0) {
+            for (i in 0..n) {
                 coordinator.start()
                 coordinator.postEvent(object : ThrowException {})
                 assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
@@ -183,9 +185,9 @@ internal class SimpleLifeCycleCoordinatorTest {
         }
     }
 
-    @Test
-    fun postHandledButRethrowErrorEvent() {
-        var n = Random.nextInt(11) + 2
+    @ParameterizedTest
+    @ValueSource(ints = [13])
+    fun postHandledButRethrowErrorEvent(n: Int) {
         var stopLatch = CountDownLatch(2)
         val expectedException = Exception("expected exception")
         val unexpectedException = Exception("unexpected exception")
@@ -215,7 +217,7 @@ internal class SimpleLifeCycleCoordinatorTest {
                 }
             }
         }.use { coordinator ->
-            while(n -- > 0) {
+            for (i in 0..n) {
                 coordinator.start()
                 coordinator.postEvent(object : ThrowException {})
                 assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
@@ -224,9 +226,9 @@ internal class SimpleLifeCycleCoordinatorTest {
     }
 
 
-    @Test
-    fun postUnhandledErrorEvent() {
-        var n = Random.nextInt(11) + 2
+    @ParameterizedTest
+    @ValueSource(ints = [13])
+    fun postUnhandledErrorEvent(n: Int) {
         var stopLatch = CountDownLatch(2)
         val expectedException = Exception("expected exception")
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
@@ -253,7 +255,7 @@ internal class SimpleLifeCycleCoordinatorTest {
                 }
             }
         }.use { coordinator ->
-            while(n -- > 0) {
+            for(i in 0 .. n) {
                 coordinator.start()
                 coordinator.postEvent(object : ThrowException {})
                 assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
@@ -304,7 +306,7 @@ internal class SimpleLifeCycleCoordinatorTest {
                 }
             }
         }.use { coordinator ->
-            while(n -- > 0) {
+            while (n-- > 0) {
                 assertFalse(coordinator.isRunning)
                 coordinator.start()
                 assertTrue(coordinator.isRunning)
