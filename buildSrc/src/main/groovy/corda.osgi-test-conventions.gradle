@@ -54,10 +54,6 @@ def testOSGi = tasks.register('testOSGi', TestOSGi) {
     bndrun = 'test.bndrun'
 }
 
-tasks.named('check') {
-    dependsOn testOSGi
-}
-
 artifacts {
     archives testingBundle
 }
