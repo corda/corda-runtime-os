@@ -150,7 +150,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     @Test
     fun postHandledErrorEvent() {
-        var n = Random.nextInt(11)
+        var n = Random.nextInt(11) + 2
         var stopLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, coordinator: LifeCycleCoordinator ->
@@ -185,7 +185,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     @Test
     fun postHandledButRethrowErrorEvent() {
-        var n = Random.nextInt(11)
+        var n = Random.nextInt(11) + 2
         var stopLatch = CountDownLatch(2)
         val expectedException = Exception("expected exception")
         val unexpectedException = Exception("unexpected exception")
@@ -226,7 +226,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     @Test
     fun postUnhandledErrorEvent() {
-        var n = Random.nextInt(11)
+        var n = Random.nextInt(11) + 2
         var stopLatch = CountDownLatch(2)
         val expectedException = Exception("expected exception")
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
@@ -290,7 +290,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     @Test
     fun startAndStopLoop() {
-        var n = Random.nextInt(11)
+        var n = Random.nextInt(11) + 2
         val startLatch = CountDownLatch(n)
         val stopLatch = CountDownLatch(n)
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
@@ -314,8 +314,5 @@ internal class SimpleLifeCycleCoordinatorTest {
             assertTrue(startLatch.await(n * TIMEOUT, TimeUnit.MILLISECONDS))
         }
     }
-
-    // create events. stop, check all events are processed.
-
 
 }
