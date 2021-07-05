@@ -24,6 +24,10 @@ dependencies {
 
     testRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
 
+    integrationTestImplementation project(":components:kafka-topic-admin")
     integrationTestImplementation project(":data:avro-schema")
+
+    //runtime implementation dependencies
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+    integrationTestRuntimeOnly project(":libs:kafka-utils:topic-admin-impl")
 }
