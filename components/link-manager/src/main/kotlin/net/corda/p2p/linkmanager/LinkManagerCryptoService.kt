@@ -11,5 +11,5 @@ interface LinkManagerCryptoService {
     fun signData(hash: ByteArray, data: ByteArray): ByteArray
 
     class NoPrivateKeyForGroupException(hash: String?):
-        CordaRuntimeException("Could not find (our) private key in the network map corresponding to private key hash = $hash")
+        CordaRuntimeException("Could not find (our) private key in the network map corresponding to public key hash = $hash")
 }

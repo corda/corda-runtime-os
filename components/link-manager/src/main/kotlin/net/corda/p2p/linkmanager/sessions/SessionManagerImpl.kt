@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.p2p.FlowMessage
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.Step2Message
@@ -12,11 +13,12 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.groupIdNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.hashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.initiatorHashNotInNetworkMapWarning
@@ -30,35 +32,74 @@ import org.slf4j.LoggerFactory
 import java.security.PublicKey
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 open class SessionManagerImpl(
     private val supportedModes: Set<ProtocolMode>,
     private val networkMap: LinkManagerNetworkMap,
     private val cryptoService: LinkManagerCryptoService,
     private val maxMessageSize: Int,
-    private val sessionNegotiatedCallback: (SessionKey, Session, LinkManagerNetworkMap) -> Unit
+    private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues
     ): SessionManager {
 
+    companion object {
+        fun getSessionKeyFromMessage(message: FlowMessage): SessionKey? {
+           val peer = message.header.destination.toHoldingIdentity() ?: return null
+           val us = message.header.source.toHoldingIdentity() ?: return null
+           return SessionKey(us.groupId, us.type, peer)
+       }
+    }
 
-    private val pendingInitiatorSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
-    private val activeInitiatorSessions = ConcurrentHashMap<SessionKey, Session>()
+    //On the Outbound side there is a single unique session per SessionKey.
+    data class SessionKey(
+        val ourGroupId: String,
+        val ourType: LinkManagerNetworkMap.IdentityType,
+        val responderId: LinkManagerNetworkMap.HoldingIdentity
+    )
 
-    private val pendingResponderSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
-    private val activeResponderSessions = ConcurrentHashMap<String, Session>()
+    private val pendingOutboundSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
+    private val activeOutboundSessions = ConcurrentHashMap<SessionKey, Session>()
+
+    private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
+    private val activeInboundSessions = ConcurrentHashMap<String, Session>()
 
     private var logger = LoggerFactory.getLogger(this::class.java.name)
+
+    private val sessionNegotiationLock = ReentrantLock()
 
     @VisibleForTesting
     override fun setLogger(newLogger: Logger) {
         logger = newLogger
     }
 
-    override fun getInitiatorSession(key: SessionKey): Session? {
-        return activeInitiatorSessions[key]
+    override fun processOutboundFlowMessage(message: FlowMessage): SessionState {
+        sessionNegotiationLock.withLock {
+            val key = getSessionKeyFromMessage(message)
+            if (key == null) {
+                logger.error("Invalid identity read from ${FlowMessage::class.java.simpleName}. The message was discarded.")
+                return SessionState.CannotEstablishSession
+            }
+
+            val activeSession = activeOutboundSessions[key]
+            if (activeSession != null) {
+                return SessionState.SessionEstablished(activeSession)
+            }
+            return if (pendingOutboundSessionMessageQueues.queueMessage(message, key)) {
+                val initMessage = getSessionInitMessage(key)
+                if (initMessage == null) {
+                    SessionState.CannotEstablishSession
+                } else {
+                    SessionState.NewSessionNeeded(initMessage)
+                }
+            } else {
+                SessionState.SessionAlreadyPending
+            }
+        }
     }
 
-    override fun getResponderSession(uuid: String): Session? {
-        return activeResponderSessions[uuid]
+    override fun getInboundSession(uuid: String): Session? {
+        return activeInboundSessions[uuid]
     }
 
     override fun processSessionMessage(message: LinkInMessage): LinkOutMessage? {
@@ -74,10 +115,10 @@ open class SessionManagerImpl(
         }
     }
 
-    override fun getSessionInitMessage(sessionKey: SessionKey): LinkOutMessage? {
+    private fun getSessionInitMessage(sessionKey: SessionKey): LinkOutMessage? {
         val sessionId = UUID.randomUUID().toString()
         val session = AuthenticationProtocolInitiator(sessionId, supportedModes, maxMessageSize)
-        pendingInitiatorSessions[sessionId] = Pair(sessionKey, session)
+        pendingOutboundSessions[sessionId] = Pair(sessionKey, session)
         return createLinkOutMessage(
             session.generateInitiatorHello(),
             sessionKey.responderId.toHoldingIdentity(),
@@ -97,7 +138,7 @@ open class SessionManagerImpl(
         CordaRuntimeException("Could not find the public key in the network map by hash = $hash")
 
     private fun processResponderHello(message: ResponderHelloMessage): LinkOutMessage? {
-        val (sessionInfo, session) = pendingInitiatorSessions[message.header.sessionId] ?: run {
+        val (sessionInfo, session) = pendingOutboundSessions[message.header.sessionId] ?: run {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
@@ -137,7 +178,7 @@ open class SessionManagerImpl(
     }
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
-        val (sessionInfo, session) = pendingInitiatorSessions[message.header.sessionId] ?: run {
+        val (sessionInfo, session) = pendingOutboundSessions[message.header.sessionId] ?: run {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
@@ -157,9 +198,11 @@ open class SessionManagerImpl(
             return null
         }
         val authenticatedSession = session.getSession()
-        activeInitiatorSessions[sessionInfo] = authenticatedSession
-        pendingInitiatorSessions.remove(message.header.sessionId)
-        sessionNegotiatedCallback(sessionInfo, authenticatedSession, networkMap)
+        sessionNegotiationLock.withLock {
+            activeOutboundSessions[sessionInfo] = authenticatedSession
+            pendingOutboundSessions.remove(message.header.sessionId)
+            pendingOutboundSessionMessageQueues.sessionNegotiatedCallback(sessionInfo, authenticatedSession, networkMap)
+        }
         return null
     }
 
@@ -172,12 +215,12 @@ open class SessionManagerImpl(
             message.privateKey.array(),
             message.responderHello.responderPublicKey.array())
         session.generateHandshakeSecrets()
-        pendingResponderSessions[message.initiatorHello.header.sessionId] = session
+        pendingInboundSessions[message.initiatorHello.header.sessionId] = session
         return null
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
-        val session = pendingResponderSessions[message.header.sessionId]
+        val session = pendingInboundSessions[message.header.sessionId]
         if (session == null) {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
@@ -230,8 +273,8 @@ open class SessionManagerImpl(
             return null
         }
 
-        activeResponderSessions[message.header.sessionId] = session.getSession()
-        pendingResponderSessions.remove(message.header.sessionId)
+        activeInboundSessions[message.header.sessionId] = session.getSession()
+        pendingInboundSessions.remove(message.header.sessionId)
         return createLinkOutMessage(response, peer, networkMap)
     }
 }

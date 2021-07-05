@@ -15,20 +15,18 @@ import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessageFromFlowMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.convertToFlowMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
+import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.SessionKey
 import net.corda.p2p.schema.Schema
 import net.corda.v5.base.annotations.VisibleForTesting
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedQueue
 
 class LinkManager(@Reference(service = SubscriptionFactory::class)
                   private val subscriptionFactory: SubscriptionFactory,
@@ -47,12 +45,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         const val INBOUND_MESSAGE_PROCESSOR_GROUP = "inbound_message_processor_group"
         const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
 
-        fun getSessionKeyFromMessage(message: FlowMessage): SessionKey? {
-            val peer = message.header.destination.toHoldingIdentity() ?: return null
-            val us = message.header.source.toHoldingIdentity() ?: return null
-            return SessionKey(us.groupId, us.type, peer)
-        }
-
         fun generateKey(): String {
             return UUID.randomUUID().toString()
         }
@@ -60,20 +52,20 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     private var outboundMessageSubscription: Subscription<String, FlowMessage>
     private var inboundMessageSubscription: Subscription<String, LinkInMessage>
-    private var messagesPendingSession = PendingSessionsMessageQueuesImpl(publisherFactory)
+    private var messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory)
     private var sessionManager: SessionManager = SessionManagerImpl(
         config.protocolModes,
         linkManagerNetworkMap,
         linkManagerCryptoService,
         config.maxMessageSize,
-        messagesPendingSession::sessionNegotiatedCallback
+        messagesPendingSession
     )
 
     init {
         val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC)
         outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             outboundMessageSubscriptionConfig,
-            OutboundMessageProcessor(sessionManager, messagesPendingSession, linkManagerNetworkMap),
+            OutboundMessageProcessor(sessionManager, linkManagerNetworkMap),
             partitionAssignmentListener = null
         )
         val inboundMessageSubscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC)
@@ -99,7 +91,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     class OutboundMessageProcessor(
         private val sessionManager: SessionManager,
-        private val pendingSessionsMessageQueues: PendingSessionsMessageQueues,
         private val networkMap: LinkManagerNetworkMap
     ) : EventLogProcessor<String, FlowMessage> {
 
@@ -124,21 +115,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 return null
             }
 
-            val sessionKey = getSessionKeyFromMessage(message)
-            if (sessionKey == null) {
-                logger.error("Invalid identity read from Avro. The message was discarded.")
-                return null
+            return when(val state = sessionManager.processOutboundFlowMessage(message)) {
+                is SessionState.NewSessionNeeded -> state.sessionInitMessage
+                is SessionState.SessionEstablished -> createLinkOutMessageFromFlowMessage(message, state.session, networkMap)
+                else -> return null //Session Pending or cannot establish session (this is logged inside the SessionManager)
             }
-            val session = sessionManager.getInitiatorSession(sessionKey)
-            if (session == null) {
-                val newSessionNeeded = pendingSessionsMessageQueues.queueMessage(message, sessionKey)
-                if (newSessionNeeded) {
-                    return sessionManager.getSessionInitMessage(sessionKey)
-                }
-            } else {
-                return createLinkOutMessageFromFlowMessage(message, session, networkMap)
-            }
-            return null
         }
     }
 
@@ -175,7 +156,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
          */
         private fun extractAndCheckMessage(message: LinkInMessage): FlowMessage? {
             val sessionId = getSessionFromDataMessage(message)
-            val session =  sessionManager.getResponderSession(sessionId)
+            val session =  sessionManager.getInboundSession(sessionId)
             if (session == null) {
                 logger.warn("Received message with SessionId = $sessionId for which there is no active session." +
                         " The message was discarded.")
@@ -198,13 +179,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         override val valueClass = LinkInMessage::class.java
     }
 
-    interface PendingSessionsMessageQueues {
+    interface PendingSessionMessageQueues {
         fun queueMessage(message: FlowMessage, key: SessionKey): Boolean
         fun sessionNegotiatedCallback(key: SessionKey, session: Session, networkMap: LinkManagerNetworkMap)
     }
 
-    class PendingSessionsMessageQueuesImpl(publisherFactory: PublisherFactory): PendingSessionsMessageQueues {
-        private val queuedMessagesPendingSession = ConcurrentHashMap<SessionKey, ConcurrentLinkedQueue<FlowMessage>>()
+    class PendingSessionMessageQueuesImpl(publisherFactory: PublisherFactory): PendingSessionMessageQueues {
+        private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<FlowMessage>>()
         private val config = PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, null)
         private val publisher = publisherFactory.createPublisher(config)
 
@@ -214,10 +195,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
          * Returns [true] if we need to start session negotiation and [false] if we don't (if the session is pending).
         */
         override fun queueMessage(message: FlowMessage, key: SessionKey): Boolean {
-            val newQueue = ConcurrentLinkedQueue<FlowMessage>()
-            newQueue.add(message)
-            val oldQueue = queuedMessagesPendingSession.putIfAbsent(key, newQueue)
-            oldQueue?.add(message)
+            val oldQueue = queuedMessagesPendingSession.putIfAbsent(key, LinkedList())
+            if (oldQueue != null) {
+                oldQueue.add(message)
+            } else {
+                queuedMessagesPendingSession[key]?.add(message)
+            }
             return oldQueue == null
         }
 
