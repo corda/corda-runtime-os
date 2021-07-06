@@ -47,6 +47,11 @@ class Gateway(address: NetworkHostAndPort,
         const val P2P_OUT_TOPIC = "p2p.out"
         const val CONSUMER_GROUP_ID = "gateway"
         const val PUBLISHER_ID = "gateway"
+
+        /**
+         * Temporary value used to negotiate P2P sessions. Will be removed when design changes
+         */
+        const val MAX_MESSAGE_SIZE = 1024 * 1024
     }
 
     private val logger = LoggerFactory.getLogger(Gateway::class.java)

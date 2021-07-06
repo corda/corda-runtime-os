@@ -8,7 +8,14 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.LinkInMessage
+import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
+import net.corda.p2p.Step2Message
+import net.corda.p2p.crypto.AuthenticatedDataMessage
+import net.corda.p2p.crypto.InitiatorHelloMessage
+import net.corda.p2p.crypto.ResponderHelloMessage
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.gateway.Gateway.Companion.MAX_MESSAGE_SIZE
 import net.corda.p2p.gateway.Gateway.Companion.P2P_IN_TOPIC
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.ConnectionManager
@@ -62,16 +69,44 @@ class InboundMessageHandler(private val server: HttpServer,
     }
 
     /**
-     * Handler for direct P2P messages. The payload is deserialized and then published to the ingress topic
+     * Handler for direct P2P messages. The payload is deserialized and then published to the ingress topic.
+     * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
     private fun handleRequestMessage(message: ReceivedMessage) {
-        val responseBytes = ByteArray(0)
+        var responseBytes = ByteArray(0)
         var statusCode = message.response.status()
         try {
             logger.info("Processing request message from ${message.source}")
             val p2pMessage = LinkOutMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
+            val record = when (p2pMessage.payload) {
+                is AuthenticatedDataMessage -> Record(P2P_IN_TOPIC, "key", LinkInMessage(p2pMessage.payload))
+                is InitiatorHelloMessage -> {
+                    // Generate a response containing the server hello and the DH secret
+                    val sessionRequest = p2pMessage.payload as InitiatorHelloMessage
+                    val session = AuthenticationProtocolResponder(sessionRequest.header.sessionId,
+                        sessionRequest.supportedModes.toSet(),
+                        MAX_MESSAGE_SIZE)
+                    session.receiveInitiatorHello(sessionRequest)
+                    val sessionInitResponse = session.generateResponderHello()
+                    val p2pOutMessage = LinkOutMessage.newBuilder().apply {
+                        //TODO: if GW to GW is always LinkOutMessages, then I need to find out how to fill the SNI header
+                        header = LinkOutHeader("SNI", message.source.toString())
+                        payload = sessionInitResponse
+                    }.build()
+                    responseBytes = p2pOutMessage.toByteBuffer().array()
+                    val (pKey, _) = session.getDHKeyPair()
+                    val step2Message = Step2Message.newBuilder().apply {
+                        initiatorHello = sessionRequest
+                        responderHello = sessionInitResponse
+                        privateKey = ByteBuffer.wrap(pKey)
+                    }
+                    Record(P2P_IN_TOPIC, "key", LinkInMessage(step2Message))
+                }
+                else -> {
+                    Record(P2P_IN_TOPIC, "key", LinkInMessage(p2pMessage.payload))
+                }
+            }
             logger.info("Received message of type ${p2pMessage.schema.name}")
-            val record = Record(P2P_IN_TOPIC, "key", LinkInMessage(p2pMessage.payload))
             p2pInPublisher?.publish(listOf(record))
         } catch (e: IOException) {
             logger.warn("Invalid message received. Cannot deserialize")
@@ -108,4 +143,5 @@ class InboundMessageHandler(private val server: HttpServer,
 
         message.release()
     }
+
 }
