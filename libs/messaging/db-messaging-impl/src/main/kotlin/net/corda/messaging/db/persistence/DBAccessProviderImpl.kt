@@ -338,14 +338,7 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
     }
 
     private fun getBytes(blob: Blob?): ByteArray? {
-        return if (blob == null) {
-            null
-        } else {
-            when(dbType) {
-                DBType.H2, DBType.ORACLE -> blob.getBytes(1, blob.length().toInt())
-                DBType.POSTGRESQL, DBType.SQL_SERVER -> blob.getBytes(1, blob.length().toInt())
-            }
-        }
+        return blob?.getBytes(1, blob.length().toInt())
     }
 
     private fun toBlob(bytes: ByteArray, connection: Connection): Blob {
