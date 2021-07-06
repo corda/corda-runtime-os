@@ -63,10 +63,7 @@ class GatewayTest {
     @Timeout(30)
     fun `http client to gateway`() {
         val serverAddress = NetworkHostAndPort.parse("localhost:10000")
-        val message = LinkOutMessage.newBuilder().apply {
-            header = LinkOutHeader("www.party-a.corda.com", serverAddress.toString())
-            payload = authenticatedP2PMessage(String())
-        }.build()
+        val message = LinkInMessage(authenticatedP2PMessage(String()))
         Gateway(serverAddress,
                 sslConfiguration,
                 SubscriptionFactoryStub(topicServiceAlice!!),
@@ -101,7 +98,7 @@ class GatewayTest {
 
 
     @Test
-    @Timeout(30)
+    @Timeout(60)
     fun `multiple clients to gateway`() {
         val clientNumber = 4
         val threadPool = NioEventLoopGroup(clientNumber)
@@ -114,10 +111,7 @@ class GatewayTest {
                     client.start()
                     client.onConnection.subscribe { evt ->
                         if (evt.connected) {
-                            val p2pOutMessage = LinkOutMessage.newBuilder().apply {
-                                header = LinkOutHeader("www.party-a.corda.com", serverAddress.toString())
-                                payload = authenticatedP2PMessage("Client-${index + 1}")
-                            }.build()
+                            val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-${index + 1}"))
                             client.send(p2pOutMessage.toByteBuffer().array())
                         }
                     }
@@ -163,7 +157,7 @@ class GatewayTest {
             }
             servers.add(HttpServer(NetworkHostAndPort.parse(serverAddresses[id]), sslConfiguration).also {
                 it.onReceive.subscribe { rcv ->
-                    val p2pMessage = LinkOutMessage.fromByteBuffer(ByteBuffer.wrap(rcv.payload))
+                    val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(rcv.payload))
                     assertEquals("Target-${serverAddresses[id]}", String((p2pMessage.payload as AuthenticatedDataMessage).payload.array()))
                     deliveryLatch.countDown()
                 }
@@ -210,7 +204,7 @@ class GatewayTest {
         }
 
         val startTime = Instant.now().toEpochMilli()
-        var barrier = CountDownLatch(1)
+        val barrier = CountDownLatch(1)
         // Start the gateways
         val t1 = thread {
             val alice = Gateway(
