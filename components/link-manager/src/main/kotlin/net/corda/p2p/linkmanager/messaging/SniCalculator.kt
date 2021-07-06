@@ -16,11 +16,11 @@ class SniCalculator {
         fun calculateSni(peer: LinkManagerNetworkMap.HoldingIdentity, address: String): String {
 
             return when (peer.type) {
-                LinkManagerNetworkMap.IdentityType.CLASSIC_CORDA -> {
+                LinkManagerNetworkMap.NetworkType.CLASSIC_CORDA -> {
                     sha256Hash(peer.x500Name.toByteArray()).toString().take(HASH_TRUNCATION_SIZE)
                         .toLowerCase() + CLASSIC_CORDA_SNI_SUFFIX
                 }
-                LinkManagerNetworkMap.IdentityType.CORDA_5 -> {
+                LinkManagerNetworkMap.NetworkType.CORDA_5 -> {
                     URI.create(address).host
                 }
             }

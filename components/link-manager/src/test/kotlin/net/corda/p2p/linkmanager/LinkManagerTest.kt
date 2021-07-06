@@ -8,10 +8,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.FlowMessage
 import net.corda.p2p.FlowMessageHeader
 import net.corda.p2p.HoldingIdentity
-import net.corda.p2p.IdentityType
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
+import net.corda.p2p.NetworkType
 import net.corda.p2p.SessionPartitions
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.ProtocolMode
@@ -31,7 +31,6 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -46,10 +45,10 @@ import java.util.concurrent.CompletableFuture
 class LinkManagerTest {
 
     companion object {
-        val FIRST_SOURCE = HoldingIdentity("PartyA", "Group", IdentityType.CORDA_5)
-        val SECOND_SOURCE = HoldingIdentity("PartyA", "AnotherGroup", IdentityType.CORDA_5)
-        val FIRST_DEST = HoldingIdentity("PartyB", "Group", IdentityType.CORDA_5)
-        val SECOND_DEST = HoldingIdentity("PartyC", "Group", IdentityType.CORDA_5)
+        val FIRST_SOURCE = HoldingIdentity("PartyA", "Group", NetworkType.CORDA_5)
+        val SECOND_SOURCE = HoldingIdentity("PartyA", "AnotherGroup", NetworkType.CORDA_5)
+        val FIRST_DEST = HoldingIdentity("PartyB", "Group", NetworkType.CORDA_5)
+        val SECOND_DEST = HoldingIdentity("PartyC", "Group", NetworkType.CORDA_5)
         const val FAKE_ADDRESS = "http://10.0.0.1/"
         val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint(FAKE_ADDRESS)
 
@@ -160,8 +159,8 @@ class LinkManagerTest {
     fun `PendingSessionsMessageQueues queueMessage returns true if a new session is needed`() {
         val message = simpleMockFlowMessage(FIRST_SOURCE, FIRST_DEST, "0-0")
 
-        val key1 = SessionKey("id", LinkManagerNetworkMap.IdentityType.CORDA_5, FIRST_DEST.toHoldingIdentity()!!)
-        val key2 = SessionKey("id", LinkManagerNetworkMap.IdentityType.CORDA_5, SECOND_DEST.toHoldingIdentity()!!)
+        val key1 = SessionKey("id", LinkManagerNetworkMap.NetworkType.CORDA_5, FIRST_DEST.toHoldingIdentity()!!)
+        val key2 = SessionKey("id", LinkManagerNetworkMap.NetworkType.CORDA_5, SECOND_DEST.toHoldingIdentity()!!)
 
         val mockPublisherFactory = Mockito.mock(PublisherFactory::class.java)
         val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory)
@@ -300,7 +299,7 @@ class LinkManagerTest {
     fun `InboundMessageProcessor routes session messages to the session manager and sends the response to the gateway`() {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         //Respond to initiator hello message with an initiator hello message (as this response is easy to mock).
-        val response = LinkOutMessage(LinkOutHeader("", IdentityType.CORDA_5, FAKE_ADDRESS), initiatorHelloLinkInMessage().payload)
+        val response = LinkOutMessage(LinkOutHeader("", NetworkType.CORDA_5, FAKE_ADDRESS), initiatorHelloLinkInMessage().payload)
         Mockito.`when`(mockSessionManager.processSessionMessage(any())).thenReturn(response)
 
         val processor = LinkManager.InboundMessageProcessor(mockSessionManager)

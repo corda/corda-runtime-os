@@ -54,7 +54,7 @@ open class SessionManagerImpl(
     //On the Outbound side there is a single unique session per SessionKey.
     data class SessionKey(
         val ourGroupId: String,
-        val ourType: LinkManagerNetworkMap.IdentityType,
+        val ourType: LinkManagerNetworkMap.NetworkType,
         val responderId: LinkManagerNetworkMap.HoldingIdentity
     )
 

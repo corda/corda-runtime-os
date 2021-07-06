@@ -51,9 +51,9 @@ class SessionManagerTest {
 
     companion object {
         private const val GROUP_ID = "myGroup"
-        val OUTBOUND_PARTY = LinkManagerNetworkMap.HoldingIdentity("Out", GROUP_ID, LinkManagerNetworkMap.IdentityType.CORDA_5)
-        val INBOUND_PARTY = LinkManagerNetworkMap.HoldingIdentity("In", GROUP_ID,  LinkManagerNetworkMap.IdentityType.CORDA_5)
-        val PARTY_NOT_IN_NETMAP = LinkManagerNetworkMap.HoldingIdentity("PartyImposter", GROUP_ID, LinkManagerNetworkMap.IdentityType.CORDA_5)
+        val OUTBOUND_PARTY = LinkManagerNetworkMap.HoldingIdentity("Out", GROUP_ID, LinkManagerNetworkMap.NetworkType.CORDA_5)
+        val INBOUND_PARTY = LinkManagerNetworkMap.HoldingIdentity("In", GROUP_ID,  LinkManagerNetworkMap.NetworkType.CORDA_5)
+        val PARTY_NOT_IN_NETMAP = LinkManagerNetworkMap.HoldingIdentity("PartyImposter", GROUP_ID, LinkManagerNetworkMap.NetworkType.CORDA_5)
         val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("http://10.0.0.1/")
         const val MAX_MESSAGE_SIZE = 1024 * 1024
         private val provider = BouncyCastleProvider()

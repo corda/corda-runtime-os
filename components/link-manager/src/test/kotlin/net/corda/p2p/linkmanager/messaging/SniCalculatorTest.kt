@@ -9,10 +9,10 @@ class SniCalculatorTest {
 
     companion object {
         val FIRST_SOURCE = LinkManagerNetworkMap.HoldingIdentity("PartyA", "Group",
-            LinkManagerNetworkMap.IdentityType.CORDA_5
+            LinkManagerNetworkMap.NetworkType.CORDA_5
         )
         val CLASSIC_SOURCE = LinkManagerNetworkMap.HoldingIdentity("PartyA", "Group",
-            LinkManagerNetworkMap.IdentityType.CLASSIC_CORDA
+            LinkManagerNetworkMap.NetworkType.CLASSIC_CORDA
         )
         const val MAX_SNI_SIZE = 255 //Under RCF-1035 the total sni can be at most 255 bytes
         const val MAX_SNI_LABEL_SIZE = 63 //Under RCF-1035 each label can be at most 63 bytes

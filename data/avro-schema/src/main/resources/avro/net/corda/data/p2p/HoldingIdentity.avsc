@@ -12,7 +12,7 @@
       "type": "string"
     },
     {
-      "type": "net.corda.p2p.IdentityType",
+      "type": "net.corda.p2p.NetworkType",
       "name": "identityType"
     }
   ]

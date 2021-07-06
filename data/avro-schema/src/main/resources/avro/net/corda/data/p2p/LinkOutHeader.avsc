@@ -8,8 +8,8 @@
       "type": "string"
     },
     {
-      "name": "destinationIdentityType",
-      "type": "net.corda.p2p.IdentityType"
+      "name": "destinationNetworkType",
+      "type": "net.corda.p2p.NetworkType"
     },
     {
       "name": "address",
