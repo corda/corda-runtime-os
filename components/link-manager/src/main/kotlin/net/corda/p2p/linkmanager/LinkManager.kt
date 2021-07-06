@@ -12,6 +12,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.FlowMessage
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
+import net.corda.p2p.SessionPartitions
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.protocol.api.Session
@@ -27,6 +28,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
+import javax.print.attribute.IntegerSyntax
 
 class LinkManager(@Reference(service = SubscriptionFactory::class)
                   private val subscriptionFactory: SubscriptionFactory,
@@ -52,6 +54,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     private var outboundMessageSubscription: Subscription<String, FlowMessage>
     private var inboundMessageSubscription: Subscription<String, LinkInMessage>
+    private var inboundAssignmentListener = InboundAssignmentListener()
+
     private var messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory)
     private var sessionManager: SessionManager = SessionManagerImpl(
         config.protocolModes,
@@ -65,25 +69,28 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC)
         outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             outboundMessageSubscriptionConfig,
-            OutboundMessageProcessor(sessionManager, linkManagerNetworkMap),
+            OutboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
             partitionAssignmentListener = null
         )
         val inboundMessageSubscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC)
         inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             inboundMessageSubscriptionConfig,
             InboundMessageProcessor(sessionManager),
-            partitionAssignmentListener = null
+            partitionAssignmentListener = inboundAssignmentListener
         )
     }
 
     override fun start() {
-        outboundMessageSubscription.start()
         inboundMessageSubscription.start()
+        /*We must wait for partitions to be assigned to the inbound subscription before we can start the outbound
+         *subscription otherwise the gateway won't know which partition to route message back to.*/
+        inboundAssignmentListener.awaitFirstAssignment()
+        outboundMessageSubscription.start()
     }
 
     override fun stop() {
-        outboundMessageSubscription.stop()
         inboundMessageSubscription.stop()
+        outboundMessageSubscription.stop()
     }
 
     override val isRunning: Boolean
@@ -91,7 +98,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     class OutboundMessageProcessor(
         private val sessionManager: SessionManager,
-        private val networkMap: LinkManagerNetworkMap
+        private val networkMap: LinkManagerNetworkMap,
+        private val inboundAssignmentListener: InboundAssignmentListener
     ) : EventLogProcessor<String, FlowMessage> {
 
         override val keyClass = String::class.java
@@ -101,26 +109,40 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         //We use an EventLogProcessor here instead of a DurableProcessor, as During [CORE-1286] we will use the
         //offset and partition.
         override fun onNext(events: List<EventLogRecord<String, FlowMessage>>): List<Record<*, *>> {
-            val records = mutableListOf<Record<String, LinkOutMessage>>()
+            val records = mutableListOf<Record<String, *>>()
             for (event in events) {
-                processEvent(event)?.let { records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), it)) }
+                records += processEvent(event)
             }
             return records
         }
 
-        private fun processEvent(event: EventLogRecord<String, FlowMessage>): LinkOutMessage? {
+        private fun processEvent(event: EventLogRecord<String, FlowMessage>): MutableList<Record<String, *>> {
+            val records = mutableListOf<Record<String, *>>()
             val message = event.value
             if (message == null) {
                 logger.error("Received null message. The message was discarded.")
-                return null
+                return records
             }
 
-            return when(val state = sessionManager.processOutboundFlowMessage(message)) {
+            val state = sessionManager.processOutboundFlowMessage(message)
+            val linkOutMessage = when(state) {
                 is SessionState.NewSessionNeeded -> state.sessionInitMessage
                 is SessionState.SessionEstablished -> createLinkOutMessageFromFlowMessage(message, state.session, networkMap)
-                else -> return null //Session Pending or cannot establish session (this is logged inside the SessionManager)
+                else -> null //Session Pending or cannot establish session (this is logged inside the SessionManager)
             }
+            linkOutMessage?.let { records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), it)) }
+
+            if (state is SessionState.NewSessionNeeded) {
+                records.add(sessionPartition(state.sessionId))
+            }
+            return records
         }
+
+        private fun sessionPartition(sessionId: String): Record<String, SessionPartitions> {
+            val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC)?.toList()
+            return Record(Schema.SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(partitions))
+        }
+
     }
 
     class InboundMessageProcessor(private val sessionManager: SessionManager) :

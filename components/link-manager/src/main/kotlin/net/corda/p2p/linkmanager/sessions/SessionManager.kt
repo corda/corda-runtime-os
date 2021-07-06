@@ -13,7 +13,7 @@ interface SessionManager {
     fun processSessionMessage(message: LinkInMessage): LinkOutMessage?
 
     sealed class SessionState {
-        data class NewSessionNeeded(val sessionInitMessage: LinkOutMessage): SessionState()
+        data class NewSessionNeeded(val sessionId: String, val sessionInitMessage: LinkOutMessage): SessionState()
         object SessionAlreadyPending: SessionState()
         data class SessionEstablished(val session: Session): SessionState()
         object CannotEstablishSession: SessionState()

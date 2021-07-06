@@ -86,11 +86,11 @@ open class SessionManagerImpl(
                 return SessionState.SessionEstablished(activeSession)
             }
             return if (pendingOutboundSessionMessageQueues.queueMessage(message, key)) {
-                val initMessage = getSessionInitMessage(key)
+                val (sessionId, initMessage) = getSessionInitMessage(key)
                 if (initMessage == null) {
                     SessionState.CannotEstablishSession
                 } else {
-                    SessionState.NewSessionNeeded(initMessage)
+                    SessionState.NewSessionNeeded(sessionId, initMessage)
                 }
             } else {
                 SessionState.SessionAlreadyPending
@@ -115,11 +115,11 @@ open class SessionManagerImpl(
         }
     }
 
-    private fun getSessionInitMessage(sessionKey: SessionKey): LinkOutMessage? {
+    private fun getSessionInitMessage(sessionKey: SessionKey): Pair<String, LinkOutMessage?> {
         val sessionId = UUID.randomUUID().toString()
         val session = AuthenticationProtocolInitiator(sessionId, supportedModes, maxMessageSize)
         pendingOutboundSessions[sessionId] = Pair(sessionKey, session)
-        return createLinkOutMessage(
+        return sessionId to createLinkOutMessage(
             session.generateInitiatorHello(),
             sessionKey.responderId.toHoldingIdentity(),
             networkMap
