@@ -60,7 +60,7 @@ class TestSandboxApplication @Activate constructor(
      */
     override fun startup(args: Array<String>) {
         val path = args[0]
-        logger.info("Start-up loading CPKs at$path...")
+        logger.info("Start-up loading CPKs at $path...")
         val configuration = configAdmin.getConfiguration(ConfigurationAdmin::class.java.name, null)
         val configProperties: Dictionary<String, Any> = Hashtable()
         configProperties.put("baseDirectory", path)

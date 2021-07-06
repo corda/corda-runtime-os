@@ -2,6 +2,7 @@ plugins {
     id 'corda.publish'
     id 'corda.common-app'
     id 'net.corda.plugins.flask' apply false
+    id 'net.corda.plugins.quasar-utils'
 }
 
 repositories {
@@ -16,8 +17,9 @@ dependencies {
 
     implementation "net.corda:corda-base:$cordaSandboxVersion"
     implementation "net.corda:corda-crypto-api:$cordaSandboxVersion"
-    implementation "net.corda:corda-sandbox:$cordaSandboxVersion"
     implementation "net.corda:corda-install:$cordaSandboxVersion"
+    implementation "net.corda:corda-sandbox:$cordaSandboxVersion"
+    implementation "net.corda:corda-packaging:$cordaSandboxVersion"
     implementation "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
     implementation project(":libs:lifecycle")
@@ -32,5 +34,17 @@ dependencies {
 
 description 'Test Sandbox'
 
-
+project.tasks.register("flaskJar", net.corda.gradle.flask.FlaskJarTask) {
+    archiveBaseName = "corda-flask-" + project.name
+    destinationDirectory = new File(project.buildDir, "bin")
+    Provider<RegularFile> quasarAgent = layout.file(provider { configurations.quasarAgent.singleFile })
+    includeLibraries(project.tasks.named("appJar").map { it.outputs }, quasarAgent)
+    javaAgents {
+        quasar {
+            jar = quasarAgent
+            args = project.quasar.options.map { it.substring(1) }.get()
+        }
+    }
+    mainClassName = "net.corda.osgi.framework.OSGiFrameworkMain"
+}
 

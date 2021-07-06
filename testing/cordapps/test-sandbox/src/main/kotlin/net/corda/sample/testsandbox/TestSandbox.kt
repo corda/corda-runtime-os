@@ -1,14 +1,14 @@
 package net.corda.sample.testsandbox
 
-import net.corda.install.Cpi
-import net.corda.install.CpiIdentifier
-import net.corda.install.Cpk
 import net.corda.install.InstallService
 import net.corda.lifecycle.LifeCycle
+import net.corda.packaging.Cpb
 import net.corda.sandbox.SandboxService
 import net.corda.v5.base.util.contextLogger
+import java.net.URL
+import java.nio.file.Files
 import java.nio.file.Path
-import java.util.*
+import kotlin.streams.toList
 
 /**
  * This class shows how to load Cordapps and create the [net.corda.sandbox.Sandbox] for it.
@@ -53,36 +53,48 @@ class TestSandbox(
      */
     override val isRunning: Boolean get() = _isRunning
 
-    /**
-     * Scan the [path] to load the CPK artifacts found.
-     * Print info about the [net.corda.sandbox.Sandbox] created per CPK.
-     */
-    fun installCpk(path: Path) {
-        logger.info("Install CPKs from $path.")
-        val cpiIdentifier = CpiIdentifier(UUID.randomUUID().toString())
-        val cpkUris = installService.scanForCpks(setOf(path.toUri()))
-        val cpis = if (cpkUris.isNotEmpty()) {
-            val cpkUriList = cpkUris.toList()
-            listOf(Cpi(cpiIdentifier, cpkUriList[0], cpkUriList.drop(1).toSet(), emptyMap()))
-        } else {
-            emptyList()
-        }
-        cpis.forEach { cpi ->
-            val cpkSet = installService.loadCpi(cpi)
-            val sandbox = sandboxService.createSandboxes(cpiIdentifier)
-
-            logger.info("Sandbox $sandbox active.")
-            val cpk: Cpk? = cpkSet.find { it.id.cordappSymbolicName == "net.corda.test-cpk" }
-            if (cpk != null) {
-                val cls = sandbox.loadClass(cpk.id, "net.corda.sample.testcpk.TestCPK")
-                logger.info("Class $cls loaded.")
-                val runnable = cls.getDeclaredConstructor().newInstance() as Runnable
-                runnable.run()
+    private fun assembleCPB(cpkUrlList: List<URL>): Cpb {
+        val cpkList = cpkUrlList.map { url ->
+            val urlAsString = url.toString()
+            val cpkName = urlAsString.substring(urlAsString.lastIndexOf("/") + 1)
+            val cpkFile = Files.createTempFile(cpkName, ".cpk")
+            Files.newOutputStream(cpkFile).use {
+                url.openStream().copyTo(it)
             }
+            cpkFile.toAbsolutePath()
+        }.toList()
+        val tempFile = Files.createTempFile("dummy-cordapp-bundle", ".cpb")
+        return try {
+            Files.newOutputStream(tempFile).use { outputStream ->
+                Cpb.assemble(outputStream, cpkList)
+            }
+            installService.loadCpb(Files.newInputStream(tempFile))
+        } finally {
+            Files.delete(tempFile)
         }
     }
 
-    /**
+    private fun listCPK(path: Path): List<URL> {
+        return Files.list(path).filter {
+            it.toFile().name.endsWith(".cpk")
+        }.map {
+            it.toUri().toURL()
+        }.toList()
+    }
+
+    fun installCPK(path: Path) {
+        val cpkUrlList = listCPK(path)
+        val cpb = assembleCPB(cpkUrlList)
+        val sandboxGroup = sandboxService.createSandboxes(cpb.identifier)
+        sandboxGroup.sandboxes.forEach { sandbox ->
+            val cls = sandbox.loadClass("net.corda.sample.testcpk.TestCPK")
+            val constructor = cls.getConstructor()
+            val obj = constructor.newInstance() as Runnable
+            obj.run()
+        }
+    }
+
+        /**
      * Start this Corda component, called by [TestSandboxApplication.coordinator].
      */
     @Synchronized
@@ -90,7 +102,7 @@ class TestSandbox(
         if (!isRunning) {
             _isRunning = true
             logger.info("Starting...")
-            installCpk(path)
+            installCPK(path)
             logger.info("Started.")
         }
     }
