@@ -300,7 +300,7 @@ class LinkManagerTest {
     fun `InboundMessageProcessor routes session messages to the session manager and sends the response to the gateway`() {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         //Respond to initiator hello message with an initiator hello message (as this response is easy to mock).
-        val response = LinkOutMessage(LinkOutHeader("", FAKE_ADDRESS), initiatorHelloLinkInMessage().payload)
+        val response = LinkOutMessage(LinkOutHeader("", IdentityType.CORDA_5, FAKE_ADDRESS), initiatorHelloLinkInMessage().payload)
         Mockito.`when`(mockSessionManager.processSessionMessage(any())).thenReturn(response)
 
         val processor = LinkManager.InboundMessageProcessor(mockSessionManager)

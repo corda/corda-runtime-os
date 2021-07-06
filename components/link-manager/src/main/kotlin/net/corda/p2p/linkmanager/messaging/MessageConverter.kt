@@ -14,7 +14,6 @@ import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.messaging.SniCalculator.Companion.calculateSni
 import net.corda.v5.base.annotations.VisibleForTesting
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -59,7 +58,7 @@ class MessageConverter {
                 logger.warn("Attempted to send message to peer $peerFromAvro which is not in the network map. The message was discarded.")
                 return null
             }
-            return LinkOutHeader(calculateSni(peer, endPoint.address) , endPoint.address)
+            return LinkOutHeader(peerFromAvro.x500Name, peerFromAvro.identityType, endPoint.address)
         }
 
         fun createLinkOutMessageFromFlowMessage(

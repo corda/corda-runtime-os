@@ -4,8 +4,12 @@
   "namespace": "net.corda.p2p",
   "fields": [
     {
-      "name": "sni",
+      "name": "destinationX500Name",
       "type": "string"
+    },
+    {
+      "name": "destinationIdentityType",
+      "type": "net.corda.p2p.IdentityType"
     },
     {
       "name": "address",
