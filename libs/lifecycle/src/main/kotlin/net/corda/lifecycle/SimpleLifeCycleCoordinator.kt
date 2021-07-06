@@ -1,6 +1,14 @@
 package net.corda.lifecycle
 
+import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
@@ -22,7 +30,7 @@ class SimpleLifeCycleCoordinator(
 
     companion object {
 
-        private val logger: Logger = LoggerFactory.getLogger(LifeCycleCoordinator::class.java)
+        private val logger: Logger = contextLogger()
 
     } //~ companion
 
