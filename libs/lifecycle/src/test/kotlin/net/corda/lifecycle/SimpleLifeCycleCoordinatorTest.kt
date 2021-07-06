@@ -151,7 +151,7 @@ internal class SimpleLifeCycleCoordinatorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = [13])
+    @ValueSource(ints = [5])
     fun postHandledErrorEvent(n: Int) {
         var stopLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
@@ -186,7 +186,7 @@ internal class SimpleLifeCycleCoordinatorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = [13])
+    @ValueSource(ints = [5])
     fun postHandledButRethrowErrorEvent(n: Int) {
         var stopLatch = CountDownLatch(2)
         val expectedException = Exception("expected exception")
@@ -227,7 +227,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
 
     @ParameterizedTest
-    @ValueSource(ints = [13])
+    @ValueSource(ints = [5])
     fun postUnhandledErrorEvent(n: Int) {
         var stopLatch = CountDownLatch(2)
         val expectedException = Exception("expected exception")
@@ -291,7 +291,7 @@ internal class SimpleLifeCycleCoordinatorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = [13])
+    @ValueSource(ints = [5])
     fun startAndStopLoop(n: Int) {
         val startLatch = CountDownLatch(n)
         val stopLatch = CountDownLatch(n)
