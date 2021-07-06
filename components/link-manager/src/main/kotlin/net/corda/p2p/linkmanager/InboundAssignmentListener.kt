@@ -34,9 +34,9 @@ class InboundAssignmentListener: PartitionAssignmentListener {
         }
     }
 
-    fun getCurrentlyAssignedPartitions(topic: String) : Set<Int>? {
+    fun getCurrentlyAssignedPartitions(topic: String) : Set<Int> {
         return lock.read {
-            topicToPartition[topic]
+            topicToPartition[topic] ?: emptySet()
         }
     }
 

@@ -28,7 +28,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
-import javax.print.attribute.IntegerSyntax
 
 class LinkManager(@Reference(service = SubscriptionFactory::class)
                   private val subscriptionFactory: SubscriptionFactory,
@@ -139,7 +138,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun sessionPartition(sessionId: String): Record<String, SessionPartitions> {
-            val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC)?.toList()
+            val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
             return Record(Schema.SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(partitions))
         }
 
