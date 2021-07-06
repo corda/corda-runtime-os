@@ -11,9 +11,9 @@ import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFacto
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.internal.uncheckedCast
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
@@ -34,7 +34,7 @@ class PubSubSubscription<K : Any, V : Any>(
 ) : Subscription<K, V> {
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
     }
 
     private val pollSize = config.getInt(TOPICS_POLL_SIZE)

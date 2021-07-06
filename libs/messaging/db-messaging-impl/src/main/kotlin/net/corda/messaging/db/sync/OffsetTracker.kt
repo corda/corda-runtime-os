@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.subscription.Subscription
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
 import org.slf4j.Logger
@@ -37,7 +38,7 @@ class OffsetTracker(private val topic: String,
                     private val periodicChecksInterval: Duration = 2.seconds): LifeCycle {
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
     }
 
     private val maxVisibleOffset = AtomicLong(initialMaxOffset)
