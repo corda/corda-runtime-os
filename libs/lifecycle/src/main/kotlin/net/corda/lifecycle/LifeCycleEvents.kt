@@ -11,18 +11,27 @@ package net.corda.lifecycle
 interface LifeCycleEvent
 
 /**
+ * Define an error event wrapping the [cause] submitted by a [LifeCycleCoordinator]
+ *
+ * @param cause caused the error.
+ * @param isHandled flag if the error event is handled by the processor.
+ *  If [isHandled] is `false` on return from the processor, this will trigger the coordinator to stop.
+ */
+class ErrorEvent internal constructor(val cause: Throwable, var isHandled: Boolean = false) : LifeCycleEvent
+
+/**
  * Define an event submitted by a [LifeCycleCoordinator] when it starts:
  *
  * @see [LifeCycleCoordinator.start]
  */
-object StartEvent : LifeCycleEvent
+class StartEvent internal constructor(): LifeCycleEvent
 
 /**
  * Define an event submitted by a [LifeCycleCoordinator] when it stops.
  *
  * @see [LifeCycleCoordinator.stop]
  */
-object StopEvent : LifeCycleEvent
+class StopEvent internal constructor(): LifeCycleEvent
 
 /**
  * Define a scheduled event submitted by a [LifeCycleCoordinator] when the event happens.
