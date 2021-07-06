@@ -181,7 +181,7 @@ class DemoApp @Activate constructor(
 
     override fun shutdown() {
         consoleLogger.info("Stopping application")
-        lifeCycleCoordinator?.stop()
+        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         log.info("Stopping application")
     }
 }
