@@ -1,9 +1,8 @@
-package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.publisher
+package net.corda.messaging.kafka.publisher
 
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
-import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
