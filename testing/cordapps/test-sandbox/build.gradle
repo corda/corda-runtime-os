@@ -16,8 +16,8 @@ dependencies {
     implementation "net.corda:corda-base:$cordaSandboxVersion"
     implementation "net.corda:corda-crypto-api:$cordaSandboxVersion"
     implementation "net.corda:corda-install:$cordaSandboxVersion"
-    implementation "net.corda:corda-sandbox:$cordaSandboxVersion"
     implementation "net.corda:corda-packaging:$cordaSandboxVersion"
+    implementation "net.corda:corda-sandbox:$cordaSandboxVersion"
     implementation "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
     implementation project(":libs:lifecycle")
