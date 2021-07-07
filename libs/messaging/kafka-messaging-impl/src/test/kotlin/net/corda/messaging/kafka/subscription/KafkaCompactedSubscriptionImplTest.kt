@@ -22,7 +22,6 @@ import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.concurrent.ConcurrentHashMap
@@ -45,28 +44,8 @@ class KafkaCompactedSubscriptionImplTest {
     private val initialSnapshotResult = List(10) {
         ConsumerRecordAndMeta<String, String>(
             TOPIC_PREFIX,
-            ConsumerRecord(TOPIC, 0, it.toLong(), it.toString(), it.toString())
+            ConsumerRecord(TOPIC, 0, it.toLong(), it.toString(), "0")
         )
-    }
-
-    private val kafkaConsumer: CordaKafkaConsumer<String, String> = mock()
-    private val consumerBuilder: ConsumerBuilder<String, String> = mock()
-
-    @BeforeEach
-    fun setup() {
-        doReturn(kafkaConsumer).whenever(consumerBuilder).createCompactedConsumer(any(), any())
-        doReturn(
-            mutableMapOf(
-                TopicPartition(TOPIC, 0) to 0L,
-                TopicPartition(TOPIC, 1) to 0L
-            )
-        ).whenever(kafkaConsumer).beginningOffsets(any())
-        doReturn(
-            mutableMapOf(
-                TopicPartition(TOPIC, 0) to initialSnapshotResult.size.toLong() - 1,
-                TopicPartition(TOPIC, 1) to 0,
-            )
-        ).whenever(kafkaConsumer).endOffsets(any())
     }
 
     private class TestProcessor : CompactedProcessor<String, String> {
@@ -92,6 +71,7 @@ class KafkaCompactedSubscriptionImplTest {
         var latestCurrentData: Map<String, String>? = null
         override fun onNext(newRecord: Record<String, String>, oldValue: String?, currentData: Map<String, String>) {
             log.info("Processing new record: $newRecord")
+            log.info("Current Data: $currentData")
             if (failNext) {
                 throw RuntimeException("Abandon Ship!")
             }
@@ -104,6 +84,7 @@ class KafkaCompactedSubscriptionImplTest {
     fun `compacted subscription returns correct results`() {
         val latch = CountDownLatch(4)
         val processor = TestProcessor()
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
 
         doAnswer {
             val iteration = latch.count
@@ -153,6 +134,7 @@ class KafkaCompactedSubscriptionImplTest {
     fun `compacted subscription removes record on null value`() {
         val latch = CountDownLatch(5)
         val processor = TestProcessor()
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
 
         doAnswer {
             when (val iteration = latch.count) {
@@ -163,7 +145,7 @@ class KafkaCompactedSubscriptionImplTest {
                     listOf(
                         ConsumerRecordAndMeta(
                             TOPIC_PREFIX,
-                            ConsumerRecord<String, String>(TOPIC, 0, iteration, iteration.toString(), null)
+                            ConsumerRecord<String, String>(TOPIC, 0, 2, "2", null)
                         )
                     )
                 }
@@ -197,9 +179,9 @@ class KafkaCompactedSubscriptionImplTest {
         assertThat(processor.incomingRecords[2]).isEqualTo(Record(TOPIC, "2", null))
         assertThat(processor.incomingRecords[3]).isEqualTo(Record(TOPIC, "1", "1"))
         assertThat(processor.latestCurrentData?.containsKey("2")).isFalse
-        val expectedMap = mutableMapOf<String, String>()
-        initialSnapshotResult.associateTo(expectedMap) { it.record.key() to it.record.value() }
-        expectedMap.remove("2")
+        val expectedMap = mapOf(
+            "0" to "0", "1" to "1", "3" to "3", "4" to "4", "5" to "0", "6" to "0", "7" to "0", "8" to "0", "9" to "0"
+        )
         assertThat(processor.latestCurrentData).isEqualTo(expectedMap)
     }
 
@@ -207,6 +189,7 @@ class KafkaCompactedSubscriptionImplTest {
     @Timeout(2, unit = TimeUnit.SECONDS)
     fun `subscription stops on processor snapshot error`() {
         val processor = TestProcessor()
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
         doAnswer { initialSnapshotResult }.whenever(kafkaConsumer).poll()
 
         processor.failSnapshot = true
@@ -226,6 +209,7 @@ class KafkaCompactedSubscriptionImplTest {
     @Test
     fun `subscription attempts to reconnect after intermittent failure`() {
         val latch = CountDownLatch(6)
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
         val processor = TestProcessor()
 
         doAnswer {
@@ -253,6 +237,7 @@ class KafkaCompactedSubscriptionImplTest {
     @Test
     fun `subscription attempts to reconnect after processor failure`() {
         val latch = CountDownLatch(6)
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
         val processor = TestProcessor()
 
         doAnswer {
@@ -294,5 +279,20 @@ class KafkaCompactedSubscriptionImplTest {
 
         // Three calls: First time and after each exception thrown
         verify(consumerBuilder, times(3)).createCompactedConsumer(any(), any())
+    }
+
+    private fun setupStandardMocks(): Pair<CordaKafkaConsumer<String, String>, ConsumerBuilder<String, String>> {
+        val kafkaConsumer: CordaKafkaConsumer<String, String> = mock()
+        val consumerBuilder: ConsumerBuilder<String, String> = mock()
+        doReturn(kafkaConsumer).whenever(consumerBuilder).createCompactedConsumer(any(), any())
+        doReturn(mutableMapOf(TopicPartition(TOPIC, 0) to 0L, TopicPartition(TOPIC, 1) to 0L)).whenever(kafkaConsumer)
+            .beginningOffsets(any())
+        doReturn(
+            mutableMapOf(
+                TopicPartition(TOPIC, 0) to initialSnapshotResult.size.toLong() - 1,
+                TopicPartition(TOPIC, 1) to 0,
+            )
+        ).whenever(kafkaConsumer).endOffsets(any())
+        return Pair(kafkaConsumer, consumerBuilder)
     }
 }
