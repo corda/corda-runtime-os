@@ -84,6 +84,20 @@ In *Kotlin* code declare the `logger` as usual.
 val logger = LoggerFactory.getLogger(MyClass::class.java)
 ```
 
+or, if the module declare the dependency on `net.corda:corda-base`, for example,
+
+```groovy
+dependencies {
+    implementation "net.corda:corda-base:$cordaVersion"
+}
+```
+
+declare the logger as
+
+```groovy
+val logger = contextLogger()
+```
+
 The application logs in a single flow according the time of generations all events, either logged by OSGi bundles, Felix
 or the code bootstrapping and controlling Felix.
 

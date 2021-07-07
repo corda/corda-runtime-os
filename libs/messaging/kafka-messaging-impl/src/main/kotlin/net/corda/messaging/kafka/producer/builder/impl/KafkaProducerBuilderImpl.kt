@@ -10,11 +10,11 @@ import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.toProperties
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.internal.uncheckedCast
+import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 /**
  * Builder for a Kafka Producer.
@@ -28,7 +28,7 @@ class KafkaProducerBuilderImpl(
 ) : ProducerBuilder {
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
     }
 
     override fun createProducer(producerConfig: Config): CordaKafkaProducer {
