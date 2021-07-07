@@ -78,7 +78,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 is WakeupException,
                 is InterruptException,
                 is KafkaException -> {
-                    logErrorAndThrowIntermittentException("Error attempting to poll from topic $topic", ex)
+                    logWarningAndThrowIntermittentException("Error attempting to poll from topic $topic", ex)
                 }
                 else -> logErrorAndThrowFatalException("Unexpected error attempting to poll from topic $topic", ex)
 
@@ -186,7 +186,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 is WakeupException,
                 is KafkaException,
                 is TimeoutException -> {
-                    throw CordaMessageAPIIntermittentException("Intermittent error attempting to get partitions on topic $topic", ex)
+                    logWarningAndThrowIntermittentException("Intermittent error attempting to get partitions on topic $topic", ex)
                 }
                 is AuthenticationException,
                 is AuthorizationException -> {
@@ -196,7 +196,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     logErrorAndThrowFatalException("Unexpected error attempting to get partitions on topic $topic", ex)
                 }
             }
-        } ?: throw CordaMessageAPIIntermittentException("Partitions for topic $topic are null. Kafka may not have completed startup.")
+        } ?: logWarningAndThrowIntermittentException("Partitions for topic $topic are null. Kafka may not have completed startup.")
 
         return listOfPartitions.map { partitionInfo ->
             TopicPartition(partitionInfo.topic(), partitionInfo.partition())
@@ -225,11 +225,15 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
     /**
-     * Log error and throw [CordaMessageAPIIntermittentException]
+     * Log warning and throw [CordaMessageAPIIntermittentException]
      * @return Nothing, to allow compiler to know that this method won't return a value in the catch blocks of the above exception handling.
      */
-    private fun logErrorAndThrowIntermittentException(errorMessage: String, ex: Exception): Nothing {
-        log.error(errorMessage, ex)
-        throw CordaMessageAPIIntermittentException(errorMessage, ex)
+    private fun logWarningAndThrowIntermittentException(errorMessage: String, ex: Exception? = null): Nothing {
+        log.warn(errorMessage, ex)
+        if (ex == null) {
+            throw CordaMessageAPIIntermittentException(errorMessage)
+        } else {
+            throw CordaMessageAPIIntermittentException(errorMessage, ex)
+        }
     }
 }
