@@ -29,7 +29,6 @@ import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**

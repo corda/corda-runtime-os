@@ -15,7 +15,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.lang.Exception
 import java.nio.ByteBuffer
 import java.time.Duration

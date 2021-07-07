@@ -8,7 +8,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.seconds
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
