@@ -24,6 +24,14 @@ dependencies {
     testImplementation "net.corda:corda-test-common:$cordaTestCommonVersion"
 
     integrationTestImplementation "com.h2database:h2:$h2Version"
+    integrationTestImplementation "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestImplementation "com.microsoft.sqlserver:mssql-jdbc:$sqlServerDriverVersion"
+    integrationTestImplementation "com.oracle.database.jdbc:ojdbc6:$oracleDriverVersion"
+    integrationTestImplementation "org.testcontainers:testcontainers:$testContainersVersion"
+    integrationTestImplementation "org.testcontainers:mssqlserver:$sqlServerTestContainersVersion"
+    integrationTestImplementation "org.testcontainers:postgresql:$postgresTestContainersVersion"
+    integrationTestImplementation "org.testcontainers:oracle-xe:$oracleTestContainersVersion"
+
 }
 
 /**
