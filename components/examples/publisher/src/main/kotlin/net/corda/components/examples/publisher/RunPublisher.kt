@@ -4,7 +4,6 @@ import com.typesafe.config.Config
 import net.corda.data.demo.DemoRecord
 import net.corda.lifecycle.LifeCycle
 import net.corda.lifecycle.LifeCycleCoordinator
-import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -54,7 +53,7 @@ class RunPublisher (
 
             log.info("Publishing complete.")
             isRunning = false
-            lifeCycleCoordinator.postEvent(StopEvent)
+            lifeCycleCoordinator.stop()
         }
     }
 
