@@ -12,6 +12,7 @@ import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -158,10 +159,11 @@ class CordaKafkaProducerImpl(
         }
     }
 
-    override fun sendOffsetsToTransaction(consumer: Consumer<*, *>) {
+    override fun sendOffsetsToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>?) {
         try {
-            producer.sendOffsetsToTransaction(consumerOffsets(consumer), consumer.groupMetadata())
+            producer.sendOffsetsToTransaction(consumerOffsets(consumer, record), consumer.groupMetadata())
         } catch (ex: Exception) {
+            producer.abortTransaction()
             when (ex) {
                 is IllegalStateException,
                 is ProducerFencedException,
@@ -209,10 +211,15 @@ class CordaKafkaProducerImpl(
     /**
      * Generate the consumer offsets.
      */
-    private fun consumerOffsets(consumer: Consumer<*, *>): Map<TopicPartition, OffsetAndMetadata> {
+    private fun consumerOffsets(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>?): Map<TopicPartition, OffsetAndMetadata> {
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
-        for (topicPartition in consumer.assignment()) {
-            offsets[topicPartition] = OffsetAndMetadata(consumer.position(topicPartition), null)
+        if (record == null) {
+            for (topicPartition in consumer.assignment()) {
+                offsets[topicPartition] = OffsetAndMetadata(consumer.position(topicPartition))
+            }
+        } else {
+            val topicPartition = TopicPartition(record.topic(), record.partition())
+            offsets[topicPartition] = OffsetAndMetadata(record.offset() + 1)
         }
         return offsets
     }

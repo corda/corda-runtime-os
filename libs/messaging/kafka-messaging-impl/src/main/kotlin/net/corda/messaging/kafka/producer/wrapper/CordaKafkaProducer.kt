@@ -2,6 +2,7 @@ package net.corda.messaging.kafka.producer.wrapper
 
 import net.corda.messaging.api.records.Record
 import org.apache.kafka.clients.consumer.Consumer
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.Producer
 
 interface CordaKafkaProducer : AutoCloseable, Producer<Any, Any> {
@@ -12,11 +13,13 @@ interface CordaKafkaProducer : AutoCloseable, Producer<Any, Any> {
     fun sendRecords(records: List<Record<*, *>>)
 
     /**
-     * Send the [consumer] offsets of the records consumed back to kafka.
+     * Send the [consumer] offsets back to kafka.
+     * If [record] is not null commit the offset of that record.
+     * Otherwise commit back the offset for the last consumer poll position.
      * @throws CordaMessageAPIFatalException Fatal error
      * @throws CordaMessageAPIIntermittentException Retryable error
      */
-    fun sendOffsetsToTransaction(consumer: Consumer<*, *>)
+    fun sendOffsetsToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>? = null)
 
     /**
      * Try to commit a transaction. If the transaction fails. Abort it.
