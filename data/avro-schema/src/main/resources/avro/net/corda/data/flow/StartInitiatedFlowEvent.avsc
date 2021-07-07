@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "StartInitiatedFlowEvent",
+  "namespace": "net.corda.data.flow",
+  "fields": [
+    {
+      "name": "stateMachineRunId",
+      "type": "bytes"
+    },
+    {
+      "name": "clientId",
+      "type": "string"
+    },
+    {
+      "name": "flowName",
+      "type": "string"
+    },
+    {
+      "name": "args",
+      "type": {
+        "type": "array",
+        "items": "bytes"
+      }
+    }
+  ]
+}

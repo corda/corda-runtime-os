@@ -1,4 +1,4 @@
-package net.corda.flow.manager
+package net.corda.flow.utils
 
 import net.corda.internal.application.cordapp.Cordapp
 import net.corda.v5.application.flows.Flow

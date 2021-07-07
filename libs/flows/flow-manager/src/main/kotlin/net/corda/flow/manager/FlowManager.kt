@@ -1,13 +1,7 @@
 package net.corda.flow.manager
 
-import co.paralleluniverse.fibers.FiberScheduler
-import net.corda.internal.di.DependencyInjectionService
 import net.corda.v5.application.flows.StateMachineRunId
-import net.corda.v5.application.identity.Party
-import net.corda.v5.application.services.persistence.PersistenceService
-import net.corda.v5.application.services.serialization.SerializationService
 import org.apache.kafka.clients.producer.ProducerRecord
-import java.util.concurrent.ScheduledExecutorService
 
 
 data class FlowTopics(
@@ -24,16 +18,7 @@ data class FlowResult(
 )
 
 interface FlowManager {
-    val ourIdentity: Party
-    val flowFactory: FlowFactory
-    val dependencyInjector: DependencyInjectionService
-    val flowExecutor: ScheduledExecutorService
-    val fiberScheduler: FiberScheduler
-    val checkpointSerialisationService: SerializationService
-    val networkMapCache: NetworkMapCache
-    val persistenceService: PersistenceService
-
-    fun startRPCFlow(
+    fun startInitiatingFlow(
         newFlowId: StateMachineRunId,
         clientId: String,
         flowName: String,
@@ -41,13 +26,13 @@ interface FlowManager {
         topics: FlowTopics
     ): FlowResult
 
-    fun initiateRemoteFlow(
+    fun startRemoteInitiatedFlow(
         newFlowId: StateMachineRunId,
         p2pMessage: FlowEvent.P2PMessage,
         topics: FlowTopics
     ): FlowResult
 
-    fun runFlow(
+    fun wakeFlow(
         lastCheckpoint: Checkpoint,
         event: FlowEvent,
         topics: FlowTopics

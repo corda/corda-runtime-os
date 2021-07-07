@@ -15,9 +15,9 @@ import net.corda.flow.manager.FlowFactory
 import net.corda.flow.manager.FlowIORequest
 import net.corda.flow.manager.FlowSession
 import net.corda.flow.manager.FlowStateMachine
-import net.corda.flow.manager.SubFlow
-import net.corda.flow.manager.SubFlowVersion
 import net.corda.flow.manager.errorAndTerminate
+import net.corda.flow.utils.SubFlow
+import net.corda.flow.utils.SubFlowVersion
 import net.corda.internal.application.context.InvocationContext
 import net.corda.internal.di.DependencyInjectionService
 import net.corda.internal.di.FlowStateMachineInjectable
