@@ -62,8 +62,11 @@ private addBundles(
 }
 
 test {
-    dependsOn('framework-app-tester:appJar')
-    final def appTesterProject = project("framework-app-tester")
+    dependsOn(
+            ':testing:cordapps:test-cpk:cpk',
+            ':testing:cordapps:test-sandbox:appJar'
+    )
+    final def appTesterProject = project(":testing:cordapps:test-sandbox")
     doFirst {
         final File source = new File(appTesterProject.buildDir, "libs")
         final File target = new File(buildDir, "resources/test/bundles")

@@ -5,8 +5,11 @@ import net.corda.lifecycle.SimpleLifeCycleCoordinator
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.osgi.api.Application
+import net.corda.osgi.api.Shutdown
 import net.corda.sandbox.SandboxService
 import net.corda.v5.base.util.contextLogger
+import org.osgi.framework.BundleContext
+import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -18,6 +21,7 @@ import java.util.*
  * This class is the entry point of the didactic application showing how to run CordApps from a bootable JAR.
  *
  * The CordApp used in this demo application is in the module `:applications:examples:test-cpk`.
+ * The full qualified name of [Runnable] implementation in the CordApp is
  *
  * Run
  *
@@ -39,9 +43,21 @@ class TestSandboxApplication @Activate constructor(
     private val installService: InstallService,
     @Reference(service = SandboxService::class)
     private val sandboxService: SandboxService,
+    @Reference(service = Shutdown::class)
+    private val shutdownService: Shutdown,
 ) : Application {
 
     private companion object {
+
+        /**
+         * Full qualified name of the [Runnable] implementation called to run `test-cpk` CordApp.
+         */
+        private val RUNNABLE_FQN = "net.corda.sample.testcpk.TestCPK"
+
+        /**
+         * Time in ms before the application shutdown itself.
+         */
+        private val SHUTDOWN_DELAY = 5000L
 
         private val logger = contextLogger()
 
@@ -60,7 +76,7 @@ class TestSandboxApplication @Activate constructor(
      */
     override fun startup(args: Array<String>) {
         val path = args[0]
-        logger.info("Start-up loading CPKs at$path...")
+        logger.info("Start-up loading CPKs at $path...")
         val configuration = configAdmin.getConfiguration(ConfigurationAdmin::class.java.name, null)
         val configProperties: Dictionary<String, Any> = Hashtable()
         configProperties.put("baseDirectory", path)
@@ -69,7 +85,7 @@ class TestSandboxApplication @Activate constructor(
         configuration.update(configProperties)
         logger.info("Configuration.properties ${configuration.properties} set.")
         coordinator = SimpleLifeCycleCoordinator(1, 1000L) { event, _ ->
-            val testSandbox = TestSandbox(Paths.get(path), installService, sandboxService)
+            val testSandbox = TestSandbox(Paths.get(path), RUNNABLE_FQN, installService, sandboxService)
             when (event) {
                 is StartEvent -> {
                     testSandbox.start()
@@ -80,11 +96,16 @@ class TestSandboxApplication @Activate constructor(
             }
         }
         coordinator.start()
-        logger.info("Press [CTRL+C] to stop the application...")
+        logger.info("Press [CTRL+C] to stop the application or wait $SHUTDOWN_DELAY ms before auto shutdown...")
+        Thread.sleep(SHUTDOWN_DELAY)
+        Thread {
+            val bundleContext: BundleContext = FrameworkUtil.getBundle(this.javaClass).bundleContext
+            shutdownService.shutdown(bundleContext.bundle)
+        }.start()
     }
 
     /**
-     * This method is called when the bootable JAr is requested to terminate by the application itself or the
+     * This method is called when the bootable JAR is requested to terminate by the application itself or the
      * operating system because the JVM terminates.
      */
     override fun shutdown() {
