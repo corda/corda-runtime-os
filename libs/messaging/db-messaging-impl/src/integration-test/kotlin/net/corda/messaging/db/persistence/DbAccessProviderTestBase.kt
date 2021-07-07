@@ -1,27 +1,16 @@
 package net.corda.messaging.db.persistence
 
-import net.corda.messaging.db.util.DbUtils.Companion.createOffsetsTableStmt
-import net.corda.messaging.db.util.DbUtils.Companion.createTopicRecordsTableStmt
-import net.corda.messaging.db.util.DbUtils.Companion.createTopicsTableStmt
+import net.corda.messaging.db.util.DbUtils
 import org.assertj.core.api.Assertions.assertThat
-import org.h2.tools.Server
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir
-import java.nio.file.Path
+import org.junit.jupiter.api.TestInstance
 import java.sql.DriverManager
 
-class DbAccessProviderTest {
-
-    @TempDir
-    lateinit var tempFolder: Path
-
-    private lateinit var server: Server
-    private val h2Port = 9092
-    private val jdbcUrl = "jdbc:h2:tcp://localhost:$h2Port/test"
-    private val username = "sa"
-    private val password = ""
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+abstract class DbAccessProviderTestBase {
 
     private val topic1 = "test.topic1"
     private val topic2 = "test.topic2"
@@ -31,27 +20,44 @@ class DbAccessProviderTest {
 
     private lateinit var dbAccessProvider: DBAccessProvider
 
-    @BeforeEach
-    fun setup() {
-        server = Server.createTcpServer("-tcpPort", h2Port.toString(), "-tcpAllowOthers", "-ifNotExists", "-baseDir", tempFolder.toAbsolutePath().toString())
-        server.start()
+    abstract fun startDatabase()
 
-        val connection = DriverManager.getConnection(jdbcUrl, username, password)
-        connection.prepareStatement(createTopicRecordsTableStmt).execute()
-        connection.prepareStatement(createOffsetsTableStmt).execute()
-        connection.prepareStatement(createTopicsTableStmt).execute()
+    abstract fun stopDatabase()
 
-        dbAccessProvider = DBAccessProviderImpl(jdbcUrl, username, password)
+    abstract fun createTables()
+
+    abstract fun getDbType(): DBType
+
+    abstract fun getJdbcUrl(): String
+
+    abstract fun getUsername(): String
+
+    abstract fun getPassword(): String
+
+    @BeforeAll
+    fun setupBeforeAllTests() {
+        startDatabase()
+        createTables()
+
+        dbAccessProvider = DBAccessProviderImpl(getJdbcUrl(), getUsername(), getPassword(), getDbType())
         dbAccessProvider.start()
 
         dbAccessProvider.createTopic(topic1)
         dbAccessProvider.createTopic(topic2)
     }
 
-    @AfterEach
-    fun cleanup() {
+    @AfterAll
+    fun cleanupAfterAllTests() {
         dbAccessProvider.stop()
-        server.stop()
+        stopDatabase()
+    }
+
+    @AfterEach
+    fun cleanupAfterEachTest() {
+        val connection = DriverManager.getConnection(getJdbcUrl(), getUsername(), getPassword())
+        connection.prepareStatement(DbUtils.cleanupTopicRecordsTableStmt).execute()
+        connection.prepareStatement(DbUtils.cleanupOffsetsTableStmt).execute()
+        connection.prepareStatement(DbUtils.cleanupTopicsTableStmt).execute()
     }
 
     @Test
