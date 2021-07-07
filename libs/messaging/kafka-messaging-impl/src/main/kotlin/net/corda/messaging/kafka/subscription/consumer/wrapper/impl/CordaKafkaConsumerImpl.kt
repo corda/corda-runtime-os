@@ -16,6 +16,7 @@ import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.kafka.clients.consumer.InvalidOffsetException
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.KafkaException
@@ -62,7 +63,27 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
     override fun poll(): List<ConsumerRecordAndMeta<K, V>> {
-        val consumerRecords = consumer.poll(consumerPollTimeout)
+        val consumerRecords = try {
+            consumer.poll(consumerPollTimeout)
+        } catch (ex: Exception) {
+            when (ex) {
+                is AuthorizationException,
+                is AuthenticationException,
+                is IllegalArgumentException,
+                is IllegalStateException,
+                is FencedInstanceIdException,
+                is InvalidOffsetException -> {
+                    logErrorAndThrowFatalException("Error attempting to poll from topic $topic", ex)
+                }
+                is WakeupException,
+                is InterruptException,
+                is KafkaException -> {
+                    logErrorAndThrowIntermittentException("Error attempting to poll from topic $topic", ex)
+                }
+                else -> logErrorAndThrowFatalException("Unexpected error attempting to poll from topic $topic", ex)
+
+            }
+        }
         return consumerRecords
             .sortedBy { it.timestamp() }
             .map { ConsumerRecordAndMeta(topicPrefix, it) }
@@ -103,8 +124,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     is InterruptException,
                     is TimeoutException -> {
                         attempts++
-                        handleErrorRetry("Failed to commitSync offsets for record $event on topic $topic",
-                            attempts, consumerCommitOffsetMaxRetries, ex)
+                        handleErrorRetry(
+                            "Failed to commitSync offsets for record $event on topic $topic",
+                            attempts, consumerCommitOffsetMaxRetries, ex
+                        )
                     }
                     is CommitFailedException,
                     is AuthenticationException,
@@ -114,8 +137,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                         logErrorAndThrowFatalException("Error attempting to commitSync offsets for record $event on topic $topic", ex)
                     }
                     else -> {
-                        logErrorAndThrowFatalException("Unexpected error attempting to commitSync offsets " +
-                                "for record $event on topic $topic", ex)
+                        logErrorAndThrowFatalException(
+                            "Unexpected error attempting to commitSync offsets " +
+                                    "for record $event on topic $topic", ex
+                        )
                     }
                 }
             }
@@ -192,10 +217,19 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     /**
      * Log error and throw [CordaMessageAPIFatalException]
-     * @return Nothing to allow compiler to know that this method won't return a value in the catch blocks of the above exception handling.
+     * @return Nothing, to allow compiler to know that this method won't return a value in the catch blocks of the above exception handling.
      */
-    private fun logErrorAndThrowFatalException(errorMessage: String, ex: Exception) : Nothing {
+    private fun logErrorAndThrowFatalException(errorMessage: String, ex: Exception): Nothing {
         log.error(errorMessage, ex)
         throw CordaMessageAPIFatalException(errorMessage, ex)
+    }
+
+    /**
+     * Log error and throw [CordaMessageAPIIntermittentException]
+     * @return Nothing, to allow compiler to know that this method won't return a value in the catch blocks of the above exception handling.
+     */
+    private fun logErrorAndThrowIntermittentException(errorMessage: String, ex: Exception): Nothing {
+        log.error(errorMessage, ex)
+        throw CordaMessageAPIIntermittentException(errorMessage, ex)
     }
 }
