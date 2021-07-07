@@ -11,10 +11,10 @@ import net.corda.messaging.db.persistence.DbSchema
 import net.corda.messaging.db.persistence.RecordDbEntry
 import net.corda.messaging.db.sync.OffsetTrackersManager
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.lang.Exception
 import java.nio.ByteBuffer
 import java.time.Duration
@@ -33,7 +33,7 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
                                              private val batchSize: Int = 100): Subscription<K, V> {
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
     }
 
     @Volatile

@@ -1,15 +1,15 @@
 package net.corda.sample.hello.impl
 
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 @Component(immediate = true)
 class HelloWorldActivator {
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(HelloWorldActivator::class.java)
+        private val logger: Logger = contextLogger()
     }
 
     @Activate

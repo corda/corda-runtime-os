@@ -12,9 +12,9 @@ import net.corda.messaging.db.persistence.DbSchema
 import net.corda.messaging.db.persistence.RecordDbEntry
 import net.corda.messaging.db.sync.OffsetTrackersManager
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.sql.SQLClientInfoException
 import java.sql.SQLNonTransientException
 import java.util.concurrent.CompletableFuture
@@ -30,7 +30,7 @@ class DBPublisher(private val publisherConfig: PublisherConfig,
                   private val threadPoolSize: Int = 5): Publisher, LifeCycle {
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
     }
 
     private var running = false

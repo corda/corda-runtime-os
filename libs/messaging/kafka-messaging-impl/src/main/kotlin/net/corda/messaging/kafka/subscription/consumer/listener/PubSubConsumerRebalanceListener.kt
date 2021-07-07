@@ -1,10 +1,10 @@
 package net.corda.messaging.kafka.subscription.consumer.listener
 
+import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 class PubSubConsumerRebalanceListener<K, V>(
     private val topic: String,
@@ -13,7 +13,7 @@ class PubSubConsumerRebalanceListener<K, V>(
 ) : ConsumerRebalanceListener {
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
     }
 
     /**
