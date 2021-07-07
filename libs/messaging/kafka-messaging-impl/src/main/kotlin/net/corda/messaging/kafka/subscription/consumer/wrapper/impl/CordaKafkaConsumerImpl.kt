@@ -81,7 +81,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     logWarningAndThrowIntermittentException("Error attempting to poll from topic $topic", ex)
                 }
                 else -> logErrorAndThrowFatalException("Unexpected error attempting to poll from topic $topic", ex)
-
             }
         }
         return consumerRecords
