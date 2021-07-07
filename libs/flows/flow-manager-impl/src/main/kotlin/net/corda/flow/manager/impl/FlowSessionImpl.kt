@@ -2,10 +2,10 @@ package net.corda.flow.manager.impl
 
 import co.paralleluniverse.fibers.Fiber
 import net.corda.flow.manager.FlowIORequest
-import net.corda.flow.manager.FlowSession
 import net.corda.flow.manager.FlowStateMachine
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.FlowInfo
+import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.application.flows.UntrustworthyData
 import net.corda.v5.application.identity.Party
 import net.corda.v5.base.annotations.Suspendable
@@ -37,7 +37,7 @@ class FlowSessionImpl(
     private val flowStateMachine: FlowStateMachine<*> get() = Fiber.currentFiber() as FlowStateMachine<*>
 
     @Suspendable
-    override fun getCounterpartyFlowInfo(maySkipCheckpoint: Boolean): FlowInfo {
+    fun getCounterpartyFlowInfo(maySkipCheckpoint: Boolean): FlowInfo {
         val request = FlowIORequest.GetFlowInfo(NonEmptySet.of(this))
         return flowStateMachine.suspend(request, maySkipCheckpoint).getValue(this)
     }
@@ -46,7 +46,7 @@ class FlowSessionImpl(
     override fun getCounterpartyFlowInfo(): FlowInfo = getCounterpartyFlowInfo(maySkipCheckpoint = false)
 
     @Suspendable
-    override fun <R : Any> sendAndReceive(
+    fun <R : Any> sendAndReceive(
         receiveType: Class<R>,
         payload: Any,
         maySkipCheckpoint: Boolean
@@ -76,7 +76,7 @@ class FlowSessionImpl(
         sendAndReceive(receiveType, payload, maySkipCheckpoint = false)
 
     @Suspendable
-    override fun <R : Any> receive(receiveType: Class<R>, maySkipCheckpoint: Boolean): UntrustworthyData<R> {
+    fun <R : Any> receive(receiveType: Class<R>, maySkipCheckpoint: Boolean): UntrustworthyData<R> {
         enforceNotPrimitive(receiveType)
         val request = FlowIORequest.Receive(NonEmptySet.of(this))
         return flowStateMachine.suspend(request, maySkipCheckpoint).getValue(this).let {
@@ -92,7 +92,7 @@ class FlowSessionImpl(
     override fun <R : Any> receive(receiveType: Class<R>) = receive(receiveType, maySkipCheckpoint = false)
 
     @Suspendable
-    override fun send(payload: Any, maySkipCheckpoint: Boolean) {
+    fun send(payload: Any, maySkipCheckpoint: Boolean) {
         val request = FlowIORequest.Send(
             sessionToMessage = mapOf(this to flowStateMachine.serializationService.serialize(payload))
         )

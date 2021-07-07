@@ -3,6 +3,7 @@ package net.corda.flow.manager
 
 import net.corda.internal.application.FlowAsyncOperation
 import net.corda.v5.application.flows.FlowInfo
+import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.base.types.NonEmptySet
 import net.corda.v5.crypto.hash
 import net.corda.v5.serialization.SerializedBytes

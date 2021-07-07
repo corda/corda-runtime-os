@@ -13,7 +13,6 @@ import net.corda.flow.manager.Checkpoint
 import net.corda.flow.manager.FlowEvent
 import net.corda.flow.manager.FlowFactory
 import net.corda.flow.manager.FlowIORequest
-import net.corda.flow.manager.FlowSession
 import net.corda.flow.manager.FlowStateMachine
 import net.corda.flow.manager.errorAndTerminate
 import net.corda.flow.utils.SubFlow
@@ -24,6 +23,7 @@ import net.corda.internal.di.FlowStateMachineInjectable
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowException
+import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.application.flows.StateMachineRunId
 import net.corda.v5.application.identity.Party
 import net.corda.v5.application.services.serialization.SerializationService

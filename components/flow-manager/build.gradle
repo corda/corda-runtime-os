@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Kafka Config Read Component"
+description "Flow Manager Component"
 
 dependencies {
 
