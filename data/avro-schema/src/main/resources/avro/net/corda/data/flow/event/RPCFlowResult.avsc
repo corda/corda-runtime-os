@@ -1,12 +1,8 @@
 {
   "type": "record",
   "name": "RPCFlowResult",
-  "namespace": "net.corda.data.flow",
+  "namespace": "net.corda.data.flow.event",
   "fields": [
-    {
-      "name": "stateMachineRunId",
-      "type": "bytes"
-    },
     {
       "name": "clientId",
       "type": "string"

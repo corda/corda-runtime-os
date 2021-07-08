@@ -1,12 +1,8 @@
 {
   "type": "record",
-  "name": "StartInitiatedFlowEvent",
-  "namespace": "net.corda.data.flow",
+  "name": "StartRPCFlow",
+  "namespace": "net.corda.data.flow.event",
   "fields": [
-    {
-      "name": "stateMachineRunId",
-      "type": "bytes"
-    },
     {
       "name": "clientId",
       "type": "string"
@@ -19,7 +15,7 @@
       "name": "args",
       "type": {
         "type": "array",
-        "items": "bytes"
+        "items": ["null", "bytes"]
       }
     }
   ]

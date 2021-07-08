@@ -2,7 +2,8 @@ package net.corda.flow.manager.impl
 
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.data.flow.Checkpoint
-import net.corda.flow.manager.FlowEvent
+import net.corda.data.flow.event.P2PMessage
+import net.corda.data.flow.event.Wakeup
 import net.corda.flow.manager.FlowFactory
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
@@ -46,7 +47,7 @@ class FlowManagerImpl : FlowManager {
 
     override fun startRemoteInitiatedFlow(
         newFlowId: StateMachineRunId,
-        p2pMessage: FlowEvent.P2PMessage,
+        p2pMessage: P2PMessage,
         topics: FlowTopics
     ): FlowResult {
         TODO("Not yet implemented")
@@ -54,7 +55,7 @@ class FlowManagerImpl : FlowManager {
 
     override fun wakeFlow(
         lastCheckpoint: Checkpoint,
-        event: FlowEvent,
+        event: Wakeup,
         topics: FlowTopics
     ): FlowResult {
         TODO("Not yet implemented")

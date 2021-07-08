@@ -1,6 +1,8 @@
 package net.corda.flow.manager
 
 import net.corda.data.flow.Checkpoint
+import net.corda.data.flow.event.P2PMessage
+import net.corda.data.flow.event.Wakeup
 import net.corda.v5.application.flows.StateMachineRunId
 import org.apache.kafka.clients.producer.ProducerRecord
 
@@ -29,13 +31,13 @@ interface FlowManager {
 
     fun startRemoteInitiatedFlow(
         newFlowId: StateMachineRunId,
-        p2pMessage: FlowEvent.P2PMessage,
+        p2pMessage: P2PMessage,
         topics: FlowTopics
     ): FlowResult
 
     fun wakeFlow(
         lastCheckpoint: Checkpoint,
-        event: FlowEvent,
+        event: Wakeup,
         topics: FlowTopics
     ): FlowResult
 }

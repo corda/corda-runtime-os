@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "FlowEvent",
+  "namespace": "net.corda.data.flow.event",
+  "fields": [
+    {
+      "name": "stateMachineRunId",
+      "type": "string"
+    },
+    {
+      "name": "payload",
+      "type": [
+        "net.corda.data.flow.event.P2PMessage",
+        "net.corda.data.flow.event.RemoteFlowError",
+        "net.corda.data.flow.event.RPCFlowResult",
+        "net.corda.data.flow.event.StartRemoteInitiatedFlow",
+        "net.corda.data.flow.event.StartRPCFlow",
+        "net.corda.data.flow.event.Wakeup"
+      ]
+    }
+  ]
+}
