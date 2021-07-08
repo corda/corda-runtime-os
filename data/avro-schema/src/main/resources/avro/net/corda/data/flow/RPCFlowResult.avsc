@@ -23,6 +23,6 @@
       "name": "error",
       "doc": "The flow exception (if any) that caused an error",
       "type": ["null", "bytes"]
-    },
+    }
   ]
 }

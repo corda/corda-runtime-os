@@ -1,10 +1,10 @@
 {
   "type": "record",
-  "name": "WakeupEvent",
+  "name": "Checkpoint",
   "namespace": "net.corda.data.flow",
   "fields": [
     {
-      "name": "stateMachineRunId",
+      "name": "checkpoint",
       "type": "bytes"
     }
   ]

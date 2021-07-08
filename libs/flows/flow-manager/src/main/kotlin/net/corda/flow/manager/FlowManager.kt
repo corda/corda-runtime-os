@@ -1,5 +1,6 @@
 package net.corda.flow.manager
 
+import net.corda.data.flow.Checkpoint
 import net.corda.v5.application.flows.StateMachineRunId
 import org.apache.kafka.clients.producer.ProducerRecord
 

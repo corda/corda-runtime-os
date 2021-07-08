@@ -19,7 +19,7 @@
       "name": "args",
       "type": {
         "type": "array",
-        "items": ["null",",bytes"]
+        "items": ["null","bytes"]
       }
     }
   ]

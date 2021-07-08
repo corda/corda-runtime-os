@@ -13,4 +13,6 @@ dependencies {
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+
+    implementation project(':data:avro-schema')
 }
