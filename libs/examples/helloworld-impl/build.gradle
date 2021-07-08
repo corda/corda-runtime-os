@@ -7,5 +7,6 @@ plugins {
 description 'Hello World Implementation'
 
 dependencies {
+    implementation "net.corda:corda-base:$cordaVersion"
     implementation project(":libs:examples:helloworld")
 }

@@ -2,9 +2,9 @@ package net.corda.messaging.db.sync
 
 import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.db.persistence.DBAccessProvider
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -16,7 +16,7 @@ import kotlin.concurrent.withLock
 class OffsetTrackersManager(private val dbAccessProvider: DBAccessProvider): LifeCycle {
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
     }
 
     private val offsetTrackerPerTopic = mutableMapOf<String, OffsetTracker>()

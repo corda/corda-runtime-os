@@ -1,11 +1,11 @@
 package net.corda.lifecycle
 
+import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -18,7 +18,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
         const val TIMEOUT: Long = 2000L
 
-        val logger: Logger = LoggerFactory.getLogger(SimpleLifeCycleCoordinatorTest::class.java)
+        val logger: Logger = contextLogger()
     }
 
     interface PostEvent : LifeCycleEvent
