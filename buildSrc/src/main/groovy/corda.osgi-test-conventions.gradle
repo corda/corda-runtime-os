@@ -54,6 +54,19 @@ def testOSGi = tasks.register('testOSGi', TestOSGi) {
     bndrun = 'test.bndrun'
 }
 
+tasks.named('check') {
+    dependsOn testOSGi
+}
+
+tasks.register('integrationTest', Test) {
+    description = "Runs integration tests."
+    group = "verification"
+    dependsOn testOSGi
+
+    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
+    classpath = project.sourceSets["integrationTest"].runtimeClasspath
+}
+
 artifacts {
     archives testingBundle
 }
