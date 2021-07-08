@@ -16,7 +16,7 @@ import net.corda.v5.serialization.SerializedBytes
 import org.slf4j.Logger
 import java.util.concurrent.CompletableFuture
 
-
+@Suppress("LongParameterList")
 class FlowStateMachineImpl<R>(
     override val clientId: String?,
     override val id: FlowId,
