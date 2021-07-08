@@ -13,12 +13,22 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAnd
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
-import org.apache.kafka.clients.consumer.*
+import org.apache.kafka.clients.consumer.CommitFailedException
+import org.apache.kafka.clients.consumer.Consumer
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.InvalidOffsetException
+import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.PartitionInfo
 import org.apache.kafka.common.TopicPartition
-import org.apache.kafka.common.errors.*
+import org.apache.kafka.common.errors.AuthenticationException
+import org.apache.kafka.common.errors.AuthorizationException
+import org.apache.kafka.common.errors.FencedInstanceIdException
+import org.apache.kafka.common.errors.InterruptException
+import org.apache.kafka.common.errors.TimeoutException
+import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.Logger
 import java.time.Duration
 
