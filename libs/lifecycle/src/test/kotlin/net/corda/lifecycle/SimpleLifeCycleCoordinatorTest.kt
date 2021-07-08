@@ -239,18 +239,14 @@ internal class SimpleLifeCycleCoordinatorTest {
         }
     }
 
-    //@Disabled
     @ParameterizedTest
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
-    @ValueSource(ints = [5])
+    @ValueSource(ints = [10])
     fun postUnhandledErrorEvent(n: Int) {
-        var stopLatch = CountDownLatch(2)
+        var stopLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             when (event) {
-                is StartEvent -> {
-                    stopLatch = CountDownLatch(2)
-                }
                 is ThrowException -> {
                     throw expectedException
                 }
@@ -266,14 +262,15 @@ internal class SimpleLifeCycleCoordinatorTest {
                 }
                 is StopEvent -> {
                     stopLatch.countDown()
-                    assertTrue(stopLatch.count == 0L)
                 }
             }
         }.use { coordinator ->
             for(i in 0 .. n) {
+                println(i)
                 coordinator.start()
                 coordinator.postEvent(object : ThrowException {})
                 stopLatch.await()
+                stopLatch = CountDownLatch(1)
             }
         }
     }
