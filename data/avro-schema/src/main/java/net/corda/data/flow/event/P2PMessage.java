@@ -12,8 +12,8 @@ import org.apache.avro.specific.SpecificData;
 
 @org.apache.avro.specific.AvroGenerated
 public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 3677899569691260810L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"P2PMessage\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":{\"type\":\"record\",\"name\":\"Identity\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"group\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}},{\"name\":\"destination\",\"type\":\"net.corda.data.flow.Identity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"message\",\"type\":\"bytes\"}]}");
+  private static final long serialVersionUID = -6308834750015412402L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"P2PMessage\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":{\"type\":\"record\",\"name\":\"Identity\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"group\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}},{\"name\":\"destination\",\"type\":\"net.corda.data.flow.Identity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"message\",\"type\":\"bytes\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();

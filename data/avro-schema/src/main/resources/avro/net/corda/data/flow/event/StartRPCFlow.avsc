@@ -12,6 +12,15 @@
       "type": "string"
     },
     {
+      "name": "rpcUsername",
+      "type": "string"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis"
+    },
+    {
       "name": "args",
       "type": {
         "type": "array",

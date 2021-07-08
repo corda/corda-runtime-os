@@ -12,8 +12,8 @@ import org.apache.avro.specific.SpecificData;
 
 @org.apache.avro.specific.AvroGenerated
 public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 839696303693248063L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"RPCFlowResult\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"result\",\"type\":[\"null\",\"bytes\"]},{\"name\":\"error\",\"type\":[\"null\",\"bytes\"],\"doc\":\"The flow exception (if any) that caused an error\"}]}");
+  private static final long serialVersionUID = -2391988193154307424L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"RPCFlowResult\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"result\",\"type\":[\"null\",\"bytes\"]},{\"name\":\"error\",\"type\":[\"null\",{\"type\":\"record\",\"name\":\"FlowError\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"errorType\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}],\"doc\":\"The flow exception (if any) that caused an error\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -73,7 +73,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
    private java.lang.String flowName;
    private java.nio.ByteBuffer result;
   /** The flow exception (if any) that caused an error */
-   private java.nio.ByteBuffer error;
+   private net.corda.data.flow.FlowError error;
 
   /**
    * Default constructor.  Note that this does not initialize fields
@@ -89,7 +89,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
    * @param result The new value for result
    * @param error The flow exception (if any) that caused an error
    */
-  public RPCFlowResult(java.lang.String clientId, java.lang.String flowName, java.nio.ByteBuffer result, java.nio.ByteBuffer error) {
+  public RPCFlowResult(java.lang.String clientId, java.lang.String flowName, java.nio.ByteBuffer result, net.corda.data.flow.FlowError error) {
     this.clientId = clientId;
     this.flowName = flowName;
     this.result = result;
@@ -116,7 +116,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
     case 0: clientId = value$ != null ? value$.toString() : null; break;
     case 1: flowName = value$ != null ? value$.toString() : null; break;
     case 2: result = (java.nio.ByteBuffer)value$; break;
-    case 3: error = (java.nio.ByteBuffer)value$; break;
+    case 3: error = (net.corda.data.flow.FlowError)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -176,7 +176,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
    * Gets the value of the 'error' field.
    * @return The flow exception (if any) that caused an error
    */
-  public java.nio.ByteBuffer getError() {
+  public net.corda.data.flow.FlowError getError() {
     return error;
   }
 
@@ -186,7 +186,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
    * The flow exception (if any) that caused an error
    * @param value the value to set.
    */
-  public void setError(java.nio.ByteBuffer value) {
+  public void setError(net.corda.data.flow.FlowError value) {
     this.error = value;
   }
 
@@ -235,7 +235,8 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
     private java.lang.String flowName;
     private java.nio.ByteBuffer result;
     /** The flow exception (if any) that caused an error */
-    private java.nio.ByteBuffer error;
+    private net.corda.data.flow.FlowError error;
+    private net.corda.data.flow.FlowError.Builder errorBuilder;
 
     /** Creates a new Builder */
     private Builder() {
@@ -264,6 +265,9 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
         this.error = data().deepCopy(fields()[3].schema(), other.error);
         fieldSetFlags()[3] = other.fieldSetFlags()[3];
       }
+      if (other.hasErrorBuilder()) {
+        this.errorBuilder = net.corda.data.flow.FlowError.newBuilder(other.getErrorBuilder());
+      }
     }
 
     /**
@@ -288,6 +292,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
         this.error = data().deepCopy(fields()[3].schema(), other.error);
         fieldSetFlags()[3] = true;
       }
+      this.errorBuilder = null;
     }
 
     /**
@@ -415,7 +420,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * The flow exception (if any) that caused an error
       * @return The value.
       */
-    public java.nio.ByteBuffer getError() {
+    public net.corda.data.flow.FlowError getError() {
       return error;
     }
 
@@ -426,8 +431,9 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * @param value The value of 'error'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.RPCFlowResult.Builder setError(java.nio.ByteBuffer value) {
+    public net.corda.data.flow.event.RPCFlowResult.Builder setError(net.corda.data.flow.FlowError value) {
       validate(fields()[3], value);
+      this.errorBuilder = null;
       this.error = value;
       fieldSetFlags()[3] = true;
       return this;
@@ -442,6 +448,43 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       return fieldSetFlags()[3];
     }
 
+    /**
+     * Gets the Builder instance for the 'error' field and creates one if it doesn't exist yet.
+     * The flow exception (if any) that caused an error
+     * @return This builder.
+     */
+    public net.corda.data.flow.FlowError.Builder getErrorBuilder() {
+      if (errorBuilder == null) {
+        if (hasError()) {
+          setErrorBuilder(net.corda.data.flow.FlowError.newBuilder(error));
+        } else {
+          setErrorBuilder(net.corda.data.flow.FlowError.newBuilder());
+        }
+      }
+      return errorBuilder;
+    }
+
+    /**
+     * Sets the Builder instance for the 'error' field
+     * The flow exception (if any) that caused an error
+     * @param value The builder instance that must be set.
+     * @return This builder.
+     */
+
+    public net.corda.data.flow.event.RPCFlowResult.Builder setErrorBuilder(net.corda.data.flow.FlowError.Builder value) {
+      clearError();
+      errorBuilder = value;
+      return this;
+    }
+
+    /**
+     * Checks whether the 'error' field has an active Builder instance
+     * The flow exception (if any) that caused an error
+     * @return True if the 'error' field has an active Builder instance
+     */
+    public boolean hasErrorBuilder() {
+      return errorBuilder != null;
+    }
 
     /**
       * Clears the value of the 'error' field.
@@ -450,6 +493,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       */
     public net.corda.data.flow.event.RPCFlowResult.Builder clearError() {
       error = null;
+      errorBuilder = null;
       fieldSetFlags()[3] = false;
       return this;
     }
@@ -462,7 +506,16 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
         record.clientId = fieldSetFlags()[0] ? this.clientId : (java.lang.String) defaultValue(fields()[0]);
         record.flowName = fieldSetFlags()[1] ? this.flowName : (java.lang.String) defaultValue(fields()[1]);
         record.result = fieldSetFlags()[2] ? this.result : (java.nio.ByteBuffer) defaultValue(fields()[2]);
-        record.error = fieldSetFlags()[3] ? this.error : (java.nio.ByteBuffer) defaultValue(fields()[3]);
+        if (errorBuilder != null) {
+          try {
+            record.error = this.errorBuilder.build();
+          } catch (org.apache.avro.AvroMissingFieldException e) {
+            e.addParentField(record.getSchema().getField("error"));
+            throw e;
+          }
+        } else {
+          record.error = fieldSetFlags()[3] ? this.error : (net.corda.data.flow.FlowError) defaultValue(fields()[3]);
+        }
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -512,7 +565,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       out.writeNull();
     } else {
       out.writeIndex(1);
-      out.writeBytes(this.error);
+      this.error.customEncode(out);
     }
 
   }
@@ -537,7 +590,10 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
         in.readNull();
         this.error = null;
       } else {
-        this.error = in.readBytes(this.error);
+        if (this.error == null) {
+          this.error = new net.corda.data.flow.FlowError();
+        }
+        this.error.customDecode(in);
       }
 
     } else {
@@ -565,7 +621,10 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
             in.readNull();
             this.error = null;
           } else {
-            this.error = in.readBytes(this.error);
+            if (this.error == null) {
+              this.error = new net.corda.data.flow.FlowError();
+            }
+            this.error.customDecode(in);
           }
           break;
 

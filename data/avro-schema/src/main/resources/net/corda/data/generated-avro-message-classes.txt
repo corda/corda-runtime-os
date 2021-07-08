@@ -5,12 +5,12 @@ net.corda.data.crypto.SecureHash
 net.corda.data.demo.DemoRecord
 net.corda.data.demo.DemoStateRecord
 net.corda.data.flow.Checkpoint
+net.corda.data.flow.FlowKey
 net.corda.data.flow.Identity
 net.corda.data.flow.event.FlowEvent
 net.corda.data.flow.event.P2PMessage
 net.corda.data.flow.event.RPCFlowResult
 net.corda.data.flow.event.RemoteFlowError
-net.corda.data.flow.event.StartInitiatedFlow
 net.corda.data.flow.event.StartRPCFlow
 net.corda.data.flow.event.StartRemoteInitiatedFlow
 net.corda.data.flow.event.Wakeup

@@ -1,15 +1,15 @@
 {
   "type": "record",
-  "name": "Identity",
+  "name": "FlowKey",
   "namespace": "net.corda.data.flow",
   "fields": [
     {
-      "name": "x500Name",
+      "name": "flowId",
       "type": "string"
     },
     {
-      "name": "group",
-      "type": ["null", "string"]
+      "name": "identity",
+      "type": "net.corda.data.flow.Identity"
     }
   ]
 }

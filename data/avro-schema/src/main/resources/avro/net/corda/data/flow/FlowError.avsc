@@ -1,15 +1,15 @@
 {
   "type": "record",
-  "name": "Identity",
+  "name": "FlowError",
   "namespace": "net.corda.data.flow",
   "fields": [
     {
-      "name": "x500Name",
+      "name": "errorType",
       "type": "string"
     },
     {
-      "name": "group",
-      "type": ["null", "string"]
+      "name": "errorMessage",
+      "type": "string"
     }
   ]
 }

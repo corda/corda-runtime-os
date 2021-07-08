@@ -12,8 +12,8 @@ import org.apache.avro.specific.SpecificData;
 
 @org.apache.avro.specific.AvroGenerated
 public class Identity extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 4309288649912479548L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"Identity\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"group\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
+  private static final long serialVersionUID = 44743908861595912L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"Identity\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"group\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -346,7 +346,13 @@ public class Identity extends org.apache.avro.specific.SpecificRecordBase implem
   {
     out.writeString(this.x500Name);
 
-    out.writeString(this.group);
+    if (this.group == null) {
+      out.writeIndex(0);
+      out.writeNull();
+    } else {
+      out.writeIndex(1);
+      out.writeString(this.group);
+    }
 
   }
 
@@ -357,7 +363,12 @@ public class Identity extends org.apache.avro.specific.SpecificRecordBase implem
     if (fieldOrder == null) {
       this.x500Name = in.readString();
 
-      this.group = in.readString();
+      if (in.readIndex() != 1) {
+        in.readNull();
+        this.group = null;
+      } else {
+        this.group = in.readString();
+      }
 
     } else {
       for (int i = 0; i < 2; i++) {
@@ -367,7 +378,12 @@ public class Identity extends org.apache.avro.specific.SpecificRecordBase implem
           break;
 
         case 1:
-          this.group = in.readString();
+          if (in.readIndex() != 1) {
+            in.readNull();
+            this.group = null;
+          } else {
+            this.group = in.readString();
+          }
           break;
 
         default:

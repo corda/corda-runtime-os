@@ -12,8 +12,8 @@ import org.apache.avro.specific.SpecificData;
 
 @org.apache.avro.specific.AvroGenerated
 public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = -2093172414639963402L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FlowEvent\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"stateMachineRunId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"payload\",\"type\":[{\"type\":\"record\",\"name\":\"P2PMessage\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":{\"type\":\"record\",\"name\":\"Identity\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"group\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}},{\"name\":\"destination\",\"type\":\"net.corda.data.flow.Identity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"message\",\"type\":\"bytes\"}]},{\"type\":\"record\",\"name\":\"RemoteFlowError\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":\"net.corda.data.flow.Identity\"},{\"name\":\"destination\",\"type\":\"net.corda.data.flow.Identity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]},{\"type\":\"record\",\"name\":\"RPCFlowResult\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"result\",\"type\":[\"null\",\"bytes\"]},{\"name\":\"error\",\"type\":[\"null\",\"bytes\"],\"doc\":\"The flow exception (if any) that caused an error\"}]},{\"type\":\"record\",\"name\":\"StartRemoteInitiatedFlow\",\"fields\":[{\"name\":\"message\",\"type\":\"P2PMessage\"}]},{\"type\":\"record\",\"name\":\"StartRPCFlow\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"args\",\"type\":{\"type\":\"array\",\"items\":[\"null\",\"bytes\"]}}]},{\"type\":\"record\",\"name\":\"Wakeup\",\"fields\":[]}]}]}");
+  private static final long serialVersionUID = -735031731751916570L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FlowEvent\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"stateMachineRunId\",\"type\":{\"type\":\"record\",\"name\":\"FlowKey\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"flowId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"identity\",\"type\":{\"type\":\"record\",\"name\":\"Identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"group\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}}]}},{\"name\":\"payload\",\"type\":[{\"type\":\"record\",\"name\":\"P2PMessage\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":\"net.corda.data.flow.Identity\"},{\"name\":\"destination\",\"type\":\"net.corda.data.flow.Identity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"message\",\"type\":\"bytes\"}]},{\"type\":\"record\",\"name\":\"RemoteFlowError\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":\"net.corda.data.flow.Identity\"},{\"name\":\"destination\",\"type\":\"net.corda.data.flow.Identity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]},{\"type\":\"record\",\"name\":\"RPCFlowResult\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"result\",\"type\":[\"null\",\"bytes\"]},{\"name\":\"error\",\"type\":[\"null\",\"bytes\"],\"doc\":\"The flow exception (if any) that caused an error\"}]},{\"type\":\"record\",\"name\":\"StartRemoteInitiatedFlow\",\"fields\":[{\"name\":\"message\",\"type\":\"P2PMessage\"}]},{\"type\":\"record\",\"name\":\"StartRPCFlow\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"rpcUsername\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"timestamp\",\"type\":\"long\",\"logicalType\":\"timestamp-millis\"},{\"name\":\"args\",\"type\":{\"type\":\"array\",\"items\":[\"null\",\"bytes\"]}}]},{\"type\":\"record\",\"name\":\"Wakeup\",\"fields\":[]}]}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -69,7 +69,7 @@ public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase imple
     return DECODER.decode(b);
   }
 
-   private java.lang.String stateMachineRunId;
+   private net.corda.data.flow.FlowKey stateMachineRunId;
    private java.lang.Object payload;
 
   /**
@@ -84,7 +84,7 @@ public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase imple
    * @param stateMachineRunId The new value for stateMachineRunId
    * @param payload The new value for payload
    */
-  public FlowEvent(java.lang.String stateMachineRunId, java.lang.Object payload) {
+  public FlowEvent(net.corda.data.flow.FlowKey stateMachineRunId, java.lang.Object payload) {
     this.stateMachineRunId = stateMachineRunId;
     this.payload = payload;
   }
@@ -104,7 +104,7 @@ public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase imple
   @SuppressWarnings(value="unchecked")
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
-    case 0: stateMachineRunId = value$ != null ? value$.toString() : null; break;
+    case 0: stateMachineRunId = (net.corda.data.flow.FlowKey)value$; break;
     case 1: payload = value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
@@ -114,7 +114,7 @@ public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase imple
    * Gets the value of the 'stateMachineRunId' field.
    * @return The value of the 'stateMachineRunId' field.
    */
-  public java.lang.String getStateMachineRunId() {
+  public net.corda.data.flow.FlowKey getStateMachineRunId() {
     return stateMachineRunId;
   }
 
@@ -123,7 +123,7 @@ public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase imple
    * Sets the value of the 'stateMachineRunId' field.
    * @param value the value to set.
    */
-  public void setStateMachineRunId(java.lang.String value) {
+  public void setStateMachineRunId(net.corda.data.flow.FlowKey value) {
     this.stateMachineRunId = value;
   }
 
@@ -185,7 +185,8 @@ public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase imple
   public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<FlowEvent>
     implements org.apache.avro.data.RecordBuilder<FlowEvent> {
 
-    private java.lang.String stateMachineRunId;
+    private net.corda.data.flow.FlowKey stateMachineRunId;
+    private net.corda.data.flow.FlowKey.Builder stateMachineRunIdBuilder;
     private java.lang.Object payload;
 
     /** Creates a new Builder */
@@ -203,6 +204,9 @@ public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase imple
         this.stateMachineRunId = data().deepCopy(fields()[0].schema(), other.stateMachineRunId);
         fieldSetFlags()[0] = other.fieldSetFlags()[0];
       }
+      if (other.hasStateMachineRunIdBuilder()) {
+        this.stateMachineRunIdBuilder = net.corda.data.flow.FlowKey.newBuilder(other.getStateMachineRunIdBuilder());
+      }
       if (isValidValue(fields()[1], other.payload)) {
         this.payload = data().deepCopy(fields()[1].schema(), other.payload);
         fieldSetFlags()[1] = other.fieldSetFlags()[1];
@@ -219,6 +223,7 @@ public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase imple
         this.stateMachineRunId = data().deepCopy(fields()[0].schema(), other.stateMachineRunId);
         fieldSetFlags()[0] = true;
       }
+      this.stateMachineRunIdBuilder = null;
       if (isValidValue(fields()[1], other.payload)) {
         this.payload = data().deepCopy(fields()[1].schema(), other.payload);
         fieldSetFlags()[1] = true;
@@ -229,7 +234,7 @@ public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase imple
       * Gets the value of the 'stateMachineRunId' field.
       * @return The value.
       */
-    public java.lang.String getStateMachineRunId() {
+    public net.corda.data.flow.FlowKey getStateMachineRunId() {
       return stateMachineRunId;
     }
 
@@ -239,8 +244,9 @@ public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase imple
       * @param value The value of 'stateMachineRunId'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.FlowEvent.Builder setStateMachineRunId(java.lang.String value) {
+    public net.corda.data.flow.event.FlowEvent.Builder setStateMachineRunId(net.corda.data.flow.FlowKey value) {
       validate(fields()[0], value);
+      this.stateMachineRunIdBuilder = null;
       this.stateMachineRunId = value;
       fieldSetFlags()[0] = true;
       return this;
@@ -254,6 +260,40 @@ public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase imple
       return fieldSetFlags()[0];
     }
 
+    /**
+     * Gets the Builder instance for the 'stateMachineRunId' field and creates one if it doesn't exist yet.
+     * @return This builder.
+     */
+    public net.corda.data.flow.FlowKey.Builder getStateMachineRunIdBuilder() {
+      if (stateMachineRunIdBuilder == null) {
+        if (hasStateMachineRunId()) {
+          setStateMachineRunIdBuilder(net.corda.data.flow.FlowKey.newBuilder(stateMachineRunId));
+        } else {
+          setStateMachineRunIdBuilder(net.corda.data.flow.FlowKey.newBuilder());
+        }
+      }
+      return stateMachineRunIdBuilder;
+    }
+
+    /**
+     * Sets the Builder instance for the 'stateMachineRunId' field
+     * @param value The builder instance that must be set.
+     * @return This builder.
+     */
+
+    public net.corda.data.flow.event.FlowEvent.Builder setStateMachineRunIdBuilder(net.corda.data.flow.FlowKey.Builder value) {
+      clearStateMachineRunId();
+      stateMachineRunIdBuilder = value;
+      return this;
+    }
+
+    /**
+     * Checks whether the 'stateMachineRunId' field has an active Builder instance
+     * @return True if the 'stateMachineRunId' field has an active Builder instance
+     */
+    public boolean hasStateMachineRunIdBuilder() {
+      return stateMachineRunIdBuilder != null;
+    }
 
     /**
       * Clears the value of the 'stateMachineRunId' field.
@@ -261,6 +301,7 @@ public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase imple
       */
     public net.corda.data.flow.event.FlowEvent.Builder clearStateMachineRunId() {
       stateMachineRunId = null;
+      stateMachineRunIdBuilder = null;
       fieldSetFlags()[0] = false;
       return this;
     }
@@ -310,7 +351,16 @@ public class FlowEvent extends org.apache.avro.specific.SpecificRecordBase imple
     public FlowEvent build() {
       try {
         FlowEvent record = new FlowEvent();
-        record.stateMachineRunId = fieldSetFlags()[0] ? this.stateMachineRunId : (java.lang.String) defaultValue(fields()[0]);
+        if (stateMachineRunIdBuilder != null) {
+          try {
+            record.stateMachineRunId = this.stateMachineRunIdBuilder.build();
+          } catch (org.apache.avro.AvroMissingFieldException e) {
+            e.addParentField(record.getSchema().getField("stateMachineRunId"));
+            throw e;
+          }
+        } else {
+          record.stateMachineRunId = fieldSetFlags()[0] ? this.stateMachineRunId : (net.corda.data.flow.FlowKey) defaultValue(fields()[0]);
+        }
         record.payload = fieldSetFlags()[1] ? this.payload :  defaultValue(fields()[1]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {

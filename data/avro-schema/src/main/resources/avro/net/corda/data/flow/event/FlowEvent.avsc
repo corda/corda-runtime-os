@@ -5,7 +5,7 @@
   "fields": [
     {
       "name": "stateMachineRunId",
-      "type": "string"
+      "type": "net.corda.data.flow.FlowKey"
     },
     {
       "name": "payload",
