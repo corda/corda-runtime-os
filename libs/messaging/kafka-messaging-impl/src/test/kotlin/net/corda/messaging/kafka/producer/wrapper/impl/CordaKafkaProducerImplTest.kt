@@ -1,6 +1,12 @@
 package net.corda.messaging.kafka.producer.wrapper.impl
 
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.doThrow
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.times
+import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.whenever
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -103,21 +109,21 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun testSendOffsetsToTransactions() {
-        cordaKafkaProducer.sendOffsetsToTransaction(consumer)
+        cordaKafkaProducer.trySendOffsetsToTransaction(consumer)
         verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
     }
 
     @Test
     fun testSendOffsetsToTransactionsFatal() {
         doThrow(IllegalStateException()).whenever(producer).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
-        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.sendOffsetsToTransaction(consumer) }
+        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.trySendOffsetsToTransaction(consumer) }
         verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
     }
 
     @Test
     fun testSendOffsetsToTransactionsIntermittent() {
         doThrow(KafkaException()).whenever(producer).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
-        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.sendOffsetsToTransaction(consumer) }
+        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.trySendOffsetsToTransaction(consumer) }
         verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
     }
 

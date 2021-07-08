@@ -251,7 +251,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             }
             producer.beginTransaction()
             producer.sendRecords(updates.responseEvents + Record(stateTopic.suffix, event.record.key(), updatedState))
-            producer.sendOffsetsToTransaction(eventConsumer, event.record)
+            producer.trySendOffsetsToTransaction(eventConsumer, event.record)
             producer.tryCommitTransaction()
         }
     }

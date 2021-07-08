@@ -19,7 +19,7 @@ interface CordaKafkaProducer : AutoCloseable, Producer<Any, Any> {
      * @throws CordaMessageAPIFatalException Fatal error
      * @throws CordaMessageAPIIntermittentException Retryable error
      */
-    fun sendOffsetsToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>? = null)
+    fun trySendOffsetsToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>? = null)
 
     /**
      * Try to commit a transaction. If the transaction fails. Abort it.

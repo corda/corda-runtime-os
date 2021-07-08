@@ -234,7 +234,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
         try {
             producer.beginTransaction()
             producer.sendRecords(processor.onNext(consumerRecords.map { it.asRecord() }))
-            producer.sendOffsetsToTransaction(consumer)
+            producer.trySendOffsetsToTransaction(consumer)
             producer.tryCommitTransaction()
         } catch (ex: Exception) {
             when (ex) {

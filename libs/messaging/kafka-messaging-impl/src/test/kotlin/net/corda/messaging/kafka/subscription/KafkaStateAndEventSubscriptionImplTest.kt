@@ -111,7 +111,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         verify(eventConsumer, times(5)).poll()
         verify(producer, times(5)).beginTransaction()
         verify(producer, times(5)).sendRecords(any())
-        verify(producer, times(5)).sendOffsetsToTransaction(any())
+        verify(producer, times(5)).trySendOffsetsToTransaction(any(), any())
         verify(producer, times(5)).tryCommitTransaction()
 
         assertThat(processor.inputs.size).isEqualTo(iterations)
