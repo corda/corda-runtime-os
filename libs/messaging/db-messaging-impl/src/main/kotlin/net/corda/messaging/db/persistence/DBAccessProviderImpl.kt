@@ -33,6 +33,7 @@ import kotlin.concurrent.withLock
 /**
  * @property threadPoolSize the size of the thread pool size used to execute queries in parallel, when needed
  *                          (i.e. for requests that perform multiple queries to the database).
+ * @property maxConnectionPoolSize the max size of the database connection pool.
  */
 @Suppress("TooManyFunctions", "LongParameterList")
 class DBAccessProviderImpl(private val jdbcUrl: String,
@@ -40,7 +41,8 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
                            private val password: String,
                            private val dbType: DBType,
                            private val threadPoolSize: Int,
-                           private val dbTimeout: Duration = 5.seconds): DBAccessProvider {
+                           private val dbTimeout: Duration = 5.seconds,
+                           private val maxConnectionPoolSize: Int = 10): DBAccessProvider {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -128,6 +130,7 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
                 hikariConfig.username = username
                 hikariConfig.password = password
                 hikariConfig.isAutoCommit = false
+                hikariConfig.maximumPoolSize = maxConnectionPoolSize
                 hikariDatasource = HikariDataSource(hikariConfig)
                 executor = Executors.newFixedThreadPool(threadPoolSize)
                 running = true
