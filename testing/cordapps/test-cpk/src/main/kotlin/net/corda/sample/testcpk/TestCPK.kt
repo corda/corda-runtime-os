@@ -9,7 +9,6 @@ class TestCPK: Runnable {
         println("TestCPK INIT.")
     }
 
-
     override fun run() {
         println("TestCPK RUN.")
     }
