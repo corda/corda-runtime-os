@@ -16,6 +16,7 @@ class DbUtils {
         val createOffsetsTableStmt = "CREATE TABLE ${DbSchema.CommittedOffsetsTable.TABLE_NAME} " +
                 "(${DbSchema.CommittedOffsetsTable.TOPIC_COLUMN_NAME} VARCHAR, ${DbSchema.CommittedOffsetsTable.CONSUMER_GROUP_COLUMN_NAME} VARCHAR, " +
                 "${DbSchema.CommittedOffsetsTable.PARTITION_COLUMN_NAME} INT, ${DbSchema.CommittedOffsetsTable.COMMITTED_OFFSET_COLUMN_NAME} BIGINT, " +
+                "${DbSchema.CommittedOffsetsTable.OFFSET_TIMESTAMP_COLUMN_NAME} TIMESTAMP, " +
                 "PRIMARY KEY (${DbSchema.CommittedOffsetsTable.TOPIC_COLUMN_NAME}, ${DbSchema.CommittedOffsetsTable.CONSUMER_GROUP_COLUMN_NAME}, ${DbSchema.CommittedOffsetsTable.PARTITION_COLUMN_NAME}, ${DbSchema.CommittedOffsetsTable.COMMITTED_OFFSET_COLUMN_NAME}));"
 
         val cleanupOffsetsTableStmt = "DELETE FROM ${DbSchema.CommittedOffsetsTable.TABLE_NAME}"
@@ -41,6 +42,7 @@ class DbUtils {
             val createOffsetsTableStmt = "CREATE TABLE ${DbSchema.CommittedOffsetsTable.TABLE_NAME} " +
                     "(${DbSchema.CommittedOffsetsTable.TOPIC_COLUMN_NAME} VARCHAR(200), ${DbSchema.CommittedOffsetsTable.CONSUMER_GROUP_COLUMN_NAME} VARCHAR(200), " +
                     "${DbSchema.CommittedOffsetsTable.PARTITION_COLUMN_NAME} INT, ${DbSchema.CommittedOffsetsTable.COMMITTED_OFFSET_COLUMN_NAME} BIGINT, " +
+                    "${DbSchema.CommittedOffsetsTable.OFFSET_TIMESTAMP_COLUMN_NAME} DATETIME, " +
                     "PRIMARY KEY (${DbSchema.CommittedOffsetsTable.TOPIC_COLUMN_NAME}, ${DbSchema.CommittedOffsetsTable.CONSUMER_GROUP_COLUMN_NAME}, ${DbSchema.CommittedOffsetsTable.PARTITION_COLUMN_NAME}, ${DbSchema.CommittedOffsetsTable.COMMITTED_OFFSET_COLUMN_NAME}));"
 
             val createTopicsTableStmt = "CREATE TABLE ${DbSchema.TopicsTable.TABLE_NAME} " +
@@ -62,6 +64,7 @@ class DbUtils {
             val createOffsetsTableStmt = "CREATE TABLE ${DbSchema.CommittedOffsetsTable.TABLE_NAME} " +
                     "(${DbSchema.CommittedOffsetsTable.TOPIC_COLUMN_NAME} VARCHAR(200), ${DbSchema.CommittedOffsetsTable.CONSUMER_GROUP_COLUMN_NAME} VARCHAR(200), " +
                     "${DbSchema.CommittedOffsetsTable.PARTITION_COLUMN_NAME} INT, ${DbSchema.CommittedOffsetsTable.COMMITTED_OFFSET_COLUMN_NAME} NUMBER, " +
+                    "${DbSchema.CommittedOffsetsTable.OFFSET_TIMESTAMP_COLUMN_NAME} TIMESTAMP, " +
                     "PRIMARY KEY (${DbSchema.CommittedOffsetsTable.TOPIC_COLUMN_NAME}, ${DbSchema.CommittedOffsetsTable.CONSUMER_GROUP_COLUMN_NAME}, ${DbSchema.CommittedOffsetsTable.PARTITION_COLUMN_NAME}, ${DbSchema.CommittedOffsetsTable.COMMITTED_OFFSET_COLUMN_NAME}))"
 
             val createTopicsTableStmt = "CREATE TABLE ${DbSchema.TopicsTable.TABLE_NAME} " +

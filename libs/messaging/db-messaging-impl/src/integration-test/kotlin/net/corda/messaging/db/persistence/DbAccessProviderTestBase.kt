@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.sql.DriverManager
+import java.time.Instant
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class DbAccessProviderTestBase {
@@ -273,6 +274,41 @@ abstract class DbAccessProviderTestBase {
 
         val nonExistingRecord = dbAccessProvider.getRecord(topic1, 1, 10)
         assertThat(nonExistingRecord).isNull()
+    }
+
+    @Test
+    fun `can delete records before timestamp successfully`() {
+        val committedOffset = 3L
+        val writtenRecords = listOf(
+            RecordDbEntry(topic1, 1, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic1, 1, 2, "key-2".toByteArray(), "value-2".toByteArray()),
+            RecordDbEntry(topic1, 1, 3, "key-3".toByteArray(), "value-3".toByteArray())
+        )
+        dbAccessProvider.writeOffsetsAndRecordsAtomically(topic1, consumer1, mapOf(1 to committedOffset), writtenRecords) {}
+
+        val readRecordsBeforeCleanup = dbAccessProvider.readRecords(topic1, listOf(FetchWindow(1, 1, 3, 10)))
+        assertThat(readRecordsBeforeCleanup).containsAll(writtenRecords)
+
+        dbAccessProvider.deleteRecordsOlderThan(topic1, Instant.now())
+
+        val readRecordsAfterCleanup = dbAccessProvider.readRecords(topic1, listOf(FetchWindow(1, 1, 3, 10)))
+        assertThat(readRecordsAfterCleanup).isEmpty()
+    }
+
+    @Test
+    fun `can delete offsets before timestamp successfully`() {
+        val offsets = mapOf(
+            1 to 3L,
+            2 to 5L
+        )
+        dbAccessProvider.writeOffsets(topic1, consumer1, offsets)
+
+        assertThat(dbAccessProvider.getMaxCommittedOffset(topic1, consumer1, setOf(1, 2))).isEqualTo(offsets)
+        dbAccessProvider.deleteOffsetsOlderThan(topic1, Instant.now())
+        assertThat(dbAccessProvider.getMaxCommittedOffset(topic1, consumer1, setOf(1, 2))).isEqualTo(mapOf(
+            1 to null,
+            2 to null
+        ))
     }
 
 }
