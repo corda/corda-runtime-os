@@ -1,7 +1,11 @@
+import aQute.bnd.gradle.Bundle
+import aQute.bnd.gradle.Resolve
+import aQute.bnd.gradle.TestOSGi
+
 plugins {
     id 'corda.common-library'
     id 'corda.publish'
-    id 'corda.osgi-test-conventions'
+    id 'biz.aQute.bnd.builder'
 }
 
 description 'Kafka Messaging API Impl'
@@ -30,4 +34,36 @@ dependencies {
     //runtime implementation dependencies
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     integrationTestRuntimeOnly project(":libs:kafka-utils:topic-admin-impl")
+}
+
+
+tasks.register('kafkaIntegrationTest', TestOSGi) {
+    description = "Runs Kafka OSGi integration tests."
+    group = "verification"
+    dependsOn resolve
+    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
+    bndrun = 'test.bndrun'
+}
+
+def kafkaTestingBundle = tasks.register('kafkaTestingBundle', Bundle) {
+    archiveClassifier = 'tests'
+    from sourceSets.integrationTest.output
+    sourceSet = sourceSets.integrationTest
+
+    bnd """\
+Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
+Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
+"""
+}
+
+def resolve = tasks.register('resolve', Resolve) {
+    dependsOn jar, kafkaTestingBundle
+    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
+    bndrun = 'test.bndrun'
+    //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
+    System.setProperty("bnd.home.dir", "$rootDir/bnd/")
+}
+
+artifacts {
+    archives kafkaTestingBundle
 }
