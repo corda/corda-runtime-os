@@ -301,6 +301,7 @@ internal class SimpleLifeCycleCoordinatorTest {
     }
 
 
+    @Disabled
     @ParameterizedTest
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     @ValueSource(ints = [5])
