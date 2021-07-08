@@ -129,7 +129,6 @@ class CordaKafkaProducerImpl(
         try {
             producer.commitTransaction()
         } catch (ex: Exception) {
-            producer.abortTransaction()
             when (ex) {
                 is IllegalStateException,
                 is ProducerFencedException,
@@ -144,6 +143,7 @@ class CordaKafkaProducerImpl(
                 is TimeoutException,
                 is InterruptException,
                 is KafkaException -> {
+                    abortTransaction()
                     throw CordaMessageAPIIntermittentException(
                         "Error occurred committing transaction " +
                                 "for CordaKafkaProducer with clientId $clientId", ex
@@ -163,7 +163,6 @@ class CordaKafkaProducerImpl(
         try {
             producer.sendOffsetsToTransaction(consumerOffsets(consumer, record), consumer.groupMetadata())
         } catch (ex: Exception) {
-            producer.abortTransaction()
             when (ex) {
                 is IllegalStateException,
                 is ProducerFencedException,
@@ -181,6 +180,7 @@ class CordaKafkaProducerImpl(
                 is TimeoutException,
                 is InterruptException,
                 is KafkaException -> {
+                    abortTransaction()
                     throw CordaMessageAPIIntermittentException(
                         "Fatal error occurred sending offsets for transaction " +
                                 "for CordaKafkaProducer with clientId $clientId", ex
