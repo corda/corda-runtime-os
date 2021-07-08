@@ -12,6 +12,7 @@ import net.corda.messaging.db.persistence.DbSchema.RecordsTable.Companion.RECORD
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.sql.Blob
 import java.sql.Connection
 import java.sql.SQLException
 import java.sql.Timestamp
@@ -22,7 +23,11 @@ import javax.sql.DataSource
 import javax.sql.rowset.serial.SerialBlob
 import kotlin.concurrent.withLock
 
-class DBAccessProviderImpl(private val jdbcUrl: String, private val username: String, private val password: String): DBAccessProvider {
+@Suppress("TooManyFunctions")
+class DBAccessProviderImpl(private val jdbcUrl: String,
+                           private val username: String,
+                           private val password: String,
+                           private val dbType: DBType): DBAccessProvider {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -34,47 +39,65 @@ class DBAccessProviderImpl(private val jdbcUrl: String, private val username: St
     private val startStopLock = ReentrantLock()
 
     private val commitOffsetStmt = "insert into ${DbSchema.CommittedOffsetsTable.TABLE_NAME} " +
-                                  "(${DbSchema.CommittedOffsetsTable.TOPIC_COLUMN_NAME}, $CONSUMER_GROUP_COLUMN_NAME, " +
-                                  "${DbSchema.CommittedOffsetsTable.PARTITION_COLUMN_NAME}, $COMMITTED_OFFSET_COLUMN_NAME)" +
-                                  "values (?, ?, ?, ?)"
+            "(${DbSchema.CommittedOffsetsTable.TOPIC_COLUMN_NAME}, $CONSUMER_GROUP_COLUMN_NAME, " +
+            "${DbSchema.CommittedOffsetsTable.PARTITION_COLUMN_NAME}, $COMMITTED_OFFSET_COLUMN_NAME)" +
+            "values (?, ?, ?, ?)"
 
     private val maxCommittedOffsetStmt = "select max($COMMITTED_OFFSET_COLUMN_NAME) " +
-                                     "from ${DbSchema.CommittedOffsetsTable.TABLE_NAME} " +
-                                     "where ${DbSchema.CommittedOffsetsTable.TOPIC_COLUMN_NAME} = ? and " +
-                                     "$CONSUMER_GROUP_COLUMN_NAME = ? and " +
-                                     "${DbSchema.CommittedOffsetsTable.PARTITION_COLUMN_NAME} = ?"
+            "from ${DbSchema.CommittedOffsetsTable.TABLE_NAME} " +
+            "where ${DbSchema.CommittedOffsetsTable.TOPIC_COLUMN_NAME} = ? and " +
+            "$CONSUMER_GROUP_COLUMN_NAME = ? and " +
+            "${DbSchema.CommittedOffsetsTable.PARTITION_COLUMN_NAME} = ?"
 
     private val maxOffsetStatement = "select ${DbSchema.RecordsTable.TOPIC_COLUMN_NAME}, max($RECORD_OFFSET_COLUMN_NAME) " +
-                "from ${DbSchema.RecordsTable.TABLE_NAME} where " +
-                "$PARTITION_COLUMN_NAME = ${DbSchema.FIXED_PARTITION_NO} " +
-                "group by ${DbSchema.RecordsTable.TOPIC_COLUMN_NAME}"
+            "from ${DbSchema.RecordsTable.TABLE_NAME} where " +
+            "$PARTITION_COLUMN_NAME = ${DbSchema.FIXED_PARTITION_NO} " +
+            "group by ${DbSchema.RecordsTable.TOPIC_COLUMN_NAME}"
 
     private val insertRecordStatement = "insert into ${DbSchema.RecordsTable.TABLE_NAME} " +
-                                    "(${DbSchema.RecordsTable.TOPIC_COLUMN_NAME}, $PARTITION_COLUMN_NAME, " +
-                                    "$RECORD_OFFSET_COLUMN_NAME, $RECORD_KEY_COLUMN_NAME, " +
-                                    "$RECORD_VALUE_COLUMN_NAME, $RECORD_TIMESTAMP_COLUMN_NAME) " +
-                                    "values (?, ?, ?, ?, ?, ?)"
+            "(${DbSchema.RecordsTable.TOPIC_COLUMN_NAME}, $PARTITION_COLUMN_NAME, " +
+            "$RECORD_OFFSET_COLUMN_NAME, $RECORD_KEY_COLUMN_NAME, " +
+            "$RECORD_VALUE_COLUMN_NAME, $RECORD_TIMESTAMP_COLUMN_NAME) " +
+            "values (?, ?, ?, ?, ?, ?)"
 
     private val readRecordsStmt = "select ${PARTITION_COLUMN_NAME}, $RECORD_OFFSET_COLUMN_NAME, " +
-                                        "$RECORD_KEY_COLUMN_NAME, $RECORD_VALUE_COLUMN_NAME " +
-                                        "from ${DbSchema.RecordsTable.TABLE_NAME} where " +
-                                        "${DbSchema.RecordsTable.TOPIC_COLUMN_NAME} = ? and " +
-                                        "$PARTITION_COLUMN_NAME = ? and " +
-                                        "$RECORD_OFFSET_COLUMN_NAME >= ? and $RECORD_OFFSET_COLUMN_NAME <= ? " +
-                                        "order by $RECORD_OFFSET_COLUMN_NAME asc " +
-                                        "limit ?"
+            "$RECORD_KEY_COLUMN_NAME, $RECORD_VALUE_COLUMN_NAME " +
+            "from ${DbSchema.RecordsTable.TABLE_NAME} where " +
+            "${DbSchema.RecordsTable.TOPIC_COLUMN_NAME} = ? and " +
+            "$PARTITION_COLUMN_NAME = ? and " +
+            "$RECORD_OFFSET_COLUMN_NAME >= ? and $RECORD_OFFSET_COLUMN_NAME <= ? " +
+            "order by $RECORD_OFFSET_COLUMN_NAME asc " +
+            "limit ?"
+
+    private val readRecordsStmtForSQLServer = "select top (?) ${PARTITION_COLUMN_NAME}, $RECORD_OFFSET_COLUMN_NAME, " +
+            "$RECORD_KEY_COLUMN_NAME, $RECORD_VALUE_COLUMN_NAME " +
+            "from ${DbSchema.RecordsTable.TABLE_NAME} where " +
+            "${DbSchema.RecordsTable.TOPIC_COLUMN_NAME} = ? and " +
+            "$PARTITION_COLUMN_NAME = ? and " +
+            "$RECORD_OFFSET_COLUMN_NAME >= ? and $RECORD_OFFSET_COLUMN_NAME <= ? " +
+            "order by $RECORD_OFFSET_COLUMN_NAME asc"
+
+    private val readRecordsStmtForOracle = "select * from (" +
+            "select ${PARTITION_COLUMN_NAME}, $RECORD_OFFSET_COLUMN_NAME, " +
+            "$RECORD_KEY_COLUMN_NAME, $RECORD_VALUE_COLUMN_NAME " +
+            "from ${DbSchema.RecordsTable.TABLE_NAME} where " +
+            "${DbSchema.RecordsTable.TOPIC_COLUMN_NAME} = ? and " +
+            "$PARTITION_COLUMN_NAME = ? and " +
+            "$RECORD_OFFSET_COLUMN_NAME >= ? and $RECORD_OFFSET_COLUMN_NAME <= ? " +
+            "order by $RECORD_OFFSET_COLUMN_NAME asc) " +
+            "where ROWNUM <= ?"
 
     private val selectRecordByPartitionOffsetStmt = "select $RECORD_KEY_COLUMN_NAME, $RECORD_VALUE_COLUMN_NAME " +
-                                        "from ${DbSchema.RecordsTable.TABLE_NAME} where " +
-                                        "${DbSchema.RecordsTable.TOPIC_COLUMN_NAME} = ? and " +
-                                        "$PARTITION_COLUMN_NAME = ? and " +
-                                        "$RECORD_OFFSET_COLUMN_NAME = ?"
+            "from ${DbSchema.RecordsTable.TABLE_NAME} where " +
+            "${DbSchema.RecordsTable.TOPIC_COLUMN_NAME} = ? and " +
+            "$PARTITION_COLUMN_NAME = ? and " +
+            "$RECORD_OFFSET_COLUMN_NAME = ?"
 
     private val readTopicsStmt = "select ${DbSchema.TopicsTable.TOPIC_COLUMN_NAME} from ${DbSchema.TopicsTable.TABLE_NAME}"
 
     private val insertTopicStmt = "insert into ${DbSchema.TopicsTable.TABLE_NAME} " +
-                                  "(${DbSchema.TopicsTable.TOPIC_COLUMN_NAME}, ${DbSchema.TopicsTable.PARTITIONS_COLUMN_NAME}) " +
-                                  "values (?, ?)"
+            "(${DbSchema.TopicsTable.TOPIC_COLUMN_NAME}, ${DbSchema.TopicsTable.PARTITIONS_COLUMN_NAME}) " +
+            "values (?, ?)"
 
     override val isRunning: Boolean
         get() = running
@@ -110,7 +133,6 @@ class DBAccessProviderImpl(private val jdbcUrl: String, private val username: St
             writeOffset(topic, consumerGroup, offset, it)
         }, "write offset $offset for consumer group $consumerGroup on topic $topic")
     }
-
 
     override fun getMaxCommittedOffset(topic: String, consumerGroup: String): Long? {
         var maxOffset: Long? = null
@@ -156,7 +178,6 @@ class DBAccessProviderImpl(private val jdbcUrl: String, private val username: St
         return maxOffsetsPerTopic
     }
 
-
     override fun writeRecords(records: List<RecordDbEntry>, postTxFn: (records: List<RecordDbEntry>) -> Unit) {
         executeWithErrorHandling({
             writeRecords(records, it)
@@ -167,22 +188,49 @@ class DBAccessProviderImpl(private val jdbcUrl: String, private val username: St
         val records = mutableListOf<RecordDbEntry>()
 
         executeWithErrorHandling({
-            val stmt = it.prepareStatement(readRecordsStmt)
-            stmt.setString(1, topic)
-            stmt.setInt(2, DbSchema.FIXED_PARTITION_NO)
-            stmt.setLong(3, startOffset)
-            stmt.setLong(4, maxOffset)
-            stmt.setInt(5, maxNumberOfRecords)
+            val stmt = when (dbType) {
+                DBType.SQL_SERVER -> {
+                    val stmt = it.prepareStatement(readRecordsStmtForSQLServer)
+                    stmt.setInt(1, maxNumberOfRecords)
+                    stmt.setString(2, topic)
+                    stmt.setInt(3, DbSchema.FIXED_PARTITION_NO)
+                    stmt.setLong(4, startOffset)
+                    stmt.setLong(5, maxOffset)
+
+                    stmt
+                }
+                DBType.ORACLE -> {
+                    val stmt = it.prepareStatement(readRecordsStmtForOracle)
+                    stmt.setString(1, topic)
+                    stmt.setInt(2, DbSchema.FIXED_PARTITION_NO)
+                    stmt.setLong(3, startOffset)
+                    stmt.setLong(4, maxOffset)
+                    stmt.setInt(5, maxNumberOfRecords)
+
+                    stmt
+                }
+                else -> {
+                    val stmt = it.prepareStatement(readRecordsStmt)
+
+                    stmt.setString(1, topic)
+                    stmt.setInt(2, DbSchema.FIXED_PARTITION_NO)
+                    stmt.setLong(3, startOffset)
+                    stmt.setLong(4, maxOffset)
+                    stmt.setInt(5, maxNumberOfRecords)
+
+                    stmt
+                }
+            }
 
             val result = stmt.executeQuery()
             while (result.next()) {
                 val keyBlob = result.getBlob(RECORD_KEY_COLUMN_NAME)
                 val valueBlob = result.getBlob(RECORD_VALUE_COLUMN_NAME)
                 val record = RecordDbEntry(topic,
-                                           result.getInt(PARTITION_COLUMN_NAME),
-                                           result.getLong(RECORD_OFFSET_COLUMN_NAME),
-                                           keyBlob.getBytes(0, keyBlob.length().toInt()),
-                                           valueBlob?.getBytes(0, valueBlob.length().toInt()))
+                    result.getInt(PARTITION_COLUMN_NAME),
+                    result.getLong(RECORD_OFFSET_COLUMN_NAME),
+                    getBytes(keyBlob)!!,
+                    getBytes(valueBlob))
                 records.add(record)
             }
         }, "retrieve (up to $maxNumberOfRecords) records from $topic starting from offset $startOffset up to offset $maxOffset")
@@ -204,10 +252,10 @@ class DBAccessProviderImpl(private val jdbcUrl: String, private val username: St
                 val keyBlob = result.getBlob(1)
                 val valueBlob = result.getBlob(2)
                 record = RecordDbEntry(topic,
-                                       partition,
-                                       offset,
-                                       keyBlob.getBytes(0, keyBlob.length().toInt()),
-                                       valueBlob?.getBytes(0, valueBlob.length().toInt()))
+                    partition,
+                    offset,
+                    getBytes(keyBlob)!!,
+                    getBytes(valueBlob))
             }
         }, "retrieve record from topic $topic at location (partition: $partition, offset: $offset)")
 
@@ -250,9 +298,9 @@ class DBAccessProviderImpl(private val jdbcUrl: String, private val username: St
             stmt.setString(1, record.topic)
             stmt.setInt(2, record.partition)
             stmt.setLong(3, record.offset)
-            stmt.setBlob(4, SerialBlob(record.key))
+            stmt.setBlob(4, toBlob(record.key, connection))
             if (record.value != null) {
-                stmt.setBlob(5, SerialBlob(record.value))
+                stmt.setBlob(5, toBlob(record.value, connection))
             } else {
                 stmt.setNull(5, Types.BLOB)
             }
@@ -289,4 +337,26 @@ class DBAccessProviderImpl(private val jdbcUrl: String, private val username: St
         }
     }
 
+    private fun getBytes(blob: Blob?): ByteArray? {
+        return blob?.getBytes(1, blob.length().toInt())
+    }
+
+    private fun toBlob(bytes: ByteArray, connection: Connection): Blob {
+        return when(dbType) {
+            DBType.ORACLE -> {
+                val blob = connection.createBlob()
+                blob.setBytes(1, bytes)
+                blob
+            }
+            else -> SerialBlob(bytes)
+        }
+    }
+
+}
+
+enum class DBType {
+    H2,
+    POSTGRESQL,
+    ORACLE,
+    SQL_SERVER
 }
