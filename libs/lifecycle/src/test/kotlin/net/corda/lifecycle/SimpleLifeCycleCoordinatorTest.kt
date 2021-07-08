@@ -239,7 +239,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     @ParameterizedTest
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
-    @ValueSource(ints = [3])
+    @ValueSource(ints = [2])
     fun postUnhandledErrorEvent(n: Int) {
         var stopLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
