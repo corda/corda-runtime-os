@@ -26,6 +26,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerH
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
 import net.corda.p2p.payload.FlowMessage
+import net.corda.p2p.payload.FlowMessageAndKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
@@ -66,9 +67,9 @@ open class SessionManagerImpl(
 
     private val sessionNegotiationLock = ReentrantLock()
 
-    override fun processOutboundFlowMessage(message: FlowMessage): SessionState {
+    override fun processOutboundFlowMessage(message: FlowMessageAndKey): SessionState {
         sessionNegotiationLock.withLock {
-            val key = getSessionKeyFromMessage(message)
+            val key = getSessionKeyFromMessage(message.flowMessage)
 
             val activeSession = activeOutboundSessions[key]
             if (activeSession != null) {
@@ -115,7 +116,7 @@ open class SessionManagerImpl(
                     "The sessionInit message was not sent.")
             return null
         }
-        val message = createLinkOutMessage(session.generateInitiatorHello(), responderMemberInfo, networkType) ?: return null
+        val message = createLinkOutMessage(session.generateInitiatorHello(), responderMemberInfo, networkType)
         return sessionId to message
     }
 
