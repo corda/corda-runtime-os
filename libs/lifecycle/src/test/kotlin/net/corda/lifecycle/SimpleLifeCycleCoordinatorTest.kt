@@ -142,7 +142,6 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     @Disabled
     @Test
-    @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun getBatchSize() {
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { _: LifeCycleEvent, _: LifeCycleCoordinator -> }
             .use { coordinator ->
@@ -152,7 +151,6 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     @Disabled
     @Test
-    @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun getTimeout() {
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { _: LifeCycleEvent, _: LifeCycleCoordinator -> }
             .use { coordinator ->
@@ -241,7 +239,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     @ParameterizedTest
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
-    @ValueSource(ints = [2])
+    @ValueSource(ints = [3])
     fun postUnhandledErrorEvent(n: Int) {
         var stopLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
