@@ -111,27 +111,6 @@ internal class SimpleLifeCycleCoordinatorTest {
         assertTrue(n > countDownLatch.count)
     }
 
-    @Disabled
-    @Test
-    @Timeout(value = 60, unit = TimeUnit.SECONDS)
-    fun getBatchSize() {
-        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { _: LifeCycleEvent, _: LifeCycleCoordinator -> }
-            .use { coordinator ->
-                assertEquals(BATCH_SIZE, coordinator.batchSize)
-            }
-    }
-
-    @Disabled
-    @Test
-    @Timeout(value = 60, unit = TimeUnit.SECONDS)
-    fun getTimeout() {
-        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { _: LifeCycleEvent, _: LifeCycleCoordinator -> }
-            .use { coordinator ->
-                assertEquals(TIMEOUT, coordinator.timeout)
-            }
-    }
-
-    @Disabled
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun cancelTimer() {
@@ -156,6 +135,24 @@ internal class SimpleLifeCycleCoordinatorTest {
             }
             coordinator.cancelTimer(key)
         }
+    }
+
+    @Test
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
+    fun getBatchSize() {
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { _: LifeCycleEvent, _: LifeCycleCoordinator -> }
+            .use { coordinator ->
+                assertEquals(BATCH_SIZE, coordinator.batchSize)
+            }
+    }
+
+    @Test
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
+    fun getTimeout() {
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { _: LifeCycleEvent, _: LifeCycleCoordinator -> }
+            .use { coordinator ->
+                assertEquals(TIMEOUT, coordinator.timeout)
+            }
     }
 
     @Disabled
