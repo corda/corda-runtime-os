@@ -5,6 +5,7 @@ net.corda.data.crypto.SecureHash
 net.corda.data.demo.DemoRecord
 net.corda.data.demo.DemoStateRecord
 net.corda.data.flow.Checkpoint
+net.corda.data.flow.FlowError
 net.corda.data.flow.FlowKey
 net.corda.data.flow.Identity
 net.corda.data.flow.event.FlowEvent
