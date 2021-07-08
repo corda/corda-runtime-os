@@ -133,6 +133,11 @@ abstract class DbAccessProviderTestBase {
     }
 
     @Test
+    fun `when set of partitions is empty on query for committed offsets, an empty map is returned`() {
+        assertThat(dbAccessProvider.getMaxCommittedOffset(topic1, consumer1, emptySet())).isEmpty()
+    }
+
+    @Test
     fun `when you try to commit offset that has already been committed, an exception is thrown`() {
         dbAccessProvider.writeOffsets(topic1, consumer1, mapOf(1 to 3))
         val records = listOf(

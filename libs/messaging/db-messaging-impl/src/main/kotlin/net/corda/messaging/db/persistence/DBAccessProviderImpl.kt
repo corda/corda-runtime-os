@@ -155,8 +155,11 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
     }
 
     override fun getMaxCommittedOffset(topic: String, consumerGroup: String, partitions: Set<Int>): Map<Int, Long?> {
-        val maxOffsets: MutableMap<Int, Long?> = partitions.map { it to null }.toMap().toMutableMap()
+        if (partitions.isEmpty()) {
+            return emptyMap()
+        }
 
+        val maxOffsets: MutableMap<Int, Long?> = partitions.map { it to null }.toMap().toMutableMap()
         executeWithErrorHandling({
             val partitionsList = MutableList(partitions.size) { "?" }.joinToString(", ", "(", ")")
             val sqlStatement = maxCommittedOffsetsStmt.replace("[partitions_list]", partitionsList)
