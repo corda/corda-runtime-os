@@ -278,7 +278,6 @@ internal class SimpleLifeCycleCoordinatorTest {
         }
     }
 
-    @Disabled
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun setTimer() {
