@@ -27,7 +27,6 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     interface ThrowException : LifeCycleEvent
 
-    @Disabled
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun burstEvents() {
