@@ -27,7 +27,6 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     interface ThrowException : LifeCycleEvent
 
-    @Disabled
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun burstEvents() {
@@ -64,7 +63,6 @@ internal class SimpleLifeCycleCoordinatorTest {
         }
     }
 
-    @Disabled
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun burstTimers() {
@@ -113,7 +111,6 @@ internal class SimpleLifeCycleCoordinatorTest {
         assertTrue(n > countDownLatch.count)
     }
 
-    @Disabled
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun cancelTimer() {
@@ -140,7 +137,6 @@ internal class SimpleLifeCycleCoordinatorTest {
         }
     }
 
-    @Disabled
     @Test
     fun getBatchSize() {
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { _: LifeCycleEvent, _: LifeCycleCoordinator -> }
@@ -149,7 +145,6 @@ internal class SimpleLifeCycleCoordinatorTest {
             }
     }
 
-    @Disabled
     @Test
     fun getTimeout() {
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { _: LifeCycleEvent, _: LifeCycleCoordinator -> }
@@ -158,7 +153,6 @@ internal class SimpleLifeCycleCoordinatorTest {
             }
     }
 
-    @Disabled
     @ParameterizedTest
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     @ValueSource(ints = [5])
@@ -195,7 +189,6 @@ internal class SimpleLifeCycleCoordinatorTest {
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     @ValueSource(ints = [5])
@@ -273,7 +266,6 @@ internal class SimpleLifeCycleCoordinatorTest {
         }
     }
 
-    @Disabled
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun setTimer() {
@@ -303,7 +295,6 @@ internal class SimpleLifeCycleCoordinatorTest {
     }
 
 
-    @Disabled
     @ParameterizedTest
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     @ValueSource(ints = [5])
