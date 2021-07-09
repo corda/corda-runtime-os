@@ -12,10 +12,6 @@
       "type": "bytes"
     },
     {
-      "name": "ourIdentity",
-      "type": "net.corda.data.flow.Identity"
-    },
-    {
       "name": "isKilled",
       "type": "boolean"
     },
