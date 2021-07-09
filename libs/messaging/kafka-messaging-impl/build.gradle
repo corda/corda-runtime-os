@@ -10,6 +10,24 @@ plugins {
 
 description 'Kafka Messaging API Impl'
 
+sourceSets {
+    kafkaIntegrationTest {
+        kotlin {
+            srcDirs = [ 'src/kafka-integration-test/kotlin' ]
+        }
+        resources {
+            srcDirs = [ 'src/kafka-integration-test/resources' ]
+        }
+    }
+}
+
+configurations {
+    kafkaIntegrationTestApi.extendsFrom integrationTestApi
+    kafkaIntegrationTestCompileOnly.extendsFrom integrationTestCompileOnly
+    kafkaIntegrationTestImplementation.extendsFrom integrationTestImplementation
+    kafkaIntegrationTestRuntimeOnly.extendsFrom integrationTestRuntimeOnly
+}
+
 dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:schema-registry:schema-registry")
@@ -28,12 +46,12 @@ dependencies {
 
     testRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
 
-    integrationTestImplementation project(":components:kafka-topic-admin")
-    integrationTestImplementation project(":data:avro-schema")
+    kafkaIntegrationTestImplementation project(":components:kafka-topic-admin")
+    kafkaIntegrationTestImplementation project(":data:avro-schema")
 
     //runtime implementation dependencies
-    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
-    integrationTestRuntimeOnly project(":libs:kafka-utils:topic-admin-impl")
+    kafkaIntegrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+    kafkaIntegrationTestRuntimeOnly project(":libs:kafka-utils:topic-admin-impl")
 }
 
 
@@ -41,14 +59,14 @@ tasks.register('kafkaIntegrationTest', TestOSGi) {
     description = "Runs Kafka OSGi integration tests."
     group = "verification"
     dependsOn resolve
-    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
+    bundles = files(sourceSets.kafkaIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
     bndrun = 'test.bndrun'
 }
 
 def kafkaTestingBundle = tasks.register('kafkaTestingBundle', Bundle) {
     archiveClassifier = 'tests'
-    from sourceSets.integrationTest.output
-    sourceSet = sourceSets.integrationTest
+    from sourceSets.kafkaIntegrationTest.output
+    sourceSet = sourceSets.kafkaIntegrationTest
 
     bnd """\
 Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
@@ -58,7 +76,7 @@ Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons
 
 def resolve = tasks.register('resolve', Resolve) {
     dependsOn jar, kafkaTestingBundle
-    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
+    bundles = files(sourceSets.kafkaIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
     bndrun = 'test.bndrun'
     //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
     System.setProperty("bnd.home.dir", "$rootDir/bnd/")
