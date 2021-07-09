@@ -4,6 +4,7 @@ import io.netty.channel.ConnectTimeoutException
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.v5.base.util.NetworkHostAndPort
@@ -20,17 +21,18 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager) : Ev
     @Suppress("TooGenericExceptionCaught")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
         events.forEach { evt ->
-            logger.info("Processing P2P outbound message")
-            val peerMessage = evt.value
-            try {
-                val destination = NetworkHostAndPort.parse(peerMessage.header.address)
-                connectionPool.acquire(destination).send(peerMessage.toByteBuffer().array())
-            } catch (e: ConnectTimeoutException) {
-                logger.warn(e.message)
-            } catch (e: IllegalArgumentException) {
-              logger.warn("Could not read the destination address")
-            } catch (e: Exception) {
-                logger.error("Unexpected error\n${e.message}")
+            evt.value?.let { peerMessage ->
+                logger.info("Processing P2P outbound message for ${peerMessage.header.address}")
+                try {
+                    val destination = NetworkHostAndPort.parse(peerMessage.header.address)
+                    connectionPool.acquire(destination).send(LinkInMessage(peerMessage.payload).toByteBuffer().array())
+                } catch (e: ConnectTimeoutException) {
+                    logger.warn(e.message)
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Could not read the destination address")
+                } catch (e: Exception) {
+                    logger.error("Unexpected error\n${e.message}")
+                }
             }
         }
 

@@ -1,6 +1,8 @@
 package net.corda.messaging.api.subscription
 
 import net.corda.lifecycle.LifeCycle
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 
@@ -72,6 +74,9 @@ interface RandomAccessSubscription<K: Any, V: Any>: Subscription<K, V> {
     /**
      * Get the record at the provided partition and offset.
      * @return the record if there is one at the specified location, null otherwise.
+     *
+     * @throws CordaMessageAPIFatalException if there was an fatal/unrecoverable error while trying to retrieve the record.
+     * @throws CordaMessageAPIIntermittentException if there was a recoverable/transient error while trying to retrieve the record.
      */
     fun getRecord(partition: Int, offset: Long): Record<K, V>?
 

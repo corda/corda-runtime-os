@@ -166,7 +166,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
     /**
      * Creates and sends a POST request. The body content type is JSON and will contain the [message].
      * @param message the bytes payload to be sent
-     * @throws IllegalStateException if the connectionnnn is down
+     * @throws IllegalStateException if the connection is down
      */
     fun send(message: ByteArray) {
         val channel = clientChannel
@@ -174,9 +174,8 @@ class HttpClient(private val destination: NetworkHostAndPort,
             throw IllegalStateException("Connection to $destination not active")
         } else {
             val request = HttpHelper.createRequest(message, destination)
-            logger.info("Created request $request")
             channel.writeAndFlush(request)
-            logger.info("Sent HTTP request")
+            logger.debug("Sent HTTP request $request")
         }
     }
 
@@ -247,7 +246,6 @@ class HttpClient(private val destination: NetworkHostAndPort,
         }
     }
 
-    // T0DO: need to do some validation here I think
     private class HttpClientChannelHandler(
         private val onOpen: (SocketChannel, ConnectionChangeEvent) -> Unit,
         private val onClose: (SocketChannel, ConnectionChangeEvent) -> Unit,
@@ -263,13 +261,13 @@ class HttpClient(private val destination: NetworkHostAndPort,
          */
         override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
             if (msg is HttpResponse) {
-                logger.info("Received response $msg")
+                logger.debug("Received response $msg")
                 responseBodyBuf = ctx.alloc().buffer(msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
                 responseCode = msg.status()
             }
 
             if (msg is HttpContent) {
-                logger.info("Received response body $msg")
+                logger.debug("Received response body $msg")
                 val content = msg.content()
                 if (content.isReadable) {
                     content.readBytes(responseBodyBuf, content.readableBytes())
@@ -279,7 +277,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
             // This message type indicates the entire response has been received and the body content can be forwarded to
             // the event processor. No trailing headers should exist
             if (msg is LastHttpContent) {
-                logger.info("Read end of response body")
+                logger.debug("Read end of response body")
                 val sourceAddress = ctx.channel().remoteAddress() as InetSocketAddress
                 val targetAddress = ctx.channel().localAddress() as InetSocketAddress
                 val returnByteArray = ByteArray(responseBodyBuf!!.readableBytes())

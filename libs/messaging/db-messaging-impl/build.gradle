@@ -1,0 +1,49 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+}
+
+description 'Database Messaging API Implementation'
+
+dependencies {
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "com.zaxxer:HikariCP:$hikariCpVersion"
+    implementation "com.google.guava:guava:$guavaVersion"
+    implementation project(":libs:lifecycle")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:schema-registry:schema-registry")
+
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
+    testImplementation "net.corda:corda-test-common:$cordaTestCommonVersion"
+
+    integrationTestImplementation "com.h2database:h2:$h2Version"
+}
+
+/**
+ * TODO: Once the new setup to perform integration testing under OSGi using the bootstrapper is ready,
+ *       we can migrate to it and remove the below.
+ */
+sourceSets {
+    integrationTest {
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+tasks.register('integrationTest', Test) {
+    description = "Runs integration tests."
+
+    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
+    classpath = project.sourceSets["integrationTest"].runtimeClasspath
+}
+
+tasks.named("integrationTest", Test).configure {
+    useJUnitPlatform()
+}

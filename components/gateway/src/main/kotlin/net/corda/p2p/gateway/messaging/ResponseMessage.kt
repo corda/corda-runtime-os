@@ -4,7 +4,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.v5.base.util.NetworkHostAndPort
 
 /**
- * [ApplicationMessage] implementation. Used to deliver response messags from the transport layer to the application layer
+ * [ApplicationMessage] implementation. Used to deliver response messages from the transport layer to the application layer
  */
 class ResponseMessage(
     val statusCode: HttpResponseStatus,

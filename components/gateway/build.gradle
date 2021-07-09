@@ -7,6 +7,7 @@ description 'P2P gateway component'
 
 dependencies {
     implementation "net.corda:corda-base:$cordaVersion"
+    implementation project(":libs:p2p-crypto")
     implementation "net.corda:corda-node-api:$cordaVersion"
     implementation "net.corda:corda-application:$cordaVersion"
     implementation project(":libs:messaging:messaging")
