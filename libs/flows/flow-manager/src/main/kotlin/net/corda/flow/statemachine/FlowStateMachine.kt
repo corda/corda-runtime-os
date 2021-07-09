@@ -23,7 +23,6 @@ interface FlowStateMachineHandle<FLOWRETURN> {
     val clientId: String?
 }
 
-/** This is an internal interface that is implemented by code in the node module. You should look at [Flow]. */
 @DoNotImplement
 interface FlowStateMachine<FLOWRETURN> : FlowStateMachineHandle<FLOWRETURN>, FlowStateMachineInjectable {
     @Suspendable
