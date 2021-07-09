@@ -13,6 +13,7 @@ import net.corda.messaging.db.persistence.DBAccessProvider
 import net.corda.messaging.db.persistence.DbSchema
 import net.corda.messaging.db.persistence.FetchWindow
 import net.corda.messaging.db.persistence.RecordDbEntry
+import net.corda.messaging.db.persistence.TransactionResult
 import net.corda.messaging.db.sync.OffsetTrackersManager
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.testing.common.internal.eventually
@@ -58,17 +59,20 @@ class DBEventLogSubscriptionTest {
         `when`(writeRecords(anyList(), anyOrNull()))
             .thenAnswer { invocation ->
                 val records = (invocation.arguments.first() as List<RecordDbEntry>)
-                val postTxFn = invocation.arguments[1] as ((records: List<RecordDbEntry>) -> Unit)
+                val postTxFn = invocation.arguments[1] as ((records: List<RecordDbEntry>, txResult: TransactionResult) -> Unit)
 
+                var transactionResult: TransactionResult? = null
                 try {
                     if (failuresToSimulateForDbRecordsWrite > 0) {
+                        transactionResult = TransactionResult.ROLLED_BACK
                         failuresToSimulateForDbRecordsWrite--
                         throw SQLTransientException()
                     }
 
                     records.forEach { dbRecords[it.topic]!![it.partition]!!.add(it) }
+                    transactionResult = TransactionResult.COMMITTED
                 } finally {
-                    postTxFn(records)
+                    postTxFn(records, transactionResult!!)
                 }
 
             }
@@ -102,10 +106,10 @@ class DBEventLogSubscriptionTest {
                 val consumerGroup = invocation.arguments[1] as String
                 val offsets = invocation.arguments[2] as Map<Int, Long>
                 val records = invocation.arguments[3] as List<RecordDbEntry>
-                val postTxFn = invocation.arguments[4] as ((records: List<RecordDbEntry>) -> Unit)
+                val postTxFn = invocation.arguments[4] as ((records: List<RecordDbEntry>, txResult: TransactionResult) -> Unit)
 
                 if (failuresToSimulateForAtomicDbWrite > 0) {
-                    postTxFn(records)
+                    postTxFn(records, TransactionResult.ROLLED_BACK)
                     failuresToSimulateForAtomicDbWrite--
                     throw SQLTransientException()
                 }

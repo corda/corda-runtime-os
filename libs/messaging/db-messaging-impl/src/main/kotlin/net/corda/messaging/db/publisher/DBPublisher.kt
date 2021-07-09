@@ -99,7 +99,7 @@ class DBPublisher(private val publisherConfig: PublisherConfig,
     private fun publishTransactionally(recordEntries: List<RecordDbEntry>): CompletableFuture<Unit> {
         return CompletableFuture.supplyAsync({
             try {
-                dbAccessProvider.writeRecords(recordEntries) { records ->
+                dbAccessProvider.writeRecords(recordEntries) { records, _ ->
                     records.forEach { offsetTrackersManager.offsetReleased(it.topic, it.partition, it.offset) }
                 }
             } catch (e: Exception) {

@@ -10,6 +10,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.db.partition.PartitionAllocator
 import net.corda.messaging.db.partition.PartitionAssignor
 import net.corda.messaging.db.persistence.DBAccessProvider
+import net.corda.messaging.db.persistence.DBAccessProviderCached
 import net.corda.messaging.db.persistence.DBAccessProviderImpl
 import net.corda.messaging.db.persistence.DBType
 import net.corda.messaging.db.publisher.DBPublisher
@@ -88,11 +89,15 @@ class DBMessagingIntegrationTest {
         connection.prepareStatement(createOffsetsTableStmt).execute()
         connection.prepareStatement(createTopicsTableStmt).execute()
 
-        dbAccessProvider = DBAccessProviderImpl(jdbcUrl, username, password, DBType.H2, 5)
+        val dbAccessProviderImpl = DBAccessProviderImpl(jdbcUrl, username, password, DBType.H2, 5)
+        dbAccessProvider = DBAccessProviderCached(dbAccessProviderImpl, 50)
         dbAccessProvider.start()
 
-        dbAccessProvider.createTopic(topic1, partitions)
-        dbAccessProvider.createTopic(topic2, partitions)
+        dbAccessProviderImpl.createTopic(topic1, partitions)
+        dbAccessProviderImpl.createTopic(topic2, partitions)
+
+        dbAccessProvider.stop()
+        dbAccessProvider.start()
 
         offsetTrackersManager = OffsetTrackersManager(dbAccessProvider)
         offsetTrackersManager.start()
