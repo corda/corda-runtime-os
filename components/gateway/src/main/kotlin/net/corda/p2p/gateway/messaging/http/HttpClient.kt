@@ -20,7 +20,6 @@ import io.netty.handler.codec.http.HttpObject
 import io.netty.handler.codec.http.HttpResponse
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.LastHttpContent
-import io.netty.handler.ssl.SniCompletionEvent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import net.corda.lifecycle.LifeCycle
 import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfig
@@ -37,7 +36,6 @@ import java.net.InetSocketAddress
 import java.nio.channels.ClosedChannelException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
-import javax.net.ssl.CertPathTrustManagerParameters
 import javax.net.ssl.SSLException
 import javax.net.ssl.TrustManagerFactory
 import kotlin.concurrent.withLock
@@ -207,14 +205,16 @@ class HttpClient(private val destination: NetworkHostAndPort,
         init {
             parent.sslConfiguration.run {
                 // TODO: get mode from config
-                val pkixParams = getCertCheckingParameters(trustStore, RevocationConfigImpl(RevocationConfig.Mode.SOFT_FAIL))
+                val pkixParams = getCertCheckingParameters(trustStore, RevocationConfigImpl(RevocationConfig.Mode.OFF))
                 trustManagerFactory.init(pkixParams)
             }
         }
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createClientSslHandler(parent.destination, trustManagerFactory))
+            pipeline.addLast("sslHandler", createClientSslHandler("www.corda.net",
+                                                                        parent.destination,
+                                                                        trustManagerFactory))
             pipeline.addLast(HttpClientCodec())
             pipeline.addLast(HttpContentDecompressor())
             httpChannelHandler = HttpClientChannelHandler(

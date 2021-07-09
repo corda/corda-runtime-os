@@ -22,6 +22,7 @@ import javax.net.ssl.ManagerFactoryParameters
 import javax.net.ssl.SNIHostName
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509ExtendedKeyManager
 import javax.net.ssl.X509ExtendedTrustManager
 
 const val HANDSHAKE_TIMEOUT = 10000L
@@ -29,8 +30,8 @@ const val TLS_VERSION = "TLSv1.3"
 val CIPHER_SUITES = arrayOf("TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384")
 
 
-fun createClientSslHandler(target: NetworkHostAndPort,
-                           targetServerName: String,
+fun createClientSslHandler(targetServerName: String,
+                           target: NetworkHostAndPort,
                            trustManagerFactory: TrustManagerFactory): SslHandler {
     val sslContext = SSLContext.getInstance("TLS")
     val trustManagers = trustManagerFactory.trustManagers.filterIsInstance(X509ExtendedTrustManager::class.java)
@@ -42,18 +43,27 @@ fun createClientSslHandler(target: NetworkHostAndPort,
         it.enabledProtocols = arrayOf(TLS_VERSION)
         it.enabledCipherSuites = CIPHER_SUITES
         it.enableSessionCreation = true
-        it.sslParameters.serverNames = listOf(SNIHostName(targetServerName))
+        val sslParameters = it.sslParameters
+        sslParameters.serverNames = listOf(SNIHostName(targetServerName))
+        it.sslParameters = sslParameters
     }
     val sslHandler = SslHandler(sslEngine)
     sslHandler.handshakeTimeoutMillis = HANDSHAKE_TIMEOUT
     return sslHandler
 }
 
-fun createServerSslHandler(keyStore: CertificateStore,
+fun createServerSslHandler(keyStore: KeyStore,
                            keyManagerFactory: KeyManagerFactory): SslHandler {
     val sslContext = SSLContext.getInstance("TLS")
+
+    /**
+     * As per the JavaDoc of SSLContext:
+     * Only the first instance of a particular key and/or trust manager implementation type in the array is used.
+     * (For example, only the first javax.net.ssl.X509KeyManager in the array will be used.)
+     * We shall initialise the SSLContext with an SNI enabled key manager instead
+     */
     val keyManagers = keyManagerFactory.keyManagers
-    sslContext.init(keyManagers, null, SecureRandom()) //May need to use secure random from crypto-api module
+    sslContext.init(arrayOf(SNIKeyManager(keyManagers.first() as X509ExtendedKeyManager)), null, SecureRandom()) //May need to use secure random from crypto-api module
 
     val sslEngine = sslContext.createSSLEngine().also {
         it.useClientMode = false
@@ -61,7 +71,9 @@ fun createServerSslHandler(keyStore: CertificateStore,
         it.enabledProtocols = arrayOf(TLS_VERSION)
         it.enabledCipherSuites = CIPHER_SUITES
         it.enableSessionCreation = true
-        it.sslParameters.sniMatchers = listOf(HostnameMatcher(keyStore))
+        val sslParameters = it.sslParameters
+        sslParameters.sniMatchers = listOf(HostnameMatcher(keyStore))
+        it.sslParameters = sslParameters
     }
     val sslHandler = SslHandler(sslEngine)
     sslHandler.handshakeTimeoutMillis = HANDSHAKE_TIMEOUT
@@ -71,7 +83,7 @@ fun createServerSslHandler(keyStore: CertificateStore,
 /**
  * Extension to convert Corda names into String representing SNI values to be used for TLS handshakes
  */
-fun CordaX500Name.toSNI() = ""
+fun CordaX500Name.toSNI() = "www.corda.net"
 
 fun getCertCheckingParameters(trustStore: KeyStore, revocationConfig: RevocationConfig): ManagerFactoryParameters {
     val pkixParams = PKIXBuilderParameters(trustStore, X509CertSelector())

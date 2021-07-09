@@ -23,7 +23,6 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpUtil
 import io.netty.handler.codec.http.HttpVersion
 import io.netty.handler.codec.http.LastHttpContent
-import io.netty.handler.ssl.SniCompletionEvent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.ReceivedMessage
@@ -171,7 +170,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createServerSslHandler(keyManagerFactory))
+            pipeline.addLast("sslHandler", createServerSslHandler(parent.sslConfig.keyStore, keyManagerFactory))
             pipeline.addLast(HttpRequestDecoder())
             pipeline.addLast(HttpResponseEncoder())
             pipeline.addLast(HttpServerChannelHandler(
@@ -275,6 +274,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
                     if (evt.isSuccess) {
                         val ch = ctx.channel()
                         val remoteAddress = (ch.remoteAddress() as InetSocketAddress).let { NetworkHostAndPort(it.hostName, it.port) }
+                        //TODO: should we do the same checks as C4?
                         logger.info("Handshake with ${ctx.channel().remoteAddress()} successful")
                         onOpen(ch as SocketChannel, ConnectionChangeEvent(remoteAddress, true))
                     } else {

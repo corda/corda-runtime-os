@@ -1,15 +1,15 @@
 package net.corda.p2p.gateway.messaging.http
 
-import net.corda.nodeapi.internal.config.CertificateStore
 import net.corda.nodeapi.internal.crypto.x509
 import net.corda.v5.application.identity.CordaX500Name
 import org.slf4j.LoggerFactory
+import java.security.KeyStore
 import javax.net.ssl.SNIHostName
 import javax.net.ssl.SNIMatcher
 import javax.net.ssl.SNIServerName
 import javax.net.ssl.StandardConstants
 
-class HostnameMatcher(private val keyStore: CertificateStore) : SNIMatcher(0) {
+class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
 
     private val logger = LoggerFactory.getLogger(HostnameMatcher::class.java)
 
@@ -20,8 +20,8 @@ class HostnameMatcher(private val keyStore: CertificateStore) : SNIMatcher(0) {
 
     override fun matches(serverName: SNIServerName): Boolean {
         if (serverName.type == StandardConstants.SNI_HOST_NAME) {
-            keyStore.aliases().forEach { alias ->
-                val x500Name = keyStore[alias].x509.subjectX500Principal
+            keyStore.aliases().toList().forEach { alias ->
+                val x500Name = keyStore.getCertificate(alias).x509.subjectX500Principal
                 val cordaX500Name = CordaX500Name.build(x500Name)
                 // Convert the CordaX500Name into the expected host name and compare
                 // E.g. O=Corda B, L=London, C=GB becomes 3c6dd991936308edb210555103ffc1bb.corda.net
@@ -33,8 +33,8 @@ class HostnameMatcher(private val keyStore: CertificateStore) : SNIMatcher(0) {
             }
         }
 
-        val knownSNIValues = keyStore.aliases().joinToString {
-            val x500Name = keyStore[it].x509.subjectX500Principal
+        val knownSNIValues = keyStore.aliases().toList().joinToString {
+            val x500Name = keyStore.getCertificate(it).x509.subjectX500Principal
             val cordaX500Name = CordaX500Name.build(x500Name)
             "hostname = ${cordaX500Name.toSNI()} alias = $it"
         }
