@@ -72,6 +72,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 is AuthenticationException,
                 is IllegalArgumentException,
                 is IllegalStateException,
+                is ArithmeticException,
                 is FencedInstanceIdException,
                 is InvalidOffsetException -> {
                     logErrorAndThrowFatalException("Error attempting to poll from topic $topic", ex)
