@@ -160,43 +160,14 @@ class CordaKafkaProducerImpl(
     }
 
     override fun sendAllOffsetsToTransaction(consumer: Consumer<*, *>) {
-        try {
-            producer.sendOffsetsToTransaction(consumerOffsets(consumer), consumer.groupMetadata())
-        } catch (ex: Exception) {
-            when (ex) {
-                is IllegalStateException,
-                is ProducerFencedException,
-                is UnsupportedVersionException,
-                is UnsupportedForMessageFormatException,
-                is AuthorizationException,
-                is CommitFailedException,
-                is InvalidProducerEpochException,
-                is FencedInstanceIdException -> {
-                    throw CordaMessageAPIFatalException(
-                        "Error occurred sending consumer offsets for transaction " +
-                                "for CordaKafkaProducer with clientId $clientId", ex
-                    )
-                }
-                is TimeoutException,
-                is InterruptException,
-                is KafkaException -> {
-                    abortTransaction()
-                    throw CordaMessageAPIIntermittentException(
-                        "Fatal error occurred sending consumer offsets for transaction " +
-                                "for CordaKafkaProducer with clientId $clientId", ex
-                    )
-                }
-                else -> {
-                    throw CordaMessageAPIFatalException(
-                        "Unexpected error occurred sending consumer offsets for transaction " +
-                                "for CordaKafkaProducer with clientId $clientId", ex
-                    )
-                }
-            }
-        }
+        trySendOffsetsToTransaction(consumer, null)
     }
 
     override fun sendRecordOffsetToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>) {
+        trySendOffsetsToTransaction(consumer, record)
+    }
+
+    private fun trySendOffsetsToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>? = null) {
         try {
             producer.sendOffsetsToTransaction(consumerOffsets(consumer, record), consumer.groupMetadata())
         } catch (ex: Exception) {
@@ -210,7 +181,7 @@ class CordaKafkaProducerImpl(
                 is InvalidProducerEpochException,
                 is FencedInstanceIdException -> {
                     throw CordaMessageAPIFatalException(
-                        "Error occurred sending record offset for transaction " +
+                        "Error occurred sending offset for transaction " +
                                 "for CordaKafkaProducer with clientId $clientId", ex
                     )
                 }
@@ -219,13 +190,13 @@ class CordaKafkaProducerImpl(
                 is KafkaException -> {
                     abortTransaction()
                     throw CordaMessageAPIIntermittentException(
-                        "Fatal error occurred sending record offset for transaction " +
+                        "Fatal error occurred sending offset for transaction " +
                                 "for CordaKafkaProducer with clientId $clientId", ex
                     )
                 }
                 else -> {
                     throw CordaMessageAPIFatalException(
-                        "Unexpected error occurred sending record offset for transaction " +
+                        "Unexpected error occurred record offset for transaction " +
                                 "for CordaKafkaProducer with clientId $clientId", ex
                     )
                 }
