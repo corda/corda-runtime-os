@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "StateMachineState",
+  "namespace": "net.corda.data.flow",
+  "fields": [
+    {
+      "name": "suspendCount",
+      "type": "int"
+    },
+    {
+      "name": "InvocationContext",
+      "type": "bytes"
+    },
+    {
+      "name": "ourIdentity",
+      "type": "net.corda.data.flow.Identity"
+    },
+    {
+      "name": "isKilled",
+      "type": "boolean"
+    },
+    {
+      "name": "initiatedBy",
+      "type": "bytes"
+    }
+  ]
+}

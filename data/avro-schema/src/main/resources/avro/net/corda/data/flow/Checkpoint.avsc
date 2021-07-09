@@ -4,8 +4,16 @@
   "namespace": "net.corda.data.flow",
   "fields": [
     {
-      "name": "checkpoint",
+      "name": "flowId",
+      "type": "net.corda.data.flow.FlowKey"
+    },
+    {
+      "name": "fiber",
       "type": "bytes"
+    },
+    {
+      "name": "flowState",
+      "type": "net.corda.data.flow.StateMachineState"
     }
   ]
 }

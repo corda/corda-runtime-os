@@ -5,15 +5,17 @@
  */
 package net.corda.data.flow;
 
-import org.apache.avro.message.BinaryMessageDecoder;
-import org.apache.avro.message.BinaryMessageEncoder;
-import org.apache.avro.message.SchemaStore;
+import org.apache.avro.generic.GenericArray;
 import org.apache.avro.specific.SpecificData;
+import org.apache.avro.util.Utf8;
+import org.apache.avro.message.BinaryMessageEncoder;
+import org.apache.avro.message.BinaryMessageDecoder;
+import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class Checkpoint extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 2567388784151054996L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"Checkpoint\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"checkpoint\",\"type\":\"bytes\"}]}");
+  private static final long serialVersionUID = 1473788257287981046L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"Checkpoint\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"flowId\",\"type\":{\"type\":\"record\",\"name\":\"FlowKey\",\"fields\":[{\"name\":\"flowId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"identity\",\"type\":{\"type\":\"record\",\"name\":\"Identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"group\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}}]}},{\"name\":\"fiber\",\"type\":\"bytes\"},{\"name\":\"flowState\",\"type\":{\"type\":\"record\",\"name\":\"StateMachineState\",\"fields\":[{\"name\":\"suspendCount\",\"type\":\"int\"},{\"name\":\"InvocationContext\",\"type\":\"bytes\"},{\"name\":\"ourIdentity\",\"type\":\"Identity\"},{\"name\":\"isKilled\",\"type\":\"boolean\"},{\"name\":\"initiatedBy\",\"type\":\"bytes\"}]}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -69,7 +71,9 @@ public class Checkpoint extends org.apache.avro.specific.SpecificRecordBase impl
     return DECODER.decode(b);
   }
 
-   private java.nio.ByteBuffer checkpoint;
+   private net.corda.data.flow.FlowKey flowId;
+   private java.nio.ByteBuffer fiber;
+   private net.corda.data.flow.StateMachineState flowState;
 
   /**
    * Default constructor.  Note that this does not initialize fields
@@ -80,10 +84,14 @@ public class Checkpoint extends org.apache.avro.specific.SpecificRecordBase impl
 
   /**
    * All-args constructor.
-   * @param checkpoint The new value for checkpoint
+   * @param flowId The new value for flowId
+   * @param fiber The new value for fiber
+   * @param flowState The new value for flowState
    */
-  public Checkpoint(java.nio.ByteBuffer checkpoint) {
-    this.checkpoint = checkpoint;
+  public Checkpoint(net.corda.data.flow.FlowKey flowId, java.nio.ByteBuffer fiber, net.corda.data.flow.StateMachineState flowState) {
+    this.flowId = flowId;
+    this.fiber = fiber;
+    this.flowState = flowState;
   }
 
   public org.apache.avro.specific.SpecificData getSpecificData() { return MODEL$; }
@@ -91,7 +99,9 @@ public class Checkpoint extends org.apache.avro.specific.SpecificRecordBase impl
   // Used by DatumWriter.  Applications should not call.
   public java.lang.Object get(int field$) {
     switch (field$) {
-    case 0: return checkpoint;
+    case 0: return flowId;
+    case 1: return fiber;
+    case 2: return flowState;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -100,26 +110,62 @@ public class Checkpoint extends org.apache.avro.specific.SpecificRecordBase impl
   @SuppressWarnings(value="unchecked")
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
-    case 0: checkpoint = (java.nio.ByteBuffer)value$; break;
+    case 0: flowId = (net.corda.data.flow.FlowKey)value$; break;
+    case 1: fiber = (java.nio.ByteBuffer)value$; break;
+    case 2: flowState = (net.corda.data.flow.StateMachineState)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
 
   /**
-   * Gets the value of the 'checkpoint' field.
-   * @return The value of the 'checkpoint' field.
+   * Gets the value of the 'flowId' field.
+   * @return The value of the 'flowId' field.
    */
-  public java.nio.ByteBuffer getCheckpoint() {
-    return checkpoint;
+  public net.corda.data.flow.FlowKey getFlowId() {
+    return flowId;
   }
 
 
   /**
-   * Sets the value of the 'checkpoint' field.
+   * Sets the value of the 'flowId' field.
    * @param value the value to set.
    */
-  public void setCheckpoint(java.nio.ByteBuffer value) {
-    this.checkpoint = value;
+  public void setFlowId(net.corda.data.flow.FlowKey value) {
+    this.flowId = value;
+  }
+
+  /**
+   * Gets the value of the 'fiber' field.
+   * @return The value of the 'fiber' field.
+   */
+  public java.nio.ByteBuffer getFiber() {
+    return fiber;
+  }
+
+
+  /**
+   * Sets the value of the 'fiber' field.
+   * @param value the value to set.
+   */
+  public void setFiber(java.nio.ByteBuffer value) {
+    this.fiber = value;
+  }
+
+  /**
+   * Gets the value of the 'flowState' field.
+   * @return The value of the 'flowState' field.
+   */
+  public net.corda.data.flow.StateMachineState getFlowState() {
+    return flowState;
+  }
+
+
+  /**
+   * Sets the value of the 'flowState' field.
+   * @param value the value to set.
+   */
+  public void setFlowState(net.corda.data.flow.StateMachineState value) {
+    this.flowState = value;
   }
 
   /**
@@ -163,7 +209,11 @@ public class Checkpoint extends org.apache.avro.specific.SpecificRecordBase impl
   public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<Checkpoint>
     implements org.apache.avro.data.RecordBuilder<Checkpoint> {
 
-    private java.nio.ByteBuffer checkpoint;
+    private net.corda.data.flow.FlowKey flowId;
+    private net.corda.data.flow.FlowKey.Builder flowIdBuilder;
+    private java.nio.ByteBuffer fiber;
+    private net.corda.data.flow.StateMachineState flowState;
+    private net.corda.data.flow.StateMachineState.Builder flowStateBuilder;
 
     /** Creates a new Builder */
     private Builder() {
@@ -176,9 +226,23 @@ public class Checkpoint extends org.apache.avro.specific.SpecificRecordBase impl
      */
     private Builder(net.corda.data.flow.Checkpoint.Builder other) {
       super(other);
-      if (isValidValue(fields()[0], other.checkpoint)) {
-        this.checkpoint = data().deepCopy(fields()[0].schema(), other.checkpoint);
+      if (isValidValue(fields()[0], other.flowId)) {
+        this.flowId = data().deepCopy(fields()[0].schema(), other.flowId);
         fieldSetFlags()[0] = other.fieldSetFlags()[0];
+      }
+      if (other.hasFlowIdBuilder()) {
+        this.flowIdBuilder = net.corda.data.flow.FlowKey.newBuilder(other.getFlowIdBuilder());
+      }
+      if (isValidValue(fields()[1], other.fiber)) {
+        this.fiber = data().deepCopy(fields()[1].schema(), other.fiber);
+        fieldSetFlags()[1] = other.fieldSetFlags()[1];
+      }
+      if (isValidValue(fields()[2], other.flowState)) {
+        this.flowState = data().deepCopy(fields()[2].schema(), other.flowState);
+        fieldSetFlags()[2] = other.fieldSetFlags()[2];
+      }
+      if (other.hasFlowStateBuilder()) {
+        this.flowStateBuilder = net.corda.data.flow.StateMachineState.newBuilder(other.getFlowStateBuilder());
       }
     }
 
@@ -188,49 +252,211 @@ public class Checkpoint extends org.apache.avro.specific.SpecificRecordBase impl
      */
     private Builder(net.corda.data.flow.Checkpoint other) {
       super(SCHEMA$);
-      if (isValidValue(fields()[0], other.checkpoint)) {
-        this.checkpoint = data().deepCopy(fields()[0].schema(), other.checkpoint);
+      if (isValidValue(fields()[0], other.flowId)) {
+        this.flowId = data().deepCopy(fields()[0].schema(), other.flowId);
         fieldSetFlags()[0] = true;
       }
+      this.flowIdBuilder = null;
+      if (isValidValue(fields()[1], other.fiber)) {
+        this.fiber = data().deepCopy(fields()[1].schema(), other.fiber);
+        fieldSetFlags()[1] = true;
+      }
+      if (isValidValue(fields()[2], other.flowState)) {
+        this.flowState = data().deepCopy(fields()[2].schema(), other.flowState);
+        fieldSetFlags()[2] = true;
+      }
+      this.flowStateBuilder = null;
     }
 
     /**
-      * Gets the value of the 'checkpoint' field.
+      * Gets the value of the 'flowId' field.
       * @return The value.
       */
-    public java.nio.ByteBuffer getCheckpoint() {
-      return checkpoint;
+    public net.corda.data.flow.FlowKey getFlowId() {
+      return flowId;
     }
 
 
     /**
-      * Sets the value of the 'checkpoint' field.
-      * @param value The value of 'checkpoint'.
+      * Sets the value of the 'flowId' field.
+      * @param value The value of 'flowId'.
       * @return This builder.
       */
-    public net.corda.data.flow.Checkpoint.Builder setCheckpoint(java.nio.ByteBuffer value) {
+    public net.corda.data.flow.Checkpoint.Builder setFlowId(net.corda.data.flow.FlowKey value) {
       validate(fields()[0], value);
-      this.checkpoint = value;
+      this.flowIdBuilder = null;
+      this.flowId = value;
       fieldSetFlags()[0] = true;
       return this;
     }
 
     /**
-      * Checks whether the 'checkpoint' field has been set.
-      * @return True if the 'checkpoint' field has been set, false otherwise.
+      * Checks whether the 'flowId' field has been set.
+      * @return True if the 'flowId' field has been set, false otherwise.
       */
-    public boolean hasCheckpoint() {
+    public boolean hasFlowId() {
       return fieldSetFlags()[0];
+    }
+
+    /**
+     * Gets the Builder instance for the 'flowId' field and creates one if it doesn't exist yet.
+     * @return This builder.
+     */
+    public net.corda.data.flow.FlowKey.Builder getFlowIdBuilder() {
+      if (flowIdBuilder == null) {
+        if (hasFlowId()) {
+          setFlowIdBuilder(net.corda.data.flow.FlowKey.newBuilder(flowId));
+        } else {
+          setFlowIdBuilder(net.corda.data.flow.FlowKey.newBuilder());
+        }
+      }
+      return flowIdBuilder;
+    }
+
+    /**
+     * Sets the Builder instance for the 'flowId' field
+     * @param value The builder instance that must be set.
+     * @return This builder.
+     */
+
+    public net.corda.data.flow.Checkpoint.Builder setFlowIdBuilder(net.corda.data.flow.FlowKey.Builder value) {
+      clearFlowId();
+      flowIdBuilder = value;
+      return this;
+    }
+
+    /**
+     * Checks whether the 'flowId' field has an active Builder instance
+     * @return True if the 'flowId' field has an active Builder instance
+     */
+    public boolean hasFlowIdBuilder() {
+      return flowIdBuilder != null;
+    }
+
+    /**
+      * Clears the value of the 'flowId' field.
+      * @return This builder.
+      */
+    public net.corda.data.flow.Checkpoint.Builder clearFlowId() {
+      flowId = null;
+      flowIdBuilder = null;
+      fieldSetFlags()[0] = false;
+      return this;
+    }
+
+    /**
+      * Gets the value of the 'fiber' field.
+      * @return The value.
+      */
+    public java.nio.ByteBuffer getFiber() {
+      return fiber;
     }
 
 
     /**
-      * Clears the value of the 'checkpoint' field.
+      * Sets the value of the 'fiber' field.
+      * @param value The value of 'fiber'.
       * @return This builder.
       */
-    public net.corda.data.flow.Checkpoint.Builder clearCheckpoint() {
-      checkpoint = null;
-      fieldSetFlags()[0] = false;
+    public net.corda.data.flow.Checkpoint.Builder setFiber(java.nio.ByteBuffer value) {
+      validate(fields()[1], value);
+      this.fiber = value;
+      fieldSetFlags()[1] = true;
+      return this;
+    }
+
+    /**
+      * Checks whether the 'fiber' field has been set.
+      * @return True if the 'fiber' field has been set, false otherwise.
+      */
+    public boolean hasFiber() {
+      return fieldSetFlags()[1];
+    }
+
+
+    /**
+      * Clears the value of the 'fiber' field.
+      * @return This builder.
+      */
+    public net.corda.data.flow.Checkpoint.Builder clearFiber() {
+      fiber = null;
+      fieldSetFlags()[1] = false;
+      return this;
+    }
+
+    /**
+      * Gets the value of the 'flowState' field.
+      * @return The value.
+      */
+    public net.corda.data.flow.StateMachineState getFlowState() {
+      return flowState;
+    }
+
+
+    /**
+      * Sets the value of the 'flowState' field.
+      * @param value The value of 'flowState'.
+      * @return This builder.
+      */
+    public net.corda.data.flow.Checkpoint.Builder setFlowState(net.corda.data.flow.StateMachineState value) {
+      validate(fields()[2], value);
+      this.flowStateBuilder = null;
+      this.flowState = value;
+      fieldSetFlags()[2] = true;
+      return this;
+    }
+
+    /**
+      * Checks whether the 'flowState' field has been set.
+      * @return True if the 'flowState' field has been set, false otherwise.
+      */
+    public boolean hasFlowState() {
+      return fieldSetFlags()[2];
+    }
+
+    /**
+     * Gets the Builder instance for the 'flowState' field and creates one if it doesn't exist yet.
+     * @return This builder.
+     */
+    public net.corda.data.flow.StateMachineState.Builder getFlowStateBuilder() {
+      if (flowStateBuilder == null) {
+        if (hasFlowState()) {
+          setFlowStateBuilder(net.corda.data.flow.StateMachineState.newBuilder(flowState));
+        } else {
+          setFlowStateBuilder(net.corda.data.flow.StateMachineState.newBuilder());
+        }
+      }
+      return flowStateBuilder;
+    }
+
+    /**
+     * Sets the Builder instance for the 'flowState' field
+     * @param value The builder instance that must be set.
+     * @return This builder.
+     */
+
+    public net.corda.data.flow.Checkpoint.Builder setFlowStateBuilder(net.corda.data.flow.StateMachineState.Builder value) {
+      clearFlowState();
+      flowStateBuilder = value;
+      return this;
+    }
+
+    /**
+     * Checks whether the 'flowState' field has an active Builder instance
+     * @return True if the 'flowState' field has an active Builder instance
+     */
+    public boolean hasFlowStateBuilder() {
+      return flowStateBuilder != null;
+    }
+
+    /**
+      * Clears the value of the 'flowState' field.
+      * @return This builder.
+      */
+    public net.corda.data.flow.Checkpoint.Builder clearFlowState() {
+      flowState = null;
+      flowStateBuilder = null;
+      fieldSetFlags()[2] = false;
       return this;
     }
 
@@ -239,7 +465,27 @@ public class Checkpoint extends org.apache.avro.specific.SpecificRecordBase impl
     public Checkpoint build() {
       try {
         Checkpoint record = new Checkpoint();
-        record.checkpoint = fieldSetFlags()[0] ? this.checkpoint : (java.nio.ByteBuffer) defaultValue(fields()[0]);
+        if (flowIdBuilder != null) {
+          try {
+            record.flowId = this.flowIdBuilder.build();
+          } catch (org.apache.avro.AvroMissingFieldException e) {
+            e.addParentField(record.getSchema().getField("flowId"));
+            throw e;
+          }
+        } else {
+          record.flowId = fieldSetFlags()[0] ? this.flowId : (net.corda.data.flow.FlowKey) defaultValue(fields()[0]);
+        }
+        record.fiber = fieldSetFlags()[1] ? this.fiber : (java.nio.ByteBuffer) defaultValue(fields()[1]);
+        if (flowStateBuilder != null) {
+          try {
+            record.flowState = this.flowStateBuilder.build();
+          } catch (org.apache.avro.AvroMissingFieldException e) {
+            e.addParentField(record.getSchema().getField("flowState"));
+            throw e;
+          }
+        } else {
+          record.flowState = fieldSetFlags()[2] ? this.flowState : (net.corda.data.flow.StateMachineState) defaultValue(fields()[2]);
+        }
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -272,7 +518,11 @@ public class Checkpoint extends org.apache.avro.specific.SpecificRecordBase impl
   @Override public void customEncode(org.apache.avro.io.Encoder out)
     throws java.io.IOException
   {
-    out.writeBytes(this.checkpoint);
+    this.flowId.customEncode(out);
+
+    out.writeBytes(this.fiber);
+
+    this.flowState.customEncode(out);
 
   }
 
@@ -281,13 +531,37 @@ public class Checkpoint extends org.apache.avro.specific.SpecificRecordBase impl
   {
     org.apache.avro.Schema.Field[] fieldOrder = in.readFieldOrderIfDiff();
     if (fieldOrder == null) {
-      this.checkpoint = in.readBytes(this.checkpoint);
+      if (this.flowId == null) {
+        this.flowId = new net.corda.data.flow.FlowKey();
+      }
+      this.flowId.customDecode(in);
+
+      this.fiber = in.readBytes(this.fiber);
+
+      if (this.flowState == null) {
+        this.flowState = new net.corda.data.flow.StateMachineState();
+      }
+      this.flowState.customDecode(in);
 
     } else {
-      for (int i = 0; i < 1; i++) {
+      for (int i = 0; i < 3; i++) {
         switch (fieldOrder[i].pos()) {
         case 0:
-          this.checkpoint = in.readBytes(this.checkpoint);
+          if (this.flowId == null) {
+            this.flowId = new net.corda.data.flow.FlowKey();
+          }
+          this.flowId.customDecode(in);
+          break;
+
+        case 1:
+          this.fiber = in.readBytes(this.fiber);
+          break;
+
+        case 2:
+          if (this.flowState == null) {
+            this.flowState = new net.corda.data.flow.StateMachineState();
+          }
+          this.flowState.customDecode(in);
           break;
 
         default:
