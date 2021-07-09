@@ -13,13 +13,20 @@ interface CordaKafkaProducer : AutoCloseable, Producer<Any, Any> {
     fun sendRecords(records: List<Record<*, *>>)
 
     /**
-     * Send the [consumer] offsets back to kafka.
-     * If [record] is not null commit the offset of that record.
+     * Send the [consumer] offsets back to kafka for a given [record].
      * Otherwise commit back the offset for the last consumer poll position.
      * @throws CordaMessageAPIFatalException Fatal error
      * @throws CordaMessageAPIIntermittentException Retryable error
      */
-    fun trySendOffsetsToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>? = null)
+    fun sendRecordOffsetToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>)
+
+
+    /**
+     * Send the [consumer] offsets back to kafka for the last consumer poll position.
+     * @throws CordaMessageAPIFatalException Fatal error
+     * @throws CordaMessageAPIIntermittentException Retryable error
+     */
+    fun sendAllOffsetsToTransaction(consumer: Consumer<*, *>)
 
     /**
      * Try to commit a transaction. If the transaction fails. Abort it.
