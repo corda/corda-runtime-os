@@ -1,10 +1,9 @@
 package net.corda.lifecycle
 
 import net.corda.v5.base.util.contextLogger
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
+
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.slf4j.Logger
@@ -12,7 +11,9 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
-internal class SimpleLifeCycleCoordinatorTest {
+// Order imposed to lighten pressure in CI.
+@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
+class SimpleLifeCycleCoordinatorTest {
 
     companion object {
 
@@ -27,6 +28,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     interface ThrowException : LifeCycleEvent
 
+    @Order(1)
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun burstEvents() {
@@ -53,16 +55,20 @@ internal class SimpleLifeCycleCoordinatorTest {
             }
         }.use { coordinator ->
             coordinator.start()
+            Thread.yield()
             startLatch.await()
             for (i in 0 until n) {
                 coordinator.postEvent(object : PostEvent {})
             }
             coordinator.stop()
+            Thread.yield()
             stopLatch.await()
+            Thread.yield()
             countDownLatch.await()
         }
     }
 
+    @Order(2)
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun burstTimers() {
@@ -91,6 +97,7 @@ internal class SimpleLifeCycleCoordinatorTest {
             }
         }.use { coordinator ->
             coordinator.start()
+            Thread.yield()
             startLatch.await()
             for (i in 0 until n) {
                 val onTime = object : TimerEvent {
@@ -106,11 +113,13 @@ internal class SimpleLifeCycleCoordinatorTest {
                 }
                 coordinator.stop()
             }.start()
+            Thread.yield()
             stopLatch.await()
         }
         assertTrue(n > countDownLatch.count)
     }
 
+    @Order(3)
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun cancelTimer() {
@@ -126,6 +135,7 @@ internal class SimpleLifeCycleCoordinatorTest {
             }
         }.use { coordinator ->
             coordinator.start()
+            Thread.yield()
             startLatch.await()
             coordinator.setTimer(key, TIMEOUT / 2) {
                 object : TimerEvent {
@@ -137,6 +147,7 @@ internal class SimpleLifeCycleCoordinatorTest {
         }
     }
 
+    @Order(4)
     @Test
     fun getBatchSize() {
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { _: LifeCycleEvent, _: LifeCycleCoordinator -> }
@@ -145,6 +156,7 @@ internal class SimpleLifeCycleCoordinatorTest {
             }
     }
 
+    @Order(5)
     @Test
     fun getTimeout() {
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { _: LifeCycleEvent, _: LifeCycleCoordinator -> }
@@ -153,6 +165,7 @@ internal class SimpleLifeCycleCoordinatorTest {
             }
     }
 
+    @Order(6)
     @ParameterizedTest
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     @ValueSource(ints = [5])
@@ -184,11 +197,13 @@ internal class SimpleLifeCycleCoordinatorTest {
             for (i in 0..n) {
                 coordinator.start()
                 coordinator.postEvent(object : ThrowException {})
+                Thread.yield()
                 stopLatch.await()
             }
         }
     }
 
+    @Order(7)
     @ParameterizedTest
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     @ValueSource(ints = [5])
@@ -225,19 +240,24 @@ internal class SimpleLifeCycleCoordinatorTest {
             for (i in 0..n) {
                 coordinator.start()
                 coordinator.postEvent(object : ThrowException {})
+                Thread.yield()
                 stopLatch.await()
             }
         }
     }
 
+    @Order(8)
     @ParameterizedTest
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
-    @ValueSource(ints = [2])
+    @ValueSource(ints = [5])
     fun postUnhandledErrorEvent(n: Int) {
         var stopLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             when (event) {
+                is StartEvent -> {
+                    stopLatch = CountDownLatch(1)
+                }
                 is ThrowException -> {
                     throw expectedException
                 }
@@ -260,12 +280,13 @@ internal class SimpleLifeCycleCoordinatorTest {
             for(i in 0 .. n) {
                 coordinator.start()
                 coordinator.postEvent(object : ThrowException {})
+                stopLatch.countDown()
                 stopLatch.await()
-                stopLatch = CountDownLatch(1)
             }
         }
     }
 
+    @Order(9)
     @Test
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun setTimer() {
@@ -283,6 +304,7 @@ internal class SimpleLifeCycleCoordinatorTest {
             }
         }.use { coordinator ->
             coordinator.start()
+            Thread.yield()
             startLatch.await()
             coordinator.setTimer(key, TIMEOUT / 2) {
                 object : TimerEvent {
@@ -290,11 +312,12 @@ internal class SimpleLifeCycleCoordinatorTest {
                         get() = key
                 }
             }
+            Thread.yield()
             timerLatch.await()
         }
     }
 
-
+    @Order(10)
     @ParameterizedTest
     @Timeout(value = 60, unit = TimeUnit.SECONDS)
     @ValueSource(ints = [5])
@@ -315,8 +338,10 @@ internal class SimpleLifeCycleCoordinatorTest {
             for (i in 0..n) {
                 assertFalse(coordinator.isRunning)
                 coordinator.start()
+                Thread.yield()
                 assertTrue(coordinator.isRunning)
                 coordinator.stop()
+                Thread.yield()
             }
             startLatch.await()
             stopLatch.await()
