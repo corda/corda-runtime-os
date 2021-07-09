@@ -1,7 +1,7 @@
 package net.corda.flow.manager.impl
 
 import co.paralleluniverse.fibers.FiberScheduler
-import net.corda.flow.manager.Checkpoint
+import net.corda.data.flow.Checkpoint
 import net.corda.flow.manager.FlowEvent
 import net.corda.flow.manager.FlowFactory
 import net.corda.flow.manager.FlowManager
