@@ -3,6 +3,6 @@
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
     <ID>NestedBlockDepth:KafkaDurableSubscriptionImpl.kt$KafkaDurableSubscriptionImpl$ @Suppress("TooGenericExceptionCaught") fun runConsumeLoop()</ID>
-    <ID>NestedBlockDepth:KafkaProducerBuilder.kt$KafkaProducerBuilder$ @Suppress("TooGenericExceptionCaught") private fun initTransactionForProducer(config: Config, producer: KafkaProducer&lt;K, V&gt;, producerCloseTimeout: Long, producerCreateMaxRetries: Long)</ID>
+    <ID>ThrowsCount:CordaKafkaProducerImpl.kt$CordaKafkaProducerImpl$private fun trySendOffsetsToTransaction(consumer: Consumer&lt;*, *&gt;, record: ConsumerRecord&lt;*, *&gt;? = null)</ID>
   </CurrentIssues>
 </SmellBaseline>

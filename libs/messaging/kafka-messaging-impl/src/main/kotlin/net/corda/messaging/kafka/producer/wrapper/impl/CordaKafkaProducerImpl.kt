@@ -181,7 +181,7 @@ class CordaKafkaProducerImpl(
                 is InvalidProducerEpochException,
                 is FencedInstanceIdException -> {
                     throw CordaMessageAPIFatalException(
-                        "Error occurred sending offset for transaction " +
+                        "FatalError occurred sending offset for transaction " +
                                 "for CordaKafkaProducer with clientId $clientId", ex
                     )
                 }
@@ -190,7 +190,7 @@ class CordaKafkaProducerImpl(
                 is KafkaException -> {
                     abortTransaction()
                     throw CordaMessageAPIIntermittentException(
-                        "Fatal error occurred sending offset for transaction " +
+                        "Error occurred sending offset for transaction " +
                                 "for CordaKafkaProducer with clientId $clientId", ex
                     )
                 }
