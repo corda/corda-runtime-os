@@ -295,16 +295,19 @@ class SimpleLifeCycleCoordinator(
      *
      * Called by [stop] in a parallel thread if the current thread isn't the [executorService]'s thread.
      */
+
     private fun cleanUpAndCloseEvents() {
-        val self = this
-        timerMap.forEach { (key, _) -> cancelTimer(key) }
-        timerMap.clear()
-        while (!eventQueue.isEmpty()) {
-            val event = eventQueue.poll()
-            lifeCycleProcessor(event, self)
-            if (event is StopEvent) break
+        lock.withLock {
+            val self = this
+            timerMap.forEach { (key, _) -> cancelTimer(key) }
+            timerMap.clear()
+            while (!eventQueue.isEmpty()) {
+                val event = eventQueue.poll()
+                lifeCycleProcessor(event, self)
+                if (event is StopEvent) break
+            }
+            eventQueue.clear()
         }
-        eventQueue.clear()
     }
 
 }
