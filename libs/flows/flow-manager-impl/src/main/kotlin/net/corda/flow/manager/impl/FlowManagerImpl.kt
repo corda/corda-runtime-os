@@ -7,7 +7,6 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.flow.manager.FlowFactory
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
-import net.corda.flow.manager.FlowTopics
 import net.corda.internal.di.DependencyInjectionService
 import net.corda.v5.application.flows.StateMachineRunId
 import net.corda.v5.application.identity.Party
@@ -15,6 +14,14 @@ import net.corda.v5.application.services.IdentityService
 import net.corda.v5.application.services.persistence.PersistenceService
 import net.corda.v5.application.services.serialization.SerializationService
 import java.util.concurrent.ScheduledExecutorService
+
+data class FlowTopics(
+    val flowEventTopic: String,
+    val checkpointsTopic: String,
+    val p2pOutTopic: String,
+    val rpcResponseTopic: String,
+    val flowSessionMappingTopic: String
+)
 
 class FlowManagerImpl : FlowManager {
 
@@ -39,24 +46,21 @@ class FlowManagerImpl : FlowManager {
         newFlowId: StateMachineRunId,
         clientId: String,
         flowName: String,
-        args: List<Any?>,
-        topics: FlowTopics
+        args: List<Any?>
     ): FlowResult {
         TODO("Not yet implemented")
     }
 
     override fun startRemoteInitiatedFlow(
         newFlowId: StateMachineRunId,
-        p2pMessage: P2PMessage,
-        topics: FlowTopics
+        p2pMessage: P2PMessage
     ): FlowResult {
         TODO("Not yet implemented")
     }
 
     override fun wakeFlow(
         lastCheckpoint: Checkpoint,
-        event: Wakeup,
-        topics: FlowTopics
+        event: Wakeup
     ): FlowResult {
         TODO("Not yet implemented")
     }
