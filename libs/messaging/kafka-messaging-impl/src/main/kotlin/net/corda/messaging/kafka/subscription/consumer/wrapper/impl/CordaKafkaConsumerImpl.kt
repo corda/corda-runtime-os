@@ -231,10 +231,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
      */
     private fun logWarningAndThrowIntermittentException(errorMessage: String, ex: Exception? = null): Nothing {
         log.warn(errorMessage, ex)
-        if (ex == null) {
-            throw CordaMessageAPIIntermittentException(errorMessage)
-        } else {
-            throw CordaMessageAPIIntermittentException(errorMessage, ex)
-        }
+        throw CordaMessageAPIIntermittentException(errorMessage, ex)
     }
 }
