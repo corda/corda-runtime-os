@@ -2,17 +2,17 @@ package net.corda.osgi.framework.apptester
 
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.BundleActivator
 import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceReference
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 class AppTester: Application, BundleActivator {
 
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(AppTester::class.java)
+        private val logger: Logger = contextLogger()
     }
 
     override fun start(context: BundleContext?) {

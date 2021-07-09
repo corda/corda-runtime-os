@@ -1,11 +1,18 @@
 package net.corda.lifecycle
 
+import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import java.util.concurrent.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+
 
 /**
  * The class coordinates [LifeCycleEvent] submitted with [postEvent] and [TimerEvent] timers set with [setTimer].
@@ -22,7 +29,7 @@ class SimpleLifeCycleCoordinator(
 
     companion object {
 
-        private val logger: Logger = LoggerFactory.getLogger(LifeCycleCoordinator::class.java)
+        private val logger: Logger = contextLogger()
 
     } //~ companion
 

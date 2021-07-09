@@ -2,6 +2,7 @@ package net.corda.sample.goodbye
 
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.BundleActivator
 import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
@@ -10,7 +11,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 @Component(immediate = true)
 class GoodbyeWorld @Activate constructor(
@@ -19,7 +19,7 @@ class GoodbyeWorld @Activate constructor(
 ) : BundleActivator, Application {
 
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(GoodbyeWorld::class.java)
+        private val logger: Logger = contextLogger()
     }
 
     init {

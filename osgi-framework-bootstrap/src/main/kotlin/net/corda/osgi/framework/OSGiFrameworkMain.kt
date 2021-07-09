@@ -1,6 +1,6 @@
 package net.corda.osgi.framework
 
-import org.slf4j.LoggerFactory
+import net.corda.v5.base.util.contextLogger
 import java.nio.file.Files
 
 /**
@@ -87,7 +87,7 @@ class OSGiFrameworkMain {
         @JvmStatic
         @Suppress("TooGenericExceptionCaught")
         fun main(args: Array<String>) {
-            val logger = LoggerFactory.getLogger(OSGiFrameworkMain::class.java)
+            val logger = contextLogger()
             try {
                 val frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX)
                 frameworkStorageDir.toFile().deleteOnExit()

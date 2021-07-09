@@ -11,6 +11,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
+import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
@@ -28,7 +29,6 @@ import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
@@ -41,7 +41,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 ) : CordaKafkaConsumer<K, V>, Consumer<K, V> by consumer {
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
     }
 
     private val consumerPollTimeout = Duration.ofMillis(config.getLong(POLL_TIMEOUT))

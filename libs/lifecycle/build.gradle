@@ -4,3 +4,7 @@ plugins {
 }
 
 description "LifeCycle API"
+
+dependencies {
+    implementation "net.corda:corda-base:$cordaVersion"
+}
