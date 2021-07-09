@@ -2,7 +2,6 @@ package net.corda.flow.manager
 
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.event.P2PMessage
-import net.corda.data.flow.event.Wakeup
 import net.corda.v5.application.flows.StateMachineRunId
 import org.apache.kafka.clients.producer.ProducerRecord
 
@@ -26,6 +25,5 @@ interface FlowManager {
 
     fun wakeFlow(
         lastCheckpoint: Checkpoint,
-        event: Wakeup,
     ): FlowResult
 }

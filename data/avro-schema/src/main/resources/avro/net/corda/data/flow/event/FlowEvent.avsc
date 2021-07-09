@@ -4,7 +4,7 @@
   "namespace": "net.corda.data.flow.event",
   "fields": [
     {
-      "name": "stateMachineRunId",
+      "name": "flowKey",
       "type": "net.corda.data.flow.FlowKey"
     },
     {

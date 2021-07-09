@@ -3,8 +3,6 @@ package net.corda.flow.manager.impl
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.event.P2PMessage
-import net.corda.data.flow.event.Wakeup
-import net.corda.flow.manager.FlowFactory
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
 import net.corda.internal.di.DependencyInjectionService
@@ -33,8 +31,6 @@ class FlowManagerImpl : FlowManager {
         get() = TODO("Not yet implemented")
     val ourIdentity: Party
         get() = TODO("Not yet implemented")
-    val flowFactory: FlowFactory
-        get() = TODO("Not yet implemented")
     val flowExecutor: ScheduledExecutorService
         get() = TODO("Not yet implemented")
     val fiberScheduler: FiberScheduler
@@ -59,8 +55,7 @@ class FlowManagerImpl : FlowManager {
     }
 
     override fun wakeFlow(
-        lastCheckpoint: Checkpoint,
-        event: Wakeup
+        lastCheckpoint: Checkpoint
     ): FlowResult {
         TODO("Not yet implemented")
     }
