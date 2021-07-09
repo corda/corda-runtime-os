@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 // Order imposed to lighten pressure in CI.
-@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
+// @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class SimpleLifeCycleCoordinatorTest {
 
     companion object {
