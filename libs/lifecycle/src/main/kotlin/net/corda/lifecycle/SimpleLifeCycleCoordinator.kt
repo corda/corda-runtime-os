@@ -2,17 +2,10 @@ package net.corda.lifecycle
 
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedDeque
-import java.util.concurrent.Executors
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
-
 
 /**
  * The class coordinates [LifeCycleEvent] submitted with [postEvent] and [TimerEvent] timers set with [setTimer].
@@ -94,7 +87,6 @@ class SimpleLifeCycleCoordinator(
     @Throws(
         RejectedExecutionException::class
     )
-    @Synchronized
     @Suppress("ComplexMethod", "TooGenericExceptionCaught")
     private fun processEvents() {
         executorThreadID = Thread.currentThread().id
@@ -296,17 +288,16 @@ class SimpleLifeCycleCoordinator(
      *
      * Called by [stop] in a parallel thread if the current thread isn't the [executorService]'s thread.
      */
-
     private fun cleanUpAndCloseEvents() {
-            val self = this
-            timerMap.forEach { (key, _) -> cancelTimer(key) }
-            timerMap.clear()
-            while (!eventQueue.isEmpty()) {
-                val event = eventQueue.poll()
-                lifeCycleProcessor(event, self)
-                if (event is StopEvent) break
-            }
-            eventQueue.clear()
+        val self = this
+        timerMap.forEach { (key, _) -> cancelTimer(key) }
+        timerMap.clear()
+        while (!eventQueue.isEmpty()) {
+            val event = eventQueue.poll()
+            lifeCycleProcessor(event, self)
+            if (event is StopEvent) break
+        }
+        eventQueue.clear()
     }
 
 }
