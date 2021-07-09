@@ -94,6 +94,7 @@ class SimpleLifeCycleCoordinator(
     @Throws(
         RejectedExecutionException::class
     )
+    @Synchronized
     @Suppress("ComplexMethod", "TooGenericExceptionCaught")
     private fun processEvents() {
         executorThreadID = Thread.currentThread().id
@@ -297,7 +298,6 @@ class SimpleLifeCycleCoordinator(
      */
 
     private fun cleanUpAndCloseEvents() {
-        lock.withLock {
             val self = this
             timerMap.forEach { (key, _) -> cancelTimer(key) }
             timerMap.clear()
@@ -307,7 +307,6 @@ class SimpleLifeCycleCoordinator(
                 if (event is StopEvent) break
             }
             eventQueue.clear()
-        }
     }
 
 }
