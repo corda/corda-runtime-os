@@ -14,8 +14,8 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class FlowKey extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 3285237681850305156L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FlowKey\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"flowId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"identity\",\"type\":{\"type\":\"record\",\"name\":\"Identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"group\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}}]}");
+  private static final long serialVersionUID = 7592212612762901328L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FlowKey\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"flowId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"identity\",\"type\":{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.data.identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -72,7 +72,7 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
   }
 
    private java.lang.String flowId;
-   private net.corda.data.flow.Identity identity;
+   private net.corda.data.identity.HoldingIdentity identity;
 
   /**
    * Default constructor.  Note that this does not initialize fields
@@ -86,7 +86,7 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
    * @param flowId The new value for flowId
    * @param identity The new value for identity
    */
-  public FlowKey(java.lang.String flowId, net.corda.data.flow.Identity identity) {
+  public FlowKey(java.lang.String flowId, net.corda.data.identity.HoldingIdentity identity) {
     this.flowId = flowId;
     this.identity = identity;
   }
@@ -107,7 +107,7 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
     case 0: flowId = value$ != null ? value$.toString() : null; break;
-    case 1: identity = (net.corda.data.flow.Identity)value$; break;
+    case 1: identity = (net.corda.data.identity.HoldingIdentity)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -133,7 +133,7 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
    * Gets the value of the 'identity' field.
    * @return The value of the 'identity' field.
    */
-  public net.corda.data.flow.Identity getIdentity() {
+  public net.corda.data.identity.HoldingIdentity getIdentity() {
     return identity;
   }
 
@@ -142,7 +142,7 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
    * Sets the value of the 'identity' field.
    * @param value the value to set.
    */
-  public void setIdentity(net.corda.data.flow.Identity value) {
+  public void setIdentity(net.corda.data.identity.HoldingIdentity value) {
     this.identity = value;
   }
 
@@ -188,8 +188,8 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
     implements org.apache.avro.data.RecordBuilder<FlowKey> {
 
     private java.lang.String flowId;
-    private net.corda.data.flow.Identity identity;
-    private net.corda.data.flow.Identity.Builder identityBuilder;
+    private net.corda.data.identity.HoldingIdentity identity;
+    private net.corda.data.identity.HoldingIdentity.Builder identityBuilder;
 
     /** Creates a new Builder */
     private Builder() {
@@ -211,7 +211,7 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
         fieldSetFlags()[1] = other.fieldSetFlags()[1];
       }
       if (other.hasIdentityBuilder()) {
-        this.identityBuilder = net.corda.data.flow.Identity.newBuilder(other.getIdentityBuilder());
+        this.identityBuilder = net.corda.data.identity.HoldingIdentity.newBuilder(other.getIdentityBuilder());
       }
     }
 
@@ -276,7 +276,7 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
       * Gets the value of the 'identity' field.
       * @return The value.
       */
-    public net.corda.data.flow.Identity getIdentity() {
+    public net.corda.data.identity.HoldingIdentity getIdentity() {
       return identity;
     }
 
@@ -286,7 +286,7 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
       * @param value The value of 'identity'.
       * @return This builder.
       */
-    public net.corda.data.flow.FlowKey.Builder setIdentity(net.corda.data.flow.Identity value) {
+    public net.corda.data.flow.FlowKey.Builder setIdentity(net.corda.data.identity.HoldingIdentity value) {
       validate(fields()[1], value);
       this.identityBuilder = null;
       this.identity = value;
@@ -306,12 +306,12 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
      * Gets the Builder instance for the 'identity' field and creates one if it doesn't exist yet.
      * @return This builder.
      */
-    public net.corda.data.flow.Identity.Builder getIdentityBuilder() {
+    public net.corda.data.identity.HoldingIdentity.Builder getIdentityBuilder() {
       if (identityBuilder == null) {
         if (hasIdentity()) {
-          setIdentityBuilder(net.corda.data.flow.Identity.newBuilder(identity));
+          setIdentityBuilder(net.corda.data.identity.HoldingIdentity.newBuilder(identity));
         } else {
-          setIdentityBuilder(net.corda.data.flow.Identity.newBuilder());
+          setIdentityBuilder(net.corda.data.identity.HoldingIdentity.newBuilder());
         }
       }
       return identityBuilder;
@@ -323,7 +323,7 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
      * @return This builder.
      */
 
-    public net.corda.data.flow.FlowKey.Builder setIdentityBuilder(net.corda.data.flow.Identity.Builder value) {
+    public net.corda.data.flow.FlowKey.Builder setIdentityBuilder(net.corda.data.identity.HoldingIdentity.Builder value) {
       clearIdentity();
       identityBuilder = value;
       return this;
@@ -362,7 +362,7 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
             throw e;
           }
         } else {
-          record.identity = fieldSetFlags()[1] ? this.identity : (net.corda.data.flow.Identity) defaultValue(fields()[1]);
+          record.identity = fieldSetFlags()[1] ? this.identity : (net.corda.data.identity.HoldingIdentity) defaultValue(fields()[1]);
         }
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
@@ -410,7 +410,7 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
       this.flowId = in.readString();
 
       if (this.identity == null) {
-        this.identity = new net.corda.data.flow.Identity();
+        this.identity = new net.corda.data.identity.HoldingIdentity();
       }
       this.identity.customDecode(in);
 
@@ -423,7 +423,7 @@ public class FlowKey extends org.apache.avro.specific.SpecificRecordBase impleme
 
         case 1:
           if (this.identity == null) {
-            this.identity = new net.corda.data.flow.Identity();
+            this.identity = new net.corda.data.identity.HoldingIdentity();
           }
           this.identity.customDecode(in);
           break;

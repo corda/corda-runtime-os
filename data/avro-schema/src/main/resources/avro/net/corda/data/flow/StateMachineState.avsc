@@ -12,6 +12,10 @@
       "type": "bytes"
     },
     {
+      "name": "ourIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
       "name": "isKilled",
       "type": "boolean"
     },

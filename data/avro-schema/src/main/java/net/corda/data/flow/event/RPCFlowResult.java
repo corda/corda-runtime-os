@@ -14,8 +14,8 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = -2391988193154307424L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"RPCFlowResult\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"result\",\"type\":[\"null\",\"bytes\"]},{\"name\":\"error\",\"type\":[\"null\",{\"type\":\"record\",\"name\":\"FlowError\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"errorType\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}],\"doc\":\"The flow exception (if any) that caused an error\"}]}");
+  private static final long serialVersionUID = 6216280761587625860L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"RPCFlowResult\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"result\",\"type\":[\"null\",\"bytes\"]},{\"name\":\"CPIIdentifier\",\"type\":{\"type\":\"record\",\"name\":\"SecureHash\",\"namespace\":\"net.corda.data.crypto\",\"fields\":[{\"name\":\"algorithm\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"serverHash\",\"type\":\"bytes\"}]}},{\"name\":\"error\",\"type\":[\"null\",{\"type\":\"record\",\"name\":\"FlowError\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"errorType\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}],\"doc\":\"The flow exception (if any) that caused an error\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -74,6 +74,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
    private java.lang.String clientId;
    private java.lang.String flowName;
    private java.nio.ByteBuffer result;
+   private net.corda.data.crypto.SecureHash CPIIdentifier;
   /** The flow exception (if any) that caused an error */
    private net.corda.data.flow.FlowError error;
 
@@ -89,12 +90,14 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
    * @param clientId The new value for clientId
    * @param flowName The new value for flowName
    * @param result The new value for result
+   * @param CPIIdentifier The new value for CPIIdentifier
    * @param error The flow exception (if any) that caused an error
    */
-  public RPCFlowResult(java.lang.String clientId, java.lang.String flowName, java.nio.ByteBuffer result, net.corda.data.flow.FlowError error) {
+  public RPCFlowResult(java.lang.String clientId, java.lang.String flowName, java.nio.ByteBuffer result, net.corda.data.crypto.SecureHash CPIIdentifier, net.corda.data.flow.FlowError error) {
     this.clientId = clientId;
     this.flowName = flowName;
     this.result = result;
+    this.CPIIdentifier = CPIIdentifier;
     this.error = error;
   }
 
@@ -106,7 +109,8 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
     case 0: return clientId;
     case 1: return flowName;
     case 2: return result;
-    case 3: return error;
+    case 3: return CPIIdentifier;
+    case 4: return error;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -118,7 +122,8 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
     case 0: clientId = value$ != null ? value$.toString() : null; break;
     case 1: flowName = value$ != null ? value$.toString() : null; break;
     case 2: result = (java.nio.ByteBuffer)value$; break;
-    case 3: error = (net.corda.data.flow.FlowError)value$; break;
+    case 3: CPIIdentifier = (net.corda.data.crypto.SecureHash)value$; break;
+    case 4: error = (net.corda.data.flow.FlowError)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -172,6 +177,23 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
    */
   public void setResult(java.nio.ByteBuffer value) {
     this.result = value;
+  }
+
+  /**
+   * Gets the value of the 'CPIIdentifier' field.
+   * @return The value of the 'CPIIdentifier' field.
+   */
+  public net.corda.data.crypto.SecureHash getCPIIdentifier() {
+    return CPIIdentifier;
+  }
+
+
+  /**
+   * Sets the value of the 'CPIIdentifier' field.
+   * @param value the value to set.
+   */
+  public void setCPIIdentifier(net.corda.data.crypto.SecureHash value) {
+    this.CPIIdentifier = value;
   }
 
   /**
@@ -236,6 +258,8 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
     private java.lang.String clientId;
     private java.lang.String flowName;
     private java.nio.ByteBuffer result;
+    private net.corda.data.crypto.SecureHash CPIIdentifier;
+    private net.corda.data.crypto.SecureHash.Builder CPIIdentifierBuilder;
     /** The flow exception (if any) that caused an error */
     private net.corda.data.flow.FlowError error;
     private net.corda.data.flow.FlowError.Builder errorBuilder;
@@ -263,9 +287,16 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
         this.result = data().deepCopy(fields()[2].schema(), other.result);
         fieldSetFlags()[2] = other.fieldSetFlags()[2];
       }
-      if (isValidValue(fields()[3], other.error)) {
-        this.error = data().deepCopy(fields()[3].schema(), other.error);
+      if (isValidValue(fields()[3], other.CPIIdentifier)) {
+        this.CPIIdentifier = data().deepCopy(fields()[3].schema(), other.CPIIdentifier);
         fieldSetFlags()[3] = other.fieldSetFlags()[3];
+      }
+      if (other.hasCPIIdentifierBuilder()) {
+        this.CPIIdentifierBuilder = net.corda.data.crypto.SecureHash.newBuilder(other.getCPIIdentifierBuilder());
+      }
+      if (isValidValue(fields()[4], other.error)) {
+        this.error = data().deepCopy(fields()[4].schema(), other.error);
+        fieldSetFlags()[4] = other.fieldSetFlags()[4];
       }
       if (other.hasErrorBuilder()) {
         this.errorBuilder = net.corda.data.flow.FlowError.newBuilder(other.getErrorBuilder());
@@ -290,9 +321,14 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
         this.result = data().deepCopy(fields()[2].schema(), other.result);
         fieldSetFlags()[2] = true;
       }
-      if (isValidValue(fields()[3], other.error)) {
-        this.error = data().deepCopy(fields()[3].schema(), other.error);
+      if (isValidValue(fields()[3], other.CPIIdentifier)) {
+        this.CPIIdentifier = data().deepCopy(fields()[3].schema(), other.CPIIdentifier);
         fieldSetFlags()[3] = true;
+      }
+      this.CPIIdentifierBuilder = null;
+      if (isValidValue(fields()[4], other.error)) {
+        this.error = data().deepCopy(fields()[4].schema(), other.error);
+        fieldSetFlags()[4] = true;
       }
       this.errorBuilder = null;
     }
@@ -418,6 +454,82 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
     }
 
     /**
+      * Gets the value of the 'CPIIdentifier' field.
+      * @return The value.
+      */
+    public net.corda.data.crypto.SecureHash getCPIIdentifier() {
+      return CPIIdentifier;
+    }
+
+
+    /**
+      * Sets the value of the 'CPIIdentifier' field.
+      * @param value The value of 'CPIIdentifier'.
+      * @return This builder.
+      */
+    public net.corda.data.flow.event.RPCFlowResult.Builder setCPIIdentifier(net.corda.data.crypto.SecureHash value) {
+      validate(fields()[3], value);
+      this.CPIIdentifierBuilder = null;
+      this.CPIIdentifier = value;
+      fieldSetFlags()[3] = true;
+      return this;
+    }
+
+    /**
+      * Checks whether the 'CPIIdentifier' field has been set.
+      * @return True if the 'CPIIdentifier' field has been set, false otherwise.
+      */
+    public boolean hasCPIIdentifier() {
+      return fieldSetFlags()[3];
+    }
+
+    /**
+     * Gets the Builder instance for the 'CPIIdentifier' field and creates one if it doesn't exist yet.
+     * @return This builder.
+     */
+    public net.corda.data.crypto.SecureHash.Builder getCPIIdentifierBuilder() {
+      if (CPIIdentifierBuilder == null) {
+        if (hasCPIIdentifier()) {
+          setCPIIdentifierBuilder(net.corda.data.crypto.SecureHash.newBuilder(CPIIdentifier));
+        } else {
+          setCPIIdentifierBuilder(net.corda.data.crypto.SecureHash.newBuilder());
+        }
+      }
+      return CPIIdentifierBuilder;
+    }
+
+    /**
+     * Sets the Builder instance for the 'CPIIdentifier' field
+     * @param value The builder instance that must be set.
+     * @return This builder.
+     */
+
+    public net.corda.data.flow.event.RPCFlowResult.Builder setCPIIdentifierBuilder(net.corda.data.crypto.SecureHash.Builder value) {
+      clearCPIIdentifier();
+      CPIIdentifierBuilder = value;
+      return this;
+    }
+
+    /**
+     * Checks whether the 'CPIIdentifier' field has an active Builder instance
+     * @return True if the 'CPIIdentifier' field has an active Builder instance
+     */
+    public boolean hasCPIIdentifierBuilder() {
+      return CPIIdentifierBuilder != null;
+    }
+
+    /**
+      * Clears the value of the 'CPIIdentifier' field.
+      * @return This builder.
+      */
+    public net.corda.data.flow.event.RPCFlowResult.Builder clearCPIIdentifier() {
+      CPIIdentifier = null;
+      CPIIdentifierBuilder = null;
+      fieldSetFlags()[3] = false;
+      return this;
+    }
+
+    /**
       * Gets the value of the 'error' field.
       * The flow exception (if any) that caused an error
       * @return The value.
@@ -434,10 +546,10 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * @return This builder.
       */
     public net.corda.data.flow.event.RPCFlowResult.Builder setError(net.corda.data.flow.FlowError value) {
-      validate(fields()[3], value);
+      validate(fields()[4], value);
       this.errorBuilder = null;
       this.error = value;
-      fieldSetFlags()[3] = true;
+      fieldSetFlags()[4] = true;
       return this;
     }
 
@@ -447,7 +559,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * @return True if the 'error' field has been set, false otherwise.
       */
     public boolean hasError() {
-      return fieldSetFlags()[3];
+      return fieldSetFlags()[4];
     }
 
     /**
@@ -496,7 +608,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
     public net.corda.data.flow.event.RPCFlowResult.Builder clearError() {
       error = null;
       errorBuilder = null;
-      fieldSetFlags()[3] = false;
+      fieldSetFlags()[4] = false;
       return this;
     }
 
@@ -508,6 +620,16 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
         record.clientId = fieldSetFlags()[0] ? this.clientId : (java.lang.String) defaultValue(fields()[0]);
         record.flowName = fieldSetFlags()[1] ? this.flowName : (java.lang.String) defaultValue(fields()[1]);
         record.result = fieldSetFlags()[2] ? this.result : (java.nio.ByteBuffer) defaultValue(fields()[2]);
+        if (CPIIdentifierBuilder != null) {
+          try {
+            record.CPIIdentifier = this.CPIIdentifierBuilder.build();
+          } catch (org.apache.avro.AvroMissingFieldException e) {
+            e.addParentField(record.getSchema().getField("CPIIdentifier"));
+            throw e;
+          }
+        } else {
+          record.CPIIdentifier = fieldSetFlags()[3] ? this.CPIIdentifier : (net.corda.data.crypto.SecureHash) defaultValue(fields()[3]);
+        }
         if (errorBuilder != null) {
           try {
             record.error = this.errorBuilder.build();
@@ -516,7 +638,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
             throw e;
           }
         } else {
-          record.error = fieldSetFlags()[3] ? this.error : (net.corda.data.flow.FlowError) defaultValue(fields()[3]);
+          record.error = fieldSetFlags()[4] ? this.error : (net.corda.data.flow.FlowError) defaultValue(fields()[4]);
         }
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
@@ -562,6 +684,8 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       out.writeBytes(this.result);
     }
 
+    this.CPIIdentifier.customEncode(out);
+
     if (this.error == null) {
       out.writeIndex(0);
       out.writeNull();
@@ -588,6 +712,11 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
         this.result = in.readBytes(this.result);
       }
 
+      if (this.CPIIdentifier == null) {
+        this.CPIIdentifier = new net.corda.data.crypto.SecureHash();
+      }
+      this.CPIIdentifier.customDecode(in);
+
       if (in.readIndex() != 1) {
         in.readNull();
         this.error = null;
@@ -599,7 +728,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       }
 
     } else {
-      for (int i = 0; i < 4; i++) {
+      for (int i = 0; i < 5; i++) {
         switch (fieldOrder[i].pos()) {
         case 0:
           this.clientId = in.readString();
@@ -619,6 +748,13 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
           break;
 
         case 3:
+          if (this.CPIIdentifier == null) {
+            this.CPIIdentifier = new net.corda.data.crypto.SecureHash();
+          }
+          this.CPIIdentifier.customDecode(in);
+          break;
+
+        case 4:
           if (in.readIndex() != 1) {
             in.readNull();
             this.error = null;

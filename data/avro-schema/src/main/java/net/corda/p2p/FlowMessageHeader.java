@@ -5,17 +5,15 @@
  */
 package net.corda.p2p;
 
-import org.apache.avro.generic.GenericArray;
-import org.apache.avro.specific.SpecificData;
-import org.apache.avro.util.Utf8;
-import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
+import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.SchemaStore;
+import org.apache.avro.specific.SpecificData;
 
 @org.apache.avro.specific.AvroGenerated
 public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 5313040266524727775L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FlowMessageHeader\",\"namespace\":\"net.corda.p2p\",\"fields\":[{\"name\":\"destination\",\"type\":{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}},{\"name\":\"source\",\"type\":\"HoldingIdentity\"},{\"name\":\"ttl\",\"type\":[\"null\",\"long\"]},{\"name\":\"messageId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"traceId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
+  private static final long serialVersionUID = 5441766202417564768L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FlowMessageHeader\",\"namespace\":\"net.corda.p2p\",\"fields\":[{\"name\":\"destination\",\"type\":{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.data.identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}},{\"name\":\"source\",\"type\":\"net.corda.data.identity.HoldingIdentity\"},{\"name\":\"ttl\",\"type\":[\"null\",\"long\"]},{\"name\":\"messageId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"traceId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -71,8 +69,8 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
     return DECODER.decode(b);
   }
 
-   private net.corda.p2p.HoldingIdentity destination;
-   private net.corda.p2p.HoldingIdentity source;
+   private net.corda.data.identity.HoldingIdentity destination;
+   private net.corda.data.identity.HoldingIdentity source;
    private java.lang.Long ttl;
    private java.lang.String messageId;
    private java.lang.String traceId;
@@ -92,7 +90,7 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
    * @param messageId The new value for messageId
    * @param traceId The new value for traceId
    */
-  public FlowMessageHeader(net.corda.p2p.HoldingIdentity destination, net.corda.p2p.HoldingIdentity source, java.lang.Long ttl, java.lang.String messageId, java.lang.String traceId) {
+  public FlowMessageHeader(net.corda.data.identity.HoldingIdentity destination, net.corda.data.identity.HoldingIdentity source, java.lang.Long ttl, java.lang.String messageId, java.lang.String traceId) {
     this.destination = destination;
     this.source = source;
     this.ttl = ttl;
@@ -118,8 +116,8 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
   @SuppressWarnings(value="unchecked")
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
-    case 0: destination = (net.corda.p2p.HoldingIdentity)value$; break;
-    case 1: source = (net.corda.p2p.HoldingIdentity)value$; break;
+    case 0: destination = (net.corda.data.identity.HoldingIdentity)value$; break;
+    case 1: source = (net.corda.data.identity.HoldingIdentity)value$; break;
     case 2: ttl = (java.lang.Long)value$; break;
     case 3: messageId = value$ != null ? value$.toString() : null; break;
     case 4: traceId = value$ != null ? value$.toString() : null; break;
@@ -131,7 +129,7 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
    * Gets the value of the 'destination' field.
    * @return The value of the 'destination' field.
    */
-  public net.corda.p2p.HoldingIdentity getDestination() {
+  public net.corda.data.identity.HoldingIdentity getDestination() {
     return destination;
   }
 
@@ -140,7 +138,7 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
    * Sets the value of the 'destination' field.
    * @param value the value to set.
    */
-  public void setDestination(net.corda.p2p.HoldingIdentity value) {
+  public void setDestination(net.corda.data.identity.HoldingIdentity value) {
     this.destination = value;
   }
 
@@ -148,7 +146,7 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
    * Gets the value of the 'source' field.
    * @return The value of the 'source' field.
    */
-  public net.corda.p2p.HoldingIdentity getSource() {
+  public net.corda.data.identity.HoldingIdentity getSource() {
     return source;
   }
 
@@ -157,7 +155,7 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
    * Sets the value of the 'source' field.
    * @param value the value to set.
    */
-  public void setSource(net.corda.p2p.HoldingIdentity value) {
+  public void setSource(net.corda.data.identity.HoldingIdentity value) {
     this.source = value;
   }
 
@@ -253,10 +251,10 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
   public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<FlowMessageHeader>
     implements org.apache.avro.data.RecordBuilder<FlowMessageHeader> {
 
-    private net.corda.p2p.HoldingIdentity destination;
-    private net.corda.p2p.HoldingIdentity.Builder destinationBuilder;
-    private net.corda.p2p.HoldingIdentity source;
-    private net.corda.p2p.HoldingIdentity.Builder sourceBuilder;
+    private net.corda.data.identity.HoldingIdentity destination;
+    private net.corda.data.identity.HoldingIdentity.Builder destinationBuilder;
+    private net.corda.data.identity.HoldingIdentity source;
+    private net.corda.data.identity.HoldingIdentity.Builder sourceBuilder;
     private java.lang.Long ttl;
     private java.lang.String messageId;
     private java.lang.String traceId;
@@ -277,14 +275,14 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
         fieldSetFlags()[0] = other.fieldSetFlags()[0];
       }
       if (other.hasDestinationBuilder()) {
-        this.destinationBuilder = net.corda.p2p.HoldingIdentity.newBuilder(other.getDestinationBuilder());
+        this.destinationBuilder = net.corda.data.identity.HoldingIdentity.newBuilder(other.getDestinationBuilder());
       }
       if (isValidValue(fields()[1], other.source)) {
         this.source = data().deepCopy(fields()[1].schema(), other.source);
         fieldSetFlags()[1] = other.fieldSetFlags()[1];
       }
       if (other.hasSourceBuilder()) {
-        this.sourceBuilder = net.corda.p2p.HoldingIdentity.newBuilder(other.getSourceBuilder());
+        this.sourceBuilder = net.corda.data.identity.HoldingIdentity.newBuilder(other.getSourceBuilder());
       }
       if (isValidValue(fields()[2], other.ttl)) {
         this.ttl = data().deepCopy(fields()[2].schema(), other.ttl);
@@ -334,7 +332,7 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
       * Gets the value of the 'destination' field.
       * @return The value.
       */
-    public net.corda.p2p.HoldingIdentity getDestination() {
+    public net.corda.data.identity.HoldingIdentity getDestination() {
       return destination;
     }
 
@@ -344,7 +342,7 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
       * @param value The value of 'destination'.
       * @return This builder.
       */
-    public net.corda.p2p.FlowMessageHeader.Builder setDestination(net.corda.p2p.HoldingIdentity value) {
+    public net.corda.p2p.FlowMessageHeader.Builder setDestination(net.corda.data.identity.HoldingIdentity value) {
       validate(fields()[0], value);
       this.destinationBuilder = null;
       this.destination = value;
@@ -364,12 +362,12 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
      * Gets the Builder instance for the 'destination' field and creates one if it doesn't exist yet.
      * @return This builder.
      */
-    public net.corda.p2p.HoldingIdentity.Builder getDestinationBuilder() {
+    public net.corda.data.identity.HoldingIdentity.Builder getDestinationBuilder() {
       if (destinationBuilder == null) {
         if (hasDestination()) {
-          setDestinationBuilder(net.corda.p2p.HoldingIdentity.newBuilder(destination));
+          setDestinationBuilder(net.corda.data.identity.HoldingIdentity.newBuilder(destination));
         } else {
-          setDestinationBuilder(net.corda.p2p.HoldingIdentity.newBuilder());
+          setDestinationBuilder(net.corda.data.identity.HoldingIdentity.newBuilder());
         }
       }
       return destinationBuilder;
@@ -381,7 +379,7 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
      * @return This builder.
      */
 
-    public net.corda.p2p.FlowMessageHeader.Builder setDestinationBuilder(net.corda.p2p.HoldingIdentity.Builder value) {
+    public net.corda.p2p.FlowMessageHeader.Builder setDestinationBuilder(net.corda.data.identity.HoldingIdentity.Builder value) {
       clearDestination();
       destinationBuilder = value;
       return this;
@@ -410,7 +408,7 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
       * Gets the value of the 'source' field.
       * @return The value.
       */
-    public net.corda.p2p.HoldingIdentity getSource() {
+    public net.corda.data.identity.HoldingIdentity getSource() {
       return source;
     }
 
@@ -420,7 +418,7 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
       * @param value The value of 'source'.
       * @return This builder.
       */
-    public net.corda.p2p.FlowMessageHeader.Builder setSource(net.corda.p2p.HoldingIdentity value) {
+    public net.corda.p2p.FlowMessageHeader.Builder setSource(net.corda.data.identity.HoldingIdentity value) {
       validate(fields()[1], value);
       this.sourceBuilder = null;
       this.source = value;
@@ -440,12 +438,12 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
      * Gets the Builder instance for the 'source' field and creates one if it doesn't exist yet.
      * @return This builder.
      */
-    public net.corda.p2p.HoldingIdentity.Builder getSourceBuilder() {
+    public net.corda.data.identity.HoldingIdentity.Builder getSourceBuilder() {
       if (sourceBuilder == null) {
         if (hasSource()) {
-          setSourceBuilder(net.corda.p2p.HoldingIdentity.newBuilder(source));
+          setSourceBuilder(net.corda.data.identity.HoldingIdentity.newBuilder(source));
         } else {
-          setSourceBuilder(net.corda.p2p.HoldingIdentity.newBuilder());
+          setSourceBuilder(net.corda.data.identity.HoldingIdentity.newBuilder());
         }
       }
       return sourceBuilder;
@@ -457,7 +455,7 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
      * @return This builder.
      */
 
-    public net.corda.p2p.FlowMessageHeader.Builder setSourceBuilder(net.corda.p2p.HoldingIdentity.Builder value) {
+    public net.corda.p2p.FlowMessageHeader.Builder setSourceBuilder(net.corda.data.identity.HoldingIdentity.Builder value) {
       clearSource();
       sourceBuilder = value;
       return this;
@@ -615,7 +613,7 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
             throw e;
           }
         } else {
-          record.destination = fieldSetFlags()[0] ? this.destination : (net.corda.p2p.HoldingIdentity) defaultValue(fields()[0]);
+          record.destination = fieldSetFlags()[0] ? this.destination : (net.corda.data.identity.HoldingIdentity) defaultValue(fields()[0]);
         }
         if (sourceBuilder != null) {
           try {
@@ -625,7 +623,7 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
             throw e;
           }
         } else {
-          record.source = fieldSetFlags()[1] ? this.source : (net.corda.p2p.HoldingIdentity) defaultValue(fields()[1]);
+          record.source = fieldSetFlags()[1] ? this.source : (net.corda.data.identity.HoldingIdentity) defaultValue(fields()[1]);
         }
         record.ttl = fieldSetFlags()[2] ? this.ttl : (java.lang.Long) defaultValue(fields()[2]);
         record.messageId = fieldSetFlags()[3] ? this.messageId : (java.lang.String) defaultValue(fields()[3]);
@@ -686,12 +684,12 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
     org.apache.avro.Schema.Field[] fieldOrder = in.readFieldOrderIfDiff();
     if (fieldOrder == null) {
       if (this.destination == null) {
-        this.destination = new net.corda.p2p.HoldingIdentity();
+        this.destination = new net.corda.data.identity.HoldingIdentity();
       }
       this.destination.customDecode(in);
 
       if (this.source == null) {
-        this.source = new net.corda.p2p.HoldingIdentity();
+        this.source = new net.corda.data.identity.HoldingIdentity();
       }
       this.source.customDecode(in);
 
@@ -711,14 +709,14 @@ public class FlowMessageHeader extends org.apache.avro.specific.SpecificRecordBa
         switch (fieldOrder[i].pos()) {
         case 0:
           if (this.destination == null) {
-            this.destination = new net.corda.p2p.HoldingIdentity();
+            this.destination = new net.corda.data.identity.HoldingIdentity();
           }
           this.destination.customDecode(in);
           break;
 
         case 1:
           if (this.source == null) {
-            this.source = new net.corda.p2p.HoldingIdentity();
+            this.source = new net.corda.data.identity.HoldingIdentity();
           }
           this.source.customDecode(in);
           break;

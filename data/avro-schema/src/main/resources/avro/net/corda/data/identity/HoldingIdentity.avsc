@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "HoldingIdentity",
-  "namespace": "net.corda.p2p",
+  "namespace": "net.corda.data.identity",
   "fields": [
     {
       "name": "x500Name",

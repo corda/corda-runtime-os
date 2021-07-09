@@ -9,11 +9,11 @@
     },
     {
       "name": "source",
-      "type": "net.corda.data.flow.Identity"
+      "type": "net.corda.data.identity.HoldingIdentity"
     },
     {
       "name": "destination",
-      "type": "net.corda.data.flow.Identity"
+      "type": "net.corda.data.identity.HoldingIdentity"
     },
     {
       "name": "sessionId",

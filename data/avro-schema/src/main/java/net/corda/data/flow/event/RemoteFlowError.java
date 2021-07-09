@@ -14,8 +14,8 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 3535168294243654882L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"RemoteFlowError\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":{\"type\":\"record\",\"name\":\"Identity\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"group\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}},{\"name\":\"destination\",\"type\":\"net.corda.data.flow.Identity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
+  private static final long serialVersionUID = -5232124196026421961L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"RemoteFlowError\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.data.identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}},{\"name\":\"destination\",\"type\":\"net.corda.data.identity.HoldingIdentity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -72,8 +72,8 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
   }
 
    private java.lang.String flowName;
-   private net.corda.data.flow.Identity source;
-   private net.corda.data.flow.Identity destination;
+   private net.corda.data.identity.HoldingIdentity source;
+   private net.corda.data.identity.HoldingIdentity destination;
    private java.nio.ByteBuffer sessionId;
    private int sequenceNo;
    private java.lang.String errorMessage;
@@ -94,7 +94,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
    * @param sequenceNo The new value for sequenceNo
    * @param errorMessage The new value for errorMessage
    */
-  public RemoteFlowError(java.lang.String flowName, net.corda.data.flow.Identity source, net.corda.data.flow.Identity destination, java.nio.ByteBuffer sessionId, java.lang.Integer sequenceNo, java.lang.String errorMessage) {
+  public RemoteFlowError(java.lang.String flowName, net.corda.data.identity.HoldingIdentity source, net.corda.data.identity.HoldingIdentity destination, java.nio.ByteBuffer sessionId, java.lang.Integer sequenceNo, java.lang.String errorMessage) {
     this.flowName = flowName;
     this.source = source;
     this.destination = destination;
@@ -123,8 +123,8 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
     case 0: flowName = value$ != null ? value$.toString() : null; break;
-    case 1: source = (net.corda.data.flow.Identity)value$; break;
-    case 2: destination = (net.corda.data.flow.Identity)value$; break;
+    case 1: source = (net.corda.data.identity.HoldingIdentity)value$; break;
+    case 2: destination = (net.corda.data.identity.HoldingIdentity)value$; break;
     case 3: sessionId = (java.nio.ByteBuffer)value$; break;
     case 4: sequenceNo = (java.lang.Integer)value$; break;
     case 5: errorMessage = value$ != null ? value$.toString() : null; break;
@@ -153,7 +153,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
    * Gets the value of the 'source' field.
    * @return The value of the 'source' field.
    */
-  public net.corda.data.flow.Identity getSource() {
+  public net.corda.data.identity.HoldingIdentity getSource() {
     return source;
   }
 
@@ -162,7 +162,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
    * Sets the value of the 'source' field.
    * @param value the value to set.
    */
-  public void setSource(net.corda.data.flow.Identity value) {
+  public void setSource(net.corda.data.identity.HoldingIdentity value) {
     this.source = value;
   }
 
@@ -170,7 +170,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
    * Gets the value of the 'destination' field.
    * @return The value of the 'destination' field.
    */
-  public net.corda.data.flow.Identity getDestination() {
+  public net.corda.data.identity.HoldingIdentity getDestination() {
     return destination;
   }
 
@@ -179,7 +179,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
    * Sets the value of the 'destination' field.
    * @param value the value to set.
    */
-  public void setDestination(net.corda.data.flow.Identity value) {
+  public void setDestination(net.corda.data.identity.HoldingIdentity value) {
     this.destination = value;
   }
 
@@ -276,10 +276,10 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
     implements org.apache.avro.data.RecordBuilder<RemoteFlowError> {
 
     private java.lang.String flowName;
-    private net.corda.data.flow.Identity source;
-    private net.corda.data.flow.Identity.Builder sourceBuilder;
-    private net.corda.data.flow.Identity destination;
-    private net.corda.data.flow.Identity.Builder destinationBuilder;
+    private net.corda.data.identity.HoldingIdentity source;
+    private net.corda.data.identity.HoldingIdentity.Builder sourceBuilder;
+    private net.corda.data.identity.HoldingIdentity destination;
+    private net.corda.data.identity.HoldingIdentity.Builder destinationBuilder;
     private java.nio.ByteBuffer sessionId;
     private int sequenceNo;
     private java.lang.String errorMessage;
@@ -304,14 +304,14 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
         fieldSetFlags()[1] = other.fieldSetFlags()[1];
       }
       if (other.hasSourceBuilder()) {
-        this.sourceBuilder = net.corda.data.flow.Identity.newBuilder(other.getSourceBuilder());
+        this.sourceBuilder = net.corda.data.identity.HoldingIdentity.newBuilder(other.getSourceBuilder());
       }
       if (isValidValue(fields()[2], other.destination)) {
         this.destination = data().deepCopy(fields()[2].schema(), other.destination);
         fieldSetFlags()[2] = other.fieldSetFlags()[2];
       }
       if (other.hasDestinationBuilder()) {
-        this.destinationBuilder = net.corda.data.flow.Identity.newBuilder(other.getDestinationBuilder());
+        this.destinationBuilder = net.corda.data.identity.HoldingIdentity.newBuilder(other.getDestinationBuilder());
       }
       if (isValidValue(fields()[3], other.sessionId)) {
         this.sessionId = data().deepCopy(fields()[3].schema(), other.sessionId);
@@ -405,7 +405,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
       * Gets the value of the 'source' field.
       * @return The value.
       */
-    public net.corda.data.flow.Identity getSource() {
+    public net.corda.data.identity.HoldingIdentity getSource() {
       return source;
     }
 
@@ -415,7 +415,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
       * @param value The value of 'source'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.RemoteFlowError.Builder setSource(net.corda.data.flow.Identity value) {
+    public net.corda.data.flow.event.RemoteFlowError.Builder setSource(net.corda.data.identity.HoldingIdentity value) {
       validate(fields()[1], value);
       this.sourceBuilder = null;
       this.source = value;
@@ -435,12 +435,12 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
      * Gets the Builder instance for the 'source' field and creates one if it doesn't exist yet.
      * @return This builder.
      */
-    public net.corda.data.flow.Identity.Builder getSourceBuilder() {
+    public net.corda.data.identity.HoldingIdentity.Builder getSourceBuilder() {
       if (sourceBuilder == null) {
         if (hasSource()) {
-          setSourceBuilder(net.corda.data.flow.Identity.newBuilder(source));
+          setSourceBuilder(net.corda.data.identity.HoldingIdentity.newBuilder(source));
         } else {
-          setSourceBuilder(net.corda.data.flow.Identity.newBuilder());
+          setSourceBuilder(net.corda.data.identity.HoldingIdentity.newBuilder());
         }
       }
       return sourceBuilder;
@@ -452,7 +452,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
      * @return This builder.
      */
 
-    public net.corda.data.flow.event.RemoteFlowError.Builder setSourceBuilder(net.corda.data.flow.Identity.Builder value) {
+    public net.corda.data.flow.event.RemoteFlowError.Builder setSourceBuilder(net.corda.data.identity.HoldingIdentity.Builder value) {
       clearSource();
       sourceBuilder = value;
       return this;
@@ -481,7 +481,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
       * Gets the value of the 'destination' field.
       * @return The value.
       */
-    public net.corda.data.flow.Identity getDestination() {
+    public net.corda.data.identity.HoldingIdentity getDestination() {
       return destination;
     }
 
@@ -491,7 +491,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
       * @param value The value of 'destination'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.RemoteFlowError.Builder setDestination(net.corda.data.flow.Identity value) {
+    public net.corda.data.flow.event.RemoteFlowError.Builder setDestination(net.corda.data.identity.HoldingIdentity value) {
       validate(fields()[2], value);
       this.destinationBuilder = null;
       this.destination = value;
@@ -511,12 +511,12 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
      * Gets the Builder instance for the 'destination' field and creates one if it doesn't exist yet.
      * @return This builder.
      */
-    public net.corda.data.flow.Identity.Builder getDestinationBuilder() {
+    public net.corda.data.identity.HoldingIdentity.Builder getDestinationBuilder() {
       if (destinationBuilder == null) {
         if (hasDestination()) {
-          setDestinationBuilder(net.corda.data.flow.Identity.newBuilder(destination));
+          setDestinationBuilder(net.corda.data.identity.HoldingIdentity.newBuilder(destination));
         } else {
-          setDestinationBuilder(net.corda.data.flow.Identity.newBuilder());
+          setDestinationBuilder(net.corda.data.identity.HoldingIdentity.newBuilder());
         }
       }
       return destinationBuilder;
@@ -528,7 +528,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
      * @return This builder.
      */
 
-    public net.corda.data.flow.event.RemoteFlowError.Builder setDestinationBuilder(net.corda.data.flow.Identity.Builder value) {
+    public net.corda.data.flow.event.RemoteFlowError.Builder setDestinationBuilder(net.corda.data.identity.HoldingIdentity.Builder value) {
       clearDestination();
       destinationBuilder = value;
       return this;
@@ -686,7 +686,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
             throw e;
           }
         } else {
-          record.source = fieldSetFlags()[1] ? this.source : (net.corda.data.flow.Identity) defaultValue(fields()[1]);
+          record.source = fieldSetFlags()[1] ? this.source : (net.corda.data.identity.HoldingIdentity) defaultValue(fields()[1]);
         }
         if (destinationBuilder != null) {
           try {
@@ -696,7 +696,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
             throw e;
           }
         } else {
-          record.destination = fieldSetFlags()[2] ? this.destination : (net.corda.data.flow.Identity) defaultValue(fields()[2]);
+          record.destination = fieldSetFlags()[2] ? this.destination : (net.corda.data.identity.HoldingIdentity) defaultValue(fields()[2]);
         }
         record.sessionId = fieldSetFlags()[3] ? this.sessionId : (java.nio.ByteBuffer) defaultValue(fields()[3]);
         record.sequenceNo = fieldSetFlags()[4] ? this.sequenceNo : (java.lang.Integer) defaultValue(fields()[4]);
@@ -755,12 +755,12 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
       this.flowName = in.readString();
 
       if (this.source == null) {
-        this.source = new net.corda.data.flow.Identity();
+        this.source = new net.corda.data.identity.HoldingIdentity();
       }
       this.source.customDecode(in);
 
       if (this.destination == null) {
-        this.destination = new net.corda.data.flow.Identity();
+        this.destination = new net.corda.data.identity.HoldingIdentity();
       }
       this.destination.customDecode(in);
 
@@ -779,14 +779,14 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
 
         case 1:
           if (this.source == null) {
-            this.source = new net.corda.data.flow.Identity();
+            this.source = new net.corda.data.identity.HoldingIdentity();
           }
           this.source.customDecode(in);
           break;
 
         case 2:
           if (this.destination == null) {
-            this.destination = new net.corda.data.flow.Identity();
+            this.destination = new net.corda.data.identity.HoldingIdentity();
           }
           this.destination.customDecode(in);
           break;

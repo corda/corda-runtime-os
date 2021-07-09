@@ -9,7 +9,7 @@
     },
     {
       "name": "identity",
-      "type": "net.corda.data.flow.Identity"
+      "type": "net.corda.data.identity.HoldingIdentity"
     }
   ]
 }
