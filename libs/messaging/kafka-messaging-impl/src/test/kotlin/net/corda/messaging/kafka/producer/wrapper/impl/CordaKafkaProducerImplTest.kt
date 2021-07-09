@@ -75,7 +75,6 @@ class CordaKafkaProducerImplTest {
     fun testTryCommitTransactionFatal() {
         doThrow(IllegalStateException()).whenever(producer).commitTransaction()
         assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.tryCommitTransaction() }
-        verify(producer, times(1)).abortTransaction()
         verify(producer, times(1)).commitTransaction()
     }
 
