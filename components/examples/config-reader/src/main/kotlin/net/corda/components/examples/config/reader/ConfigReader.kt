@@ -46,7 +46,7 @@ private val readServiceFactory: ConfigReadServiceFactory
             configReadService = readServiceFactory.createReadService(bootstrapConfig!!)
             val lister = ConfigListener { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
                 if (!receivedSnapshot) {
-                    if (currentConfigurationSnapshot.isNotEmpty() && changedKeys.contains(MESSAGING_CONFIG)) {
+                    if (changedKeys.contains(MESSAGING_CONFIG)) {
                         log.info("Config read service config snapshot received")
                         receivedSnapshot = true
                         lifeCycleCoordinator.postEvent(ConfigReceivedEvent(currentConfigurationSnapshot))
