@@ -17,7 +17,7 @@ You can deploy the 1-cluster environment using the following command:
 docker-compose -f single-kafka-cluster.yml up -d
 ```
 
-You can deploy the 1-cluster environment using the following command:
+You can deploy the 2-cluster environment using the following command:
 ```
 docker-compose -f two-kafka-clusters.yml up -d
 ```
