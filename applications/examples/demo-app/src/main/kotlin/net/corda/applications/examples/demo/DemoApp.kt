@@ -127,7 +127,7 @@ class DemoApp @Activate constructor(
                             durableSub?.stop()
                             stateEventSub?.stop()
                             pubsubSub?.stop()
-                            shutdown()
+                            shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
                         }
                         else -> {
                             log.error("$event unexpected!")
@@ -181,7 +181,7 @@ class DemoApp @Activate constructor(
 
     override fun shutdown() {
         consoleLogger.info("Stopping application")
-        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
+        lifeCycleCoordinator?.stop()
         log.info("Stopping application")
     }
 }
