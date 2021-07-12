@@ -127,7 +127,6 @@ class DemoApp @Activate constructor(
                             durableSub?.stop()
                             stateEventSub?.stop()
                             pubsubSub?.stop()
-                            shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
                         }
                         else -> {
                             log.error("$event unexpected!")
