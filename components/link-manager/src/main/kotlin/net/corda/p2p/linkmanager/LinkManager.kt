@@ -23,16 +23,14 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.SessionKey
 import net.corda.p2p.schema.Schema
-import net.corda.v5.base.annotations.VisibleForTesting
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 
 class LinkManager(@Reference(service = SubscriptionFactory::class)
-                  private val subscriptionFactory: SubscriptionFactory,
+                  subscriptionFactory: SubscriptionFactory,
                   @Reference(service = PublisherFactory::class)
-                  private val publisherFactory: PublisherFactory,
+                  publisherFactory: PublisherFactory,
                   linkManagerNetworkMap: LinkManagerNetworkMap,
                   linkManagerCryptoService: LinkManagerCryptoService,
                   config: LinkManagerConfig
@@ -51,12 +49,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
     }
 
-    private var outboundMessageSubscription: Subscription<String, FlowMessage>
-    private var inboundMessageSubscription: Subscription<String, LinkInMessage>
-    private var inboundAssignmentListener = InboundAssignmentListener()
+    private val outboundMessageSubscription: Subscription<String, FlowMessage>
+    private val inboundMessageSubscription: Subscription<String, LinkInMessage>
+    private val inboundAssignmentListener = InboundAssignmentListener()
 
-    private var messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory)
-    private var sessionManager: SessionManager = SessionManagerImpl(
+    private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory)
+    private val sessionManager: SessionManager = SessionManagerImpl(
         config.protocolModes,
         linkManagerNetworkMap,
         linkManagerCryptoService,
@@ -148,11 +146,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         EventLogProcessor<String, LinkInMessage> {
 
         private var logger = LoggerFactory.getLogger(this::class.java.name)
-
-        @VisibleForTesting
-        fun setLogger(newLogger: Logger) {
-            logger = newLogger
-        }
 
         override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
             val records = mutableListOf<Record<String, *>>()

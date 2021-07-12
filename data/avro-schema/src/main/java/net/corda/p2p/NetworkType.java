@@ -6,8 +6,8 @@
 package net.corda.p2p;
 @org.apache.avro.specific.AvroGenerated
 public enum NetworkType implements org.apache.avro.generic.GenericEnumSymbol<NetworkType> {
-  CLASSIC_CORDA, CORDA_5  ;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"NetworkType\",\"namespace\":\"net.corda.p2p\",\"symbols\":[\"CLASSIC_CORDA\",\"CORDA_5\"]}");
+  CORDA_4, CORDA_5  ;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"enum\",\"name\":\"NetworkType\",\"namespace\":\"net.corda.p2p\",\"symbols\":[\"CORDA_4\",\"CORDA_5\"]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
   public org.apache.avro.Schema getSchema() { return SCHEMA$; }
 }

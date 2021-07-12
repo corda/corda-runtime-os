@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager.messaging
 
 import net.corda.p2p.FlowMessage
-import net.corda.p2p.HoldingIdentity
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
@@ -13,9 +12,10 @@ import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.MemberInfo
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.NetworkType
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.v5.base.annotations.VisibleForTesting
-import org.slf4j.Logger
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toNetworkType
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -28,37 +28,15 @@ class MessageConverter {
 
     companion object {
 
-        private var logger = LoggerFactory.getLogger(this::class.java.name)
+        private val logger = LoggerFactory.getLogger(this::class.java.name)
 
-        @VisibleForTesting
-        fun setLogger(newLogger: Logger) {
-            logger = newLogger
-        }
-
-        internal fun createLinkOutMessage(
-            payload: Any,
-            dest: HoldingIdentity,
-            networkMap: LinkManagerNetworkMap
-        ): LinkOutMessage? {
-            val header = generateLinkOutHeaderFromPeer(dest, networkMap) ?: return null
+        internal fun createLinkOutMessage(payload: Any, dest: MemberInfo, networkType: NetworkType): LinkOutMessage? {
+            val header = generateLinkOutHeaderFromPeer(dest, networkType)
             return LinkOutMessage(header, payload)
         }
 
-        private fun generateLinkOutHeaderFromPeer(
-            peerFromAvro: HoldingIdentity,
-            networkMap: LinkManagerNetworkMap
-        ): LinkOutHeader? {
-            val peer = peerFromAvro.toHoldingIdentity()
-            if (peer == null) {
-                logger.error("Invalid peer identity read from Avro. The message was discarded.")
-                return null
-            }
-            val endPoint = networkMap.getEndPoint(peer)
-            if (endPoint == null) {
-                logger.warn("Attempted to send message to peer $peerFromAvro which is not in the network map. The message was discarded.")
-                return null
-            }
-            return LinkOutHeader(peerFromAvro.x500Name, peerFromAvro.identityType, endPoint.address)
+        private fun generateLinkOutHeaderFromPeer(peer: MemberInfo, networkType: NetworkType): LinkOutHeader {
+            return LinkOutHeader(peer.holdingIdentity.x500Name, networkType.toNetworkType(), peer.endPoint.address)
         }
 
         fun createLinkOutMessageFromFlowMessage(
@@ -87,11 +65,21 @@ class MessageConverter {
                     return null
                 }
             }
-            return createLinkOutMessage(
-                result,
-                message.header.destination,
-                networkMap
-            )
+
+            val destMemberInfo = networkMap.getMemberInfo(message.header.destination.toHoldingIdentity())
+            if (destMemberInfo == null) {
+                logger.warn("Attempted to send message to peer ${message.header.destination} which is not in the network map." +
+                    " The message was discarded.")
+                return null
+            }
+            val networkType = networkMap.getNetworkType(message.header.source.toHoldingIdentity())
+            if (networkType == null) {
+                logger.warn("Could not find the network type in the NetworkMap for our identity = ${message.header.source}. The message" +
+                    " was discarded.")
+                return null
+            }
+
+            return createLinkOutMessage(result, destMemberInfo, networkType)
         }
 
         fun convertToFlowMessage(session: Session, sessionId: String, message: LinkInMessage): FlowMessage? {

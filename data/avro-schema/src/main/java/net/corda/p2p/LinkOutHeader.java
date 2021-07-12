@@ -14,8 +14,8 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = -121020122826252785L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"LinkOutHeader\",\"namespace\":\"net.corda.p2p\",\"fields\":[{\"name\":\"destinationX500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"destinationNetworkType\",\"type\":{\"type\":\"enum\",\"name\":\"NetworkType\",\"symbols\":[\"CLASSIC_CORDA\",\"CORDA_5\"]}},{\"name\":\"address\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
+  private static final long serialVersionUID = 7809630617040363926L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"LinkOutHeader\",\"namespace\":\"net.corda.p2p\",\"fields\":[{\"name\":\"destinationX500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"destinationNetworkType\",\"type\":{\"type\":\"enum\",\"name\":\"NetworkType\",\"symbols\":[\"CORDA_4\",\"CORDA_5\"]}},{\"name\":\"address\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();

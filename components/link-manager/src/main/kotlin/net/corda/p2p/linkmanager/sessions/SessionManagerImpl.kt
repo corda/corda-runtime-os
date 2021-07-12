@@ -19,15 +19,14 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.groupIdNotInNetworkMapWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.hashNotInNetworkMapWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.initiatorHashNotInNetworkMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInNetworkMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInNetworkMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noSessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
-import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
 import java.util.*
@@ -44,17 +43,16 @@ open class SessionManagerImpl(
     ): SessionManager {
 
     companion object {
-        fun getSessionKeyFromMessage(message: FlowMessage): SessionKey? {
-           val peer = message.header.destination.toHoldingIdentity() ?: return null
-           val us = message.header.source.toHoldingIdentity() ?: return null
-           return SessionKey(us.groupId, us.type, peer)
+        fun getSessionKeyFromMessage(message: FlowMessage): SessionKey {
+           val peer = message.header.destination.toHoldingIdentity()
+           val us = message.header.source.toHoldingIdentity()
+           return SessionKey(us, peer)
        }
     }
 
     //On the Outbound side there is a single unique session per SessionKey.
     data class SessionKey(
-        val ourGroupId: String,
-        val ourType: LinkManagerNetworkMap.NetworkType,
+        val ourId: LinkManagerNetworkMap.HoldingIdentity,
         val responderId: LinkManagerNetworkMap.HoldingIdentity
     )
 
@@ -64,36 +62,23 @@ open class SessionManagerImpl(
     private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
     private val activeInboundSessions = ConcurrentHashMap<String, Session>()
 
-    private var logger = LoggerFactory.getLogger(this::class.java.name)
+    private val logger = LoggerFactory.getLogger(this::class.java.name)
 
     private val sessionNegotiationLock = ReentrantLock()
-
-    @VisibleForTesting
-    override fun setLogger(newLogger: Logger) {
-        logger = newLogger
-    }
 
     override fun processOutboundFlowMessage(message: FlowMessage): SessionState {
         sessionNegotiationLock.withLock {
             val key = getSessionKeyFromMessage(message)
-            if (key == null) {
-                logger.error("Invalid identity read from ${FlowMessage::class.java.simpleName}. The message was discarded.")
-                return SessionState.CannotEstablishSession
-            }
 
             val activeSession = activeOutboundSessions[key]
             if (activeSession != null) {
                 return SessionState.SessionEstablished(activeSession)
             }
-            return if (pendingOutboundSessionMessageQueues.queueMessage(message, key)) {
-                val (sessionId, initMessage) = getSessionInitMessage(key)
-                if (initMessage == null) {
-                    SessionState.CannotEstablishSession
-                } else {
-                    SessionState.NewSessionNeeded(sessionId, initMessage)
-                }
+            if (pendingOutboundSessionMessageQueues.queueMessage(message, key)) {
+                val (sessionId, initMessage) = getSessionInitMessage(key) ?: return SessionState.CannotEstablishSession
+                return SessionState.NewSessionNeeded(sessionId, initMessage)
             } else {
-                SessionState.SessionAlreadyPending
+                return SessionState.SessionAlreadyPending
             }
         }
     }
@@ -115,15 +100,23 @@ open class SessionManagerImpl(
         }
     }
 
-    private fun getSessionInitMessage(sessionKey: SessionKey): Pair<String, LinkOutMessage?> {
+    private fun getSessionInitMessage(sessionKey: SessionKey): Pair<String, LinkOutMessage>? {
         val sessionId = UUID.randomUUID().toString()
         val session = AuthenticationProtocolInitiator(sessionId, supportedModes, maxMessageSize)
         pendingOutboundSessions[sessionId] = Pair(sessionKey, session)
-        return sessionId to createLinkOutMessage(
-            session.generateInitiatorHello(),
-            sessionKey.responderId.toHoldingIdentity(),
-            networkMap
-        )
+        val networkType = networkMap.getNetworkType(sessionKey.ourId)
+        if (networkType == null) {
+            logger.warn("")
+            return null
+        }
+        val responderMemberInfo = networkMap.getMemberInfo(sessionKey.responderId)
+        if (responderMemberInfo == null) {
+            logger.warn("Attempted to start session negotiation with peer ${sessionKey.responderId} which is not in the network map. " +
+                    "The sessionInit message was not sent.")
+            return null
+        }
+        val message = createLinkOutMessage(session.generateInitiatorHello(), responderMemberInfo, networkType) ?: return null
+        return sessionId to message
     }
 
     private fun ByteArray.toBase64(): String {
@@ -131,7 +124,7 @@ open class SessionManagerImpl(
     }
 
     private fun getPublicKeyFromHash(hash: ByteArray): PublicKey {
-        return networkMap.getPublicKeyFromHash(hash) ?: throw NoPublicKeyForHashException(hash.toBase64())
+        return networkMap.getMemberInfoFromPublicKeyHash(hash)?.publicKey ?: throw NoPublicKeyForHashException(hash.toBase64())
     }
 
     class NoPublicKeyForHashException(hash: String):
@@ -150,31 +143,38 @@ open class SessionManagerImpl(
         session.receiveResponderHello(message)
         session.generateHandshakeSecrets()
 
-        val ourKey = networkMap.getOurPublicKey(sessionInfo.ourGroupId)
-        if (ourKey == null) {
-            logger.groupIdNotInNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.ourGroupId)
+        val ourMemberInfo = networkMap.getMemberInfo(sessionInfo.ourId)
+        if (ourMemberInfo == null) {
+            logger.ourIdNotInNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.ourId)
             return null
         }
 
-        val responderKey = networkMap.getPublicKey(sessionInfo.responderId)
-        if (responderKey == null) {
+        val responderMemberInfo = networkMap.getMemberInfo(sessionInfo.responderId)
+        if (responderMemberInfo == null) {
             logger.peerNotInTheNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.responderId)
             return null
         }
 
-        val signWithOurGroupId = { data: ByteArray -> cryptoService.signData(networkMap.hashPublicKey(ourKey), data) }
+        val signWithOurGroupId = { data: ByteArray -> cryptoService.signData(ourMemberInfo.publicKey, data) }
         val payload = try {
-            session.generateOurHandshakeMessage(ourKey, responderKey, sessionInfo.ourGroupId, signWithOurGroupId)
+            session.generateOurHandshakeMessage(
+                ourMemberInfo.publicKey,
+                responderMemberInfo.publicKey,
+                sessionInfo.ourId.groupId,
+                signWithOurGroupId
+            )
         } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
-            logger.warn("${exception.message}. The ${message::class.java.simpleName} was discarded.")
+            logger.warn("${exception.message}. The ${message::class.java.simpleName} with sessionId ${message.header.sessionId}" +
+                " was discarded.")
             return null
         }
 
-        return createLinkOutMessage(
-            payload,
-            sessionInfo.responderId.toHoldingIdentity(),
-            networkMap
-        )
+        val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity)
+        if (networkType == null) {
+            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity)
+            return null
+        }
+        return createLinkOutMessage(payload, responderMemberInfo, networkType)
     }
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
@@ -183,7 +183,7 @@ open class SessionManagerImpl(
             return null
         }
 
-        val responderKey = networkMap.getPublicKey(sessionInfo.responderId)
+        val responderKey = networkMap.getMemberInfo(sessionInfo.responderId)?.publicKey
         if (responderKey == null) {
             logger.peerNotInTheNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.responderId)
             return null
@@ -238,9 +238,9 @@ open class SessionManagerImpl(
         }
 
         //Find the correct Holding Identity to use (using the public key hash).
-        val us = networkMap.getPeerFromHash(identityData.responderPublicKeyHash)
-        if (us == null) {
-            logger.hashNotInNetworkMapWarning(
+        val ourMemberInfo = networkMap.getMemberInfoFromPublicKeyHash(identityData.responderPublicKeyHash)
+        if (ourMemberInfo == null) {
+            logger.ourHashNotInNetworkMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 identityData.responderPublicKeyHash.toBase64()
@@ -248,13 +248,9 @@ open class SessionManagerImpl(
             return null
         }
 
-        val ourPublicKey = networkMap.getOurPublicKey(us.groupId)
-        if (ourPublicKey == null) {
-            logger.groupIdNotInNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, us.groupId)
-            return null
-        }
+        val ourPublicKey = ourMemberInfo.publicKey
 
-        val signData = {data: ByteArray -> cryptoService.signData(identityData.responderPublicKeyHash, data)}
+        val signData = {data: ByteArray -> cryptoService.signData(ourMemberInfo.publicKey, data)}
         val response = try {
             session.generateOurHandshakeMessage(ourPublicKey, signData)
         } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
@@ -263,9 +259,9 @@ open class SessionManagerImpl(
             return null
         }
 
-        val peer = networkMap.getPeerFromHash(identityData.initiatorPublicKeyHash)?.toHoldingIdentity()
+        val peer = networkMap.getMemberInfoFromPublicKeyHash(identityData.initiatorPublicKeyHash)
         if (peer == null) {
-            logger.initiatorHashNotInNetworkMapWarning(
+            logger.peerHashNotInNetworkMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
                 identityData.initiatorPublicKeyHash.toBase64()
@@ -273,8 +269,15 @@ open class SessionManagerImpl(
             return null
         }
 
+        val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity)
+        if (networkType == null) {
+            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity)
+            return null
+        }
+
         activeInboundSessions[message.header.sessionId] = session.getSession()
         pendingInboundSessions.remove(message.header.sessionId)
-        return createLinkOutMessage(response, peer, networkMap)
+
+        return createLinkOutMessage(response, peer, networkType)
     }
 }

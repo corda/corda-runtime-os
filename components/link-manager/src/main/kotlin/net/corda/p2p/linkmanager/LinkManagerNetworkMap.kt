@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.p2p.HoldingIdentity
 import java.security.PublicKey
 
 /**
@@ -9,61 +8,48 @@ import java.security.PublicKey
 interface LinkManagerNetworkMap {
 
     companion object {
-        internal fun net.corda.p2p.HoldingIdentity.toHoldingIdentity(): HoldingIdentity? {
-            return when (this.identityType) {
-                net.corda.p2p.NetworkType.CLASSIC_CORDA -> HoldingIdentity(x500Name, groupId, NetworkType.CLASSIC_CORDA)
-                net.corda.p2p.NetworkType.CORDA_5 -> HoldingIdentity(x500Name, groupId, NetworkType.CORDA_5)
-                null -> null
+        internal fun net.corda.p2p.HoldingIdentity.toHoldingIdentity(): HoldingIdentity {
+            return HoldingIdentity(x500Name, groupId)
+        }
+
+        internal fun net.corda.p2p.NetworkType.toNetworkType(): NetworkType? {
+            return when (this) {
+                net.corda.p2p.NetworkType.CORDA_4 -> NetworkType.CORDA_4
+                net.corda.p2p.NetworkType.CORDA_5 -> NetworkType.CORDA_5
+                else -> null
             }
         }
 
-        internal fun HoldingIdentity.toHoldingIdentity(): net.corda.p2p.HoldingIdentity {
-            return when (this.type) {
-                NetworkType.CLASSIC_CORDA -> HoldingIdentity(this.x500Name, this.groupId, net.corda.p2p.NetworkType.CLASSIC_CORDA)
-                NetworkType.CORDA_5 -> HoldingIdentity(this.x500Name, this.groupId, net.corda.p2p.NetworkType.CORDA_5)
+        internal fun NetworkType.toNetworkType(): net.corda.p2p.NetworkType {
+            return when (this) {
+                NetworkType.CORDA_4 -> net.corda.p2p.NetworkType.CORDA_4
+                NetworkType.CORDA_5 -> net.corda.p2p.NetworkType.CORDA_5
             }
         }
     }
 
     /**
-     * Return the hash of the [PublicKey]
+     * Returns the [MemberInfo] belonging a specific [holdingIdentity]
      */
-    fun hashPublicKey(publicKey: PublicKey): ByteArray
+    fun getMemberInfo(holdingIdentity: HoldingIdentity): MemberInfo?
 
     /**
-     * Returns the [PublicKey] belonging a specific [holdingIdentity]
+     * Returns the [MemberInfo] which has a public key with SHA-256 hash [hash].
      */
-    fun getPublicKey(holdingIdentity: HoldingIdentity): PublicKey?
+    fun getMemberInfoFromPublicKeyHash(hash: ByteArray): MemberInfo?
 
     /**
-     * Returns the [PublicKey] in the NetworkMap [hash].
-     * The hash algorithm should be the same as used in [LinkManagerNetworkMap.PublicKey.toHash]
+     * Returns the [NetworkType] our [holdingIdentity].
      */
-    fun getPublicKeyFromHash(hash: ByteArray): PublicKey?
+    fun getNetworkType(holdingIdentity: HoldingIdentity): NetworkType?
 
-    /**
-     * Returns the [HoldingIdentity] in the NetworkMap. Which public key SHA-256 hashes to [hash].
-     * Returns [null] if there is no such key.
-     */
-    fun getPeerFromHash(hash: ByteArray): HoldingIdentity?
-
-    fun getEndPoint(holdingIdentity: HoldingIdentity): EndPoint?
-
-    /**
-     * Returns our [PublicKey] belonging to [groupId]
-     */
-    fun getOurPublicKey(groupId: String?): PublicKey?
-
-    /**
-     * Returns our [HoldingIdentity] belonging to [groupId]
-     */
-    fun getOurHoldingIdentity(groupId: String?): HoldingIdentity?
+    data class MemberInfo(val holdingIdentity: HoldingIdentity, val publicKey: PublicKey, val endPoint: EndPoint)
 
     data class EndPoint(val address: String)
 
-    data class HoldingIdentity(val x500Name: String, val groupId: String, val type: NetworkType)
+    data class HoldingIdentity(val x500Name: String, val groupId: String)
 
     enum class NetworkType {
-        CLASSIC_CORDA, CORDA_5
+        CORDA_4, CORDA_5
     }
 }

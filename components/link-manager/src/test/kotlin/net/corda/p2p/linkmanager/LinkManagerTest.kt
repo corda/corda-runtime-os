@@ -24,6 +24,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.Companion.getSessionKeyFromMessage
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.SessionKey
+import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
@@ -33,9 +34,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
-import org.slf4j.Logger
 import java.lang.RuntimeException
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
@@ -45,12 +47,19 @@ import java.util.concurrent.CompletableFuture
 class LinkManagerTest {
 
     companion object {
-        val FIRST_SOURCE = HoldingIdentity("PartyA", "Group", NetworkType.CORDA_5)
-        val SECOND_SOURCE = HoldingIdentity("PartyA", "AnotherGroup", NetworkType.CORDA_5)
-        val FIRST_DEST = HoldingIdentity("PartyB", "Group", NetworkType.CORDA_5)
-        val SECOND_DEST = HoldingIdentity("PartyC", "Group", NetworkType.CORDA_5)
+        val FIRST_SOURCE = HoldingIdentity("PartyA", "Group")
+        val SECOND_SOURCE = HoldingIdentity("PartyA", "AnotherGroup")
+        val FIRST_DEST = HoldingIdentity("PartyB", "Group")
+        val SECOND_DEST = HoldingIdentity("PartyC", "Group")
         const val FAKE_ADDRESS = "http://10.0.0.1/"
-        val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint(FAKE_ADDRESS)
+        val provider = BouncyCastleProvider()
+        val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
+        private val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint(FAKE_ADDRESS)
+        val FIRST_DEST_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(
+            FIRST_DEST.toHoldingIdentity(),
+            keyPairGenerator.generateKeyPair().public,
+            FAKE_ENDPOINT
+        )
 
         const val SESSION_ID = "testSession"
         const val MAX_MESSAGE_SIZE = 1000000
@@ -58,11 +67,17 @@ class LinkManagerTest {
         const val KEY = "Key"
         const val TOPIC = "Topic"
 
+        lateinit var loggingInterceptor: LoggingInterceptor
+
+        @BeforeAll
+        @JvmStatic
+        fun setup() {
+            loggingInterceptor = LoggingInterceptor.setupLogging()
+        }
+
         data class SessionPair(val initiatorSession: Session, val responderSession: Session)
 
         fun createSessionPair(mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY): SessionPair {
-            val provider = BouncyCastleProvider()
-            val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
             val partyAIdentityKey = keyPairGenerator.generateKeyPair()
             val partyBIdentityKey = keyPairGenerator.generateKeyPair()
             val signature = Signature.getInstance("ECDSA", provider)
@@ -100,6 +115,11 @@ class LinkManagerTest {
         }
     }
 
+    @BeforeEach
+    fun resetLogging() {
+        loggingInterceptor.reset()
+    }
+
     class TestListBasedPublisher: Publisher {
 
         var list = mutableListOf<Record<*, *>>()
@@ -118,14 +138,14 @@ class LinkManagerTest {
         }
     }
 
-    private fun simpleMockFlowMessage(source: HoldingIdentity, dest: HoldingIdentity, data: String): FlowMessage {
+    fun simpleMockFlowMessage(source: HoldingIdentity, dest: HoldingIdentity, data: String): FlowMessage {
         val mockHeader = Mockito.mock(FlowMessageHeader::class.java)
         Mockito.`when`(mockHeader.source).thenReturn(source)
         Mockito.`when`(mockHeader.destination).thenReturn(dest)
         return FlowMessage(mockHeader, ByteBuffer.wrap(data.toByteArray()))
     }
 
-    private fun complexMockFlowMessage(source: HoldingIdentity, dest: HoldingIdentity, data: ByteBuffer): FlowMessage {
+    fun complexMockFlowMessage(source: HoldingIdentity, dest: HoldingIdentity, data: ByteBuffer): FlowMessage {
         val mockHeader = Mockito.mock(FlowMessageHeader::class.java)
         Mockito.`when`(mockHeader.source).thenReturn(source)
         Mockito.`when`(mockHeader.destination).thenReturn(dest)
@@ -154,13 +174,12 @@ class LinkManagerTest {
         return listener
     }
 
-
     @Test
     fun `PendingSessionsMessageQueues queueMessage returns true if a new session is needed`() {
         val message = simpleMockFlowMessage(FIRST_SOURCE, FIRST_DEST, "0-0")
 
-        val key1 = SessionKey("id", LinkManagerNetworkMap.NetworkType.CORDA_5, FIRST_DEST.toHoldingIdentity()!!)
-        val key2 = SessionKey("id", LinkManagerNetworkMap.NetworkType.CORDA_5, SECOND_DEST.toHoldingIdentity()!!)
+        val key1 = SessionKey(FIRST_SOURCE.toHoldingIdentity(), FIRST_DEST.toHoldingIdentity())
+        val key2 = SessionKey(SECOND_SOURCE.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity())
 
         val mockPublisherFactory = Mockito.mock(PublisherFactory::class.java)
         val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory)
@@ -184,20 +203,21 @@ class LinkManagerTest {
         //Messages 1 and 2 can share the same session
         val message1 = complexMockFlowMessage(FIRST_SOURCE, FIRST_DEST, payload1)
         val message2 = complexMockFlowMessage(FIRST_SOURCE, FIRST_DEST, payload2)
-        val key1 = getSessionKeyFromMessage(message1)!!
+        val key1 = getSessionKeyFromMessage(message1)
 
         //Messages 3, 4, 5 can share another session
         val message3 = complexMockFlowMessage(SECOND_SOURCE, SECOND_DEST, payload3)
         val message4 = complexMockFlowMessage(SECOND_SOURCE, SECOND_DEST, payload4)
         val message5 = complexMockFlowMessage(SECOND_SOURCE, SECOND_DEST, payload5)
-        val key2 = getSessionKeyFromMessage(message3)!!
+        val key2 = getSessionKeyFromMessage(message3)
 
         val publisher = TestListBasedPublisher()
         val mockPublisherFactory = Mockito.mock(PublisherFactory::class.java)
         Mockito.`when`(mockPublisherFactory.createPublisher(any(), any())).thenReturn(publisher)
 
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(FAKE_ENDPOINT)
+        Mockito.`when`(mockNetworkMap.getMemberInfo(any())).thenReturn(FIRST_DEST_MEMBER_INFO)
+        Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
 
         val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory)
 
@@ -253,7 +273,6 @@ class LinkManagerTest {
         val state = SessionManager.SessionState.NewSessionNeeded(sessionId, sessionInitMessage)
         Mockito.`when`(mockSessionManager.processOutboundFlowMessage(any())).thenReturn(state)
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(FAKE_ENDPOINT)
 
         val inboundSubscribedTopics = listOf(1, 5, 9)
 
@@ -277,7 +296,8 @@ class LinkManagerTest {
         val state = SessionManager.SessionState.SessionEstablished(createSessionPair().initiatorSession)
         Mockito.`when`(mockSessionManager.processOutboundFlowMessage(any())).thenReturn(state)
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(FAKE_ENDPOINT)
+        Mockito.`when`(mockNetworkMap.getMemberInfo(FIRST_DEST.toHoldingIdentity())).thenReturn(FIRST_DEST_MEMBER_INFO)
+        Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
 
         val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, mockNetworkMap, assignedListener(listOf(1)))
 
@@ -317,7 +337,8 @@ class LinkManagerTest {
     private fun testDataMessagesWithInboundMessageProcessor(session: SessionPair) {
         val payload = ByteBuffer.wrap("PAYLOAD".toByteArray())
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(FAKE_ENDPOINT)
+        Mockito.`when`(mockNetworkMap.getMemberInfo(FIRST_DEST.toHoldingIdentity())).thenReturn(FIRST_DEST_MEMBER_INFO)
+        Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
 
         val header = FlowMessageHeader(FIRST_DEST, FIRST_SOURCE, null, "", "")
         val flowMessage = FlowMessage(header, payload)
@@ -358,7 +379,8 @@ class LinkManagerTest {
         val session = createSessionPair()
         val payload = ByteBuffer.wrap("PAYLOAD".toByteArray())
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(mockNetworkMap.getEndPoint(any())).thenReturn(FAKE_ENDPOINT)
+        Mockito.`when`(mockNetworkMap.getMemberInfo(FIRST_DEST.toHoldingIdentity())).thenReturn(FIRST_DEST_MEMBER_INFO)
+        Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
 
         val header = FlowMessageHeader(FIRST_DEST, FIRST_SOURCE, null, "", "")
         val flowMessage = FlowMessage(header, payload)
@@ -372,13 +394,11 @@ class LinkManagerTest {
         Mockito.`when`(mockSessionManager.getInboundSession(any())).thenReturn(null)
 
         val processor = LinkManager.InboundMessageProcessor(mockSessionManager)
-        val mockLogger = Mockito.mock(Logger::class.java)
-        processor.setLogger(mockLogger)
 
         val records = processor.onNext(messages)
         assertEquals(records.size, 0)
 
-        Mockito.verify(mockLogger).warn("Received message with SessionId = $SESSION_ID for which there is no active session. " +
+        loggingInterceptor.assertSingleWarning("Received message with SessionId = $SESSION_ID for which there is no active session. " +
             "The message was discarded.")
     }
 }

@@ -14,8 +14,8 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = -3883797442540585145L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.p2p\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"identityType\",\"type\":{\"type\":\"enum\",\"name\":\"NetworkType\",\"symbols\":[\"CLASSIC_CORDA\",\"CORDA_5\"]}}]}");
+  private static final long serialVersionUID = 4376517469381981226L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.p2p\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -73,7 +73,6 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
 
    private java.lang.String x500Name;
    private java.lang.String groupId;
-   private net.corda.p2p.NetworkType identityType;
 
   /**
    * Default constructor.  Note that this does not initialize fields
@@ -86,12 +85,10 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
    * All-args constructor.
    * @param x500Name The new value for x500Name
    * @param groupId The new value for groupId
-   * @param identityType The new value for identityType
    */
-  public HoldingIdentity(java.lang.String x500Name, java.lang.String groupId, net.corda.p2p.NetworkType identityType) {
+  public HoldingIdentity(java.lang.String x500Name, java.lang.String groupId) {
     this.x500Name = x500Name;
     this.groupId = groupId;
-    this.identityType = identityType;
   }
 
   public org.apache.avro.specific.SpecificData getSpecificData() { return MODEL$; }
@@ -101,7 +98,6 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
     switch (field$) {
     case 0: return x500Name;
     case 1: return groupId;
-    case 2: return identityType;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -112,7 +108,6 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
     switch (field$) {
     case 0: x500Name = value$ != null ? value$.toString() : null; break;
     case 1: groupId = value$ != null ? value$.toString() : null; break;
-    case 2: identityType = (net.corda.p2p.NetworkType)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -149,23 +144,6 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
    */
   public void setGroupId(java.lang.String value) {
     this.groupId = value;
-  }
-
-  /**
-   * Gets the value of the 'identityType' field.
-   * @return The value of the 'identityType' field.
-   */
-  public net.corda.p2p.NetworkType getIdentityType() {
-    return identityType;
-  }
-
-
-  /**
-   * Sets the value of the 'identityType' field.
-   * @param value the value to set.
-   */
-  public void setIdentityType(net.corda.p2p.NetworkType value) {
-    this.identityType = value;
   }
 
   /**
@@ -211,7 +189,6 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
 
     private java.lang.String x500Name;
     private java.lang.String groupId;
-    private net.corda.p2p.NetworkType identityType;
 
     /** Creates a new Builder */
     private Builder() {
@@ -232,10 +209,6 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
         this.groupId = data().deepCopy(fields()[1].schema(), other.groupId);
         fieldSetFlags()[1] = other.fieldSetFlags()[1];
       }
-      if (isValidValue(fields()[2], other.identityType)) {
-        this.identityType = data().deepCopy(fields()[2].schema(), other.identityType);
-        fieldSetFlags()[2] = other.fieldSetFlags()[2];
-      }
     }
 
     /**
@@ -251,10 +224,6 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
       if (isValidValue(fields()[1], other.groupId)) {
         this.groupId = data().deepCopy(fields()[1].schema(), other.groupId);
         fieldSetFlags()[1] = true;
-      }
-      if (isValidValue(fields()[2], other.identityType)) {
-        this.identityType = data().deepCopy(fields()[2].schema(), other.identityType);
-        fieldSetFlags()[2] = true;
       }
     }
 
@@ -338,46 +307,6 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
       return this;
     }
 
-    /**
-      * Gets the value of the 'identityType' field.
-      * @return The value.
-      */
-    public net.corda.p2p.NetworkType getIdentityType() {
-      return identityType;
-    }
-
-
-    /**
-      * Sets the value of the 'identityType' field.
-      * @param value The value of 'identityType'.
-      * @return This builder.
-      */
-    public net.corda.p2p.HoldingIdentity.Builder setIdentityType(net.corda.p2p.NetworkType value) {
-      validate(fields()[2], value);
-      this.identityType = value;
-      fieldSetFlags()[2] = true;
-      return this;
-    }
-
-    /**
-      * Checks whether the 'identityType' field has been set.
-      * @return True if the 'identityType' field has been set, false otherwise.
-      */
-    public boolean hasIdentityType() {
-      return fieldSetFlags()[2];
-    }
-
-
-    /**
-      * Clears the value of the 'identityType' field.
-      * @return This builder.
-      */
-    public net.corda.p2p.HoldingIdentity.Builder clearIdentityType() {
-      identityType = null;
-      fieldSetFlags()[2] = false;
-      return this;
-    }
-
     @Override
     @SuppressWarnings("unchecked")
     public HoldingIdentity build() {
@@ -385,7 +314,6 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
         HoldingIdentity record = new HoldingIdentity();
         record.x500Name = fieldSetFlags()[0] ? this.x500Name : (java.lang.String) defaultValue(fields()[0]);
         record.groupId = fieldSetFlags()[1] ? this.groupId : (java.lang.String) defaultValue(fields()[1]);
-        record.identityType = fieldSetFlags()[2] ? this.identityType : (net.corda.p2p.NetworkType) defaultValue(fields()[2]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -422,8 +350,6 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
 
     out.writeString(this.groupId);
 
-    out.writeEnum(this.identityType.ordinal());
-
   }
 
   @Override public void customDecode(org.apache.avro.io.ResolvingDecoder in)
@@ -435,10 +361,8 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
 
       this.groupId = in.readString();
 
-      this.identityType = net.corda.p2p.NetworkType.values()[in.readEnum()];
-
     } else {
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < 2; i++) {
         switch (fieldOrder[i].pos()) {
         case 0:
           this.x500Name = in.readString();
@@ -446,10 +370,6 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
 
         case 1:
           this.groupId = in.readString();
-          break;
-
-        case 2:
-          this.identityType = net.corda.p2p.NetworkType.values()[in.readEnum()];
           break;
 
         default:

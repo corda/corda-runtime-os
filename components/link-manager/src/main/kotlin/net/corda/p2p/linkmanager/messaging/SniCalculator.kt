@@ -13,10 +13,13 @@ class SniCalculator {
         private const val HASH_TRUNCATION_SIZE = 63 //Truncate to 63 characters (as RCF 1035)
         private const val CLASSIC_CORDA_SNI_SUFFIX = ".p2p.corda.net" //This is intentionally different to Corda 4
 
-        fun calculateSni(peer: LinkManagerNetworkMap.HoldingIdentity, address: String): String {
-
-            return when (peer.type) {
-                LinkManagerNetworkMap.NetworkType.CLASSIC_CORDA -> {
+        fun calculateSni(
+            peer: LinkManagerNetworkMap.HoldingIdentity,
+            networkType: LinkManagerNetworkMap.NetworkType,
+            address: String
+        ): String {
+            return when (networkType) {
+                LinkManagerNetworkMap.NetworkType.CORDA_4 -> {
                     sha256Hash(peer.x500Name.toByteArray()).toString().take(HASH_TRUNCATION_SIZE)
                         .toLowerCase() + CLASSIC_CORDA_SNI_SUFFIX
                 }

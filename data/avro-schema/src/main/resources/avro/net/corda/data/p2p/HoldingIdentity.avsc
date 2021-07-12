@@ -10,10 +10,6 @@
     {
       "name": "groupId",
       "type": "string"
-    },
-    {
-      "type": "net.corda.p2p.NetworkType",
-      "name": "identityType"
     }
   ]
 }
