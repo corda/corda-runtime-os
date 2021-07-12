@@ -168,7 +168,6 @@ class CordaKafkaProducerImpl(
                 is UnsupportedVersionException,
                 is UnsupportedForMessageFormatException,
                 is AuthorizationException,
-                is CommitFailedException,
                 is InvalidProducerEpochException,
                 is FencedInstanceIdException -> {
                     throw CordaMessageAPIFatalException(
@@ -178,6 +177,8 @@ class CordaKafkaProducerImpl(
                 }
                 is TimeoutException,
                 is InterruptException,
+                //Failure to commit here might be due to consumer kicked from group. return as intermittent to trigger retry
+                is CommitFailedException,
                 is KafkaException -> {
                     throw CordaMessageAPIIntermittentException(
                         "Fatal error occurred sending offsets for transaction " +
