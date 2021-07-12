@@ -7,8 +7,8 @@ description "Flow Manager"
 
 dependencies {
     implementation "net.corda:corda-application:$cordaVersion"
-    implementation "net.corda:corda-application-internal:$cordaVersion"
     implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-crypto-api:$cordaVersion"
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"

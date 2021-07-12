@@ -1,8 +1,5 @@
 package net.corda.flow.statemachine
 
-import net.corda.internal.application.FlowIORequest
-import net.corda.internal.application.context.InvocationContext
-import net.corda.internal.di.FlowStateMachineInjectable
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowSession
