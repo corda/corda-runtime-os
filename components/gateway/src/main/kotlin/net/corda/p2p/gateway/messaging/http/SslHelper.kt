@@ -1,7 +1,6 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.ssl.SslHandler
-import net.corda.nodeapi.internal.config.CertificateStore
 import net.corda.nodeapi.internal.protonwrapper.netty.LoggingTrustManagerWrapper
 import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfig
 import net.corda.v5.application.identity.CordaX500Name
