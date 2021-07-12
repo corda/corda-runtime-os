@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.atLeast
 import com.nhaarman.mockito_kotlin.doAnswer
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.times
@@ -20,7 +21,6 @@ import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.stubs.St
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
@@ -32,11 +32,6 @@ class KafkaStateAndEventSubscriptionImplTest {
         private const val TEST_TIMEOUT_SECONDS = 1L
     }
 
-    private val builder: StateAndEventBuilder<String, String, String> = mock()
-    private val eventConsumer: CordaKafkaConsumer<String, String> = mock()
-    private val stateConsumer: CordaKafkaConsumer<String, String> = mock()
-    private val producer: CordaKafkaProducer = mock()
-
     private val config: Config = createStandardTestConfig().getConfig(PATTERN_STATEANDEVENT)
 
     val map = ConcurrentHashMap<String, Pair<Long, String>>()
@@ -45,11 +40,23 @@ class KafkaStateAndEventSubscriptionImplTest {
         override fun destroyMap(map: MutableMap<String, Pair<Long, String>>) {}
     }
 
-    @BeforeEach
-    fun setUp() {
+    data class Mocks(
+        val builder: StateAndEventBuilder<String, String, String>,
+        val producer: CordaKafkaProducer,
+        val eventConsumer: CordaKafkaConsumer<String, String>,
+        val stateConsumer: CordaKafkaConsumer<String, String>,
+    )
+
+    private fun setupMocks(): Mocks {
+        val eventConsumer: CordaKafkaConsumer<String, String> = mock()
+        val stateConsumer: CordaKafkaConsumer<String, String> = mock()
+        val producer: CordaKafkaProducer = mock()
+        val builder: StateAndEventBuilder<String, String, String> = mock()
+
         doAnswer { eventConsumer }.whenever(builder).createEventConsumer(any(), any())
         doAnswer { stateConsumer }.whenever(builder).createStateConsumer(any())
         doAnswer { producer }.whenever(builder).createProducer(any())
+        return Mocks(builder, producer, eventConsumer, stateConsumer)
     }
 
     private fun generateMockConsumerRecordList(
@@ -71,6 +78,7 @@ class KafkaStateAndEventSubscriptionImplTest {
     fun `state and event subscription processes correct state after event`() {
         val iterations = 5
         val latch = CountDownLatch(iterations)
+        val (builder, producer, eventConsumer, stateConsumer) = setupMocks()
 
         val topicPartition = TopicPartition(TOPIC, 0)
         val state = ConsumerRecordAndMeta<String, String>(
@@ -107,11 +115,11 @@ class KafkaStateAndEventSubscriptionImplTest {
         verify(builder, times(1)).createEventConsumer(any(), any())
         verify(builder, times(1)).createStateConsumer(any())
         verify(builder, times(1)).createProducer(any())
-        verify(stateConsumer, times(5)).poll()
-        verify(eventConsumer, times(5)).poll()
-        verify(producer, times(5)).beginTransaction()
-        verify(producer, times(5)).sendRecords(any())
-        verify(producer, times(5)).tryCommitTransaction()
+        verify(stateConsumer, atLeast(5)).poll()
+        verify(eventConsumer, atLeast(5)).poll()
+        verify(producer, atLeast(5)).beginTransaction()
+        verify(producer, atLeast(5)).sendRecords(any())
+        verify(producer, atLeast(5)).tryCommitTransaction()
 
         assertThat(processor.inputs.size).isEqualTo(iterations)
         for (i in 0 until iterations) {
