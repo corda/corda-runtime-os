@@ -17,7 +17,7 @@ plugins {
     id 'io.gitlab.arturbosch.detekt' apply false
     id 'idea'
     id 'application'
-    id 'com.jfrog.artifactory'
+    id 'com.r3.internal.gradle.plugins.r3Publish' apply false
     id 'maven-publish'
     id 'corda.publish'
     id 'jacoco'
@@ -32,9 +32,6 @@ wrapper {
 
 allprojects {
     apply plugin: 'org.jetbrains.kotlin.jvm'
-
-    group 'net.corda'
-    version flowworkerVersion
 
     tasks.withType(JavaCompile) {
         sourceCompatibility = VERSION_11

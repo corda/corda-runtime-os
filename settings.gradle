@@ -19,13 +19,23 @@ pluginManagement {
             }
         }
         gradlePluginPortal()
+        maven {
+            url "$artifactoryContextUrl/engineering-tools-maven"
+            credentials {
+                username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+            }
+            content {
+                includeGroupByRegex 'com\\.r3\\.internal(\\..*)?'
+            }
+        }
     }
     plugins {
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.noarg' version kotlinVersion
         id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
-        id 'com.jfrog.artifactory' version jfrogArtifactoryPluginVersion
+        id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
         id 'biz.aQute.bnd.builder' version bndVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
     }
