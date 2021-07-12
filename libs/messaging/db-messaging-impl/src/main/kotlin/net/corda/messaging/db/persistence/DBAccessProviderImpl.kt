@@ -382,13 +382,14 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
      *
      * The provided callback function [postTxFn] will be invoked in the end regardless of whether the transaction was successful or not.
      */
+    @Suppress("TooGenericExceptionCaught")
     private fun executeWithErrorHandling(operation: (connection: Connection) -> Unit, operationName: String, postTxFn: () -> Unit = {}) {
         hikariDatasource.connection.use {
             try {
                 operation(it)
 
                 it.commit()
-            } catch (e: SQLException) {
+            } catch (e: Exception) {
                 log.error("Error while trying to $operationName. Transaction will be rolled back.", e)
                 try {
                     it.rollback()
