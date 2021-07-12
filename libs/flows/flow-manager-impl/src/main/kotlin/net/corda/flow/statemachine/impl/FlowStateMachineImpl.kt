@@ -5,7 +5,6 @@ import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.flow.statemachine.FlowIORequest
 import net.corda.flow.statemachine.FlowStateMachine
-import net.corda.flow.statemachine.InvocationContext
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowSession
@@ -25,7 +24,6 @@ class FlowStateMachineImpl<R>(
     override val creationTime: Long = System.currentTimeMillis(), override val ourSenderUUID: String?,
     override val resultFuture: CompletableFuture<R>,
     override val logger: Logger,
-    override val context: InvocationContext,
     override val ourIdentity: Party,
     override val isKilled: Boolean
 ) : Fiber<Unit>(id.toString(), scheduler), FlowStateMachine<R> {
