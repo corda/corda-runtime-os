@@ -5,15 +5,17 @@
  */
 package net.corda.data.flow;
 
-import org.apache.avro.message.BinaryMessageDecoder;
-import org.apache.avro.message.BinaryMessageEncoder;
-import org.apache.avro.message.SchemaStore;
+import org.apache.avro.generic.GenericArray;
 import org.apache.avro.specific.SpecificData;
+import org.apache.avro.util.Utf8;
+import org.apache.avro.message.BinaryMessageEncoder;
+import org.apache.avro.message.BinaryMessageDecoder;
+import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class StateMachineState extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 2183550371236976645L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"StateMachineState\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"suspendCount\",\"type\":\"int\"},{\"name\":\"InvocationContext\",\"type\":\"bytes\"},{\"name\":\"ourIdentity\",\"type\":{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.data.identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}},{\"name\":\"isKilled\",\"type\":\"boolean\"},{\"name\":\"initiatedBy\",\"type\":\"bytes\"}]}");
+  private static final long serialVersionUID = 3145643916596632866L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"StateMachineState\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"suspendCount\",\"type\":\"int\"},{\"name\":\"isKilled\",\"type\":\"boolean\"},{\"name\":\"initiatedBy\",\"type\":\"bytes\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -70,8 +72,6 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
   }
 
    private int suspendCount;
-   private java.nio.ByteBuffer InvocationContext;
-   private net.corda.data.identity.HoldingIdentity ourIdentity;
    private boolean isKilled;
    private java.nio.ByteBuffer initiatedBy;
 
@@ -85,15 +85,11 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
   /**
    * All-args constructor.
    * @param suspendCount The new value for suspendCount
-   * @param InvocationContext The new value for InvocationContext
-   * @param ourIdentity The new value for ourIdentity
    * @param isKilled The new value for isKilled
    * @param initiatedBy The new value for initiatedBy
    */
-  public StateMachineState(java.lang.Integer suspendCount, java.nio.ByteBuffer InvocationContext, net.corda.data.identity.HoldingIdentity ourIdentity, java.lang.Boolean isKilled, java.nio.ByteBuffer initiatedBy) {
+  public StateMachineState(java.lang.Integer suspendCount, java.lang.Boolean isKilled, java.nio.ByteBuffer initiatedBy) {
     this.suspendCount = suspendCount;
-    this.InvocationContext = InvocationContext;
-    this.ourIdentity = ourIdentity;
     this.isKilled = isKilled;
     this.initiatedBy = initiatedBy;
   }
@@ -104,10 +100,8 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
   public java.lang.Object get(int field$) {
     switch (field$) {
     case 0: return suspendCount;
-    case 1: return InvocationContext;
-    case 2: return ourIdentity;
-    case 3: return isKilled;
-    case 4: return initiatedBy;
+    case 1: return isKilled;
+    case 2: return initiatedBy;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -117,10 +111,8 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
     case 0: suspendCount = (java.lang.Integer)value$; break;
-    case 1: InvocationContext = (java.nio.ByteBuffer)value$; break;
-    case 2: ourIdentity = (net.corda.data.identity.HoldingIdentity)value$; break;
-    case 3: isKilled = (java.lang.Boolean)value$; break;
-    case 4: initiatedBy = (java.nio.ByteBuffer)value$; break;
+    case 1: isKilled = (java.lang.Boolean)value$; break;
+    case 2: initiatedBy = (java.nio.ByteBuffer)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -140,40 +132,6 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
    */
   public void setSuspendCount(int value) {
     this.suspendCount = value;
-  }
-
-  /**
-   * Gets the value of the 'InvocationContext' field.
-   * @return The value of the 'InvocationContext' field.
-   */
-  public java.nio.ByteBuffer getInvocationContext() {
-    return InvocationContext;
-  }
-
-
-  /**
-   * Sets the value of the 'InvocationContext' field.
-   * @param value the value to set.
-   */
-  public void setInvocationContext(java.nio.ByteBuffer value) {
-    this.InvocationContext = value;
-  }
-
-  /**
-   * Gets the value of the 'ourIdentity' field.
-   * @return The value of the 'ourIdentity' field.
-   */
-  public net.corda.data.identity.HoldingIdentity getOurIdentity() {
-    return ourIdentity;
-  }
-
-
-  /**
-   * Sets the value of the 'ourIdentity' field.
-   * @param value the value to set.
-   */
-  public void setOurIdentity(net.corda.data.identity.HoldingIdentity value) {
-    this.ourIdentity = value;
   }
 
   /**
@@ -252,9 +210,6 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
     implements org.apache.avro.data.RecordBuilder<StateMachineState> {
 
     private int suspendCount;
-    private java.nio.ByteBuffer InvocationContext;
-    private net.corda.data.identity.HoldingIdentity ourIdentity;
-    private net.corda.data.identity.HoldingIdentity.Builder ourIdentityBuilder;
     private boolean isKilled;
     private java.nio.ByteBuffer initiatedBy;
 
@@ -273,24 +228,13 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
         this.suspendCount = data().deepCopy(fields()[0].schema(), other.suspendCount);
         fieldSetFlags()[0] = other.fieldSetFlags()[0];
       }
-      if (isValidValue(fields()[1], other.InvocationContext)) {
-        this.InvocationContext = data().deepCopy(fields()[1].schema(), other.InvocationContext);
+      if (isValidValue(fields()[1], other.isKilled)) {
+        this.isKilled = data().deepCopy(fields()[1].schema(), other.isKilled);
         fieldSetFlags()[1] = other.fieldSetFlags()[1];
       }
-      if (isValidValue(fields()[2], other.ourIdentity)) {
-        this.ourIdentity = data().deepCopy(fields()[2].schema(), other.ourIdentity);
+      if (isValidValue(fields()[2], other.initiatedBy)) {
+        this.initiatedBy = data().deepCopy(fields()[2].schema(), other.initiatedBy);
         fieldSetFlags()[2] = other.fieldSetFlags()[2];
-      }
-      if (other.hasOurIdentityBuilder()) {
-        this.ourIdentityBuilder = net.corda.data.identity.HoldingIdentity.newBuilder(other.getOurIdentityBuilder());
-      }
-      if (isValidValue(fields()[3], other.isKilled)) {
-        this.isKilled = data().deepCopy(fields()[3].schema(), other.isKilled);
-        fieldSetFlags()[3] = other.fieldSetFlags()[3];
-      }
-      if (isValidValue(fields()[4], other.initiatedBy)) {
-        this.initiatedBy = data().deepCopy(fields()[4].schema(), other.initiatedBy);
-        fieldSetFlags()[4] = other.fieldSetFlags()[4];
       }
     }
 
@@ -304,22 +248,13 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
         this.suspendCount = data().deepCopy(fields()[0].schema(), other.suspendCount);
         fieldSetFlags()[0] = true;
       }
-      if (isValidValue(fields()[1], other.InvocationContext)) {
-        this.InvocationContext = data().deepCopy(fields()[1].schema(), other.InvocationContext);
+      if (isValidValue(fields()[1], other.isKilled)) {
+        this.isKilled = data().deepCopy(fields()[1].schema(), other.isKilled);
         fieldSetFlags()[1] = true;
       }
-      if (isValidValue(fields()[2], other.ourIdentity)) {
-        this.ourIdentity = data().deepCopy(fields()[2].schema(), other.ourIdentity);
+      if (isValidValue(fields()[2], other.initiatedBy)) {
+        this.initiatedBy = data().deepCopy(fields()[2].schema(), other.initiatedBy);
         fieldSetFlags()[2] = true;
-      }
-      this.ourIdentityBuilder = null;
-      if (isValidValue(fields()[3], other.isKilled)) {
-        this.isKilled = data().deepCopy(fields()[3].schema(), other.isKilled);
-        fieldSetFlags()[3] = true;
-      }
-      if (isValidValue(fields()[4], other.initiatedBy)) {
-        this.initiatedBy = data().deepCopy(fields()[4].schema(), other.initiatedBy);
-        fieldSetFlags()[4] = true;
       }
     }
 
@@ -363,122 +298,6 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
     }
 
     /**
-      * Gets the value of the 'InvocationContext' field.
-      * @return The value.
-      */
-    public java.nio.ByteBuffer getInvocationContext() {
-      return InvocationContext;
-    }
-
-
-    /**
-      * Sets the value of the 'InvocationContext' field.
-      * @param value The value of 'InvocationContext'.
-      * @return This builder.
-      */
-    public net.corda.data.flow.StateMachineState.Builder setInvocationContext(java.nio.ByteBuffer value) {
-      validate(fields()[1], value);
-      this.InvocationContext = value;
-      fieldSetFlags()[1] = true;
-      return this;
-    }
-
-    /**
-      * Checks whether the 'InvocationContext' field has been set.
-      * @return True if the 'InvocationContext' field has been set, false otherwise.
-      */
-    public boolean hasInvocationContext() {
-      return fieldSetFlags()[1];
-    }
-
-
-    /**
-      * Clears the value of the 'InvocationContext' field.
-      * @return This builder.
-      */
-    public net.corda.data.flow.StateMachineState.Builder clearInvocationContext() {
-      InvocationContext = null;
-      fieldSetFlags()[1] = false;
-      return this;
-    }
-
-    /**
-      * Gets the value of the 'ourIdentity' field.
-      * @return The value.
-      */
-    public net.corda.data.identity.HoldingIdentity getOurIdentity() {
-      return ourIdentity;
-    }
-
-
-    /**
-      * Sets the value of the 'ourIdentity' field.
-      * @param value The value of 'ourIdentity'.
-      * @return This builder.
-      */
-    public net.corda.data.flow.StateMachineState.Builder setOurIdentity(net.corda.data.identity.HoldingIdentity value) {
-      validate(fields()[2], value);
-      this.ourIdentityBuilder = null;
-      this.ourIdentity = value;
-      fieldSetFlags()[2] = true;
-      return this;
-    }
-
-    /**
-      * Checks whether the 'ourIdentity' field has been set.
-      * @return True if the 'ourIdentity' field has been set, false otherwise.
-      */
-    public boolean hasOurIdentity() {
-      return fieldSetFlags()[2];
-    }
-
-    /**
-     * Gets the Builder instance for the 'ourIdentity' field and creates one if it doesn't exist yet.
-     * @return This builder.
-     */
-    public net.corda.data.identity.HoldingIdentity.Builder getOurIdentityBuilder() {
-      if (ourIdentityBuilder == null) {
-        if (hasOurIdentity()) {
-          setOurIdentityBuilder(net.corda.data.identity.HoldingIdentity.newBuilder(ourIdentity));
-        } else {
-          setOurIdentityBuilder(net.corda.data.identity.HoldingIdentity.newBuilder());
-        }
-      }
-      return ourIdentityBuilder;
-    }
-
-    /**
-     * Sets the Builder instance for the 'ourIdentity' field
-     * @param value The builder instance that must be set.
-     * @return This builder.
-     */
-
-    public net.corda.data.flow.StateMachineState.Builder setOurIdentityBuilder(net.corda.data.identity.HoldingIdentity.Builder value) {
-      clearOurIdentity();
-      ourIdentityBuilder = value;
-      return this;
-    }
-
-    /**
-     * Checks whether the 'ourIdentity' field has an active Builder instance
-     * @return True if the 'ourIdentity' field has an active Builder instance
-     */
-    public boolean hasOurIdentityBuilder() {
-      return ourIdentityBuilder != null;
-    }
-
-    /**
-      * Clears the value of the 'ourIdentity' field.
-      * @return This builder.
-      */
-    public net.corda.data.flow.StateMachineState.Builder clearOurIdentity() {
-      ourIdentity = null;
-      ourIdentityBuilder = null;
-      fieldSetFlags()[2] = false;
-      return this;
-    }
-
-    /**
       * Gets the value of the 'isKilled' field.
       * @return The value.
       */
@@ -493,9 +312,9 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
       * @return This builder.
       */
     public net.corda.data.flow.StateMachineState.Builder setIsKilled(boolean value) {
-      validate(fields()[3], value);
+      validate(fields()[1], value);
       this.isKilled = value;
-      fieldSetFlags()[3] = true;
+      fieldSetFlags()[1] = true;
       return this;
     }
 
@@ -504,7 +323,7 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
       * @return True if the 'isKilled' field has been set, false otherwise.
       */
     public boolean hasIsKilled() {
-      return fieldSetFlags()[3];
+      return fieldSetFlags()[1];
     }
 
 
@@ -513,7 +332,7 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
       * @return This builder.
       */
     public net.corda.data.flow.StateMachineState.Builder clearIsKilled() {
-      fieldSetFlags()[3] = false;
+      fieldSetFlags()[1] = false;
       return this;
     }
 
@@ -532,9 +351,9 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
       * @return This builder.
       */
     public net.corda.data.flow.StateMachineState.Builder setInitiatedBy(java.nio.ByteBuffer value) {
-      validate(fields()[4], value);
+      validate(fields()[2], value);
       this.initiatedBy = value;
-      fieldSetFlags()[4] = true;
+      fieldSetFlags()[2] = true;
       return this;
     }
 
@@ -543,7 +362,7 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
       * @return True if the 'initiatedBy' field has been set, false otherwise.
       */
     public boolean hasInitiatedBy() {
-      return fieldSetFlags()[4];
+      return fieldSetFlags()[2];
     }
 
 
@@ -553,7 +372,7 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
       */
     public net.corda.data.flow.StateMachineState.Builder clearInitiatedBy() {
       initiatedBy = null;
-      fieldSetFlags()[4] = false;
+      fieldSetFlags()[2] = false;
       return this;
     }
 
@@ -563,19 +382,8 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
       try {
         StateMachineState record = new StateMachineState();
         record.suspendCount = fieldSetFlags()[0] ? this.suspendCount : (java.lang.Integer) defaultValue(fields()[0]);
-        record.InvocationContext = fieldSetFlags()[1] ? this.InvocationContext : (java.nio.ByteBuffer) defaultValue(fields()[1]);
-        if (ourIdentityBuilder != null) {
-          try {
-            record.ourIdentity = this.ourIdentityBuilder.build();
-          } catch (org.apache.avro.AvroMissingFieldException e) {
-            e.addParentField(record.getSchema().getField("ourIdentity"));
-            throw e;
-          }
-        } else {
-          record.ourIdentity = fieldSetFlags()[2] ? this.ourIdentity : (net.corda.data.identity.HoldingIdentity) defaultValue(fields()[2]);
-        }
-        record.isKilled = fieldSetFlags()[3] ? this.isKilled : (java.lang.Boolean) defaultValue(fields()[3]);
-        record.initiatedBy = fieldSetFlags()[4] ? this.initiatedBy : (java.nio.ByteBuffer) defaultValue(fields()[4]);
+        record.isKilled = fieldSetFlags()[1] ? this.isKilled : (java.lang.Boolean) defaultValue(fields()[1]);
+        record.initiatedBy = fieldSetFlags()[2] ? this.initiatedBy : (java.nio.ByteBuffer) defaultValue(fields()[2]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -610,10 +418,6 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
   {
     out.writeInt(this.suspendCount);
 
-    out.writeBytes(this.InvocationContext);
-
-    this.ourIdentity.customEncode(out);
-
     out.writeBoolean(this.isKilled);
 
     out.writeBytes(this.initiatedBy);
@@ -627,40 +431,22 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
     if (fieldOrder == null) {
       this.suspendCount = in.readInt();
 
-      this.InvocationContext = in.readBytes(this.InvocationContext);
-
-      if (this.ourIdentity == null) {
-        this.ourIdentity = new net.corda.data.identity.HoldingIdentity();
-      }
-      this.ourIdentity.customDecode(in);
-
       this.isKilled = in.readBoolean();
 
       this.initiatedBy = in.readBytes(this.initiatedBy);
 
     } else {
-      for (int i = 0; i < 5; i++) {
+      for (int i = 0; i < 3; i++) {
         switch (fieldOrder[i].pos()) {
         case 0:
           this.suspendCount = in.readInt();
           break;
 
         case 1:
-          this.InvocationContext = in.readBytes(this.InvocationContext);
-          break;
-
-        case 2:
-          if (this.ourIdentity == null) {
-            this.ourIdentity = new net.corda.data.identity.HoldingIdentity();
-          }
-          this.ourIdentity.customDecode(in);
-          break;
-
-        case 3:
           this.isKilled = in.readBoolean();
           break;
 
-        case 4:
+        case 2:
           this.initiatedBy = in.readBytes(this.initiatedBy);
           break;
 

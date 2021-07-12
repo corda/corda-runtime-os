@@ -21,7 +21,7 @@ interface FlowStateMachineHandle<FLOWRETURN> {
 }
 
 @DoNotImplement
-interface FlowStateMachine<FLOWRETURN> : FlowStateMachineHandle<FLOWRETURN>, FlowStateMachineInjectable {
+interface FlowStateMachine<FLOWRETURN> : FlowStateMachineHandle<FLOWRETURN> {
     @Suspendable
     fun <SUSPENDRETURN : Any> suspend(ioRequest: FlowIORequest<SUSPENDRETURN>, maySkipCheckpoint: Boolean): SUSPENDRETURN
 
@@ -42,7 +42,6 @@ interface FlowStateMachine<FLOWRETURN> : FlowStateMachineHandle<FLOWRETURN>, Flo
     fun updateTimedFlowTimeout(timeoutSeconds: Long)
 
     val logger: Logger
-    val context: InvocationContext
     val ourIdentity: Party
     val ourSenderUUID: String?
     val creationTime: Long
