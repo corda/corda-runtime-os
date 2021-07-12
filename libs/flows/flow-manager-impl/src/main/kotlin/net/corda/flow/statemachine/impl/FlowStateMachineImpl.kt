@@ -3,9 +3,9 @@ package net.corda.flow.statemachine.impl
 
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
+import net.corda.flow.statemachine.FlowIORequest
 import net.corda.flow.statemachine.FlowStateMachine
-import net.corda.internal.application.FlowIORequest
-import net.corda.internal.application.context.InvocationContext
+import net.corda.flow.statemachine.InvocationContext
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowSession
