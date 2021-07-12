@@ -3,19 +3,17 @@
  *
  * DO NOT EDIT DIRECTLY
  */
-package net.corda.data.flow.event;
+package net.corda.data.flow;
 
-import org.apache.avro.generic.GenericArray;
-import org.apache.avro.specific.SpecificData;
-import org.apache.avro.util.Utf8;
-import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
+import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.SchemaStore;
+import org.apache.avro.specific.SpecificData;
 
 @org.apache.avro.specific.AvroGenerated
 public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 6216280761587625860L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"RPCFlowResult\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"result\",\"type\":[\"null\",\"bytes\"]},{\"name\":\"CPIIdentifier\",\"type\":{\"type\":\"record\",\"name\":\"SecureHash\",\"namespace\":\"net.corda.data.crypto\",\"fields\":[{\"name\":\"algorithm\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"serverHash\",\"type\":\"bytes\"}]}},{\"name\":\"error\",\"type\":[\"null\",{\"type\":\"record\",\"name\":\"FlowError\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"errorType\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}],\"doc\":\"The flow exception (if any) that caused an error\"}]}");
+  private static final long serialVersionUID = 7234427434928271975L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"RPCFlowResult\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"result\",\"type\":[\"null\",\"bytes\"]},{\"name\":\"CPIIdentifier\",\"type\":{\"type\":\"record\",\"name\":\"SecureHash\",\"namespace\":\"net.corda.data.crypto\",\"fields\":[{\"name\":\"algorithm\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"serverHash\",\"type\":\"bytes\"}]}},{\"name\":\"error\",\"type\":[\"null\",{\"type\":\"record\",\"name\":\"FlowError\",\"fields\":[{\"name\":\"errorType\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}],\"doc\":\"The flow exception (if any) that caused an error\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -218,8 +216,8 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
    * Creates a new RPCFlowResult RecordBuilder.
    * @return A new RPCFlowResult RecordBuilder
    */
-  public static net.corda.data.flow.event.RPCFlowResult.Builder newBuilder() {
-    return new net.corda.data.flow.event.RPCFlowResult.Builder();
+  public static net.corda.data.flow.RPCFlowResult.Builder newBuilder() {
+    return new net.corda.data.flow.RPCFlowResult.Builder();
   }
 
   /**
@@ -227,11 +225,11 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
    * @param other The existing builder to copy.
    * @return A new RPCFlowResult RecordBuilder
    */
-  public static net.corda.data.flow.event.RPCFlowResult.Builder newBuilder(net.corda.data.flow.event.RPCFlowResult.Builder other) {
+  public static net.corda.data.flow.RPCFlowResult.Builder newBuilder(net.corda.data.flow.RPCFlowResult.Builder other) {
     if (other == null) {
-      return new net.corda.data.flow.event.RPCFlowResult.Builder();
+      return new net.corda.data.flow.RPCFlowResult.Builder();
     } else {
-      return new net.corda.data.flow.event.RPCFlowResult.Builder(other);
+      return new net.corda.data.flow.RPCFlowResult.Builder(other);
     }
   }
 
@@ -240,11 +238,11 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
    * @param other The existing instance to copy.
    * @return A new RPCFlowResult RecordBuilder
    */
-  public static net.corda.data.flow.event.RPCFlowResult.Builder newBuilder(net.corda.data.flow.event.RPCFlowResult other) {
+  public static net.corda.data.flow.RPCFlowResult.Builder newBuilder(net.corda.data.flow.RPCFlowResult other) {
     if (other == null) {
-      return new net.corda.data.flow.event.RPCFlowResult.Builder();
+      return new net.corda.data.flow.RPCFlowResult.Builder();
     } else {
-      return new net.corda.data.flow.event.RPCFlowResult.Builder(other);
+      return new net.corda.data.flow.RPCFlowResult.Builder(other);
     }
   }
 
@@ -273,7 +271,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
      * Creates a Builder by copying an existing Builder.
      * @param other The existing Builder to copy.
      */
-    private Builder(net.corda.data.flow.event.RPCFlowResult.Builder other) {
+    private Builder(net.corda.data.flow.RPCFlowResult.Builder other) {
       super(other);
       if (isValidValue(fields()[0], other.clientId)) {
         this.clientId = data().deepCopy(fields()[0].schema(), other.clientId);
@@ -307,7 +305,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
      * Creates a Builder by copying an existing RPCFlowResult instance
      * @param other The existing instance to copy.
      */
-    private Builder(net.corda.data.flow.event.RPCFlowResult other) {
+    private Builder(net.corda.data.flow.RPCFlowResult other) {
       super(SCHEMA$);
       if (isValidValue(fields()[0], other.clientId)) {
         this.clientId = data().deepCopy(fields()[0].schema(), other.clientId);
@@ -347,7 +345,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * @param value The value of 'clientId'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.RPCFlowResult.Builder setClientId(java.lang.String value) {
+    public net.corda.data.flow.RPCFlowResult.Builder setClientId(java.lang.String value) {
       validate(fields()[0], value);
       this.clientId = value;
       fieldSetFlags()[0] = true;
@@ -367,7 +365,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * Clears the value of the 'clientId' field.
       * @return This builder.
       */
-    public net.corda.data.flow.event.RPCFlowResult.Builder clearClientId() {
+    public net.corda.data.flow.RPCFlowResult.Builder clearClientId() {
       clientId = null;
       fieldSetFlags()[0] = false;
       return this;
@@ -387,7 +385,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * @param value The value of 'flowName'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.RPCFlowResult.Builder setFlowName(java.lang.String value) {
+    public net.corda.data.flow.RPCFlowResult.Builder setFlowName(java.lang.String value) {
       validate(fields()[1], value);
       this.flowName = value;
       fieldSetFlags()[1] = true;
@@ -407,7 +405,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * Clears the value of the 'flowName' field.
       * @return This builder.
       */
-    public net.corda.data.flow.event.RPCFlowResult.Builder clearFlowName() {
+    public net.corda.data.flow.RPCFlowResult.Builder clearFlowName() {
       flowName = null;
       fieldSetFlags()[1] = false;
       return this;
@@ -427,7 +425,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * @param value The value of 'result'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.RPCFlowResult.Builder setResult(java.nio.ByteBuffer value) {
+    public net.corda.data.flow.RPCFlowResult.Builder setResult(java.nio.ByteBuffer value) {
       validate(fields()[2], value);
       this.result = value;
       fieldSetFlags()[2] = true;
@@ -447,7 +445,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * Clears the value of the 'result' field.
       * @return This builder.
       */
-    public net.corda.data.flow.event.RPCFlowResult.Builder clearResult() {
+    public net.corda.data.flow.RPCFlowResult.Builder clearResult() {
       result = null;
       fieldSetFlags()[2] = false;
       return this;
@@ -467,7 +465,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * @param value The value of 'CPIIdentifier'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.RPCFlowResult.Builder setCPIIdentifier(net.corda.data.crypto.SecureHash value) {
+    public net.corda.data.flow.RPCFlowResult.Builder setCPIIdentifier(net.corda.data.crypto.SecureHash value) {
       validate(fields()[3], value);
       this.CPIIdentifierBuilder = null;
       this.CPIIdentifier = value;
@@ -504,7 +502,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
      * @return This builder.
      */
 
-    public net.corda.data.flow.event.RPCFlowResult.Builder setCPIIdentifierBuilder(net.corda.data.crypto.SecureHash.Builder value) {
+    public net.corda.data.flow.RPCFlowResult.Builder setCPIIdentifierBuilder(net.corda.data.crypto.SecureHash.Builder value) {
       clearCPIIdentifier();
       CPIIdentifierBuilder = value;
       return this;
@@ -522,7 +520,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * Clears the value of the 'CPIIdentifier' field.
       * @return This builder.
       */
-    public net.corda.data.flow.event.RPCFlowResult.Builder clearCPIIdentifier() {
+    public net.corda.data.flow.RPCFlowResult.Builder clearCPIIdentifier() {
       CPIIdentifier = null;
       CPIIdentifierBuilder = null;
       fieldSetFlags()[3] = false;
@@ -545,7 +543,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * @param value The value of 'error'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.RPCFlowResult.Builder setError(net.corda.data.flow.FlowError value) {
+    public net.corda.data.flow.RPCFlowResult.Builder setError(net.corda.data.flow.FlowError value) {
       validate(fields()[4], value);
       this.errorBuilder = null;
       this.error = value;
@@ -585,7 +583,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
      * @return This builder.
      */
 
-    public net.corda.data.flow.event.RPCFlowResult.Builder setErrorBuilder(net.corda.data.flow.FlowError.Builder value) {
+    public net.corda.data.flow.RPCFlowResult.Builder setErrorBuilder(net.corda.data.flow.FlowError.Builder value) {
       clearError();
       errorBuilder = value;
       return this;
@@ -605,7 +603,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * The flow exception (if any) that caused an error
       * @return This builder.
       */
-    public net.corda.data.flow.event.RPCFlowResult.Builder clearError() {
+    public net.corda.data.flow.RPCFlowResult.Builder clearError() {
       error = null;
       errorBuilder = null;
       fieldSetFlags()[4] = false;
