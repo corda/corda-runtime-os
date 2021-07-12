@@ -244,15 +244,16 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             log.trace { "Processing event: $event" }
             val updates = processor.onNext(getCurrentStates()[event.record.key()]?.second, event.asRecord())
             val updatedState = updates.updatedState
+            producer.beginTransaction()
+            producer.sendRecords(updates.responseEvents + Record(stateTopic.suffix, event.record.key(), updatedState))
+            producer.sendRecordOffsetToTransaction(eventConsumer, event.record)
+            producer.tryCommitTransaction()
+
             if (updatedState != null) {
                 getCurrentStates()[event.record.key()] = Pair(clock.instant().toEpochMilli(), updatedState)
             } else {
                 getCurrentStates().remove(event.record.key())
             }
-            producer.beginTransaction()
-            producer.sendRecords(updates.responseEvents + Record(stateTopic.suffix, event.record.key(), updatedState))
-            producer.sendRecordOffsetToTransaction(eventConsumer, event.record)
-            producer.tryCommitTransaction()
         }
     }
 
