@@ -82,7 +82,7 @@ fun createServerSslHandler(keyStore: KeyStore,
 /**
  * Extension to convert Corda names into String representing SNI values to be used for TLS handshakes
  */
-fun CordaX500Name.toSNI() = "www.corda.net"
+fun CordaX500Name.toSNI() = "temp"
 
 fun getCertCheckingParameters(trustStore: KeyStore, revocationConfig: RevocationConfig): ManagerFactoryParameters {
     val pkixParams = PKIXBuilderParameters(trustStore, X509CertSelector())

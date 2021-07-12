@@ -204,14 +204,14 @@ class HttpClient(private val destination: NetworkHostAndPort,
         init {
             parent.sslConfiguration.run {
                 // TODO: get mode from config
-                val pkixParams = getCertCheckingParameters(trustStore, RevocationConfigImpl(RevocationConfig.Mode.OFF))
+                val pkixParams = getCertCheckingParameters(trustStore, RevocationConfigImpl(RevocationConfig.Mode.HARD_FAIL))
                 trustManagerFactory.init(pkixParams)
             }
         }
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createClientSslHandler("www.corda.net",
+            pipeline.addLast("sslHandler", createClientSslHandler("temp",
                                                                         parent.destination,
                                                                         trustManagerFactory))
             pipeline.addLast(HttpClientCodec())
