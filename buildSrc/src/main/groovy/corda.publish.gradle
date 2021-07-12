@@ -1,12 +1,5 @@
 // This plugin is for providing the standard set of gradle used for all modules
 // wishing to publish to the R3 artifactory
-if (!project.hasProperty('cordaArtifactoryUsername')) {
-    ext.cordaArtifactoryUsername = System.getenv('CORDA_ARTIFACTORY_USERNAME')
-}
-
-if (! project.hasProperty('cordaArtifactoryPassword')) {
-    ext.cordaArtifactoryPassword = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
-}
 
 def releaseType = System.getenv("RELEASE_TYPE") ?: "SNAPSHOT"
 def versionSuffix = System.getenv("VERSION_SUFFIX")
