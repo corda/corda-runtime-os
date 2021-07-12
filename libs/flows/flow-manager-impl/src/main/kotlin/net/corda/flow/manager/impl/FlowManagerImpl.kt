@@ -2,7 +2,7 @@ package net.corda.flow.manager.impl
 
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.data.flow.Checkpoint
-import net.corda.data.flow.event.P2PMessage
+import net.corda.data.flow.event.FlowSessionMessage
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
 import net.corda.internal.di.DependencyInjectionService
@@ -49,7 +49,7 @@ class FlowManagerImpl : FlowManager {
 
     override fun startRemoteInitiatedFlow(
         newFlowId: StateMachineRunId,
-        p2pMessage: P2PMessage
+        flowSessionMessage: FlowSessionMessage
     ): FlowResult {
         TODO("Not yet implemented")
     }

@@ -5,32 +5,30 @@
  */
 package net.corda.data.flow.event;
 
-import org.apache.avro.generic.GenericArray;
-import org.apache.avro.specific.SpecificData;
-import org.apache.avro.util.Utf8;
-import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
+import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.SchemaStore;
+import org.apache.avro.specific.SpecificData;
 
 @org.apache.avro.specific.AvroGenerated
-public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 6078432819120342188L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"P2PMessage\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.data.identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}},{\"name\":\"destination\",\"type\":\"net.corda.data.identity.HoldingIdentity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"message\",\"type\":\"bytes\"}]}");
+public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
+  private static final long serialVersionUID = 4274480871688503934L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FlowSessionMessage\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.data.identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}},{\"name\":\"destination\",\"type\":\"net.corda.data.identity.HoldingIdentity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"message\",\"type\":\"bytes\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
 
-  private static final BinaryMessageEncoder<P2PMessage> ENCODER =
-      new BinaryMessageEncoder<P2PMessage>(MODEL$, SCHEMA$);
+  private static final BinaryMessageEncoder<FlowSessionMessage> ENCODER =
+      new BinaryMessageEncoder<FlowSessionMessage>(MODEL$, SCHEMA$);
 
-  private static final BinaryMessageDecoder<P2PMessage> DECODER =
-      new BinaryMessageDecoder<P2PMessage>(MODEL$, SCHEMA$);
+  private static final BinaryMessageDecoder<FlowSessionMessage> DECODER =
+      new BinaryMessageDecoder<FlowSessionMessage>(MODEL$, SCHEMA$);
 
   /**
    * Return the BinaryMessageEncoder instance used by this class.
    * @return the message encoder used by this class
    */
-  public static BinaryMessageEncoder<P2PMessage> getEncoder() {
+  public static BinaryMessageEncoder<FlowSessionMessage> getEncoder() {
     return ENCODER;
   }
 
@@ -38,7 +36,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
    * Return the BinaryMessageDecoder instance used by this class.
    * @return the message decoder used by this class
    */
-  public static BinaryMessageDecoder<P2PMessage> getDecoder() {
+  public static BinaryMessageDecoder<FlowSessionMessage> getDecoder() {
     return DECODER;
   }
 
@@ -47,12 +45,12 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
    * @param resolver a {@link SchemaStore} used to find schemas by fingerprint
    * @return a BinaryMessageDecoder instance for this class backed by the given SchemaStore
    */
-  public static BinaryMessageDecoder<P2PMessage> createDecoder(SchemaStore resolver) {
-    return new BinaryMessageDecoder<P2PMessage>(MODEL$, SCHEMA$, resolver);
+  public static BinaryMessageDecoder<FlowSessionMessage> createDecoder(SchemaStore resolver) {
+    return new BinaryMessageDecoder<FlowSessionMessage>(MODEL$, SCHEMA$, resolver);
   }
 
   /**
-   * Serializes this P2PMessage to a ByteBuffer.
+   * Serializes this FlowSessionMessage to a ByteBuffer.
    * @return a buffer holding the serialized data for this instance
    * @throws java.io.IOException if this instance could not be serialized
    */
@@ -61,12 +59,12 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
   }
 
   /**
-   * Deserializes a P2PMessage from a ByteBuffer.
+   * Deserializes a FlowSessionMessage from a ByteBuffer.
    * @param b a byte buffer holding serialized data for an instance of this class
-   * @return a P2PMessage instance decoded from the given buffer
+   * @return a FlowSessionMessage instance decoded from the given buffer
    * @throws java.io.IOException if the given bytes could not be deserialized into an instance of this class
    */
-  public static P2PMessage fromByteBuffer(
+  public static FlowSessionMessage fromByteBuffer(
       java.nio.ByteBuffer b) throws java.io.IOException {
     return DECODER.decode(b);
   }
@@ -83,7 +81,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
    * to their default values from the schema.  If that is desired then
    * one should use <code>newBuilder()</code>.
    */
-  public P2PMessage() {}
+  public FlowSessionMessage() {}
 
   /**
    * All-args constructor.
@@ -94,7 +92,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
    * @param sequenceNo The new value for sequenceNo
    * @param message The new value for message
    */
-  public P2PMessage(java.lang.String flowName, net.corda.data.identity.HoldingIdentity source, net.corda.data.identity.HoldingIdentity destination, java.nio.ByteBuffer sessionId, java.lang.Integer sequenceNo, java.nio.ByteBuffer message) {
+  public FlowSessionMessage(java.lang.String flowName, net.corda.data.identity.HoldingIdentity source, net.corda.data.identity.HoldingIdentity destination, java.nio.ByteBuffer sessionId, java.lang.Integer sequenceNo, java.nio.ByteBuffer message) {
     this.flowName = flowName;
     this.source = source;
     this.destination = destination;
@@ -235,45 +233,45 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
   }
 
   /**
-   * Creates a new P2PMessage RecordBuilder.
-   * @return A new P2PMessage RecordBuilder
+   * Creates a new FlowSessionMessage RecordBuilder.
+   * @return A new FlowSessionMessage RecordBuilder
    */
-  public static net.corda.data.flow.event.P2PMessage.Builder newBuilder() {
-    return new net.corda.data.flow.event.P2PMessage.Builder();
+  public static net.corda.data.flow.event.FlowSessionMessage.Builder newBuilder() {
+    return new net.corda.data.flow.event.FlowSessionMessage.Builder();
   }
 
   /**
-   * Creates a new P2PMessage RecordBuilder by copying an existing Builder.
+   * Creates a new FlowSessionMessage RecordBuilder by copying an existing Builder.
    * @param other The existing builder to copy.
-   * @return A new P2PMessage RecordBuilder
+   * @return A new FlowSessionMessage RecordBuilder
    */
-  public static net.corda.data.flow.event.P2PMessage.Builder newBuilder(net.corda.data.flow.event.P2PMessage.Builder other) {
+  public static net.corda.data.flow.event.FlowSessionMessage.Builder newBuilder(net.corda.data.flow.event.FlowSessionMessage.Builder other) {
     if (other == null) {
-      return new net.corda.data.flow.event.P2PMessage.Builder();
+      return new net.corda.data.flow.event.FlowSessionMessage.Builder();
     } else {
-      return new net.corda.data.flow.event.P2PMessage.Builder(other);
+      return new net.corda.data.flow.event.FlowSessionMessage.Builder(other);
     }
   }
 
   /**
-   * Creates a new P2PMessage RecordBuilder by copying an existing P2PMessage instance.
+   * Creates a new FlowSessionMessage RecordBuilder by copying an existing FlowSessionMessage instance.
    * @param other The existing instance to copy.
-   * @return A new P2PMessage RecordBuilder
+   * @return A new FlowSessionMessage RecordBuilder
    */
-  public static net.corda.data.flow.event.P2PMessage.Builder newBuilder(net.corda.data.flow.event.P2PMessage other) {
+  public static net.corda.data.flow.event.FlowSessionMessage.Builder newBuilder(net.corda.data.flow.event.FlowSessionMessage other) {
     if (other == null) {
-      return new net.corda.data.flow.event.P2PMessage.Builder();
+      return new net.corda.data.flow.event.FlowSessionMessage.Builder();
     } else {
-      return new net.corda.data.flow.event.P2PMessage.Builder(other);
+      return new net.corda.data.flow.event.FlowSessionMessage.Builder(other);
     }
   }
 
   /**
-   * RecordBuilder for P2PMessage instances.
+   * RecordBuilder for FlowSessionMessage instances.
    */
   @org.apache.avro.specific.AvroGenerated
-  public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<P2PMessage>
-    implements org.apache.avro.data.RecordBuilder<P2PMessage> {
+  public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<FlowSessionMessage>
+    implements org.apache.avro.data.RecordBuilder<FlowSessionMessage> {
 
     private java.lang.String flowName;
     private net.corda.data.identity.HoldingIdentity source;
@@ -293,7 +291,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
      * Creates a Builder by copying an existing Builder.
      * @param other The existing Builder to copy.
      */
-    private Builder(net.corda.data.flow.event.P2PMessage.Builder other) {
+    private Builder(net.corda.data.flow.event.FlowSessionMessage.Builder other) {
       super(other);
       if (isValidValue(fields()[0], other.flowName)) {
         this.flowName = data().deepCopy(fields()[0].schema(), other.flowName);
@@ -328,10 +326,10 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
     }
 
     /**
-     * Creates a Builder by copying an existing P2PMessage instance
+     * Creates a Builder by copying an existing FlowSessionMessage instance
      * @param other The existing instance to copy.
      */
-    private Builder(net.corda.data.flow.event.P2PMessage other) {
+    private Builder(net.corda.data.flow.event.FlowSessionMessage other) {
       super(SCHEMA$);
       if (isValidValue(fields()[0], other.flowName)) {
         this.flowName = data().deepCopy(fields()[0].schema(), other.flowName);
@@ -375,7 +373,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
       * @param value The value of 'flowName'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.P2PMessage.Builder setFlowName(java.lang.String value) {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder setFlowName(java.lang.String value) {
       validate(fields()[0], value);
       this.flowName = value;
       fieldSetFlags()[0] = true;
@@ -395,7 +393,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
       * Clears the value of the 'flowName' field.
       * @return This builder.
       */
-    public net.corda.data.flow.event.P2PMessage.Builder clearFlowName() {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder clearFlowName() {
       flowName = null;
       fieldSetFlags()[0] = false;
       return this;
@@ -415,7 +413,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
       * @param value The value of 'source'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.P2PMessage.Builder setSource(net.corda.data.identity.HoldingIdentity value) {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder setSource(net.corda.data.identity.HoldingIdentity value) {
       validate(fields()[1], value);
       this.sourceBuilder = null;
       this.source = value;
@@ -452,7 +450,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
      * @return This builder.
      */
 
-    public net.corda.data.flow.event.P2PMessage.Builder setSourceBuilder(net.corda.data.identity.HoldingIdentity.Builder value) {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder setSourceBuilder(net.corda.data.identity.HoldingIdentity.Builder value) {
       clearSource();
       sourceBuilder = value;
       return this;
@@ -470,7 +468,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
       * Clears the value of the 'source' field.
       * @return This builder.
       */
-    public net.corda.data.flow.event.P2PMessage.Builder clearSource() {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder clearSource() {
       source = null;
       sourceBuilder = null;
       fieldSetFlags()[1] = false;
@@ -491,7 +489,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
       * @param value The value of 'destination'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.P2PMessage.Builder setDestination(net.corda.data.identity.HoldingIdentity value) {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder setDestination(net.corda.data.identity.HoldingIdentity value) {
       validate(fields()[2], value);
       this.destinationBuilder = null;
       this.destination = value;
@@ -528,7 +526,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
      * @return This builder.
      */
 
-    public net.corda.data.flow.event.P2PMessage.Builder setDestinationBuilder(net.corda.data.identity.HoldingIdentity.Builder value) {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder setDestinationBuilder(net.corda.data.identity.HoldingIdentity.Builder value) {
       clearDestination();
       destinationBuilder = value;
       return this;
@@ -546,7 +544,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
       * Clears the value of the 'destination' field.
       * @return This builder.
       */
-    public net.corda.data.flow.event.P2PMessage.Builder clearDestination() {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder clearDestination() {
       destination = null;
       destinationBuilder = null;
       fieldSetFlags()[2] = false;
@@ -567,7 +565,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
       * @param value The value of 'sessionId'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.P2PMessage.Builder setSessionId(java.nio.ByteBuffer value) {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder setSessionId(java.nio.ByteBuffer value) {
       validate(fields()[3], value);
       this.sessionId = value;
       fieldSetFlags()[3] = true;
@@ -587,7 +585,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
       * Clears the value of the 'sessionId' field.
       * @return This builder.
       */
-    public net.corda.data.flow.event.P2PMessage.Builder clearSessionId() {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder clearSessionId() {
       sessionId = null;
       fieldSetFlags()[3] = false;
       return this;
@@ -607,7 +605,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
       * @param value The value of 'sequenceNo'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.P2PMessage.Builder setSequenceNo(int value) {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder setSequenceNo(int value) {
       validate(fields()[4], value);
       this.sequenceNo = value;
       fieldSetFlags()[4] = true;
@@ -627,7 +625,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
       * Clears the value of the 'sequenceNo' field.
       * @return This builder.
       */
-    public net.corda.data.flow.event.P2PMessage.Builder clearSequenceNo() {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder clearSequenceNo() {
       fieldSetFlags()[4] = false;
       return this;
     }
@@ -646,7 +644,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
       * @param value The value of 'message'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.P2PMessage.Builder setMessage(java.nio.ByteBuffer value) {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder setMessage(java.nio.ByteBuffer value) {
       validate(fields()[5], value);
       this.message = value;
       fieldSetFlags()[5] = true;
@@ -666,7 +664,7 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
       * Clears the value of the 'message' field.
       * @return This builder.
       */
-    public net.corda.data.flow.event.P2PMessage.Builder clearMessage() {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder clearMessage() {
       message = null;
       fieldSetFlags()[5] = false;
       return this;
@@ -674,9 +672,9 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
 
     @Override
     @SuppressWarnings("unchecked")
-    public P2PMessage build() {
+    public FlowSessionMessage build() {
       try {
-        P2PMessage record = new P2PMessage();
+        FlowSessionMessage record = new FlowSessionMessage();
         record.flowName = fieldSetFlags()[0] ? this.flowName : (java.lang.String) defaultValue(fields()[0]);
         if (sourceBuilder != null) {
           try {
@@ -711,8 +709,8 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
   }
 
   @SuppressWarnings("unchecked")
-  private static final org.apache.avro.io.DatumWriter<P2PMessage>
-    WRITER$ = (org.apache.avro.io.DatumWriter<P2PMessage>)MODEL$.createDatumWriter(SCHEMA$);
+  private static final org.apache.avro.io.DatumWriter<FlowSessionMessage>
+    WRITER$ = (org.apache.avro.io.DatumWriter<FlowSessionMessage>)MODEL$.createDatumWriter(SCHEMA$);
 
   @Override public void writeExternal(java.io.ObjectOutput out)
     throws java.io.IOException {
@@ -720,8 +718,8 @@ public class P2PMessage extends org.apache.avro.specific.SpecificRecordBase impl
   }
 
   @SuppressWarnings("unchecked")
-  private static final org.apache.avro.io.DatumReader<P2PMessage>
-    READER$ = (org.apache.avro.io.DatumReader<P2PMessage>)MODEL$.createDatumReader(SCHEMA$);
+  private static final org.apache.avro.io.DatumReader<FlowSessionMessage>
+    READER$ = (org.apache.avro.io.DatumReader<FlowSessionMessage>)MODEL$.createDatumReader(SCHEMA$);
 
   @Override public void readExternal(java.io.ObjectInput in)
     throws java.io.IOException {

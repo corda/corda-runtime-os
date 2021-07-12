@@ -13,12 +13,14 @@
     },
     {
       "name": "rpcUsername",
-      "type": "string"
+      "type": "net.corda.data.identity.HoldingIdentity"
     },
     {
       "name": "timestamp",
-      "type": "long",
-      "logicalType": "timestamp-millis"
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
     },
     {
       "name": "args",

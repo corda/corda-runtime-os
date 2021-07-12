@@ -5,17 +5,15 @@
  */
 package net.corda.data.flow.event;
 
-import org.apache.avro.generic.GenericArray;
-import org.apache.avro.specific.SpecificData;
-import org.apache.avro.util.Utf8;
-import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
+import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.SchemaStore;
+import org.apache.avro.specific.SpecificData;
 
 @org.apache.avro.specific.AvroGenerated
 public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = -5232124196026421961L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"RemoteFlowError\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.data.identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}},{\"name\":\"destination\",\"type\":\"net.corda.data.identity.HoldingIdentity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
+  private static final long serialVersionUID = 2094455317852541289L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"RemoteFlowError\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.data.identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}},{\"name\":\"destination\",\"type\":\"net.corda.data.identity.HoldingIdentity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -75,7 +73,6 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
    private net.corda.data.identity.HoldingIdentity source;
    private net.corda.data.identity.HoldingIdentity destination;
    private java.nio.ByteBuffer sessionId;
-   private int sequenceNo;
    private java.lang.String errorMessage;
 
   /**
@@ -91,15 +88,13 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
    * @param source The new value for source
    * @param destination The new value for destination
    * @param sessionId The new value for sessionId
-   * @param sequenceNo The new value for sequenceNo
    * @param errorMessage The new value for errorMessage
    */
-  public RemoteFlowError(java.lang.String flowName, net.corda.data.identity.HoldingIdentity source, net.corda.data.identity.HoldingIdentity destination, java.nio.ByteBuffer sessionId, java.lang.Integer sequenceNo, java.lang.String errorMessage) {
+  public RemoteFlowError(java.lang.String flowName, net.corda.data.identity.HoldingIdentity source, net.corda.data.identity.HoldingIdentity destination, java.nio.ByteBuffer sessionId, java.lang.String errorMessage) {
     this.flowName = flowName;
     this.source = source;
     this.destination = destination;
     this.sessionId = sessionId;
-    this.sequenceNo = sequenceNo;
     this.errorMessage = errorMessage;
   }
 
@@ -112,8 +107,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
     case 1: return source;
     case 2: return destination;
     case 3: return sessionId;
-    case 4: return sequenceNo;
-    case 5: return errorMessage;
+    case 4: return errorMessage;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -126,8 +120,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
     case 1: source = (net.corda.data.identity.HoldingIdentity)value$; break;
     case 2: destination = (net.corda.data.identity.HoldingIdentity)value$; break;
     case 3: sessionId = (java.nio.ByteBuffer)value$; break;
-    case 4: sequenceNo = (java.lang.Integer)value$; break;
-    case 5: errorMessage = value$ != null ? value$.toString() : null; break;
+    case 4: errorMessage = value$ != null ? value$.toString() : null; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -201,23 +194,6 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
   }
 
   /**
-   * Gets the value of the 'sequenceNo' field.
-   * @return The value of the 'sequenceNo' field.
-   */
-  public int getSequenceNo() {
-    return sequenceNo;
-  }
-
-
-  /**
-   * Sets the value of the 'sequenceNo' field.
-   * @param value the value to set.
-   */
-  public void setSequenceNo(int value) {
-    this.sequenceNo = value;
-  }
-
-  /**
    * Gets the value of the 'errorMessage' field.
    * @return The value of the 'errorMessage' field.
    */
@@ -281,7 +257,6 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
     private net.corda.data.identity.HoldingIdentity destination;
     private net.corda.data.identity.HoldingIdentity.Builder destinationBuilder;
     private java.nio.ByteBuffer sessionId;
-    private int sequenceNo;
     private java.lang.String errorMessage;
 
     /** Creates a new Builder */
@@ -317,13 +292,9 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
         this.sessionId = data().deepCopy(fields()[3].schema(), other.sessionId);
         fieldSetFlags()[3] = other.fieldSetFlags()[3];
       }
-      if (isValidValue(fields()[4], other.sequenceNo)) {
-        this.sequenceNo = data().deepCopy(fields()[4].schema(), other.sequenceNo);
+      if (isValidValue(fields()[4], other.errorMessage)) {
+        this.errorMessage = data().deepCopy(fields()[4].schema(), other.errorMessage);
         fieldSetFlags()[4] = other.fieldSetFlags()[4];
-      }
-      if (isValidValue(fields()[5], other.errorMessage)) {
-        this.errorMessage = data().deepCopy(fields()[5].schema(), other.errorMessage);
-        fieldSetFlags()[5] = other.fieldSetFlags()[5];
       }
     }
 
@@ -351,13 +322,9 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
         this.sessionId = data().deepCopy(fields()[3].schema(), other.sessionId);
         fieldSetFlags()[3] = true;
       }
-      if (isValidValue(fields()[4], other.sequenceNo)) {
-        this.sequenceNo = data().deepCopy(fields()[4].schema(), other.sequenceNo);
+      if (isValidValue(fields()[4], other.errorMessage)) {
+        this.errorMessage = data().deepCopy(fields()[4].schema(), other.errorMessage);
         fieldSetFlags()[4] = true;
-      }
-      if (isValidValue(fields()[5], other.errorMessage)) {
-        this.errorMessage = data().deepCopy(fields()[5].schema(), other.errorMessage);
-        fieldSetFlags()[5] = true;
       }
     }
 
@@ -594,45 +561,6 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
     }
 
     /**
-      * Gets the value of the 'sequenceNo' field.
-      * @return The value.
-      */
-    public int getSequenceNo() {
-      return sequenceNo;
-    }
-
-
-    /**
-      * Sets the value of the 'sequenceNo' field.
-      * @param value The value of 'sequenceNo'.
-      * @return This builder.
-      */
-    public net.corda.data.flow.event.RemoteFlowError.Builder setSequenceNo(int value) {
-      validate(fields()[4], value);
-      this.sequenceNo = value;
-      fieldSetFlags()[4] = true;
-      return this;
-    }
-
-    /**
-      * Checks whether the 'sequenceNo' field has been set.
-      * @return True if the 'sequenceNo' field has been set, false otherwise.
-      */
-    public boolean hasSequenceNo() {
-      return fieldSetFlags()[4];
-    }
-
-
-    /**
-      * Clears the value of the 'sequenceNo' field.
-      * @return This builder.
-      */
-    public net.corda.data.flow.event.RemoteFlowError.Builder clearSequenceNo() {
-      fieldSetFlags()[4] = false;
-      return this;
-    }
-
-    /**
       * Gets the value of the 'errorMessage' field.
       * @return The value.
       */
@@ -647,9 +575,9 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
       * @return This builder.
       */
     public net.corda.data.flow.event.RemoteFlowError.Builder setErrorMessage(java.lang.String value) {
-      validate(fields()[5], value);
+      validate(fields()[4], value);
       this.errorMessage = value;
-      fieldSetFlags()[5] = true;
+      fieldSetFlags()[4] = true;
       return this;
     }
 
@@ -658,7 +586,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
       * @return True if the 'errorMessage' field has been set, false otherwise.
       */
     public boolean hasErrorMessage() {
-      return fieldSetFlags()[5];
+      return fieldSetFlags()[4];
     }
 
 
@@ -668,7 +596,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
       */
     public net.corda.data.flow.event.RemoteFlowError.Builder clearErrorMessage() {
       errorMessage = null;
-      fieldSetFlags()[5] = false;
+      fieldSetFlags()[4] = false;
       return this;
     }
 
@@ -699,8 +627,7 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
           record.destination = fieldSetFlags()[2] ? this.destination : (net.corda.data.identity.HoldingIdentity) defaultValue(fields()[2]);
         }
         record.sessionId = fieldSetFlags()[3] ? this.sessionId : (java.nio.ByteBuffer) defaultValue(fields()[3]);
-        record.sequenceNo = fieldSetFlags()[4] ? this.sequenceNo : (java.lang.Integer) defaultValue(fields()[4]);
-        record.errorMessage = fieldSetFlags()[5] ? this.errorMessage : (java.lang.String) defaultValue(fields()[5]);
+        record.errorMessage = fieldSetFlags()[4] ? this.errorMessage : (java.lang.String) defaultValue(fields()[4]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -741,8 +668,6 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
 
     out.writeBytes(this.sessionId);
 
-    out.writeInt(this.sequenceNo);
-
     out.writeString(this.errorMessage);
 
   }
@@ -766,12 +691,10 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
 
       this.sessionId = in.readBytes(this.sessionId);
 
-      this.sequenceNo = in.readInt();
-
       this.errorMessage = in.readString();
 
     } else {
-      for (int i = 0; i < 6; i++) {
+      for (int i = 0; i < 5; i++) {
         switch (fieldOrder[i].pos()) {
         case 0:
           this.flowName = in.readString();
@@ -796,10 +719,6 @@ public class RemoteFlowError extends org.apache.avro.specific.SpecificRecordBase
           break;
 
         case 4:
-          this.sequenceNo = in.readInt();
-          break;
-
-        case 5:
           this.errorMessage = in.readString();
           break;
 

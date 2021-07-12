@@ -20,10 +20,6 @@
       "type": "bytes"
     },
     {
-      "name": "sequenceNo",
-      "type": "int"
-    },
-    {
       "name": "errorMessage",
       "type": "string"
     }

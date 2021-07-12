@@ -5,20 +5,21 @@
  */
 package net.corda.data.flow.event;
 
-import org.apache.avro.generic.GenericArray;
-import org.apache.avro.specific.SpecificData;
-import org.apache.avro.util.Utf8;
-import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
+import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.SchemaStore;
+import org.apache.avro.specific.SpecificData;
 
 @org.apache.avro.specific.AvroGenerated
 public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = -1532790649597640123L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"StartRPCFlow\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"rpcUsername\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"timestamp\",\"type\":\"long\",\"logicalType\":\"timestamp-millis\"},{\"name\":\"args\",\"type\":{\"type\":\"array\",\"items\":[\"null\",\"bytes\"]}}]}");
+  private static final long serialVersionUID = 1874718742835422887L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"StartRPCFlow\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"rpcUsername\",\"type\":{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.data.identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}},{\"name\":\"timestamp\",\"type\":{\"type\":\"long\",\"logicalType\":\"timestamp-millis\"}},{\"name\":\"args\",\"type\":{\"type\":\"array\",\"items\":[\"null\",\"bytes\"]}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
+static {
+    MODEL$.addLogicalTypeConversion(new org.apache.avro.data.TimeConversions.TimestampMillisConversion());
+  }
 
   private static final BinaryMessageEncoder<StartRPCFlow> ENCODER =
       new BinaryMessageEncoder<StartRPCFlow>(MODEL$, SCHEMA$);
@@ -73,8 +74,8 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
 
    private java.lang.String clientId;
    private java.lang.String flowName;
-   private java.lang.String rpcUsername;
-   private long timestamp;
+   private net.corda.data.identity.HoldingIdentity rpcUsername;
+   private java.time.Instant timestamp;
    private java.util.List<java.nio.ByteBuffer> args;
 
   /**
@@ -92,11 +93,11 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
    * @param timestamp The new value for timestamp
    * @param args The new value for args
    */
-  public StartRPCFlow(java.lang.String clientId, java.lang.String flowName, java.lang.String rpcUsername, java.lang.Long timestamp, java.util.List<java.nio.ByteBuffer> args) {
+  public StartRPCFlow(java.lang.String clientId, java.lang.String flowName, net.corda.data.identity.HoldingIdentity rpcUsername, java.time.Instant timestamp, java.util.List<java.nio.ByteBuffer> args) {
     this.clientId = clientId;
     this.flowName = flowName;
     this.rpcUsername = rpcUsername;
-    this.timestamp = timestamp;
+    this.timestamp = timestamp.truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
     this.args = args;
   }
 
@@ -114,14 +115,29 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
     }
   }
 
+  private static final org.apache.avro.Conversion<?>[] conversions =
+      new org.apache.avro.Conversion<?>[] {
+      null,
+      null,
+      null,
+      new org.apache.avro.data.TimeConversions.TimestampMillisConversion(),
+      null,
+      null
+  };
+
+  @Override
+  public org.apache.avro.Conversion<?> getConversion(int field) {
+    return conversions[field];
+  }
+
   // Used by DatumReader.  Applications should not call.
   @SuppressWarnings(value="unchecked")
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
     case 0: clientId = value$ != null ? value$.toString() : null; break;
     case 1: flowName = value$ != null ? value$.toString() : null; break;
-    case 2: rpcUsername = value$ != null ? value$.toString() : null; break;
-    case 3: timestamp = (java.lang.Long)value$; break;
+    case 2: rpcUsername = (net.corda.data.identity.HoldingIdentity)value$; break;
+    case 3: timestamp = (java.time.Instant)value$; break;
     case 4: args = (java.util.List<java.nio.ByteBuffer>)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
@@ -165,7 +181,7 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
    * Gets the value of the 'rpcUsername' field.
    * @return The value of the 'rpcUsername' field.
    */
-  public java.lang.String getRpcUsername() {
+  public net.corda.data.identity.HoldingIdentity getRpcUsername() {
     return rpcUsername;
   }
 
@@ -174,7 +190,7 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
    * Sets the value of the 'rpcUsername' field.
    * @param value the value to set.
    */
-  public void setRpcUsername(java.lang.String value) {
+  public void setRpcUsername(net.corda.data.identity.HoldingIdentity value) {
     this.rpcUsername = value;
   }
 
@@ -182,7 +198,7 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
    * Gets the value of the 'timestamp' field.
    * @return The value of the 'timestamp' field.
    */
-  public long getTimestamp() {
+  public java.time.Instant getTimestamp() {
     return timestamp;
   }
 
@@ -191,8 +207,8 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
    * Sets the value of the 'timestamp' field.
    * @param value the value to set.
    */
-  public void setTimestamp(long value) {
-    this.timestamp = value;
+  public void setTimestamp(java.time.Instant value) {
+    this.timestamp = value.truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
   }
 
   /**
@@ -255,8 +271,9 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
 
     private java.lang.String clientId;
     private java.lang.String flowName;
-    private java.lang.String rpcUsername;
-    private long timestamp;
+    private net.corda.data.identity.HoldingIdentity rpcUsername;
+    private net.corda.data.identity.HoldingIdentity.Builder rpcUsernameBuilder;
+    private java.time.Instant timestamp;
     private java.util.List<java.nio.ByteBuffer> args;
 
     /** Creates a new Builder */
@@ -281,6 +298,9 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
       if (isValidValue(fields()[2], other.rpcUsername)) {
         this.rpcUsername = data().deepCopy(fields()[2].schema(), other.rpcUsername);
         fieldSetFlags()[2] = other.fieldSetFlags()[2];
+      }
+      if (other.hasRpcUsernameBuilder()) {
+        this.rpcUsernameBuilder = net.corda.data.identity.HoldingIdentity.newBuilder(other.getRpcUsernameBuilder());
       }
       if (isValidValue(fields()[3], other.timestamp)) {
         this.timestamp = data().deepCopy(fields()[3].schema(), other.timestamp);
@@ -310,6 +330,7 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
         this.rpcUsername = data().deepCopy(fields()[2].schema(), other.rpcUsername);
         fieldSetFlags()[2] = true;
       }
+      this.rpcUsernameBuilder = null;
       if (isValidValue(fields()[3], other.timestamp)) {
         this.timestamp = data().deepCopy(fields()[3].schema(), other.timestamp);
         fieldSetFlags()[3] = true;
@@ -404,7 +425,7 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
       * Gets the value of the 'rpcUsername' field.
       * @return The value.
       */
-    public java.lang.String getRpcUsername() {
+    public net.corda.data.identity.HoldingIdentity getRpcUsername() {
       return rpcUsername;
     }
 
@@ -414,8 +435,9 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
       * @param value The value of 'rpcUsername'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.StartRPCFlow.Builder setRpcUsername(java.lang.String value) {
+    public net.corda.data.flow.event.StartRPCFlow.Builder setRpcUsername(net.corda.data.identity.HoldingIdentity value) {
       validate(fields()[2], value);
+      this.rpcUsernameBuilder = null;
       this.rpcUsername = value;
       fieldSetFlags()[2] = true;
       return this;
@@ -429,6 +451,40 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
       return fieldSetFlags()[2];
     }
 
+    /**
+     * Gets the Builder instance for the 'rpcUsername' field and creates one if it doesn't exist yet.
+     * @return This builder.
+     */
+    public net.corda.data.identity.HoldingIdentity.Builder getRpcUsernameBuilder() {
+      if (rpcUsernameBuilder == null) {
+        if (hasRpcUsername()) {
+          setRpcUsernameBuilder(net.corda.data.identity.HoldingIdentity.newBuilder(rpcUsername));
+        } else {
+          setRpcUsernameBuilder(net.corda.data.identity.HoldingIdentity.newBuilder());
+        }
+      }
+      return rpcUsernameBuilder;
+    }
+
+    /**
+     * Sets the Builder instance for the 'rpcUsername' field
+     * @param value The builder instance that must be set.
+     * @return This builder.
+     */
+
+    public net.corda.data.flow.event.StartRPCFlow.Builder setRpcUsernameBuilder(net.corda.data.identity.HoldingIdentity.Builder value) {
+      clearRpcUsername();
+      rpcUsernameBuilder = value;
+      return this;
+    }
+
+    /**
+     * Checks whether the 'rpcUsername' field has an active Builder instance
+     * @return True if the 'rpcUsername' field has an active Builder instance
+     */
+    public boolean hasRpcUsernameBuilder() {
+      return rpcUsernameBuilder != null;
+    }
 
     /**
       * Clears the value of the 'rpcUsername' field.
@@ -436,6 +492,7 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
       */
     public net.corda.data.flow.event.StartRPCFlow.Builder clearRpcUsername() {
       rpcUsername = null;
+      rpcUsernameBuilder = null;
       fieldSetFlags()[2] = false;
       return this;
     }
@@ -444,7 +501,7 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
       * Gets the value of the 'timestamp' field.
       * @return The value.
       */
-    public long getTimestamp() {
+    public java.time.Instant getTimestamp() {
       return timestamp;
     }
 
@@ -454,9 +511,9 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
       * @param value The value of 'timestamp'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.StartRPCFlow.Builder setTimestamp(long value) {
+    public net.corda.data.flow.event.StartRPCFlow.Builder setTimestamp(java.time.Instant value) {
       validate(fields()[3], value);
-      this.timestamp = value;
+      this.timestamp = value.truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
       fieldSetFlags()[3] = true;
       return this;
     }
@@ -526,8 +583,17 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
         StartRPCFlow record = new StartRPCFlow();
         record.clientId = fieldSetFlags()[0] ? this.clientId : (java.lang.String) defaultValue(fields()[0]);
         record.flowName = fieldSetFlags()[1] ? this.flowName : (java.lang.String) defaultValue(fields()[1]);
-        record.rpcUsername = fieldSetFlags()[2] ? this.rpcUsername : (java.lang.String) defaultValue(fields()[2]);
-        record.timestamp = fieldSetFlags()[3] ? this.timestamp : (java.lang.Long) defaultValue(fields()[3]);
+        if (rpcUsernameBuilder != null) {
+          try {
+            record.rpcUsername = this.rpcUsernameBuilder.build();
+          } catch (org.apache.avro.AvroMissingFieldException e) {
+            e.addParentField(record.getSchema().getField("rpcUsername"));
+            throw e;
+          }
+        } else {
+          record.rpcUsername = fieldSetFlags()[2] ? this.rpcUsername : (net.corda.data.identity.HoldingIdentity) defaultValue(fields()[2]);
+        }
+        record.timestamp = fieldSetFlags()[3] ? this.timestamp : (java.time.Instant) defaultValue(fields()[3]);
         record.args = fieldSetFlags()[4] ? this.args : (java.util.List<java.nio.ByteBuffer>) defaultValue(fields()[4]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
@@ -556,120 +622,6 @@ public class StartRPCFlow extends org.apache.avro.specific.SpecificRecordBase im
     READER$.read(this, SpecificData.getDecoder(in));
   }
 
-  @Override protected boolean hasCustomCoders() { return true; }
-
-  @Override public void customEncode(org.apache.avro.io.Encoder out)
-    throws java.io.IOException
-  {
-    out.writeString(this.clientId);
-
-    out.writeString(this.flowName);
-
-    out.writeString(this.rpcUsername);
-
-    out.writeLong(this.timestamp);
-
-    long size0 = this.args.size();
-    out.writeArrayStart();
-    out.setItemCount(size0);
-    long actualSize0 = 0;
-    for (java.nio.ByteBuffer e0: this.args) {
-      actualSize0++;
-      out.startItem();
-      if (e0 == null) {
-        out.writeIndex(0);
-        out.writeNull();
-      } else {
-        out.writeIndex(1);
-        out.writeBytes(e0);
-      }
-    }
-    out.writeArrayEnd();
-    if (actualSize0 != size0)
-      throw new java.util.ConcurrentModificationException("Array-size written was " + size0 + ", but element count was " + actualSize0 + ".");
-
-  }
-
-  @Override public void customDecode(org.apache.avro.io.ResolvingDecoder in)
-    throws java.io.IOException
-  {
-    org.apache.avro.Schema.Field[] fieldOrder = in.readFieldOrderIfDiff();
-    if (fieldOrder == null) {
-      this.clientId = in.readString();
-
-      this.flowName = in.readString();
-
-      this.rpcUsername = in.readString();
-
-      this.timestamp = in.readLong();
-
-      long size0 = in.readArrayStart();
-      java.util.List<java.nio.ByteBuffer> a0 = this.args;
-      if (a0 == null) {
-        a0 = new SpecificData.Array<java.nio.ByteBuffer>((int)size0, SCHEMA$.getField("args").schema());
-        this.args = a0;
-      } else a0.clear();
-      SpecificData.Array<java.nio.ByteBuffer> ga0 = (a0 instanceof SpecificData.Array ? (SpecificData.Array<java.nio.ByteBuffer>)a0 : null);
-      for ( ; 0 < size0; size0 = in.arrayNext()) {
-        for ( ; size0 != 0; size0--) {
-          java.nio.ByteBuffer e0 = (ga0 != null ? ga0.peek() : null);
-          if (in.readIndex() != 1) {
-            in.readNull();
-            e0 = null;
-          } else {
-            e0 = in.readBytes(e0);
-          }
-          a0.add(e0);
-        }
-      }
-
-    } else {
-      for (int i = 0; i < 5; i++) {
-        switch (fieldOrder[i].pos()) {
-        case 0:
-          this.clientId = in.readString();
-          break;
-
-        case 1:
-          this.flowName = in.readString();
-          break;
-
-        case 2:
-          this.rpcUsername = in.readString();
-          break;
-
-        case 3:
-          this.timestamp = in.readLong();
-          break;
-
-        case 4:
-          long size0 = in.readArrayStart();
-          java.util.List<java.nio.ByteBuffer> a0 = this.args;
-          if (a0 == null) {
-            a0 = new SpecificData.Array<java.nio.ByteBuffer>((int)size0, SCHEMA$.getField("args").schema());
-            this.args = a0;
-          } else a0.clear();
-          SpecificData.Array<java.nio.ByteBuffer> ga0 = (a0 instanceof SpecificData.Array ? (SpecificData.Array<java.nio.ByteBuffer>)a0 : null);
-          for ( ; 0 < size0; size0 = in.arrayNext()) {
-            for ( ; size0 != 0; size0--) {
-              java.nio.ByteBuffer e0 = (ga0 != null ? ga0.peek() : null);
-              if (in.readIndex() != 1) {
-                in.readNull();
-                e0 = null;
-              } else {
-                e0 = in.readBytes(e0);
-              }
-              a0.add(e0);
-            }
-          }
-          break;
-
-        default:
-          throw new java.io.IOException("Corrupt ResolvingDecoder.");
-        }
-      }
-    }
-  }
 }
 
 

@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "P2PMessage",
+  "name": "FlowSessionMessage",
   "namespace": "net.corda.data.flow.event",
   "fields": [
     {

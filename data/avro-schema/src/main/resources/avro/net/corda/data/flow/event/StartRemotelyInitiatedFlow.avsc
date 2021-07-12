@@ -1,11 +1,11 @@
 {
   "type": "record",
-  "name": "StartRemoteInitiatedFlow",
+  "name": "StartRemotelyInitiatedFlow",
   "namespace": "net.corda.data.flow.event",
   "fields": [
     {
       "name": "message",
-      "type": "net.corda.data.flow.event.P2PMessage"
+      "type": "net.corda.data.flow.event.FlowSessionMessage"
     }
   ]
 }
