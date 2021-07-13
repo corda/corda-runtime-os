@@ -1,0 +1,33 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+}
+
+description 'LinkManager for p2p communication'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    implementation project(":libs:p2p-crypto")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":data:avro-schema")
+    implementation project(":data:topic-schema")
+    implementation project(":libs:lifecycle")
+
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
+    testCompile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    testCompile "org.apache.logging.log4j:log4j-core:$log4jVersion"
+}
