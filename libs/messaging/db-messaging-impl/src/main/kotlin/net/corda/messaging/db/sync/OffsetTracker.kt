@@ -12,6 +12,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantLock
@@ -48,6 +49,8 @@ class OffsetTracker(private val topic: String,
 
     private val waitingList = ConcurrentHashMap<WaitingIdentifier, WaitingData>()
 
+    private var backgroundTask: ScheduledFuture<*>? = null
+
     private var running = false
     private val startStopLock = ReentrantLock()
 
@@ -57,7 +60,7 @@ class OffsetTracker(private val topic: String,
     override fun start() {
         startStopLock.withLock {
             if (!running) {
-                executorService.scheduleWithFixedDelay({
+                backgroundTask = executorService.scheduleWithFixedDelay({
                     /**
                      * there is a very rare case where a publisher might add an offset into the [releasedInvisibleOffsets]
                      * and not advance the offset even though it would be possible
@@ -79,8 +82,7 @@ class OffsetTracker(private val topic: String,
     override fun stop() {
         startStopLock.withLock {
             if (running) {
-                executorService.shutdown()
-                executorService.awaitTermination(periodicChecksInterval.toMillis() * 2, TimeUnit.MILLISECONDS)
+                backgroundTask?.cancel(false)
                 running = false
                 log.debug { "Offset tracker for (topic $topic, partition $partition) stopped." }
             }

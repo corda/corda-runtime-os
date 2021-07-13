@@ -57,6 +57,7 @@ class OffsetTrackersManager(private val dbAccessProvider: DBAccessProvider): Lif
                 offsetTrackerPerTopicPartition.forEach { (_, offsetTrackerPerPartition) ->
                     offsetTrackerPerPartition.forEach { (_, offsetTracker) -> offsetTracker.stop() }
                 }
+                executorService.shutdown()
                 running = false
                 log.debug { "Offset trackers manager stopped." }
             }
