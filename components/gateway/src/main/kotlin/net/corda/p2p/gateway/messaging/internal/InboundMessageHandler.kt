@@ -27,13 +27,13 @@ import java.nio.ByteBuffer
  * This class implements a simple message processor for p2p messages received from other Gateways.
  */
 class InboundMessageHandler(private val server: HttpServer,
-                            private val connectionManager: ConnectionManager,
+//                            private val connectionManager: ConnectionManager,
                             private val publisherFactory: PublisherFactory) : LifeCycle {
 
     private var logger = LoggerFactory.getLogger(InboundMessageHandler::class.java)
     private var inboundMessageListener: Subscription? = null
     private var p2pInPublisher: Publisher? = null
-    private val clientMessageHandlers = mutableListOf<Subscription>()
+//    private val clientMessageHandlers = mutableListOf<Subscription>()
     private var connectionListener: Subscription? = null
 
     private var started = false
@@ -45,10 +45,10 @@ class InboundMessageHandler(private val server: HttpServer,
         val publisherConfig = PublisherConfig(PUBLISHER_ID)
         p2pInPublisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty())
         inboundMessageListener = server.onReceive.subscribe { handleRequestMessage(it) }
-        connectionListener = connectionManager.onNewConnection.subscribe { clientObs ->
-            val clientMessageReceiver = clientObs.subscribe { responseMessageHandler(it) }
-            clientMessageHandlers.add(clientMessageReceiver)
-        }
+//        connectionListener = connectionManager.onNewConnection.subscribe { clientObs ->
+//            val clientMessageReceiver = clientObs.subscribe { responseMessageHandler(it) }
+//            clientMessageHandlers.add(clientMessageReceiver)
+//        }
         started = true
         logger.info("Started P2P message receiver")
     }
@@ -57,7 +57,7 @@ class InboundMessageHandler(private val server: HttpServer,
         started = false
         inboundMessageListener?.unsubscribe()
         inboundMessageListener = null
-        clientMessageHandlers.forEach { it.unsubscribe() }
+//        clientMessageHandlers.forEach { it.unsubscribe() }
         connectionListener?.unsubscribe()
         connectionListener = null
         p2pInPublisher?.close()
@@ -109,31 +109,31 @@ class InboundMessageHandler(private val server: HttpServer,
         }
     }
 
-    /**
-     * Handler for P2P messages sent back as a result of a request. Typically, these responses have no payloads and serve
-     * as an indication of successful receipt on the other end. In case of a session request message, the response will
-     * contain information which then needs to be forwarded to the LinkManager
-     */
-    private fun responseMessageHandler(message: ResponseMessage) {
-        logger.info("Processing response message from ${message.source} with status $${message.statusCode}")
-        if (HttpResponseStatus.OK == message.statusCode) {
-            // response messages should have empty payloads unless they are part of the initial session handshake
-            if (message.payload.isNotEmpty()) {
-                try {
-                    // Attempt to deserialize as an early check. Shouldn't forward unrecognised message types
-                    LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
-                    val record = Record(P2P_IN_TOPIC, "key", message)
-                    p2pInPublisher?.publish(listOf(record))
-                } catch (e: IOException) {
-                    logger.warn("Invalid message received. Cannot deserialize")
-                    logger.debug(e.stackTraceToString())
-                }
-            }
-        } else {
-            logger.warn("Something went wrong with peer processing an outbound message. Peer response status ${message.statusCode}")
-        }
-
-        message.release()
-    }
+//    /**
+//     * Handler for P2P messages sent back as a result of a request. Typically, these responses have no payloads and serve
+//     * as an indication of successful receipt on the other end. In case of a session request message, the response will
+//     * contain information which then needs to be forwarded to the LinkManager
+//     */
+//    private fun responseMessageHandler(message: ResponseMessage) {
+//        logger.info("Processing response message from ${message.source} with status $${message.statusCode}")
+//        if (HttpResponseStatus.OK == message.statusCode) {
+//            // response messages should have empty payloads unless they are part of the initial session handshake
+//            if (message.payload.isNotEmpty()) {
+//                try {
+//                    // Attempt to deserialize as an early check. Shouldn't forward unrecognised message types
+//                    LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
+//                    val record = Record(P2P_IN_TOPIC, "key", message)
+//                    p2pInPublisher?.publish(listOf(record))
+//                } catch (e: IOException) {
+//                    logger.warn("Invalid message received. Cannot deserialize")
+//                    logger.debug(e.stackTraceToString())
+//                }
+//            }
+//        } else {
+//            logger.warn("Something went wrong with peer processing an outbound message. Peer response status ${message.statusCode}")
+//        }
+//
+//        message.release()
+//    }
 
 }

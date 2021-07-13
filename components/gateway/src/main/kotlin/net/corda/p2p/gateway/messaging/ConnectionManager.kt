@@ -73,6 +73,7 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
 
     override fun start() {
         sharedEventLoopGroup = NioEventLoopGroup(4)
+        started = true
     }
 
     override fun stop() {
@@ -153,7 +154,7 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
     fun activeConnectionsForHost(remoteAddress: NetworkHostAndPort) =
         connectionPool.asMap()
             .entries
-            .filter { e -> e.key == remoteAddress }
+            .filter { e -> e.key == remoteAddress && e.value?.connected!! }
             .size
 
     private val _onNewConnection = PublishSubject.create<Observable<ResponseMessage>>().toSerialized()

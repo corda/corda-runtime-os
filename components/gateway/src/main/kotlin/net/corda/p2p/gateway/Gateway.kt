@@ -60,7 +60,7 @@ class Gateway(address: NetworkHostAndPort,
     private val httpServer = HttpServer(address, sslConfig)
     private val connectionManager = ConnectionManager(sslConfig)
     private var p2pMessageSubscription: Subscription<String, LinkOutMessage>
-    private val inboundMessageProcessor = InboundMessageHandler(httpServer, connectionManager, publisherFactory)
+    private val inboundMessageProcessor = InboundMessageHandler(httpServer, publisherFactory)
 
     private var started = false
     override val isRunning: Boolean
@@ -69,7 +69,7 @@ class Gateway(address: NetworkHostAndPort,
     init {
         val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, P2P_OUT_TOPIC)
         p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
-            OutboundMessageHandler(connectionManager),
+            OutboundMessageHandler(connectionManager, publisherFactory),
             ConfigFactory.empty(),
             PartitionAssignmentListenerImpl())
     }

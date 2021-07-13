@@ -161,6 +161,7 @@ class GatewayTest {
                 it.onReceive.subscribe { rcv ->
                     val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(rcv.payload))
                     assertEquals("Target-${serverAddresses[id]}", String((p2pMessage.payload as AuthenticatedDataMessage).payload.array()))
+                    it.write(HttpResponseStatus.OK, ByteArray(0), rcv.source)
                     deliveryLatch.countDown()
                 }
                 it.start()
