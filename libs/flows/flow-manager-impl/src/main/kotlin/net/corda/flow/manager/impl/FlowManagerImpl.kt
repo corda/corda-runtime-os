@@ -5,7 +5,7 @@ import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.event.FlowSessionMessage
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
-import net.corda.v5.application.flows.StateMachineRunId
+import net.corda.v5.application.flows.FlowId
 import net.corda.v5.application.identity.Party
 import net.corda.v5.application.services.IdentityService
 import net.corda.v5.application.services.persistence.PersistenceService
@@ -36,7 +36,7 @@ class FlowManagerImpl : FlowManager {
         get() = TODO("Not yet implemented")
 
     override fun startInitiatingFlow(
-        newFlowId: StateMachineRunId,
+        newFlowId: FlowId,
         clientId: String,
         flowName: String,
         args: List<Any?>
@@ -45,7 +45,7 @@ class FlowManagerImpl : FlowManager {
     }
 
     override fun startRemoteInitiatedFlow(
-        newFlowId: StateMachineRunId,
+        newFlowId: FlowId,
         flowSessionMessage: FlowSessionMessage
     ): FlowResult {
         TODO("Not yet implemented")
