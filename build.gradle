@@ -8,6 +8,35 @@ buildscript {
             url "$artifactoryContextUrl/corda-releases"
         }
     }
+    ext {
+        // Remember where our Java executable lives (until Bnd supports Gradle toolchains).
+        javaExecutable = file("${System.getProperty('java.home')}/bin/java")
+
+        // Global configuration for our quasar-utils Gradle plugin.
+        quasar_suspendable_annotation = "net.corda.v5.base.annotations.Suspendable"
+        quasar_group = 'co.paralleluniverse'
+        quasar_version = quasarVersion
+        quasar_exclusions = [
+                'co.paralleluniverse**',
+                'com.esotericsoftware.**',
+                'jdk**',
+                'junit**',
+                'kotlin**',
+                'net.rubygrapefruit.**',
+                'org.gradle.**',
+                'org.apache.**',
+                'org.jacoco.**',
+                'org.junit**',
+                'org.slf4j**',
+                'worker.org.gradle.**',
+                'com.nhaarman.mockito_kotlin**',
+                'org.assertj**',
+                'org.hamcrest**',
+                'org.mockito**',
+                'org.opentest4j**',
+                'org.eclipse**'
+        ]
+    }
 }
 
 plugins {

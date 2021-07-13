@@ -35,5 +35,7 @@ dependencies {
 
 }
 
+project.tasks.each {println(it)}
+
 description 'Demo Application'
 
