@@ -5,7 +5,6 @@ import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.event.FlowSessionMessage
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
-import net.corda.internal.di.DependencyInjectionService
 import net.corda.v5.application.flows.StateMachineRunId
 import net.corda.v5.application.identity.Party
 import net.corda.v5.application.services.IdentityService
@@ -26,8 +25,6 @@ class FlowManagerImpl : FlowManager {
     val checkpointSerialisationService: SerializationService
         get() = TODO("Not yet implemented")
     val persistenceService: PersistenceService
-        get() = TODO("Not yet implemented")
-    val dependencyInjector: DependencyInjectionService
         get() = TODO("Not yet implemented")
     val ourIdentity: Party
         get() = TODO("Not yet implemented")
