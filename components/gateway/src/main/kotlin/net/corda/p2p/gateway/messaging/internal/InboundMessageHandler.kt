@@ -72,7 +72,7 @@ class InboundMessageHandler(private val server: HttpServer,
         var responseBytes = ByteArray(0)
         var statusCode = message.response.status()
         try {
-            logger.info("Processing request message from ${message.source}")
+            logger.debug("Processing request message from ${message.source}")
             val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
             val record = when (p2pMessage.payload) {
                 is InitiatorHelloMessage -> {
@@ -97,7 +97,7 @@ class InboundMessageHandler(private val server: HttpServer,
                     Record(P2P_IN_TOPIC, "key", p2pMessage)
                 }
             }
-            logger.info("Received message of type ${p2pMessage.schema.name}")
+            logger.debug("Received message of type ${p2pMessage.schema.name}")
             p2pInPublisher?.publish(listOf(record))
         } catch (e: IOException) {
             logger.warn("Invalid message received. Cannot deserialize")

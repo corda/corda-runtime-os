@@ -176,7 +176,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
         } else {
             val request = HttpHelper.createRequest(message, destination)
             channel.writeAndFlush(request)
-            logger.info("Sent HTTP request $request")
+            logger.debug("Sent HTTP request $request")
         }
     }
 

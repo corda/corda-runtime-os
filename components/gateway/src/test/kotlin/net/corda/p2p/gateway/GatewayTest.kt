@@ -206,6 +206,16 @@ class GatewayTest {
             topicServiceBob!!.addRecords(listOf(Record(P2P_OUT_TOPIC, "key", msg)))
         }
 
+        val receivedLatch = CountDownLatch(messageCount * 2)
+        (topicServiceAlice as TopicServiceStub).onPublish.subscribe { records ->
+            val inRecords = records.filter { it.topic == P2P_IN_TOPIC }
+            if (inRecords.isNotEmpty()) receivedLatch.countDown()
+        }
+        (topicServiceBob as TopicServiceStub).onPublish.subscribe { records ->
+            val inRecords = records.filter { it.topic == P2P_IN_TOPIC }
+            if (inRecords.isNotEmpty()) receivedLatch.countDown()
+        }
+
         val startTime = Instant.now().toEpochMilli()
         val barrier = CountDownLatch(1)
         // Start the gateways
@@ -230,27 +240,6 @@ class GatewayTest {
             bob.stop()
         }
 
-        val receivedLatch = CountDownLatch(messageCount * 2)
-        (topicServiceAlice as TopicServiceStub).onPublish.subscribe { records ->
-            records.forEach { record ->
-                if (record.topic == P2P_IN_TOPIC) {
-                    val p2pMessage = record.value as LinkInMessage
-                    val payload = p2pMessage.payload as AuthenticatedDataMessage
-                    assertEquals("Target-$aliceGatewayAddress", String(payload.payload.array()))
-                    receivedLatch.countDown()
-                }
-            }
-        }
-        (topicServiceBob as TopicServiceStub).onPublish.subscribe { records ->
-            records.forEach { record ->
-                if (record.topic == P2P_IN_TOPIC) {
-                    val p2pMessage = record.value as LinkInMessage
-                    val payload = p2pMessage.payload as AuthenticatedDataMessage
-                    assertEquals("Target-$bobGatewayAddress", String(payload.payload.array()))
-                    receivedLatch.countDown()
-                }
-            }
-        }
         receivedLatch.await()
         barrier.countDown()
         val endTime = Instant.now().toEpochMilli()

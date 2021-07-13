@@ -67,6 +67,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                             }
                             client.send(message.toByteBuffer().array())
                             if (!responseBarrier.await(10000, TimeUnit.MILLISECONDS)) {
+                                println("RESCHEDULING")
                                 logger.info("Response from ${entry.key} has not arrived in time. Scheduling for retry")
                                 // If the response has not arrived in the specified time, the message
                                 // is queued for redelivery
@@ -84,7 +85,10 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                 }
 
                 // Schedule any pending re-tries
-                Executors.newSingleThreadScheduledExecutor().schedule({ resend(messagesToRetry) }, 5000L, TimeUnit.MILLISECONDS).get()
+                if (messagesToRetry.size > 0) {
+                    Executors.newSingleThreadScheduledExecutor()
+                        .schedule({ resend(messagesToRetry) }, 5000L, TimeUnit.MILLISECONDS).get()
+                }
             })
         }
 
@@ -96,7 +100,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
     private fun resend(messages: LinkedList<Pair<NetworkHostAndPort, LinkInMessage>>) {
         messages.forEach { (target, message) ->
             try {
-                logger.info("Retrying deliver of message to target $target")
+                logger.info("Retrying delivery of message to target $target")
                 val client = connectionPool.acquire(target)
                 val responseBarrier = CountDownLatch(1)
                 val responseSub = client.onReceive.subscribe { response ->
@@ -120,7 +124,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
      * contain information which then needs to be forwarded to the LinkManager
      */
     private fun responseMessageHandler(message: ResponseMessage) {
-        logger.info("Processing response message from ${message.source} with status $${message.statusCode}")
+        logger.debug("Processing response message from ${message.source} with status $${message.statusCode}")
         if (HttpResponseStatus.OK == message.statusCode) {
             // response messages should have empty payloads unless they are part of the initial session handshake
             if (message.payload.isNotEmpty()) {
