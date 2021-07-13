@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT DIRECTLY
  */
-package net.corda.data.identity;
+package net.corda.p2p;
 
 import org.apache.avro.message.BinaryMessageDecoder;
 import org.apache.avro.message.BinaryMessageEncoder;
@@ -12,8 +12,8 @@ import org.apache.avro.specific.SpecificData;
 
 @org.apache.avro.specific.AvroGenerated
 public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 595688020675674952L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.data.identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
+  private static final long serialVersionUID = 4376517469381981226L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.p2p\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -148,8 +148,8 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
    * Creates a new HoldingIdentity RecordBuilder.
    * @return A new HoldingIdentity RecordBuilder
    */
-  public static net.corda.data.identity.HoldingIdentity.Builder newBuilder() {
-    return new net.corda.data.identity.HoldingIdentity.Builder();
+  public static net.corda.p2p.HoldingIdentity.Builder newBuilder() {
+    return new net.corda.p2p.HoldingIdentity.Builder();
   }
 
   /**
@@ -157,11 +157,11 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
    * @param other The existing builder to copy.
    * @return A new HoldingIdentity RecordBuilder
    */
-  public static net.corda.data.identity.HoldingIdentity.Builder newBuilder(net.corda.data.identity.HoldingIdentity.Builder other) {
+  public static net.corda.p2p.HoldingIdentity.Builder newBuilder(net.corda.p2p.HoldingIdentity.Builder other) {
     if (other == null) {
-      return new net.corda.data.identity.HoldingIdentity.Builder();
+      return new net.corda.p2p.HoldingIdentity.Builder();
     } else {
-      return new net.corda.data.identity.HoldingIdentity.Builder(other);
+      return new net.corda.p2p.HoldingIdentity.Builder(other);
     }
   }
 
@@ -170,11 +170,11 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
    * @param other The existing instance to copy.
    * @return A new HoldingIdentity RecordBuilder
    */
-  public static net.corda.data.identity.HoldingIdentity.Builder newBuilder(net.corda.data.identity.HoldingIdentity other) {
+  public static net.corda.p2p.HoldingIdentity.Builder newBuilder(net.corda.p2p.HoldingIdentity other) {
     if (other == null) {
-      return new net.corda.data.identity.HoldingIdentity.Builder();
+      return new net.corda.p2p.HoldingIdentity.Builder();
     } else {
-      return new net.corda.data.identity.HoldingIdentity.Builder(other);
+      return new net.corda.p2p.HoldingIdentity.Builder(other);
     }
   }
 
@@ -197,7 +197,7 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
      * Creates a Builder by copying an existing Builder.
      * @param other The existing Builder to copy.
      */
-    private Builder(net.corda.data.identity.HoldingIdentity.Builder other) {
+    private Builder(net.corda.p2p.HoldingIdentity.Builder other) {
       super(other);
       if (isValidValue(fields()[0], other.x500Name)) {
         this.x500Name = data().deepCopy(fields()[0].schema(), other.x500Name);
@@ -213,7 +213,7 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
      * Creates a Builder by copying an existing HoldingIdentity instance
      * @param other The existing instance to copy.
      */
-    private Builder(net.corda.data.identity.HoldingIdentity other) {
+    private Builder(net.corda.p2p.HoldingIdentity other) {
       super(SCHEMA$);
       if (isValidValue(fields()[0], other.x500Name)) {
         this.x500Name = data().deepCopy(fields()[0].schema(), other.x500Name);
@@ -239,7 +239,7 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
       * @param value The value of 'x500Name'.
       * @return This builder.
       */
-    public net.corda.data.identity.HoldingIdentity.Builder setX500Name(java.lang.String value) {
+    public net.corda.p2p.HoldingIdentity.Builder setX500Name(java.lang.String value) {
       validate(fields()[0], value);
       this.x500Name = value;
       fieldSetFlags()[0] = true;
@@ -259,7 +259,7 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
       * Clears the value of the 'x500Name' field.
       * @return This builder.
       */
-    public net.corda.data.identity.HoldingIdentity.Builder clearX500Name() {
+    public net.corda.p2p.HoldingIdentity.Builder clearX500Name() {
       x500Name = null;
       fieldSetFlags()[0] = false;
       return this;
@@ -279,7 +279,7 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
       * @param value The value of 'groupId'.
       * @return This builder.
       */
-    public net.corda.data.identity.HoldingIdentity.Builder setGroupId(java.lang.String value) {
+    public net.corda.p2p.HoldingIdentity.Builder setGroupId(java.lang.String value) {
       validate(fields()[1], value);
       this.groupId = value;
       fieldSetFlags()[1] = true;
@@ -299,7 +299,7 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
       * Clears the value of the 'groupId' field.
       * @return This builder.
       */
-    public net.corda.data.identity.HoldingIdentity.Builder clearGroupId() {
+    public net.corda.p2p.HoldingIdentity.Builder clearGroupId() {
       groupId = null;
       fieldSetFlags()[1] = false;
       return this;

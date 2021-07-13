@@ -19,6 +19,7 @@ net.corda.data.identity.HoldingIdentity
 net.corda.data.test.EvolvedMessage
 net.corda.p2p.FlowMessage
 net.corda.p2p.FlowMessageHeader
+net.corda.p2p.HoldingIdentity
 net.corda.p2p.LinkInMessage
 net.corda.p2p.LinkOutHeader
 net.corda.p2p.LinkOutMessage
