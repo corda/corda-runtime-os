@@ -7,23 +7,26 @@ import org.apache.logging.log4j.core.LoggerContext
 import org.apache.logging.log4j.core.appender.AbstractAppender
 import org.junit.jupiter.api.Assertions.assertEquals
 
-class LoggingInterceptor private constructor(private var testAppender: TestAppender) {
+class LoggingInterceptor private constructor(private val testAppender: TestAppender) {
 
     companion object {
+
         fun setupLogging(): LoggingInterceptor {
-            LogManager.shutdown()
             val context = LogManager.getContext(false) as LoggerContext
+            context.reconfigure()
             val configuration = context.configuration
             val testAppender = TestAppender()
-            testAppender.start()
+
             configuration.rootLogger.addAppender(testAppender, null, null)
             configuration.rootLogger.level = Level.TRACE
             context.updateLoggers()
+            testAppender.start()
             return LoggingInterceptor(testAppender)
         }
     }
 
     private class TestAppender: AbstractAppender("TestAppender", null, null, false, null) {
+
         val messages = mutableListOf<String>()
         val levels = mutableListOf<Level>()
 

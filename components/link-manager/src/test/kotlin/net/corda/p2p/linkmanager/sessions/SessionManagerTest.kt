@@ -30,12 +30,12 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLink
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import java.nio.ByteBuffer
@@ -92,7 +92,7 @@ class SessionManagerTest {
 
     }
 
-    @BeforeEach
+    @AfterEach
     fun resetLogging() {
         loggingInterceptor.reset()
     }

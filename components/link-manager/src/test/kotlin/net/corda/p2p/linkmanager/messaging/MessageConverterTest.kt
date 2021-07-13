@@ -11,8 +11,10 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.LinkManagerTest
+import net.corda.p2p.linkmanager.LinkManagerTest.Companion.complexMockFlowMessage
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.createSessionPair
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -38,7 +40,7 @@ class MessageConverterTest {
         }
     }
 
-    @BeforeEach
+    @AfterEach
     fun resetLogging() {
         loggingInterceptor.reset()
     }
@@ -73,7 +75,7 @@ class MessageConverterTest {
         val peer = HoldingIdentity("Imposter", "")
         val networkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(networkMap.getMemberInfo(any())).thenReturn(null)
-        val flowMessage = LinkManagerTest().complexMockFlowMessage(HoldingIdentity("", ""), peer, ByteBuffer.wrap("DATA".toByteArray()))
+        val flowMessage = complexMockFlowMessage(HoldingIdentity("", ""), peer, ByteBuffer.wrap("DATA".toByteArray()))
         assertNull(MessageConverter.createLinkOutMessageFromFlowMessage(flowMessage, session, networkMap))
         loggingInterceptor.assertSingleWarning("Attempted to send message to peer $peer which is not in the network map." +
                 " The message was discarded.")
@@ -92,7 +94,7 @@ class MessageConverterTest {
                 LinkManagerNetworkMap.EndPoint("")
             )
         )
-        val flowMessage = LinkManagerTest().complexMockFlowMessage(us, peer, ByteBuffer.wrap("DATA".toByteArray()))
+        val flowMessage = complexMockFlowMessage(us, peer, ByteBuffer.wrap("DATA".toByteArray()))
         assertNull(MessageConverter.createLinkOutMessageFromFlowMessage(flowMessage, session, networkMap))
         loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for our identity = $us." +
             " The message was discarded.")

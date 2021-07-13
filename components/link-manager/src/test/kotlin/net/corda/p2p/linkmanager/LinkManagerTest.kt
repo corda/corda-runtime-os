@@ -29,13 +29,13 @@ import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import java.lang.RuntimeException
@@ -113,9 +113,21 @@ class LinkManagerTest {
             initiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
             return SessionPair(initiator.getSession(), responder.getSession())
         }
+
+        fun complexMockFlowMessage(source: HoldingIdentity, dest: HoldingIdentity, data: ByteBuffer): FlowMessage {
+            val mockHeader = Mockito.mock(FlowMessageHeader::class.java)
+            Mockito.`when`(mockHeader.source).thenReturn(source)
+            Mockito.`when`(mockHeader.destination).thenReturn(dest)
+
+            val mockFlowMessage = Mockito.mock(FlowMessage::class.java)
+            Mockito.`when`(mockFlowMessage.toByteBuffer()).thenReturn(data)
+            Mockito.`when`(mockFlowMessage.header).thenReturn(mockHeader)
+
+            return mockFlowMessage
+        }
     }
 
-    @BeforeEach
+    @AfterEach
     fun resetLogging() {
         loggingInterceptor.reset()
     }
@@ -138,23 +150,11 @@ class LinkManagerTest {
         }
     }
 
-    fun simpleMockFlowMessage(source: HoldingIdentity, dest: HoldingIdentity, data: String): FlowMessage {
+    private fun simpleMockFlowMessage(source: HoldingIdentity, dest: HoldingIdentity, data: String): FlowMessage {
         val mockHeader = Mockito.mock(FlowMessageHeader::class.java)
         Mockito.`when`(mockHeader.source).thenReturn(source)
         Mockito.`when`(mockHeader.destination).thenReturn(dest)
         return FlowMessage(mockHeader, ByteBuffer.wrap(data.toByteArray()))
-    }
-
-    fun complexMockFlowMessage(source: HoldingIdentity, dest: HoldingIdentity, data: ByteBuffer): FlowMessage {
-        val mockHeader = Mockito.mock(FlowMessageHeader::class.java)
-        Mockito.`when`(mockHeader.source).thenReturn(source)
-        Mockito.`when`(mockHeader.destination).thenReturn(dest)
-
-        val mockFlowMessage = Mockito.mock(FlowMessage::class.java)
-        Mockito.`when`(mockFlowMessage.toByteBuffer()).thenReturn(data)
-        Mockito.`when`(mockFlowMessage.header).thenReturn(mockHeader)
-
-        return mockFlowMessage
     }
 
     private fun initiatorHelloLinkInMessage() : LinkInMessage {
