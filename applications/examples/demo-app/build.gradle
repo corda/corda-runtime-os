@@ -1,3 +1,8 @@
+plugins {
+    id 'corda.publish'
+    id 'corda.common-app'
+}
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
@@ -32,5 +37,3 @@ dependencies {
 
 description 'Demo Application'
 
-apply plugin: 'corda.common-app'
-apply plugin: 'corda.publish'

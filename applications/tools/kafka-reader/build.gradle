@@ -1,4 +1,5 @@
 plugins {
+    id 'corda.publish'
     id 'corda.common-app'
 }
 
@@ -30,5 +31,3 @@ dependencies {
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 
 }
-
-apply plugin: 'corda.publish'
