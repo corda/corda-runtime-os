@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "FlowEvent",
+  "namespace": "net.corda.data.flow.event",
+  "fields": [
+    {
+      "name": "flowKey",
+      "type": "net.corda.data.flow.FlowKey"
+    },
+    {
+      "name": "payload",
+      "type": [
+        "net.corda.data.flow.event.FlowSessionMessage",
+        "net.corda.data.flow.event.RemoteFlowError",
+        "net.corda.data.flow.event.StartRemotelyInitiatedFlow",
+        "net.corda.data.flow.event.StartRPCFlow",
+        "net.corda.data.flow.event.Wakeup"
+      ]
+    }
+  ]
+}
