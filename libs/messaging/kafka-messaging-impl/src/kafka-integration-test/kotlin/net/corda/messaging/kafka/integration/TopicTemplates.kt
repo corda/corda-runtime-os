@@ -14,6 +14,15 @@ class TopicTemplates {
                 "    }\n" +
                 "]"
 
+        const val DURABLE_TOPIC1  = "DurableTopic1"
+        const val DURABLE_TOPIC1_TEMPLATE = "topics = [" +
+                "    {\n" +
+                "        topicName = \"${DURABLE_TOPIC1}\"\n" +
+                "        numPartitions = 2\n" +
+                "        replicationFactor = 3\n" +
+                "    }\n" +
+                "]"
+
         const val EVENT_TOPIC1  = "EventTopic1"
         const val EVENT_TOPIC1_TEMPLATE = "topics = [" +
                 "    {\n" +
@@ -57,6 +66,23 @@ class TopicTemplates {
                 "    },\n" +
                 "    {\n" +
                 "        topicName = \"$EVENT_TOPIC3.state\"\n" +
+                "        numPartitions = 2\n" +
+                "        replicationFactor = 3\n" +
+                "        config {\n" +
+                "            cleanup.policy=compact\n" +
+                "        }\n" +
+                "    }\n" +
+                "]"
+
+        const val EVENT_TOPIC4  = "EventTopic4"
+        const val EVENT_TOPIC4_TEMPLATE = "topics = [" +
+                "    {\n" +
+                "        topicName = \"$EVENT_TOPIC4\"\n" +
+                "        numPartitions = 2\n" +
+                "        replicationFactor = 3\n" +
+                "    },\n" +
+                "    {\n" +
+                "        topicName = \"$EVENT_TOPIC4.state\"\n" +
                 "        numPartitions = 2\n" +
                 "        replicationFactor = 3\n" +
                 "        config {\n" +
