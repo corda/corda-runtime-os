@@ -66,8 +66,7 @@ class CordaKafkaPublisherImpl(
         //Only allow keys as string for now. see CORE-1367
         records.forEach {
             if (it.key.javaClass != String::class.java) {
-                val future = CompletableFuture<Unit>()
-                future.completeExceptionally(CordaMessageAPIFatalException("Unsupported Key type, use a String."))
+                val future = CompletableFuture.failedFuture<Unit>(CordaMessageAPIFatalException("Unsupported Key type, use a String."))
                 return listOf(future)
             }
         }
@@ -77,6 +76,25 @@ class CordaKafkaPublisherImpl(
             futures.add(publishTransaction(records))
         } else {
             publishRecordsAsync(records, futures)
+        }
+
+        return futures
+    }
+
+    override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
+        //Only allow keys as string for now. see CORE-1367
+        records.forEach { (_, record) ->
+            if (record.key.javaClass != String::class.java) {
+                val future = CompletableFuture.failedFuture<Unit>(CordaMessageAPIFatalException("Unsupported Key type, use a String."))
+                return listOf(future)
+            }
+        }
+
+        val futures = mutableListOf<CompletableFuture<Unit>>()
+        if (transactionalId != null) {
+            futures.add(publishTransactionWithPartitions(records))
+        } else {
+            publishRecordsToPartitionsAsync(records, futures)
         }
 
         return futures
@@ -96,40 +114,71 @@ class CordaKafkaPublisherImpl(
     }
 
     /**
+     * Publish provided list of records to specific partitions asynchronously with results stored in [futures].
+     */
+    private fun publishRecordsToPartitionsAsync(recordsWithPartitions: List<Pair<Int, Record<*, *>>>,
+                                                futures: MutableList<CompletableFuture<Unit>>) {
+        recordsWithPartitions.forEach { (partition, record) ->
+            val fut = CompletableFuture<Unit>()
+            futures.add(fut)
+            cordaKafkaProducer.send(ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value)) { _, ex ->
+                setFutureFromResponse(ex, fut, record.topic)
+            }
+        }
+    }
+
+    /**
      * Send list of [records] as a transaction. It is not necessary to handle exceptions for each send in a transaction
      * as this is handled by the [KafkaProducer] commitTransaction operation. commitTransaction will execute all sends synchronously
      * and will fail to send all if any individual sends fail
      * Set the [future] with the result of the transaction.
      * @return future set to true if transaction was successful.
      */
-    @Suppress("TooGenericExceptionCaught")
     private fun publishTransaction(records: List<Record<*, *>>): CompletableFuture<Unit> {
-        val fut = CompletableFuture<Unit>()
-
-        try {
+        return executeInTransaction { future ->
             cordaKafkaProducer.beginTransaction()
             cordaKafkaProducer.sendRecords(records)
             cordaKafkaProducer.tryCommitTransaction()
-            fut.complete(Unit)
+            future.complete(Unit)
+        }
+    }
 
+    /**
+     * Same as [publishTransaction] but publishing records to specific partitions.
+     */
+    private fun publishTransactionWithPartitions(recordsWithPartitions: List<Pair<Int, Record<*, *>>>): CompletableFuture<Unit> {
+        return executeInTransaction { future ->
+            cordaKafkaProducer.beginTransaction()
+            cordaKafkaProducer.sendRecordsToPartitions(recordsWithPartitions)
+            cordaKafkaProducer.tryCommitTransaction()
+            future.complete(Unit)
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun executeInTransaction(block: (CompletableFuture<Unit>) -> Unit): CompletableFuture<Unit> {
+        val future = CompletableFuture<Unit>()
+
+        try {
+            block(future)
         } catch (ex: Exception) {
             when (ex) {
                 is CordaMessageAPIIntermittentException -> {
                     logErrorAndSetFuture(
                         "Kafka producer clientId $clientId, instanceId $transactionalId, " +
-                                "failed to send", ex, fut, false
+                                "failed to send", ex, future, false
                     )
                 }
                 else -> {
                     logErrorAndSetFuture(
                         "Kafka producer clientId $clientId, instanceId $transactionalId, " +
-                                "failed to send", ex, fut, true
+                                "failed to send", ex, future, true
                     )
                 }
             }
         }
 
-        return fut
+        return future
     }
 
     /**
@@ -196,8 +245,5 @@ class CordaKafkaPublisherImpl(
         }
     }
 
-    override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-        TODO("Not yet implemented")
-    }
 }
 

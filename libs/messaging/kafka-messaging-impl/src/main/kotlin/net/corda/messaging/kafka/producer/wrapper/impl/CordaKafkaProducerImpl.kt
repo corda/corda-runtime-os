@@ -60,6 +60,12 @@ class CordaKafkaProducerImpl(
         }
     }
 
+    override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, Record<*, *>>>) {
+        for ((partition, record) in recordsWithPartitions) {
+            producer.send(ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value))
+        }
+    }
+
     override fun beginTransaction() {
         try {
             producer.beginTransaction()

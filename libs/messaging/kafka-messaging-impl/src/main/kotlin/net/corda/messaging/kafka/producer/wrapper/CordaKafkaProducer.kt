@@ -12,6 +12,13 @@ interface CordaKafkaProducer : AutoCloseable, Producer<Any, Any> {
     fun sendRecords(records: List<Record<*, *>>)
 
     /**
+     * Send the records to the specified partitions.
+     *
+     * @param recordsWithPartitions a list of pairs, where the second element is the record and the first is the partition to be sent to.
+     */
+    fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, Record<*, *>>>)
+
+    /**
      * Send the [consumer] offsets of the records consumed back to kafka.
      * @throws CordaMessageAPIFatalException Fatal error
      * @throws CordaMessageAPIIntermittentException Retryable error
