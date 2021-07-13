@@ -2,20 +2,37 @@ package net.corda.flow.statemachine
 
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.FlowId
 import net.corda.v5.application.flows.FlowSession
-import net.corda.v5.application.flows.FlowStackSnapshot
-import net.corda.v5.application.flows.StateMachineRunId
 import net.corda.v5.application.identity.Party
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.serialization.SerializedBytes
 import org.slf4j.Logger
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
+
+
+/**
+ * Main data object representing snapshot of the flow stack, extracted from the Quasar stack.
+ */
+data class FlowStackSnapshot(
+    val time: Instant,
+    val flowClass: String,
+    val stackFrames: List<Frame>
+) {
+    data class Frame(
+        val stackTraceElement: StackTraceElement, // This should be the call that *pushed* the frame of [objects]
+        val stackObjects: List<Any?>
+    ) {
+        override fun toString(): String = stackTraceElement.toString()
+    }
+}
 
 @DoNotImplement
 interface FlowStateMachineHandle<FLOWRETURN> {
     val logic: Flow<FLOWRETURN>?
-    val id: StateMachineRunId
+    val id: FlowId
     val resultFuture: CompletableFuture<FLOWRETURN>
     val clientId: String?
 }

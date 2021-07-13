@@ -4,12 +4,12 @@ package net.corda.flow.statemachine.impl
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.flow.statemachine.FlowIORequest
+import net.corda.flow.statemachine.FlowStackSnapshot
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.FlowId
 import net.corda.v5.application.flows.FlowSession
-import net.corda.v5.application.flows.FlowStackSnapshot
-import net.corda.v5.application.flows.StateMachineRunId
 import net.corda.v5.application.identity.Party
 import net.corda.v5.serialization.SerializedBytes
 import org.slf4j.Logger
@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture
 @Suppress("LongParameterList")
 class FlowStateMachineImpl<R>(
     override val clientId: String?,
-    override val id: StateMachineRunId,
+    override val id: FlowId,
     override val logic: Flow<R>,
     scheduler: FiberScheduler,
     override val creationTime: Long = System.currentTimeMillis(), override val ourSenderUUID: String?,
