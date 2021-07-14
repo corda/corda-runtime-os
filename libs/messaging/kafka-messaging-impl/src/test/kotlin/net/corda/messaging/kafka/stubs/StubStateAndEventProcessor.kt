@@ -6,19 +6,21 @@ import java.util.concurrent.CountDownLatch
 
 class StubStateAndEventProcessor(
     private val latch: CountDownLatch? = null,
-    private val exception: Exception? = null
+    private val exceptionOnFirstCall: Exception? = null
 ) : StateAndEventProcessor<String, String, String> {
 
+    var exceptionThrown = false
     val inputs = mutableListOf<Pair<String?, Record<String, String>>>()
     override fun onNext(
         state: String?,
         event: Record<String, String>
     ): StateAndEventProcessor.Response<String> {
+        if (!exceptionThrown && exceptionOnFirstCall != null) {
+            exceptionThrown = true
+            throw exceptionOnFirstCall
+        }
         latch?.countDown()
 
-        if (exception != null) {
-            throw exception
-        }
         val outState = "state${latch?.count}"
         inputs.add(Pair(outState, event))
         return StateAndEventProcessor.Response(outState, listOf(Record(event.topic, event.key, "response to $state")))

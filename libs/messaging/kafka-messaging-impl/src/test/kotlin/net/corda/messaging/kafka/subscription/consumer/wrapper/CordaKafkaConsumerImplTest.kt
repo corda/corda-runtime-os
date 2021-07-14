@@ -27,6 +27,7 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.errors.FencedInstanceIdException
 import org.apache.kafka.common.errors.TimeoutException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -84,6 +85,38 @@ class CordaKafkaConsumerImplTest {
         )
 
         cordaKafkaConsumer.poll()
+        verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
+    }
+
+    @Test
+    fun testPollFatal() {
+        consumer = mock()
+        cordaKafkaConsumer = CordaKafkaConsumerImpl(
+            kafkaConfig,
+            consumer,
+            listener
+        )
+
+        doThrow(FencedInstanceIdException("")).whenever(consumer).poll(Mockito.any(Duration::class.java))
+        assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
+            cordaKafkaConsumer.poll()
+        }
+        verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
+    }
+
+    @Test
+    fun testPollIntermittent() {
+        consumer = mock()
+        cordaKafkaConsumer = CordaKafkaConsumerImpl(
+            kafkaConfig,
+            consumer,
+            listener
+        )
+
+        doThrow(KafkaException()).whenever(consumer).poll(Mockito.any(Duration::class.java))
+        assertThatExceptionOfType(CordaMessageAPIIntermittentException::class.java).isThrownBy {
+            cordaKafkaConsumer.poll()
+        }
         verify(consumer, times(1)).poll(Mockito.any(Duration::class.java))
     }
 
