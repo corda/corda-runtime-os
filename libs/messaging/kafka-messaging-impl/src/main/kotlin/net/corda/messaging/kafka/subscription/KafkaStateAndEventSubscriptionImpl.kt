@@ -146,14 +146,14 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 producer = builder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 stateConsumer = builder.createStateConsumer(config.getConfig(STATE_CONSUMER))
                 eventConsumer = builder.createEventConsumer(config.getConfig(EVENT_CONSUMER), this)
-                validateConsumers(stateConsumer, eventConsumer)
+                validateConsumers()
 
                 stateConsumer.assign(emptyList())
                 eventConsumer.subscribeToTopic()
 
                 while (!stopped) {
                     updateStates()
-                    processEvents(eventConsumer, producer)
+                    processEvents()
                 }
             } catch (ex: Exception) {
                 when (ex) {
@@ -184,7 +184,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         stateConsumer.close(consumerCloseTimeout)
     }
 
-    private fun validateConsumers(stateConsumer: CordaKafkaConsumer<K, S>, eventConsumer: CordaKafkaConsumer<K, E>) {
+    private fun validateConsumers() {
         val statePartitions = stateConsumer.getPartitions(stateTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
         val eventPartitions = eventConsumer.getPartitions(eventTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
         if (statePartitions.size != eventPartitions.size) {
@@ -246,31 +246,27 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun processEvents(eventConsumer: CordaKafkaConsumer<K, E>, producer: CordaKafkaProducer) {
+    private fun processEvents() {
         var attempts = 0
         var pollAndProcessSuccessful = false
         var record: Record<K, E>? = null
         while (!pollAndProcessSuccessful) {
             try {
-                val events = eventConsumer.poll()
-                for (event in events) {
+                for (event in eventConsumer.poll()) {
                     record = event.asRecord()
-                    tryProcessEvent(event, producer, eventConsumer)
+                    tryProcessEvent(event)
                 }
                 pollAndProcessSuccessful = true
             } catch (ex: Exception) {
                 when (ex) {
-                    is CordaMessageAPIFatalException -> {
-                        throw ex
-                    }
                     is CordaMessageAPIIntermittentException -> {
                         attempts++
-                        handleProcessEventRetries(record, attempts, eventConsumer, ex)
+                        handleProcessEventRetries(record, attempts, ex)
                     }
                     else -> {
                         throw CordaMessageAPIFatalException(
                             "Failed to process records from topic $eventTopic, group $groupName, producerClientId $producerClientId. " +
-                                    "Unexpected error occurred.", ex
+                                    "Fatal error occurred.", ex
                         )
                     }
                 }
@@ -278,11 +274,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun tryProcessEvent(
-        event: ConsumerRecordAndMeta<K, E>,
-        producer: CordaKafkaProducer,
-        eventConsumer: CordaKafkaConsumer<K, E>
-    ) {
+    private fun tryProcessEvent(event: ConsumerRecordAndMeta<K, E>) {
         log.trace { "Processing event: $event" }
         val updates = processor.onNext(getCurrentStates()[event.record.key()]?.second, event.asRecord())
         val updatedState = updates.updatedState
@@ -343,7 +335,6 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun handleProcessEventRetries(
         eventRecord: Record<K, E>?,
         attempts: Int,
-        eventConsumer: CordaKafkaConsumer<K, E>,
         ex: Exception
     ) {
         if (attempts <= consumerPollAndProcessMaxRetries) {
