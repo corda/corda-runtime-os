@@ -14,9 +14,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.gateway.Gateway.Companion.MAX_MESSAGE_SIZE
 import net.corda.p2p.gateway.Gateway.Companion.P2P_IN_TOPIC
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.messaging.ConnectionManager
-import net.corda.p2p.gateway.messaging.ReceivedMessage
-import net.corda.p2p.gateway.messaging.ResponseMessage
+import net.corda.p2p.gateway.messaging.RequestMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import org.slf4j.LoggerFactory
 import rx.Subscription
@@ -27,13 +25,11 @@ import java.nio.ByteBuffer
  * This class implements a simple message processor for p2p messages received from other Gateways.
  */
 class InboundMessageHandler(private val server: HttpServer,
-//                            private val connectionManager: ConnectionManager,
                             private val publisherFactory: PublisherFactory) : LifeCycle {
 
     private var logger = LoggerFactory.getLogger(InboundMessageHandler::class.java)
     private var inboundMessageListener: Subscription? = null
     private var p2pInPublisher: Publisher? = null
-//    private val clientMessageHandlers = mutableListOf<Subscription>()
     private var connectionListener: Subscription? = null
 
     private var started = false
@@ -45,10 +41,6 @@ class InboundMessageHandler(private val server: HttpServer,
         val publisherConfig = PublisherConfig(PUBLISHER_ID)
         p2pInPublisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty())
         inboundMessageListener = server.onReceive.subscribe { handleRequestMessage(it) }
-//        connectionListener = connectionManager.onNewConnection.subscribe { clientObs ->
-//            val clientMessageReceiver = clientObs.subscribe { responseMessageHandler(it) }
-//            clientMessageHandlers.add(clientMessageReceiver)
-//        }
         started = true
         logger.info("Started P2P message receiver")
     }
@@ -57,7 +49,6 @@ class InboundMessageHandler(private val server: HttpServer,
         started = false
         inboundMessageListener?.unsubscribe()
         inboundMessageListener = null
-//        clientMessageHandlers.forEach { it.unsubscribe() }
         connectionListener?.unsubscribe()
         connectionListener = null
         p2pInPublisher?.close()
@@ -68,7 +59,7 @@ class InboundMessageHandler(private val server: HttpServer,
      * Handler for direct P2P messages. The payload is deserialized and then published to the ingress topic.
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
-    private fun handleRequestMessage(message: ReceivedMessage) {
+    private fun handleRequestMessage(message: RequestMessage) {
         var responseBytes = ByteArray(0)
         var statusCode = message.response.status()
         try {
@@ -108,32 +99,4 @@ class InboundMessageHandler(private val server: HttpServer,
             message.release()
         }
     }
-
-//    /**
-//     * Handler for P2P messages sent back as a result of a request. Typically, these responses have no payloads and serve
-//     * as an indication of successful receipt on the other end. In case of a session request message, the response will
-//     * contain information which then needs to be forwarded to the LinkManager
-//     */
-//    private fun responseMessageHandler(message: ResponseMessage) {
-//        logger.info("Processing response message from ${message.source} with status $${message.statusCode}")
-//        if (HttpResponseStatus.OK == message.statusCode) {
-//            // response messages should have empty payloads unless they are part of the initial session handshake
-//            if (message.payload.isNotEmpty()) {
-//                try {
-//                    // Attempt to deserialize as an early check. Shouldn't forward unrecognised message types
-//                    LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
-//                    val record = Record(P2P_IN_TOPIC, "key", message)
-//                    p2pInPublisher?.publish(listOf(record))
-//                } catch (e: IOException) {
-//                    logger.warn("Invalid message received. Cannot deserialize")
-//                    logger.debug(e.stackTraceToString())
-//                }
-//            }
-//        } else {
-//            logger.warn("Something went wrong with peer processing an outbound message. Peer response status ${message.statusCode}")
-//        }
-//
-//        message.release()
-//    }
-
 }

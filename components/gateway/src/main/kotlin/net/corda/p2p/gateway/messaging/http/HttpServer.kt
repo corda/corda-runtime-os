@@ -1,47 +1,28 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.bootstrap.ServerBootstrap
-import io.netty.buffer.ByteBuf
-import io.netty.buffer.Unpooled
 import io.netty.channel.Channel
-import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.EventLoopGroup
-import io.netty.channel.SimpleChannelInboundHandler
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
-import io.netty.handler.codec.http.DefaultFullHttpResponse
-import io.netty.handler.codec.http.HttpContent
-import io.netty.handler.codec.http.HttpHeaderNames
-import io.netty.handler.codec.http.HttpObject
-import io.netty.handler.codec.http.HttpRequest
 import io.netty.handler.codec.http.HttpRequestDecoder
-import io.netty.handler.codec.http.HttpResponse
 import io.netty.handler.codec.http.HttpResponseEncoder
 import io.netty.handler.codec.http.HttpResponseStatus
-import io.netty.handler.codec.http.HttpUtil
-import io.netty.handler.codec.http.HttpVersion
-import io.netty.handler.codec.http.LastHttpContent
-import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import net.corda.lifecycle.LifeCycle
-import net.corda.p2p.gateway.messaging.ReceivedMessage
+import net.corda.p2p.gateway.messaging.RequestMessage
 import net.corda.p2p.gateway.messaging.SslConfiguration
-import net.corda.p2p.gateway.messaging.http.HttpHelper.Companion.validate
-import net.corda.p2p.gateway.messaging.toHostAndPort
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
 import java.lang.IllegalStateException
-import java.lang.IndexOutOfBoundsException
 import java.net.BindException
 import java.net.InetSocketAddress
-import java.nio.channels.ClosedChannelException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.KeyManagerFactory
-import javax.net.ssl.SSLException
 import kotlin.concurrent.withLock
 
 /**
@@ -81,8 +62,8 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
     override val isRunning: Boolean
         get() = started
 
-    private val _onReceive = PublishSubject.create<ReceivedMessage>().toSerialized()
-    val onReceive: Observable<ReceivedMessage>
+    private val _onReceive = PublishSubject.create<RequestMessage>().toSerialized()
+    val onReceive: Observable<RequestMessage>
         get() = _onReceive
 
     private val _onConnection = PublishSubject.create<ConnectionChangeEvent>().toSerialized()
@@ -110,8 +91,6 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
         }
     }
 
-    //T0DO: on a polite shutdown, perhaps it's a good idea to tell all clients so that they can clean-up their connection;
-    // could send 408 Request Timeout
     override fun stop() {
         lock.withLock {
             try {
@@ -172,7 +151,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
             pipeline.addLast("sslHandler", createServerSslHandler(keyManagerFactory))
             pipeline.addLast(HttpRequestDecoder())
             pipeline.addLast(HttpResponseEncoder())
-            pipeline.addLast(HttpServerChannelHandler(
+            pipeline.addLast(HttpChannelHandler(
                 onOpen = { channel, change ->
                     parent.run {
                         clientChannels[channel.remoteAddress()] = channel
@@ -186,120 +165,9 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
                     }
                 },
                 onReceive = { msg ->
-                    parent._onReceive.onNext(msg)
+                    parent._onReceive.onNext(msg as RequestMessage)
                 }
             ))
-        }
-    }
-
-    private class HttpServerChannelHandler(private val onOpen: (SocketChannel, ConnectionChangeEvent) -> Unit,
-                                           private val onClose: (SocketChannel, ConnectionChangeEvent) -> Unit,
-                                           private val onReceive: (ReceivedMessage) -> Unit
-    ) : SimpleChannelInboundHandler<HttpObject>() {
-
-        private val logger = LoggerFactory.getLogger(HttpServerChannelHandler::class.java)
-
-        private var requestBodyBuf: ByteBuf? = null
-        private var validationResult: HttpResponse? = null
-
-        @Suppress("ComplexMethod", "TooGenericExceptionCaught")
-        override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
-            if (msg is HttpRequest) {
-                validationResult = msg.validate()
-                logger.debug("Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
-                    "Protocol version: ${msg.protocolVersion()}\n" +
-                    "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
-                    "Request URI: ${msg.uri()}\n" +
-                    "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n")
-                // initialise byte array to read the request into
-                if (validationResult!!.status() != HttpResponseStatus.LENGTH_REQUIRED) {
-                    requestBodyBuf = ctx.alloc().buffer(msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
-                }
-
-                if (HttpUtil.is100ContinueExpected(msg)) {
-                    send100Continue(ctx)
-                }
-            }
-
-            if (msg is HttpContent) {
-                val content = msg.content()
-                if (content.isReadable) {
-                    logger.debug("Reading request content into local buffer of size ${content.readableBytes()}")
-                    try {
-                        content.readBytes(requestBodyBuf, content.readableBytes())
-                    } catch (e: IndexOutOfBoundsException) {
-                        logger.error("Cannot read request body into buffer. Space not allocated")
-                    }
-                }
-            }
-
-            if (msg is LastHttpContent) {
-                logger.debug("Read end of request body")
-                val channel = ctx.channel()
-                val sourceAddress = (channel.remoteAddress() as InetSocketAddress).toHostAndPort()
-                val targetAddress = (channel.localAddress() as InetSocketAddress).toHostAndPort()
-                val returnByteArray = ByteArray(requestBodyBuf?.readableBytes() ?: 0)
-                requestBodyBuf!!.readBytes(returnByteArray)
-                onReceive(ReceivedMessage(validationResult!!, returnByteArray, sourceAddress, targetAddress))
-                // Normally response would be sent right after but that operation is now delegated to upstream
-                requestBodyBuf?.release()
-                validationResult = null
-            }
-        }
-
-        override fun channelActive(ctx: ChannelHandlerContext) {
-            val ch = ctx.channel()
-            logger.info("New client connection ${ch.id()} from ${ch.remoteAddress()} to ${ch.localAddress()}")
-        }
-
-        override fun channelInactive(ctx: ChannelHandlerContext) {
-            val ch = ctx.channel()
-            logger.info("Closed client connection ${ch.id()} from ${ch.remoteAddress()} to ${ch.localAddress()}")
-            requestBodyBuf?.let {
-                if (it.refCnt() > 0)
-                    it.release()
-            }
-            val remoteAddress = (ch.remoteAddress() as InetSocketAddress).let { NetworkHostAndPort(it.hostName, it.port) }
-            onClose(ch as SocketChannel, ConnectionChangeEvent(remoteAddress, false))
-            ctx.fireChannelInactive()
-        }
-
-        //T0DO: a bunch of this code (except channel read) is duplicated and should probably be reused
-        override fun userEventTriggered(ctx: ChannelHandlerContext, evt: Any) {
-            when (evt) {
-                is SslHandshakeCompletionEvent -> {
-                    if (evt.isSuccess) {
-                        val ch = ctx.channel()
-                        val remoteAddress = (ch.remoteAddress() as InetSocketAddress).let { NetworkHostAndPort(it.hostName, it.port) }
-                        logger.info("Handshake with ${ctx.channel().remoteAddress()} successful")
-                        onOpen(ch as SocketChannel, ConnectionChangeEvent(remoteAddress, true))
-                    } else {
-                        val cause = evt.cause()
-                        if (cause is ClosedChannelException) {
-                            logger.warn("SSL handshake closed early")
-                        } else if (cause is SSLException && cause.message == "handshake timed out") {
-                            logger.warn("SSL handshake timed out")
-                        }
-                        logger.error("Handshake failure ${evt.cause().message}")
-                        ctx.close()
-                    }
-                }
-            }
-        }
-
-        override fun channelReadComplete(ctx: ChannelHandlerContext) {
-            // Nothing more to read from the transport in this event-loop run. Simply flush
-            ctx.flush()
-        }
-
-        override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
-            cause.printStackTrace()
-            ctx.close()
-        }
-
-        private fun send100Continue(ctx: ChannelHandlerContext) {
-            val response = DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE, Unpooled.EMPTY_BUFFER)
-            ctx.write(response)
         }
     }
 }
