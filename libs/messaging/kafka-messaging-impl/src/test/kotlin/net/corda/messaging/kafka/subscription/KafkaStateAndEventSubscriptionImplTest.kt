@@ -1,7 +1,6 @@
 package net.corda.messaging.kafka.subscription
 
 import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.atLeast
 import com.nhaarman.mockito_kotlin.doAnswer
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.times
@@ -26,7 +25,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 class KafkaStateAndEventSubscriptionImplTest {
 
