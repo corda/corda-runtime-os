@@ -96,7 +96,6 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
      */
     @Throws(ConnectTimeoutException::class)
     fun acquire(remoteAddress: NetworkHostAndPort): HttpClient {
-        logger.info("Acquiring connection for remote address $remoteAddress")
         return connectionPool.get(remoteAddress) {
             logger.info("Creating new connection to $remoteAddress")
             val client = HttpClient(remoteAddress, sslConfiguration, sharedEventLoopGroup)

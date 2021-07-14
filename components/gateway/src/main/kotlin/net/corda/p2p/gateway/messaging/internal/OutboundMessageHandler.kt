@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit
  * events are processed and fed into the HTTP pipeline. No records will be produced by this processor as a result.
  */
 class OutboundMessageHandler(private val connectionPool: ConnectionManager,
-                             private val publisherFactory: PublisherFactory
+                             publisherFactory: PublisherFactory
 ) : EventLogProcessor<String, LinkOutMessage> {
 
     private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
@@ -55,7 +55,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
 
         destinationToMessagesMap.forEach { entry ->
             workResults.add(workers.submit {
-                val messagesToRetry = LinkedList<Pair<NetworkHostAndPort, LinkInMessage>>()
+                val messagesToRetry = LinkedList<LinkInMessage>()
                 try {
                     val client = connectionPool.acquire(entry.key)
                     entry.value.forEach { message ->
@@ -66,17 +66,16 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                                 responseBarrier.countDown()
                             }
                             client.send(message.toByteBuffer().array())
-                            if (!responseBarrier.await(10000, TimeUnit.MILLISECONDS)) {
-                                println("RESCHEDULING")
-                                logger.info("Response from ${entry.key} has not arrived in time. Scheduling for retry")
+                            if (!responseBarrier.await(1000, TimeUnit.MILLISECONDS)) {
+                                logger.info("Response from ${entry.key} has not arrived in time. Scheduling for re-send")
                                 // If the response has not arrived in the specified time, the message
                                 // is queued for redelivery
-                                messagesToRetry.add(Pair(entry.key, message))
+                                messagesToRetry.add(message)
                             }
                             responseSub.unsubscribe()
                         } catch (e: IllegalStateException) {
-                            logger.warn("Could not send message to target ${entry.key}", e)
-                            messagesToRetry.add(Pair(entry.key, message))
+                            logger.warn("Could not send message to target ${entry.key}. Scheduling for re-send", e)
+                            messagesToRetry.add(message)
                         }
                     }
                 } catch (e: ConnectTimeoutException) {
@@ -87,7 +86,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                 // Schedule any pending re-tries
                 if (messagesToRetry.size > 0) {
                     Executors.newSingleThreadScheduledExecutor()
-                        .schedule({ resend(messagesToRetry) }, 5000L, TimeUnit.MILLISECONDS).get()
+                        .schedule({ resend(entry.key, messagesToRetry) }, 5000L, TimeUnit.MILLISECONDS).get()
                 }
             })
         }
@@ -97,23 +96,26 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
         return emptyList()
     }
 
-    private fun resend(messages: LinkedList<Pair<NetworkHostAndPort, LinkInMessage>>) {
-        messages.forEach { (target, message) ->
+    @Suppress("TooGenericExceptionCaught")
+    private fun resend(target: NetworkHostAndPort, messages: LinkedList<LinkInMessage>) {
+        logger.debug("Retrying delivery of message to $target. No of messages to retry ${messages.size}")
+        var successCounter = 0
+        messages.forEach { message ->
             try {
-                logger.info("Retrying delivery of message to target $target")
                 val client = connectionPool.acquire(target)
                 val responseBarrier = CountDownLatch(1)
                 val responseSub = client.onReceive.subscribe { response ->
                     responseMessageHandler(response)
+                    successCounter++
                     responseBarrier.countDown()
                 }
                 client.send(message.toByteBuffer().array())
                 responseBarrier.await(1000, TimeUnit.MILLISECONDS)
                 responseSub.unsubscribe()
-            } catch (e: ConnectTimeoutException) {
-                logger.warn("Could not send message to target $target", e)
-            } catch (e: IllegalStateException) {
-                logger.warn("Could not send message to target $target", e)
+            } catch (e: Exception) {
+                logger.warn("Could not re-send message to $target", e)
+            } finally {
+                logger.info("Successfully re-delivered $successCounter out of ${messages.size} messages to $target")
             }
         }
     }

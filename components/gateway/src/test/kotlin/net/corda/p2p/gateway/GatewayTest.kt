@@ -186,7 +186,6 @@ class GatewayTest {
     }
 
     @Test
-    @Timeout(60)
     fun `gateway to gateway - dual stream`() {
         val aliceGatewayAddress = NetworkHostAndPort.parse("localhost:10001")
         val bobGatewayAddress = NetworkHostAndPort.parse("localhost:10002")
