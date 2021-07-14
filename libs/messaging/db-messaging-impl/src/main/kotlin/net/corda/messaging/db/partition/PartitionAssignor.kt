@@ -6,7 +6,7 @@ class PartitionAssignor {
 
     fun assign(key: ByteArray, numberOfPartitions: Int): Int {
         require(numberOfPartitions > 0)
-        return abs(key.contentHashCode()) % numberOfPartitions + 1
+        return abs(key.contentHashCode() % numberOfPartitions) + 1
     }
 
 }
