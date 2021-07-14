@@ -24,7 +24,6 @@ import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import java.nio.ByteBuffer
@@ -32,7 +31,7 @@ import java.nio.charset.StandardCharsets
 import java.sql.DriverManager
 import java.time.Duration
 import java.time.Instant
-import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
@@ -81,10 +80,11 @@ class PerformanceTests {
 
     @BeforeEach
     fun setup() {
-        val connection = DriverManager.getConnection(jdbcUrl, jdbcUsername, jdbcPassword)
-        connection.prepareStatement(DbUtils.createTopicRecordsTableStmt).execute()
-        connection.prepareStatement(DbUtils.createOffsetsTableStmt).execute()
-        connection.prepareStatement(DbUtils.createTopicsTableStmt).execute()
+        DriverManager.getConnection(jdbcUrl, jdbcUsername, jdbcPassword).use {
+            it.prepareStatement(DbUtils.createTopicRecordsTableStmt).execute()
+            it.prepareStatement(DbUtils.createOffsetsTableStmt).execute()
+            it.prepareStatement(DbUtils.createTopicsTableStmt).execute()
+        }
 
         dbAccessProvider = DBAccessProviderImpl(jdbcUrl, jdbcUsername, jdbcPassword, dbType, persistenceLayerThreadPoolSize, 5.seconds, dbConnectionPoolSize)
         dbAccessProvider.start()
@@ -100,10 +100,11 @@ class PerformanceTests {
 
     @AfterEach
     fun cleanup() {
-        val connection = DriverManager.getConnection(jdbcUrl, jdbcUsername, jdbcPassword)
-        connection.prepareStatement(DbUtils.deleteTopicRecordsTableStmt).execute()
-        connection.prepareStatement(DbUtils.deleteOffsetsTableStmt).execute()
-        connection.prepareStatement(DbUtils.deleteTopicsTableStmt).execute()
+        DriverManager.getConnection(jdbcUrl, jdbcUsername, jdbcPassword).use {
+            it.prepareStatement(DbUtils.deleteTopicRecordsTableStmt).execute()
+            it.prepareStatement(DbUtils.deleteOffsetsTableStmt).execute()
+            it.prepareStatement(DbUtils.deleteTopicsTableStmt).execute()
+        }
     }
 
     @Test
@@ -156,8 +157,8 @@ class PerformanceTests {
         val totalRecords = (numberOfWriters * numberOfRecordsPerWriter)
 
         val publisher = DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor, publisherThreadPoolSize)
-        val processedRecords = Collections.synchronizedSet(mutableSetOf<Record<String, String>>())
-        val processor = CopyingProcessor(processedRecords, String::class.java, String::class.java, topic2)
+        val processedRecordKeys = ConcurrentHashMap.newKeySet<String>()
+        val processor = CopyingProcessor(processedRecordKeys, String::class.java, String::class.java, topic2)
         val subscriptions = (1..numberOfSubscriptions).map {
             DBDurableSubscription(
                 subscriptionConfigTopic,
@@ -177,7 +178,6 @@ class PerformanceTests {
 
 
         val latch = CountDownLatch(numberOfWriters)
-        val writtenRecords = Collections.synchronizedList(mutableListOf<Record<String, String>>())
         var publishDuration: Duration? = null
         val totalDuration = timed {
             publishDuration = timed {
@@ -185,7 +185,6 @@ class PerformanceTests {
                     val latency = metrics.histogram("writer.latency")
                     (1..numberOfRecordsPerWriter).chunked(writerBatchSize).forEach { values ->
                         val records = values.map { Record(topic1, "key-$writer-$it", payload) }
-                        writtenRecords.addAll(records)
                         val time = timed { publisher.publish(records).map { it.getOrThrow() } }
                         latency.update(time.toMillis())
                     }
@@ -195,8 +194,8 @@ class PerformanceTests {
                 latch.await()
             }
 
-            eventually(5.minutes, 100.millis) {
-                assertThat(processedRecords.size).`as`("not enough records read from topic 1").isEqualTo(totalRecords)
+            eventually(5.minutes, 10.millis) {
+                assertThat(processedRecordKeys.size).`as`("not enough records read from topic 1").isEqualTo(totalRecords)
             }
         }
 
@@ -227,14 +226,14 @@ class PerformanceTests {
     }
 
     class CopyingProcessor<K : Any, V : Any>(
-        private val processedRecords: MutableSet<Record<K, V>>,
+        private val processedRecordKeys: MutableSet<K>,
         override val keyClass: Class<K>,
         override val valueClass: Class<V>,
         private val topicToWriteTo: String?
     ): DurableProcessor<K, V> {
 
         override fun onNext(events: List<Record<K, V>>): List<Record<*, *>> {
-            processedRecords.addAll(events)
+            processedRecordKeys.addAll(events.map { it.key })
             return if (topicToWriteTo != null) {
                 events.map { Record(topicToWriteTo, it.key, it.value) }
             } else {
