@@ -3,7 +3,6 @@ package net.corda.flow.statemachine
 import net.corda.v5.application.flows.FlowInfo
 import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.base.types.NonEmptySet
-import net.corda.v5.crypto.hash
 import net.corda.v5.serialization.SerializedBytes
 import java.time.Instant
 
@@ -19,7 +18,7 @@ sealed class FlowIORequest<out R> {
     data class Send(
             val sessionToMessage: Map<FlowSession, SerializedBytes<Any>>
     ) : FlowIORequest<Unit>() {
-        override fun toString() = "Send(sessionToMessage=${sessionToMessage.mapValues { it.value.hash }})"
+        override fun toString() = "Send(sessionToMessage=${sessionToMessage.mapValues { it.value }})"
     }
 
     /**
@@ -43,7 +42,7 @@ sealed class FlowIORequest<out R> {
     data class SendAndReceive(
         val sessionToMessage: Map<FlowSession, SerializedBytes<Any>>
     ) : FlowIORequest<Map<FlowSession, SerializedBytes<Any>>>() {
-        override fun toString() = "SendAndReceive(${sessionToMessage.mapValues { (key, value) -> "$key=${value.hash}" }})"
+        override fun toString() = "SendAndReceive(${sessionToMessage.mapValues { (key, value) -> "$key=$value" }})"
     }
 
     /**
