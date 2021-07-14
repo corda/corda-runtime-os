@@ -34,12 +34,12 @@ class DemoDurableProcessor(
 
         for (event in events) {
             if (counter == killProcessOnRecord) {
-                log.error("Killing process for test purposes!")
+                log.info("Killing process for test purposes!")
                 exitProcess(0)
             }
 
             if (delayOnNext != 0L) {
-                log.error("Durable processor pausing..")
+                log.info("Durable processor pausing..")
                 Thread.sleep(delayOnNext)
             }
 
@@ -49,7 +49,7 @@ class DemoDurableProcessor(
             val newPublisherSet = eventRecordValue == 1
             if (expectedNextValues[key] != null && expectedNextValues[key] != eventRecordValue && !newPublisherSet) {
                 log.error("Wrong record found! Expected to find ${expectedNextValues[key]} but found $eventRecordValue")
-                consoleLogger.info("Wrong record received by Durable processor! " +
+                consoleLogger.error("Wrong record received by Durable processor! " +
                         "Expected to find ${expectedNextValues[key]} but found $eventRecordValue")
             }
             expectedNextValues[key] = eventRecordValue + 1

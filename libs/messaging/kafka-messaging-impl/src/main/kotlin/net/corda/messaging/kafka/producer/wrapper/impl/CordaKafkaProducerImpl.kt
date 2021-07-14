@@ -167,6 +167,7 @@ class CordaKafkaProducerImpl(
         trySendOffsetsToTransaction(consumer, record)
     }
 
+    @Suppress("ThrowsCount")
     private fun trySendOffsetsToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>? = null) {
         try {
             producer.sendOffsetsToTransaction(consumerOffsets(consumer, record), consumer.groupMetadata())

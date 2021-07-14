@@ -5,17 +5,15 @@
  */
 package net.corda.p2p;
 
-import org.apache.avro.generic.GenericArray;
-import org.apache.avro.specific.SpecificData;
-import org.apache.avro.util.Utf8;
-import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
+import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.SchemaStore;
+import org.apache.avro.specific.SpecificData;
 
 @org.apache.avro.specific.AvroGenerated
 public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 2698520613327291321L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.p2p\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]}]}");
+  private static final long serialVersionUID = 4376517469381981226L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.p2p\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -348,13 +346,7 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
   {
     out.writeString(this.x500Name);
 
-    if (this.groupId == null) {
-      out.writeIndex(0);
-      out.writeNull();
-    } else {
-      out.writeIndex(1);
-      out.writeString(this.groupId);
-    }
+    out.writeString(this.groupId);
 
   }
 
@@ -365,12 +357,7 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
     if (fieldOrder == null) {
       this.x500Name = in.readString();
 
-      if (in.readIndex() != 1) {
-        in.readNull();
-        this.groupId = null;
-      } else {
-        this.groupId = in.readString();
-      }
+      this.groupId = in.readString();
 
     } else {
       for (int i = 0; i < 2; i++) {
@@ -380,12 +367,7 @@ public class HoldingIdentity extends org.apache.avro.specific.SpecificRecordBase
           break;
 
         case 1:
-          if (in.readIndex() != 1) {
-            in.readNull();
-            this.groupId = null;
-          } else {
-            this.groupId = in.readString();
-          }
+          this.groupId = in.readString();
           break;
 
         default:
