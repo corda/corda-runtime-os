@@ -1,11 +1,15 @@
 package net.corda.messaging.db.sync
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.db.persistence.DBAccessProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
 import java.time.Duration
+import java.time.Instant
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -17,9 +21,11 @@ class OffsetTrackersManager(private val dbAccessProvider: DBAccessProvider): Lif
 
     companion object {
         private val log: Logger = contextLogger()
+        private const val SHARED_OFFSET_TRACKERS_POOL_SIZE_FOR = 5
     }
 
-    private val offsetTrackerPerTopic = mutableMapOf<String, OffsetTracker>()
+    private val offsetTrackerPerTopicPartition: MutableMap<String, MutableMap<Int, OffsetTracker>> = mutableMapOf()
+    private lateinit var executorService: ScheduledExecutorService
 
     private var running = false
     private val startStopLock = ReentrantLock()
@@ -30,10 +36,17 @@ class OffsetTrackersManager(private val dbAccessProvider: DBAccessProvider): Lif
     override fun start() {
         startStopLock.withLock {
             if (!running) {
+                executorService = Executors.newScheduledThreadPool(
+                    SHARED_OFFSET_TRACKERS_POOL_SIZE_FOR,
+                    ThreadFactoryBuilder().setNameFormat("offset-tracker-background-task-%d").build()
+                )
                 initialiseOffsetTrackers()
-                offsetTrackerPerTopic.forEach { (_, offsetTracker) -> offsetTracker.start() }
+                offsetTrackerPerTopicPartition.forEach { (_, offsetTrackerPerPartition) ->
+                    offsetTrackerPerPartition.forEach { (_, offsetTracker) -> offsetTracker.start() }
+                }
                 running = true
-                log.debug { "Offset trackers manager started. Offset trackers initialised for topics: ${offsetTrackerPerTopic.keys}" }
+                log.debug { "Offset trackers manager started. " +
+                        "Offset trackers initialised for topics: ${offsetTrackerPerTopicPartition.keys}" }
             }
         }
     }
@@ -41,35 +54,45 @@ class OffsetTrackersManager(private val dbAccessProvider: DBAccessProvider): Lif
     override fun stop() {
         startStopLock.withLock {
             if (running) {
-                offsetTrackerPerTopic.forEach { (_, offsetTracker) -> offsetTracker.stop() }
+                offsetTrackerPerTopicPartition.forEach { (_, offsetTrackerPerPartition) ->
+                    offsetTrackerPerPartition.forEach { (_, offsetTracker) -> offsetTracker.stop() }
+                }
+                executorService.shutdown()
                 running = false
                 log.debug { "Offset trackers manager stopped." }
             }
         }
     }
 
-    fun maxVisibleOffset(topic: String): Long {
-        return offsetTrackerPerTopic[topic]!!.maxVisibleOffset()
+    fun maxVisibleOffset(topic: String, partition: Int): Long {
+        return offsetTrackerPerTopicPartition[topic]!![partition]!!.maxVisibleOffset()
     }
 
-    fun waitForOffset(topic: String, offset: Long, duration: Duration): Boolean {
-        return offsetTrackerPerTopic[topic]!!.waitForOffset(offset, duration)
+    fun waitForOffsets(topic: String, offsets: Map<Int, Long>, duration: Duration) {
+        val finalTimeout = Instant.now() + duration
+        offsets.forEach { (partition, offset) ->
+            val waitTime = Duration.between(Instant.now(), finalTimeout)
+            offsetTrackerPerTopicPartition[topic]!![partition]!!.waitForOffset(offset, waitTime)
+        }
     }
 
-    fun getNextOffset(topic: String): Long {
-        return offsetTrackerPerTopic[topic]!!.getNextOffset()
+    fun getNextOffset(topic: String, partition: Int): Long {
+        return offsetTrackerPerTopicPartition[topic]!![partition]!!.getNextOffset()
     }
 
-    fun offsetReleased(topic: String, newOffset: Long) {
-        offsetTrackerPerTopic[topic]!!.offsetReleased(newOffset)
+    fun offsetReleased(topic: String, partition:Int, newOffset: Long) {
+        offsetTrackerPerTopicPartition[topic]!![partition]!!.offsetReleased(newOffset)
     }
 
     private fun initialiseOffsetTrackers() {
-        val maxOffsetPerTopic = dbAccessProvider.getMaxOffsetPerTopic()
+        val maxOffsetPerTopic = dbAccessProvider.getMaxOffsetsPerTopic()
 
-        maxOffsetPerTopic.forEach { (topicName, offset) ->
-            val offsetTracker = OffsetTracker(topicName,offset ?: 0)
-            offsetTrackerPerTopic[topicName] = offsetTracker
+        maxOffsetPerTopic.forEach { (topicName, maxOffsetsPerPartition) ->
+            offsetTrackerPerTopicPartition[topicName] = mutableMapOf()
+            maxOffsetsPerPartition.forEach { (partition, offset) ->
+                val offsetTracker = OffsetTracker(topicName,partition, offset ?: 0, executorService)
+                offsetTrackerPerTopicPartition[topicName]!![partition] = offsetTracker
+            }
         }
     }
 

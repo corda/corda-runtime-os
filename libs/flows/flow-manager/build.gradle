@@ -1,0 +1,17 @@
+plugins {
+    id 'corda.publish'
+    id 'corda.common-library'
+}
+
+description "Flow Manager"
+
+dependencies {
+    implementation "net.corda:corda-application:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-crypto-api:$cordaVersion"
+
+    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+
+    implementation project(':data:avro-schema')
+}
