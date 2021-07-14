@@ -73,5 +73,22 @@ class TopicTemplates {
                 "        }\n" +
                 "    }\n" +
                 "]"
+
+        const val EVENT_TOPIC4  = "EventTopic4"
+        const val EVENT_TOPIC4_TEMPLATE = "topics = [" +
+                "    {\n" +
+                "        topicName = \"$EVENT_TOPIC4\"\n" +
+                "        numPartitions = 2\n" +
+                "        replicationFactor = 3\n" +
+                "    },\n" +
+                "    {\n" +
+                "        topicName = \"$EVENT_TOPIC4.state\"\n" +
+                "        numPartitions = 2\n" +
+                "        replicationFactor = 3\n" +
+                "        config {\n" +
+                "            cleanup.policy=compact\n" +
+                "        }\n" +
+                "    }\n" +
+                "]"
     }
 }
