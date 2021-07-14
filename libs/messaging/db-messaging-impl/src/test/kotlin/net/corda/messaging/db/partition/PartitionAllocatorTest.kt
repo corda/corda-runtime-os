@@ -69,27 +69,36 @@ class PartitionAllocatorTest {
 
     @Test
     fun `allocation sizes do not differ by more than one and they contain contiguous partitions`() {
-        `when`(dbAccessProvider.getTopics()).thenReturn(mapOf(
-            topic1 to 50
-        ))
+        for (numberOfPartitions in 1..50) {
+            for (numberOfRegistrations in 1..10) {
+                val partitions = (1..numberOfPartitions).toList()
+                val listeners = (1..numberOfRegistrations).map { mock(PartitionAllocationListener::class.java) }
+                val allocations = partitionAllocator.splitEqually(partitions.toMutableList(), listeners)
 
-        for (numberOfRegistrations in 1..10) {
-            val partitionAllocator = PartitionAllocator(dbAccessProvider)
-            partitionAllocator.start()
-
-            val registeredListeners = (1..numberOfRegistrations).map { InMemoryListener(mutableMapOf(topic1 to mutableSetOf())) }
-            registeredListeners.forEach { partitionAllocator.register(topic1, it) }
-
-            // check allocation contains contiguous numbers
-            registeredListeners.forEach { listener ->
-                val min = listener.allocatedPartitions[topic1]!!.minOrNull()!!
-                val max = listener.allocatedPartitions[topic1]!!.maxOrNull()!!
-                val range = (min..max).toSet()
-                assertThat(listener.allocatedPartitions[topic1]!!).containsExactlyInAnyOrderElementsOf(range)
-            }
-            // check allocation sizes do not differ by more than one
-            registeredListeners.forEach { listener ->
-                assertThat(listener.allocatedPartitions[topic1]!!.size).isCloseTo(registeredListeners[0].allocatedPartitions[topic1]!!.size, within(1))
+                // check every allocation contains contiguous numbers
+                listeners.forEach { listener ->
+                    val allocation  = allocations[listener]!!
+                    if (allocation.isNotEmpty()) {
+                        val min = allocation.minOrNull()!!
+                        val max = allocation.maxOrNull()!!
+                        val range = (min..max).toSet()
+                        assertThat(allocation).containsExactlyInAnyOrderElementsOf(range)
+                    }
+                }
+                // check allocation sizes do not differ by more than one and do not overlap (no partition assigned twice)
+                listeners.forEach { firstListener ->
+                    listeners.forEach { secondListener ->
+                        if (firstListener != secondListener) {
+                            val firstAllocation = allocations[firstListener]!!
+                            val secondAllocation = allocations[secondListener]!!
+                            assertThat(firstAllocation.size).isCloseTo(secondAllocation.size, within(1))
+                            assertThat(firstAllocation.intersect(secondAllocation)).isEmpty()
+                        }
+                    }
+                }
+                // check all partitions are assigned
+                allocations.flatMap { (_, allocation) -> allocation }
+                    .containsAll(partitions)
             }
         }
     }

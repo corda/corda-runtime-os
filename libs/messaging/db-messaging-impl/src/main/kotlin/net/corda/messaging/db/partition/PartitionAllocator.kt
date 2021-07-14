@@ -3,6 +3,7 @@ package net.corda.messaging.db.partition
 import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.db.persistence.DBAccessProvider
+import net.corda.v5.base.annotations.VisibleForTesting
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.math.ceil
@@ -60,23 +61,12 @@ class PartitionAllocator(private val dbAccessProvider: DBAccessProvider): LifeCy
         }
     }
 
-    /**
-     * Splits the partitions of the specified topic amongst the available listeners,
-     * so that allocation sizes do not differ by more than one and partitions are allocated sequentially.
-     */
     private fun reallocatePartitions(topic: String) {
         val registeredListeners = registeredListenersPerTopic[topic]!!
         val partitions = (1..partitionsPerTopic[topic]!!).toMutableList()
-        var remainingListeners = registeredListeners.size
 
-        registeredListeners.forEach { listener ->
-            val partitionsPerListener = ceil(partitions.size.toDouble() / remainingListeners.toDouble()).toInt()
-            val newAllocation = mutableListOf<Int>()
-            for (i in 1..partitionsPerListener) {
-                newAllocation.add(partitions.removeFirst())
-            }
-            remainingListeners--
-
+        val newAllocations = splitEqually(partitions, registeredListeners)
+        newAllocations.forEach { (listener, newAllocation) ->
             val previousAllocation = currentAllocationsPerTopic[topic]!![listener] ?: emptyList()
             currentAllocationsPerTopic[topic]!![listener] = newAllocation
 
@@ -86,6 +76,29 @@ class PartitionAllocator(private val dbAccessProvider: DBAccessProvider): LifeCy
             listener.onPartitionsUnassigned(topic, unassignedPartitions.toSet())
             listener.onPartitionsAssigned(topic, assignedPartitions.toSet())
         }
+    }
+
+    /**
+     * Splits the partitions of the specified topic amongst the available listeners,
+     * so that allocation sizes do not differ by more than one and partitions are allocated sequentially.
+     */
+    @VisibleForTesting
+    fun splitEqually(partitionsToSplit: MutableList<Int>, listeners: List<PartitionAllocationListener>):
+            Map<PartitionAllocationListener, List<Int>> {
+        var remainingListeners = listeners.size
+        val allocations = mutableMapOf<PartitionAllocationListener, List<Int>>()
+
+        listeners.forEach { listener ->
+            val partitionsPerListener = ceil(partitionsToSplit.size.toDouble() / remainingListeners.toDouble()).toInt()
+            val newAllocation = mutableListOf<Int>()
+            for (i in 1..partitionsPerListener) {
+                newAllocation.add(partitionsToSplit.removeFirst())
+            }
+            remainingListeners--
+            allocations[listener] = newAllocation
+        }
+
+        return allocations
     }
 
 }

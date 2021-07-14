@@ -1,6 +1,7 @@
 package net.corda.messaging.db.partition
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
@@ -38,6 +39,14 @@ class PartitionAssignorTest {
 
             assertThat(partition).isIn(partitions)
         }
+    }
+
+    @Test
+    fun `throws an error if invoked with negative number of partitions`() {
+        val randomKey = UUID.randomUUID().toString().toByteArray()
+
+        assertThatThrownBy { partitionAssignor.assign(randomKey, -1) }
+            .isInstanceOf(IllegalArgumentException::class.java)
     }
 
 }
