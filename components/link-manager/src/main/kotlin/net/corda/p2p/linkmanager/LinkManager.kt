@@ -26,6 +26,8 @@ import net.corda.p2p.schema.Schema
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.*
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class LinkManager(@Reference(service = SubscriptionFactory::class)
                   subscriptionFactory: SubscriptionFactory,
@@ -48,6 +50,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return UUID.randomUUID().toString()
         }
     }
+
+    @Volatile
+    private var running = false
+    private val startStopLock = ReentrantLock()
 
     private val outboundMessageSubscription: Subscription<String, FlowMessage>
     private val inboundMessageSubscription: Subscription<String, LinkInMessage>
@@ -78,20 +84,30 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     }
 
     override fun start() {
-        inboundMessageSubscription.start()
-        /*We must wait for partitions to be assigned to the inbound subscription before we can start the outbound
-         *subscription otherwise the gateway won't know which partition to route message back to.*/
-        inboundAssignmentListener.awaitFirstAssignment()
-        outboundMessageSubscription.start()
+        startStopLock.withLock {
+            if (!running) {
+                inboundMessageSubscription.start()
+                /*We must wait for partitions to be assigned to the inbound subscription before we can start the outbound
+                *subscription otherwise the gateway won't know which partition to route message back to.*/
+                inboundAssignmentListener.awaitFirstAssignment()
+                outboundMessageSubscription.start()
+                running = true
+            }
+        }
     }
 
     override fun stop() {
-        inboundMessageSubscription.stop()
-        outboundMessageSubscription.stop()
+        startStopLock.withLock {
+            if (running) {
+                inboundMessageSubscription.stop()
+                outboundMessageSubscription.stop()
+                running = false
+            }
+        }
     }
 
     override val isRunning: Boolean
-        get() = outboundMessageSubscription.isRunning && inboundMessageSubscription.isRunning
+        get() = running
 
     class OutboundMessageProcessor(
         private val sessionManager: SessionManager,
@@ -121,23 +137,33 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 return records
             }
 
-            val state = sessionManager.processOutboundFlowMessage(message)
-            val linkOutMessage = when(state) {
-                is SessionState.NewSessionNeeded -> state.sessionInitMessage
-                is SessionState.SessionEstablished -> createLinkOutMessageFromFlowMessage(message, state.session, networkMap)
-                else -> null //Session Pending or cannot establish session (this is logged inside the SessionManager)
+            when(val state = sessionManager.processOutboundFlowMessage(message)) {
+                is SessionState.NewSessionNeeded -> {
+                    partitionRecordForNewSession(state.sessionId)?.let {
+                        records.add(it)
+                        records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage))
+                    }
+                }
+                is SessionState.SessionEstablished -> {
+                    val dataMessage = createLinkOutMessageFromFlowMessage(message, state.session, networkMap)
+                    dataMessage?. let { records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), it)) }
+                }
+                //Session Pending or cannot establish session (this is logged inside the SessionManager)
+                else -> {}
             }
-            linkOutMessage?.let { records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), it)) }
 
-            if (state is SessionState.NewSessionNeeded) {
-                records.add(sessionPartition(state.sessionId))
-            }
             return records
         }
 
-        private fun sessionPartition(sessionId: String): Record<String, SessionPartitions> {
-            val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
-            return Record(Schema.SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(partitions))
+        private fun partitionRecordForNewSession(sessionId: String): Record<String, SessionPartitions>? {
+            val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC)
+            if (partitions.isEmpty()) {
+                logger.warn("The Link Manager is not currently assigned to any partitions for the topic ${Schema.LINK_IN_TOPIC}." +
+                    " This means there is no way to route a message back to the LinkManager with the Session with SessionId" +
+                    " $sessionId in memory. The message was discarded.")
+                return null
+            }
+            return Record(Schema.SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(partitions.toList()))
         }
 
     }
