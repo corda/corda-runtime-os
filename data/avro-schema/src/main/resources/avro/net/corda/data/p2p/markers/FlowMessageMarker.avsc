@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "FlowMessageMarker",
+  "namespace": "net.corda.p2p.markers",
+  "fields": [
+    {
+      "name": "marker",
+      "type": [
+        "net.corda.p2p.markers.LinkManagerReceivedMarker",
+        "net.corda.p2p.markers.LinkManagerSentMarker"
+      ]
+    },
+    {
+      "name": "messageId",
+      "type": "string"
+    }
+  ]
+}

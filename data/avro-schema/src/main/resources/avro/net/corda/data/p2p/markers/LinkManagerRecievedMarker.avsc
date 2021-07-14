@@ -1,0 +1,6 @@
+{
+  "type": "record",
+  "name": "LinkManagerReceivedMarker",
+  "namespace": "net.corda.p2p.markers",
+  "fields": []
+}

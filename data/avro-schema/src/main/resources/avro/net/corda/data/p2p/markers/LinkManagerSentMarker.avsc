@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "LinkManagerSentMarker",
+  "namespace": "net.corda.p2p.markers",
+  "fields": [
+    {
+     "name": "partition",
+     "type": "long"
+    },
+    {
+      "name": "offset",
+      "type": "long"
+    }
+  ]
+}
