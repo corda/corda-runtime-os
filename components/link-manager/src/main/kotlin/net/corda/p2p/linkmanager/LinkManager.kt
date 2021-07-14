@@ -158,9 +158,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private fun partitionRecordForNewSession(sessionId: String): Record<String, SessionPartitions>? {
             val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC)
             if (partitions.isEmpty()) {
-                logger.warn("The InboundMessageProcessor is not currently assigned to any partitions. This means there is no way to" +
-                    " route a message back to the LinkManager with the Session with SessionId $sessionId in memory. The message was" +
-                    " discarded.")
+                logger.warn("The Link Manager is not currently assigned to any partitions for the topic ${Schema.LINK_IN_TOPIC}." +
+                    " This means there is no way to route a message back to the LinkManager with the Session with SessionId" +
+                    " $sessionId in memory. The message was discarded.")
                 return null
             }
             return Record(Schema.SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(partitions.toList()))

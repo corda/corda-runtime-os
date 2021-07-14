@@ -303,9 +303,9 @@ class LinkManagerTest {
         val records = processor.onNext(messages)
 
         assertEquals(records.size, 0)
-        loggingInterceptor.assertSingleWarning("The InboundMessageProcessor is not currently assigned to any partitions. This means" +
-            " there is no way to route a message back to the LinkManager with the Session with SessionId $sessionId in memory. The" +
-            " message was discarded.")
+        loggingInterceptor.assertSingleWarning("The Link Manager is not currently assigned to any partitions for the topic" +
+                " ${Schema.LINK_IN_TOPIC}. This means there is no way to route a message back to the LinkManager with the" +
+                " Session with SessionId $sessionId in memory. The message was discarded.")
     }
 
     @Test
