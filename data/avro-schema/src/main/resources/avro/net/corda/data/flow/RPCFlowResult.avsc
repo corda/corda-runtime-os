@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "RPCFlowResult",
+  "namespace": "net.corda.data.flow",
+  "fields": [
+    {
+      "name": "clientId",
+      "type": "string"
+    },
+    {
+      "name": "flowName",
+      "type": "string"
+    },
+    {
+      "name": "result",
+      "type": ["null", "bytes"]
+    },
+    {
+      "name": "CPIIdentifier",
+      "type": "net.corda.data.crypto.SecureHash"
+    },
+    {
+      "name": "error",
+      "doc": "The flow exception (if any) that caused an error",
+      "type": ["null", "net.corda.data.flow.FlowError"]
+    }
+  ]
+}

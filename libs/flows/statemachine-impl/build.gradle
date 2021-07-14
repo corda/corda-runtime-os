@@ -1,0 +1,16 @@
+plugins {
+    id 'corda.publish'
+    id 'corda.common-library'
+}
+
+description "State Machine Impl"
+
+dependencies {
+    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
+
+    implementation "net.corda:corda-application:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-crypto-api:$cordaVersion"
+
+    implementation project(':libs:flows:statemachine')
+}
