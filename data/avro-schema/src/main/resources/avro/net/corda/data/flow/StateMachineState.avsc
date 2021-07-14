@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "StateMachineState",
+  "namespace": "net.corda.data.flow",
+  "fields": [
+    {
+      "name": "suspendCount",
+      "type": "int"
+    },
+    {
+      "name": "isKilled",
+      "type": "boolean"
+    },
+    {
+      "name": "initiatedBy",
+      "type": "bytes"
+    }
+  ]
+}

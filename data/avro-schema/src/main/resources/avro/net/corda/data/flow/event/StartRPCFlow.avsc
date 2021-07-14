@@ -1,0 +1,33 @@
+{
+  "type": "record",
+  "name": "StartRPCFlow",
+  "namespace": "net.corda.data.flow.event",
+  "fields": [
+    {
+      "name": "clientId",
+      "type": "string"
+    },
+    {
+      "name": "flowName",
+      "type": "string"
+    },
+    {
+      "name": "rpcUsername",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "args",
+      "type": {
+        "type": "array",
+        "items": ["null", "bytes"]
+      }
+    }
+  ]
+}
