@@ -16,7 +16,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
         const val BATCH_SIZE: Int = 128
 
-        const val TIMEOUT: Long = 2000L
+        const val TIMEOUT: Long = 100L
 
         val logger: Logger = contextLogger()
     }
@@ -32,6 +32,7 @@ internal class SimpleLifeCycleCoordinatorTest {
         val countDownLatch =
             CountDownLatch(n)  // Used to test all posted events are processed when coordinator stopped.
         val stopLatch = CountDownLatch(1)
+        var eventsProcessed = 0
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT * n) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             logger.debug("processEvent $event")
             when (event) {
@@ -39,6 +40,7 @@ internal class SimpleLifeCycleCoordinatorTest {
                     startLatch.countDown()
                 }
                 is PostEvent -> {
+                    eventsProcessed++
                     countDownLatch.countDown()
                 }
                 is StopEvent -> {
@@ -57,6 +59,7 @@ internal class SimpleLifeCycleCoordinatorTest {
             coordinator.stop()
             assertTrue(stopLatch.await(coordinator.timeout * n, TimeUnit.MILLISECONDS))
             assertTrue(countDownLatch.await(coordinator.timeout * n, TimeUnit.MILLISECONDS))
+            assertEquals(n, eventsProcessed)
         }
     }
 
@@ -67,8 +70,7 @@ internal class SimpleLifeCycleCoordinatorTest {
         val countDownLatch =
             CountDownLatch(n)  // Used to test all posted events are processed when coordinator stopped.
         val stopLatch = CountDownLatch(1)
-        SimpleLifeCycleCoordinator(BATCH_SIZE,
-            TIMEOUT * n) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT * n) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             logger.debug("processEvent $event")
             when (event) {
                 is StartEvent -> {
