@@ -1,7 +1,6 @@
 package net.corda.messaging.kafka.subscription
 
 import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.atLeast
 import com.nhaarman.mockito_kotlin.doAnswer
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.times
@@ -26,12 +25,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 class KafkaStateAndEventSubscriptionImplTest {
 
     companion object {
-        private const val TEST_TIMEOUT_SECONDS = 10L
+        private const val TEST_TIMEOUT_SECONDS = 4L
     }
 
     private val config: Config = createStandardTestConfig().getConfig(PATTERN_STATEANDEVENT)
@@ -101,6 +99,45 @@ class KafkaStateAndEventSubscriptionImplTest {
 
     @Test
     @Timeout(TEST_TIMEOUT_SECONDS)
+    fun `state and event subscription aetries`() {
+        val iterations = 5
+        val latch = CountDownLatch(iterations)
+        val (builder, producer, eventConsumer, stateConsumer) = setupMocks(iterations, latch)
+        val processor = StubStateAndEventProcessor(latch, CordaMessageAPIIntermittentException("Test exception"))
+        val subscription = KafkaStateAndEventSubscriptionImpl(
+            config,
+            subscriptionMapFactory,
+            builder,
+            processor
+        )
+
+        subscription.start()
+        while (subscription.isRunning) { Thread.sleep(10) }
+        assertThat(latch.count).isEqualTo(0)
+
+        verify(builder, times(1)).createEventConsumer(any(), any())
+        verify(builder, times(1)).createStateConsumer(any())
+        verify(builder, times(1)).createProducer(any())
+        verify(stateConsumer, times(6)).poll()
+        verify(eventConsumer, times(7)).poll()
+        verify(producer, times(5)).beginTransaction()
+        verify(producer, times(5)).sendRecords(any())
+        verify(producer, times(5)).sendRecordOffsetToTransaction(any(), any())
+        verify(producer, times(5)).tryCommitTransaction()
+
+        assertThat(processor.inputs.size).isEqualTo(iterations)
+        for (i in 0 until iterations) {
+            // The list is made counting down so we need our expectations to count down too
+            val countValue = iterations - i - 1
+            val input = processor.inputs[i]
+            assertThat(input.first).isEqualTo("state$countValue")
+            assertThat(input.second.key).isEqualTo("key")
+            assertThat(input.second.value).isEqualTo("value$countValue")
+        }
+    }
+
+    @Test
+    @Timeout(TEST_TIMEOUT_SECONDS)
     fun `state and event subscription processes correct state after event`() {
         val iterations = 5
         val latch = CountDownLatch(iterations)
@@ -114,7 +151,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning) { }
+        while (subscription.isRunning) { Thread.sleep(10) }
         assertThat(latch.count).isEqualTo(0)
 
         verify(builder, times(1)).createEventConsumer(any(), any())
@@ -139,42 +176,5 @@ class KafkaStateAndEventSubscriptionImplTest {
     }
 
 
-    @Test
-    @Timeout(TEST_TIMEOUT_SECONDS)
-    fun `state and event subscription retries`() {
-        val iterations = 5
-        val latch = CountDownLatch(iterations)
-        val (builder, producer, eventConsumer, stateConsumer) = setupMocks(iterations, latch)
-        val processor = StubStateAndEventProcessor(latch, CordaMessageAPIIntermittentException("Test exception"))
-        val subscription = KafkaStateAndEventSubscriptionImpl(
-            config,
-            subscriptionMapFactory,
-            builder,
-            processor
-        )
 
-        subscription.start()
-        while (subscription.isRunning) { }
-        assertThat(latch.count).isEqualTo(0)
-
-        verify(builder, times(1)).createEventConsumer(any(), any())
-        verify(builder, times(1)).createStateConsumer(any())
-        verify(builder, times(1)).createProducer(any())
-        verify(stateConsumer, times(6)).poll()
-        verify(eventConsumer, times(7)).poll()
-        verify(producer, times(5)).beginTransaction()
-        verify(producer, times(5)).sendRecords(any())
-        verify(producer, times(5)).sendRecordOffsetToTransaction(any(), any())
-        verify(producer, times(5)).tryCommitTransaction()
-
-        assertThat(processor.inputs.size).isEqualTo(iterations)
-        for (i in 0 until iterations) {
-            // The list is made counting down so we need our expectations to count down too
-            val countValue = iterations - i - 1
-            val input = processor.inputs[i]
-            assertThat(input.first).isEqualTo("state$countValue")
-            assertThat(input.second.key).isEqualTo("key")
-            assertThat(input.second.value).isEqualTo("value$countValue")
-        }
-    }
 }
