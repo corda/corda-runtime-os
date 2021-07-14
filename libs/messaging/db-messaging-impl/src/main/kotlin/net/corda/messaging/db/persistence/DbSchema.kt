@@ -34,8 +34,4 @@ class DbSchema {
         }
     }
 
-    companion object {
-        const val FIXED_PARTITION_NO = 1
-    }
-
 }
