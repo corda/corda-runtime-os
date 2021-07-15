@@ -7,6 +7,7 @@ import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
+import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
@@ -152,7 +153,7 @@ class GatewayTest {
         repeat(serverAddresses.size) { id ->
             repeat(messageCount) {
                 val msg = LinkOutMessage.newBuilder().apply {
-                    header = LinkOutHeader("sni", serverAddresses[id])
+                    header = LinkOutHeader("PartyA", NetworkType.CORDA_4, serverAddresses[id])
                     payload = authenticatedP2PMessage("Target-${serverAddresses[id]}")
                 }.build()
                 topicServiceAlice!!.addRecords(listOf(Record(P2P_OUT_TOPIC, "key", msg)))
@@ -193,13 +194,13 @@ class GatewayTest {
         // Produce messages for each Gateway
         repeat(messageCount) {
             var msg = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("sni", bobGatewayAddress.toString())
+                header = LinkOutHeader("PartyA", NetworkType.CORDA_4, bobGatewayAddress.toString())
                 payload = authenticatedP2PMessage("Target-$bobGatewayAddress")
             }.build()
             topicServiceAlice!!.addRecords(listOf(Record(P2P_OUT_TOPIC, "key", msg)))
 
             msg = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("sni", aliceGatewayAddress.toString())
+                header = LinkOutHeader("PartyA", NetworkType.CORDA_4, aliceGatewayAddress.toString())
                 payload = authenticatedP2PMessage("Target-$aliceGatewayAddress")
             }.build()
             topicServiceBob!!.addRecords(listOf(Record(P2P_OUT_TOPIC, "key", msg)))
