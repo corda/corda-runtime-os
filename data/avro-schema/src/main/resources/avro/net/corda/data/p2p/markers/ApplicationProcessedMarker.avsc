@@ -3,5 +3,5 @@
   "name": "ApplicationProcessedMarker",
   "namespace": "net.corda.p2p.markers",
   "fields": [],
-  "doc": "An acknowledgement of successful processing was received by the sending LinkManager. This acknowledgment originates in the receiving application layer."
+  "doc": "The message was processed by the application layer on the recipient side."
 }
