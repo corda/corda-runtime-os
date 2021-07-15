@@ -4,7 +4,7 @@ import net.corda.messaging.kafka.publisher.CordaAvroSerializer.Companion.BYTE_AR
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer.Companion.STRING_MAGIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.internal.uncheckedCast
+import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
@@ -12,7 +12,7 @@ import java.nio.ByteBuffer
 
 class CordaAvroDeserializer<T>(
     private val schemaRegistry: AvroSchemaRegistry,
-    private val onError: (String, ByteArray) -> Unit,
+    private val onError: (String, ByteArray) -> Unit
 ) : Deserializer<T> {
 
     private companion object {
