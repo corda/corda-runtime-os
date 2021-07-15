@@ -29,10 +29,10 @@ class CordaAvroDeserializer<T>(
                 return null
             }
             startsWith(data, stringMagicSerialized) -> {
-                return uncheckedCast(stringDeserializer.deserialize(topic, data.copyOfRange(stringMagicSerialized.size, data.size - 1)))
+                return uncheckedCast(stringDeserializer.deserialize(topic, data.copyOfRange(stringMagicSerialized.size, data.size)))
             }
             startsWith(data, BYTE_ARRAY_MAGIC_BYTES) -> {
-                return uncheckedCast(data.copyOfRange(BYTE_ARRAY_MAGIC_BYTES.size, data.size - 1))
+                return uncheckedCast(data.copyOfRange(BYTE_ARRAY_MAGIC_BYTES.size, data.size))
             }
             else -> {
                 return try {
