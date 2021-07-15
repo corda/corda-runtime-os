@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.integration.subscription
+package net.corda.messaging.kafka.integration.publisher
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -59,7 +59,7 @@ class PublisherIntegrationTest {
 
         val latch = CountDownLatch(recordsWithPartitions.size)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("${DURABLE_TOPIC1}-group", DURABLE_TOPIC1, 1),
+            SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1, 1),
             TestDurableProcessor(latch),
             kafkaConfig,
             null
@@ -82,7 +82,7 @@ class PublisherIntegrationTest {
 
         val latch = CountDownLatch(recordsWithPartitions.size)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("${DURABLE_TOPIC1}-group", DURABLE_TOPIC1, 1),
+            SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1, 1),
             TestDurableProcessor(latch),
             kafkaConfig,
             null
