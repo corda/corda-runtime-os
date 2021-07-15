@@ -10,10 +10,10 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.ResponseMessage
+import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -133,7 +133,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                 try {
                     // Attempt to deserialize as an early check. Shouldn't forward unrecognised message types
                     LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
-                    val record = Record(Gateway.P2P_IN_TOPIC, "key", message)
+                    val record = Record(LINK_IN_TOPIC, "key", message)
                     p2pInPublisher.publish(listOf(record))
                 } catch (e: IOException) {
                     logger.warn("Invalid message received. Cannot deserialize")

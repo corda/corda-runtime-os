@@ -13,6 +13,7 @@ import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.PartitionAssignmentListenerImpl
+import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
@@ -41,12 +42,7 @@ class Gateway(address: NetworkHostAndPort,
 ) : LifeCycle {
 
     companion object {
-        /**
-         * Topic names used to communicate with upstream services, specifically Link Manager
-         *
-         */
-        const val P2P_IN_TOPIC = "p2p.in"
-        const val P2P_OUT_TOPIC = "p2p.out"
+
         const val CONSUMER_GROUP_ID = "gateway"
         const val PUBLISHER_ID = "gateway"
 
@@ -73,7 +69,7 @@ class Gateway(address: NetworkHostAndPort,
         get() = started
 
     init {
-        val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, P2P_OUT_TOPIC)
+        val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, LINK_OUT_TOPIC)
         p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
             OutboundMessageHandler(connectionManager, publisherFactory),
             ConfigFactory.empty(),

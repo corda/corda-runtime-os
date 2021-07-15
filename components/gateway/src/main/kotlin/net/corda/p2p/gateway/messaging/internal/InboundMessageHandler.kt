@@ -12,10 +12,10 @@ import net.corda.p2p.Step2Message
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.gateway.Gateway.Companion.MAX_MESSAGE_SIZE
-import net.corda.p2p.gateway.Gateway.Companion.P2P_IN_TOPIC
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.RequestMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
+import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.slf4j.LoggerFactory
 import rx.Subscription
 import java.io.IOException
@@ -82,10 +82,10 @@ class InboundMessageHandler(private val server: HttpServer,
                         responderHello = sessionInitResponse
                         privateKey = ByteBuffer.wrap(pKey)
                     }
-                    Record(P2P_IN_TOPIC, "key", LinkInMessage(step2Message))
+                    Record(LINK_IN_TOPIC, "key", LinkInMessage(step2Message))
                 }
                 else -> {
-                    Record(P2P_IN_TOPIC, "key", p2pMessage)
+                    Record(LINK_IN_TOPIC, "key", p2pMessage)
                 }
             }
             logger.debug("Received message of type ${p2pMessage.schema.name}")

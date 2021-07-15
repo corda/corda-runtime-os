@@ -12,11 +12,11 @@ import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
-import net.corda.p2p.gateway.Gateway.Companion.P2P_IN_TOPIC
-import net.corda.p2p.gateway.Gateway.Companion.P2P_OUT_TOPIC
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpServer
+import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
+import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -90,7 +90,7 @@ class GatewayTest {
         }
 
         // Verify Gateway has successfully forwarded the message to the P2P_IN topic
-        val publishedRecords = topicServiceAlice!!.getRecords(P2P_IN_TOPIC, CONSUMER_GROUP_ID, -1, false)
+        val publishedRecords = topicServiceAlice!!.getRecords(LINK_IN_TOPIC, CONSUMER_GROUP_ID, -1, false)
         assertEquals(1, publishedRecords.size)
         val receivedMessage = publishedRecords.first().record.value
         assertTrue(receivedMessage is LinkInMessage)
@@ -131,7 +131,7 @@ class GatewayTest {
         }
 
         // Verify Gateway has received all [clientNumber] messages and that they were forwarded to the P2P_IN topic
-        val publishedRecords = topicServiceAlice!!.getRecords(P2P_IN_TOPIC, CONSUMER_GROUP_ID, -1, false)
+        val publishedRecords = topicServiceAlice!!.getRecords(LINK_IN_TOPIC, CONSUMER_GROUP_ID, -1, false)
         assertEquals(clientNumber, publishedRecords.size)
         var sum = 0
         // All clients should have sent a message containing their ID (index in the range). We verify that by simply adding them and comparing to the expected
@@ -157,7 +157,7 @@ class GatewayTest {
                     header = LinkOutHeader("PartyA", NetworkType.CORDA_4, serverAddresses[id])
                     payload = authenticatedP2PMessage("Target-${serverAddresses[id]}")
                 }.build()
-                topicServiceAlice!!.addRecords(listOf(Record(P2P_OUT_TOPIC, "key", msg)))
+                topicServiceAlice!!.addRecords(listOf(Record(LINK_OUT_TOPIC, "key", msg)))
             }
             servers.add(HttpServer(NetworkHostAndPort.parse(serverAddresses[id]), sslConfiguration).also {
                 it.onReceive.subscribe { rcv ->
@@ -199,22 +199,22 @@ class GatewayTest {
                 header = LinkOutHeader("PartyA", NetworkType.CORDA_4, bobGatewayAddress.toString())
                 payload = authenticatedP2PMessage("Target-$bobGatewayAddress")
             }.build()
-            topicServiceAlice!!.addRecords(listOf(Record(P2P_OUT_TOPIC, "key", msg)))
+            topicServiceAlice!!.addRecords(listOf(Record(LINK_OUT_TOPIC, "key", msg)))
 
             msg = LinkOutMessage.newBuilder().apply {
                 header = LinkOutHeader("PartyA", NetworkType.CORDA_4, aliceGatewayAddress.toString())
                 payload = authenticatedP2PMessage("Target-$aliceGatewayAddress")
             }.build()
-            topicServiceBob!!.addRecords(listOf(Record(P2P_OUT_TOPIC, "key", msg)))
+            topicServiceBob!!.addRecords(listOf(Record(LINK_OUT_TOPIC, "key", msg)))
         }
 
         val receivedLatch = CountDownLatch(messageCount * 2)
         (topicServiceAlice as TopicServiceStub).onPublish.subscribe { records ->
-            val inRecords = records.filter { it.topic == P2P_IN_TOPIC }
+            val inRecords = records.filter { it.topic == LINK_IN_TOPIC }
             if (inRecords.isNotEmpty()) receivedLatch.countDown()
         }
         (topicServiceBob as TopicServiceStub).onPublish.subscribe { records ->
-            val inRecords = records.filter { it.topic == P2P_IN_TOPIC }
+            val inRecords = records.filter { it.topic == LINK_IN_TOPIC }
             if (inRecords.isNotEmpty()) receivedLatch.countDown()
         }
 
