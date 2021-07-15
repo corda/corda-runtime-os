@@ -236,7 +236,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(private val config: Config
         try {
             producer.beginTransaction()
             producer.sendRecords(processor.onNext(consumerRecords.map { it.asEventLogRecord() }))
-            producer.sendOffsetsToTransaction(consumer)
+            producer.sendAllOffsetsToTransaction(consumer)
             producer.tryCommitTransaction()
         } catch (ex: Exception) {
             when (ex) {

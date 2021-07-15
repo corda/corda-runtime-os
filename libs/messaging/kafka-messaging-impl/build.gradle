@@ -46,6 +46,7 @@ dependencies {
 
     testRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
 
+    kafkaIntegrationTestImplementation project(":libs:messaging:kafka-messaging-impl")
     kafkaIntegrationTestImplementation project(":components:kafka-topic-admin")
     kafkaIntegrationTestImplementation project(":data:avro-schema")
 

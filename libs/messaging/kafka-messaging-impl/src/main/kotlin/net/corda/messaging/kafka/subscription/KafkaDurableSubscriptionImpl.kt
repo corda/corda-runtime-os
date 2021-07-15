@@ -58,7 +58,6 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
             get() = durableProcessor.keyClass
         override val valueClass: Class<V>
             get() = durableProcessor.valueClass
-
     }
 
 }
