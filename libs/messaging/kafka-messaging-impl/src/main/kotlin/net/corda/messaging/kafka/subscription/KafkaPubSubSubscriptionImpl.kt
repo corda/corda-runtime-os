@@ -16,10 +16,10 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAnd
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.v5.base.types.toHexString
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
@@ -47,7 +47,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
 ) : Subscription<K, V> {
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
     }
 
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)

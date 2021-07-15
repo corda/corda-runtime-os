@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "SessionPartitions",
+  "namespace": "net.corda.p2p",
+  "fields": [
+    {
+      "name": "partitions",
+      "type": {
+        "type": "array",
+        "items": "int"
+      }
+    }
+  ]
+}

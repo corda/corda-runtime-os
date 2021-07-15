@@ -9,9 +9,9 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.db.persistence.DBAccessProvider
 import net.corda.messaging.db.sync.OffsetTrackersManager
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.lang.Exception
 import java.nio.ByteBuffer
 import java.sql.SQLClientInfoException
@@ -28,7 +28,7 @@ class DBRandomAccessSubscription<K: Any, V: Any>(private val subscriptionConfig:
                                                  private val valueClass: Class<V>): RandomAccessSubscription<K, V>, LifeCycle {
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
     }
 
     private var running = false
@@ -59,7 +59,7 @@ class DBRandomAccessSubscription<K: Any, V: Any>(private val subscriptionConfig:
 
     @Suppress("TooGenericExceptionCaught")
     override fun getRecord(partition: Int, offset: Long): Record<K, V>? {
-        val maxVisibleOffset = offsetTrackersManager.maxVisibleOffset(subscriptionConfig.eventTopic)
+        val maxVisibleOffset = offsetTrackersManager.maxVisibleOffset(subscriptionConfig.eventTopic, partition)
 
         if (offset > maxVisibleOffset) {
             return null

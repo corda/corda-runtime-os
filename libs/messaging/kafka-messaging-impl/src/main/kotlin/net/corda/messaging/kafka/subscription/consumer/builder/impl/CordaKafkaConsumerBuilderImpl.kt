@@ -12,13 +12,13 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaCo
 import net.corda.messaging.kafka.toProperties
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.internal.uncheckedCast
+import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 /**
  * Generate a Kafka Consumer.
@@ -28,7 +28,7 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
 ) : ConsumerBuilder<K, V> {
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+        private val log: Logger = contextLogger()
     }
 
     override fun createPubSubConsumer(
