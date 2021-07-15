@@ -38,7 +38,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
     private val workers: ThreadPoolExecutor = Executors.newFixedThreadPool(4) as ThreadPoolExecutor
     private var p2pInPublisher = publisherFactory.createPublisher(PublisherConfig(PUBLISHER_ID), ConfigFactory.empty())
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "ComplexMethod")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
         val destinationToMessagesMap = mutableMapOf<NetworkHostAndPort, MutableList<LinkInMessage>>()
         val workResults = mutableListOf<Future<*>>()
