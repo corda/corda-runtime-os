@@ -36,3 +36,10 @@ net.corda.p2p.crypto.internal.InitiatorEncryptedExtensions
 net.corda.p2p.crypto.internal.InitiatorHandshakePayload
 net.corda.p2p.crypto.internal.ResponderEncryptedExtensions
 net.corda.p2p.crypto.internal.ResponderHandshakePayload
+net.corda.p2p.markers.ApplicationProcessedMarker
+net.corda.p2p.markers.ApplicationRejectedStaleMarker
+net.corda.p2p.markers.FlowMessageMarker
+net.corda.p2p.markers.GatewaySentMarker
+net.corda.p2p.markers.LinkManagerReceivedMarker
+net.corda.p2p.markers.LinkManagerSentMarker
+net.corda.p2p.markers.TtlExpiredMarker

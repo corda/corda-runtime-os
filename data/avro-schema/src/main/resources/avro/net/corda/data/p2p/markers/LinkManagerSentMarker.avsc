@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "LinkManagerSentMarker",
+  "namespace": "net.corda.p2p.markers",
+  "fields": [
+    {
+     "name": "partition",
+     "type": "long",
+     "doc": "The original partition of the message in P2P_OUT_TOPIC."
+    },
+    {
+      "name": "offset",
+      "type": "long",
+      "doc": "The original offset of the message in P2P_OUT_TOPIC."
+    }
+  ],
+  "doc": "The message was processed by the sending Link Manager."
+}
