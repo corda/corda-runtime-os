@@ -11,6 +11,7 @@ class CordaAvroSerializer<T : Any>(
     companion object {
         const val STRING_MAGIC = "corda-string-"
         const val BYTE_ARRAY_MAGIC = "corda-bytearray-"
+        private val stringSerializer = StringSerializer()
     }
 
     override fun serialize(topic: String?, data: T?): ByteArray? {
@@ -19,10 +20,7 @@ class CordaAvroSerializer<T : Any>(
                 null
             }
             data.javaClass == String::class.java -> {
-                val stringSerializer = StringSerializer()
-                val serializedMagic = stringSerializer.serialize(topic, STRING_MAGIC)
-                val serializedData = stringSerializer.serialize(topic, data as String)
-                serializedMagic + serializedData
+                stringSerializer.serialize(topic, STRING_MAGIC) + stringSerializer.serialize(topic, data as String)
             }
             data.javaClass == ByteArray::class.java -> {
                 BYTE_ARRAY_MAGIC.toByteArray() + data as ByteArray
