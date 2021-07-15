@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager.messaging
 
 import com.nhaarman.mockito_kotlin.any
-import net.corda.p2p.HoldingIdentity
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.CommonHeader
@@ -14,10 +13,10 @@ import net.corda.p2p.linkmanager.LinkManagerTest
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.complexMockFlowMessage
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.createSessionPair
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+import net.corda.p2p.payload.HoldingIdentity
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import java.nio.ByteBuffer
