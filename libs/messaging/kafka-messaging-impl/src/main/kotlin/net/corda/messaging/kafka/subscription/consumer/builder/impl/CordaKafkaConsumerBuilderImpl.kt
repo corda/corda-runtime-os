@@ -11,13 +11,11 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
 import net.corda.messaging.kafka.toProperties
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.internal.uncheckedCast
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.KafkaException
-import org.apache.kafka.common.serialization.StringDeserializer
 import org.slf4j.Logger
 
 /**
@@ -82,7 +80,7 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
             Thread.currentThread().contextClassLoader = null
             KafkaConsumer(
                 consumerConfig.toProperties(),
-                uncheckedCast(StringDeserializer()),
+                CordaAvroDeserializer<K>(avroSchemaRegistry, onError),
                 CordaAvroDeserializer<V>(avroSchemaRegistry, onError)
             )
         } catch (ex: KafkaException) {

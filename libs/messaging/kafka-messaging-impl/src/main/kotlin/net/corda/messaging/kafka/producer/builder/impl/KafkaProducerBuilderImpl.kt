@@ -9,11 +9,9 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_C
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.toProperties
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.v5.base.internal.uncheckedCast
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.common.KafkaException
-import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.Logger
 
 /**
@@ -35,9 +33,9 @@ class KafkaProducerBuilderImpl(
         val contextClassLoader = Thread.currentThread().contextClassLoader
         val producer = try {
             Thread.currentThread().contextClassLoader = null;
-            KafkaProducer<Any, Any>(
+            KafkaProducer(
                 producerConfig.toProperties(),
-                uncheckedCast(StringSerializer()),
+                CordaAvroSerializer(avroSchemaRegistry),
                 CordaAvroSerializer(avroSchemaRegistry)
             )
         } catch (ex: KafkaException) {
