@@ -6,7 +6,7 @@ import net.corda.messaging.api.records.Record
 import java.util.concurrent.CountDownLatch
 
 class TestDurableProcessor(
-    private val latch: CountDownLatch, private val outputTopic: String? = null
+    private val latch: CountDownLatch, private val outputTopic: String? = null, private val delayProcessor: Long? = null
 ) : DurableProcessor<String, DemoRecord> {
     override val keyClass: Class<String>
         get() = String::class.java
@@ -14,6 +14,10 @@ class TestDurableProcessor(
         get() = DemoRecord::class.java
 
     override fun onNext(events: List<Record<String, DemoRecord>>): List<Record<*, *>> {
+        if (delayProcessor != null) {
+            Thread.sleep(delayProcessor)
+        }
+
         for (event in events) {
             latch.countDown()
         }
