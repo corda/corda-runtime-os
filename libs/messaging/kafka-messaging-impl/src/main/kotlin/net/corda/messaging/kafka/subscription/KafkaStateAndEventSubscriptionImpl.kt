@@ -249,18 +249,19 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun processEvents() {
         var attempts = 0
         var pollAndProcessSuccessful = false
-        var currentKey: K? = null
+        var currentBatch = 0
         while (!pollAndProcessSuccessful) {
             try {
-                for (entry in getEventsByKey(eventConsumer.poll())) {
-                    tryProcessEvent(entry.key, entry.value)
+                for (entry in getEventsByBatch(eventConsumer.poll())) {
+                    currentBatch = entry.key
+                    tryProcessBatchOfEvents(entry.key, entry.value)
                 }
                 pollAndProcessSuccessful = true
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
                         attempts++
-                        handleProcessEventRetries(currentKey, attempts, ex)
+                        handleProcessEventRetries(currentBatch, attempts, ex)
                     }
                     else -> {
                         throw CordaMessageAPIFatalException(
@@ -273,42 +274,75 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun getEventsByKey(events: List<ConsumerRecordAndMeta<K, E>>): Map<K, List<ConsumerRecordAndMeta<K, E>>> {
-        val map = mutableMapOf<K, MutableList<ConsumerRecordAndMeta<K, E>>>()
+    /**
+     * Divide a list of [events] into batches such that 1 key does not have more then one entry per batch
+     */
+    private fun getEventsByBatch(events: List<ConsumerRecordAndMeta<K, E>>): Map<Int, List<ConsumerRecordAndMeta<K, E>>> {
+        var mapByKey = mutableMapOf<K, ConsumerRecordAndMeta<K, E>>()
+        val mapByBatch = mutableMapOf<Int, MutableList<ConsumerRecordAndMeta<K, E>>>()
+        var batchNumber = 1
         events.forEach { event ->
-            if (map[event.record.key()] == null) {
-                map[event.record.key()] = mutableListOf()
+            val eventKey = event.record.key()
+
+            if (mapByKey[eventKey] != null) {
+                mapByKey = mutableMapOf()
+                batchNumber++
             }
-            map[event.record.key()]!!.add(event)
+            mapByKey[eventKey] = event
+
+            if (mapByBatch[batchNumber] == null) {
+                mapByBatch[batchNumber] = mutableListOf()
+            }
+            mapByBatch[batchNumber]!!.add(event)
         }
 
-        return map
+        return mapByBatch
     }
 
-    private fun tryProcessEvent(key: K, events: List<ConsumerRecordAndMeta<K, E>>) {
+    private fun tryProcessBatchOfEvents(batchNumber : Int, events: List<ConsumerRecordAndMeta<K, E>>) {
         val outputRecords = mutableListOf<Record<*, *>>()
-        var updatedState: S? = null
+        val updatedStates: MutableMap<K, S?> = mutableMapOf()
 
-        log.trace { "Processing batch of events(size: ${events.size}, key: $key)" }
+        log.trace { "Processing batch number $batchNumber of events(size: ${events.size})" }
         for (event in events) {
-            log.trace { "Processing event: $event" }
-            val thisEventUpdates = processor.onNext(getCurrentStates()[event.record.key()]?.second, event.asRecord())
-            outputRecords.addAll(thisEventUpdates.responseEvents)
-            updatedState = thisEventUpdates.updatedState
-            log.trace { "Completed event: $event" }
+            processEvent(event, outputRecords, updatedStates)
         }
 
         producer.beginTransaction()
-        producer.sendRecords(outputRecords + Record(stateTopic.suffix, key, updatedState))
+        producer.sendRecords(outputRecords)
         producer.sendRecordOffsetToTransaction(eventConsumer, events.last().record)
         producer.tryCommitTransaction()
 
-        if (updatedState != null) {
-            getCurrentStates()[key] = Pair(clock.instant().toEpochMilli(), updatedState)
-        } else {
-            getCurrentStates().remove(key)
+        updateCurrentStates(updatedStates)
+
+        log.trace { "Completed batch number $batchNumber of events(size: ${events.size})" }
+    }
+
+    private fun processEvent(
+        event: ConsumerRecordAndMeta<K, E>,
+        outputRecords: MutableList<Record<*, *>>,
+        updatedStates: MutableMap<K, S?>
+    ) {
+        log.trace { "Processing event: $event" }
+        val key = event.record.key()
+        val thisEventUpdates = processor.onNext(getCurrentStates()[key]?.second, event.asRecord())
+        outputRecords.addAll(thisEventUpdates.responseEvents)
+        val updatedState = thisEventUpdates.updatedState
+        outputRecords.add(Record(stateTopic.suffix, key, updatedState))
+        updatedStates[key] = updatedState
+        log.trace { "Completed event: $event" }
+    }
+
+    private fun updateCurrentStates(updatedStates: MutableMap<K, S?>) {
+        for (entry in updatedStates) {
+            val key = entry.key
+            val value = entry.value
+            if (value != null) {
+                getCurrentStates()[key] = Pair(clock.instant().toEpochMilli(), value)
+            } else {
+                getCurrentStates().remove(key)
+            }
         }
-        log.trace { "completed batch of events(size: ${events.size}, key: $key)" }
     }
 
     private fun updateStates() {
@@ -349,24 +383,24 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     /**
      * Handle retries for event processing.
-     * Reset [eventConsumer] position and retry poll and process of eventRecords by [key].
+     * Reset [eventConsumer] position and retry poll and process of eventRecords by [batchNumber].
      * Retry a max of [consumerPollAndProcessMaxRetries] times.
      * If [consumerPollAndProcessMaxRetries] is exceeded then throw a [CordaMessageAPIIntermittentException]
      */
     private fun handleProcessEventRetries(
-        key: K?,
+        batchNumber: Int?,
         attempts: Int,
         ex: Exception
     ) {
         if (attempts <= consumerPollAndProcessMaxRetries) {
             log.warn(
-                "Failed to process record key $key from topic $eventTopic, group $groupName, " +
+                "Failed to process record batch number $batchNumber from topic $eventTopic, group $groupName, " +
                         "producerClientId $producerClientId. " +
                         "Retrying poll and process. Attempts: $attempts."
             )
             eventConsumer.resetToLastCommittedPositions(OffsetResetStrategy.EARLIEST)
         } else {
-            val message = "Failed to process record key $key from topic $eventTopic, group $groupName, " +
+            val message = "Failed to process batchNumber $batchNumber from topic $eventTopic, group $groupName, " +
                     "producerClientId $producerClientId. " +
                     "Attempts: $attempts. Max reties exceeded."
             log.warn(message, ex)

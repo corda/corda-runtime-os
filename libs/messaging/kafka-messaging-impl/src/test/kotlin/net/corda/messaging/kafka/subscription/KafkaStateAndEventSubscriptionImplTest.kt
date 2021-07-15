@@ -2,7 +2,6 @@ package net.corda.messaging.kafka.subscription
 
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doAnswer
-import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
@@ -11,7 +10,6 @@ import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_STATEANDEVENT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -32,7 +30,7 @@ import java.util.concurrent.TimeUnit.SECONDS
 class KafkaStateAndEventSubscriptionImplTest {
 
     companion object {
-        private const val TEST_TIMEOUT_SECONDS = 10L
+        private const val TEST_TIMEOUT_SECONDS = 20L
         private const val TOPIC = "topic"
     }
 
@@ -181,14 +179,60 @@ class KafkaStateAndEventSubscriptionImplTest {
 
 
     @Test
-    fun `state and event subscription processes multiples events by key`() {
-        val iterations = 30
-        val latch = CountDownLatch(iterations)
-        val (builder, producer, eventConsumer) = setupMocks(iterations, latch)
+    fun `state and event subscription processes multiples events by key, small batches`() {
+        val latch = CountDownLatch(30)
+        val (builder, producer, eventConsumer) = setupMocks(0, latch)
         val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
         var offset = 0
         for (i in 0 until 3) {
             for (j in 0 until 10) {
+                records.add(ConsumerRecordAndMeta("", ConsumerRecord(TOPIC, 1, offset.toLong(), "key$i", "value$j")))
+                offset++
+            }
+        }
+
+        var eventsPaused = false
+        doAnswer {
+            if (eventsPaused) {
+                emptyList()
+            } else {
+                eventsPaused = true
+                records
+            }
+        }.whenever(eventConsumer).poll()
+
+        val processor = StubStateAndEventProcessor(latch)
+        val subscription = KafkaStateAndEventSubscriptionImpl(
+            config,
+            subscriptionMapFactory,
+            builder,
+            processor
+        )
+
+        subscription.start()
+        assertTrue(latch.await(TEST_TIMEOUT_SECONDS, SECONDS))
+        subscription.stop()
+
+        verify(builder, times(1)).createEventConsumer(any(), any())
+        verify(builder, times(1)).createStateConsumer(any())
+        verify(builder, times(1)).createProducer(any())
+        verify(producer, times(28)).beginTransaction()
+        verify(producer, times(28)).sendRecords(any())
+        verify(producer, times(28)).sendRecordOffsetToTransaction(any(), any())
+        verify(producer, times(28)).tryCommitTransaction()
+
+        assertThat(processor.inputs.size).isEqualTo(30)
+    }
+
+
+    @Test
+    fun `state and event subscription processes multiples events by key, large batches`() {
+        val latch = CountDownLatch(30)
+        val (builder, producer, eventConsumer) = setupMocks(0, latch)
+        val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
+        var offset = 0
+        for (j in 0 until 3) {
+            for (i in 0 until 10) {
                 records.add(ConsumerRecordAndMeta("", ConsumerRecord(TOPIC, 1, offset.toLong(), "key$i", "value$j")))
                 offset++
             }
@@ -224,7 +268,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         verify(producer, times(3)).sendRecordOffsetToTransaction(any(), any())
         verify(producer, times(3)).tryCommitTransaction()
 
-        assertThat(processor.inputs.size).isEqualTo(iterations)
+        assertThat(processor.inputs.size).isEqualTo(30)
     }
 
 }
