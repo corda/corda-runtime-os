@@ -11,7 +11,7 @@ import io.netty.handler.codec.http.HttpRequestDecoder
 import io.netty.handler.codec.http.HttpResponseEncoder
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.lifecycle.LifeCycle
-import net.corda.p2p.gateway.messaging.RequestMessage
+import net.corda.p2p.gateway.messaging.HttpMessage
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
@@ -62,8 +62,8 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
     override val isRunning: Boolean
         get() = started
 
-    private val _onReceive = PublishSubject.create<RequestMessage>().toSerialized()
-    val onReceive: Observable<RequestMessage>
+    private val _onReceive = PublishSubject.create<HttpMessage>().toSerialized()
+    val onReceive: Observable<HttpMessage>
         get() = _onReceive
 
     private val _onConnection = PublishSubject.create<ConnectionChangeEvent>().toSerialized()
@@ -165,7 +165,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
                     }
                 },
                 onReceive = { msg ->
-                    parent._onReceive.onNext(msg as RequestMessage)
+                    parent._onReceive.onNext(msg)
                 }
             ))
         }

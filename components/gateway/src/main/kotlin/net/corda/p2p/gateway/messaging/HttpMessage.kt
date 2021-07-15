@@ -4,15 +4,15 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.v5.base.util.NetworkHostAndPort
 
 /**
- * [ApplicationMessage] implementation. Used to deliver response messages from the transport layer to the application layer
+ * Used to deliver HTTP messages from the transport layer to the application layer
  */
-class ResponseMessage(
+class HttpMessage(
     val statusCode: HttpResponseStatus,
-    override var payload: ByteArray,
-    override val source: NetworkHostAndPort,
-    override val destination: NetworkHostAndPort
-) : ApplicationMessage {
-    override fun release() {
+    var payload: ByteArray,
+    val source: NetworkHostAndPort,
+    val destination: NetworkHostAndPort
+) {
+    fun release() {
         payload = ByteArray(0)
     }
 

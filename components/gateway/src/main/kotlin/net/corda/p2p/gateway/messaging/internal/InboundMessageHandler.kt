@@ -13,7 +13,7 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.gateway.Gateway.Companion.MAX_MESSAGE_SIZE
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.messaging.RequestMessage
+import net.corda.p2p.gateway.messaging.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.slf4j.LoggerFactory
@@ -59,9 +59,9 @@ class InboundMessageHandler(private val server: HttpServer,
      * Handler for direct P2P messages. The payload is deserialized and then published to the ingress topic.
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
-    private fun handleRequestMessage(message: RequestMessage) {
+    private fun handleRequestMessage(message: HttpMessage) {
         var responseBytes = ByteArray(0)
-        var statusCode = message.response.status()
+        var statusCode = message.statusCode
         try {
             logger.debug("Processing request message from ${message.source}")
             val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))

@@ -11,7 +11,7 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.HttpClientCodec
 import io.netty.handler.codec.http.HttpContentDecompressor
 import net.corda.lifecycle.LifeCycle
-import net.corda.p2p.gateway.messaging.ResponseMessage
+import net.corda.p2p.gateway.messaging.HttpMessage
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
@@ -64,8 +64,8 @@ class HttpClient(private val destination: NetworkHostAndPort,
     override val isRunning: Boolean
         get() = started
 
-    private val _onReceive = PublishSubject.create<ResponseMessage>().toSerialized()
-    val onReceive: Observable<ResponseMessage>
+    private val _onReceive = PublishSubject.create<HttpMessage>().toSerialized()
+    val onReceive: Observable<HttpMessage>
         get() = _onReceive
 
     private val _onConnection = PublishSubject.create<ConnectionChangeEvent>().toSerialized()
@@ -173,7 +173,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
             httpChannelHandler = HttpChannelHandler(
                 onOpen = { _, change -> parent._onConnection.onNext(change) },
                 onClose = { _, change -> parent._onConnection.onNext(change) },
-                onReceive = { rcv -> parent._onReceive.onNext(rcv as ResponseMessage) }
+                onReceive = { rcv -> parent._onReceive.onNext(rcv) }
             )
             pipeline.addLast(httpChannelHandler)
         }

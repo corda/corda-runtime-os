@@ -16,9 +16,7 @@ import io.netty.handler.codec.http.HttpUtil
 import io.netty.handler.codec.http.HttpVersion
 import io.netty.handler.codec.http.LastHttpContent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
-import net.corda.p2p.gateway.messaging.ApplicationMessage
-import net.corda.p2p.gateway.messaging.RequestMessage
-import net.corda.p2p.gateway.messaging.ResponseMessage
+import net.corda.p2p.gateway.messaging.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpHelper.Companion.validate
 import net.corda.p2p.gateway.messaging.toHostAndPort
 import net.corda.v5.base.util.NetworkHostAndPort
@@ -31,14 +29,13 @@ import javax.net.ssl.SSLException
 class HttpChannelHandler(
     private val onOpen: (SocketChannel, ConnectionChangeEvent) -> Unit,
     private val onClose: (SocketChannel, ConnectionChangeEvent) -> Unit,
-    private val onReceive: (ApplicationMessage) -> Unit
+    private val onReceive: (HttpMessage) -> Unit
 ) : SimpleChannelInboundHandler<HttpObject>() {
 
     private val logger = LoggerFactory.getLogger(HttpChannelHandler::class.java)
 
     private var messageBodyBuf: ByteBuf? = null
     private var responseCode: HttpResponseStatus? = null
-    private var validationResult: HttpResponse? = null
 
     /**
      * Reads the HTTP objects into a [ByteBuf] and publishes them to all subscribers
@@ -52,14 +49,14 @@ class HttpChannelHandler(
         }
 
         if (msg is HttpRequest) {
-            validationResult = msg.validate()
+            responseCode = msg.validate()
             logger.debug("Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
                     "Protocol version: ${msg.protocolVersion()}\n" +
                     "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
                     "Request URI: ${msg.uri()}\n" +
                     "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n")
             // initialise byte array to read the request into
-            if (validationResult!!.status() != HttpResponseStatus.LENGTH_REQUIRED) {
+            if (responseCode!! != HttpResponseStatus.LENGTH_REQUIRED) {
                 messageBodyBuf = ctx.alloc().buffer(msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
             }
 
@@ -91,19 +88,19 @@ class HttpChannelHandler(
             if (responseCode != null) {
                 // Client
                 onReceive(
-                    ResponseMessage(responseCode!!, returnByteArray,
+                    HttpMessage(responseCode!!, returnByteArray,
                         sourceAddress.toHostAndPort(), targetAddress.toHostAndPort())
                 )
             } else {
                 // Server
                 onReceive(
-                    RequestMessage(validationResult!!, returnByteArray,
-                        sourceAddress.toHostAndPort(), targetAddress.toHostAndPort()))
+                    HttpMessage(responseCode!!, returnByteArray,
+                        sourceAddress.toHostAndPort(), targetAddress.toHostAndPort())
+                )
             }
 
             messageBodyBuf?.release()
             responseCode = null
-            validationResult = null
         }
     }
 

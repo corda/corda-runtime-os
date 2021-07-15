@@ -156,13 +156,13 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
             .filter { e -> e.key == remoteAddress && e.value?.connected!! }
             .size
 
-    private val _onNewConnection = PublishSubject.create<Observable<ResponseMessage>>().toSerialized()
+    private val _onNewConnection = PublishSubject.create<Observable<HttpMessage>>().toSerialized()
 
     /**
      * Returns an observable to which services can subscribe and receive client request response messages. Used due to
      * having this manager as an intermediary for HTTP clients
      */
-    val onNewConnection: Observable<Observable<ResponseMessage>>
+    val onNewConnection: Observable<Observable<HttpMessage>>
         get() = _onNewConnection
 }
 

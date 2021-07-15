@@ -12,7 +12,7 @@ import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.ConnectionManager
-import net.corda.p2p.gateway.messaging.ResponseMessage
+import net.corda.p2p.gateway.messaging.HttpMessage
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
@@ -125,7 +125,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
      * as an indication of successful receipt on the other end. In case of a session request message, the response will
      * contain information which then needs to be forwarded to the LinkManager
      */
-    private fun responseMessageHandler(message: ResponseMessage) {
+    private fun responseMessageHandler(message: HttpMessage) {
         logger.debug("Processing response message from ${message.source} with status $${message.statusCode}")
         if (HttpResponseStatus.OK == message.statusCode) {
             // response messages should have empty payloads unless they are part of the initial session handshake

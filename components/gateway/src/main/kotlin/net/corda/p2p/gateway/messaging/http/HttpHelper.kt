@@ -71,40 +71,40 @@ class HttpHelper {
          * @return an [HttpResponse] containing the status code and potentially an error message in the response body should
          * there be a need
          */
-        fun HttpRequest.validate(): HttpResponse {
+        fun HttpRequest.validate(): HttpResponseStatus {
             try {
                 val uri = URI.create(this.uri()).normalize()
                 if (uri.scheme != SCHEME) {
-                    return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST)
+                    return HttpResponseStatus.BAD_REQUEST
                 }
 
                 if (uri.path != ENDPOINT) {
-                    return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
+                    return HttpResponseStatus.NOT_FOUND
                 }
 
             } catch (e: IllegalArgumentException) {
                 //The URI string in the request is invalid - cannot be used to instantiate URI object
-                return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST)
+                return HttpResponseStatus.BAD_REQUEST
             }
 
             if (this.protocolVersion() != HttpVersion.HTTP_1_1) {
-                return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.HTTP_VERSION_NOT_SUPPORTED)
+                return HttpResponseStatus.HTTP_VERSION_NOT_SUPPORTED
             }
 
             if (this.method() != HttpMethod.POST) {
-                return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_IMPLEMENTED)
+                return HttpResponseStatus.NOT_IMPLEMENTED
             }
 
             if (this.headers()[HttpHeaderNames.CONTENT_LENGTH] == null) {
-                return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.LENGTH_REQUIRED)
+                return HttpResponseStatus.LENGTH_REQUIRED
             }
 
             if (!HttpHeaderValues.APPLICATION_JSON.contentEqualsIgnoreCase(this.headers()[HttpHeaderNames.CONTENT_TYPE]))
             {
-                return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE)
+                return HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
             }
 
-            return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
+            return HttpResponseStatus.OK
         }
     }
 }
