@@ -37,18 +37,18 @@ class HttpHelper {
          * @param destination host and port of the HTTP server for which this request is intended
          */
         fun createRequest(message: ByteArray, destination: NetworkHostAndPort): HttpRequest {
+            val content = Unpooled.copiedBuffer(message)
             return DefaultFullHttpRequest(
                 HttpVersion.HTTP_1_1,
                 HttpMethod.POST,
-                URL(SCHEME, destination.host, destination.port, ENDPOINT).toString()
+                URL(SCHEME, destination.host, destination.port, ENDPOINT).toString(),
+                content
             ).apply {
-                val bbuf = Unpooled.copiedBuffer(message)
                 headers().set(HttpHeaderNames.HOST, destination.host)
                     .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
                     .set(HttpHeaderNames.ACCEPT_ENCODING, HttpHeaderValues.APPLICATION_JSON)
                     .set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
-                    .set(HttpHeaderNames.CONTENT_LENGTH, bbuf.readableBytes())
-                content().clear().writeBytes(bbuf)
+                    .set(HttpHeaderNames.CONTENT_LENGTH, content().readableBytes())
             }
         }
 
