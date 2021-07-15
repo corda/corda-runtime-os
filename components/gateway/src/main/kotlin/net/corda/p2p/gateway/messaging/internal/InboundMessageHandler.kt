@@ -13,7 +13,7 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.gateway.Gateway.Companion.MAX_MESSAGE_SIZE
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.messaging.HttpMessage
+import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.slf4j.LoggerFactory
@@ -96,7 +96,6 @@ class InboundMessageHandler(private val server: HttpServer,
             statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR
         } finally {
             server.write(statusCode, responseBytes, message.source)
-            message.release()
         }
     }
 }

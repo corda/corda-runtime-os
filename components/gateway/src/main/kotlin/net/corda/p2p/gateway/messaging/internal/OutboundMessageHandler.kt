@@ -12,7 +12,7 @@ import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.ConnectionManager
-import net.corda.p2p.gateway.messaging.HttpMessage
+import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
@@ -143,8 +143,6 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
         } else {
             logger.warn("Something went wrong with peer processing an outbound message. Peer response status ${message.statusCode}")
         }
-
-        message.release()
     }
 
     override val keyClass: Class<String>

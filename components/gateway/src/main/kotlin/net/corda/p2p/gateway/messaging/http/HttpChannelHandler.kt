@@ -16,7 +16,6 @@ import io.netty.handler.codec.http.HttpUtil
 import io.netty.handler.codec.http.HttpVersion
 import io.netty.handler.codec.http.LastHttpContent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
-import net.corda.p2p.gateway.messaging.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpHelper.Companion.validate
 import net.corda.p2p.gateway.messaging.toHostAndPort
 import net.corda.v5.base.util.NetworkHostAndPort

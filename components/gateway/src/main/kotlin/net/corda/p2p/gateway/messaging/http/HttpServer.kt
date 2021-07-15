@@ -11,7 +11,6 @@ import io.netty.handler.codec.http.HttpRequestDecoder
 import io.netty.handler.codec.http.HttpResponseEncoder
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.lifecycle.LifeCycle
-import net.corda.p2p.gateway.messaging.HttpMessage
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
