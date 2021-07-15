@@ -127,7 +127,6 @@ class DemoApp @Activate constructor(
                             durableSub?.stop()
                             stateEventSub?.stop()
                             pubsubSub?.stop()
-                            shutdown()
                         }
                         else -> {
                             log.error("$event unexpected!")

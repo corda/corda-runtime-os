@@ -37,11 +37,9 @@
 	junit-platform-commons;version='[1.7.1,1.7.2)',\
 	junit-platform-engine;version='[1.7.1,1.7.2)',\
 	junit-platform-launcher;version='[1.7.1,1.7.2)',\
-	net.corda.base;version='[1.0.0,1.0.1)',\
+	net.corda.base;version='[5.0.0,5.0.1)',\
 	net.corda.helloworld;version='[5.0.0,5.0.1)',\
 	net.corda.helloworld-impl;version='[5.0.0,5.0.1)',\
-	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.21,1.4.22)',\
-	net.corda.kotlin-stdlib-jdk8.osgi-bundle;version='[1.4.21,1.4.22)',\
 	org.apache.felix.scr;version='[2.1.20,2.1.21)',\
 	org.apache.logging.log4j.api;version='[2.14.1,2.14.2)',\
 	org.apache.logging.log4j.slf4j-impl;version='[2.14.1,2.14.2)',\
