@@ -79,8 +79,8 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                         }
                     }
                 } catch (e: ConnectTimeoutException) {
-                    logger.warn(e.message)
-                    logger.warn("Dropping all messages for target ${entry.key}")
+                    logger.warn("Could not establish a connection to ${entry.key}. Scheduling for re-send")
+                    messagesToRetry.addAll(entry.value)
                 }
 
                 // Schedule any pending re-tries

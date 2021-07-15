@@ -58,8 +58,6 @@ class HttpTest {
                 clientReceivedResponses.await(5, TimeUnit.SECONDS)
                 assertTrue(responseReceived)
             }
-
-            Thread.sleep(10000)
         }
     }
 

@@ -21,12 +21,10 @@ import rx.subjects.PublishSubject
 import java.lang.IllegalStateException
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509CertSelector
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.CertPathTrustManagerParameters
 import javax.net.ssl.TrustManagerFactory
 import kotlin.concurrent.withLock
-import kotlin.math.min
 
 /**
  * The [HttpClient] creates an HTTP(S) connection to a given URL. It will attempt to keep the connection alive until a set number
@@ -50,18 +48,11 @@ class HttpClient(private val destination: NetworkHostAndPort,
     LifeCycle {
 
     companion object {
-        private const val MIN_RETRY_INTERVAL = 1000L
-        private const val MAX_RETRY_INTERVAL = 60000L
-        private const val BACKOFF_MULTIPLIER = 2L
-        /**
-         * Default number of thread to use for the worker group
-         */
         private const val NUM_CLIENT_THREADS = 2
     }
 
     private val logger = LoggerFactory.getLogger(HttpClient::class.java)
 
-    private var retryInterval = MIN_RETRY_INTERVAL
     private val lock = ReentrantLock()
 
     @Volatile
@@ -70,12 +61,6 @@ class HttpClient(private val destination: NetworkHostAndPort,
 
     @Volatile
     private var clientChannel: Channel? = null
-
-    @Volatile
-    private var httpActive = false
-
-    @Volatile
-    private var httpChannelHandler: ChannelHandler? = null
 
     override val isRunning: Boolean
         get() = started
@@ -89,16 +74,9 @@ class HttpClient(private val destination: NetworkHostAndPort,
         get() = _onConnection
 
     private val connectListener = ChannelFutureListener { future ->
-        httpActive = false
         if (!future.isSuccess) {
             logger.warn("Failed to connect. ${future.cause().message}")
-            if (started) {
-                workerGroup?.schedule({
-                    logger.info("Retry connect to $destination")
-                    retryInterval = min(MAX_RETRY_INTERVAL, retryInterval * BACKOFF_MULTIPLIER)
-                    restart()
-                }, retryInterval, TimeUnit.MILLISECONDS)
-            }
+            stop()
         } else {
             clientChannel = future.channel()
             clientChannel?.closeFuture()?.addListener(closeListener)
@@ -110,14 +88,6 @@ class HttpClient(private val destination: NetworkHostAndPort,
         logger.info("Disconnected from $destination")
         future.channel()?.disconnect()
         clientChannel = null
-        if (started && !httpActive) {
-            logger.info("Scheduling reconnect to $destination reason HTTP channel inactive")
-            workerGroup?.schedule({
-                logger.info("Retry connect to $destination")
-                retryInterval = min(MAX_RETRY_INTERVAL, retryInterval * BACKOFF_MULTIPLIER)
-                restart()
-            }, retryInterval, TimeUnit.MILLISECONDS)
-        }
     }
 
     override fun start() {
@@ -129,7 +99,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
             logger.info("Connecting to $destination")
             workerGroup = sharedThreadPool ?: NioEventLoopGroup(NUM_CLIENT_THREADS)
             started = true
-            restart()
+            connect()
         }
 
     }
@@ -172,7 +142,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
             return isChannelWritable(channel)
         }
 
-    private fun restart() {
+    private fun connect() {
         val bootstrap = Bootstrap()
         bootstrap.group(workerGroup).channel(NioSocketChannel::class.java).handler(ClientChannelInitializer(this))
         val clientFuture = bootstrap.connect(destination.host, destination.port)
@@ -180,7 +150,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
     }
 
     private fun isChannelWritable(channel: Channel?): Boolean {
-        return channel?.let { channel.isOpen && channel.isActive && httpActive } ?: false
+        return channel?.let { channel.isOpen && channel.isActive } ?: false
     }
 
     private class ClientChannelInitializer(val parent: HttpClient) : ChannelInitializer<SocketChannel>() {
@@ -202,32 +172,11 @@ class HttpClient(private val destination: NetworkHostAndPort,
             pipeline.addLast(HttpClientCodec())
             pipeline.addLast(HttpContentDecompressor())
             httpChannelHandler = HttpChannelHandler(
-                onOpen = { _, change ->
-                    parent.run {
-                        httpActive = true
-                        retryInterval = MIN_RETRY_INTERVAL
-                        _onConnection.onNext(change)
-                    }
-                },
-                onClose = { _, change ->
-                    if (parent.httpChannelHandler == httpChannelHandler) {
-                        parent.run {
-                            _onConnection.onNext(change)
-                            if (started && httpActive) {
-                                logger.info("Scheduling restart of connection to ${parent.destination} (HTTP active)")
-                                workerGroup?.schedule({
-                                    retryInterval = min(MAX_RETRY_INTERVAL, retryInterval * BACKOFF_MULTIPLIER)
-                                    restart()
-                                }, retryInterval, TimeUnit.MILLISECONDS)
-                            }
-                            httpActive = false
-                        }
-                    }
-                },
+                onOpen = { _, change -> parent._onConnection.onNext(change) },
+                onClose = { _, change -> parent._onConnection.onNext(change) },
                 onReceive = { rcv -> parent._onReceive.onNext(rcv as ResponseMessage) }
             )
             pipeline.addLast(httpChannelHandler)
-            parent.httpChannelHandler = httpChannelHandler
         }
     }
 }
