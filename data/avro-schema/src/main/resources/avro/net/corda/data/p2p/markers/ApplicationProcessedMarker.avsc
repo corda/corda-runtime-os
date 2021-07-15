@@ -1,0 +1,7 @@
+{
+  "type": "record",
+  "name": "ApplicationProcessedMarker",
+  "namespace": "net.corda.p2p.markers",
+  "fields": [],
+  "doc": "An acknowledgement of successful processing was received by the sending LinkManager. This acknowledgment originates in the receiving application layer."
+}

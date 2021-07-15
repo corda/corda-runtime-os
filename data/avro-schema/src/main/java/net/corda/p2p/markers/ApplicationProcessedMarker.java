@@ -12,26 +12,26 @@ import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
 import org.apache.avro.message.SchemaStore;
 
-/** An acknowledgement of successful delivery for the message was received by the sending LinkManager. This acknowledgment originates in the receiving LinkManager. */
+/** An acknowledgement of successful processing was received by the sending LinkManager. This acknowledgment originates in the receiving application layer. */
 @org.apache.avro.specific.AvroGenerated
-public class LinkManagerReceivedMarker extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 6604469289054083601L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"LinkManagerReceivedMarker\",\"namespace\":\"net.corda.p2p.markers\",\"doc\":\"An acknowledgement of successful delivery for the message was received by the sending LinkManager. This acknowledgment originates in the receiving LinkManager.\",\"fields\":[]}");
+public class ApplicationProcessedMarker extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
+  private static final long serialVersionUID = -5291496385002991065L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"ApplicationProcessedMarker\",\"namespace\":\"net.corda.p2p.markers\",\"doc\":\"An acknowledgement of successful processing was received by the sending LinkManager. This acknowledgment originates in the receiving application layer.\",\"fields\":[]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
 
-  private static final BinaryMessageEncoder<LinkManagerReceivedMarker> ENCODER =
-      new BinaryMessageEncoder<LinkManagerReceivedMarker>(MODEL$, SCHEMA$);
+  private static final BinaryMessageEncoder<ApplicationProcessedMarker> ENCODER =
+      new BinaryMessageEncoder<ApplicationProcessedMarker>(MODEL$, SCHEMA$);
 
-  private static final BinaryMessageDecoder<LinkManagerReceivedMarker> DECODER =
-      new BinaryMessageDecoder<LinkManagerReceivedMarker>(MODEL$, SCHEMA$);
+  private static final BinaryMessageDecoder<ApplicationProcessedMarker> DECODER =
+      new BinaryMessageDecoder<ApplicationProcessedMarker>(MODEL$, SCHEMA$);
 
   /**
    * Return the BinaryMessageEncoder instance used by this class.
    * @return the message encoder used by this class
    */
-  public static BinaryMessageEncoder<LinkManagerReceivedMarker> getEncoder() {
+  public static BinaryMessageEncoder<ApplicationProcessedMarker> getEncoder() {
     return ENCODER;
   }
 
@@ -39,7 +39,7 @@ public class LinkManagerReceivedMarker extends org.apache.avro.specific.Specific
    * Return the BinaryMessageDecoder instance used by this class.
    * @return the message decoder used by this class
    */
-  public static BinaryMessageDecoder<LinkManagerReceivedMarker> getDecoder() {
+  public static BinaryMessageDecoder<ApplicationProcessedMarker> getDecoder() {
     return DECODER;
   }
 
@@ -48,12 +48,12 @@ public class LinkManagerReceivedMarker extends org.apache.avro.specific.Specific
    * @param resolver a {@link SchemaStore} used to find schemas by fingerprint
    * @return a BinaryMessageDecoder instance for this class backed by the given SchemaStore
    */
-  public static BinaryMessageDecoder<LinkManagerReceivedMarker> createDecoder(SchemaStore resolver) {
-    return new BinaryMessageDecoder<LinkManagerReceivedMarker>(MODEL$, SCHEMA$, resolver);
+  public static BinaryMessageDecoder<ApplicationProcessedMarker> createDecoder(SchemaStore resolver) {
+    return new BinaryMessageDecoder<ApplicationProcessedMarker>(MODEL$, SCHEMA$, resolver);
   }
 
   /**
-   * Serializes this LinkManagerReceivedMarker to a ByteBuffer.
+   * Serializes this ApplicationProcessedMarker to a ByteBuffer.
    * @return a buffer holding the serialized data for this instance
    * @throws java.io.IOException if this instance could not be serialized
    */
@@ -62,12 +62,12 @@ public class LinkManagerReceivedMarker extends org.apache.avro.specific.Specific
   }
 
   /**
-   * Deserializes a LinkManagerReceivedMarker from a ByteBuffer.
+   * Deserializes a ApplicationProcessedMarker from a ByteBuffer.
    * @param b a byte buffer holding serialized data for an instance of this class
-   * @return a LinkManagerReceivedMarker instance decoded from the given buffer
+   * @return a ApplicationProcessedMarker instance decoded from the given buffer
    * @throws java.io.IOException if the given bytes could not be deserialized into an instance of this class
    */
-  public static LinkManagerReceivedMarker fromByteBuffer(
+  public static ApplicationProcessedMarker fromByteBuffer(
       java.nio.ByteBuffer b) throws java.io.IOException {
     return DECODER.decode(b);
   }
@@ -91,45 +91,45 @@ public class LinkManagerReceivedMarker extends org.apache.avro.specific.Specific
   }
 
   /**
-   * Creates a new LinkManagerReceivedMarker RecordBuilder.
-   * @return A new LinkManagerReceivedMarker RecordBuilder
+   * Creates a new ApplicationProcessedMarker RecordBuilder.
+   * @return A new ApplicationProcessedMarker RecordBuilder
    */
-  public static net.corda.p2p.markers.LinkManagerReceivedMarker.Builder newBuilder() {
-    return new net.corda.p2p.markers.LinkManagerReceivedMarker.Builder();
+  public static net.corda.p2p.markers.ApplicationProcessedMarker.Builder newBuilder() {
+    return new net.corda.p2p.markers.ApplicationProcessedMarker.Builder();
   }
 
   /**
-   * Creates a new LinkManagerReceivedMarker RecordBuilder by copying an existing Builder.
+   * Creates a new ApplicationProcessedMarker RecordBuilder by copying an existing Builder.
    * @param other The existing builder to copy.
-   * @return A new LinkManagerReceivedMarker RecordBuilder
+   * @return A new ApplicationProcessedMarker RecordBuilder
    */
-  public static net.corda.p2p.markers.LinkManagerReceivedMarker.Builder newBuilder(net.corda.p2p.markers.LinkManagerReceivedMarker.Builder other) {
+  public static net.corda.p2p.markers.ApplicationProcessedMarker.Builder newBuilder(net.corda.p2p.markers.ApplicationProcessedMarker.Builder other) {
     if (other == null) {
-      return new net.corda.p2p.markers.LinkManagerReceivedMarker.Builder();
+      return new net.corda.p2p.markers.ApplicationProcessedMarker.Builder();
     } else {
-      return new net.corda.p2p.markers.LinkManagerReceivedMarker.Builder(other);
+      return new net.corda.p2p.markers.ApplicationProcessedMarker.Builder(other);
     }
   }
 
   /**
-   * Creates a new LinkManagerReceivedMarker RecordBuilder by copying an existing LinkManagerReceivedMarker instance.
+   * Creates a new ApplicationProcessedMarker RecordBuilder by copying an existing ApplicationProcessedMarker instance.
    * @param other The existing instance to copy.
-   * @return A new LinkManagerReceivedMarker RecordBuilder
+   * @return A new ApplicationProcessedMarker RecordBuilder
    */
-  public static net.corda.p2p.markers.LinkManagerReceivedMarker.Builder newBuilder(net.corda.p2p.markers.LinkManagerReceivedMarker other) {
+  public static net.corda.p2p.markers.ApplicationProcessedMarker.Builder newBuilder(net.corda.p2p.markers.ApplicationProcessedMarker other) {
     if (other == null) {
-      return new net.corda.p2p.markers.LinkManagerReceivedMarker.Builder();
+      return new net.corda.p2p.markers.ApplicationProcessedMarker.Builder();
     } else {
-      return new net.corda.p2p.markers.LinkManagerReceivedMarker.Builder(other);
+      return new net.corda.p2p.markers.ApplicationProcessedMarker.Builder(other);
     }
   }
 
   /**
-   * RecordBuilder for LinkManagerReceivedMarker instances.
+   * RecordBuilder for ApplicationProcessedMarker instances.
    */
   @org.apache.avro.specific.AvroGenerated
-  public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<LinkManagerReceivedMarker>
-    implements org.apache.avro.data.RecordBuilder<LinkManagerReceivedMarker> {
+  public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<ApplicationProcessedMarker>
+    implements org.apache.avro.data.RecordBuilder<ApplicationProcessedMarker> {
 
 
     /** Creates a new Builder */
@@ -141,23 +141,23 @@ public class LinkManagerReceivedMarker extends org.apache.avro.specific.Specific
      * Creates a Builder by copying an existing Builder.
      * @param other The existing Builder to copy.
      */
-    private Builder(net.corda.p2p.markers.LinkManagerReceivedMarker.Builder other) {
+    private Builder(net.corda.p2p.markers.ApplicationProcessedMarker.Builder other) {
       super(other);
     }
 
     /**
-     * Creates a Builder by copying an existing LinkManagerReceivedMarker instance
+     * Creates a Builder by copying an existing ApplicationProcessedMarker instance
      * @param other The existing instance to copy.
      */
-    private Builder(net.corda.p2p.markers.LinkManagerReceivedMarker other) {
+    private Builder(net.corda.p2p.markers.ApplicationProcessedMarker other) {
       super(SCHEMA$);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public LinkManagerReceivedMarker build() {
+    public ApplicationProcessedMarker build() {
       try {
-        LinkManagerReceivedMarker record = new LinkManagerReceivedMarker();
+        ApplicationProcessedMarker record = new ApplicationProcessedMarker();
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -168,8 +168,8 @@ public class LinkManagerReceivedMarker extends org.apache.avro.specific.Specific
   }
 
   @SuppressWarnings("unchecked")
-  private static final org.apache.avro.io.DatumWriter<LinkManagerReceivedMarker>
-    WRITER$ = (org.apache.avro.io.DatumWriter<LinkManagerReceivedMarker>)MODEL$.createDatumWriter(SCHEMA$);
+  private static final org.apache.avro.io.DatumWriter<ApplicationProcessedMarker>
+    WRITER$ = (org.apache.avro.io.DatumWriter<ApplicationProcessedMarker>)MODEL$.createDatumWriter(SCHEMA$);
 
   @Override public void writeExternal(java.io.ObjectOutput out)
     throws java.io.IOException {
@@ -177,8 +177,8 @@ public class LinkManagerReceivedMarker extends org.apache.avro.specific.Specific
   }
 
   @SuppressWarnings("unchecked")
-  private static final org.apache.avro.io.DatumReader<LinkManagerReceivedMarker>
-    READER$ = (org.apache.avro.io.DatumReader<LinkManagerReceivedMarker>)MODEL$.createDatumReader(SCHEMA$);
+  private static final org.apache.avro.io.DatumReader<ApplicationProcessedMarker>
+    READER$ = (org.apache.avro.io.DatumReader<ApplicationProcessedMarker>)MODEL$.createDatumReader(SCHEMA$);
 
   @Override public void readExternal(java.io.ObjectInput in)
     throws java.io.IOException {

@@ -2,5 +2,6 @@
   "type": "record",
   "name": "LinkManagerReceivedMarker",
   "namespace": "net.corda.p2p.markers",
-  "fields": []
+  "fields": [],
+  "doc": "An acknowledgement of successful delivery for the message was received by the sending LinkManager. This acknowledgment originates in the receiving LinkManager."
 }

@@ -12,10 +12,11 @@ import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
 import org.apache.avro.message.SchemaStore;
 
+/** The message was received by the LinkManager (on P2P_OUT_TOPIC) from the application level. */
 @org.apache.avro.specific.AvroGenerated
 public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
   private static final long serialVersionUID = -2537506531453178306L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"LinkManagerSentMarker\",\"namespace\":\"net.corda.p2p.markers\",\"fields\":[{\"name\":\"partition\",\"type\":\"long\"},{\"name\":\"offset\",\"type\":\"long\"}]}");
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"LinkManagerSentMarker\",\"namespace\":\"net.corda.p2p.markers\",\"doc\":\"The message was received by the LinkManager (on P2P_OUT_TOPIC) from the application level.\",\"fields\":[{\"name\":\"partition\",\"type\":\"long\",\"doc\":\"The original partition of the message in P2P_OUT_TOPIC.\"},{\"name\":\"offset\",\"type\":\"long\",\"doc\":\"The original offset of the message in P2P_OUT_TOPIC.\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -71,7 +72,9 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
     return DECODER.decode(b);
   }
 
+  /** The original partition of the message in P2P_OUT_TOPIC. */
    private long partition;
+  /** The original offset of the message in P2P_OUT_TOPIC. */
    private long offset;
 
   /**
@@ -83,8 +86,8 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
 
   /**
    * All-args constructor.
-   * @param partition The new value for partition
-   * @param offset The new value for offset
+   * @param partition The original partition of the message in P2P_OUT_TOPIC.
+   * @param offset The original offset of the message in P2P_OUT_TOPIC.
    */
   public LinkManagerSentMarker(java.lang.Long partition, java.lang.Long offset) {
     this.partition = partition;
@@ -114,7 +117,7 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
 
   /**
    * Gets the value of the 'partition' field.
-   * @return The value of the 'partition' field.
+   * @return The original partition of the message in P2P_OUT_TOPIC.
    */
   public long getPartition() {
     return partition;
@@ -123,6 +126,7 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
 
   /**
    * Sets the value of the 'partition' field.
+   * The original partition of the message in P2P_OUT_TOPIC.
    * @param value the value to set.
    */
   public void setPartition(long value) {
@@ -131,7 +135,7 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
 
   /**
    * Gets the value of the 'offset' field.
-   * @return The value of the 'offset' field.
+   * @return The original offset of the message in P2P_OUT_TOPIC.
    */
   public long getOffset() {
     return offset;
@@ -140,6 +144,7 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
 
   /**
    * Sets the value of the 'offset' field.
+   * The original offset of the message in P2P_OUT_TOPIC.
    * @param value the value to set.
    */
   public void setOffset(long value) {
@@ -187,7 +192,9 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
   public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<LinkManagerSentMarker>
     implements org.apache.avro.data.RecordBuilder<LinkManagerSentMarker> {
 
+    /** The original partition of the message in P2P_OUT_TOPIC. */
     private long partition;
+    /** The original offset of the message in P2P_OUT_TOPIC. */
     private long offset;
 
     /** Creates a new Builder */
@@ -229,6 +236,7 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
 
     /**
       * Gets the value of the 'partition' field.
+      * The original partition of the message in P2P_OUT_TOPIC.
       * @return The value.
       */
     public long getPartition() {
@@ -238,6 +246,7 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
 
     /**
       * Sets the value of the 'partition' field.
+      * The original partition of the message in P2P_OUT_TOPIC.
       * @param value The value of 'partition'.
       * @return This builder.
       */
@@ -250,6 +259,7 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
 
     /**
       * Checks whether the 'partition' field has been set.
+      * The original partition of the message in P2P_OUT_TOPIC.
       * @return True if the 'partition' field has been set, false otherwise.
       */
     public boolean hasPartition() {
@@ -259,6 +269,7 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
 
     /**
       * Clears the value of the 'partition' field.
+      * The original partition of the message in P2P_OUT_TOPIC.
       * @return This builder.
       */
     public net.corda.p2p.markers.LinkManagerSentMarker.Builder clearPartition() {
@@ -268,6 +279,7 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
 
     /**
       * Gets the value of the 'offset' field.
+      * The original offset of the message in P2P_OUT_TOPIC.
       * @return The value.
       */
     public long getOffset() {
@@ -277,6 +289,7 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
 
     /**
       * Sets the value of the 'offset' field.
+      * The original offset of the message in P2P_OUT_TOPIC.
       * @param value The value of 'offset'.
       * @return This builder.
       */
@@ -289,6 +302,7 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
 
     /**
       * Checks whether the 'offset' field has been set.
+      * The original offset of the message in P2P_OUT_TOPIC.
       * @return True if the 'offset' field has been set, false otherwise.
       */
     public boolean hasOffset() {
@@ -298,6 +312,7 @@ public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificReco
 
     /**
       * Clears the value of the 'offset' field.
+      * The original offset of the message in P2P_OUT_TOPIC.
       * @return This builder.
       */
     public net.corda.p2p.markers.LinkManagerSentMarker.Builder clearOffset() {

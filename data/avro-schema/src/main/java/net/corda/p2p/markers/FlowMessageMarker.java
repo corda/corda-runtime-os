@@ -12,10 +12,11 @@ import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
 import org.apache.avro.message.SchemaStore;
 
+/** Used by the sending side to track the end to end delivery of a {@link net.corda.p2p.FlowMessage}. When processing a FlowMessage a component can persist a FlowMessageMarker to communicate the status to other components. */
 @org.apache.avro.specific.AvroGenerated
 public class FlowMessageMarker extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = -2749594229819764035L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FlowMessageMarker\",\"namespace\":\"net.corda.p2p.markers\",\"fields\":[{\"name\":\"marker\",\"type\":[{\"type\":\"record\",\"name\":\"LinkManagerReceivedMarker\",\"fields\":[]},{\"type\":\"record\",\"name\":\"LinkManagerSentMarker\",\"fields\":[{\"name\":\"partition\",\"type\":\"long\"},{\"name\":\"offset\",\"type\":\"long\"}]}]},{\"name\":\"messageId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
+  private static final long serialVersionUID = -6755090152943481444L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FlowMessageMarker\",\"namespace\":\"net.corda.p2p.markers\",\"doc\":\"Used by the sending side to track the end to end delivery of a {@link net.corda.p2p.FlowMessage}. When processing a FlowMessage a component can persist a FlowMessageMarker to communicate the status to other components.\",\"fields\":[{\"name\":\"marker\",\"type\":[{\"type\":\"record\",\"name\":\"LinkManagerReceivedMarker\",\"doc\":\"An acknowledgement of successful delivery for the message was received by the sending LinkManager. This acknowledgment originates in the receiving LinkManager.\",\"fields\":[]},{\"type\":\"record\",\"name\":\"LinkManagerSentMarker\",\"doc\":\"The message was received by the LinkManager (on P2P_OUT_TOPIC) from the application level.\",\"fields\":[{\"name\":\"partition\",\"type\":\"long\",\"doc\":\"The original partition of the message in P2P_OUT_TOPIC.\"},{\"name\":\"offset\",\"type\":\"long\",\"doc\":\"The original offset of the message in P2P_OUT_TOPIC.\"}]},{\"type\":\"record\",\"name\":\"ApplicationProcessedMarker\",\"doc\":\"An acknowledgement of successful processing was received by the sending LinkManager. This acknowledgment originates in the receiving application layer.\",\"fields\":[]},{\"type\":\"record\",\"name\":\"ApplicationRejectedStaleMarker\",\"doc\":\"The receiving application layer rejected the message because it is stale.\",\"fields\":[]},{\"type\":\"record\",\"name\":\"GatewaySentMarker\",\"doc\":\"The sending Gateway sent the message over HTTP and received an OK from the receiving Gateway.\",\"fields\":[]},{\"type\":\"record\",\"name\":\"TtlExpiredMarker\",\"doc\":\"The message was discarded because the TTL timestamp has been exceeded.\",\"fields\":[{\"name\":\"component\",\"type\":{\"type\":\"enum\",\"name\":\"Component\",\"symbols\":[\"LINK_MANAGER\",\"GATEWAY\"]},\"doc\":\"The component where the TTL timeout was detected.\"}]}]}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -72,7 +73,6 @@ public class FlowMessageMarker extends org.apache.avro.specific.SpecificRecordBa
   }
 
    private java.lang.Object marker;
-   private java.lang.String messageId;
 
   /**
    * Default constructor.  Note that this does not initialize fields
@@ -84,11 +84,9 @@ public class FlowMessageMarker extends org.apache.avro.specific.SpecificRecordBa
   /**
    * All-args constructor.
    * @param marker The new value for marker
-   * @param messageId The new value for messageId
    */
-  public FlowMessageMarker(java.lang.Object marker, java.lang.String messageId) {
+  public FlowMessageMarker(java.lang.Object marker) {
     this.marker = marker;
-    this.messageId = messageId;
   }
 
   public org.apache.avro.specific.SpecificData getSpecificData() { return MODEL$; }
@@ -97,7 +95,6 @@ public class FlowMessageMarker extends org.apache.avro.specific.SpecificRecordBa
   public java.lang.Object get(int field$) {
     switch (field$) {
     case 0: return marker;
-    case 1: return messageId;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -107,7 +104,6 @@ public class FlowMessageMarker extends org.apache.avro.specific.SpecificRecordBa
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
     case 0: marker = value$; break;
-    case 1: messageId = value$ != null ? value$.toString() : null; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -127,23 +123,6 @@ public class FlowMessageMarker extends org.apache.avro.specific.SpecificRecordBa
    */
   public void setMarker(java.lang.Object value) {
     this.marker = value;
-  }
-
-  /**
-   * Gets the value of the 'messageId' field.
-   * @return The value of the 'messageId' field.
-   */
-  public java.lang.String getMessageId() {
-    return messageId;
-  }
-
-
-  /**
-   * Sets the value of the 'messageId' field.
-   * @param value the value to set.
-   */
-  public void setMessageId(java.lang.String value) {
-    this.messageId = value;
   }
 
   /**
@@ -188,7 +167,6 @@ public class FlowMessageMarker extends org.apache.avro.specific.SpecificRecordBa
     implements org.apache.avro.data.RecordBuilder<FlowMessageMarker> {
 
     private java.lang.Object marker;
-    private java.lang.String messageId;
 
     /** Creates a new Builder */
     private Builder() {
@@ -205,10 +183,6 @@ public class FlowMessageMarker extends org.apache.avro.specific.SpecificRecordBa
         this.marker = data().deepCopy(fields()[0].schema(), other.marker);
         fieldSetFlags()[0] = other.fieldSetFlags()[0];
       }
-      if (isValidValue(fields()[1], other.messageId)) {
-        this.messageId = data().deepCopy(fields()[1].schema(), other.messageId);
-        fieldSetFlags()[1] = other.fieldSetFlags()[1];
-      }
     }
 
     /**
@@ -220,10 +194,6 @@ public class FlowMessageMarker extends org.apache.avro.specific.SpecificRecordBa
       if (isValidValue(fields()[0], other.marker)) {
         this.marker = data().deepCopy(fields()[0].schema(), other.marker);
         fieldSetFlags()[0] = true;
-      }
-      if (isValidValue(fields()[1], other.messageId)) {
-        this.messageId = data().deepCopy(fields()[1].schema(), other.messageId);
-        fieldSetFlags()[1] = true;
       }
     }
 
@@ -267,53 +237,12 @@ public class FlowMessageMarker extends org.apache.avro.specific.SpecificRecordBa
       return this;
     }
 
-    /**
-      * Gets the value of the 'messageId' field.
-      * @return The value.
-      */
-    public java.lang.String getMessageId() {
-      return messageId;
-    }
-
-
-    /**
-      * Sets the value of the 'messageId' field.
-      * @param value The value of 'messageId'.
-      * @return This builder.
-      */
-    public net.corda.p2p.markers.FlowMessageMarker.Builder setMessageId(java.lang.String value) {
-      validate(fields()[1], value);
-      this.messageId = value;
-      fieldSetFlags()[1] = true;
-      return this;
-    }
-
-    /**
-      * Checks whether the 'messageId' field has been set.
-      * @return True if the 'messageId' field has been set, false otherwise.
-      */
-    public boolean hasMessageId() {
-      return fieldSetFlags()[1];
-    }
-
-
-    /**
-      * Clears the value of the 'messageId' field.
-      * @return This builder.
-      */
-    public net.corda.p2p.markers.FlowMessageMarker.Builder clearMessageId() {
-      messageId = null;
-      fieldSetFlags()[1] = false;
-      return this;
-    }
-
     @Override
     @SuppressWarnings("unchecked")
     public FlowMessageMarker build() {
       try {
         FlowMessageMarker record = new FlowMessageMarker();
         record.marker = fieldSetFlags()[0] ? this.marker :  defaultValue(fields()[0]);
-        record.messageId = fieldSetFlags()[1] ? this.messageId : (java.lang.String) defaultValue(fields()[1]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
