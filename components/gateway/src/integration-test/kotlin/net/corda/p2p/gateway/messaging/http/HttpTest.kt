@@ -1,8 +1,7 @@
-package net.corda.p2p.gateway.messaging
+package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
-import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.p2p.gateway.messaging.http.HttpServer
+import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue

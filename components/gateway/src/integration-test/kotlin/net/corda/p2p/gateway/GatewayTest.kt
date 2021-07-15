@@ -68,7 +68,8 @@ class GatewayTest {
         Gateway(serverAddress,
                 sslConfiguration,
                 SubscriptionFactoryStub(topicServiceAlice!!),
-                PublisherFactoryStub(topicServiceAlice!!)).use {
+                PublisherFactoryStub(topicServiceAlice!!)
+        ).use {
             it.start()
             HttpClient(serverAddress, sslConfiguration).use { client->
                 client.start()
@@ -174,7 +175,8 @@ class GatewayTest {
         Gateway(gatewayAddress,
                 sslConfiguration,
                 SubscriptionFactoryStub(topicServiceAlice!!),
-                PublisherFactoryStub(topicServiceAlice!!)).use {
+                PublisherFactoryStub(topicServiceAlice!!)
+        ).use {
             startTime = Instant.now().toEpochMilli()
             it.start()
             // Wait until all messages have been delivered

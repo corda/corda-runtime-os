@@ -21,7 +21,6 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
-import net.corda.p2p.gateway.messaging.ResponseMessage
 import net.corda.v5.base.internal.uncheckedCast
 import rx.Observable
 import rx.subjects.PublishSubject
