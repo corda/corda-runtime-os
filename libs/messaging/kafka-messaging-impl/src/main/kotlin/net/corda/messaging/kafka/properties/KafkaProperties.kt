@@ -16,6 +16,8 @@ class KafkaProperties {
         const val KAFKA_PRODUCER = "producer"
         const val KAFKA_CONSUMER = "consumer"
 
+        const val MESSAGING_KAFKA = "messaging.kafka"
+
         const val PATTERN_PUBLISHER = "messaging.pattern.publisher"
         const val PATTERN_PUBSUB = "messaging.pattern.pubsub"
         const val PATTERN_DURABLE = "messaging.pattern.durable"
@@ -39,6 +41,7 @@ class KafkaProperties {
         const val GROUP_INSTANCE_ID = CommonClientConfigs.GROUP_INSTANCE_ID_CONFIG
         const val PRODUCER_CLIENT_ID = "producer.${CommonClientConfigs.CLIENT_ID_CONFIG}"
         const val CONSUMER_GROUP_ID = "consumer.${CommonClientConfigs.GROUP_ID_CONFIG}"
+        const val CONSUMER_MAX_POLL_INTERVAL = "consumer.${CommonClientConfigs.MAX_POLL_INTERVAL_MS_CONFIG}"
         const val PRODUCER_TRANSACTIONAL_ID = "producer.${ProducerConfig.TRANSACTIONAL_ID_CONFIG}"
     }
 }
