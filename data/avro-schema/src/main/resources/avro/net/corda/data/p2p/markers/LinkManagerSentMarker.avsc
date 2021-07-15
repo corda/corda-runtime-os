@@ -14,5 +14,5 @@
       "doc": "The original offset of the message in P2P_OUT_TOPIC."
     }
   ],
-  "doc": "The message was received by the LinkManager (on P2P_OUT_TOPIC) from the application level."
+  "doc": "The message was processed by the sending Link Manager."
 }

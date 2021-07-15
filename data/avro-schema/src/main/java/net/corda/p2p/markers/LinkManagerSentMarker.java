@@ -12,11 +12,11 @@ import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
 import org.apache.avro.message.SchemaStore;
 
-/** The message was received by the LinkManager (on P2P_OUT_TOPIC) from the application level. */
+/** The message was processed by the sending Link Manager. */
 @org.apache.avro.specific.AvroGenerated
 public class LinkManagerSentMarker extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
   private static final long serialVersionUID = -2537506531453178306L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"LinkManagerSentMarker\",\"namespace\":\"net.corda.p2p.markers\",\"doc\":\"The message was received by the LinkManager (on P2P_OUT_TOPIC) from the application level.\",\"fields\":[{\"name\":\"partition\",\"type\":\"long\",\"doc\":\"The original partition of the message in P2P_OUT_TOPIC.\"},{\"name\":\"offset\",\"type\":\"long\",\"doc\":\"The original offset of the message in P2P_OUT_TOPIC.\"}]}");
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"LinkManagerSentMarker\",\"namespace\":\"net.corda.p2p.markers\",\"doc\":\"The message was processed by the sending Link Manager.\",\"fields\":[{\"name\":\"partition\",\"type\":\"long\",\"doc\":\"The original partition of the message in P2P_OUT_TOPIC.\"},{\"name\":\"offset\",\"type\":\"long\",\"doc\":\"The original offset of the message in P2P_OUT_TOPIC.\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();

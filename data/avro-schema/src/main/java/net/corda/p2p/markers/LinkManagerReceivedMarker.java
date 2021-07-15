@@ -12,11 +12,11 @@ import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
 import org.apache.avro.message.SchemaStore;
 
-/** An acknowledgement of successful delivery for the message was received by the sending LinkManager. This acknowledgment originates in the receiving LinkManager. */
+/** The message was received by the recipient Link Manager. */
 @org.apache.avro.specific.AvroGenerated
 public class LinkManagerReceivedMarker extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
   private static final long serialVersionUID = 6604469289054083601L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"LinkManagerReceivedMarker\",\"namespace\":\"net.corda.p2p.markers\",\"doc\":\"An acknowledgement of successful delivery for the message was received by the sending LinkManager. This acknowledgment originates in the receiving LinkManager.\",\"fields\":[]}");
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"LinkManagerReceivedMarker\",\"namespace\":\"net.corda.p2p.markers\",\"doc\":\"The message was received by the recipient Link Manager.\",\"fields\":[]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
