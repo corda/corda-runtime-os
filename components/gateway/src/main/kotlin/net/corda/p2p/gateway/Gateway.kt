@@ -17,6 +17,8 @@ import net.corda.v5.base.util.NetworkHostAndPort
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.lang.Exception
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * The Gateway is a light component which facilitates the sending and receiving of P2P messages.
@@ -62,7 +64,11 @@ class Gateway(address: NetworkHostAndPort,
     private var p2pMessageSubscription: Subscription<String, LinkOutMessage>
     private val inboundMessageProcessor = InboundMessageHandler(httpServer, publisherFactory)
 
+    private val lock = ReentrantLock()
+
+    @Volatile
     private var started = false
+
     override val isRunning: Boolean
         get() = started
 
@@ -75,31 +81,41 @@ class Gateway(address: NetworkHostAndPort,
     }
 
     override fun start() {
-        logger.info("Starting Gateway service")
-        connectionManager.start()
-        closeActions += { connectionManager.close() }
-        httpServer.start()
-        closeActions += { httpServer.close() }
-        inboundMessageProcessor.start()
-        closeActions += { inboundMessageProcessor.close() }
-        p2pMessageSubscription.start()
-        closeActions += { p2pMessageSubscription.close() }
-        logger.info("Gateway started")
+        lock.withLock {
+            if (started) {
+                logger.info("Already started")
+                return
+            }
+            logger.info("Starting Gateway service")
+            started = true
+            connectionManager.start()
+            closeActions += { connectionManager.close() }
+            httpServer.start()
+            closeActions += { httpServer.close() }
+            inboundMessageProcessor.start()
+            closeActions += { inboundMessageProcessor.close() }
+            p2pMessageSubscription.start()
+            closeActions += { p2pMessageSubscription.close() }
+            logger.info("Gateway started")
+        }
     }
 
     @Suppress("TooGenericExceptionCaught")
     override fun stop() {
-        logger.info("Shutting down")
-        for (closeAction in closeActions.reversed()) {
-            try {
-                closeAction()
-            } catch (e: InterruptedException) {
-                logger.warn("InterruptedException was thrown during shutdown, ignoring.")
-            } catch (e: Exception) {
-                logger.warn("Exception thrown during shutdown.", e)
+        lock.withLock {
+            logger.info("Shutting down")
+            started = false
+            for (closeAction in closeActions.reversed()) {
+                try {
+                    closeAction()
+                } catch (e: InterruptedException) {
+                    logger.warn("InterruptedException was thrown during shutdown, ignoring.")
+                } catch (e: Exception) {
+                    logger.warn("Exception thrown during shutdown.", e)
+                }
             }
-        }
 
-        logger.info("Shutdown complete")
+            logger.info("Shutdown complete")
+        }
     }
 }
