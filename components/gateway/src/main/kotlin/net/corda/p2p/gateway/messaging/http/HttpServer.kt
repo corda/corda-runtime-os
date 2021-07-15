@@ -50,8 +50,6 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
     }
 
     private val lock = ReentrantLock()
-    @Volatile
-    private var stopping: Boolean = false
     private var bossGroup: EventLoopGroup? = null
     private var workerGroup: EventLoopGroup? = null
     private var serverChannel: Channel? = null
@@ -94,7 +92,6 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
         lock.withLock {
             try {
                 logger.info("Stopping HTTP server")
-                stopping = true
                 serverChannel?.apply { close() }
                 serverChannel = null
 
@@ -107,7 +104,6 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
                 workerGroup = null
                 bossGroup = null
             } finally {
-                stopping = false
                 started = false
                 logger.info("HTTP server stopped")
             }
