@@ -3,20 +3,14 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Flow Manager Implemenation"
+description "Sandbox Cache Interface"
 
 dependencies {
-    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "net.corda:corda-application:$cordaVersion"
     implementation "net.corda:corda-base:$cordaVersion"
     implementation "net.corda:corda-install:$cordaVersion"
     implementation "net.corda:corda-packaging:$cordaVersion"
     implementation "net.corda:corda-sandbox:$cordaVersion"
-    implementation "net.corda:corda-crypto-api:$cordaVersion"
 
     implementation project(':data:avro-schema')
-    implementation project(':libs:flows:flow-manager')
-    implementation project(':libs:flows:statemachine')
-    implementation project(':libs:flows:statemachine-impl')
-    implementation project(':libs:sandbox:sandbox-cache')
 }
