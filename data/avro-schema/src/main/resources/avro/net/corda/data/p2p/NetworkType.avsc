@@ -1,0 +1,6 @@
+{
+  "type": "enum",
+  "name": "NetworkType",
+  "namespace": "net.corda.p2p",
+  "symbols": [ "CORDA_4", "CORDA_5" ]
+}

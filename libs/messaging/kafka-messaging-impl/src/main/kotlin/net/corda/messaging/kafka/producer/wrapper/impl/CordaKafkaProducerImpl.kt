@@ -12,6 +12,7 @@ import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -128,7 +129,6 @@ class CordaKafkaProducerImpl(
         try {
             producer.commitTransaction()
         } catch (ex: Exception) {
-            producer.abortTransaction()
             when (ex) {
                 is IllegalStateException,
                 is ProducerFencedException,
@@ -143,6 +143,7 @@ class CordaKafkaProducerImpl(
                 is TimeoutException,
                 is InterruptException,
                 is KafkaException -> {
+                    abortTransaction()
                     throw CordaMessageAPIIntermittentException(
                         "Error occurred committing transaction " +
                                 "for CordaKafkaProducer with clientId $clientId", ex
@@ -158,9 +159,18 @@ class CordaKafkaProducerImpl(
         }
     }
 
-    override fun sendOffsetsToTransaction(consumer: Consumer<*, *>) {
+    override fun sendAllOffsetsToTransaction(consumer: Consumer<*, *>) {
+        trySendOffsetsToTransaction(consumer, null)
+    }
+
+    override fun sendRecordOffsetToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>) {
+        trySendOffsetsToTransaction(consumer, record)
+    }
+
+    @Suppress("ThrowsCount")
+    private fun trySendOffsetsToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>? = null) {
         try {
-            producer.sendOffsetsToTransaction(consumerOffsets(consumer), consumer.groupMetadata())
+            producer.sendOffsetsToTransaction(consumerOffsets(consumer, record), consumer.groupMetadata())
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException,
@@ -168,25 +178,27 @@ class CordaKafkaProducerImpl(
                 is UnsupportedVersionException,
                 is UnsupportedForMessageFormatException,
                 is AuthorizationException,
-                is CommitFailedException,
                 is InvalidProducerEpochException,
                 is FencedInstanceIdException -> {
                     throw CordaMessageAPIFatalException(
-                        "Error occurred sending offsets for transaction " +
+                        "FatalError occurred sending offset for transaction " +
                                 "for CordaKafkaProducer with clientId $clientId", ex
                     )
                 }
                 is TimeoutException,
                 is InterruptException,
+                //Failure to commit here might be due to consumer kicked from group. return as intermittent to trigger retry
+                is CommitFailedException,
                 is KafkaException -> {
+                    abortTransaction()
                     throw CordaMessageAPIIntermittentException(
-                        "Fatal error occurred sending offsets for transaction " +
+                        "Error occurred sending offset for transaction " +
                                 "for CordaKafkaProducer with clientId $clientId", ex
                     )
                 }
                 else -> {
                     throw CordaMessageAPIFatalException(
-                        "Unexpected error occurred sending offsets for transaction " +
+                        "Unexpected error occurred record offset for transaction " +
                                 "for CordaKafkaProducer with clientId $clientId", ex
                     )
                 }
@@ -209,10 +221,15 @@ class CordaKafkaProducerImpl(
     /**
      * Generate the consumer offsets.
      */
-    private fun consumerOffsets(consumer: Consumer<*, *>): Map<TopicPartition, OffsetAndMetadata> {
+    private fun consumerOffsets(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>? = null): Map<TopicPartition, OffsetAndMetadata> {
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
-        for (topicPartition in consumer.assignment()) {
-            offsets[topicPartition] = OffsetAndMetadata(consumer.position(topicPartition), null)
+        if (record == null) {
+            for (topicPartition in consumer.assignment()) {
+                offsets[topicPartition] = OffsetAndMetadata(consumer.position(topicPartition))
+            }
+        } else {
+            val topicPartition = TopicPartition(record.topic(), record.partition())
+            offsets[topicPartition] = OffsetAndMetadata(record.offset() + 1)
         }
         return offsets
     }
