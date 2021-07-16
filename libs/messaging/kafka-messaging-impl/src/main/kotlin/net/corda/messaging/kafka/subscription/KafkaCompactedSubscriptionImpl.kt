@@ -90,7 +90,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 log.debug { "Creating compacted consumer.  Attempt: $attempts" }
-                consumerBuilder.createCompactedConsumer(config.getConfig(KAFKA_CONSUMER)).use {
+                consumerBuilder.createCompactedConsumer(config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass).use {
                     val partitions = it.getPartitions(
                         topicPrefix + topic,
                         Duration.ofSeconds(consumerThreadStopTimeout)

@@ -58,8 +58,10 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         private val CONSUMER_CLOSE_TIMEOUT = KafkaProperties.CONSUMER_CLOSE_TIMEOUT.replace("consumer", "eventConsumer")
         private val EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES = CONSUMER_POLL_AND_PROCESS_RETRIES.replace("consumer", "eventConsumer")
     }
+
     private val log: Logger = LoggerFactory.getLogger(
-        "${config.getString(EVENT_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}")
+        "${config.getString(EVENT_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
+    )
 
     private lateinit var producer: CordaKafkaProducer
     private lateinit var eventConsumer: CordaKafkaConsumer<K, E>
@@ -144,8 +146,9 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             attempts++
             try {
                 producer = builder.createProducer(config.getConfig(KAFKA_PRODUCER))
-                stateConsumer = builder.createStateConsumer(config.getConfig(STATE_CONSUMER))
-                eventConsumer = builder.createEventConsumer(config.getConfig(EVENT_CONSUMER), this)
+                stateConsumer = builder.createStateConsumer(config.getConfig(STATE_CONSUMER), processor.keyClass, processor.stateValueClass)
+                eventConsumer =
+                    builder.createEventConsumer(config.getConfig(EVENT_CONSUMER), processor.keyClass, processor.eventValueClass, this)
                 validateConsumers()
 
                 stateConsumer.assign(emptyList())
@@ -356,6 +359,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun TopicPartition.toStateTopic() = TopicPartition(stateTopic.topic, partition())
     private fun TopicPartition.toEventTopic() = TopicPartition(eventTopic.topic, partition())
     private fun Collection<TopicPartition>.toStateTopics(): List<TopicPartition> = map { it.toStateTopic() }
+
     @Suppress("unused")
     private fun Collection<TopicPartition>.toEventTopics(): List<TopicPartition> = map { it.toEventTopic() }
 

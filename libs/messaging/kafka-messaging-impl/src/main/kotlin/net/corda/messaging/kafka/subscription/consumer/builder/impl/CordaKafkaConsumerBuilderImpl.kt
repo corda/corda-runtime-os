@@ -31,9 +31,11 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
 
     override fun createPubSubConsumer(
         consumerConfig: Config,
+        kClazz: Class<K>,
+        vClazz: Class<V>,
         onError: (String, ByteArray) -> Unit
     ): CordaKafkaConsumer<K, V> {
-        val consumer = createKafkaConsumer(consumerConfig, onError)
+        val consumer = createKafkaConsumer(consumerConfig, onError, kClazz, vClazz)
         val listener = PubSubConsumerRebalanceListener(
             consumerConfig.getString(TOPIC_NAME),
             consumerConfig.getString(CommonClientConfigs.GROUP_ID_CONFIG),
@@ -44,10 +46,12 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
 
     override fun createDurableConsumer(
         consumerConfig: Config,
+        kClazz: Class<K>,
+        vClazz: Class<V>,
         onError: (String, ByteArray) -> Unit,
-        consumerRebalanceListener: ConsumerRebalanceListener?,
+        consumerRebalanceListener: ConsumerRebalanceListener?
     ): CordaKafkaConsumer<K, V> {
-        val consumer = createKafkaConsumer(consumerConfig, onError)
+        val consumer = createKafkaConsumer(consumerConfig, onError, kClazz, vClazz)
         val listener = consumerRebalanceListener ?: DurableConsumerRebalanceListener(
             consumerConfig.getString(TOPIC_NAME),
             consumerConfig.getString(CommonClientConfigs.GROUP_ID_CONFIG),
@@ -62,15 +66,19 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
      */
     override fun createCompactedConsumer(
         consumerConfig: Config,
-        onError: (String, ByteArray) -> Unit,
+        kClazz: Class<K>,
+        vClazz: Class<V>,
+        onError: (String, ByteArray) -> Unit
     ): CordaKafkaConsumer<K, V> {
-        val consumer = createKafkaConsumer(consumerConfig, onError)
+        val consumer = createKafkaConsumer(consumerConfig, onError, kClazz, vClazz)
         return CordaKafkaConsumerImpl(consumerConfig, consumer, null)
     }
 
     private fun createKafkaConsumer(
         consumerConfig: Config,
-        onError: (String, ByteArray) -> Unit
+        onError: (String, ByteArray) -> Unit,
+        kClazz: Class<K>,
+        vClazz: Class<V>
     ): KafkaConsumer<K, V> {
         val topic = consumerConfig.getString(TOPIC_NAME)
         val groupName = consumerConfig.getString(CommonClientConfigs.GROUP_ID_CONFIG)
@@ -80,8 +88,8 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
             Thread.currentThread().contextClassLoader = null
             KafkaConsumer(
                 consumerConfig.toProperties(),
-                CordaAvroDeserializer<K>(avroSchemaRegistry, onError),
-                CordaAvroDeserializer<V>(avroSchemaRegistry, onError)
+                CordaAvroDeserializer(avroSchemaRegistry, onError, kClazz),
+                CordaAvroDeserializer(avroSchemaRegistry, onError, vClazz)
             )
         } catch (ex: KafkaException) {
             val message = "ConsumerBuilder failed to create and consumer for group $groupName, topic $topic."
@@ -92,4 +100,3 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
         }
     }
 }
-

@@ -1,38 +1,33 @@
 package net.corda.messaging.kafka.subscription
 
-import net.corda.messaging.kafka.publisher.CordaAvroSerializer.Companion.BYTE_ARRAY_MAGIC
-import net.corda.messaging.kafka.publisher.CordaAvroSerializer.Companion.STRING_MAGIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringDeserializer
-import org.apache.kafka.common.serialization.StringSerializer
 import java.nio.ByteBuffer
 
 class CordaAvroDeserializer<T>(
     private val schemaRegistry: AvroSchemaRegistry,
-    private val onError: (String, ByteArray) -> Unit
+    private val onError: (String, ByteArray) -> Unit,
+    private val expectedClass: Class<T>
 ) : Deserializer<T> {
 
     private companion object {
-        val BYTE_ARRAY_MAGIC_BYTES = BYTE_ARRAY_MAGIC.toByteArray()
-        val stringSerializer = StringSerializer()
         val stringDeserializer = StringDeserializer()
     }
 
     override fun deserialize(topic: String, data: ByteArray?): T? {
-        val stringMagicSerialized = stringSerializer.serialize(topic, STRING_MAGIC)
 
         when {
             data == null -> {
                 return null
             }
-            startsWith(data, stringMagicSerialized) -> {
-                return uncheckedCast(stringDeserializer.deserialize(topic, data.copyOfRange(stringMagicSerialized.size, data.size)))
+            expectedClass == String::class.java -> {
+                return uncheckedCast(stringDeserializer.deserialize(topic, data))
             }
-            startsWith(data, BYTE_ARRAY_MAGIC_BYTES) -> {
-                return uncheckedCast(data.copyOfRange(BYTE_ARRAY_MAGIC_BYTES.size, data.size))
+            expectedClass == ByteArray::class.java  -> {
+                return uncheckedCast(data)
             }
             else -> {
                 return try {
@@ -49,27 +44,5 @@ class CordaAvroDeserializer<T>(
                 }
             }
         }
-    }
-
-    /**
-     * Compare two byte arrays to see one is the prefix of another
-     */
-    private fun startsWith(array: ByteArray?, prefix: ByteArray?): Boolean {
-        if (array.contentEquals(prefix)) {
-            return true
-        }
-        if (array == null || prefix == null) {
-            return false
-        }
-        val prefixLength = prefix.size
-        if (prefix.size > array.size) {
-            return false
-        }
-        for (i in 0 until prefixLength) {
-            if (array[i] != prefix[i]) {
-                return false
-            }
-        }
-        return true
     }
 }

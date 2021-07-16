@@ -9,8 +9,6 @@ class CordaAvroSerializer<T : Any>(
 ) : Serializer<T> {
 
     companion object {
-        const val STRING_MAGIC = "corda-string-"
-        const val BYTE_ARRAY_MAGIC = "corda-bytearray-"
         private val stringSerializer = StringSerializer()
     }
 
@@ -20,10 +18,10 @@ class CordaAvroSerializer<T : Any>(
                 null
             }
             data.javaClass == String::class.java -> {
-                stringSerializer.serialize(topic, STRING_MAGIC) + stringSerializer.serialize(topic, data as String)
+                stringSerializer.serialize(topic, data as String)
             }
             data.javaClass == ByteArray::class.java -> {
-                BYTE_ARRAY_MAGIC.toByteArray() + data as ByteArray
+                data as ByteArray
             }
             else -> {
                 schemaRegistry.serialize(data).array()
