@@ -12,13 +12,12 @@ import io.netty.handler.codec.http.HttpResponseEncoder
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
-import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
 import java.lang.IllegalStateException
 import java.net.BindException
-import java.net.InetSocketAddress
+import java.net.SocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.KeyManagerFactory
@@ -38,11 +37,11 @@ import kotlin.concurrent.withLock
  * The server provides two observables [onReceive] and [onConnection] which upstream services can subscribe to receive
  * updates on important events.
  */
-class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslConfig: SslConfiguration) : LifeCycle {
-
-    private val logger = LoggerFactory.getLogger(HttpServer::class.java)
+class HttpServer(private val host: String, private val port: Int, private val sslConfig: SslConfiguration) : LifeCycle {
 
     companion object {
+        private val logger = LoggerFactory.getLogger(HttpServer::class.java)
+
         /**
          * Default number of thread to use for the worker group
          */
@@ -53,7 +52,7 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
     private var bossGroup: EventLoopGroup? = null
     private var workerGroup: EventLoopGroup? = null
     private var serverChannel: Channel? = null
-    private val clientChannels = ConcurrentHashMap<InetSocketAddress, SocketChannel>()
+    private val clientChannels = ConcurrentHashMap<SocketAddress, SocketChannel>()
 
     private var started = false
     override val isRunning: Boolean
@@ -80,9 +79,9 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
             server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
 //                .handler(LoggingHandler(LogLevel.INFO))
                 .childHandler(ServerChannelInitializer(this))
-            logger.info("Trying to bind to ${hostAddress.port}")
-            val channelFuture = server.bind(hostAddress.host, hostAddress.port).sync()
-            logger.info("Listening on port ${hostAddress.port}")
+            logger.info("Trying to bind to $host:$port")
+            val channelFuture = server.bind(host, port).sync()
+            logger.info("Listening on port $port")
             serverChannel = channelFuture.channel()
             started = true
         }
@@ -119,8 +118,8 @@ class HttpServer(private val hostAddress: NetworkHostAndPort, private val sslCon
      * has closed it or the server is stopped
      */
     @Throws(IllegalStateException::class)
-    fun write(statusCode: HttpResponseStatus, message: ByteArray, destination: NetworkHostAndPort) {
-        val channel = clientChannels[InetSocketAddress(destination.host, destination.port)]
+    fun write(statusCode: HttpResponseStatus, message: ByteArray, destination: SocketAddress) {
+        val channel = clientChannels[destination]
         if (channel == null) {
             throw IllegalStateException("Connection to $destination not active")
         } else {

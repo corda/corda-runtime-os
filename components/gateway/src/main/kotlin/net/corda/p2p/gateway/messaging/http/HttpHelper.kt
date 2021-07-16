@@ -10,7 +10,6 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpRequest
 import io.netty.handler.codec.http.HttpResponse
 import io.netty.handler.codec.http.DefaultFullHttpResponse
-import net.corda.v5.base.util.NetworkHostAndPort
 import java.lang.IllegalArgumentException
 import java.net.URI
 import java.net.URL
@@ -34,17 +33,17 @@ class HttpHelper {
         /**
          * Creates a simple POST request with keepalive and JSON content type
          * @param message payload bytes to be added to the body of the request
-         * @param destination host and port of the HTTP server for which this request is intended
+         * @param uri URI of the HTTP server for which this request is intended
          */
-        fun createRequest(message: ByteArray, destination: NetworkHostAndPort): HttpRequest {
+        fun createRequest(message: ByteArray, uri: URI): HttpRequest {
             val content = Unpooled.copiedBuffer(message)
             return DefaultFullHttpRequest(
                 HttpVersion.HTTP_1_1,
                 HttpMethod.POST,
-                URL(SCHEME, destination.host, destination.port, ENDPOINT).toString(),
+                URL(SCHEME, uri.host, uri.port, ENDPOINT).toString(), // At a later point we should just use the provided URI
                 content
             ).apply {
-                headers().set(HttpHeaderNames.HOST, destination.host)
+                headers().set(HttpHeaderNames.HOST, uri.host)
                     .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
                     .set(HttpHeaderNames.ACCEPT_ENCODING, HttpHeaderValues.APPLICATION_JSON)
                     .set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)

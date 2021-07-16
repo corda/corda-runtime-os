@@ -17,11 +17,8 @@ import io.netty.handler.codec.http.HttpVersion
 import io.netty.handler.codec.http.LastHttpContent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import net.corda.p2p.gateway.messaging.http.HttpHelper.Companion.validate
-import net.corda.p2p.gateway.messaging.toHostAndPort
-import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
 import java.lang.IndexOutOfBoundsException
-import java.net.InetSocketAddress
 import java.nio.channels.ClosedChannelException
 import javax.net.ssl.SSLException
 
@@ -80,21 +77,21 @@ class HttpChannelHandler(
         // the event processor. No trailing headers should exist
         if (msg is LastHttpContent) {
             logger.debug("Read end of response body $msg")
-            val sourceAddress = ctx.channel().remoteAddress() as InetSocketAddress
-            val targetAddress = ctx.channel().localAddress() as InetSocketAddress
+            val sourceAddress = ctx.channel().remoteAddress()
+            val targetAddress = ctx.channel().localAddress()
             val returnByteArray = ByteArray(messageBodyBuf!!.readableBytes())
             messageBodyBuf!!.readBytes(returnByteArray)
             if (responseCode != null) {
                 // Client
                 onReceive(
                     HttpMessage(responseCode!!, returnByteArray,
-                        sourceAddress.toHostAndPort(), targetAddress.toHostAndPort())
+                        sourceAddress, targetAddress)
                 )
             } else {
                 // Server
                 onReceive(
                     HttpMessage(responseCode!!, returnByteArray,
-                        sourceAddress.toHostAndPort(), targetAddress.toHostAndPort())
+                        sourceAddress, targetAddress)
                 )
             }
 
@@ -115,8 +112,7 @@ class HttpChannelHandler(
             if (it.refCnt() > 0)
                 it.release()
         }
-        val remoteAddress = (ch.remoteAddress() as InetSocketAddress).let { NetworkHostAndPort(it.hostName, it.port) }
-        onClose(ch as SocketChannel, ConnectionChangeEvent(remoteAddress, false))
+        onClose(ch as SocketChannel, ConnectionChangeEvent(ch.remoteAddress(), false))
         ctx.fireChannelInactive()
     }
 
@@ -125,9 +121,8 @@ class HttpChannelHandler(
             is SslHandshakeCompletionEvent -> {
                 if (evt.isSuccess) {
                     val ch = ctx.channel()
-                    val remoteAddress = (ch.remoteAddress() as InetSocketAddress).let { NetworkHostAndPort(it.hostName, it.port) }
                     logger.info("Handshake with ${ctx.channel().remoteAddress()} successful")
-                    onOpen(ch as SocketChannel, ConnectionChangeEvent(remoteAddress, true))
+                    onOpen(ch as SocketChannel, ConnectionChangeEvent(ch.remoteAddress(), true))
                 } else {
                     val cause = evt.cause()
                     if (cause is ClosedChannelException) {

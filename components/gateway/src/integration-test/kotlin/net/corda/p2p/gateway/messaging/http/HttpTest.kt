@@ -2,11 +2,11 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.p2p.gateway.messaging.SslConfiguration
-import net.corda.v5.base.util.NetworkHostAndPort
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.FileInputStream
+import java.net.URI
 import java.security.KeyStore
 import java.time.Instant
 import java.util.Arrays
@@ -20,7 +20,7 @@ class HttpTest {
     private val serverResponseContent = "PONG"
     private val keystorePass = "cordacadevpass"
     private val truststorePass = "trustpass"
-    private val serverAddress = NetworkHostAndPort.parse("localhost:10000")
+    private val serverAddress = URI.create("http://localhost:10000")
     private val sslConfiguration = object : SslConfiguration {
         override val keyStore: KeyStore = KeyStore.getInstance("JKS").also {
             it.load(FileInputStream(javaClass.classLoader.getResource("sslkeystore.jks")!!.file), keystorePass.toCharArray())
@@ -34,7 +34,7 @@ class HttpTest {
 
     @Test
     fun `simple client POST request`() {
-        HttpServer(serverAddress, sslConfiguration).use { server ->
+        HttpServer(serverAddress.host, serverAddress.port, sslConfiguration).use { server ->
             server.onReceive.subscribe {
                 assertEquals(clientMessageContent, String(it.payload))
                 server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
@@ -66,7 +66,7 @@ class HttpTest {
         val threadNo = 2
         val threads = mutableListOf<Thread>()
         val times = mutableListOf<Long>()
-        val httpServer = HttpServer(serverAddress, sslConfiguration)
+        val httpServer = HttpServer(serverAddress.host, serverAddress.port, sslConfiguration)
         httpServer.use { server ->
             server.onReceive.subscribe {
                 assertEquals(clientMessageContent, String(it.payload))
@@ -114,7 +114,7 @@ class HttpTest {
     fun `large payload`() {
         val hugePayload = FileInputStream(javaClass.classLoader.getResource("10mb.txt")!!.file).readAllBytes()
 
-        HttpServer(serverAddress, sslConfiguration).use { server ->
+        HttpServer(serverAddress.host, serverAddress.port, sslConfiguration).use { server ->
             server.onReceive.subscribe {
                 assert(Arrays.equals(hugePayload, it.payload))
                 server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)

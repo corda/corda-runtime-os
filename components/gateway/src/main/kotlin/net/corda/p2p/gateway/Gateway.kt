@@ -14,7 +14,6 @@ import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.PartitionAssignmentListenerImpl
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
-import net.corda.v5.base.util.NetworkHostAndPort
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.lang.Exception
@@ -33,7 +32,8 @@ import kotlin.concurrent.withLock
  *
  *
  */
-class Gateway(address: NetworkHostAndPort,
+class Gateway(host: String,
+              port: Int,
               sslConfig: SslConfiguration,
               @Reference(service = SubscriptionFactory::class)
               subscriptionFactory: SubscriptionFactory,
@@ -42,7 +42,7 @@ class Gateway(address: NetworkHostAndPort,
 ) : LifeCycle {
 
     companion object {
-
+        private val logger = LoggerFactory.getLogger(Gateway::class.java)
         const val CONSUMER_GROUP_ID = "gateway"
         const val PUBLISHER_ID = "gateway"
 
@@ -52,10 +52,10 @@ class Gateway(address: NetworkHostAndPort,
         const val MAX_MESSAGE_SIZE = 1024 * 1024
     }
 
-    private val logger = LoggerFactory.getLogger(Gateway::class.java)
+
 
     private val closeActions = mutableListOf<() -> Unit>()
-    private val httpServer = HttpServer(address, sslConfig)
+    private val httpServer = HttpServer(host, port, sslConfig)
     private val connectionManager = ConnectionManager(sslConfig)
     private var p2pMessageSubscription: Subscription<String, LinkOutMessage>
     private val inboundMessageProcessor = InboundMessageHandler(httpServer, publisherFactory)

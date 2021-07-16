@@ -14,10 +14,10 @@ import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
-import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.lang.IllegalStateException
+import java.net.URI
 import java.nio.ByteBuffer
 import java.util.LinkedList
 import java.util.concurrent.CountDownLatch
@@ -33,20 +33,22 @@ import java.util.concurrent.TimeUnit
 class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                              publisherFactory: PublisherFactory
 ) : EventLogProcessor<String, LinkOutMessage> {
+    companion object {
+        private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
+    }
 
-    private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
     private val workers: ThreadPoolExecutor = Executors.newFixedThreadPool(4) as ThreadPoolExecutor
     private var p2pInPublisher = publisherFactory.createPublisher(PublisherConfig(PUBLISHER_ID), ConfigFactory.empty())
 
     @Suppress("TooGenericExceptionCaught", "ComplexMethod")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
-        val destinationToMessagesMap = mutableMapOf<NetworkHostAndPort, MutableList<LinkInMessage>>()
+        val destinationToMessagesMap = mutableMapOf<URI, MutableList<LinkInMessage>>()
         val workResults = mutableListOf<Future<*>>()
         events.forEach { evt ->
             // Separate records by destination. This way, we can continue processing messages to connected targets while
             // trying to establish connections for others; if connection times out, we abandon all messages for the unreachable target
             evt.value?.let { peerMessage ->
-                val destination = NetworkHostAndPort.parse(peerMessage.header.address)
+                val destination = URI.create(peerMessage.header.address)
                 val messages = destinationToMessagesMap.getOrDefault(destination, mutableListOf())
                 messages.add(LinkInMessage(peerMessage.payload))
                 destinationToMessagesMap[destination] = messages
@@ -97,7 +99,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun resend(target: NetworkHostAndPort, messages: LinkedList<LinkInMessage>) {
+    private fun resend(target: URI, messages: LinkedList<LinkInMessage>) {
         logger.debug("Retrying delivery of message to $target. No of messages to retry ${messages.size}")
         var successCounter = 0
         messages.forEach { message ->

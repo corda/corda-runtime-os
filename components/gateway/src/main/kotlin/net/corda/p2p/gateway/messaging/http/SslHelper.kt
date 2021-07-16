@@ -1,8 +1,8 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.ssl.SslHandler
-import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
+import java.net.URI
 import java.security.SecureRandom
 import java.security.cert.CertPathValidatorException
 import java.security.cert.Certificate
@@ -13,7 +13,7 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509ExtendedTrustManager
 
-fun createClientSslHandler(target: NetworkHostAndPort,
+fun createClientSslHandler(target: URI,
                            trustManagerFactory: TrustManagerFactory): SslHandler {
     val sslContext = SSLContext.getInstance("TLS")
     val trustManagers = trustManagerFactory.trustManagers.filterIsInstance(X509ExtendedTrustManager::class.java).toTypedArray()

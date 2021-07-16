@@ -7,12 +7,10 @@ import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.p2p.gateway.messaging.http.HttpMessage
-import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
-import rx.Observable
-import rx.subjects.PublishSubject
 import java.lang.NullPointerException
+import java.net.SocketAddress
+import java.net.URI
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -37,6 +35,8 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
             this(sslConfiguration, ConnectionManagerConfig(MAX_CONNECTIONS, ACQUIRE_TIMEOUT, CONNECTION_MAX_IDLE_TIME))
 
     companion object {
+        private val logger = LoggerFactory.getLogger(ConnectionManager::class.java)
+
         /**
          * Maximum size of the connection pool
          */
@@ -53,18 +53,16 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
         private const val CONNECTION_MAX_IDLE_TIME = 60000L
     }
 
-    private val logger = LoggerFactory.getLogger(ConnectionManager::class.java)
-
     private val connectionPool = Caffeine.newBuilder()
         .maximumSize(config.connectionPoolSize)
         .expireAfterAccess(config.maxIdleTime, TimeUnit.MILLISECONDS)
-        .removalListener(RemovalListener<NetworkHostAndPort, HttpClient> { key, value, cause ->
+        .removalListener(RemovalListener<URI, HttpClient> { key, value, cause ->
             logger.debug("Removing connection for target $key. Reason: $cause")
             value?.close()
         })
         //T0DO: replace with scheduled task to do clean-up every now and then. With Runnable::run, clean-up happens when cache is used
         .executor(Runnable::run) //Specify an executor thread for async background tasks such as clean-up of expired connections
-        .build<NetworkHostAndPort, HttpClient>()
+        .build<URI, HttpClient>()
 
     private var sharedEventLoopGroup: EventLoopGroup? = null
 
@@ -92,14 +90,14 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
     /**
      * Return an existing or new [HttpClient]. The client will be started connected to the specified remote address. This
      * method blocks until either it returns or throws.
-     * @param remoteAddress the [NetworkHostAndPort] to connect to
+     * @param target the [URI] to connect to
      * @throws [TimeoutException] if a successful connection cannot established
      */
     @Throws(ConnectTimeoutException::class)
-    fun acquire(remoteAddress: NetworkHostAndPort): HttpClient {
-        return connectionPool.get(remoteAddress) {
-            logger.info("Creating new connection to $remoteAddress")
-            val client = HttpClient(remoteAddress, sslConfiguration, sharedEventLoopGroup)
+    fun acquire(target: URI): HttpClient {
+        return connectionPool.get(target) {
+            logger.info("Creating new connection to ${target.authority}")
+            val client = HttpClient(target, sslConfiguration, sharedEventLoopGroup)
             val connectionLock = CountDownLatch(1)
             val connectionSub = client.onConnection.subscribe { evt ->
                 if (evt.connected) {
@@ -110,20 +108,19 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
             val connected = connectionLock.await(config.acquireTimeout, TimeUnit.MILLISECONDS)
             connectionSub.unsubscribe()
             if (!connected) {
-                throw ConnectTimeoutException("Could not acquire connection to $remoteAddress in ${config.acquireTimeout} milliseconds")
+                throw ConnectTimeoutException("Could not acquire connection to ${target.authority} " +
+                        "in ${config.acquireTimeout} milliseconds")
             }
-            //Publish event that connection was established
-            _onNewConnection.onNext(client.onReceive)
             client
         }!!
     }
 
     /**
      * Clears the cached connections corresponding to the given remote address
-     * @param remoteAddress the [NetworkHostAndPort] of the peer
+     * @param remoteAddress the [SocketAddress] of the peer
      */
     @Suppress("TooGenericExceptionCaught")
-    fun dispose(remoteAddress: NetworkHostAndPort) {
+    fun dispose(remoteAddress: URI) {
         val toDispose = connectionPool.asMap()
             .entries
             .stream()
@@ -149,22 +146,13 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
     /**
      * Returns the current number of active connections for the given host address. Does not count connections which
      * are being started at the time of the call.
-     * @param remoteAddress the
+     * @param remoteAddress the [SocketAddress] of the peer
      */
-    fun activeConnectionsForHost(remoteAddress: NetworkHostAndPort) =
+    fun activeConnectionsForHost(remoteAddress: URI) =
         connectionPool.asMap()
             .entries
             .filter { e -> e.key == remoteAddress && e.value?.connected!! }
             .size
-
-    private val _onNewConnection = PublishSubject.create<Observable<HttpMessage>>().toSerialized()
-
-    /**
-     * Returns an observable to which services can subscribe and receive client request response messages. Used due to
-     * having this manager as an intermediary for HTTP clients
-     */
-    val onNewConnection: Observable<Observable<HttpMessage>>
-        get() = _onNewConnection
 }
 
 data class ConnectionManagerConfig(val connectionPoolSize: Long, val acquireTimeout: Long, val maxIdleTime: Long)

@@ -12,11 +12,11 @@ import io.netty.handler.codec.http.HttpClientCodec
 import io.netty.handler.codec.http.HttpContentDecompressor
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
-import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
 import java.lang.IllegalStateException
+import java.net.URI
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509CertSelector
 import java.util.concurrent.locks.ReentrantLock
@@ -38,18 +38,17 @@ import kotlin.concurrent.withLock
  * The client provides two observables [onReceive] and [onConnection] which upstream services can subscribe to receive
  * updates on important events.
  *
- * @param destination the target address; TODO: will probably become some URL in the future like https://bankofcorda.net:6666
+ * @param destination the target URI
  */
-class HttpClient(private val destination: NetworkHostAndPort,
+class HttpClient(private val destination: URI,
                  private val sslConfiguration: SslConfiguration,
                  private val sharedThreadPool: EventLoopGroup? = null) :
     LifeCycle {
 
     companion object {
+        private val logger = LoggerFactory.getLogger(HttpClient::class.java)
         private const val NUM_CLIENT_THREADS = 2
     }
-
-    private val logger = LoggerFactory.getLogger(HttpClient::class.java)
 
     private val lock = ReentrantLock()
 
@@ -78,7 +77,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
         } else {
             clientChannel = future.channel()
             clientChannel?.closeFuture()?.addListener(closeListener)
-            logger.info("Connected to $destination")
+            logger.info("Connected to ${destination.authority}")
         }
     }
 
@@ -91,7 +90,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
     override fun start() {
         lock.withLock {
             if (started) {
-                logger.info("Already connected to $destination")
+                logger.info("Already connected to ${destination.authority}")
                 return
             }
             logger.info("Connecting to $destination")
@@ -104,7 +103,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
 
     override fun stop() {
         lock.withLock {
-            logger.info("Stopping connection to $destination")
+            logger.info("Stopping connection to ${destination.authority}")
             started = false
             if (sharedThreadPool == null) {
                 workerGroup?.shutdownGracefully()
@@ -114,7 +113,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
             clientChannel?.close()
             clientChannel = null
             workerGroup = null
-            logger.info("Stopped connection to $destination")
+            logger.info("Stopped connection to ${destination.authority}")
         }
     }
 
@@ -126,7 +125,7 @@ class HttpClient(private val destination: NetworkHostAndPort,
     fun send(message: ByteArray) {
         val channel = clientChannel
         if (channel == null || !isChannelWritable(channel)) {
-            throw IllegalStateException("Connection to $destination not active")
+            throw IllegalStateException("Connection to ${destination.authority} not active")
         } else {
             val request = HttpHelper.createRequest(message, destination)
             channel.writeAndFlush(request)

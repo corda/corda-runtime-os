@@ -17,7 +17,6 @@ import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
-import net.corda.v5.base.util.NetworkHostAndPort
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -25,6 +24,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.io.FileInputStream
+import java.net.InetSocketAddress
+import java.net.SocketAddress
+import java.net.URI
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.time.Instant
@@ -63,9 +65,10 @@ class GatewayTest {
     @Test
     @Timeout(30)
     fun `http client to gateway`() {
-        val serverAddress = NetworkHostAndPort.parse("localhost:10000")
+        val serverAddress = URI.create("http://localhost:10000")
         val message = LinkInMessage(authenticatedP2PMessage(String()))
-        Gateway(serverAddress,
+        Gateway(serverAddress.host,
+                serverAddress.port,
                 sslConfiguration,
                 SubscriptionFactoryStub(topicServiceAlice!!),
                 PublisherFactoryStub(topicServiceAlice!!)
@@ -80,7 +83,7 @@ class GatewayTest {
                     }
                 }
                 client.onReceive.subscribe { msg ->
-                    assertEquals(serverAddress, msg.source)
+                    assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port) as SocketAddress, msg.source)
                     assertEquals(HttpResponseStatus.OK, msg.statusCode)
                     assertTrue(msg.payload.isEmpty())
                     responseReceived.countDown()
@@ -104,9 +107,12 @@ class GatewayTest {
     fun `multiple clients to gateway`() {
         val clientNumber = 4
         val threadPool = NioEventLoopGroup(clientNumber)
-        val serverAddress = NetworkHostAndPort.parse("localhost:10000")
+        val serverAddress = URI.create("http://localhost:10000")
         val clients = mutableListOf<HttpClient>()
-        Gateway(serverAddress, sslConfiguration, SubscriptionFactoryStub(topicServiceAlice!!), PublisherFactoryStub(topicServiceAlice!!)).use {
+        Gateway(serverAddress.host, serverAddress.port,
+                sslConfiguration,
+                SubscriptionFactoryStub(topicServiceAlice!!),
+                PublisherFactoryStub(topicServiceAlice!!)).use {
             it.start()
             val responseReceived = CountDownLatch(clientNumber)
             repeat(clientNumber) { index ->
@@ -118,7 +124,7 @@ class GatewayTest {
                     }
                 }
                 client.onReceive.subscribe { msg ->
-                    assertEquals(serverAddress, msg.source)
+                    assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port) as SocketAddress, msg.source)
                     assertEquals(HttpResponseStatus.OK, msg.statusCode)
                     assertTrue(msg.payload.isEmpty())
                     responseReceived.countDown()
@@ -145,8 +151,8 @@ class GatewayTest {
     @Test
     @Timeout(60)
     fun `gateway to multiple servers`() {
-        val gatewayAddress = NetworkHostAndPort.parse("localhost:10000")
-        val serverAddresses = listOf("localhost:10001", "localhost:10002", "localhost:10003", "localhost:10004")
+        val gatewayAddress = Pair("localhost", 10000)
+        val serverAddresses = listOf("http://localhost:10001", "http://localhost:10002", "http://localhost:10003", "http://localhost:10004")
         // We first produce some messages which will be consumed by the Gateway.
         val messageCount = 10000 // this number will be produced for each target
         val deliveryLatch = CountDownLatch(serverAddresses.size * messageCount)
@@ -159,7 +165,8 @@ class GatewayTest {
                 }.build()
                 topicServiceAlice!!.addRecords(listOf(Record(LINK_OUT_TOPIC, "key", msg)))
             }
-            servers.add(HttpServer(NetworkHostAndPort.parse(serverAddresses[id]), sslConfiguration).also {
+            val serverURI = URI.create(serverAddresses[id])
+            servers.add(HttpServer(serverURI.host, serverURI.port, sslConfiguration).also {
                 it.onReceive.subscribe { rcv ->
                     val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(rcv.payload))
                     assertEquals("Target-${serverAddresses[id]}", String((p2pMessage.payload as AuthenticatedDataMessage).payload.array()))
@@ -172,7 +179,8 @@ class GatewayTest {
 
         var startTime: Long
         var endTime: Long
-        Gateway(gatewayAddress,
+        Gateway(gatewayAddress.first,
+                gatewayAddress.second,
                 sslConfiguration,
                 SubscriptionFactoryStub(topicServiceAlice!!),
                 PublisherFactoryStub(topicServiceAlice!!)
@@ -190,8 +198,8 @@ class GatewayTest {
 
     @Test
     fun `gateway to gateway - dual stream`() {
-        val aliceGatewayAddress = NetworkHostAndPort.parse("localhost:10001")
-        val bobGatewayAddress = NetworkHostAndPort.parse("localhost:10002")
+        val aliceGatewayAddress = URI.create("http://localhost:10001")
+        val bobGatewayAddress = URI.create("http://localhost:10002")
         val messageCount = 10000
         // Produce messages for each Gateway
         repeat(messageCount) {
@@ -223,7 +231,8 @@ class GatewayTest {
         // Start the gateways
         val t1 = thread {
             val alice = Gateway(
-                aliceGatewayAddress,
+                aliceGatewayAddress.host,
+                aliceGatewayAddress.port,
                 sslConfiguration,
                 SubscriptionFactoryStub(topicServiceAlice!!),
                 PublisherFactoryStub(topicServiceAlice!!)
@@ -233,7 +242,8 @@ class GatewayTest {
         }
         val t2 = thread {
             val bob = Gateway(
-                bobGatewayAddress,
+                bobGatewayAddress.host,
+                bobGatewayAddress.port,
                 sslConfiguration,
                 SubscriptionFactoryStub(topicServiceBob!!),
                 PublisherFactoryStub(topicServiceBob!!)

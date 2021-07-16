@@ -27,7 +27,10 @@ import java.nio.ByteBuffer
 class InboundMessageHandler(private val server: HttpServer,
                             private val publisherFactory: PublisherFactory) : LifeCycle {
 
-    private var logger = LoggerFactory.getLogger(InboundMessageHandler::class.java)
+    companion object {
+        private var logger = LoggerFactory.getLogger(InboundMessageHandler::class.java)
+    }
+
     private var inboundMessageListener: Subscription? = null
     private var p2pInPublisher: Publisher? = null
     private var connectionListener: Subscription? = null

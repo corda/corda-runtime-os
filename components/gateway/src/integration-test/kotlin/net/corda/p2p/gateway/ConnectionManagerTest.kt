@@ -6,11 +6,12 @@ import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.ConnectionManagerConfig
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpServer
-import net.corda.v5.base.util.NetworkHostAndPort
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.io.FileInputStream
+import java.net.SocketAddress
+import java.net.URI
 import java.security.KeyStore
 import java.util.concurrent.CountDownLatch
 
@@ -20,7 +21,7 @@ class ConnectionManagerTest {
     private val serverResponseContent = "PONG"
     private val keystorePass = "cordacadevpass"
     private val truststorePass = "trustpass"
-    private val serverAddresses = listOf(NetworkHostAndPort.parse("localhost:10000"), NetworkHostAndPort.parse("localhost:10001"))
+    private val serverAddresses = listOf("http://localhost:10000", "http://localhost:10001")
     private val sslConfiguration = object : SslConfiguration {
         override val keyStore: KeyStore = KeyStore.getInstance("JKS").also {
             it.load(FileInputStream(javaClass.classLoader.getResource("sslkeystore.jks")!!.file), keystorePass.toCharArray())
@@ -36,13 +37,14 @@ class ConnectionManagerTest {
     @Timeout(30)
     fun `acquire connection`() {
         val manager = ConnectionManager(sslConfiguration)
-        HttpServer(serverAddresses.first(), sslConfiguration).use { server ->
+        val (host, port) = URI.create(serverAddresses.first()).let { Pair(it.host, it.port) }
+        HttpServer(host, port, sslConfiguration).use { server ->
             server.onReceive.subscribe {
                 assertEquals(clientMessageContent, String(it.payload))
                 server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), it.source)
             }
             server.start()
-            manager.acquire(serverAddresses.first()).use { client ->
+            manager.acquire(URI.create(serverAddresses.first().toString())).use { client ->
                 // Client is connected at this point
                 val responseReceived = CountDownLatch(1)
                 client.onReceive.subscribe {
@@ -58,8 +60,9 @@ class ConnectionManagerTest {
     @Test
     fun `reuse connection`() {
         val manager = ConnectionManager(sslConfiguration)
-        HttpServer(serverAddresses.first(), sslConfiguration).use { server ->
-            val remotePeers = mutableListOf<NetworkHostAndPort>()
+        val serverURI = URI.create((serverAddresses.first()))
+        HttpServer(serverURI.host, serverURI.port, sslConfiguration).use { server ->
+            val remotePeers = mutableListOf<SocketAddress>()
             server.onConnection.subscribe {
                 if (it.connected) {
                     remotePeers.add(it.remoteAddress)
@@ -67,12 +70,12 @@ class ConnectionManagerTest {
             }
             server.start()
 
-            manager.acquire(serverAddresses.first())
-            assertEquals( 1, manager.activeConnectionsForHost(serverAddresses.first()))
-            manager.acquire(serverAddresses.first())
-            assertEquals( 1, manager.activeConnectionsForHost(serverAddresses.first()))
+            manager.acquire(serverURI)
+            assertEquals( 1, manager.activeConnectionsForHost(serverURI))
+            manager.acquire(serverURI)
+            assertEquals( 1, manager.activeConnectionsForHost(serverURI))
             assertEquals(1, remotePeers.size)
-            manager.acquire(serverAddresses.first()).stop()
+            manager.acquire(serverURI).stop()
         }
     }
 
@@ -81,7 +84,7 @@ class ConnectionManagerTest {
         var gotException = false
         try {
             val config = ConnectionManagerConfig(10, 100, 1000)
-            ConnectionManager(sslConfiguration, config).acquire(serverAddresses.first())
+            ConnectionManager(sslConfiguration, config).acquire(URI.create(serverAddresses.first().toString()))
         } catch (e: Exception) {
             assert(e is ConnectTimeoutException)
             gotException = true

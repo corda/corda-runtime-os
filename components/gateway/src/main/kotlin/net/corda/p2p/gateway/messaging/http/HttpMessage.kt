@@ -1,7 +1,7 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
-import net.corda.v5.base.util.NetworkHostAndPort
+import java.net.SocketAddress
 
 /**
  * Used to deliver HTTP messages from the transport layer to the application layer
@@ -9,8 +9,8 @@ import net.corda.v5.base.util.NetworkHostAndPort
 class HttpMessage(
     val statusCode: HttpResponseStatus,
     val payload: ByteArray,
-    val source: NetworkHostAndPort,
-    val destination: NetworkHostAndPort
+    val source: SocketAddress,
+    val destination: SocketAddress
 ) {
 
     override fun toString(): String {
