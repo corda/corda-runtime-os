@@ -94,7 +94,6 @@ internal class LifecycleEventQueueManager(
      *
      * @return true if there were no errors, false if there was an unhandled error during processing
      */
-    @Suppress("TooGenericExceptionCaught")
     fun processEvents(): Boolean {
         val batch = mutableListOf<LifeCycleEvent>()
         for (i in 0..batchSize) {
@@ -114,6 +113,7 @@ internal class LifecycleEventQueueManager(
      * @param event The event to process.
      * @return true if the event was processed successfully or any errors were properly handled, false otherwise.
      */
+    @Suppress("TooGenericExceptionCaught")
     private fun processEvent(event: LifeCycleEvent) : Boolean {
         return try {
             processor(event)
