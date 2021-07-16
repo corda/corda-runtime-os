@@ -20,12 +20,13 @@ class FlowStateMachineImpl<R>(
     override val clientId: String?,
     override val id: FlowId,
     override val logic: Flow<R>,
-    scheduler: FiberScheduler,
-    override val creationTime: Long = System.currentTimeMillis(), override val ourSenderUUID: String?,
     override val resultFuture: CompletableFuture<R>,
     override val logger: Logger,
     override val ourIdentity: Party,
-    override val isKilled: Boolean
+    override val isKilled: Boolean,
+    override val ourSenderUUID: String?,
+    scheduler: FiberScheduler,
+    override val creationTime: Long = System.currentTimeMillis()
 ) : Fiber<Unit>(id.toString(), scheduler), FlowStateMachine<R> {
 
     override fun <SUSPENDRETURN : Any> suspend(
