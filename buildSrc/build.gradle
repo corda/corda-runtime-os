@@ -1,34 +1,33 @@
-//buildscript {
-//    def artifactoryContextUrl = "https://software.r3.com/artifactory"
-//    def cordaGradlePluginsVersion = "6.0.0-SNAPSHOT"
-//    repositories {
-//        maven {
-//            url "$artifactoryContextUrl/corda-dev"
-//            content {
-//                includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
-//            }
-//        }
-//        maven {
-//            url "$artifactoryContextUrl/corda-releases"
-//            content {
-//                includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
-//            }
-//        }
-//        maven {
-//            url "$artifactoryContextUrl/corda-os-maven"
-//            content {
-//                includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
-//            }
-//        }
-//        gradlePluginPortal()
-//    }
-//
-//    dependencies {
-//        classpath "net.corda.plugins:quasar-utils:$cordaGradlePluginsVersion"
-//        classpath "net.corda.plugins:flask:$cordaGradlePluginsVersion"
-//    }
-//
-//}
+buildscript {
+    def artifactoryContextUrl = "https://software.r3.com/artifactory"
+    def cordaGradlePluginsVersion = "6.0.0-SNAPSHOT"
+    repositories {
+        maven {
+            url "$artifactoryContextUrl/corda-dev"
+            content {
+                includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
+            }
+        }
+        maven {
+            url "$artifactoryContextUrl/corda-releases"
+            content {
+                includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
+            }
+        }
+        maven {
+            url "$artifactoryContextUrl/corda-os-maven"
+            content {
+                includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
+            }
+        }
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath "net.corda.plugins:quasar-utils:$cordaGradlePluginsVersion"
+        classpath "net.corda.plugins:flask:$cordaGradlePluginsVersion"
+    }
+
+}
 
 plugins {
     id 'groovy-gradle-plugin'
