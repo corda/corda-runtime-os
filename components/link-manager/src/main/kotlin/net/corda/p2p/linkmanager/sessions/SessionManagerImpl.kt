@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.p2p.FlowMessage
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.Step2Message
@@ -20,12 +19,13 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdenti
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInNetworkMapWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInNetworkMapWarning
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noSessionWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInNetworkMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInNetworkMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
+import net.corda.p2p.payload.FlowMessage
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.security.PublicKey

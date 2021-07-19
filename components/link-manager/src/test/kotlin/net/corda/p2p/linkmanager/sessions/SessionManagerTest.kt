@@ -1,9 +1,6 @@
 package net.corda.p2p.linkmanager.sessions
 
 import com.nhaarman.mockito_kotlin.any
-import net.corda.p2p.FlowMessage
-import net.corda.p2p.FlowMessageHeader
-import net.corda.p2p.HoldingIdentity
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.Step2Message
@@ -29,6 +26,9 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.convertAut
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessageFromFlowMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+import net.corda.p2p.payload.FlowMessage
+import net.corda.p2p.payload.FlowMessageHeader
+import net.corda.p2p.payload.HoldingIdentity
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
