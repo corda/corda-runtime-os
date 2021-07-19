@@ -22,6 +22,7 @@ class DbSchema {
             const val CONSUMER_GROUP_COLUMN_NAME = "consumer_group_name"
             const val PARTITION_COLUMN_NAME = "partition_no"
             const val COMMITTED_OFFSET_COLUMN_NAME = "committed_offset"
+            const val OFFSET_TIMESTAMP_COLUMN_NAME = "offset_timestamp"
         }
     }
 

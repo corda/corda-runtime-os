@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -152,11 +153,21 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<K, V>) {
         while (!stopped) {
+            val consumerRecords = consumer.poll()
             try {
-                val consumerRecords = consumer.poll()
                 processCompactedRecords(consumerRecords)
             } catch (ex: Exception) {
-                throw CordaMessageAPIIntermittentException("$errorMsg.", ex)
+                when (ex) {
+                    is CordaMessageAPIFatalException,
+                    is CordaMessageAPIIntermittentException -> {
+                        throw ex
+                    }
+                    else -> {
+                        throw CordaMessageAPIFatalException(
+                            "Failed to process records from topic $topic, group $groupName.", ex
+                        )
+                    }
+                }
             }
         }
     }
