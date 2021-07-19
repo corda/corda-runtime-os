@@ -29,4 +29,14 @@ class CordaAvroSerializerTest {
     fun testNullValue() {
         assertThat(cordaAvroSerializer.serialize(topic, null) == null)
     }
+
+    @Test
+    fun testStringValue() {
+        assertThat(cordaAvroSerializer.serialize(topic, "string") != null)
+    }
+
+    @Test
+    fun testByteArrayValue() {
+        assertThat(cordaAvroSerializer.serialize(topic, "bytearray".toByteArray()) != null)
+    }
 }

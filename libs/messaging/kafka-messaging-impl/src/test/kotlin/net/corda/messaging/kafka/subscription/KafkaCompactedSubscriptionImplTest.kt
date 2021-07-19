@@ -237,7 +237,7 @@ class KafkaCompactedSubscriptionImplTest {
         }
 
         // Three calls: First time and after each exception thrown
-        verify(consumerBuilder, times(3)).createCompactedConsumer(any(), any())
+        verify(consumerBuilder, times(3)).createCompactedConsumer(any(), any(), any(), any())
     }
 
     @Test
@@ -284,13 +284,13 @@ class KafkaCompactedSubscriptionImplTest {
         while (subscription.isRunning) { Thread.sleep(10) }
 
         // Four calls: First time and after each exception thrown
-        verify(consumerBuilder, times(4)).createCompactedConsumer(any(), any())
+        verify(consumerBuilder, times(4)).createCompactedConsumer(any(), any(), any(), any())
     }
 
     private fun setupStandardMocks(): Pair<CordaKafkaConsumer<String, String>, ConsumerBuilder<String, String>> {
         val kafkaConsumer: CordaKafkaConsumer<String, String> = mock()
         val consumerBuilder: ConsumerBuilder<String, String> = mock()
-        doReturn(kafkaConsumer).whenever(consumerBuilder).createCompactedConsumer(any(), any())
+        doReturn(kafkaConsumer).whenever(consumerBuilder).createCompactedConsumer(any(), any(), any(), any())
         doReturn(mutableMapOf(TopicPartition(TOPIC, 0) to 0L, TopicPartition(TOPIC, 1) to 0L)).whenever(kafkaConsumer)
             .beginningOffsets(any())
         doReturn(

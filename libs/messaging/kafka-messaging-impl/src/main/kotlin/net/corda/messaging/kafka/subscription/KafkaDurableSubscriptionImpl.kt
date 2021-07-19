@@ -122,7 +122,9 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 log.debug { "Attempt: $attempts" }
-                consumer = consumerBuilder.createDurableConsumer(config.getConfig(KAFKA_CONSUMER))
+                consumer = consumerBuilder.createDurableConsumer(
+                    config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass
+                )
                 producer = producerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribeToTopic()
