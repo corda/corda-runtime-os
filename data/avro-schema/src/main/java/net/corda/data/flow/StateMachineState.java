@@ -14,11 +14,14 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class StateMachineState extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 3145643916596632866L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"StateMachineState\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"suspendCount\",\"type\":\"int\"},{\"name\":\"isKilled\",\"type\":\"boolean\"},{\"name\":\"initiatedBy\",\"type\":\"bytes\"}]}");
+  private static final long serialVersionUID = 2824827524729850072L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"StateMachineState\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"suspendCount\",\"type\":\"int\"},{\"name\":\"isKilled\",\"type\":\"boolean\"},{\"name\":\"initiatedBy\",\"type\":\"bytes\"},{\"name\":\"eventQueue\",\"type\":{\"type\":\"array\",\"items\":{\"type\":\"record\",\"name\":\"FlowEvent\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"flowKey\",\"type\":{\"type\":\"record\",\"name\":\"FlowKey\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"flowId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"identity\",\"type\":{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.data.identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}}]}},{\"name\":\"payload\",\"type\":[{\"type\":\"record\",\"name\":\"FlowSessionMessage\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":\"net.corda.data.identity.HoldingIdentity\"},{\"name\":\"destination\",\"type\":\"net.corda.data.identity.HoldingIdentity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"message\",\"type\":\"bytes\"}]},{\"type\":\"record\",\"name\":\"RemoteFlowError\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":\"net.corda.data.identity.HoldingIdentity\"},{\"name\":\"destination\",\"type\":\"net.corda.data.identity.HoldingIdentity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]},{\"type\":\"record\",\"name\":\"StartRemotelyInitiatedFlow\",\"fields\":[{\"name\":\"message\",\"type\":\"FlowSessionMessage\"}]},{\"type\":\"record\",\"name\":\"StartRPCFlow\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"rpcUsername\",\"type\":\"net.corda.data.identity.HoldingIdentity\"},{\"name\":\"timestamp\",\"type\":{\"type\":\"long\",\"logicalType\":\"timestamp-millis\"}},{\"name\":\"args\",\"type\":{\"type\":\"array\",\"items\":[\"null\",\"bytes\"]}}]},{\"type\":\"record\",\"name\":\"Wakeup\",\"fields\":[]}]}]}}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
+static {
+    MODEL$.addLogicalTypeConversion(new org.apache.avro.data.TimeConversions.TimestampMillisConversion());
+  }
 
   private static final BinaryMessageEncoder<StateMachineState> ENCODER =
       new BinaryMessageEncoder<StateMachineState>(MODEL$, SCHEMA$);
@@ -74,6 +77,7 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
    private int suspendCount;
    private boolean isKilled;
    private java.nio.ByteBuffer initiatedBy;
+   private java.util.List<net.corda.data.flow.event.FlowEvent> eventQueue;
 
   /**
    * Default constructor.  Note that this does not initialize fields
@@ -87,11 +91,13 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
    * @param suspendCount The new value for suspendCount
    * @param isKilled The new value for isKilled
    * @param initiatedBy The new value for initiatedBy
+   * @param eventQueue The new value for eventQueue
    */
-  public StateMachineState(java.lang.Integer suspendCount, java.lang.Boolean isKilled, java.nio.ByteBuffer initiatedBy) {
+  public StateMachineState(java.lang.Integer suspendCount, java.lang.Boolean isKilled, java.nio.ByteBuffer initiatedBy, java.util.List<net.corda.data.flow.event.FlowEvent> eventQueue) {
     this.suspendCount = suspendCount;
     this.isKilled = isKilled;
     this.initiatedBy = initiatedBy;
+    this.eventQueue = eventQueue;
   }
 
   public org.apache.avro.specific.SpecificData getSpecificData() { return MODEL$; }
@@ -102,6 +108,7 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
     case 0: return suspendCount;
     case 1: return isKilled;
     case 2: return initiatedBy;
+    case 3: return eventQueue;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -113,6 +120,7 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
     case 0: suspendCount = (java.lang.Integer)value$; break;
     case 1: isKilled = (java.lang.Boolean)value$; break;
     case 2: initiatedBy = (java.nio.ByteBuffer)value$; break;
+    case 3: eventQueue = (java.util.List<net.corda.data.flow.event.FlowEvent>)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -169,6 +177,23 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
   }
 
   /**
+   * Gets the value of the 'eventQueue' field.
+   * @return The value of the 'eventQueue' field.
+   */
+  public java.util.List<net.corda.data.flow.event.FlowEvent> getEventQueue() {
+    return eventQueue;
+  }
+
+
+  /**
+   * Sets the value of the 'eventQueue' field.
+   * @param value the value to set.
+   */
+  public void setEventQueue(java.util.List<net.corda.data.flow.event.FlowEvent> value) {
+    this.eventQueue = value;
+  }
+
+  /**
    * Creates a new StateMachineState RecordBuilder.
    * @return A new StateMachineState RecordBuilder
    */
@@ -212,6 +237,7 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
     private int suspendCount;
     private boolean isKilled;
     private java.nio.ByteBuffer initiatedBy;
+    private java.util.List<net.corda.data.flow.event.FlowEvent> eventQueue;
 
     /** Creates a new Builder */
     private Builder() {
@@ -236,6 +262,10 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
         this.initiatedBy = data().deepCopy(fields()[2].schema(), other.initiatedBy);
         fieldSetFlags()[2] = other.fieldSetFlags()[2];
       }
+      if (isValidValue(fields()[3], other.eventQueue)) {
+        this.eventQueue = data().deepCopy(fields()[3].schema(), other.eventQueue);
+        fieldSetFlags()[3] = other.fieldSetFlags()[3];
+      }
     }
 
     /**
@@ -255,6 +285,10 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
       if (isValidValue(fields()[2], other.initiatedBy)) {
         this.initiatedBy = data().deepCopy(fields()[2].schema(), other.initiatedBy);
         fieldSetFlags()[2] = true;
+      }
+      if (isValidValue(fields()[3], other.eventQueue)) {
+        this.eventQueue = data().deepCopy(fields()[3].schema(), other.eventQueue);
+        fieldSetFlags()[3] = true;
       }
     }
 
@@ -376,6 +410,46 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
       return this;
     }
 
+    /**
+      * Gets the value of the 'eventQueue' field.
+      * @return The value.
+      */
+    public java.util.List<net.corda.data.flow.event.FlowEvent> getEventQueue() {
+      return eventQueue;
+    }
+
+
+    /**
+      * Sets the value of the 'eventQueue' field.
+      * @param value The value of 'eventQueue'.
+      * @return This builder.
+      */
+    public net.corda.data.flow.StateMachineState.Builder setEventQueue(java.util.List<net.corda.data.flow.event.FlowEvent> value) {
+      validate(fields()[3], value);
+      this.eventQueue = value;
+      fieldSetFlags()[3] = true;
+      return this;
+    }
+
+    /**
+      * Checks whether the 'eventQueue' field has been set.
+      * @return True if the 'eventQueue' field has been set, false otherwise.
+      */
+    public boolean hasEventQueue() {
+      return fieldSetFlags()[3];
+    }
+
+
+    /**
+      * Clears the value of the 'eventQueue' field.
+      * @return This builder.
+      */
+    public net.corda.data.flow.StateMachineState.Builder clearEventQueue() {
+      eventQueue = null;
+      fieldSetFlags()[3] = false;
+      return this;
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public StateMachineState build() {
@@ -384,6 +458,7 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
         record.suspendCount = fieldSetFlags()[0] ? this.suspendCount : (java.lang.Integer) defaultValue(fields()[0]);
         record.isKilled = fieldSetFlags()[1] ? this.isKilled : (java.lang.Boolean) defaultValue(fields()[1]);
         record.initiatedBy = fieldSetFlags()[2] ? this.initiatedBy : (java.nio.ByteBuffer) defaultValue(fields()[2]);
+        record.eventQueue = fieldSetFlags()[3] ? this.eventQueue : (java.util.List<net.corda.data.flow.event.FlowEvent>) defaultValue(fields()[3]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -411,51 +486,6 @@ public class StateMachineState extends org.apache.avro.specific.SpecificRecordBa
     READER$.read(this, SpecificData.getDecoder(in));
   }
 
-  @Override protected boolean hasCustomCoders() { return true; }
-
-  @Override public void customEncode(org.apache.avro.io.Encoder out)
-    throws java.io.IOException
-  {
-    out.writeInt(this.suspendCount);
-
-    out.writeBoolean(this.isKilled);
-
-    out.writeBytes(this.initiatedBy);
-
-  }
-
-  @Override public void customDecode(org.apache.avro.io.ResolvingDecoder in)
-    throws java.io.IOException
-  {
-    org.apache.avro.Schema.Field[] fieldOrder = in.readFieldOrderIfDiff();
-    if (fieldOrder == null) {
-      this.suspendCount = in.readInt();
-
-      this.isKilled = in.readBoolean();
-
-      this.initiatedBy = in.readBytes(this.initiatedBy);
-
-    } else {
-      for (int i = 0; i < 3; i++) {
-        switch (fieldOrder[i].pos()) {
-        case 0:
-          this.suspendCount = in.readInt();
-          break;
-
-        case 1:
-          this.isKilled = in.readBoolean();
-          break;
-
-        case 2:
-          this.initiatedBy = in.readBytes(this.initiatedBy);
-          break;
-
-        default:
-          throw new java.io.IOException("Corrupt ResolvingDecoder.");
-        }
-      }
-    }
-  }
 }
 
 

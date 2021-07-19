@@ -1,10 +1,12 @@
 package net.corda.flow.statemachine
 
+import net.corda.data.flow.FlowKey
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowId
 import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.application.identity.Party
+import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.serialization.SerializedBytes
@@ -32,7 +34,7 @@ data class FlowStackSnapshot(
 @DoNotImplement
 interface FlowStateMachineHandle<FLOWRETURN> {
     val logic: Flow<FLOWRETURN>?
-    val id: FlowId
+    val id: FlowKey
     val resultFuture: CompletableFuture<FLOWRETURN>
     val clientId: String?
 }
@@ -40,9 +42,7 @@ interface FlowStateMachineHandle<FLOWRETURN> {
 @DoNotImplement
 interface FlowStateMachine<FLOWRETURN> : FlowStateMachineHandle<FLOWRETURN> {
     @Suspendable
-    fun <SUSPENDRETURN : Any> suspend(ioRequest: FlowIORequest<SUSPENDRETURN>, maySkipCheckpoint: Boolean): SUSPENDRETURN
-
-    fun serialize(payloads: Map<FlowSession, Any>): Map<FlowSession, SerializedBytes<Any>>
+    fun <SUSPENDRETURN : Any> suspend(ioRequest: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN
 
     @Suspendable
     fun initiateFlow(destination: Destination, wellKnownParty: Party): FlowSession
@@ -50,17 +50,11 @@ interface FlowStateMachine<FLOWRETURN> : FlowStateMachineHandle<FLOWRETURN> {
     @Suspendable
     fun <SUBFLOWRETURN> subFlow(currentFlow: Flow<*>, subFlow: Flow<SUBFLOWRETURN>): SUBFLOWRETURN
 
-    @Suspendable
-    fun flowStackSnapshot(flowClass: Class<out Flow<*>>): FlowStackSnapshot?
-
-    @Suspendable
-    fun persistFlowStackSnapshot(flowClass: Class<out Flow<*>>)
-
     fun updateTimedFlowTimeout(timeoutSeconds: Long)
 
     val logger: Logger
     val ourIdentity: Party
-    val ourSenderUUID: String?
     val creationTime: Long
     val isKilled: Boolean
+    val serializationService: SerializationService
 }
