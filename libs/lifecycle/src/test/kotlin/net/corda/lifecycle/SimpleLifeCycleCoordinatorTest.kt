@@ -431,10 +431,10 @@ internal class SimpleLifeCycleCoordinatorTest {
     fun `can handle exceptions being thrown when processing the start or stop event`() {
         val startLatch = CountDownLatch(1)
         val stopLatch = CountDownLatch(1)
+        val exceptionLatch = CountDownLatch(2)
         val exception = Exception("A bad thing happened")
         var startCount = 0
         var stopCount = 0
-        var errorsProcessed = 0
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event, _ ->
             when (event) {
                 is StartEvent -> {
@@ -445,7 +445,7 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is ErrorEvent -> {
                     event.isHandled = true
                     assertEquals(exception, event.cause)
-                    errorsProcessed++
+                    exceptionLatch.countDown()
                 }
                 is StopEvent -> {
                     stopCount++
@@ -456,12 +456,11 @@ internal class SimpleLifeCycleCoordinatorTest {
         }.use {
             it.start()
             it.stop()
+            assertTrue(exceptionLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
-            // For sanity
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(1, startCount)
             assertEquals(1, stopCount)
-            assertEquals(2, errorsProcessed)
         }
     }
 }
