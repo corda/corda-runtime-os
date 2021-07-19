@@ -1,82 +1,18 @@
 // This plugin is for providing the standard set of gradle used for all modules
 // wishing to publish to the R3 artifactory
 
-plugins {
-    id 'com.jfrog.artifactory'
-    id 'maven-publish'
-}
-
-if (!project.hasProperty('cordaArtifactoryUsername')) {
-    ext.cordaArtifactoryUsername = System.getenv('CORDA_ARTIFACTORY_USERNAME')
-}
-
-if (! project.hasProperty('cordaArtifactoryPassword')) {
-    ext.cordaArtifactoryPassword = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
-}
-
-def revision = {
-    if (System.getenv("CORDA_REVISION")) {
-        return System.getenv("CORDA_REVISION")
-    }
-    try {
-        return "git rev-parse HEAD".execute().text.trim()
-    } catch (Exception error) {
-        logger.warn("git is unavailable in build environment", error)
-        "unknown"
-    }
-}()
-
 def releaseType = System.getenv("RELEASE_TYPE") ?: "SNAPSHOT"
 def versionSuffix = System.getenv("VERSION_SUFFIX")
-def artifactoryPublishRepo = System.getenv("CORDA_PUBLISH_REPOSITORY_KEY") ?: "corda-ent-maven-dev"
 
 switch (releaseType) {
     case "SNAPSHOT":
-        ext.flowworkerVersion = project.hasProperty("snapshotLabel") ?
+        version = project.hasProperty("snapshotLabel") ?
                 "$flowworkerMajorVersion.$flowworkerMinorVersion.0-${project.property("snapshotLabel")}-SNAPSHOT" :
                 "$flowworkerMajorVersion.$flowworkerMinorVersion.0-SNAPSHOT"
         break
     default:
         //default case is builds made on jenkins where versionSuffix is calculated for us by the corda-shared-build-pipeline
-        ext.flowworkerVersion = "$flowworkerMajorVersion.$flowworkerMinorVersion.$versionSuffix"
+        version = "$flowworkerMajorVersion.$flowworkerMinorVersion.$versionSuffix"
 }
-
-
-publishing {
-    publications {
-        maven(MavenPublication) {
-            artifactId project.name
-
-            afterEvaluate {
-                groupId project.group
-                version project.version
-            }
-            from components.kotlin
-        }
-    }
-}
-
-afterEvaluate {
-    artifactoryPublish.dependsOn(jar)
-}
-
-artifactoryPublish {
-    publications('maven')
-}
-
-artifactory {
-    publish {
-        contextUrl = artifactoryContextUrl
-        repository {
-            repoKey = artifactoryPublishRepo
-            username = cordaArtifactoryUsername
-            password = cordaArtifactoryPassword
-            maven = true
-        }
-        defaults {
-            publications(project.name)
-            properties = ['release.type': releaseType, 'source.revision': revision]
-        }
-    }
-}
-
+group = 'net.corda'
+pluginManager.apply('com.r3.internal.gradle.plugins.r3Publish')
