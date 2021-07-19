@@ -18,8 +18,8 @@ import kotlin.concurrent.withLock
  * @param lifeCycleProcessor method receiving the [LifeCycleEvent] notifications coordinated by this object.
  */
 class SimpleLifeCycleCoordinator(
-    val batchSize: Int,
-    val timeout: Long,
+    private val batchSize: Int,
+    private val timeout: Long,
     override val lifeCycleProcessor: (LifeCycleEvent: LifeCycleEvent, lifecycleCoordinator: LifeCycleCoordinator) -> Unit,
 ) : LifeCycleCoordinator {
 
@@ -211,7 +211,7 @@ class SimpleLifeCycleCoordinator(
     /**
      * Start this coordinator.
      *
-     * **NOTE: events posted after last [stop] and before start are ignored.**
+     * This should never be called from the event processor function. Doing so could result in a deadlock.
      *
      * @throws RejectedExecutionException if [executorService] can't schedule [processEvents].
      */
@@ -219,8 +219,8 @@ class SimpleLifeCycleCoordinator(
         RejectedExecutionException::class
     )
     override fun start() {
-        lock.withLock {
-            if (!isRunning) {
+        if (!isRunning) {
+            lock.withLock {
                 // Must wait here for previous cleanup to prevent a race condition where the start event posted below is
                 // deleted by a previous cleanup run.
                 while (cleanupInProgress.get()) {
@@ -228,7 +228,6 @@ class SimpleLifeCycleCoordinator(
                 }
                 _isRunning.set(true)
                 postEvent(StartEvent())
-                scheduleIfRequired()
             }
         }
     }
