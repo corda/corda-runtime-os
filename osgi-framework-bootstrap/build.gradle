@@ -63,6 +63,7 @@ test {
         final systemBundlesFile = new File(project.buildDir, "resources/test/system_bundles")
         systemBundlesFile.withWriter { writer ->
             systemBundleSet.each { line ->
+                println "Adding test bundles $line to system_bundles"
                 writer.writeLine(line)
             }
         }
