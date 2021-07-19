@@ -121,7 +121,9 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
         while (!stopped) {
             attempts++
             try {
-                consumerBuilder.createPubSubConsumer(config.getConfig(KAFKA_CONSUMER), ::logFailedDeserialize).use {
+                consumerBuilder.createPubSubConsumer(
+                    config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass,::logFailedDeserialize
+                ).use {
                     it.subscribeToTopic()
                     pollAndProcessRecords(it)
                 }

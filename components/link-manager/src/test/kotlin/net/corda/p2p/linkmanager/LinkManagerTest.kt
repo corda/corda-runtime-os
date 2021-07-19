@@ -1,13 +1,10 @@
 package net.corda.p2p.linkmanager
 
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.FlowMessage
-import net.corda.p2p.FlowMessageHeader
-import net.corda.p2p.HoldingIdentity
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
@@ -25,6 +22,9 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.Companion.getSessionKeyFromMessage
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.SessionKey
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+import net.corda.p2p.payload.FlowMessage
+import net.corda.p2p.payload.FlowMessageHeader
+import net.corda.p2p.payload.HoldingIdentity
 import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
@@ -39,7 +39,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
-import java.lang.RuntimeException
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature

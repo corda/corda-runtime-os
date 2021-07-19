@@ -17,9 +17,9 @@ plugins {
     id 'io.gitlab.arturbosch.detekt' apply false
     id 'idea'
     id 'application'
-    id 'com.jfrog.artifactory'
+    id 'com.r3.internal.gradle.plugins.r3Publish' apply false
     id 'maven-publish'
-    id 'corda.publish'
+    id 'corda.publish' apply false
     id 'jacoco'
 }
 
@@ -31,10 +31,15 @@ wrapper {
 
 
 allprojects {
-    apply plugin: 'org.jetbrains.kotlin.jvm'
+    if (!project.hasProperty('cordaArtifactoryUsername')) {
+        ext.cordaArtifactoryUsername = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+    }
 
-    group 'net.corda'
-    version flowworkerVersion
+    if (! project.hasProperty('cordaArtifactoryPassword')) {
+        ext.cordaArtifactoryPassword = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+    }
+
+    apply plugin: 'org.jetbrains.kotlin.jvm'
 
     tasks.withType(JavaCompile) {
         sourceCompatibility = VERSION_11

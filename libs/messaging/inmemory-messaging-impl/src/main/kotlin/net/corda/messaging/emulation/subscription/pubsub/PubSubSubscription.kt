@@ -10,7 +10,7 @@ import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFacto
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.GROUP_NAME
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.service.TopicService
-import net.corda.v5.base.internal.uncheckedCast
+import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger

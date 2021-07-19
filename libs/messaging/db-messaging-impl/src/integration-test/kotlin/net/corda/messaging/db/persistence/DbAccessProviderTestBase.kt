@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.sql.DriverManager
+import java.time.Instant
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class DbAccessProviderTestBase {
@@ -273,6 +274,49 @@ abstract class DbAccessProviderTestBase {
 
         val nonExistingRecord = dbAccessProvider.getRecord(topic1, 1, 10)
         assertThat(nonExistingRecord).isNull()
+    }
+
+    @Test
+    fun `can delete records before timestamp successfully`() {
+        val recordsBeforeWindow = listOf(
+            RecordDbEntry(topic1, 1, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic1, 1, 2, "key-2".toByteArray(), "value-2".toByteArray()),
+            RecordDbEntry(topic1, 1, 3, "key-3".toByteArray(), "value-3".toByteArray())
+        )
+        val recordsAfterWindow = listOf(
+            RecordDbEntry(topic1, 1, 4, "key-4".toByteArray(), "value-4".toByteArray()),
+            RecordDbEntry(topic1, 1, 5, "key-5".toByteArray(), "value-5".toByteArray())
+        )
+
+        dbAccessProvider.writeRecords(recordsBeforeWindow) {}
+        val cutoffWindow = Instant.now()
+        dbAccessProvider.writeRecords(recordsAfterWindow) {}
+
+        dbAccessProvider.deleteRecordsOlderThan(topic1, cutoffWindow)
+
+        val readRecordsAfterCleanup = dbAccessProvider.readRecords(topic1, listOf(FetchWindow(1, 1, 5, 10)))
+        assertThat(readRecordsAfterCleanup).doesNotContainAnyElementsOf(recordsBeforeWindow)
+        assertThat(readRecordsAfterCleanup).containsAll(recordsAfterWindow)
+    }
+
+    @Test
+    fun `can delete offsets before timestamp successfully`() {
+        val offsetsBeforeWindow = mapOf(
+            1 to 3L
+        )
+        val offsetsAfterWindow = mapOf(
+            2 to 11L
+        )
+
+        dbAccessProvider.writeOffsets(topic1, consumer1, offsetsBeforeWindow)
+        val cutoffWindow = Instant.now()
+        dbAccessProvider.writeOffsets(topic1, consumer1, offsetsAfterWindow)
+
+        dbAccessProvider.deleteOffsetsOlderThan(topic1, cutoffWindow)
+        assertThat(dbAccessProvider.getMaxCommittedOffset(topic1, consumer1, setOf(1, 2))).isEqualTo(mapOf(
+            1 to null,
+            2 to 11L
+        ))
     }
 
 }
