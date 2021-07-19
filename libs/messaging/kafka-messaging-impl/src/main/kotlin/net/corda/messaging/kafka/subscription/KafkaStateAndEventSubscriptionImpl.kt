@@ -253,19 +253,17 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun processEvents() {
         var attempts = 0
         var pollAndProcessSuccessful = false
-        var currentBatchNumber = 0
         while (!pollAndProcessSuccessful) {
             try {
                 for (batch in getEventsByBatch(eventConsumer.poll())) {
-                    currentBatchNumber++
-                    tryProcessBatchOfEvents(currentBatchNumber, batch)
+                    tryProcessBatchOfEvents(batch)
                 }
                 pollAndProcessSuccessful = true
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
                         attempts++
-                        handleProcessEventRetries(currentBatchNumber, attempts, ex)
+                        handleProcessEventRetries(attempts, ex)
                     }
                     else -> {
                         throw CordaMessageAPIFatalException(
@@ -278,11 +276,11 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun tryProcessBatchOfEvents(batchNumber : Int, events: List<ConsumerRecordAndMeta<K, E>>) {
+    private fun tryProcessBatchOfEvents(events: List<ConsumerRecordAndMeta<K, E>>) {
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<K, S?> = mutableMapOf()
 
-        log.trace { "Processing batch number $batchNumber of events(size: ${events.size})" }
+        log.trace { "Processing events(size: ${events.size})" }
         for (event in events) {
             processEvent(event, outputRecords, updatedStates)
         }
@@ -291,10 +289,9 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         producer.sendRecords(outputRecords)
         producer.sendRecordOffsetToTransaction(eventConsumer, events.last().record)
         producer.tryCommitTransaction()
+        log.trace { "Processing of events(size: ${events.size}) complete" }
 
-        updateCurrentStates(updatedStates)
-
-        log.trace { "Completed batch number $batchNumber of events(size: ${events.size})" }
+        onProcessorStateUpdated(updatedStates)
     }
 
     private fun processEvent(
@@ -362,24 +359,23 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     /**
      * Handle retries for event processing.
-     * Reset [eventConsumer] position and retry poll and process of eventRecords by [batchNumber].
+     * Reset [eventConsumer] position and retry poll and process of eventRecords
      * Retry a max of [consumerPollAndProcessMaxRetries] times.
      * If [consumerPollAndProcessMaxRetries] is exceeded then throw a [CordaMessageAPIIntermittentException]
      */
     private fun handleProcessEventRetries(
-        batchNumber: Int?,
         attempts: Int,
         ex: Exception
     ) {
         if (attempts <= consumerPollAndProcessMaxRetries) {
             log.warn(
-                "Failed to process record batch number $batchNumber from topic $eventTopic, group $groupName, " +
+                "Failed to process record from topic $eventTopic, group $groupName, " +
                         "producerClientId $producerClientId. " +
                         "Retrying poll and process. Attempts: $attempts."
             )
             eventConsumer.resetToLastCommittedPositions(OffsetResetStrategy.EARLIEST)
         } else {
-            val message = "Failed to process batchNumber $batchNumber from topic $eventTopic, group $groupName, " +
+            val message = "Failed to process records from topic $eventTopic, group $groupName, " +
                     "producerClientId $producerClientId. " +
                     "Attempts: $attempts. Max reties exceeded."
             log.warn(message, ex)
