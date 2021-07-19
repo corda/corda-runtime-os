@@ -93,4 +93,11 @@ class UtilsTest {
         val eventsByBatch  = getEventsByBatch(records)
         assertThat(eventsByBatch.size).isEqualTo(3)
     }
+
+    @Test
+    fun `test events by batch, no records`() {
+        val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
+        val eventsByBatch  = getEventsByBatch(records)
+        assertThat(eventsByBatch.size).isEqualTo(0)
+    }
 }

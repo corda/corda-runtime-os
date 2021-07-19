@@ -140,6 +140,10 @@ fun PublisherConfig.toConfig(): Config {
  * Divide a list of [events] into batches such that 1 key does not have more then one entry per batch
  */
 fun<K: Any, E : Any> getEventsByBatch(events: List<ConsumerRecordAndMeta<K, E>>): List<List<ConsumerRecordAndMeta<K, E>>> {
+    if (events.isEmpty()) {
+        return emptyList()
+    }
+
     val mapByKey = mutableMapOf<K, ConsumerRecordAndMeta<K, E>>()
     val mapByBatch = mutableListOf<MutableList<ConsumerRecordAndMeta<K, E>>>()
     var currentEventList = mutableListOf<ConsumerRecordAndMeta<K, E>>()
