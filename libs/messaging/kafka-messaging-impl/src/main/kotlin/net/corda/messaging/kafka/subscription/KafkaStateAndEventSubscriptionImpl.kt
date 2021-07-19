@@ -312,7 +312,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         log.trace { "Completed event: $event" }
     }
 
-    private fun updateCurrentStates(updatedStates: MutableMap<K, S?>) {
+    private fun onProcessorStateUpdated(updatedStates: MutableMap<K, S?>) {
         for (entry in updatedStates) {
             val key = entry.key
             val value = entry.value
