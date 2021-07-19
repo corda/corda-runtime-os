@@ -153,7 +153,7 @@ fun<K: Any, E : Any> getEventsByBatch(events: List<ConsumerRecordAndMeta<K, E>>)
 
         if (eventKey in keysInBatch) {
             keysInBatch.clear()
-            currentEventList = mutableListOf()
+            eventBatches.add(mutableListOf())
         }
 
         keysInBatch.add(eventKey)
