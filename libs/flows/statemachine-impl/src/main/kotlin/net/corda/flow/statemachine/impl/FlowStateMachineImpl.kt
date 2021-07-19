@@ -13,15 +13,12 @@ import net.corda.data.flow.FlowError
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.RPCFlowResult
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.FlowSessionMessage
-import net.corda.data.flow.event.RemoteFlowError
 import net.corda.data.flow.event.Wakeup
 import net.corda.flow.statemachine.FlowIORequest
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.internal.di.DependencyInjectionService
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.FlowException
 import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.application.identity.Party
 import net.corda.v5.application.services.serialization.SerializationService
@@ -33,7 +30,6 @@ import net.corda.v5.serialization.SerializedBytes
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
-import java.nio.ByteBuffer
 import java.time.Clock
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ScheduledExecutorService
@@ -41,7 +37,7 @@ import java.util.concurrent.ScheduledExecutorService
 class TransientReference<out A>(@Transient val value: A)
 
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "ForbiddenComment", "ComplexMethod", "TooGenericExceptionCaught")
 class FlowStateMachineImpl<R>(
     override val clientId: String?,
     override val id: FlowKey,
@@ -159,7 +155,8 @@ class FlowStateMachineImpl<R>(
         } catch (t: Throwable) {
             if (t.isUnrecoverable()) {
                 errorAndTerminate(
-                    "Caught unrecoverable error from flow. Forcibly terminating the JVM, this might leave resources open, and most likely will.",
+                    "Caught unrecoverable error from flow. Forcibly terminating the JVM, this might leave " +
+                            "resources open, and most likely will.",
                     t
                 )
             }

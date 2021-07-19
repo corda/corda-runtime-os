@@ -10,6 +10,7 @@ import kotlin.concurrent.thread
  */
 
 //TODO: Review JIRA:
+@Suppress("ForbiddenComment")
 @Synchronized
 fun errorAndTerminate(message: String, e: Throwable?) {
     try {

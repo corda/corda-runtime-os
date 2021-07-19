@@ -3,13 +3,11 @@ package net.corda.flow.statemachine
 import net.corda.data.flow.FlowKey
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.FlowId
 import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.application.identity.Party
 import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.serialization.SerializedBytes
 import org.slf4j.Logger
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
