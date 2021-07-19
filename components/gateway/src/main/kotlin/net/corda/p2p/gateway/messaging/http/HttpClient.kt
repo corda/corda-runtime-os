@@ -13,12 +13,11 @@ import io.netty.handler.codec.http.HttpContentDecompressor
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.slf4j.LoggerFactory
-import rx.Observable
-import rx.subjects.PublishSubject
 import java.lang.IllegalStateException
 import java.net.URI
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509CertSelector
+import java.util.LinkedList
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.CertPathTrustManagerParameters
 import javax.net.ssl.TrustManagerFactory
@@ -42,8 +41,7 @@ import kotlin.concurrent.withLock
  */
 class HttpClient(private val destination: URI,
                  private val sslConfiguration: SslConfiguration,
-                 private val sharedThreadPool: EventLoopGroup? = null) :
-    LifeCycle {
+                 private val sharedThreadPool: EventLoopGroup? = null) : HttpEventHandler, LifeCycle {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HttpClient::class.java)
@@ -56,19 +54,14 @@ class HttpClient(private val destination: URI,
     private var started: Boolean = false
     private var workerGroup: EventLoopGroup? = null
 
+    private val onConnectionCallbacks = LinkedList<(ConnectionChangeEvent) -> Unit>()
+    private val onMessageCallbacks = LinkedList<(HttpMessage) -> Unit>()
+
     @Volatile
     private var clientChannel: Channel? = null
 
     override val isRunning: Boolean
         get() = started
-
-    private val _onReceive = PublishSubject.create<HttpMessage>().toSerialized()
-    val onReceive: Observable<HttpMessage>
-        get() = _onReceive
-
-    private val _onConnection = PublishSubject.create<ConnectionChangeEvent>().toSerialized()
-    val onConnection: Observable<ConnectionChangeEvent>
-        get() = _onConnection
 
     private val connectListener = ChannelFutureListener { future ->
         if (!future.isSuccess) {
@@ -113,9 +106,23 @@ class HttpClient(private val destination: URI,
             clientChannel?.close()
             clientChannel = null
             workerGroup = null
+
+            unregisterConnectionHandlers()
+            unregisterMessageHandlers()
             logger.info("Stopped connection to ${destination.authority}")
         }
     }
+
+    override fun registerConnectionHandler(handler: (ConnectionChangeEvent) -> Unit) {
+        onConnectionCallbacks.add(handler)
+    }
+
+    override fun registerMessageHandler(handler: (HttpMessage) -> Unit) {
+        onMessageCallbacks.add(handler)
+    }
+
+    override fun unregisterConnectionHandlers() = onConnectionCallbacks.clear()
+    override fun unregisterMessageHandlers() = onMessageCallbacks.clear()
 
     /**
      * Creates and sends a POST request. The body content type is JSON and will contain the [message].
@@ -169,9 +176,9 @@ class HttpClient(private val destination: URI,
             pipeline.addLast(HttpClientCodec())
             pipeline.addLast(HttpContentDecompressor())
             httpChannelHandler = HttpChannelHandler(
-                onOpen = { _, change -> parent._onConnection.onNext(change) },
-                onClose = { _, change -> parent._onConnection.onNext(change) },
-                onReceive = { rcv -> parent._onReceive.onNext(rcv) }
+                onOpen = { _, change -> parent.onConnectionCallbacks.forEach { it.invoke(change) } },
+                onClose = { _, change -> parent.onConnectionCallbacks.forEach { it.invoke(change) } },
+                onReceive = { rcv -> parent.onMessageCallbacks.forEach { it.invoke(rcv) } }
             )
             pipeline.addLast(httpChannelHandler)
         }

@@ -63,7 +63,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                     entry.value.forEach { message ->
                         try {
                             val responseBarrier = CountDownLatch(1)
-                            val responseSub = client.onReceive.subscribe { response ->
+                           client.registerMessageHandler { response ->
                                 responseMessageHandler(response)
                                 responseBarrier.countDown()
                             }
@@ -74,7 +74,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                                 // is queued for redelivery
                                 messagesToRetry.add(message)
                             }
-                            responseSub.unsubscribe()
+                            client.unregisterMessageHandlers()
                         } catch (e: IllegalStateException) {
                             logger.warn("Could not send message to target ${entry.key}. Scheduling for re-send", e)
                             messagesToRetry.add(message)
@@ -106,14 +106,14 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
             try {
                 val client = connectionPool.acquire(target)
                 val responseBarrier = CountDownLatch(1)
-                val responseSub = client.onReceive.subscribe { response ->
+                client.registerMessageHandler { response ->
                     responseMessageHandler(response)
                     successCounter++
                     responseBarrier.countDown()
                 }
                 client.send(message.toByteBuffer().array())
                 responseBarrier.await(1000, TimeUnit.MILLISECONDS)
-                responseSub.unsubscribe()
+                client.unregisterMessageHandlers()
             } catch (e: Exception) {
                 logger.warn("Could not re-send message to $target", e)
             } finally {

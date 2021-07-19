@@ -13,11 +13,10 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.slf4j.LoggerFactory
-import rx.Observable
-import rx.subjects.PublishSubject
 import java.lang.IllegalStateException
 import java.net.BindException
 import java.net.SocketAddress
+import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.KeyManagerFactory
@@ -37,7 +36,8 @@ import kotlin.concurrent.withLock
  * The server provides two observables [onReceive] and [onConnection] which upstream services can subscribe to receive
  * updates on important events.
  */
-class HttpServer(private val host: String, private val port: Int, private val sslConfig: SslConfiguration) : LifeCycle {
+class HttpServer(private val host: String, private val port: Int, private val sslConfig: SslConfiguration)
+    : HttpEventHandler, LifeCycle {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HttpServer::class.java)
@@ -54,17 +54,12 @@ class HttpServer(private val host: String, private val port: Int, private val ss
     private var serverChannel: Channel? = null
     private val clientChannels = ConcurrentHashMap<SocketAddress, SocketChannel>()
 
+    private val onConnectionCallbacks = LinkedList<(ConnectionChangeEvent) -> Unit>()
+    private val onMessageCallbacks = LinkedList<(HttpMessage) -> Unit>()
+
     private var started = false
     override val isRunning: Boolean
         get() = started
-
-    private val _onReceive = PublishSubject.create<HttpMessage>().toSerialized()
-    val onReceive: Observable<HttpMessage>
-        get() = _onReceive
-
-    private val _onConnection = PublishSubject.create<ConnectionChangeEvent>().toSerialized()
-    val onConnection: Observable<ConnectionChangeEvent>
-        get() = _onConnection
 
     /**
      * @throws BindException if the server cannot bind to the address provided in the constructor
@@ -109,6 +104,17 @@ class HttpServer(private val host: String, private val port: Int, private val ss
         }
     }
 
+    override fun registerConnectionHandler(handler: (ConnectionChangeEvent) -> Unit) {
+        onConnectionCallbacks.add(handler)
+    }
+
+    override fun registerMessageHandler(handler: (HttpMessage) -> Unit) {
+        onMessageCallbacks.add(handler)
+    }
+
+    override fun unregisterConnectionHandlers() = onConnectionCallbacks.clear()
+    override fun unregisterMessageHandlers() = onMessageCallbacks.clear()
+
     /**
      * Writes the given message to the channel corresponding to the recipient address. This method should be called
      * by upstream services in order to send an HTTP response
@@ -149,17 +155,17 @@ class HttpServer(private val host: String, private val port: Int, private val ss
                 onOpen = { channel, change ->
                     parent.run {
                         clientChannels[channel.remoteAddress()] = channel
-                        _onConnection.onNext(change)
+                        onConnectionCallbacks.forEach { it.invoke(change) }
                     }
                 },
                 onClose = { channel, change ->
                     parent.run {
                         clientChannels.remove(channel.remoteAddress())
-                        _onConnection.onNext(change)
+                        onConnectionCallbacks.forEach { it.invoke(change) }
                     }
                 },
                 onReceive = { msg ->
-                    parent._onReceive.onNext(msg)
+                    parent.onMessageCallbacks.forEach { it.invoke(msg) }
                 }
             ))
         }

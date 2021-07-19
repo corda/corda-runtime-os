@@ -14,7 +14,6 @@ dependencies {
     implementation project(":data:topic-schema")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "io.reactivex:rxjava:$rxjavaVersion"
     implementation "io.netty:netty-transport:$nettyVersion"
     implementation "io.netty:netty-codec-http:$nettyVersion"
     implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
@@ -31,6 +30,8 @@ dependencies {
     testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
     }
+    // RxJava solely used for testing now. May be removed in the future with the addition of more in-memory messaging functionality
+    testImplementation "io.reactivex:rxjava:$rxjavaVersion"
 
     testImplementation project(":libs:messaging:inmemory-messaging-impl")
 }

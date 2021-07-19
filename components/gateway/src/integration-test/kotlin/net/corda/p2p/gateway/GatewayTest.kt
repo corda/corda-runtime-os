@@ -77,12 +77,12 @@ class GatewayTest {
             HttpClient(serverAddress, sslConfiguration).use { client->
                 client.start()
                 val responseReceived = CountDownLatch(1)
-                client.onConnection.subscribe { evt ->
+                client.registerConnectionHandler { evt ->
                     if (evt.connected) {
                         client.send(message.toByteBuffer().array())
                     }
                 }
-                client.onReceive.subscribe { msg ->
+                client.registerMessageHandler { msg ->
                     assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port) as SocketAddress, msg.source)
                     assertEquals(HttpResponseStatus.OK, msg.statusCode)
                     assertTrue(msg.payload.isEmpty())
@@ -117,13 +117,13 @@ class GatewayTest {
             val responseReceived = CountDownLatch(clientNumber)
             repeat(clientNumber) { index ->
                 val client = HttpClient(serverAddress, sslConfiguration, threadPool)
-                client.onConnection.subscribe { evt ->
+                client.registerConnectionHandler { evt ->
                     if (evt.connected) {
                         val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-${index + 1}"))
                         client.send(p2pOutMessage.toByteBuffer().array())
                     }
                 }
-                client.onReceive.subscribe { msg ->
+                client.registerMessageHandler { msg ->
                     assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port) as SocketAddress, msg.source)
                     assertEquals(HttpResponseStatus.OK, msg.statusCode)
                     assertTrue(msg.payload.isEmpty())
@@ -167,7 +167,7 @@ class GatewayTest {
             }
             val serverURI = URI.create(serverAddresses[id])
             servers.add(HttpServer(serverURI.host, serverURI.port, sslConfiguration).also {
-                it.onReceive.subscribe { rcv ->
+                it.registerMessageHandler { rcv ->
                     val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(rcv.payload))
                     assertEquals("Target-${serverAddresses[id]}", String((p2pMessage.payload as AuthenticatedDataMessage).payload.array()))
                     it.write(HttpResponseStatus.OK, ByteArray(0), rcv.source)

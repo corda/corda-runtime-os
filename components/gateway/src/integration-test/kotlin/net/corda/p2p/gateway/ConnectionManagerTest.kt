@@ -39,7 +39,7 @@ class ConnectionManagerTest {
         val manager = ConnectionManager(sslConfiguration)
         val (host, port) = URI.create(serverAddresses.first()).let { Pair(it.host, it.port) }
         HttpServer(host, port, sslConfiguration).use { server ->
-            server.onReceive.subscribe {
+            server.registerMessageHandler {
                 assertEquals(clientMessageContent, String(it.payload))
                 server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), it.source)
             }
@@ -47,7 +47,7 @@ class ConnectionManagerTest {
             manager.acquire(URI.create(serverAddresses.first().toString())).use { client ->
                 // Client is connected at this point
                 val responseReceived = CountDownLatch(1)
-                client.onReceive.subscribe {
+                client.registerMessageHandler {
                     assertEquals(serverResponseContent, String(it.payload))
                     responseReceived.countDown()
                 }
@@ -63,7 +63,7 @@ class ConnectionManagerTest {
         val serverURI = URI.create((serverAddresses.first()))
         HttpServer(serverURI.host, serverURI.port, sslConfiguration).use { server ->
             val remotePeers = mutableListOf<SocketAddress>()
-            server.onConnection.subscribe {
+            server.registerConnectionHandler {
                 if (it.connected) {
                     remotePeers.add(it.remoteAddress)
                 }

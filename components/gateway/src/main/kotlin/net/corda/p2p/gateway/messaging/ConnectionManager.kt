@@ -99,14 +99,14 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
             logger.info("Creating new connection to ${target.authority}")
             val client = HttpClient(target, sslConfiguration, sharedEventLoopGroup)
             val connectionLock = CountDownLatch(1)
-            val connectionSub = client.onConnection.subscribe { evt ->
+            client.registerConnectionHandler { evt ->
                 if (evt.connected) {
                     connectionLock.countDown()
                 }
             }
             client.start()
             val connected = connectionLock.await(config.acquireTimeout, TimeUnit.MILLISECONDS)
-            connectionSub.unsubscribe()
+            client.unregisterConnectionHandlers()
             if (!connected) {
                 throw ConnectTimeoutException("Could not acquire connection to ${target.authority} " +
                         "in ${config.acquireTimeout} milliseconds")

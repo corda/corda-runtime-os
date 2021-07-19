@@ -35,20 +35,20 @@ class HttpTest {
     @Test
     fun `simple client POST request`() {
         HttpServer(serverAddress.host, serverAddress.port, sslConfiguration).use { server ->
-            server.onReceive.subscribe {
+            server.registerMessageHandler {
                 assertEquals(clientMessageContent, String(it.payload))
                 server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
             }
             server.start()
             HttpClient(serverAddress, sslConfiguration).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
-                client.onConnection.subscribe {
+                client.registerConnectionHandler {
                     if (it.connected) {
                         client.send(clientMessageContent.toByteArray(Charsets.UTF_8))
                     }
                 }
                 var responseReceived = false
-                client.onReceive.subscribe {
+                client.registerMessageHandler {
                     assertEquals(serverResponseContent, String(it.payload))
                     responseReceived = true
                     clientReceivedResponses.countDown()
@@ -68,7 +68,7 @@ class HttpTest {
         val times = mutableListOf<Long>()
         val httpServer = HttpServer(serverAddress.host, serverAddress.port, sslConfiguration)
         httpServer.use { server ->
-            server.onReceive.subscribe {
+            server.registerMessageHandler {
                 assertEquals(clientMessageContent, String(it.payload))
                 server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
             }
@@ -80,11 +80,11 @@ class HttpTest {
                     val httpClient = HttpClient(serverAddress, sslConfiguration)
                     val clientReceivedResponses = CountDownLatch(requestNo)
                     httpClient.use {
-                        httpClient.onReceive.subscribe {
+                        httpClient.registerMessageHandler {
                             assertEquals(serverResponseContent, String(it.payload))
                             clientReceivedResponses.countDown()
                         }
-                        httpClient.onConnection.subscribe {
+                        httpClient.registerConnectionHandler {
                             if (it.connected) {
                                 startTime = Instant.now().toEpochMilli()
                                 repeat(requestNo) {
@@ -115,20 +115,20 @@ class HttpTest {
         val hugePayload = FileInputStream(javaClass.classLoader.getResource("10mb.txt")!!.file).readAllBytes()
 
         HttpServer(serverAddress.host, serverAddress.port, sslConfiguration).use { server ->
-            server.onReceive.subscribe {
+            server.registerMessageHandler {
                 assert(Arrays.equals(hugePayload, it.payload))
                 server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
             }
             server.start()
             HttpClient(serverAddress, sslConfiguration).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
-                client.onConnection.subscribe {
+                client.registerConnectionHandler {
                     if (it.connected) {
                         client.send(hugePayload)
                     }
                 }
                 var responseReceived = false
-                client.onReceive.subscribe {
+                client.registerMessageHandler {
                     assertEquals(serverResponseContent, String(it.payload))
                     responseReceived = true
                     clientReceivedResponses.countDown()
