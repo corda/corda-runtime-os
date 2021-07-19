@@ -4,10 +4,13 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.kafka.Utils.Companion.resolvePublisherConfiguration
+import net.corda.messaging.kafka.getEventsByBatch
 import net.corda.messaging.kafka.mergeProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBLISHER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
+import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.toConfig
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -58,5 +61,36 @@ class UtilsTest {
             PATTERN_PUBLISHER
         )
         assertThat(!publisherConfig.hasPath(PRODUCER_TRANSACTIONAL_ID))
+    }
+
+
+    @Test
+    fun `test events by batch, small bat5`() {
+        val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
+        var offset = 0
+        for (i in 0 until 3) {
+            for (j in 0 until 10) {
+                records.add(ConsumerRecordAndMeta("", ConsumerRecord("", 1, offset.toLong(), "key$i", "value$j")))
+                offset++
+            }
+        }
+
+        val eventsByBatch  = getEventsByBatch(records)
+        assertThat(eventsByBatch.size).isEqualTo(28)
+    }
+
+    @Test
+    fun `test events by batch, large batches`() {
+        val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
+        var offset = 0
+        for (j in 0 until 3) {
+            for (i in 0 until 10) {
+                records.add(ConsumerRecordAndMeta("", ConsumerRecord("", 1, offset.toLong(), "key$i", "value$j")))
+                offset++
+            }
+        }
+
+        val eventsByBatch  = getEventsByBatch(records)
+        assertThat(eventsByBatch.size).isEqualTo(3)
     }
 }

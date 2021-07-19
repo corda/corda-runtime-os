@@ -6,6 +6,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.messaging.kafka.getEventsByBatch
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
@@ -253,8 +254,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         while (!pollAndProcessSuccessful) {
             try {
                 for (entry in getEventsByBatch(eventConsumer.poll())) {
-                    currentBatch = entry.key
-                    tryProcessBatchOfEvents(entry.key, entry.value)
+                    currentBatch++
+                    tryProcessBatchOfEvents(currentBatch, entry)
                 }
                 pollAndProcessSuccessful = true
             } catch (ex: Exception) {
@@ -272,31 +273,6 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 }
             }
         }
-    }
-
-    /**
-     * Divide a list of [events] into batches such that 1 key does not have more then one entry per batch
-     */
-    private fun getEventsByBatch(events: List<ConsumerRecordAndMeta<K, E>>): Map<Int, List<ConsumerRecordAndMeta<K, E>>> {
-        var mapByKey = mutableMapOf<K, ConsumerRecordAndMeta<K, E>>()
-        val mapByBatch = mutableMapOf<Int, MutableList<ConsumerRecordAndMeta<K, E>>>()
-        var batchNumber = 1
-        events.forEach { event ->
-            val eventKey = event.record.key()
-
-            if (mapByKey[eventKey] != null) {
-                mapByKey = mutableMapOf()
-                batchNumber++
-            }
-            mapByKey[eventKey] = event
-
-            if (mapByBatch[batchNumber] == null) {
-                mapByBatch[batchNumber] = mutableListOf()
-            }
-            mapByBatch[batchNumber]!!.add(event)
-        }
-
-        return mapByBatch
     }
 
     private fun tryProcessBatchOfEvents(batchNumber : Int, events: List<ConsumerRecordAndMeta<K, E>>) {

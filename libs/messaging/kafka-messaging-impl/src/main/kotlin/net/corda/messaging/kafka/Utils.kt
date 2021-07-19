@@ -10,6 +10,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.GROUP
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.INSTANCE_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
+import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import java.net.URL
@@ -135,3 +136,26 @@ fun PublisherConfig.toConfig(): Config {
     return config
 }
 
+/**
+ * Divide a list of [events] into batches such that 1 key does not have more then one entry per batch
+ */
+fun<K: Any, E : Any> getEventsByBatch(events: List<ConsumerRecordAndMeta<K, E>>): List<List<ConsumerRecordAndMeta<K, E>>> {
+    val mapByKey = mutableMapOf<K, ConsumerRecordAndMeta<K, E>>()
+    val mapByBatch = mutableListOf<MutableList<ConsumerRecordAndMeta<K, E>>>()
+    var currentEventList = mutableListOf<ConsumerRecordAndMeta<K, E>>()
+    mapByBatch.add(currentEventList)
+    events.forEach { event ->
+        val eventKey = event.record.key()
+
+        if (mapByKey.containsKey(eventKey)) {
+            mapByKey.clear()
+            currentEventList = mutableListOf()
+            mapByBatch.add(currentEventList)
+        }
+
+        mapByKey[eventKey] = event
+        currentEventList.add(event)
+    }
+
+    return mapByBatch
+}
