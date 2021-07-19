@@ -15,11 +15,13 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
 
     override fun createProducer(producerConfig: Config): CordaKafkaProducer =
         producerBuilder.createProducer(producerConfig)
-    override fun createStateConsumer(stateConsumerConfig: Config) =
-        stateConsumerBuilder.createCompactedConsumer(stateConsumerConfig)
-    override fun createEventConsumer(eventConsumerConfig: Config, listener: ConsumerRebalanceListener) =
+    override fun createStateConsumer(stateConsumerConfig: Config, kClazz: Class<K>, sClazz: Class<S>) =
+        stateConsumerBuilder.createCompactedConsumer(stateConsumerConfig,  kClazz, sClazz)
+    override fun createEventConsumer(eventConsumerConfig: Config, kClazz: Class<K>, eClazz: Class<E>, listener: ConsumerRebalanceListener) =
         eventConsumerBuilder.createDurableConsumer(
             eventConsumerConfig,
+            kClazz,
+            eClazz,
             consumerRebalanceListener = listener
         )
 }

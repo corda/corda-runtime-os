@@ -2,6 +2,7 @@ package net.corda.messaging.db.persistence
 
 import net.corda.lifecycle.LifeCycle
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import java.time.Instant
 
 /**
  * Provides basic read/write capabilities over a relational database.
@@ -88,6 +89,16 @@ interface DBAccessProvider: LifeCycle {
                                         offsetsPerPartition: Map<Int, Long>,
                                         records: List<RecordDbEntry>,
                                         postTxFn: (records: List<RecordDbEntry>) -> Unit)
+
+    /**
+     * Deletes records from the specified topic that are older than the specified timestamp.
+     */
+    fun deleteRecordsOlderThan(topic: String, timestamp: Instant)
+
+    /**
+     * Deletes offsets from the specified topic that are older than the specified timestamp.
+     */
+    fun deleteOffsetsOlderThan(topic: String, timestamp: Instant)
 
 }
 
