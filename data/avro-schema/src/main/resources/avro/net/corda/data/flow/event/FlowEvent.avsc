@@ -14,7 +14,8 @@
         "net.corda.data.flow.event.RemoteFlowError",
         "net.corda.data.flow.event.StartRemotelyInitiatedFlow",
         "net.corda.data.flow.event.StartRPCFlow",
-        "net.corda.data.flow.event.Wakeup"
+        "net.corda.data.flow.event.Wakeup",
+        "net.corda.data.flow.RPCFlowResult"
       ]
     }
   ]
