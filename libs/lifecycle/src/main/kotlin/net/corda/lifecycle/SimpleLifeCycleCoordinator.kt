@@ -226,8 +226,9 @@ class SimpleLifeCycleCoordinator(
                 while (cleanupInProgress.get()) {
                     cleanupCondition.await()
                 }
+                eventQueueManager.postEvent(StartEvent())
+                scheduleIfRequired()
                 _isRunning.set(true)
-                postEvent(StartEvent())
             }
         }
     }
