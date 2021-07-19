@@ -146,8 +146,7 @@ fun<K: Any, E : Any> getEventsByBatch(events: List<ConsumerRecordAndMeta<K, E>>)
 
     val keysInBatch = mutableSetOf<K>()
     val eventBatches = mutableListOf<MutableList<ConsumerRecordAndMeta<K, E>>>()
-    var currentEventList = mutableListOf<ConsumerRecordAndMeta<K, E>>()
-    eventBatches.add(currentEventList)
+    eventBatches.add(mutableListOf())
     events.forEach { event ->
         val eventKey = event.record.key()
 
