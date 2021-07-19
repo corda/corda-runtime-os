@@ -213,8 +213,8 @@ class KafkaStateAndEventSubscriptionImplTest {
         assertTrue(latch.await(TEST_TIMEOUT_SECONDS, SECONDS))
         subscription.stop()
 
-        verify(builder, times(1)).createEventConsumer(any(), any())
-        verify(builder, times(1)).createStateConsumer(any())
+        verify(builder, times(1)).createEventConsumer(any(), any(), any(), any())
+        verify(builder, times(1)).createStateConsumer(any(), any(), any())
         verify(builder, times(1)).createProducer(any())
         verify(producer, times(28)).beginTransaction()
         verify(producer, times(28)).sendRecords(any())
@@ -260,8 +260,8 @@ class KafkaStateAndEventSubscriptionImplTest {
         assertTrue(latch.await(TEST_TIMEOUT_SECONDS, SECONDS))
         subscription.stop()
 
-        verify(builder, times(1)).createEventConsumer(any(), any())
-        verify(builder, times(1)).createStateConsumer(any())
+        verify(builder, times(1)).createEventConsumer(any(), any(), any(), any())
+        verify(builder, times(1)).createStateConsumer(any(), any(), any())
         verify(builder, times(1)).createProducer(any())
         verify(producer, times(3)).beginTransaction()
         verify(producer, times(3)).sendRecords(any())
