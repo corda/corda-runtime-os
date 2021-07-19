@@ -136,14 +136,15 @@ internal class SimpleLifeCycleCoordinatorTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = [5])
-    fun postHandledErrorEvent(n: Int) {
+    @Test
+    fun postHandledErrorEvent() {
         var stopLatch = CountDownLatch(1)
+        var startLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, coordinator: LifeCycleCoordinator ->
             when (event) {
                 is StartEvent -> {
+                    startLatch.countDown()
                     stopLatch = CountDownLatch(1)
                 }
                 is ThrowException -> {
@@ -160,27 +161,30 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is StopEvent -> {
                     assertTrue(stopLatch.count > 0)
                     stopLatch.countDown()
+                    startLatch = CountDownLatch(1)
                 }
             }
         }.use { coordinator ->
-            for (i in 0..n) {
+            for (i in 0..5) {
                 coordinator.start()
+                assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
                 coordinator.postEvent(object : ThrowException {})
                 assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             }
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = [5])
-    fun postHandledButRethrowErrorEvent(n: Int) {
+    @Test
+    fun postHandledButRethrowErrorEvent() {
         var stopLatch = CountDownLatch(2)
+        var startLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
         val unexpectedException = Exception("unexpected exception")
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             when (event) {
                 is StartEvent -> {
                     stopLatch = CountDownLatch(2)
+                    startLatch.countDown()
                 }
                 is ThrowException -> {
                     throw expectedException
@@ -200,11 +204,13 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is StopEvent -> {
                     stopLatch.countDown()
                     assertTrue(stopLatch.count == 0L)
+                    startLatch = CountDownLatch(1)
                 }
             }
         }.use { coordinator ->
-            for (i in 0..n) {
+            for (i in 0..5) {
                 coordinator.start()
+                assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
                 coordinator.postEvent(object : ThrowException {})
                 assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             }
@@ -212,14 +218,15 @@ internal class SimpleLifeCycleCoordinatorTest {
     }
 
 
-    @ParameterizedTest
-    @ValueSource(ints = [5])
-    fun postUnhandledErrorEvent(n: Int) {
+    @Test
+    fun postUnhandledErrorEvent() {
         var stopLatch = CountDownLatch(2)
+        var startLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             when (event) {
                 is StartEvent -> {
+                    startLatch.countDown()
                     stopLatch = CountDownLatch(2)
                 }
                 is ThrowException -> {
@@ -238,11 +245,13 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is StopEvent -> {
                     stopLatch.countDown()
                     assertTrue(stopLatch.count == 0L)
+                    startLatch = CountDownLatch(1)
                 }
             }
         }.use { coordinator ->
-            for(i in 0 .. n) {
+            for(i in 0 .. 5) {
                 coordinator.start()
+                assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
                 coordinator.postEvent(object : ThrowException {})
                 assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             }
