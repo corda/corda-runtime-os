@@ -253,19 +253,19 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun processEvents() {
         var attempts = 0
         var pollAndProcessSuccessful = false
-        var currentBatch = 0
+        var currentBatchNumber = 0
         while (!pollAndProcessSuccessful) {
             try {
-                for (entry in getEventsByBatch(eventConsumer.poll())) {
-                    currentBatch++
-                    tryProcessBatchOfEvents(currentBatch, entry)
+                for (batch in getEventsByBatch(eventConsumer.poll())) {
+                    currentBatchNumber++
+                    tryProcessBatchOfEvents(currentBatchNumber, batch)
                 }
                 pollAndProcessSuccessful = true
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
                         attempts++
-                        handleProcessEventRetries(currentBatch, attempts, ex)
+                        handleProcessEventRetries(currentBatchNumber, attempts, ex)
                     }
                     else -> {
                         throw CordaMessageAPIFatalException(
