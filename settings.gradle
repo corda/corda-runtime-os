@@ -22,8 +22,17 @@ pluginManagement {
         maven {
             url "$artifactoryContextUrl/engineering-tools-maven"
             credentials {
-                username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
-                password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                if (settings.hasProperty("cordaArtifactoryUsername")) {
+                    username = settings.cordaArtifactoryUsername
+                } else {
+                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                }
+
+                if (settings.hasProperty("cordaArtifactoryPassword")) {
+                    password = settings.cordaArtifactoryUsername
+                } else {
+                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
             }
             content {
                 includeGroupByRegex 'com\\.r3\\.internal(\\..*)?'
