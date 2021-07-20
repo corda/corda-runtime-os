@@ -216,10 +216,10 @@ class KafkaStateAndEventSubscriptionImplTest {
         verify(builder, times(1)).createEventConsumer(any(), any(), any(), any())
         verify(builder, times(1)).createStateConsumer(any(), any(), any())
         verify(builder, times(1)).createProducer(any())
-        verify(producer, times(28)).beginTransaction()
-        verify(producer, times(28)).sendRecords(any())
-        verify(producer, times(28)).sendRecordOffsetToTransaction(any(), any())
-        verify(producer, times(28)).tryCommitTransaction()
+        verify(producer, times(10)).beginTransaction()
+        verify(producer, times(10)).sendRecords(any())
+        verify(producer, times(10)).sendRecordOffsetToTransaction(any(), any())
+        verify(producer, times(10)).tryCommitTransaction()
 
         assertThat(processor.inputs.size).isEqualTo(30)
     }
