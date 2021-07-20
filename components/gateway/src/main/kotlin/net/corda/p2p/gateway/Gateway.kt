@@ -8,7 +8,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.gateway.messaging.ConnectionManager
-import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
@@ -30,11 +30,8 @@ import kotlin.concurrent.withLock
  * receipt of the request. Once e response arrives, it is inspected for any server side errors and, if needed, published
  * to the internal messaging system.
  *
- *
  */
-class Gateway(host: String,
-              port: Int,
-              sslConfig: SslConfiguration,
+class Gateway(config: GatewayConfiguration,
               @Reference(service = SubscriptionFactory::class)
               subscriptionFactory: SubscriptionFactory,
               @Reference(service = PublisherFactory::class)
@@ -45,20 +42,13 @@ class Gateway(host: String,
         private val logger = LoggerFactory.getLogger(Gateway::class.java)
         const val CONSUMER_GROUP_ID = "gateway"
         const val PUBLISHER_ID = "gateway"
-
-        /**
-         * Temporary value used to negotiate P2P sessions. Will be removed when design changes
-         */
-        const val MAX_MESSAGE_SIZE = 1024 * 1024
     }
 
-
-
     private val closeActions = mutableListOf<() -> Unit>()
-    private val httpServer = HttpServer(host, port, sslConfig)
-    private val connectionManager = ConnectionManager(sslConfig)
+    private val httpServer = HttpServer(config.hostAddress, config.hostPort, config.sslConfig)
+    private val connectionManager = ConnectionManager(config.sslConfig, config.connectionConfig)
     private var p2pMessageSubscription: Subscription<String, LinkOutMessage>
-    private val inboundMessageProcessor = InboundMessageHandler(httpServer, publisherFactory)
+    private val inboundMessageProcessor = InboundMessageHandler(httpServer, config.maxMessageSize, publisherFactory)
 
     private val lock = ReentrantLock()
 

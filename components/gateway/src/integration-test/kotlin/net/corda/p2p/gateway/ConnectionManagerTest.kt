@@ -2,8 +2,8 @@ package net.corda.p2p.gateway
 
 import io.netty.channel.ConnectTimeoutException
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.ConnectionManager
-import net.corda.p2p.gateway.messaging.ConnectionManagerConfig
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -36,7 +36,7 @@ class ConnectionManagerTest {
     @Test
     @Timeout(30)
     fun `acquire connection`() {
-        val manager = ConnectionManager(sslConfiguration)
+        val manager = ConnectionManager(sslConfiguration, ConnectionConfiguration())
         val (host, port) = URI.create(serverAddresses.first()).let { Pair(it.host, it.port) }
         HttpServer(host, port, sslConfiguration).use { server ->
             server.onReceive.subscribe {
@@ -59,7 +59,7 @@ class ConnectionManagerTest {
 
     @Test
     fun `reuse connection`() {
-        val manager = ConnectionManager(sslConfiguration)
+        val manager = ConnectionManager(sslConfiguration,  ConnectionConfiguration())
         val serverURI = URI.create((serverAddresses.first()))
         HttpServer(serverURI.host, serverURI.port, sslConfiguration).use { server ->
             val remotePeers = mutableListOf<SocketAddress>()
@@ -83,7 +83,7 @@ class ConnectionManagerTest {
     fun `acquire times out`() {
         var gotException = false
         try {
-            val config = ConnectionManagerConfig(10, 100, 1000)
+            val config =  ConnectionConfiguration(10, 100, 1000)
             ConnectionManager(sslConfiguration, config).acquire(URI.create(serverAddresses.first().toString()))
         } catch (e: Exception) {
             assert(e is ConnectTimeoutException)

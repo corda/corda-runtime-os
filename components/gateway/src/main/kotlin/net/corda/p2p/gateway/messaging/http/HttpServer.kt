@@ -10,6 +10,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpRequestDecoder
 import io.netty.handler.codec.http.HttpResponseEncoder
 import io.netty.handler.codec.http.HttpResponseStatus
+import io.netty.handler.logging.LogLevel
+import io.netty.handler.logging.LoggingHandler
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.slf4j.LoggerFactory
@@ -36,8 +38,16 @@ import kotlin.concurrent.withLock
  *
  * The server provides two observables [onReceive] and [onConnection] which upstream services can subscribe to receive
  * updates on important events.
+ *
+ * @param host [String] value representing a host name or IP address used when binding the server
+ * @param port port number used when binding the server
+ * @param sslConfig the configuration to be used for the one-way TLS handshake
+ * @param traceLogging optional setting to enable Netty logging inside the channel pipeline. Should be set to *true* only when debugging
  */
-class HttpServer(private val host: String, private val port: Int, private val sslConfig: SslConfiguration) : LifeCycle {
+class HttpServer(private val host: String,
+                 private val port: Int,
+                 private val sslConfig: SslConfiguration,
+                 private val traceLogging: Boolean = false) : LifeCycle {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HttpServer::class.java)
@@ -77,7 +87,6 @@ class HttpServer(private val host: String, private val port: Int, private val ss
 
             val server = ServerBootstrap()
             server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
-//                .handler(LoggingHandler(LogLevel.INFO))
                 .childHandler(ServerChannelInitializer(this))
             logger.info("Trying to bind to $host:$port")
             val channelFuture = server.bind(host, port).sync()
@@ -143,6 +152,7 @@ class HttpServer(private val host: String, private val port: Int, private val ss
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
             pipeline.addLast("sslHandler", createServerSslHandler(keyManagerFactory))
+            if (parent.traceLogging) pipeline.addLast("logger", LoggingHandler(LogLevel.INFO))
             pipeline.addLast(HttpRequestDecoder())
             pipeline.addLast(HttpResponseEncoder())
             pipeline.addLast(HttpChannelHandler(

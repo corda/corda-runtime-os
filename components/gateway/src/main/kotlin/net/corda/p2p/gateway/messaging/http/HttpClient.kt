@@ -10,6 +10,8 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.HttpClientCodec
 import io.netty.handler.codec.http.HttpContentDecompressor
+import io.netty.handler.logging.LogLevel
+import io.netty.handler.logging.LoggingHandler
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.slf4j.LoggerFactory
@@ -25,25 +27,25 @@ import javax.net.ssl.TrustManagerFactory
 import kotlin.concurrent.withLock
 
 /**
- * The [HttpClient] creates an HTTP(S) connection to a given URL. It will attempt to keep the connection alive until a set number
- * of retries has been reached. It can use a shared thread pool injected through the constructor or default to use its
- * own Netty thread pool.
+ * The [HttpClient] creates an HTTP(S) connection to a given URI. It tries to initiate a connection at most once.
+ * It can use a shared thread pool injected through the constructor or default to use its own Netty thread pool.
  * Once connected, it can accept serialised application messages to send via POST requests. Request responses are expected
  * to arrive shortly and they will terminate at this layer (unless a specific session handshake message is present in the
  * response body)
- *
- * The client is responsible for keeping the connection up. On loss, it will attempt to reconnect with exponential back-off.
- * It is the responsibility of the upstream services to decide when to close a connection.
+ * The client will never close a connection. It is the responsibility of the upstream services to decide when to close a connection.
  *
  * The client provides two observables [onReceive] and [onConnection] which upstream services can subscribe to receive
  * updates on important events.
  *
  * @param destination the target URI
+ * @param sslConfiguration the configuration to be used for the one-way TLS handshake
+ * @param sharedThreadPool optional thread pool
+ * @param traceLogging optional setting to enable Netty logging inside the channel pipeline. Should be set to *true* only when debugging
  */
 class HttpClient(private val destination: URI,
                  private val sslConfiguration: SslConfiguration,
-                 private val sharedThreadPool: EventLoopGroup? = null) :
-    LifeCycle {
+                 private val sharedThreadPool: EventLoopGroup? = null,
+                 private val traceLogging: Boolean = false) : LifeCycle {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HttpClient::class.java)
@@ -166,6 +168,7 @@ class HttpClient(private val destination: URI,
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
             pipeline.addLast("sslHandler", createClientSslHandler(parent.destination, trustManagerFactory))
+            if (parent.traceLogging) pipeline.addLast("logger", LoggingHandler(LogLevel.INFO))
             pipeline.addLast(HttpClientCodec())
             pipeline.addLast(HttpContentDecompressor())
             httpChannelHandler = HttpChannelHandler(

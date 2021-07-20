@@ -11,7 +11,6 @@ import net.corda.p2p.LinkInMessage
 import net.corda.p2p.Step2Message
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
-import net.corda.p2p.gateway.Gateway.Companion.MAX_MESSAGE_SIZE
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
@@ -25,6 +24,7 @@ import java.nio.ByteBuffer
  * This class implements a simple message processor for p2p messages received from other Gateways.
  */
 class InboundMessageHandler(private val server: HttpServer,
+                            private val maxMessageSize: Int,
                             private val publisherFactory: PublisherFactory) : LifeCycle {
 
     companion object {
@@ -73,8 +73,7 @@ class InboundMessageHandler(private val server: HttpServer,
                     // Generate a response containing the server hello and the DH secret
                     val sessionRequest = p2pMessage.payload as InitiatorHelloMessage
                     val session = AuthenticationProtocolResponder(sessionRequest.header.sessionId,
-                        sessionRequest.supportedModes.toSet(),
-                        MAX_MESSAGE_SIZE)
+                        sessionRequest.supportedModes.toSet(), maxMessageSize)
                     session.receiveInitiatorHello(sessionRequest)
                     val sessionInitResponse = session.generateResponderHello()
                     val p2pOutMessage = LinkInMessage(sessionInitResponse)

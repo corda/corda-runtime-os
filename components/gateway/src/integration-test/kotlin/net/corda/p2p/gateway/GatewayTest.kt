@@ -12,6 +12,8 @@ import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
+import net.corda.p2p.gateway.messaging.ConnectionConfiguration
+import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpServer
@@ -67,9 +69,7 @@ class GatewayTest {
     fun `http client to gateway`() {
         val serverAddress = URI.create("http://localhost:10000")
         val message = LinkInMessage(authenticatedP2PMessage(String()))
-        Gateway(serverAddress.host,
-                serverAddress.port,
-                sslConfiguration,
+        Gateway(GatewayConfiguration(serverAddress.host, serverAddress.port, sslConfiguration),
                 SubscriptionFactoryStub(topicServiceAlice!!),
                 PublisherFactoryStub(topicServiceAlice!!)
         ).use {
@@ -109,10 +109,9 @@ class GatewayTest {
         val threadPool = NioEventLoopGroup(clientNumber)
         val serverAddress = URI.create("http://localhost:10000")
         val clients = mutableListOf<HttpClient>()
-        Gateway(serverAddress.host, serverAddress.port,
-                sslConfiguration,
-                SubscriptionFactoryStub(topicServiceAlice!!),
-                PublisherFactoryStub(topicServiceAlice!!)).use {
+        Gateway(GatewayConfiguration(serverAddress.host, serverAddress.port, sslConfiguration),
+            SubscriptionFactoryStub(topicServiceAlice!!),
+            PublisherFactoryStub(topicServiceAlice!!)).use {
             it.start()
             val responseReceived = CountDownLatch(clientNumber)
             repeat(clientNumber) { index ->
@@ -179,9 +178,7 @@ class GatewayTest {
 
         var startTime: Long
         var endTime: Long
-        Gateway(gatewayAddress.first,
-                gatewayAddress.second,
-                sslConfiguration,
+        Gateway(GatewayConfiguration(gatewayAddress.first, gatewayAddress.second, sslConfiguration),
                 SubscriptionFactoryStub(topicServiceAlice!!),
                 PublisherFactoryStub(topicServiceAlice!!)
         ).use {
@@ -230,10 +227,7 @@ class GatewayTest {
         val barrier = CountDownLatch(1)
         // Start the gateways
         val t1 = thread {
-            val alice = Gateway(
-                aliceGatewayAddress.host,
-                aliceGatewayAddress.port,
-                sslConfiguration,
+            val alice = Gateway(GatewayConfiguration(aliceGatewayAddress.host, aliceGatewayAddress.port, sslConfiguration),
                 SubscriptionFactoryStub(topicServiceAlice!!),
                 PublisherFactoryStub(topicServiceAlice!!)
             ).also { it.start() }
@@ -241,10 +235,7 @@ class GatewayTest {
             alice.stop()
         }
         val t2 = thread {
-            val bob = Gateway(
-                bobGatewayAddress.host,
-                bobGatewayAddress.port,
-                sslConfiguration,
+            val bob = Gateway(GatewayConfiguration(bobGatewayAddress.host, bobGatewayAddress.port, sslConfiguration),
                 SubscriptionFactoryStub(topicServiceBob!!),
                 PublisherFactoryStub(topicServiceBob!!)
             ).also { it.start() }

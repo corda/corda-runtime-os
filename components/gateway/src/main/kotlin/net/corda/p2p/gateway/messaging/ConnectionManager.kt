@@ -24,38 +24,17 @@ import java.util.stream.Collectors
  * To ensure we don't block indefinitely, several timeouts will be used to determine when to close an inactive connection
  * or to drop a request for one.
  *
- * TODO: need to figure out how to handle situations where pool is maxed out and no stale connections can be evicted
- *
  */
 class ConnectionManager(private val sslConfiguration: SslConfiguration,
-                        private val config: ConnectionManagerConfig) :
-    LifeCycle {
-
-    constructor(sslConfiguration: SslConfiguration) :
-            this(sslConfiguration, ConnectionManagerConfig(MAX_CONNECTIONS, ACQUIRE_TIMEOUT, CONNECTION_MAX_IDLE_TIME))
+                        val config: ConnectionConfiguration) : LifeCycle {
 
     companion object {
         private val logger = LoggerFactory.getLogger(ConnectionManager::class.java)
-
-        /**
-         * Maximum size of the connection pool
-         */
-        private const val MAX_CONNECTIONS = 100L
-
-        /**
-         * Time in milliseconds after which a connection request will fail
-         */
-        private const val ACQUIRE_TIMEOUT = 60000L
-
-        /**
-         * Time in milliseconds after which an inactive connection in the pool will be released (closed)
-         */
-        private const val CONNECTION_MAX_IDLE_TIME = 60000L
     }
 
     private val connectionPool = Caffeine.newBuilder()
-        .maximumSize(config.connectionPoolSize)
-        .expireAfterAccess(config.maxIdleTime, TimeUnit.MILLISECONDS)
+        .maximumSize(config.maxClientConnections)
+        .expireAfterAccess(config.connectionIdleTimeout, TimeUnit.MILLISECONDS)
         .removalListener(RemovalListener<URI, HttpClient> { key, value, cause ->
             logger.debug("Removing connection for target $key. Reason: $cause")
             value?.close()
@@ -154,5 +133,3 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
             .filter { e -> e.key == remoteAddress && e.value?.connected!! }
             .size
 }
-
-data class ConnectionManagerConfig(val connectionPoolSize: Long, val acquireTimeout: Long, val maxIdleTime: Long)

@@ -37,6 +37,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
     }
 
+    // Perhaps a better alternative would be to use ForkJoinPool
     private val workers: ThreadPoolExecutor = Executors.newFixedThreadPool(4) as ThreadPoolExecutor
     private var p2pInPublisher = publisherFactory.createPublisher(PublisherConfig(PUBLISHER_ID), ConfigFactory.empty())
 
@@ -68,7 +69,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                                 responseBarrier.countDown()
                             }
                             client.send(message.toByteBuffer().array())
-                            if (!responseBarrier.await(1000, TimeUnit.MILLISECONDS)) {
+                            if (!responseBarrier.await(connectionPool.config.responseTimeout, TimeUnit.MILLISECONDS)) {
                                 logger.info("Response from ${entry.key} has not arrived in time. Scheduling for re-send")
                                 // If the response has not arrived in the specified time, the message
                                 // is queued for redelivery
@@ -88,7 +89,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                 // Schedule any pending re-tries
                 if (messagesToRetry.size > 0) {
                     Executors.newSingleThreadScheduledExecutor()
-                        .schedule({ resend(entry.key, messagesToRetry) }, 5000L, TimeUnit.MILLISECONDS).get()
+                        .schedule({ resend(entry.key, messagesToRetry) }, connectionPool.config.retryDelay, TimeUnit.MILLISECONDS).get()
                 }
             })
         }
