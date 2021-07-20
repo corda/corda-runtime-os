@@ -1,10 +1,10 @@
 {
   "type": "record",
   "name": "FlowMessage",
-  "namespace": "net.corda.p2p",
+  "namespace": "net.corda.p2p.payload",
   "fields": [
     { "name": "header",
-      "type": "net.corda.p2p.FlowMessageHeader"
+      "type": "net.corda.p2p.payload.FlowMessageHeader"
     },
     {
       "name": "payload",

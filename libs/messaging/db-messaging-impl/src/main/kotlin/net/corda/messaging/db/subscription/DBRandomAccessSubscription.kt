@@ -59,7 +59,7 @@ class DBRandomAccessSubscription<K: Any, V: Any>(private val subscriptionConfig:
 
     @Suppress("TooGenericExceptionCaught")
     override fun getRecord(partition: Int, offset: Long): Record<K, V>? {
-        val maxVisibleOffset = offsetTrackersManager.maxVisibleOffset(subscriptionConfig.eventTopic)
+        val maxVisibleOffset = offsetTrackersManager.maxVisibleOffset(subscriptionConfig.eventTopic, partition)
 
         if (offset > maxVisibleOffset) {
             return null

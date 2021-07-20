@@ -68,7 +68,7 @@ class KafkaPubSubSubscriptionImplTest {
         }.whenever(mockCordaConsumer).poll()
 
         builderInvocationCount = 0
-        doReturn(mockCordaConsumer).whenever(consumerBuilder).createPubSubConsumer(any(), any())
+        doReturn(mockCordaConsumer).whenever(consumerBuilder).createPubSubConsumer(any(), any(), any(), any())
     }
 
     /**
@@ -84,7 +84,7 @@ class KafkaPubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription.stop()
         assertThat(latch.count).isEqualTo(0)
-        verify(consumerBuilder, times(1)).createPubSubConsumer(any(), any())
+        verify(consumerBuilder, times(1)).createPubSubConsumer(any(), any(), any(), any())
     }
 
     /**
@@ -101,7 +101,7 @@ class KafkaPubSubSubscriptionImplTest {
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         kafkaPubSubSubscription.stop()
         assertThat(latch.count).isEqualTo(0)
-        verify(consumerBuilder, times(1)).createPubSubConsumer(any(), any())
+        verify(consumerBuilder, times(1)).createPubSubConsumer(any(), any(), any(), any())
     }
 
 
@@ -117,7 +117,7 @@ class KafkaPubSubSubscriptionImplTest {
             } else {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
-        }.whenever(consumerBuilder).createPubSubConsumer(any(), any())
+        }.whenever(consumerBuilder).createPubSubConsumer(any(), any(), any(), any())
         doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
 
         doThrow(CordaMessageAPIFatalException::class).whenever(mockCordaConsumer).commitSyncOffsets(any(), anyOrNull())
@@ -130,7 +130,7 @@ class KafkaPubSubSubscriptionImplTest {
         assertThat(latch.count).isEqualTo(1)
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll()
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).commitSyncOffsets(any(), isNull())
-        verify(consumerBuilder, times(2)).createPubSubConsumer(any(), any())
+        verify(consumerBuilder, times(2)).createPubSubConsumer(any(), any(), any(), any())
     }
 
     /**
@@ -138,7 +138,7 @@ class KafkaPubSubSubscriptionImplTest {
      */
     @Test
     fun testFatalExceptionConsumerBuild() {
-        whenever(consumerBuilder.createPubSubConsumer(any(), any())).thenThrow(
+        whenever(consumerBuilder.createPubSubConsumer(any(), any(), any(), any())).thenThrow(
             CordaMessageAPIFatalException(
                 "Fatal Error",
                 Exception()
@@ -152,7 +152,7 @@ class KafkaPubSubSubscriptionImplTest {
         while (kafkaPubSubSubscription.isRunning) { }
 
         verify(mockCordaConsumer, times(0)).poll()
-        verify(consumerBuilder, times(1)).createPubSubConsumer(any(), any())
+        verify(consumerBuilder, times(1)).createPubSubConsumer(any(), any(), any(), any())
         assertThat(latch.count).isEqualTo(mockRecordCount)
     }
 
@@ -168,7 +168,7 @@ class KafkaPubSubSubscriptionImplTest {
             } else {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
-        }.whenever(consumerBuilder).createPubSubConsumer(any(), any())
+        }.whenever(consumerBuilder).createPubSubConsumer(any(), any(), any(), any())
         whenever(mockCordaConsumer.poll()).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
         kafkaPubSubSubscription =
@@ -179,7 +179,7 @@ class KafkaPubSubSubscriptionImplTest {
         }
 
         assertThat(latch.count).isEqualTo(mockRecordCount)
-        verify(consumerBuilder, times(2)).createPubSubConsumer(any(), any())
+        verify(consumerBuilder, times(2)).createPubSubConsumer(any(), any(), any(), any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll()
     }
@@ -197,7 +197,7 @@ class KafkaPubSubSubscriptionImplTest {
             } else {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
-        }.whenever(consumerBuilder).createPubSubConsumer(any(), any())
+        }.whenever(consumerBuilder).createPubSubConsumer(any(), any(), any(), any())
 
         latch = CountDownLatch(consumerPollAndProcessRetriesCount)
         processor = StubPubSubProcessor(latch, CordaMessageAPIFatalException("", Exception()))
@@ -225,7 +225,7 @@ class KafkaPubSubSubscriptionImplTest {
             } else {
                 CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
             }
-        }.whenever(consumerBuilder).createPubSubConsumer(any(), any())
+        }.whenever(consumerBuilder).createPubSubConsumer(any(), any(), any(), any())
 
         latch = CountDownLatch(consumerPollAndProcessRetriesCount)
         processor = StubPubSubProcessor(latch, IOException())

@@ -1,9 +1,9 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.p2p.FlowMessage
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.payload.FlowMessage
 
 interface SessionManager {
     fun processOutboundFlowMessage(message: FlowMessage): SessionState

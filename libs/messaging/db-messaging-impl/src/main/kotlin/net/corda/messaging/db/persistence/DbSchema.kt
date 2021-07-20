@@ -22,6 +22,7 @@ class DbSchema {
             const val CONSUMER_GROUP_COLUMN_NAME = "consumer_group_name"
             const val PARTITION_COLUMN_NAME = "partition_no"
             const val COMMITTED_OFFSET_COLUMN_NAME = "committed_offset"
+            const val OFFSET_TIMESTAMP_COLUMN_NAME = "offset_timestamp"
         }
     }
 
@@ -32,10 +33,6 @@ class DbSchema {
             const val TOPIC_COLUMN_NAME = "topic_name"
             const val PARTITIONS_COLUMN_NAME = "partitions_number"
         }
-    }
-
-    companion object {
-        const val FIXED_PARTITION_NO = 1
     }
 
 }

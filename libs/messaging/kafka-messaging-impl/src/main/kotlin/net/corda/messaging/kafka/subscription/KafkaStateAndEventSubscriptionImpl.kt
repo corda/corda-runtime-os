@@ -1,18 +1,21 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.render
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
+import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
@@ -21,6 +24,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
+import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -52,9 +56,12 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         private const val EVENT_GROUP_ID = "$EVENT_CONSUMER.${CommonClientConfigs.GROUP_ID_CONFIG}"
         private val CONSUMER_THREAD_STOP_TIMEOUT = KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT.replace("consumer", "eventConsumer")
         private val CONSUMER_CLOSE_TIMEOUT = KafkaProperties.CONSUMER_CLOSE_TIMEOUT.replace("consumer", "eventConsumer")
+        private val EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES = CONSUMER_POLL_AND_PROCESS_RETRIES.replace("consumer", "eventConsumer")
     }
+
     private val log: Logger = LoggerFactory.getLogger(
-        "${config.getString(EVENT_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}")
+        "${config.getString(EVENT_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
+    )
 
     private lateinit var producer: CordaKafkaProducer
     private lateinit var eventConsumer: CordaKafkaConsumer<K, E>
@@ -74,6 +81,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
     private val producerCloseTimeout = Duration.ofMillis(config.getLong(KafkaProperties.PRODUCER_CLOSE_TIMEOUT))
     private val consumerCloseTimeout = Duration.ofMillis(config.getLong(CONSUMER_CLOSE_TIMEOUT))
+    private val consumerPollAndProcessMaxRetries = config.getLong(EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES)
 
     // When syncing up new partitions gives us the (partition, endOffset) for a given new partition
     private val statePartitionsToSync: MutableMap<Int, Long> = ConcurrentHashMap<Int, Long>()
@@ -138,16 +146,17 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             attempts++
             try {
                 producer = builder.createProducer(config.getConfig(KAFKA_PRODUCER))
-                stateConsumer = builder.createStateConsumer(config.getConfig(STATE_CONSUMER))
-                eventConsumer = builder.createEventConsumer(config.getConfig(EVENT_CONSUMER), this)
-                validateConsumers(stateConsumer, eventConsumer)
+                stateConsumer = builder.createStateConsumer(config.getConfig(STATE_CONSUMER), processor.keyClass, processor.stateValueClass)
+                eventConsumer =
+                    builder.createEventConsumer(config.getConfig(EVENT_CONSUMER), processor.keyClass, processor.eventValueClass, this)
+                validateConsumers()
 
                 stateConsumer.assign(emptyList())
                 eventConsumer.subscribeToTopic()
 
                 while (!stopped) {
                     updateStates()
-                    processEvents(eventConsumer, producer)
+                    processEvents()
                 }
             } catch (ex: Exception) {
                 when (ex) {
@@ -178,7 +187,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         stateConsumer.close(consumerCloseTimeout)
     }
 
-    private fun validateConsumers(stateConsumer: CordaKafkaConsumer<K, S>, eventConsumer: CordaKafkaConsumer<K, E>) {
+    private fun validateConsumers() {
         val statePartitions = stateConsumer.getPartitions(stateTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
         val eventPartitions = eventConsumer.getPartitions(eventTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
         if (statePartitions.size != eventPartitions.size) {
@@ -239,21 +248,50 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun processEvents(eventConsumer: CordaKafkaConsumer<K, E>, producer: CordaKafkaProducer) {
-        for (event in eventConsumer.poll()) {
-            log.trace { "Processing event: $event" }
-            val updates = processor.onNext(getCurrentStates()[event.record.key()]?.second, event.asRecord())
-            val updatedState = updates.updatedState
-            if (updatedState != null) {
-                getCurrentStates()[event.record.key()] = Pair(clock.instant().toEpochMilli(), updatedState)
-            } else {
-                getCurrentStates().remove(event.record.key())
+    @Suppress("TooGenericExceptionCaught")
+    private fun processEvents() {
+        var attempts = 0
+        var pollAndProcessSuccessful = false
+        var record: Record<K, E>? = null
+        while (!pollAndProcessSuccessful) {
+            try {
+                for (event in eventConsumer.poll()) {
+                    record = event.asRecord()
+                    tryProcessEvent(event)
+                }
+                pollAndProcessSuccessful = true
+            } catch (ex: Exception) {
+                when (ex) {
+                    is CordaMessageAPIIntermittentException -> {
+                        attempts++
+                        handleProcessEventRetries(record, attempts, ex)
+                    }
+                    else -> {
+                        throw CordaMessageAPIFatalException(
+                            "Failed to process records from topic $eventTopic, group $groupName, producerClientId $producerClientId. " +
+                                    "Fatal error occurred.", ex
+                        )
+                    }
+                }
             }
-            producer.beginTransaction()
-            producer.sendRecords(updates.responseEvents + Record(stateTopic.suffix, event.record.key(), updatedState))
-            producer.tryCommitTransaction()
         }
-        eventConsumer.commitSync()
+    }
+
+    private fun tryProcessEvent(event: ConsumerRecordAndMeta<K, E>) {
+        log.trace { "Processing event: $event" }
+        val updates = processor.onNext(getCurrentStates()[event.record.key()]?.second, event.asRecord())
+        val updatedState = updates.updatedState
+        producer.beginTransaction()
+        producer.sendRecords(updates.responseEvents + Record(stateTopic.suffix, event.record.key(), updatedState))
+        producer.sendRecordOffsetToTransaction(eventConsumer, event.record)
+        producer.tryCommitTransaction()
+
+        if (updatedState != null) {
+            getCurrentStates()[event.record.key()] = Pair(clock.instant().toEpochMilli(), updatedState)
+        } else {
+            getCurrentStates().remove(event.record.key())
+        }
+        log.trace { "Completed event: $event" }
     }
 
     private fun updateStates() {
@@ -292,9 +330,36 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
+    /**
+     * Handle retries for event processing.
+     * Reset [eventConsumer] position and retry poll and process of an [eventRecord] a max of [consumerPollAndProcessMaxRetries] times.
+     * If [consumerPollAndProcessMaxRetries] is exceeded then throw a [CordaMessageAPIIntermittentException]
+     */
+    private fun handleProcessEventRetries(
+        eventRecord: Record<K, E>?,
+        attempts: Int,
+        ex: Exception
+    ) {
+        if (attempts <= consumerPollAndProcessMaxRetries) {
+            log.warn(
+                "Failed to process record $eventRecord from topic $eventTopic, group $groupName, " +
+                        "producerClientId $producerClientId. " +
+                        "Retrying poll and process. Attempts: $attempts."
+            )
+            eventConsumer.resetToLastCommittedPositions(OffsetResetStrategy.EARLIEST)
+        } else {
+            val message = "Failed to process record $eventRecord from topic $eventTopic, group $groupName, " +
+                    "producerClientId $producerClientId. " +
+                    "Attempts: $attempts. Max reties exceeded."
+            log.warn(message, ex)
+            throw CordaMessageAPIIntermittentException(message, ex)
+        }
+    }
+
     private fun TopicPartition.toStateTopic() = TopicPartition(stateTopic.topic, partition())
     private fun TopicPartition.toEventTopic() = TopicPartition(eventTopic.topic, partition())
     private fun Collection<TopicPartition>.toStateTopics(): List<TopicPartition> = map { it.toStateTopic() }
+
     @Suppress("unused")
     private fun Collection<TopicPartition>.toEventTopics(): List<TopicPartition> = map { it.toEventTopic() }
 

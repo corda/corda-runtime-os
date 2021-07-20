@@ -1,13 +1,10 @@
 package net.corda.p2p.linkmanager
 
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.FlowMessage
-import net.corda.p2p.FlowMessageHeader
-import net.corda.p2p.HoldingIdentity
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
@@ -25,9 +22,13 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.Companion.getSessionKeyFromMessage
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.SessionKey
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+import net.corda.p2p.payload.FlowMessage
+import net.corda.p2p.payload.FlowMessageHeader
+import net.corda.p2p.payload.HoldingIdentity
 import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -38,7 +39,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
-import java.lang.RuntimeException
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
@@ -265,7 +265,7 @@ class LinkManagerTest {
     }
 
     @Test
-    fun `OutboundMessageProcess routes the session init messages and persists a list of partitions for a specific sessionId`() {
+    fun `OutboundMessageProcessor routes the session init messages and persists a list of partitions for a specific sessionId`() {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
 
         val sessionId = "SessionId"
@@ -280,13 +280,31 @@ class LinkManagerTest {
         val messages = listOf(EventLogRecord(TOPIC, KEY, simpleMockFlowMessage(FIRST_SOURCE, FIRST_DEST, "0"), 0, 0))
         val records = processor.onNext(messages)
 
-        assertEquals(records.size, 2 * messages.size)
-        assertEquals(records[0].topic, LINK_OUT_TOPIC)
-        assertSame(records[0].value, sessionInitMessage)
-        assertEquals(records[1].topic, Schema.SESSION_OUT_PARTITIONS)
-        assertEquals(records[1].key, sessionId)
-        assertTrue(records[1].value is SessionPartitions)
-        assertArrayEquals(inboundSubscribedTopics.toIntArray(), (records[1].value as SessionPartitions).partitions.toIntArray())
+        assertEquals(records.size, 2)
+        assertThat(records).filteredOn{ it.topic == LINK_OUT_TOPIC }.hasSize(1)
+        assertThat(records).contains(Record(Schema.SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(inboundSubscribedTopics)))
+    }
+
+    @Test
+    fun `OutboundMessageProcessor discards messages if the InboundMessageForwarder is not subscribed to any partitions`() {
+        val mockSessionManager = Mockito.mock(SessionManager::class.java)
+
+        val sessionId = "SessionId"
+        val sessionInitMessage = LinkOutMessage()
+        val state = SessionManager.SessionState.NewSessionNeeded(sessionId, sessionInitMessage)
+        Mockito.`when`(mockSessionManager.processOutboundFlowMessage(any())).thenReturn(state)
+        val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+
+        val unassignedListener = assignedListener(emptyList())
+
+        val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, mockNetworkMap, unassignedListener)
+        val messages = listOf(EventLogRecord(TOPIC, KEY, simpleMockFlowMessage(FIRST_SOURCE, FIRST_DEST, "0"), 0, 0))
+        val records = processor.onNext(messages)
+
+        assertEquals(records.size, 0)
+        loggingInterceptor.assertSingleWarning("The Link Manager is not currently assigned to any partitions for the topic" +
+                " ${Schema.LINK_IN_TOPIC}. This means there is no way to route a message back to the LinkManager with the" +
+                " Session with SessionId $sessionId in memory. The message was discarded.")
     }
 
     @Test
