@@ -1,16 +1,20 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.p2p.LinkInMessage
+import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.FileInputStream
 import java.net.URI
+import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.time.Instant
 import java.util.Arrays
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Flow
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
@@ -35,10 +39,23 @@ class HttpTest {
     @Test
     fun `simple client POST request`() {
         HttpServer(serverAddress.host, serverAddress.port, sslConfiguration).use { server ->
-            server.onReceive.subscribe {
-                assertEquals(clientMessageContent, String(it.payload))
-                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
-            }
+            server.registerMessageSubscriber(object : Flow.Subscriber<HttpMessage> {
+                var sub: Flow.Subscription? = null
+                override fun onSubscribe(subscription: Flow.Subscription) {
+                    sub = subscription
+                    subscription.request(1)
+                }
+
+                override fun onNext(item: HttpMessage) {
+                    assertEquals(clientMessageContent, String(item.payload))
+                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), item.source)
+                    sub?.request(1)
+                }
+
+                override fun onError(throwable: Throwable?) = Unit
+                override fun onComplete() = Unit
+            })
+
             server.start()
             HttpClient(serverAddress, sslConfiguration).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
@@ -68,10 +85,23 @@ class HttpTest {
         val times = mutableListOf<Long>()
         val httpServer = HttpServer(serverAddress.host, serverAddress.port, sslConfiguration)
         httpServer.use { server ->
-            server.onReceive.subscribe {
-                assertEquals(clientMessageContent, String(it.payload))
-                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
-            }
+            server.registerMessageSubscriber(object : Flow.Subscriber<HttpMessage> {
+                var sub: Flow.Subscription? = null
+                override fun onSubscribe(subscription: Flow.Subscription) {
+                    sub = subscription
+                    subscription.request(1)
+                }
+
+                override fun onNext(item: HttpMessage) {
+                    assertEquals(clientMessageContent, String(item.payload))
+                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), item.source)
+                    sub?.request(1)
+                }
+
+                override fun onError(throwable: Throwable?) = Unit
+                override fun onComplete() = Unit
+            })
+
             server.start()
             repeat(threadNo) {
                 val t = thread {
@@ -115,10 +145,23 @@ class HttpTest {
         val hugePayload = FileInputStream(javaClass.classLoader.getResource("10mb.txt")!!.file).readAllBytes()
 
         HttpServer(serverAddress.host, serverAddress.port, sslConfiguration).use { server ->
-            server.onReceive.subscribe {
-                assert(Arrays.equals(hugePayload, it.payload))
-                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
-            }
+            server.registerMessageSubscriber(object : Flow.Subscriber<HttpMessage> {
+                var sub: Flow.Subscription? = null
+                override fun onSubscribe(subscription: Flow.Subscription) {
+                    sub = subscription
+                    subscription.request(1)
+                }
+
+                override fun onNext(item: HttpMessage) {
+                    assert(Arrays.equals(hugePayload, item.payload))
+                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), item.source)
+                    sub?.request(1)
+                }
+
+                override fun onError(throwable: Throwable?) = Unit
+                override fun onComplete() = Unit
+            })
+
             server.start()
             HttpClient(serverAddress, sslConfiguration).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)

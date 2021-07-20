@@ -14,6 +14,7 @@ import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpClient
+import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
@@ -31,6 +32,7 @@ import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Flow
 import kotlin.concurrent.thread
 
 class GatewayTest {
@@ -167,12 +169,25 @@ class GatewayTest {
             }
             val serverURI = URI.create(serverAddresses[id])
             servers.add(HttpServer(serverURI.host, serverURI.port, sslConfiguration).also {
-                it.onReceive.subscribe { rcv ->
-                    val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(rcv.payload))
-                    assertEquals("Target-${serverAddresses[id]}", String((p2pMessage.payload as AuthenticatedDataMessage).payload.array()))
-                    it.write(HttpResponseStatus.OK, ByteArray(0), rcv.source)
-                    deliveryLatch.countDown()
-                }
+                it.registerMessageSubscriber(object : Flow.Subscriber<HttpMessage> {
+                    var sub: Flow.Subscription? = null
+                    override fun onSubscribe(subscription: Flow.Subscription) {
+                        sub = subscription
+                        subscription.request(1)
+                    }
+
+                    override fun onNext(item: HttpMessage) {
+                        val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(item.payload))
+                        assertEquals("Target-${serverAddresses[id]}", String((p2pMessage.payload as AuthenticatedDataMessage).payload.array()))
+                        it.write(HttpResponseStatus.OK, ByteArray(0), item.source)
+                        deliveryLatch.countDown()
+                        sub?.request(1)
+                    }
+
+                    override fun onError(throwable: Throwable?) = Unit
+                    override fun onComplete() = Unit
+                })
+
                 it.start()
             })
         }

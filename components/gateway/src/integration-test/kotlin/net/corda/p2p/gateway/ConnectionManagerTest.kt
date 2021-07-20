@@ -5,6 +5,8 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.ConnectionManagerConfig
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.http.ConnectionChangeEvent
+import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -14,6 +16,7 @@ import java.net.SocketAddress
 import java.net.URI
 import java.security.KeyStore
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Flow
 
 class ConnectionManagerTest {
 
@@ -39,10 +42,19 @@ class ConnectionManagerTest {
         val manager = ConnectionManager(sslConfiguration)
         val (host, port) = URI.create(serverAddresses.first()).let { Pair(it.host, it.port) }
         HttpServer(host, port, sslConfiguration).use { server ->
-            server.onReceive.subscribe {
-                assertEquals(clientMessageContent, String(it.payload))
-                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), it.source)
-            }
+            server.registerMessageSubscriber(object : Flow.Subscriber<HttpMessage> {
+                override fun onSubscribe(subscription: Flow.Subscription) {
+                    subscription.request(1)
+                }
+                override fun onNext(item: HttpMessage) {
+                    assertEquals(clientMessageContent, String(item.payload))
+                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), item.source)
+
+                }
+                override fun onError(throwable: Throwable?) = Unit
+                override fun onComplete() = Unit
+
+            })
             server.start()
             manager.acquire(URI.create(serverAddresses.first().toString())).use { client ->
                 // Client is connected at this point
@@ -63,11 +75,19 @@ class ConnectionManagerTest {
         val serverURI = URI.create((serverAddresses.first()))
         HttpServer(serverURI.host, serverURI.port, sslConfiguration).use { server ->
             val remotePeers = mutableListOf<SocketAddress>()
-            server.onConnection.subscribe {
-                if (it.connected) {
-                    remotePeers.add(it.remoteAddress)
+            server.registerConnectionEventSubscriber(object : Flow.Subscriber<ConnectionChangeEvent> {
+                override fun onSubscribe(subscription: Flow.Subscription) {
+                    subscription.request(1)
                 }
-            }
+                override fun onNext(item: ConnectionChangeEvent) {
+                    if (item.connected) {
+                        remotePeers.add(item.remoteAddress)
+                    }
+                }
+                override fun onError(throwable: Throwable?) = Unit
+                override fun onComplete() = Unit
+
+            })
             server.start()
 
             manager.acquire(serverURI)
