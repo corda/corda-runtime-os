@@ -76,7 +76,7 @@ class UtilsTest {
         }
 
         val eventsByBatch  = getEventsByBatch(records)
-        assertThat(eventsByBatch.size).isEqualTo(10)
+        assertThat(eventsByBatch.size).isEqualTo(28)
     }
 
     @Test
@@ -103,7 +103,7 @@ class UtilsTest {
         }
 
         val eventsByBatch  = getEventsByBatch(records)
-        assertThat(eventsByBatch.size).isEqualTo(3)
+        assertThat(eventsByBatch.size).isEqualTo(4)
 
         val batchOne = eventsByBatch[0]
         assertThat(batchOne.size).isEqualTo(3)
@@ -112,10 +112,19 @@ class UtilsTest {
         assertThat(batchOne[2].record.value()).isEqualTo("2")
 
         val batchTwo = eventsByBatch[1]
-        assertThat(batchTwo.size).isEqualTo(3)
+        assertThat(batchTwo.size).isEqualTo(1)
         assertThat(batchTwo[0].record.value()).isEqualTo("3")
-        assertThat(batchTwo[1].record.value()).isEqualTo("5")
-        assertThat(batchTwo[2].record.value()).isEqualTo("6")
+
+        val batchThree = eventsByBatch[2]
+        assertThat(batchThree.size).isEqualTo(3)
+        assertThat(batchThree[0].record.value()).isEqualTo("4")
+        assertThat(batchThree[1].record.value()).isEqualTo("5")
+        assertThat(batchThree[2].record.value()).isEqualTo("6")
+
+        val batchFour = eventsByBatch[3]
+        assertThat(batchFour.size).isEqualTo(2)
+        assertThat(batchFour[0].record.value()).isEqualTo("7")
+        assertThat(batchFour[1].record.value()).isEqualTo("8")
     }
 
     @Test

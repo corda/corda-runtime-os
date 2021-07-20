@@ -137,27 +137,25 @@ fun PublisherConfig.toConfig(): Config {
 }
 
 /**
- * Divide a list of [events] into batches such that 1 key does not have more then one entry per batch.
- * Ignore ordering of different keys to maximise batch sizes. Preserve order of same key in different batches.
+ * Divide a list of [events] into batches such that 1 key does not have more then one entry per batch
  */
 fun<K: Any, E : Any> getEventsByBatch(events: List<ConsumerRecordAndMeta<K, E>>): List<List<ConsumerRecordAndMeta<K, E>>> {
     if (events.isEmpty()) {
         return emptyList()
     }
 
-    val nextBatchForKeyMap = mutableMapOf<K, Int>()
-    val eventBatches = mutableListOf<MutableList<ConsumerRecordAndMeta<K, E>>>()
-
+    val keysInBatch = mutableSetOf<K>()
+    val eventBatches = mutableListOf<MutableList<ConsumerRecordAndMeta<K, E>>>(mutableListOf())
     events.forEach { event ->
         val eventKey = event.record.key()
-        val batchForKey = nextBatchForKeyMap.compute(eventKey) { _, currentBatch ->
-            if (currentBatch == null) { 0 } else { currentBatch + 1 }
-        }!!
 
-        eventBatches.getOrElse(batchForKey) {
+        if (eventKey in keysInBatch) {
+            keysInBatch.clear()
             eventBatches.add(mutableListOf())
-            eventBatches[it]
-        }.add(event)
+        }
+
+        keysInBatch.add(eventKey)
+        eventBatches.last().add(event)
     }
 
     return eventBatches
