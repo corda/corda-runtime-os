@@ -40,13 +40,15 @@ pluginManagement {
         }
     }
     plugins {
+        id 'biz.aQute.bnd.builder' version bndVersion
+        id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.noarg' version kotlinVersion
+        id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
+        id 'net.corda.plugins.flask' version cordaGradlePluginsVersion
         id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
         id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
-        id 'biz.aQute.bnd.builder' version bndVersion
-        id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
     }
 }
 
@@ -95,4 +97,6 @@ include 'libs:schema-registry:schema-registry'
 include 'libs:schema-registry:schema-registry-impl'
 include 'osgi-framework-api'
 include 'osgi-framework-bootstrap'
-include 'osgi-framework-bootstrap:framework-app-tester'
+include 'testing:cordapps:test-cpk'
+include 'testing:cordapps:test-sandbox'
+
