@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.messaging
 
-import net.corda.p2p.FlowMessage
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
@@ -12,10 +11,11 @@ import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.MemberInfo
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.NetworkType
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toNetworkType
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.MemberInfo
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.NetworkType
+import net.corda.p2p.payload.FlowMessage
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.ByteBuffer

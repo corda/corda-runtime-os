@@ -35,7 +35,7 @@ allprojects {
         ext.cordaArtifactoryUsername = System.getenv('CORDA_ARTIFACTORY_USERNAME')
     }
 
-    if (! project.hasProperty('cordaArtifactoryPassword')) {
+    if (!project.hasProperty('cordaArtifactoryPassword')) {
         ext.cordaArtifactoryPassword = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
     }
 

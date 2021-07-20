@@ -2,12 +2,8 @@ package net.corda.lifecycle
 
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
@@ -22,8 +18,8 @@ import kotlin.concurrent.withLock
  * @param lifeCycleProcessor method receiving the [LifeCycleEvent] notifications coordinated by this object.
  */
 class SimpleLifeCycleCoordinator(
-    val batchSize: Int,
-    val timeout: Long,
+    private val batchSize: Int,
+    private val timeout: Long,
     override val lifeCycleProcessor: (LifeCycleEvent: LifeCycleEvent, lifecycleCoordinator: LifeCycleCoordinator) -> Unit,
 ) : LifeCycleCoordinator {
 
@@ -31,46 +27,64 @@ class SimpleLifeCycleCoordinator(
 
         private val logger: Logger = contextLogger()
 
-    } //~ companion
+    }
 
     /**
-     * Synchronize the access to [executorService].
+     * Synchronize startup and shutdown procedures, to ensure there is no overlap of start and stop methods.
      */
     private val lock = ReentrantLock()
 
     /**
-     * Set to the value of the [Thread.getId] of the thread running [processEvents],
-     * `null` if [processEvents] is not running.
+     * Used to ensure that startup is blocked on the cleanup from a previous shutdown is completed.
+     *
+     * This is required as the cleanup must occur on the executor thread, to ensure that events are always processed on
+     * the same thread. However, stop may be called from threads that are not the executor thread, so the lock is not
+     * sufficient.
+     */
+    private val cleanupCondition = lock.newCondition()
+
+    /**
+     * Set to the value of the [Thread.getId] of the thread running [processEvents], or `null` if [processEvents] is not
+     * running.
+     *
+     * This is primarily used to ensure that no attempt is made to schedule something on the executor thread.
      */
     private var executorThreadID: Long? = null
 
     /**
-     * It owns [processEvents] when this coordinator is running.
-     *
-     * Must be synchronized with [lock].
-     *
-     * @see [start]
-     * @see [stop]
+     * The event queue and timer state for this lifecycle processor.
      */
-    @Volatile
-    private var executorService: ScheduledExecutorService? = null
+    private val eventQueueManager = LifecycleEventQueueManager(batchSize) { lifecycleEvent ->
+        lifeCycleProcessor(lifecycleEvent, this)
+    }
 
     /**
-     * Queue of events to be processed by [lifeCycleProcessor] when [processEvents] is called.
-     */
-    private val eventQueue = ConcurrentLinkedDeque<LifeCycleEvent>()
-
-    /**
-     * `true` if [processEvents] is executing.
+     * `true` if [processEvents] is executing. This is used to ensure only one attempt at processing the event queue is
+     * scheduled at a time.
      */
     private val isScheduled = AtomicBoolean(false)
 
     /**
-     * Map of [ScheduledFuture] according [TimerEvent.key] to allow timers to be cancelled.
+     * Indicates whether cleanup from when the coordinator was previously started is still in progress.
      *
-     * @see [cancelTimer]
+     * This is used to block restarting the coordinator until the previous run has completed.
      */
-    private val timerMap = ConcurrentHashMap<String, ScheduledFuture<*>>()
+    private val cleanupInProgress = AtomicBoolean(false)
+
+    /**
+     * Backing variable for the public [isRunning], but atomically updated.
+     */
+    private val _isRunning = AtomicBoolean(false)
+
+    /**
+     * The executor on which events are processed. Note that all events should be processed in the executor thread, but
+     * may be posted from any other thread.
+     */
+    private val executor = Executors.newSingleThreadScheduledExecutor { runnable ->
+        val thread = Thread(runnable)
+        thread.isDaemon = true
+        thread
+    }
 
     /**
      * Process the events in [eventQueue].
@@ -94,42 +108,16 @@ class SimpleLifeCycleCoordinator(
     @Throws(
         RejectedExecutionException::class
     )
-    @Suppress("ComplexMethod", "TooGenericExceptionCaught")
     private fun processEvents() {
         executorThreadID = Thread.currentThread().id
-        val eventList = ArrayList<LifeCycleEvent>(batchSize)
-        for (i in 0 until batchSize) {
-            val lifeCycleEvent = eventQueue.poll() ?: break
-            eventList.add(lifeCycleEvent)
-        }
-        var shutdown = false
-        for (lifeCycleEvent in eventList) {
-            try {
-                lifeCycleProcessor(lifeCycleEvent, this)
-            } catch (cause: Throwable) {
-                val errorEvent = ErrorEvent(cause)
-                logger.warn("Life-Cycle coordinator caught ${cause.message} starting ErrorEvent processing.",
-                    cause)
-                try {
-                    lifeCycleProcessor(errorEvent, this)
-                } catch (cause: Throwable) {
-                    logger.error("Life-Cycle coordinator caught unexpected ${cause.message}" +
-                            " during ErrorEvent processing. Will now stop coordinator!",
-                        cause)
-                    errorEvent.isHandled = false
-                }
-                if (!errorEvent.isHandled) {
-                    shutdown = true
-                }
-            }
-        }
+        val shutdown = !eventQueueManager.processEvents()
         isScheduled.set(false)
         if (shutdown) {
             logger.warn("Unhandled error event! Life-Cycle coordinator stops.")
             stop()
         } else {
             executorThreadID = null
-            if (eventQueue.isNotEmpty()) {
+            if (!eventQueueManager.isEmpty) {
                 scheduleIfRequired()
             }
         }
@@ -144,13 +132,10 @@ class SimpleLifeCycleCoordinator(
         RejectedExecutionException::class
     )
     private fun scheduleIfRequired() {
-        val executorService = this.executorService ?: return
         if (!isScheduled.getAndSet(true)) {
-            executorService.submit(::processEvents)
+            executor.submit(::processEvents)
         }
     }
-
-    //: LifeCycleCoordinator
 
     /**
      * Cancel the [TimerEvent] uniquely identified by [key].
@@ -162,14 +147,7 @@ class SimpleLifeCycleCoordinator(
      *
      */
     override fun cancelTimer(key: String) {
-        timerMap[key]?.cancel(false)
-        val eventQueueIterator = eventQueue.iterator()
-        while (eventQueueIterator.hasNext()) {
-            val lifeCycleEvent = eventQueueIterator.next()
-            if (lifeCycleEvent is TimerEvent && lifeCycleEvent.key == key) {
-                eventQueueIterator.remove()
-            }
-        }
+        eventQueueManager.cancelTimer(key)
     }
 
     /**
@@ -188,10 +166,10 @@ class SimpleLifeCycleCoordinator(
     )
     override fun postEvent(lifeCycleEvent: LifeCycleEvent) {
         if (isRunning) {
-            eventQueue.offer(lifeCycleEvent)
+            eventQueueManager.postEvent(lifeCycleEvent)
             scheduleIfRequired()
         } else {
-            logger.warn("Life-Cycle coordinator not running: posted event ignored!")
+            logger.warn("Cannot post event $lifeCycleEvent as the lifecycle coordinator is not currently running")
         }
     }
 
@@ -200,7 +178,7 @@ class SimpleLifeCycleCoordinator(
      *
      * **NOTE! Pending [TimerEvent] are cancelled when [stop] is called.
      *
-     * **Note! Timers set between last [stop] and next [start] are ignored: this method lags a warning message.**
+     * **Note! Timers set between last [stop] and next [start] are ignored: this method logs a warning message.**
      *
      * @param key unique [TimerEvent] identifier.
      * @param delay in milliseconds, when [onTime] is processed.
@@ -214,27 +192,26 @@ class SimpleLifeCycleCoordinator(
         RejectedExecutionException::class
     )
     override fun setTimer(key: String, delay: Long, onTime: (String) -> TimerEvent) {
-        val executorService = this.executorService
-        if (executorService != null) {
-            cancelTimer(key)
-            timerMap[key] = executorService.schedule({ postEvent(onTime(key)) }, delay, TimeUnit.MILLISECONDS)
+        if (isRunning) {
+            eventQueueManager.setTimer(
+                key,
+                executor.schedule({ postEvent(onTime(key)) }, delay, TimeUnit.MILLISECONDS)
+            )
         } else {
             logger.warn("Life-Cycle coordinator not running: timer set with key = $key is ignored!")
         }
     }
 
-    //: LifeCycle
-
     /**
      * Return `true` in this coordinator is processing posted events.
      */
     override val isRunning: Boolean
-        get() = lock.withLock { (executorService != null) }
+        get() = _isRunning.get()
 
     /**
      * Start this coordinator.
      *
-     * **NOTE: events posted after last [stop] and before start are ignored.**
+     * This should never be called from the event processor function. Doing so could result in a deadlock.
      *
      * @throws RejectedExecutionException if [executorService] can't schedule [processEvents].
      */
@@ -242,15 +219,14 @@ class SimpleLifeCycleCoordinator(
         RejectedExecutionException::class
     )
     override fun start() {
-        lock.withLock {
-            if (executorService == null) {
-                eventQueue.clear()
-                executorService = Executors.newSingleThreadScheduledExecutor { runnable ->
-                    val thread = Thread(runnable)
-                    thread.isDaemon = true
-                    thread
+        if (!isRunning) {
+            lock.withLock {
+                // Must wait here for previous cleanup to prevent a race condition where the start event posted below is
+                // deleted by a previous cleanup run.
+                while (cleanupInProgress.get()) {
+                    cleanupCondition.await()
                 }
-                isScheduled.set(false)
+                _isRunning.set(true)
                 postEvent(StartEvent())
             }
         }
@@ -270,41 +246,31 @@ class SimpleLifeCycleCoordinator(
      *
      */
     override fun stop() {
-        val executor = lock.withLock {
-            val exec = executorService
-            executorService = null
-            exec
-        }
-        executor?.apply {
-            eventQueue.offer(StopEvent())
+        if (isRunning) {
+            lock.withLock {
+                cleanupInProgress.set(true)
+                eventQueueManager.postEvent(StopEvent())
+                _isRunning.set(false)
+            }
+            // Because cleanup processes outstanding events, it must be run on the executor thread. This also means that
+            // the lock does not protect against running start before cleanup has completed, so a condition is used
+            // instead to ensure start does not run until cleanup has finished.
             if (Thread.currentThread().id != executorThreadID) {
-                submit { cleanUpAndCloseEvents() }
-                shutdown()
-                if (!awaitTermination(timeout, TimeUnit.MILLISECONDS)) {
-                    logger.warn("Stop: timeout after $timeout ms.")
+                executor.submit {
+                    cleanup()
                 }
             } else {
-                cleanUpAndCloseEvents()
-                shutdown()
+                cleanup()
             }
         }
     }
 
-    /**
-     * Cancel all pending timer, notify to the [lifeCycleProcessor] all pending events and clear the [eventQueue].
-     *
-     * Called by [stop] in a parallel thread if the current thread isn't the [executorService]'s thread.
-     */
-    private fun cleanUpAndCloseEvents() {
-        val self = this
-        timerMap.forEach { (key, _) -> cancelTimer(key) }
-        timerMap.clear()
-        while (!eventQueue.isEmpty()) {
-            val event = eventQueue.poll()
-            lifeCycleProcessor(event, self)
-            if (event is StopEvent) break
+    private fun cleanup() {
+        lock.withLock {
+            eventQueueManager.cleanup()
+            cleanupInProgress.set(false)
+            cleanupCondition.signal()
         }
-        eventQueue.clear()
     }
 
 }

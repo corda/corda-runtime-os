@@ -17,9 +17,6 @@ net.corda.data.flow.event.StartRemotelyInitiatedFlow
 net.corda.data.flow.event.Wakeup
 net.corda.data.identity.HoldingIdentity
 net.corda.data.test.EvolvedMessage
-net.corda.p2p.FlowMessage
-net.corda.p2p.FlowMessageHeader
-net.corda.p2p.HoldingIdentity
 net.corda.p2p.LinkInMessage
 net.corda.p2p.LinkOutHeader
 net.corda.p2p.LinkOutMessage
@@ -43,3 +40,9 @@ net.corda.p2p.markers.GatewaySentMarker
 net.corda.p2p.markers.LinkManagerReceivedMarker
 net.corda.p2p.markers.LinkManagerSentMarker
 net.corda.p2p.markers.TtlExpiredMarker
+net.corda.p2p.payload.FlowMessage
+net.corda.p2p.payload.FlowMessageAndKey
+net.corda.p2p.payload.FlowMessageHeader
+net.corda.p2p.payload.HoldingIdentity
+net.corda.p2p.payload.LinkManagerPayload
+net.corda.p2p.payload.MessageAck

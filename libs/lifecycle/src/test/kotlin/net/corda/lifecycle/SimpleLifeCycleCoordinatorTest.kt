@@ -16,7 +16,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
         const val BATCH_SIZE: Int = 128
 
-        const val TIMEOUT: Long = 2000L
+        const val TIMEOUT: Long = 100L
 
         val logger: Logger = contextLogger()
     }
@@ -32,6 +32,7 @@ internal class SimpleLifeCycleCoordinatorTest {
         val countDownLatch =
             CountDownLatch(n)  // Used to test all posted events are processed when coordinator stopped.
         val stopLatch = CountDownLatch(1)
+        var eventsProcessed = 0
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT * n) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             logger.debug("processEvent $event")
             when (event) {
@@ -39,6 +40,7 @@ internal class SimpleLifeCycleCoordinatorTest {
                     startLatch.countDown()
                 }
                 is PostEvent -> {
+                    eventsProcessed++
                     countDownLatch.countDown()
                 }
                 is StopEvent -> {
@@ -50,13 +52,14 @@ internal class SimpleLifeCycleCoordinatorTest {
             }
         }.use { coordinator ->
             coordinator.start()
-            assertTrue(startLatch.await(coordinator.timeout, TimeUnit.MILLISECONDS))
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             for (i in 0 until n) {
                 coordinator.postEvent(object : PostEvent {})
             }
             coordinator.stop()
-            assertTrue(stopLatch.await(coordinator.timeout * n, TimeUnit.MILLISECONDS))
-            assertTrue(countDownLatch.await(coordinator.timeout * n, TimeUnit.MILLISECONDS))
+            assertTrue(stopLatch.await(TIMEOUT * n, TimeUnit.MILLISECONDS))
+            assertTrue(countDownLatch.await(TIMEOUT * n, TimeUnit.MILLISECONDS))
+            assertEquals(n, eventsProcessed)
         }
     }
 
@@ -67,8 +70,7 @@ internal class SimpleLifeCycleCoordinatorTest {
         val countDownLatch =
             CountDownLatch(n)  // Used to test all posted events are processed when coordinator stopped.
         val stopLatch = CountDownLatch(1)
-        SimpleLifeCycleCoordinator(BATCH_SIZE,
-            TIMEOUT * n) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT * n) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             logger.debug("processEvent $event")
             when (event) {
                 is StartEvent -> {
@@ -87,7 +89,7 @@ internal class SimpleLifeCycleCoordinatorTest {
             }
         }.use { coordinator ->
             coordinator.start()
-            assertTrue(startLatch.await(coordinator.timeout, TimeUnit.MILLISECONDS))
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             for (i in 0 until n) {
                 val onTime = object : TimerEvent {
                     override val key: String
@@ -97,30 +99,14 @@ internal class SimpleLifeCycleCoordinatorTest {
                 coordinator.setTimer(onTime.key, delay) { onTime }
             }
             Thread {
-                while (countDownLatch.count >= coordinator.batchSize / 2) {
+                while (countDownLatch.count >= BATCH_SIZE / 2) {
                     Thread.sleep(Random.nextLong(0, TIMEOUT / 20))
                 }
                 coordinator.stop()
             }.start()
-            assertTrue(stopLatch.await(coordinator.timeout * n, TimeUnit.MILLISECONDS))
+            assertTrue(stopLatch.await(TIMEOUT * n, TimeUnit.MILLISECONDS))
         }
         assertTrue(n > countDownLatch.count)
-    }
-
-    @Test
-    fun getBatchSize() {
-        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { _: LifeCycleEvent, _: LifeCycleCoordinator -> }
-            .use { coordinator ->
-                assertEquals(BATCH_SIZE, coordinator.batchSize)
-            }
-    }
-
-    @Test
-    fun getTimeout() {
-        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { _: LifeCycleEvent, _: LifeCycleCoordinator -> }
-            .use { coordinator ->
-                assertEquals(TIMEOUT, coordinator.timeout)
-            }
     }
 
     @Test
@@ -150,14 +136,15 @@ internal class SimpleLifeCycleCoordinatorTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = [5])
-    fun postHandledErrorEvent(n: Int) {
+    @Test
+    fun postHandledErrorEvent() {
         var stopLatch = CountDownLatch(1)
+        var startLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, coordinator: LifeCycleCoordinator ->
             when (event) {
                 is StartEvent -> {
+                    startLatch.countDown()
                     stopLatch = CountDownLatch(1)
                 }
                 is ThrowException -> {
@@ -174,27 +161,30 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is StopEvent -> {
                     assertTrue(stopLatch.count > 0)
                     stopLatch.countDown()
+                    startLatch = CountDownLatch(1)
                 }
             }
         }.use { coordinator ->
-            for (i in 0..n) {
+            for (i in 0..5) {
                 coordinator.start()
+                assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
                 coordinator.postEvent(object : ThrowException {})
                 assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             }
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = [5])
-    fun postHandledButRethrowErrorEvent(n: Int) {
+    @Test
+    fun postHandledButRethrowErrorEvent() {
         var stopLatch = CountDownLatch(2)
+        var startLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
         val unexpectedException = Exception("unexpected exception")
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             when (event) {
                 is StartEvent -> {
                     stopLatch = CountDownLatch(2)
+                    startLatch.countDown()
                 }
                 is ThrowException -> {
                     throw expectedException
@@ -214,11 +204,13 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is StopEvent -> {
                     stopLatch.countDown()
                     assertTrue(stopLatch.count == 0L)
+                    startLatch = CountDownLatch(1)
                 }
             }
         }.use { coordinator ->
-            for (i in 0..n) {
+            for (i in 0..5) {
                 coordinator.start()
+                assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
                 coordinator.postEvent(object : ThrowException {})
                 assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             }
@@ -226,14 +218,15 @@ internal class SimpleLifeCycleCoordinatorTest {
     }
 
 
-    @ParameterizedTest
-    @ValueSource(ints = [5])
-    fun postUnhandledErrorEvent(n: Int) {
+    @Test
+    fun postUnhandledErrorEvent() {
         var stopLatch = CountDownLatch(2)
+        var startLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             when (event) {
                 is StartEvent -> {
+                    startLatch.countDown()
                     stopLatch = CountDownLatch(2)
                 }
                 is ThrowException -> {
@@ -252,11 +245,13 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is StopEvent -> {
                     stopLatch.countDown()
                     assertTrue(stopLatch.count == 0L)
+                    startLatch = CountDownLatch(1)
                 }
             }
         }.use { coordinator ->
-            for(i in 0 .. n) {
+            for(i in 0 .. 5) {
                 coordinator.start()
+                assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
                 coordinator.postEvent(object : ThrowException {})
                 assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             }
@@ -317,4 +312,164 @@ internal class SimpleLifeCycleCoordinatorTest {
         }
     }
 
+    @Test
+    fun `calling start and stop multiple times in a row only delivers a single start and stop event`() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        var startCount = 0
+        var stopCount = 0
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startCount++
+                    startLatch.countDown()
+                }
+                is StopEvent -> {
+                    stopCount++
+                    stopLatch.countDown()
+                }
+            }
+        }.use {
+            it.stop()
+            it.start()
+            it.start()
+            it.stop()
+            it.stop()
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            // For sanity
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(1, startCount)
+            assertEquals(1, stopCount)
+        }
+    }
+
+    @Test
+    fun `calling stop inside start event causes correct termination of coordinator`() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event, coordinator ->
+            when (event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                    coordinator.stop()
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
+                }
+            }
+        }.use {
+            it.start()
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            // For sanity
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertFalse(it.isRunning)
+        }
+    }
+
+    @Test
+    fun `given a chain of events, when each is posted, they are processed in the correct order`() {
+        val event1 = object : LifeCycleEvent {}
+        val event2 = object : LifeCycleEvent {}
+        val event3 = object : LifeCycleEvent {}
+        val stopLatch = CountDownLatch(1)
+        var previousEvent : LifeCycleEvent? = null
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event, coordinator ->
+            when (event) {
+                is StartEvent -> {
+                    assertEquals(null, previousEvent)
+                    previousEvent = event
+                    coordinator.postEvent(event1)
+                }
+                event1 -> {
+                    assertTrue(previousEvent is StartEvent)
+                    previousEvent = event
+                    coordinator.postEvent(event2)
+                }
+                event2 -> {
+                    assertEquals(event1, previousEvent)
+                    previousEvent = event
+                    coordinator.postEvent(event3)
+                }
+                event3 -> {
+                    assertEquals(event2, previousEvent)
+                    previousEvent = event
+                    coordinator.stop()
+                }
+                is StopEvent -> {
+                    assertEquals(event3, previousEvent)
+                    stopLatch.countDown()
+                }
+            }
+        }.use {
+            it.start()
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+        }
+    }
+
+    @Test
+    fun `calling stop inside the stop event does not redeliver stop`() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        var startCount = 0
+        var stopCount = 0
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event, coordinator ->
+            when (event) {
+                is StartEvent -> {
+                    startCount++
+                    startLatch.countDown()
+                }
+                is StopEvent -> {
+                    // This could potentially re-trigger cleanup, which would redeliver all events so far.
+                    coordinator.stop()
+                    stopCount++
+                    stopLatch.countDown()
+                }
+            }
+        }.use {
+            it.start()
+            it.stop()
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            // For sanity
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(1, startCount)
+            assertEquals(1, stopCount)
+        }
+    }
+
+    @Test
+    fun `can handle exceptions being thrown when processing the start or stop event`() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        val exceptionLatch = CountDownLatch(2)
+        val exception = Exception("A bad thing happened")
+        var startCount = 0
+        var stopCount = 0
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startCount++
+                    startLatch.countDown()
+                    throw exception
+                }
+                is ErrorEvent -> {
+                    event.isHandled = true
+                    assertEquals(exception, event.cause)
+                    exceptionLatch.countDown()
+                }
+                is StopEvent -> {
+                    stopCount++
+                    stopLatch.countDown()
+                    throw exception
+                }
+            }
+        }.use {
+            it.start()
+            it.stop()
+            assertTrue(exceptionLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(1, startCount)
+            assertEquals(1, stopCount)
+        }
+    }
 }
