@@ -99,11 +99,23 @@ class UtilsTest {
     fun `test events by batch, large batches unordered`() {
         val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
         for ((offset, i) in listOf(1, 2, 3, 1, 1, 2, 3, 3, 2).withIndex()) {
-            records.add(ConsumerRecordAndMeta("", ConsumerRecord("", 1, offset.toLong(), "key$i", "value$offset")))
+            records.add(ConsumerRecordAndMeta("", ConsumerRecord("", 1, offset.toLong(), "key$i", "$offset")))
         }
 
         val eventsByBatch  = getEventsByBatch(records)
         assertThat(eventsByBatch.size).isEqualTo(3)
+
+        val batchOne = eventsByBatch[0]
+        assertThat(batchOne.size).isEqualTo(3)
+        assertThat(batchOne[0].record.value()).isEqualTo("0")
+        assertThat(batchOne[1].record.value()).isEqualTo("1")
+        assertThat(batchOne[2].record.value()).isEqualTo("2")
+
+        val batchTwo = eventsByBatch[1]
+        assertThat(batchTwo.size).isEqualTo(3)
+        assertThat(batchTwo[0].record.value()).isEqualTo("3")
+        assertThat(batchTwo[1].record.value()).isEqualTo("5")
+        assertThat(batchTwo[2].record.value()).isEqualTo("6")
     }
 
     @Test
