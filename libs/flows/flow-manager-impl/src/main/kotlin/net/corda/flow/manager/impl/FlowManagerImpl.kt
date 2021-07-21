@@ -8,6 +8,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
 import net.corda.flow.statemachine.impl.FlowStateMachineImpl
+import net.corda.flow.statemachine.impl.TransientState
+import net.corda.flow.statemachine.impl.TransientValues
 import net.corda.internal.di.DependencyInjectionService
 import net.corda.sandbox.cache.FlowMetadata
 import net.corda.sandbox.cache.SandboxCache
@@ -21,7 +23,6 @@ import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Reference
 import java.time.Clock
-import java.util.concurrent.CompletableFuture
 
 data class FlowTopics(
     val flowEventTopic: String,
@@ -69,7 +70,7 @@ class FlowManagerImpl @Activate constructor(
             scheduler,
         )
 
-        stateMachine.transientState = FlowStateMachineImpl.TransientState(
+        stateMachine.transientState = TransientState(
             0,
             ourIdentity,
             false,
@@ -105,11 +106,8 @@ class FlowManagerImpl @Activate constructor(
     }
 
     private fun setupFlow(flow: FlowStateMachineImpl<*>) {
-        flow.transientValues = FlowStateMachineImpl.TransientValues<*>(
-            CompletableFuture(),
-            scheduler,
+        flow.transientValues = TransientValues(
             checkpointSerialisationService,
-            dependencyInjector,
             Clock.systemUTC()
         )
         dependencyInjector.injectDependencies(flow.logic, flow)

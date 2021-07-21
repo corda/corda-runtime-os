@@ -11,7 +11,6 @@ import net.corda.v5.application.identity.Party
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 
 
 /**
@@ -34,7 +33,6 @@ data class FlowStackSnapshot(
 interface FlowStateMachineHandle<FLOWRETURN> {
     val logic: Flow<FLOWRETURN>?
     val id: FlowKey
-    val resultFuture: CompletableFuture<FLOWRETURN>
     val clientId: String?
 }
 
