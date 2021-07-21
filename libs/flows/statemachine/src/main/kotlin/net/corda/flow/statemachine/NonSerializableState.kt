@@ -9,7 +9,7 @@ import net.corda.v5.application.services.serialization.SerializationService
 import java.time.Clock
 import java.util.concurrent.CompletableFuture
 
-data class TransientValues(
+data class NonSerializableState(
     val checkpointSerializationService: SerializationService,
     val clock: Clock
 ) : KryoSerializable {
@@ -17,10 +17,10 @@ data class TransientValues(
     val eventsOut = mutableListOf<FlowEvent>()
 
     override fun write(kryo: Kryo?, output: Output?) {
-        throw IllegalStateException("${TransientValues::class.qualifiedName} should never be serialized")
+        throw IllegalStateException("${NonSerializableState::class.qualifiedName} should never be serialized")
     }
 
     override fun read(kryo: Kryo?, input: Input?) {
-        throw IllegalStateException("${TransientValues::class.qualifiedName} should never be deserialized")
+        throw IllegalStateException("${NonSerializableState::class.qualifiedName} should never be deserialized")
     }
 }
