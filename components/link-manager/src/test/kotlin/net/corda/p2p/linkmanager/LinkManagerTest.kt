@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager
 
-import com.nhaarman.mockito_kotlin.any
+import org.mockito.kotlin.any
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
