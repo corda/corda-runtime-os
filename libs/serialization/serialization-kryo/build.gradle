@@ -1,0 +1,27 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    implementation "net.corda:corda-application:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-crypto-impl:$cordaVersion"
+    implementation "net.corda:corda-serialization:$cordaVersion"
+    implementation "net.corda:corda-serialization-internal:$cordaVersion"
+
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation "com.esotericsoftware:kryo:$kryoVersion"
+    implementation "de.javakaffee:kryo-serializers:$kryoSerializerVersion"
+
+    testImplementation "org.osgi:osgi.core:$osgiVersion"
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
+    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
+}
