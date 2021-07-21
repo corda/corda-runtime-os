@@ -2,13 +2,7 @@ package net.corda.flow.statemachine.impl
 
 
 import co.paralleluniverse.fibers.Fiber
-import co.paralleluniverse.fibers.FiberExecutorScheduler
 import co.paralleluniverse.fibers.FiberScheduler
-import co.paralleluniverse.strands.Strand
-import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.KryoSerializable
-import com.esotericsoftware.kryo.io.Input
-import com.esotericsoftware.kryo.io.Output
 import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowError
@@ -18,83 +12,32 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.flow.statemachine.FlowIORequest
 import net.corda.flow.statemachine.FlowStateMachine
-import net.corda.internal.di.DependencyInjectionService
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.application.identity.Party
-import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.Try
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
-import net.corda.v5.serialization.SerializedBytes
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.slf4j.MDC
-import java.time.Clock
-import java.util.concurrent.CompletableFuture
 
 class TransientReference<out A>(@Transient val value: A)
 
 
-@Suppress("LongParameterList", "ForbiddenComment", "ComplexMethod", "TooGenericExceptionCaught")
+@Suppress("ForbiddenComment", "ComplexMethod", "TooGenericExceptionCaught")
 class FlowStateMachineImpl<R>(
     override val clientId: String?,
     override val id: FlowKey,
     override val logic: Flow<R>,
     val ourIdentity: Party,
-    scheduler: FiberScheduler,
-    val creationTime: Long = System.currentTimeMillis()
+    scheduler: FiberScheduler
 ) : Fiber<Unit>(id.toString(), scheduler), FlowStateMachine<R> {
 
     companion object {
-        /**
-         * Return the current [FlowStateMachineImpl] or null if executing outside of one.
-         */
-        fun currentStateMachine(): FlowStateMachineImpl<*>? = Strand.currentStrand() as? FlowStateMachineImpl<*>
-
-        private val log: Logger = LoggerFactory.getLogger("net.cordax.flow")
-
-        private val SERIALIZER_BLOCKER =
-            Fiber::class.java.getDeclaredField("SERIALIZER_BLOCKER").apply { isAccessible = true }.get(null)
-
-    }
-
-    data class TransientValues(
-        val resultFuture: CompletableFuture<Any?>,
-        val executor: FiberExecutorScheduler,
-        val checkpointSerializationService: SerializationService,
-        val dependencyInjectionService: DependencyInjectionService,
-        val clock: Clock
-    ) : KryoSerializable {
-        var suspended: SerializedBytes<FlowStateMachineImpl<*>>? = null
-        val eventsOut = mutableListOf<FlowEvent>()
-
-        override fun write(kryo: Kryo?, output: Output?) {
-            throw IllegalStateException("${TransientValues::class.qualifiedName} should never be serialized")
-        }
-
-        override fun read(kryo: Kryo?, input: Input?) {
-            throw IllegalStateException("${TransientValues::class.qualifiedName} should never be deserialized")
-        }
-    }
-
-    data class TransientState(
-        val suspendCount: Int,
-        val ourIdentity: Party,
-        val isKilled: Boolean,
-//        val sessions: MutableMap<Trace.SessionId, FlowSessionImpl>,
-//        val subFlows: MutableList<SubFlow>,
-        val eventQueue: MutableList<FlowEvent>
-    ) : KryoSerializable {
-        override fun write(kryo: Kryo?, output: Output?) {
-            throw IllegalStateException("${TransientState::class.qualifiedName} should never be serialized")
-        }
-
-        override fun read(kryo: Kryo?, input: Input?) {
-            throw IllegalStateException("${TransientState::class.qualifiedName} should never be deserialized")
-        }
+        private val log: Logger = contextLogger()
     }
 
     private var transientValuesReference: TransientReference<TransientValues>? = null
@@ -115,9 +58,7 @@ class FlowStateMachineImpl<R>(
         }
 
     val isKilled: Boolean get() = transientState.isKilled
-    val serializationService: SerializationService get() = transientValues.checkpointSerializationService
-    override val resultFuture: CompletableFuture<R> get() = uncheckedCast(transientValues.resultFuture)
-    private val logger = log
+    val creationTime: Long = System.currentTimeMillis()
 
     private fun setLoggingContext() {
         MDC.put("flow-id", id.flowId)
@@ -128,30 +69,18 @@ class FlowStateMachineImpl<R>(
     private fun Throwable.isUnrecoverable(): Boolean = this is VirtualMachineError && this !is StackOverflowError
 
     private fun logFlowError(throwable: Throwable) {
-        logger.warn("Flow raised an error: ${throwable.message}. Sending it to flow hospital to be triaged.")
-    }
-
-    @Suspendable
-    private fun initialiseFlow() {
-
+        log.warn("Flow raised an error: ${throwable.message}. Sending it to flow hospital to be triaged.")
     }
 
     @Suspendable
     override fun run() {
         setLoggingContext()
-
-        logger.debug { "Calling flow: $logic" }
+        log.debug { "Calling flow: $logic" }
         val resultOrError = try {
-
-            initialiseFlow()
-
             //TODO: we might need the sandbox class loader
             Thread.currentThread().contextClassLoader = logic.javaClass.classLoader
-
             suspend(FlowIORequest.ForceCheckpoint)
-
             val result = logic.call()
-
             Try.Success(result)
         } catch (t: Throwable) {
             if (t.isUnrecoverable()) {
@@ -165,10 +94,9 @@ class FlowStateMachineImpl<R>(
             Try.Failure(t)
         }
 
-        logger.info("flow ended $id")
+        log.info("flow ended $id")
         when (resultOrError) {
             is Try.Success -> {
-                transientValues.resultFuture.complete(resultOrError.value)
                 val clientId = clientId
                 if (clientId != null) {
                     transientValues.eventsOut += FlowEvent(
@@ -184,7 +112,6 @@ class FlowStateMachineImpl<R>(
                 }
             }
             is Try.Failure -> {
-                transientValues.resultFuture.completeExceptionally(resultOrError.exception)
                 val clientId = clientId
                 if (clientId != null) {
                     transientValues.eventsOut += FlowEvent(
@@ -230,7 +157,7 @@ class FlowStateMachineImpl<R>(
             }
             parkAndSerialize { _, _ ->
                 val fiberState = transientValues.checkpointSerializationService.serialize(this)
-                transientValues.suspended = fiberState
+                transientValues.suspended = uncheckedCast(fiberState)
             }
             setLoggingContext()
         }
