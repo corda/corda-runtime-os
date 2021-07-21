@@ -18,7 +18,6 @@ dependencies {
     implementation "net.corda:corda-install:$cordaVersion"
     implementation "net.corda:corda-packaging:$cordaVersion"
     implementation "net.corda:corda-sandbox:$cordaVersion"
-    implementation "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
     implementation project(":libs:lifecycle")
     implementation project(":osgi-framework-api")
