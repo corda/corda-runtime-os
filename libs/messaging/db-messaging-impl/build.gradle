@@ -18,9 +18,7 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
-    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
-        exclude group: 'mockito-core'
-    }
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "net.corda:corda-test-common:$cordaTestCommonVersion"
 
     integrationTestImplementation "com.h2database:h2:$h2Version"

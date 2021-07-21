@@ -1,7 +1,6 @@
 package net.corda.messaging.db.performance
 
 import com.codahale.metrics.MetricRegistry
-import com.nhaarman.mockito_kotlin.anyOrNull
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
@@ -27,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
+import org.mockito.kotlin.anyOrNull
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.sql.DriverManager
