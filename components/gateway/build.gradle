@@ -14,7 +14,6 @@ dependencies {
     implementation project(":data:topic-schema")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "io.reactivex:rxjava:$rxjavaVersion"
     implementation "io.netty:netty-transport:$nettyVersion"
     implementation "io.netty:netty-codec-http:$nettyVersion"
     implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
@@ -31,6 +30,7 @@ dependencies {
     testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
     }
+    testImplementation "io.reactivex:rxjava:$rxjavaVersion"
 
     testImplementation project(":libs:messaging:inmemory-messaging-impl")
 }

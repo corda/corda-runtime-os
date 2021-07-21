@@ -17,7 +17,9 @@ import java.lang.IllegalStateException
 import java.net.BindException
 import java.net.SocketAddress
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 import java.util.concurrent.Flow
+import java.util.concurrent.SubmissionPublisher
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.KeyManagerFactory
 import kotlin.concurrent.withLock
@@ -48,8 +50,8 @@ class HttpServer(private val host: String, private val port: Int, private val ss
     }
 
     private val lock = ReentrantLock()
-    private var connectionEventNotifier: HttpConnectionEventPublisher? = null
-    private var messageNotifier: HttpMessagePublisher? = null
+    private val connectionEventNotifier = SubmissionPublisher<ConnectionChangeEvent>(Executors.newSingleThreadExecutor(), 100)
+    private val messageNotifier = SubmissionPublisher<HttpMessage>(Executors.newSingleThreadExecutor(), 100)
     private var bossGroup: EventLoopGroup? = null
     private var workerGroup: EventLoopGroup? = null
     private var serverChannel: Channel? = null
@@ -65,8 +67,6 @@ class HttpServer(private val host: String, private val port: Int, private val ss
     override fun start() {
         lock.withLock {
             logger.info("Starting HTTP Server")
-            connectionEventNotifier = HttpConnectionEventPublisher()
-            messageNotifier = HttpMessagePublisher()
             bossGroup = NioEventLoopGroup(1)
             workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS)
 
@@ -86,6 +86,9 @@ class HttpServer(private val host: String, private val port: Int, private val ss
         lock.withLock {
             try {
                 logger.info("Stopping HTTP server")
+                messageNotifier.close()
+                connectionEventNotifier.close()
+
                 serverChannel?.apply { close() }
                 serverChannel = null
 
@@ -97,12 +100,6 @@ class HttpServer(private val host: String, private val port: Int, private val ss
 
                 workerGroup = null
                 bossGroup = null
-
-                messageNotifier?.close()
-                messageNotifier = null
-
-                connectionEventNotifier?.close()
-                connectionEventNotifier = null
             } finally {
                 started = false
                 logger.info("HTTP server stopped")
@@ -111,11 +108,11 @@ class HttpServer(private val host: String, private val port: Int, private val ss
     }
 
     fun registerMessageSubscriber(subscriber: Flow.Subscriber<HttpMessage>) {
-        messageNotifier?.subscribe(subscriber)
+        messageNotifier.subscribe(subscriber)
     }
 
     fun registerConnectionEventSubscriber(subscriber: Flow.Subscriber<ConnectionChangeEvent>) {
-        connectionEventNotifier?.subscribe(subscriber)
+        connectionEventNotifier.subscribe(subscriber)
     }
 
     /**
@@ -158,7 +155,8 @@ class HttpServer(private val host: String, private val port: Int, private val ss
                 onOpen = { channel, change ->
                     parent.run {
                         clientChannels[channel.remoteAddress()] = channel
-                        connectionEventNotifier?.offer(change) { subscriber: Flow.Subscriber<in ConnectionChangeEvent>, event: ConnectionChangeEvent ->
+                        connectionEventNotifier .offer(change) { subscriber: Flow.Subscriber<in ConnectionChangeEvent>,
+                                                                 event: ConnectionChangeEvent ->
                             subscriber.onError(RuntimeException("Event $event dropped"))
                             true
                         }
@@ -167,14 +165,16 @@ class HttpServer(private val host: String, private val port: Int, private val ss
                 onClose = { channel, change ->
                     parent.run {
                         clientChannels.remove(channel.remoteAddress())
-                        connectionEventNotifier?.offer(change) { subscriber: Flow.Subscriber<in ConnectionChangeEvent>, event: ConnectionChangeEvent ->
+                        connectionEventNotifier.offer(change) { subscriber: Flow.Subscriber<in ConnectionChangeEvent>,
+                                                                event: ConnectionChangeEvent ->
                             subscriber.onError(RuntimeException("Event $event dropped"))
                             true
                         }
                     }
                 },
                 onReceive = { msg ->
-                    parent.messageNotifier?.offer(msg) { subscriber: Flow.Subscriber<in HttpMessage>, message: HttpMessage ->
+                    parent.messageNotifier.offer(msg) { subscriber: Flow.Subscriber<in HttpMessage>,
+                                                        message: HttpMessage ->
                         subscriber.onError(java.lang.RuntimeException("Message $message dropped"))
                         true
                     }

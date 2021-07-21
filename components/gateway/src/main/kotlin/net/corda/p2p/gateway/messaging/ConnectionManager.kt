@@ -6,12 +6,14 @@ import io.netty.channel.ConnectTimeoutException
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.lifecycle.LifeCycle
+import net.corda.p2p.gateway.messaging.http.ConnectionChangeEvent
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import org.slf4j.LoggerFactory
 import java.lang.NullPointerException
 import java.net.SocketAddress
 import java.net.URI
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Flow
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.stream.Collectors
@@ -99,14 +101,9 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
             logger.info("Creating new connection to ${target.authority}")
             val client = HttpClient(target, sslConfiguration, sharedEventLoopGroup)
             val connectionLock = CountDownLatch(1)
-            val connectionSub = client.onConnection.subscribe { evt ->
-                if (evt.connected) {
-                    connectionLock.countDown()
-                }
-            }
+            client.registerConnectionEventSubscriber(ConnectionHandler(connectionLock))
             client.start()
             val connected = connectionLock.await(config.acquireTimeout, TimeUnit.MILLISECONDS)
-            connectionSub.unsubscribe()
             if (!connected) {
                 throw ConnectTimeoutException("Could not acquire connection to ${target.authority} " +
                         "in ${config.acquireTimeout} milliseconds")
@@ -153,6 +150,33 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
             .entries
             .filter { e -> e.key == remoteAddress && e.value?.connected!! }
             .size
+
+    private class ConnectionHandler(private val latch: CountDownLatch) : Flow.Subscriber<ConnectionChangeEvent> {
+        private lateinit var subscription: Flow.Subscription
+
+        override fun onSubscribe(subscription: Flow.Subscription) {
+            this.subscription = subscription
+            subscription.request(1)
+        }
+
+        override fun onNext(item: ConnectionChangeEvent) {
+            if (item.connected)  {
+                latch.countDown()
+            }
+            // One shot subscription
+            subscription.cancel()
+        }
+
+        override fun onError(throwable: Throwable) {
+            logger.error(throwable.toString())
+            logger.debug(throwable.stackTraceToString())
+        }
+
+        override fun onComplete() {
+            logger.warn("Error occurred at the transport layer. No more messages will be received")
+
+        }
+    }
 }
 
 data class ConnectionManagerConfig(val connectionPoolSize: Long, val acquireTimeout: Long, val maxIdleTime: Long)

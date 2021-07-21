@@ -1,15 +1,12 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
-import net.corda.p2p.LinkInMessage
-import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.FileInputStream
 import java.net.URI
-import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.time.Instant
 import java.util.Arrays
@@ -59,17 +56,31 @@ class HttpTest {
             server.start()
             HttpClient(serverAddress, sslConfiguration).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
-                client.onConnection.subscribe {
-                    if (it.connected) {
-                        client.send(clientMessageContent.toByteArray(Charsets.UTF_8))
+                client.registerConnectionEventSubscriber(object : Flow.Subscriber<ConnectionChangeEvent> {
+                    override fun onSubscribe(subscription: Flow.Subscription) {
+                        subscription.request(1)
                     }
-                }
+                    override fun onNext(item: ConnectionChangeEvent) {
+                        if (item.connected) {
+                            client.send(clientMessageContent.toByteArray(Charsets.UTF_8))
+                        }
+                    }
+                    override fun onError(throwable: Throwable?) = Unit
+                    override fun onComplete() = Unit
+                })
                 var responseReceived = false
-                client.onReceive.subscribe {
-                    assertEquals(serverResponseContent, String(it.payload))
-                    responseReceived = true
-                    clientReceivedResponses.countDown()
-                }
+                client.registerMessageSubscriber(object : Flow.Subscriber<HttpMessage> {
+                    override fun onSubscribe(subscription: Flow.Subscription) {
+                        subscription.request(1)
+                    }
+                    override fun onNext(item: HttpMessage) {
+                        assertEquals(serverResponseContent, String(item.payload))
+                        responseReceived = true
+                        clientReceivedResponses.countDown()
+                    }
+                    override fun onError(throwable: Throwable?) = Unit
+                    override fun onComplete() = Unit
+                })
                 client.start()
                 clientReceivedResponses.await(5, TimeUnit.SECONDS)
                 assertTrue(responseReceived)
@@ -91,13 +102,11 @@ class HttpTest {
                     sub = subscription
                     subscription.request(1)
                 }
-
                 override fun onNext(item: HttpMessage) {
                     assertEquals(clientMessageContent, String(item.payload))
                     server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), item.source)
                     sub?.request(1)
                 }
-
                 override fun onError(throwable: Throwable?) = Unit
                 override fun onComplete() = Unit
             })
@@ -110,21 +119,42 @@ class HttpTest {
                     val httpClient = HttpClient(serverAddress, sslConfiguration)
                     val clientReceivedResponses = CountDownLatch(requestNo)
                     httpClient.use {
-                        httpClient.onReceive.subscribe {
-                            assertEquals(serverResponseContent, String(it.payload))
-                            clientReceivedResponses.countDown()
-                        }
-                        httpClient.onConnection.subscribe {
-                            if (it.connected) {
-                                startTime = Instant.now().toEpochMilli()
-                                repeat(requestNo) {
-                                    httpClient.send(clientMessageContent.toByteArray(Charsets.UTF_8))
+                        httpClient.registerMessageSubscriber(object : Flow.Subscriber<HttpMessage> {
+                            private lateinit var subscription: Flow.Subscription
+                            override fun onSubscribe(subscription: Flow.Subscription) {
+                                this.subscription = subscription
+                                subscription.request(1)
+                            }
+                            override fun onNext(item: HttpMessage) {
+                                assertEquals(serverResponseContent, String(item.payload))
+                                clientReceivedResponses.countDown()
+                                subscription.request(1)
+                            }
+                            override fun onError(throwable: Throwable?) = Unit
+                            override fun onComplete() = Unit
+                        })
+
+                        httpClient.registerConnectionEventSubscriber(object : Flow.Subscriber<ConnectionChangeEvent> {
+                            private lateinit var subscription: Flow.Subscription
+                            override fun onSubscribe(subscription: Flow.Subscription) {
+                                this.subscription = subscription
+                                subscription.request(1)
+                            }
+                            override fun onNext(item: ConnectionChangeEvent) {
+                                if (item.connected) {
+                                    startTime = Instant.now().toEpochMilli()
+                                    repeat(requestNo) {
+                                        httpClient.send(clientMessageContent.toByteArray(Charsets.UTF_8))
+                                    }
+                                    subscription.request(1)
+                                }
+                                if (!item.connected) {
+                                    endTime = Instant.now().toEpochMilli()
                                 }
                             }
-                            if (!it.connected) {
-                                endTime = Instant.now().toEpochMilli()
-                            }
-                        }
+                            override fun onError(throwable: Throwable?) = Unit
+                            override fun onComplete() = Unit
+                        })
                         httpClient.start()
                         clientReceivedResponses.await()
                     }
@@ -165,17 +195,31 @@ class HttpTest {
             server.start()
             HttpClient(serverAddress, sslConfiguration).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
-                client.onConnection.subscribe {
-                    if (it.connected) {
-                        client.send(hugePayload)
+                client.registerConnectionEventSubscriber(object : Flow.Subscriber<ConnectionChangeEvent> {
+                    override fun onSubscribe(subscription: Flow.Subscription) {
+                        subscription.request(1)
                     }
-                }
+                    override fun onNext(item: ConnectionChangeEvent) {
+                        if (item.connected) {
+                            client.send(hugePayload)
+                        }
+                    }
+                    override fun onError(throwable: Throwable?) = Unit
+                    override fun onComplete() = Unit
+                })
                 var responseReceived = false
-                client.onReceive.subscribe {
-                    assertEquals(serverResponseContent, String(it.payload))
-                    responseReceived = true
-                    clientReceivedResponses.countDown()
-                }
+                client.registerMessageSubscriber(object : Flow.Subscriber<HttpMessage> {
+                    override fun onSubscribe(subscription: Flow.Subscription) {
+                        subscription.request(1)
+                    }
+                    override fun onNext(item: HttpMessage) {
+                        assertEquals(serverResponseContent, String(item.payload))
+                        responseReceived = true
+                        clientReceivedResponses.countDown()
+                    }
+                    override fun onError(throwable: Throwable?) = Unit
+                    override fun onComplete() = Unit
+                })
                 client.start()
                 clientReceivedResponses.await()
                 assertTrue(responseReceived)

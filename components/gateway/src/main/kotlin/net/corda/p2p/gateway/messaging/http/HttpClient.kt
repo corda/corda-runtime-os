@@ -13,12 +13,13 @@ import io.netty.handler.codec.http.HttpContentDecompressor
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.slf4j.LoggerFactory
-import rx.Observable
-import rx.subjects.PublishSubject
 import java.lang.IllegalStateException
 import java.net.URI
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509CertSelector
+import java.util.concurrent.Executors
+import java.util.concurrent.Flow
+import java.util.concurrent.SubmissionPublisher
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.CertPathTrustManagerParameters
 import javax.net.ssl.TrustManagerFactory
@@ -59,16 +60,11 @@ class HttpClient(private val destination: URI,
     @Volatile
     private var clientChannel: Channel? = null
 
+    private var connectionEventNotifier = SubmissionPublisher<ConnectionChangeEvent>(Executors.newSingleThreadExecutor(), 100)
+    private var messageNotifier = SubmissionPublisher<HttpMessage>(Executors.newSingleThreadExecutor(), 100)
+
     override val isRunning: Boolean
         get() = started
-
-    private val _onReceive = PublishSubject.create<HttpMessage>().toSerialized()
-    val onReceive: Observable<HttpMessage>
-        get() = _onReceive
-
-    private val _onConnection = PublishSubject.create<ConnectionChangeEvent>().toSerialized()
-    val onConnection: Observable<ConnectionChangeEvent>
-        get() = _onConnection
 
     private val connectListener = ChannelFutureListener { future ->
         if (!future.isSuccess) {
@@ -105,6 +101,12 @@ class HttpClient(private val destination: URI,
         lock.withLock {
             logger.info("Stopping connection to ${destination.authority}")
             started = false
+
+            // Feels like I should close these but there are errors thrown because the channel might still
+            // be active for a while after. Maybe should check if subscriptions are closed before doing offer()
+//            connectionEventNotifier.close()
+//            messageNotifier.close()
+
             if (sharedThreadPool == null) {
                 workerGroup?.shutdownGracefully()
                 workerGroup?.terminationFuture()?.sync()
@@ -113,8 +115,17 @@ class HttpClient(private val destination: URI,
             clientChannel?.close()
             clientChannel = null
             workerGroup = null
+
             logger.info("Stopped connection to ${destination.authority}")
         }
+    }
+
+    fun registerMessageSubscriber(subscriber: Flow.Subscriber<HttpMessage>) {
+        messageNotifier.subscribe(subscriber)
+    }
+
+    fun registerConnectionEventSubscriber(subscriber: Flow.Subscriber<ConnectionChangeEvent>) {
+        connectionEventNotifier.subscribe(subscriber)
     }
 
     /**
@@ -169,10 +180,22 @@ class HttpClient(private val destination: URI,
             pipeline.addLast(HttpClientCodec())
             pipeline.addLast(HttpContentDecompressor())
             httpChannelHandler = HttpChannelHandler(
-                onOpen = { _, change -> parent._onConnection.onNext(change) },
-                onClose = { _, change -> parent._onConnection.onNext(change) },
-                onReceive = { rcv -> parent._onReceive.onNext(rcv) }
-            )
+                onOpen = { _, change -> parent.connectionEventNotifier
+                    .offer(change) { subscriber: Flow.Subscriber<in ConnectionChangeEvent>, event: ConnectionChangeEvent ->
+                        subscriber.onError(RuntimeException("Event $event dropped"))
+                        true
+                    } },
+                onClose = { _, change -> parent.connectionEventNotifier
+                    .offer(change) { subscriber: Flow.Subscriber<in ConnectionChangeEvent>, event: ConnectionChangeEvent ->
+                        subscriber.onError(RuntimeException("Event $event dropped"))
+                        true
+                    } },
+                onReceive = { rcv ->
+                    parent.messageNotifier.offer(rcv) { subscriber: Flow.Subscriber<in HttpMessage>, message: HttpMessage ->
+                        subscriber.onError(java.lang.RuntimeException("Message $message dropped"))
+                        true
+                    }
+                })
             pipeline.addLast(httpChannelHandler)
         }
     }

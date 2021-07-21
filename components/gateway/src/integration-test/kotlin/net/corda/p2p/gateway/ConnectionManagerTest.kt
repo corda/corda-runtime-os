@@ -59,10 +59,18 @@ class ConnectionManagerTest {
             manager.acquire(URI.create(serverAddresses.first().toString())).use { client ->
                 // Client is connected at this point
                 val responseReceived = CountDownLatch(1)
-                client.onReceive.subscribe {
-                    assertEquals(serverResponseContent, String(it.payload))
-                    responseReceived.countDown()
-                }
+                client.registerMessageSubscriber(object : Flow.Subscriber<HttpMessage> {
+                    override fun onSubscribe(subscription: Flow.Subscription) {
+                        subscription.request(1)
+                    }
+                    override fun onNext(item: HttpMessage) {
+                        assertEquals(serverResponseContent, String(item.payload))
+                        responseReceived.countDown()
+                    }
+                    override fun onError(throwable: Throwable) = Unit
+                    override fun onComplete() = Unit
+                })
+
                 client.send(clientMessageContent.toByteArray())
                 responseReceived.await()
             }

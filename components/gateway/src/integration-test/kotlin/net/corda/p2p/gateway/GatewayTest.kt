@@ -13,6 +13,7 @@ import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.http.ConnectionChangeEvent
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
@@ -79,17 +80,31 @@ class GatewayTest {
             HttpClient(serverAddress, sslConfiguration).use { client->
                 client.start()
                 val responseReceived = CountDownLatch(1)
-                client.onConnection.subscribe { evt ->
-                    if (evt.connected) {
-                        client.send(message.toByteBuffer().array())
+                client.registerConnectionEventSubscriber(object : Flow.Subscriber<ConnectionChangeEvent> {
+                    override fun onSubscribe(subscription: Flow.Subscription) {
+                        subscription.request(1)
                     }
-                }
-                client.onReceive.subscribe { msg ->
-                    assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port) as SocketAddress, msg.source)
-                    assertEquals(HttpResponseStatus.OK, msg.statusCode)
-                    assertTrue(msg.payload.isEmpty())
-                    responseReceived.countDown()
-                }
+                    override fun onNext(item: ConnectionChangeEvent) {
+                        if (item.connected) {
+                            client.send(message.toByteBuffer().array())
+                        }
+                    }
+                    override fun onError(throwable: Throwable?) = Unit
+                    override fun onComplete() = Unit
+                })
+                client.registerMessageSubscriber(object : Flow.Subscriber<HttpMessage> {
+                    override fun onSubscribe(subscription: Flow.Subscription) {
+                        subscription.request(1)
+                    }
+                    override fun onNext(item: HttpMessage) {
+                        assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port) as SocketAddress, item.source)
+                        assertEquals(HttpResponseStatus.OK, item.statusCode)
+                        assertTrue(item.payload.isEmpty())
+                        responseReceived.countDown()
+                    }
+                    override fun onError(throwable: Throwable?) = Unit
+                    override fun onComplete() = Unit
+                })
                 responseReceived.await()
             }
         }
@@ -119,18 +134,32 @@ class GatewayTest {
             val responseReceived = CountDownLatch(clientNumber)
             repeat(clientNumber) { index ->
                 val client = HttpClient(serverAddress, sslConfiguration, threadPool)
-                client.onConnection.subscribe { evt ->
-                    if (evt.connected) {
-                        val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-${index + 1}"))
-                        client.send(p2pOutMessage.toByteBuffer().array())
+                client.registerConnectionEventSubscriber(object : Flow.Subscriber<ConnectionChangeEvent> {
+                    override fun onSubscribe(subscription: Flow.Subscription) {
+                        subscription.request(1)
                     }
-                }
-                client.onReceive.subscribe { msg ->
-                    assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port) as SocketAddress, msg.source)
-                    assertEquals(HttpResponseStatus.OK, msg.statusCode)
-                    assertTrue(msg.payload.isEmpty())
-                    responseReceived.countDown()
-                }
+                    override fun onNext(item: ConnectionChangeEvent) {
+                        if (item.connected) {
+                            val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-${index + 1}"))
+                            client.send(p2pOutMessage.toByteBuffer().array())
+                        }
+                    }
+                    override fun onError(throwable: Throwable?) = Unit
+                    override fun onComplete() = Unit
+                })
+                client.registerMessageSubscriber(object : Flow.Subscriber<HttpMessage> {
+                    override fun onSubscribe(subscription: Flow.Subscription) {
+                        subscription.request(1)
+                    }
+                    override fun onNext(item: HttpMessage) {
+                        assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port) as SocketAddress, item.source)
+                        assertEquals(HttpResponseStatus.OK, item.statusCode)
+                        assertTrue(item.payload.isEmpty())
+                        responseReceived.countDown()
+                    }
+                    override fun onError(throwable: Throwable?) = Unit
+                    override fun onComplete() = Unit
+                })
                 client.start()
                 clients.add(client)
             }

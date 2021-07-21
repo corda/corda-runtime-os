@@ -22,6 +22,7 @@ import java.nio.ByteBuffer
 import java.util.LinkedList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.Flow
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -63,10 +64,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                     entry.value.forEach { message ->
                         try {
                             val responseBarrier = CountDownLatch(1)
-                            val responseSub = client.onReceive.subscribe { response ->
-                                responseMessageHandler(response)
-                                responseBarrier.countDown()
-                            }
+                            client.registerMessageSubscriber(ResponseHandler(this, responseBarrier))
                             client.send(message.toByteBuffer().array())
                             if (!responseBarrier.await(1000, TimeUnit.MILLISECONDS)) {
                                 logger.info("Response from ${entry.key} has not arrived in time. Scheduling for re-send")
@@ -74,7 +72,6 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                                 // is queued for redelivery
                                 messagesToRetry.add(message)
                             }
-                            responseSub.unsubscribe()
                         } catch (e: IllegalStateException) {
                             logger.warn("Could not send message to target ${entry.key}. Scheduling for re-send", e)
                             messagesToRetry.add(message)
@@ -101,23 +98,15 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
     @Suppress("TooGenericExceptionCaught")
     private fun resend(target: URI, messages: LinkedList<LinkInMessage>) {
         logger.debug("Retrying delivery of message to $target. No of messages to retry ${messages.size}")
-        var successCounter = 0
         messages.forEach { message ->
             try {
                 val client = connectionPool.acquire(target)
                 val responseBarrier = CountDownLatch(1)
-                val responseSub = client.onReceive.subscribe { response ->
-                    responseMessageHandler(response)
-                    successCounter++
-                    responseBarrier.countDown()
-                }
+                client.registerMessageSubscriber(ResponseHandler(this, responseBarrier))
                 client.send(message.toByteBuffer().array())
                 responseBarrier.await(1000, TimeUnit.MILLISECONDS)
-                responseSub.unsubscribe()
             } catch (e: Exception) {
                 logger.warn("Could not re-send message to $target", e)
-            } finally {
-                logger.info("Successfully re-delivered $successCounter out of ${messages.size} messages to $target")
             }
         }
     }
@@ -127,7 +116,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
      * as an indication of successful receipt on the other end. In case of a session request message, the response will
      * contain information which then needs to be forwarded to the LinkManager
      */
-    private fun responseMessageHandler(message: HttpMessage) {
+    fun responseMessageHandler(message: HttpMessage) {
         logger.debug("Processing response message from ${message.source} with status $${message.statusCode}")
         if (HttpResponseStatus.OK == message.statusCode) {
             // response messages should have empty payloads unless they are part of the initial session handshake
@@ -144,6 +133,34 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
             }
         } else {
             logger.warn("Something went wrong with peer processing an outbound message. Peer response status ${message.statusCode}")
+        }
+    }
+
+    private class ResponseHandler(private val parent: OutboundMessageHandler,
+                                  private val latch: CountDownLatch) : Flow.Subscriber<HttpMessage> {
+
+        private lateinit var subscription: Flow.Subscription
+
+        override fun onSubscribe(subscription: Flow.Subscription) {
+            this.subscription = subscription
+            subscription.request(1)
+        }
+
+        override fun onNext(item: HttpMessage) {
+            parent.responseMessageHandler(item)
+            latch.countDown()
+            // One shot subscription
+            subscription.cancel()
+        }
+
+        override fun onError(throwable: Throwable) {
+            logger.error(throwable.toString())
+            logger.debug(throwable.stackTraceToString())
+        }
+
+        override fun onComplete() {
+            logger.warn("Error occurred at the transport layer. No more messages will be received")
+
         }
     }
 
