@@ -15,6 +15,8 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdenti
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toNetworkType
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.MemberInfo
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.NetworkType
+import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
+import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import net.corda.p2p.payload.FlowMessage
 import net.corda.p2p.payload.FlowMessageAndKey
 import net.corda.p2p.payload.HoldingIdentity
@@ -110,7 +112,7 @@ class MessageConverter {
             return createLinkOutMessage(result, destMemberInfo, networkType)
         }
 
-        fun extractPayload(session: Session, sessionId: String, message: Any): LinkManagerPayload? {
+        fun extractPayload(session: Session, sessionId: String, message: DataMessage): LinkManagerPayload? {
             val sessionAndMessage = SessionAndMessage.create(session, sessionId, message) ?: return null
             return when (sessionAndMessage) {
                 is SessionAndMessage.Authenticated -> extractPayloadFromAuthenticatedMessage(sessionAndMessage)

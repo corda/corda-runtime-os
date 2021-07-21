@@ -11,12 +11,14 @@ import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
 import net.corda.p2p.SessionPartitions
 import net.corda.p2p.crypto.AuthenticatedDataMessage
+import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromFlowMessageAndKey
@@ -40,12 +42,12 @@ import net.corda.p2p.schema.Schema.Companion.P2P_OUT_MARKERS
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
@@ -169,8 +171,17 @@ class LinkManagerTest {
         return LinkInMessage(session.generateInitiatorHello())
     }
 
-    fun extractPayload(session: Session, message: LinkOutMessage): ByteBuffer {
-        val payload = MessageConverter.extractPayload(session, "", message.payload)
+    private fun createDataMessage(message: LinkOutMessage): DataMessage {
+        return when (val payload = message.payload) {
+            is AuthenticatedDataMessage -> DataMessage.Authenticated(payload)
+            is AuthenticatedEncryptedDataMessage -> DataMessage.AuthenticatedAndEncrypted(payload)
+            else -> fail("Tried to create a DataMessage from a LinkOutMessage which doesn't contain a AVRO data message.")
+        }
+    }
+
+    private fun extractPayload(session: Session, message: LinkOutMessage): ByteBuffer {
+        val dataMessage = createDataMessage(message)
+        val payload = MessageConverter.extractPayload(session, "", dataMessage)
         return (payload?.content as FlowMessageAndKey).flowMessage.payload
     }
 
@@ -455,13 +466,13 @@ class LinkManagerTest {
                 }
                 is LinkOutMessage -> {
                     assertEquals(LINK_OUT_TOPIC, record.topic)
-                    val linkManagerPayload = MessageConverter.extractPayload(session.initiatorSession, "sessionId", value.payload)
+                    val linkManagerPayload = MessageConverter.extractPayload(session.initiatorSession, "sessionId", createDataMessage(value))
                     assertTrue(linkManagerPayload!!.content is MessageAck)
                     assertEquals(messageId, (linkManagerPayload.content as MessageAck).messageId)
                 }
                 else -> {
-                    Assertions.fail("Inbound message processor should only produce records with " +
-                        "${FlowMessage::class.java} and ${LinkOutMessage::class.java}")
+                    fail("Inbound message processor should only produce records with ${FlowMessage::class.java} and " +
+                        "${LinkOutMessage::class.java}")
                 }
             }
         }

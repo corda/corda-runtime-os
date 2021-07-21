@@ -19,6 +19,7 @@ import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromFlowMessageAndKey
@@ -137,18 +138,18 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun processEvent(event: EventLogRecord<ByteBuffer, FlowMessage>): List<Record<String, *>> {
-            val flowMessageAndKey = FlowMessageAndKey(event.value, event.key)
-            val value = event.value
-            if (value == null) {
+            val message = event.value
+            if (message == null) {
                 logger.error("Received null message. The message was discarded.")
                 return emptyList()
             }
+            val flowMessageAndKey = FlowMessageAndKey(message, event.key)
 
             return when (val state = sessionManager.processOutboundFlowMessage(flowMessageAndKey)) {
                 is SessionState.NewSessionNeeded -> recordsForNewSession(state)
                 is SessionState.SessionEstablished -> recordsForSessionEstablished(state, flowMessageAndKey)
                 is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> emptyList()
-            } + makeMarker(event, value.header.messageId)
+            } + recordForMarker(event, message.header.messageId)
         }
 
         private fun recordsForNewSession(state: SessionState.NewSessionNeeded): List<Record<String, *>> {
@@ -169,7 +170,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return records
         }
 
-        private fun makeMarker(event: EventLogRecord<ByteBuffer, FlowMessage>, messageId: String): Record<String, FlowMessageMarker> {
+        private fun recordForMarker(event: EventLogRecord<ByteBuffer, FlowMessage>, messageId: String): Record<String, FlowMessageMarker> {
             val marker = FlowMessageMarker(LinkManagerSentMarker(event.partition.toLong(), event.offset))
             return Record(Schema.P2P_OUT_MARKERS, messageId, marker)
         }
@@ -189,8 +190,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     continue
                 }
                 records += when (val payload = message.payload) {
-                    is AuthenticatedDataMessage -> processDataMessage(payload.header.sessionId, payload)
-                    is AuthenticatedEncryptedDataMessage -> processDataMessage(payload.header.sessionId, payload)
+                    is AuthenticatedDataMessage -> processDataMessage(payload.header.sessionId, DataMessage.Authenticated(payload))
+                    is AuthenticatedEncryptedDataMessage -> processDataMessage(
+                        payload.header.sessionId,
+                        DataMessage.AuthenticatedAndEncrypted(payload)
+                    )
                     is ResponderHelloMessage, is ResponderHandshakeMessage,
                     is InitiatorHandshakeMessage, is Step2Message -> processSessionMessage(message)
                     else -> {
@@ -211,7 +215,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             }
         }
 
-        private fun processDataMessage(sessionId: String, message: Any): List<Record<*, *>> {
+        private fun processDataMessage(sessionId: String, message: DataMessage): List<Record<*, *>> {
             val session =  sessionManager.getInboundSession(sessionId)
             if (session == null) {
                 logger.warn("Received message with SessionId = $sessionId for which there is no active session." +
@@ -230,7 +234,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     makeAckMessageForFlowMessage(content.flowMessage, session)?.let { messages.add(it) }
                     messages
                 }
-                is MessageAck -> listOf(makeMarkerFromAckMessage(content))
+                is MessageAck -> listOf(makeMarkerForAckMessage(content))
                 else -> {
                     logger.error("Received message payload content type ${content::class.java.simpleName} that cannot be processed.")
                     emptyList()
@@ -250,7 +254,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             )
         }
 
-        private fun makeMarkerFromAckMessage(message: MessageAck): Record<String, FlowMessageMarker> {
+        private fun makeMarkerForAckMessage(message: MessageAck): Record<String, FlowMessageMarker> {
             return Record(Schema.P2P_OUT_MARKERS, message.messageId, FlowMessageMarker(LinkManagerReceivedMarker()))
         }
 

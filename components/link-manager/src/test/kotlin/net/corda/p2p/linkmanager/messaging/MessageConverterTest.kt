@@ -12,6 +12,7 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdenti
 import net.corda.p2p.linkmanager.LinkManagerTest
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.createSessionPair
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.flowMessageAndKey
+import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.payload.HoldingIdentity
 import org.junit.jupiter.api.AfterEach
