@@ -1,9 +1,9 @@
 package net.corda.sandbox.cache
 
+import net.corda.data.flow.FlowKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.install.InstallService
 import net.corda.packaging.Cpb
-import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.SandboxService
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -18,7 +18,6 @@ class SandboxCacheImpl @Activate constructor(
     private val installService: InstallService,
     @Reference
     private val sandboxService: SandboxService,
-    CPBs: List<Path>,
 ) : SandboxCache {
 
     private val cache = ConcurrentHashMap<HoldingIdentity, SandboxGroup>()
@@ -26,10 +25,12 @@ class SandboxCacheImpl @Activate constructor(
     /**
      * Given a flow, where do I go for the cpb (and sandbox)
      */
-    private val cpbForFlow = ConcurrentHashMap<FlowId, Cpb.Identifier>()
+    private val cpbForFlow = ConcurrentHashMap<FlowMetadata, Cpb.Identifier>()
 
     // This might need to go somewhere else...?
-    init {
+    override fun loadCpbs(
+        CPBs: List<Path>,
+    ) {
         for (cpbPath in CPBs) {
             // Can I assume this load has already happened?
             // Regardless I need the Cpb.Identifier
@@ -37,17 +38,14 @@ class SandboxCacheImpl @Activate constructor(
             val cpbEx = installService.getCpb(cpb.identifier)
             cpbEx?.cpks?.forEach { cpk ->
                 cpk.cordappManifest.flows.forEach { flow ->
-                    cpbForFlow.computeIfAbsent(FlowId(cpk.id, flow)) { cpb.identifier }
+                    // TODO: We don't know what to put for FlowKey here.  It might not belong in the key to the map.
+                    cpbForFlow.computeIfAbsent(FlowMetadata(cpk.id, flow, FlowKey())) { cpb.identifier }
                 }
             }
         }
     }
 
-    override fun getSandboxFor(identity: HoldingIdentity, flow: FlowId): Sandbox {
-        return getSandboxGroupFor(identity, flow).getSandbox(flow.cpkId)
-    }
-
-    private fun getSandboxGroupFor(identity: HoldingIdentity, flow: FlowId): SandboxGroup {
+    override fun getSandboxGroupFor(identity: HoldingIdentity, flow: FlowMetadata): SandboxGroup {
         return cache.computeIfAbsent(identity) {
             val cpb = cpbForFlow[flow]
                 ?: throw CordaRuntimeException("Flow not available in cordapp")

@@ -2,6 +2,7 @@ package net.corda.flow.statemachine.impl
 
 
 import co.paralleluniverse.fibers.Fiber
+import co.paralleluniverse.fibers.FiberExecutorScheduler
 import co.paralleluniverse.fibers.FiberScheduler
 import co.paralleluniverse.strands.Strand
 import com.esotericsoftware.kryo.Kryo
@@ -9,6 +10,7 @@ import com.esotericsoftware.kryo.KryoSerializable
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import net.corda.data.crypto.SecureHash
+import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowError
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.RPCFlowResult
@@ -32,7 +34,6 @@ import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import java.time.Clock
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ScheduledExecutorService
 
 class TransientReference<out A>(@Transient val value: A)
 
@@ -42,9 +43,9 @@ class FlowStateMachineImpl<R>(
     override val clientId: String?,
     override val id: FlowKey,
     override val logic: Flow<R>,
-    override val ourIdentity: Party,
+    val ourIdentity: Party,
     scheduler: FiberScheduler,
-    override val creationTime: Long = System.currentTimeMillis()
+    val creationTime: Long = System.currentTimeMillis()
 ) : Fiber<Unit>(id.toString(), scheduler), FlowStateMachine<R> {
 
     companion object {
@@ -62,12 +63,12 @@ class FlowStateMachineImpl<R>(
 
     data class TransientValues(
         val resultFuture: CompletableFuture<Any?>,
-        val executor: ScheduledExecutorService,
+        val executor: FiberExecutorScheduler,
         val checkpointSerializationService: SerializationService,
         val dependencyInjectionService: DependencyInjectionService,
         val clock: Clock
     ) : KryoSerializable {
-        var suspended: CompletableFuture<SerializedBytes<FlowStateMachineImpl<*>>?> = CompletableFuture()
+        var suspended: SerializedBytes<FlowStateMachineImpl<*>>? = null
         val eventsOut = mutableListOf<FlowEvent>()
 
         override fun write(kryo: Kryo?, output: Output?) {
@@ -88,16 +89,16 @@ class FlowStateMachineImpl<R>(
         val eventQueue: MutableList<FlowEvent>
     ) : KryoSerializable {
         override fun write(kryo: Kryo?, output: Output?) {
-            throw IllegalStateException("${TransientValues::class.qualifiedName} should never be serialized")
+            throw IllegalStateException("${TransientState::class.qualifiedName} should never be serialized")
         }
 
         override fun read(kryo: Kryo?, input: Input?) {
-            throw IllegalStateException("${TransientValues::class.qualifiedName} should never be deserialized")
+            throw IllegalStateException("${TransientState::class.qualifiedName} should never be deserialized")
         }
     }
 
     private var transientValuesReference: TransientReference<TransientValues>? = null
-    internal var transientValues: TransientValues
+    var transientValues: TransientValues
         // After the flow has been created, the transient values should never be null
         get() = transientValuesReference!!.value
         set(values) {
@@ -106,17 +107,17 @@ class FlowStateMachineImpl<R>(
         }
 
     private var transientStateReference: TransientReference<TransientState>? = null
-    internal var transientState: TransientState
+    var transientState: TransientState
         // After the flow has been created, the transient state should never be null
         get() = transientStateReference!!.value
         set(state) {
             transientStateReference = TransientReference(state)
         }
 
-    override val isKilled: Boolean get() = transientState.isKilled
-    override val serializationService: SerializationService get() = transientValues.checkpointSerializationService
+    val isKilled: Boolean get() = transientState.isKilled
+    val serializationService: SerializationService get() = transientValues.checkpointSerializationService
     override val resultFuture: CompletableFuture<R> get() = uncheckedCast(transientValues.resultFuture)
-    override val logger = log
+    private val logger = log
 
     private fun setLoggingContext() {
         MDC.put("flow-id", id.flowId)
@@ -161,8 +162,9 @@ class FlowStateMachineImpl<R>(
                 )
             }
             logFlowError(t)
-            Try.Failure<R>(t)
+            Try.Failure(t)
         }
+
         logger.info("flow ended $id")
         when (resultOrError) {
             is Try.Success -> {
@@ -211,7 +213,7 @@ class FlowStateMachineImpl<R>(
 //                }
             }
         }
-        transientValues.suspended.complete(null)
+        transientValues.suspended = null
     }
 
     @Suspendable
@@ -228,7 +230,7 @@ class FlowStateMachineImpl<R>(
             }
             parkAndSerialize { _, _ ->
                 val fiberState = transientValues.checkpointSerializationService.serialize(this)
-                transientValues.suspended = uncheckedCast(fiberState)
+                transientValues.suspended = fiberState
             }
             setLoggingContext()
         }
@@ -289,5 +291,11 @@ class FlowStateMachineImpl<R>(
     override fun updateTimedFlowTimeout(timeoutSeconds: Long) {
         TODO("Not yet implemented")
     }
+
+    override fun waitForCheckpoint(): Checkpoint {
+        TODO("Not yet implemented")
+    }
+
+    override fun startFlow(): Fiber<Unit> = start()
 
 }

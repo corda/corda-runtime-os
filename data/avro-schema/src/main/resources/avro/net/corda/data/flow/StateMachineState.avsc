@@ -4,6 +4,10 @@
   "namespace": "net.corda.data.flow",
   "fields": [
     {
+      "name": "clientId",
+      "type": ["null", "string"]
+    },
+    {
       "name": "suspendCount",
       "type": "int"
     },

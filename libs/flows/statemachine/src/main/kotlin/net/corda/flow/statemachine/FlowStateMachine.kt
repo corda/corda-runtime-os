@@ -1,14 +1,15 @@
 package net.corda.flow.statemachine
 
+import co.paralleluniverse.fibers.Fiber
+import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
+import net.corda.internal.di.FlowStateMachineInjectable
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.application.identity.Party
-import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
-import org.slf4j.Logger
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
@@ -38,7 +39,7 @@ interface FlowStateMachineHandle<FLOWRETURN> {
 }
 
 @DoNotImplement
-interface FlowStateMachine<FLOWRETURN> : FlowStateMachineHandle<FLOWRETURN> {
+interface FlowStateMachine<FLOWRETURN> : FlowStateMachineHandle<FLOWRETURN>, FlowStateMachineInjectable {
     @Suspendable
     fun <SUSPENDRETURN : Any> suspend(ioRequest: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN
 
@@ -50,9 +51,8 @@ interface FlowStateMachine<FLOWRETURN> : FlowStateMachineHandle<FLOWRETURN> {
 
     fun updateTimedFlowTimeout(timeoutSeconds: Long)
 
-    val logger: Logger
-    val ourIdentity: Party
-    val creationTime: Long
-    val isKilled: Boolean
-    val serializationService: SerializationService
+    fun waitForCheckpoint(): Checkpoint
+
+    fun startFlow(): Fiber<Unit>
+
 }
