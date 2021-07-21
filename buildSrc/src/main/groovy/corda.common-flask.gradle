@@ -1,0 +1,19 @@
+
+plugins {
+    id 'net.corda.plugins.flask'
+    id 'net.corda.plugins.quasar-utils'
+}
+
+project.tasks.register("appFlask", net.corda.gradle.flask.FlaskJarTask) {
+    archiveBaseName = "corda-flask-" + project.name
+    destinationDirectory = new File(project.buildDir, "bin")
+    Provider<RegularFile> quasarAgent = layout.file(provider { configurations.quasarAgent.singleFile })
+    includeLibraries(project.tasks.named("appJar").map { it.outputs }, quasarAgent)
+    javaAgents {
+        quasar {
+            jar = quasarAgent
+            args = project.quasar.options.map { it.substring(1) }.get()
+        }
+    }
+    mainClassName = "net.corda.osgi.framework.OSGiFrameworkMain"
+}
