@@ -19,10 +19,8 @@ dependencies {
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-params:$jupiterVersion"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }
 
 private boolean isBundle(JarFile jarFile) {

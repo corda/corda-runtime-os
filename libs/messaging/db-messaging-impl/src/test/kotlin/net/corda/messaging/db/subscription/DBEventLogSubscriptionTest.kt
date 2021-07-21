@@ -1,6 +1,6 @@
 package net.corda.messaging.db.subscription
 
-import com.nhaarman.mockito_kotlin.anyOrNull
+import org.mockito.kotlin.anyOrNull
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
