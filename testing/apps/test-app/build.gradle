@@ -1,6 +1,7 @@
 plugins {
     id 'corda.publish'
     id 'corda.common-app'
+    id 'corda.common-flask'
 }
 
 repositories {
@@ -14,10 +15,6 @@ dependencies {
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 
     implementation "net.corda:corda-base:$cordaVersion"
-    implementation "net.corda:corda-crypto-api:$cordaVersion"
-    implementation "net.corda:corda-install:$cordaVersion"
-    implementation "net.corda:corda-packaging:$cordaVersion"
-    implementation "net.corda:corda-sandbox:$cordaVersion"
 
     implementation project(":libs:lifecycle")
     implementation project(":osgi-framework-api")
@@ -29,7 +26,5 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
 }
 
-description 'Test Sandbox'
-
-
+description 'Test Application'
 

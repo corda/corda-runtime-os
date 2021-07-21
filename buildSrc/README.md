@@ -20,7 +20,7 @@ Felix framework, to activate bundles and to stop the application at runtime.
 
 ### How to apply the plugin
 
-To build a bootable JAR from the application module, apply the plugin in the `build.gradle`
+To build a bootable jat from the application module, apply the plugin in the `build.gradle`
 of application module with
 
 ```groovy
@@ -352,34 +352,6 @@ The classpath or executable JAR has the following structure.
   +--- system_bundles
   \___ system_packages_extra
 ```
-
-
-## Common Flask Plugin
-
-The **Common Flask** plugin wraps the bootable JAR built by the **Common App* plugin making an executable JAR
-instrumented with [Quasar](https://docs.paralleluniverse.co/quasar/).
-
-To use the **Common Flask** plugin in the module and to build a **Quasar** instrumented bottable JAR,
-in the `build.gradle` of the module declare
-
-```groovy
-plugins {
-    id 'corda.publish'
-    id 'corda.common-app'
-    id 'corda.common-flask'
-}
-```
-
-**WARNING! Gradle tasks `flaskJar` and `flaskRun` don't execute correctly at this time because borrowed from C5.**
-
-Use
-
-```shell
-./gradlew appFlask
-```
-
-to build the **Quasar** instrumented bootable JAR.
-
 
 ## Common Library Plugin
 

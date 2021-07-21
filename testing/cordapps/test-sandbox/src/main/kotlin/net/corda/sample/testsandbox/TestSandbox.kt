@@ -36,12 +36,12 @@ class TestSandbox(
     /**
      * Injected as OSGi service by [TestSandboxApplication].
      */
-    private var installService: InstallService,
+    private val installService: InstallService,
 
     /**
      * Injected as OSGi service by [TestSandboxApplication].
      */
-    private var sandboxService: SandboxService,
+    private val sandboxService: SandboxService,
 ) : LifeCycle {
 
     private companion object {
@@ -73,18 +73,9 @@ class TestSandbox(
     } //~ companion object
 
     /**
-     * `true` if this Corda component is running.
-     *
-     * @see [start]
-     * @see [stop]
-     */
-    @Volatile
-    private var _isRunning: Boolean = false
-
-    /**
      * Return `true` if this Corda component is running.
      */
-    override val isRunning: Boolean get() = _isRunning
+    override var isRunning = false
 
     /**
      * Return the [Cpb] assembled from the CPKs listed in [cpkUrlList].
@@ -156,7 +147,7 @@ class TestSandbox(
     @Synchronized
     override fun start() {
         if (!isRunning) {
-            _isRunning = true
+            isRunning = true
             logger.info("Starting...")
             runCPK(path, runnableFQN)
             logger.info("Started.")
@@ -170,7 +161,7 @@ class TestSandbox(
     override fun stop() {
         if (isRunning) {
             logger.info("Stop.")
-            _isRunning = false
+            isRunning = false
         }
     }
 
