@@ -14,7 +14,7 @@ import java.time.Duration
  *
  * @throws AssertionError, if the test does not pass within the given [duration].
  */
-inline fun <R> eventually(
+fun <R> eventually(
         duration: Duration = Duration.ofSeconds(5),
         waitBetween: Duration = Duration.ofMillis(100),
         waitBefore: Duration = waitBetween,
