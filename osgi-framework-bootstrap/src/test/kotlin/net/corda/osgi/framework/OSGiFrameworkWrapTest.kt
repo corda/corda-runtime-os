@@ -10,7 +10,6 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.BundleEvent
 import org.osgi.framework.FrameworkEvent
 import org.osgi.framework.FrameworkListener
-import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes

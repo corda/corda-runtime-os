@@ -10,7 +10,6 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpRequest
 import io.netty.handler.codec.http.HttpResponse
 import io.netty.handler.codec.http.DefaultFullHttpResponse
-import net.corda.v5.base.util.NetworkHostAndPort
 import java.lang.IllegalArgumentException
 import java.net.URI
 import java.net.URL
@@ -34,21 +33,21 @@ class HttpHelper {
         /**
          * Creates a simple POST request with keepalive and JSON content type
          * @param message payload bytes to be added to the body of the request
-         * @param destination host and port of the HTTP server for which this request is intended
+         * @param uri URI of the HTTP server for which this request is intended
          */
-        fun createRequest(message: ByteArray, destination: NetworkHostAndPort): HttpRequest {
+        fun createRequest(message: ByteArray, uri: URI): HttpRequest {
+            val content = Unpooled.copiedBuffer(message)
             return DefaultFullHttpRequest(
                 HttpVersion.HTTP_1_1,
                 HttpMethod.POST,
-                URL(SCHEME, destination.host, destination.port, ENDPOINT).toString()
+                URL(SCHEME, uri.host, uri.port, ENDPOINT).toString(), // At a later point we should just use the provided URI
+                content
             ).apply {
-                val bbuf = Unpooled.copiedBuffer(message)
-                headers().set(HttpHeaderNames.HOST, destination.host)
+                headers().set(HttpHeaderNames.HOST, uri.host)
                     .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
                     .set(HttpHeaderNames.ACCEPT_ENCODING, HttpHeaderValues.APPLICATION_JSON)
                     .set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
-                    .set(HttpHeaderNames.CONTENT_LENGTH, bbuf.readableBytes())
-                content().clear().writeBytes(bbuf)
+                    .set(HttpHeaderNames.CONTENT_LENGTH, content().readableBytes())
             }
         }
 
@@ -71,40 +70,40 @@ class HttpHelper {
          * @return an [HttpResponse] containing the status code and potentially an error message in the response body should
          * there be a need
          */
-        fun HttpRequest.validate(): HttpResponse {
+        fun HttpRequest.validate(): HttpResponseStatus {
             try {
                 val uri = URI.create(this.uri()).normalize()
                 if (uri.scheme != SCHEME) {
-                    return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST)
+                    return HttpResponseStatus.BAD_REQUEST
                 }
 
                 if (uri.path != ENDPOINT) {
-                    return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
+                    return HttpResponseStatus.NOT_FOUND
                 }
 
             } catch (e: IllegalArgumentException) {
                 //The URI string in the request is invalid - cannot be used to instantiate URI object
-                return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST)
+                return HttpResponseStatus.BAD_REQUEST
             }
 
             if (this.protocolVersion() != HttpVersion.HTTP_1_1) {
-                return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.HTTP_VERSION_NOT_SUPPORTED)
+                return HttpResponseStatus.HTTP_VERSION_NOT_SUPPORTED
             }
 
             if (this.method() != HttpMethod.POST) {
-                return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_IMPLEMENTED)
+                return HttpResponseStatus.NOT_IMPLEMENTED
             }
 
             if (this.headers()[HttpHeaderNames.CONTENT_LENGTH] == null) {
-                return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.LENGTH_REQUIRED)
+                return HttpResponseStatus.LENGTH_REQUIRED
             }
 
             if (!HttpHeaderValues.APPLICATION_JSON.contentEqualsIgnoreCase(this.headers()[HttpHeaderNames.CONTENT_TYPE]))
             {
-                return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE)
+                return HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
             }
 
-            return DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
+            return HttpResponseStatus.OK
         }
     }
 }

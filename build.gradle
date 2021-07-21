@@ -52,7 +52,8 @@ allprojects {
             freeCompilerArgs += [
                     // Prevent Kotlin from warning about kotlin.* classes inside the OSGi bundle.
                     "-Xskip-runtime-version-check",
-                    "-java-parameters"
+                    "-java-parameters",
+                    "-Xjvm-default=all"
             ]
         }
     }

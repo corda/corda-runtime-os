@@ -12,7 +12,7 @@ import java.util.concurrent.Executors
 
 class OffsetTrackerTest {
 
-    private val offsetTracker = OffsetTracker("test.topic", 1, 10.millis)
+    private val offsetTracker = OffsetTracker("test.topic", 3, 1, Executors.newSingleThreadScheduledExecutor(), 10.millis)
 
     private val executorService = Executors.newFixedThreadPool(10)
 

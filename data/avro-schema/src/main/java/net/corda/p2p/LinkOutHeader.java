@@ -14,8 +14,8 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 339291128431956454L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"LinkOutHeader\",\"namespace\":\"net.corda.p2p\",\"fields\":[{\"name\":\"sni\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"address\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
+  private static final long serialVersionUID = 7809630617040363926L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"LinkOutHeader\",\"namespace\":\"net.corda.p2p\",\"fields\":[{\"name\":\"destinationX500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"destinationNetworkType\",\"type\":{\"type\":\"enum\",\"name\":\"NetworkType\",\"symbols\":[\"CORDA_4\",\"CORDA_5\"]}},{\"name\":\"address\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -71,7 +71,8 @@ public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase i
     return DECODER.decode(b);
   }
 
-   private java.lang.String sni;
+   private java.lang.String destinationX500Name;
+   private net.corda.p2p.NetworkType destinationNetworkType;
    private java.lang.String address;
 
   /**
@@ -83,11 +84,13 @@ public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase i
 
   /**
    * All-args constructor.
-   * @param sni The new value for sni
+   * @param destinationX500Name The new value for destinationX500Name
+   * @param destinationNetworkType The new value for destinationNetworkType
    * @param address The new value for address
    */
-  public LinkOutHeader(java.lang.String sni, java.lang.String address) {
-    this.sni = sni;
+  public LinkOutHeader(java.lang.String destinationX500Name, net.corda.p2p.NetworkType destinationNetworkType, java.lang.String address) {
+    this.destinationX500Name = destinationX500Name;
+    this.destinationNetworkType = destinationNetworkType;
     this.address = address;
   }
 
@@ -96,8 +99,9 @@ public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase i
   // Used by DatumWriter.  Applications should not call.
   public java.lang.Object get(int field$) {
     switch (field$) {
-    case 0: return sni;
-    case 1: return address;
+    case 0: return destinationX500Name;
+    case 1: return destinationNetworkType;
+    case 2: return address;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
@@ -106,27 +110,45 @@ public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase i
   @SuppressWarnings(value="unchecked")
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
-    case 0: sni = value$ != null ? value$.toString() : null; break;
-    case 1: address = value$ != null ? value$.toString() : null; break;
+    case 0: destinationX500Name = value$ != null ? value$.toString() : null; break;
+    case 1: destinationNetworkType = (net.corda.p2p.NetworkType)value$; break;
+    case 2: address = value$ != null ? value$.toString() : null; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
     }
   }
 
   /**
-   * Gets the value of the 'sni' field.
-   * @return The value of the 'sni' field.
+   * Gets the value of the 'destinationX500Name' field.
+   * @return The value of the 'destinationX500Name' field.
    */
-  public java.lang.String getSni() {
-    return sni;
+  public java.lang.String getDestinationX500Name() {
+    return destinationX500Name;
   }
 
 
   /**
-   * Sets the value of the 'sni' field.
+   * Sets the value of the 'destinationX500Name' field.
    * @param value the value to set.
    */
-  public void setSni(java.lang.String value) {
-    this.sni = value;
+  public void setDestinationX500Name(java.lang.String value) {
+    this.destinationX500Name = value;
+  }
+
+  /**
+   * Gets the value of the 'destinationNetworkType' field.
+   * @return The value of the 'destinationNetworkType' field.
+   */
+  public net.corda.p2p.NetworkType getDestinationNetworkType() {
+    return destinationNetworkType;
+  }
+
+
+  /**
+   * Sets the value of the 'destinationNetworkType' field.
+   * @param value the value to set.
+   */
+  public void setDestinationNetworkType(net.corda.p2p.NetworkType value) {
+    this.destinationNetworkType = value;
   }
 
   /**
@@ -187,7 +209,8 @@ public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase i
   public static class Builder extends org.apache.avro.specific.SpecificRecordBuilderBase<LinkOutHeader>
     implements org.apache.avro.data.RecordBuilder<LinkOutHeader> {
 
-    private java.lang.String sni;
+    private java.lang.String destinationX500Name;
+    private net.corda.p2p.NetworkType destinationNetworkType;
     private java.lang.String address;
 
     /** Creates a new Builder */
@@ -201,13 +224,17 @@ public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase i
      */
     private Builder(net.corda.p2p.LinkOutHeader.Builder other) {
       super(other);
-      if (isValidValue(fields()[0], other.sni)) {
-        this.sni = data().deepCopy(fields()[0].schema(), other.sni);
+      if (isValidValue(fields()[0], other.destinationX500Name)) {
+        this.destinationX500Name = data().deepCopy(fields()[0].schema(), other.destinationX500Name);
         fieldSetFlags()[0] = other.fieldSetFlags()[0];
       }
-      if (isValidValue(fields()[1], other.address)) {
-        this.address = data().deepCopy(fields()[1].schema(), other.address);
+      if (isValidValue(fields()[1], other.destinationNetworkType)) {
+        this.destinationNetworkType = data().deepCopy(fields()[1].schema(), other.destinationNetworkType);
         fieldSetFlags()[1] = other.fieldSetFlags()[1];
+      }
+      if (isValidValue(fields()[2], other.address)) {
+        this.address = data().deepCopy(fields()[2].schema(), other.address);
+        fieldSetFlags()[2] = other.fieldSetFlags()[2];
       }
     }
 
@@ -217,53 +244,97 @@ public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase i
      */
     private Builder(net.corda.p2p.LinkOutHeader other) {
       super(SCHEMA$);
-      if (isValidValue(fields()[0], other.sni)) {
-        this.sni = data().deepCopy(fields()[0].schema(), other.sni);
+      if (isValidValue(fields()[0], other.destinationX500Name)) {
+        this.destinationX500Name = data().deepCopy(fields()[0].schema(), other.destinationX500Name);
         fieldSetFlags()[0] = true;
       }
-      if (isValidValue(fields()[1], other.address)) {
-        this.address = data().deepCopy(fields()[1].schema(), other.address);
+      if (isValidValue(fields()[1], other.destinationNetworkType)) {
+        this.destinationNetworkType = data().deepCopy(fields()[1].schema(), other.destinationNetworkType);
         fieldSetFlags()[1] = true;
+      }
+      if (isValidValue(fields()[2], other.address)) {
+        this.address = data().deepCopy(fields()[2].schema(), other.address);
+        fieldSetFlags()[2] = true;
       }
     }
 
     /**
-      * Gets the value of the 'sni' field.
+      * Gets the value of the 'destinationX500Name' field.
       * @return The value.
       */
-    public java.lang.String getSni() {
-      return sni;
+    public java.lang.String getDestinationX500Name() {
+      return destinationX500Name;
     }
 
 
     /**
-      * Sets the value of the 'sni' field.
-      * @param value The value of 'sni'.
+      * Sets the value of the 'destinationX500Name' field.
+      * @param value The value of 'destinationX500Name'.
       * @return This builder.
       */
-    public net.corda.p2p.LinkOutHeader.Builder setSni(java.lang.String value) {
+    public net.corda.p2p.LinkOutHeader.Builder setDestinationX500Name(java.lang.String value) {
       validate(fields()[0], value);
-      this.sni = value;
+      this.destinationX500Name = value;
       fieldSetFlags()[0] = true;
       return this;
     }
 
     /**
-      * Checks whether the 'sni' field has been set.
-      * @return True if the 'sni' field has been set, false otherwise.
+      * Checks whether the 'destinationX500Name' field has been set.
+      * @return True if the 'destinationX500Name' field has been set, false otherwise.
       */
-    public boolean hasSni() {
+    public boolean hasDestinationX500Name() {
       return fieldSetFlags()[0];
     }
 
 
     /**
-      * Clears the value of the 'sni' field.
+      * Clears the value of the 'destinationX500Name' field.
       * @return This builder.
       */
-    public net.corda.p2p.LinkOutHeader.Builder clearSni() {
-      sni = null;
+    public net.corda.p2p.LinkOutHeader.Builder clearDestinationX500Name() {
+      destinationX500Name = null;
       fieldSetFlags()[0] = false;
+      return this;
+    }
+
+    /**
+      * Gets the value of the 'destinationNetworkType' field.
+      * @return The value.
+      */
+    public net.corda.p2p.NetworkType getDestinationNetworkType() {
+      return destinationNetworkType;
+    }
+
+
+    /**
+      * Sets the value of the 'destinationNetworkType' field.
+      * @param value The value of 'destinationNetworkType'.
+      * @return This builder.
+      */
+    public net.corda.p2p.LinkOutHeader.Builder setDestinationNetworkType(net.corda.p2p.NetworkType value) {
+      validate(fields()[1], value);
+      this.destinationNetworkType = value;
+      fieldSetFlags()[1] = true;
+      return this;
+    }
+
+    /**
+      * Checks whether the 'destinationNetworkType' field has been set.
+      * @return True if the 'destinationNetworkType' field has been set, false otherwise.
+      */
+    public boolean hasDestinationNetworkType() {
+      return fieldSetFlags()[1];
+    }
+
+
+    /**
+      * Clears the value of the 'destinationNetworkType' field.
+      * @return This builder.
+      */
+    public net.corda.p2p.LinkOutHeader.Builder clearDestinationNetworkType() {
+      destinationNetworkType = null;
+      fieldSetFlags()[1] = false;
       return this;
     }
 
@@ -282,9 +353,9 @@ public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase i
       * @return This builder.
       */
     public net.corda.p2p.LinkOutHeader.Builder setAddress(java.lang.String value) {
-      validate(fields()[1], value);
+      validate(fields()[2], value);
       this.address = value;
-      fieldSetFlags()[1] = true;
+      fieldSetFlags()[2] = true;
       return this;
     }
 
@@ -293,7 +364,7 @@ public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase i
       * @return True if the 'address' field has been set, false otherwise.
       */
     public boolean hasAddress() {
-      return fieldSetFlags()[1];
+      return fieldSetFlags()[2];
     }
 
 
@@ -303,7 +374,7 @@ public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase i
       */
     public net.corda.p2p.LinkOutHeader.Builder clearAddress() {
       address = null;
-      fieldSetFlags()[1] = false;
+      fieldSetFlags()[2] = false;
       return this;
     }
 
@@ -312,8 +383,9 @@ public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase i
     public LinkOutHeader build() {
       try {
         LinkOutHeader record = new LinkOutHeader();
-        record.sni = fieldSetFlags()[0] ? this.sni : (java.lang.String) defaultValue(fields()[0]);
-        record.address = fieldSetFlags()[1] ? this.address : (java.lang.String) defaultValue(fields()[1]);
+        record.destinationX500Name = fieldSetFlags()[0] ? this.destinationX500Name : (java.lang.String) defaultValue(fields()[0]);
+        record.destinationNetworkType = fieldSetFlags()[1] ? this.destinationNetworkType : (net.corda.p2p.NetworkType) defaultValue(fields()[1]);
+        record.address = fieldSetFlags()[2] ? this.address : (java.lang.String) defaultValue(fields()[2]);
         return record;
       } catch (org.apache.avro.AvroMissingFieldException e) {
         throw e;
@@ -346,7 +418,9 @@ public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase i
   @Override public void customEncode(org.apache.avro.io.Encoder out)
     throws java.io.IOException
   {
-    out.writeString(this.sni);
+    out.writeString(this.destinationX500Name);
+
+    out.writeEnum(this.destinationNetworkType.ordinal());
 
     out.writeString(this.address);
 
@@ -357,18 +431,24 @@ public class LinkOutHeader extends org.apache.avro.specific.SpecificRecordBase i
   {
     org.apache.avro.Schema.Field[] fieldOrder = in.readFieldOrderIfDiff();
     if (fieldOrder == null) {
-      this.sni = in.readString();
+      this.destinationX500Name = in.readString();
+
+      this.destinationNetworkType = net.corda.p2p.NetworkType.values()[in.readEnum()];
 
       this.address = in.readString();
 
     } else {
-      for (int i = 0; i < 2; i++) {
+      for (int i = 0; i < 3; i++) {
         switch (fieldOrder[i].pos()) {
         case 0:
-          this.sni = in.readString();
+          this.destinationX500Name = in.readString();
           break;
 
         case 1:
+          this.destinationNetworkType = net.corda.p2p.NetworkType.values()[in.readEnum()];
+          break;
+
+        case 2:
           this.address = in.readString();
           break;
 

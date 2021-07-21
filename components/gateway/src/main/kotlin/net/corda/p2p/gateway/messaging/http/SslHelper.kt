@@ -6,6 +6,7 @@ import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfig
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
+import java.net.URI
 import java.security.KeyStore
 import java.security.SecureRandom
 import java.security.cert.CertPathBuilder
@@ -30,7 +31,7 @@ val CIPHER_SUITES = arrayOf("TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384")
 
 
 fun createClientSslHandler(targetServerName: String,
-                           target: NetworkHostAndPort,
+                           target: URI,
                            trustManagerFactory: TrustManagerFactory): SslHandler {
     val sslContext = SSLContext.getInstance("TLS")
     val trustManagers = trustManagerFactory.trustManagers.filterIsInstance(X509ExtendedTrustManager::class.java)

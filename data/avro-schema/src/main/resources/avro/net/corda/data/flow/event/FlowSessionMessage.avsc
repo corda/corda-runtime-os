@@ -1,0 +1,31 @@
+{
+  "type": "record",
+  "name": "FlowSessionMessage",
+  "namespace": "net.corda.data.flow.event",
+  "fields": [
+    {
+      "name": "flowName",
+      "type": "string"
+    },
+    {
+      "name": "source",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "destination",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "sessionId",
+      "type": "bytes"
+    },
+    {
+      "name": "sequenceNo",
+      "type": "int"
+    },
+    {
+      "name": "message",
+      "type": "bytes"
+    }
+  ]
+}

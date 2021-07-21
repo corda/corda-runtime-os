@@ -113,7 +113,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
      * If an error occurs while processing, reset the consumers position on the topic to the last committed position.
      * If subscription is stopped close the consumer.
      */
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
     fun runConsumeLoop() {
         var attempts = 0
         var consumer: CordaKafkaConsumer<K, V>?
@@ -234,7 +234,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
         try {
             producer.beginTransaction()
             producer.sendRecords(processor.onNext(consumerRecords.map { it.asRecord() }))
-            producer.sendOffsetsToTransaction(consumer)
+            producer.sendAllOffsetsToTransaction(consumer)
             producer.tryCommitTransaction()
         } catch (ex: Exception) {
             when (ex) {
