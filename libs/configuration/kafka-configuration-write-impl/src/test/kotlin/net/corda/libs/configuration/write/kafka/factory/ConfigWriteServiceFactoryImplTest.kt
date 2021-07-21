@@ -1,7 +1,5 @@
 package net.corda.libs.configuration.write.kafka.factory
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.mock
 import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -9,6 +7,8 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
 
 class ConfigWriteServiceFactoryImplTest {
     private lateinit var cordaWriteServiceFactory: ConfigWriteServiceFactoryImpl

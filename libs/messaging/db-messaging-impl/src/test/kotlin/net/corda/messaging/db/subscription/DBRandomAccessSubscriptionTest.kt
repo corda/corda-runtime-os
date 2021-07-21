@@ -1,6 +1,6 @@
 package net.corda.messaging.db.subscription
 
-import com.nhaarman.mockito_kotlin.anyOrNull
+import org.mockito.kotlin.anyOrNull
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
