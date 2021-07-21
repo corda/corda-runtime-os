@@ -15,18 +15,13 @@ import io.netty.handler.logging.LoggingHandler
 import net.corda.lifecycle.LifeCycle
 import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfig
 import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfigImpl
-import net.corda.p2p.gateway.messaging.ResponseMessage
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subjects.PublishSubject
 import java.lang.IllegalStateException
 import java.net.URI
-import java.security.cert.PKIXBuilderParameters
-import java.security.cert.X509CertSelector
 import java.util.concurrent.locks.ReentrantLock
-import javax.net.ssl.CertPathTrustManagerParameters
-import javax.net.ssl.SSLException
 import javax.net.ssl.TrustManagerFactory
 import kotlin.concurrent.withLock
 

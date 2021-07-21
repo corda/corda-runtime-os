@@ -18,16 +18,16 @@ class HttpTest {
 
     private val clientMessageContent = "PING"
     private val serverResponseContent = "PONG"
-    private val keystorePass = "password"
-    private val truststorePass = "password"
+    private val keystorePass = "cordacadevpass"
+    private val truststorePass = "trustpass"
     private val serverAddress = URI.create("http://localhost:10000")
     private val sslConfiguration = object : SslConfiguration {
         override val keyStore: KeyStore = KeyStore.getInstance("JKS").also {
-            it.load(FileInputStream(javaClass.classLoader.getResource("sslkeystore_tiny_2.jks")!!.file), keystorePass.toCharArray())
+            it.load(FileInputStream(javaClass.classLoader.getResource("sslkeystore.jks")!!.file), keystorePass.toCharArray())
         }
         override val keyStorePassword: String = keystorePass
         override val trustStore: KeyStore = KeyStore.getInstance("JKS").also {
-            it.load(FileInputStream(javaClass.classLoader.getResource("truststore_tiny.jks")!!.file), truststorePass.toCharArray())
+            it.load(FileInputStream(javaClass.classLoader.getResource("truststore.jks")!!.file), truststorePass.toCharArray())
         }
         override val trustStorePassword: String = truststorePass
     }
@@ -57,6 +57,8 @@ class HttpTest {
                 clientReceivedResponses.await(5, TimeUnit.SECONDS)
                 assertTrue(responseReceived)
             }
+
+            Thread.sleep(10000)
         }
     }
 
