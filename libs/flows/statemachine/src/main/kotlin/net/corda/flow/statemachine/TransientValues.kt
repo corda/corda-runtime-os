@@ -7,12 +7,13 @@ import com.esotericsoftware.kryo.io.Output
 import net.corda.data.flow.event.FlowEvent
 import net.corda.v5.application.services.serialization.SerializationService
 import java.time.Clock
+import java.util.concurrent.CompletableFuture
 
 data class TransientValues(
     val checkpointSerializationService: SerializationService,
     val clock: Clock
 ) : KryoSerializable {
-    var suspended: ByteArray? = null
+    val suspended: CompletableFuture<ByteArray?> = CompletableFuture()
     val eventsOut = mutableListOf<FlowEvent>()
 
     override fun write(kryo: Kryo?, output: Output?) {
