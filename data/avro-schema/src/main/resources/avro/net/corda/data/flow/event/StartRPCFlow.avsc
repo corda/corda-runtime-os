@@ -12,6 +12,10 @@
       "type": "string"
     },
     {
+      "name": "cpkId",
+      "type": "string"
+    },
+    {
       "name": "rpcUsername",
       "type": "net.corda.data.identity.HoldingIdentity"
     },

@@ -38,8 +38,8 @@ class SandboxCacheImpl @Activate constructor(
             val cpbEx = installService.getCpb(cpb.identifier)
             cpbEx?.cpks?.forEach { cpk ->
                 cpk.cordappManifest.flows.forEach { flow ->
-                    // TODO: We don't know what to put for FlowKey here.  It might not belong in the key to the map.
-                    cpbForFlow.computeIfAbsent(FlowMetadata(cpk.id, flow, FlowKey())) { cpb.identifier }
+                    // HMM: We don't know what to put for FlowKey here.  It might not belong in the key to the map.
+                    cpbForFlow.computeIfAbsent(FlowMetadata(flow, FlowKey())) { cpb.identifier }
                 }
             }
         }

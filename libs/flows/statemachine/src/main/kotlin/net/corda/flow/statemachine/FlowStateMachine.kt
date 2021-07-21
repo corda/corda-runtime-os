@@ -2,7 +2,6 @@ package net.corda.flow.statemachine
 
 import co.paralleluniverse.fibers.Fiber
 import net.corda.data.flow.Checkpoint
-import net.corda.data.flow.FlowKey
 import net.corda.internal.di.FlowStateMachineInjectable
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
@@ -30,14 +29,7 @@ data class FlowStackSnapshot(
 }
 
 @DoNotImplement
-interface FlowStateMachineHandle<FLOWRETURN> {
-    val logic: Flow<FLOWRETURN>?
-    val id: FlowKey
-    val clientId: String?
-}
-
-@DoNotImplement
-interface FlowStateMachine<FLOWRETURN> : FlowStateMachineHandle<FLOWRETURN>, FlowStateMachineInjectable {
+interface FlowStateMachine<FLOWRETURN> : FlowStateMachineInjectable {
     @Suspendable
     fun <SUSPENDRETURN : Any> suspend(ioRequest: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN
 
@@ -49,8 +41,7 @@ interface FlowStateMachine<FLOWRETURN> : FlowStateMachineHandle<FLOWRETURN>, Flo
 
     fun updateTimedFlowTimeout(timeoutSeconds: Long)
 
-    fun waitForCheckpoint(): Checkpoint
+    fun waitForCheckpoint(): Checkpoint?
 
     fun startFlow(): Fiber<Unit>
-
 }

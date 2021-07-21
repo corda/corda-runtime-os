@@ -2,12 +2,12 @@ package net.corda.flow.manager
 
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.event.FlowSessionMessage
+import net.corda.messaging.api.records.Record
 import net.corda.sandbox.cache.FlowMetadata
-import org.apache.kafka.clients.producer.ProducerRecord
 
 data class FlowResult(
-    val checkpoint: Checkpoint,
-    val events: List<ProducerRecord<String, ByteArray?>>
+    val checkpoint: Checkpoint?,
+    val events: List<Record<String, ByteArray>>
 )
 
 interface FlowManager {

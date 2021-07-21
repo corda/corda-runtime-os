@@ -7,9 +7,9 @@ import net.corda.data.flow.event.FlowSessionMessage
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
+import net.corda.flow.statemachine.HousekeepingState
+import net.corda.flow.statemachine.NonSerializableState
 import net.corda.flow.statemachine.impl.FlowStateMachineImpl
-import net.corda.flow.statemachine.TransientState
-import net.corda.flow.statemachine.TransientValues
 import net.corda.internal.di.DependencyInjectionService
 import net.corda.sandbox.cache.FlowMetadata
 import net.corda.sandbox.cache.SandboxCache
@@ -21,6 +21,7 @@ import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Clock
 
@@ -32,6 +33,7 @@ data class FlowTopics(
     val flowSessionMappingTopic: String
 )
 
+@Component
 class FlowManagerImpl @Activate constructor(
     @Reference
     private val sandboxCache: SandboxCache,
@@ -70,7 +72,7 @@ class FlowManagerImpl @Activate constructor(
             scheduler,
         )
 
-        stateMachine.transientState = TransientState(
+        stateMachine.housekeepingState = HousekeepingState(
             0,
             ourIdentity,
             false,
@@ -101,12 +103,12 @@ class FlowManagerImpl @Activate constructor(
 
     private fun getOrCreate(identity: HoldingIdentity, flow: FlowMetadata, args: List<Any?>): Flow<*> {
         val flowClazz: Class<Flow<*>> =
-            uncheckedCast(sandboxCache.getSandboxGroupFor(identity, flow).loadClass(flow.cpkId, flow.name))
+            uncheckedCast(sandboxCache.getSandboxGroupFor(identity, flow).loadClass(flow.name, Flow::class.java))
         return flowClazz.getDeclaredConstructor().newInstance(args)
     }
 
     private fun setupFlow(flow: FlowStateMachineImpl<*>) {
-        flow.transientValues = TransientValues(
+        flow.nonSerializableState = NonSerializableState(
             checkpointSerialisationService,
             Clock.systemUTC()
         )

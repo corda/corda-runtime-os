@@ -7,12 +7,13 @@ description "Flow Manager"
 
 dependencies {
     implementation "net.corda:corda-application:$cordaVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base-internal:$cordaVersion"
     implementation "net.corda:corda-crypto-api:$cordaVersion"
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
     implementation project(':data:avro-schema')
+    implementation project(':libs:messaging:messaging')
     implementation project(':libs:sandbox:sandbox-cache')
 }
