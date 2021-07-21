@@ -15,6 +15,7 @@ import net.corda.p2p.linkmanager.LinkManagerTest.Companion.flowMessageAndKey
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.payload.HoldingIdentity
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
@@ -29,8 +30,7 @@ class MessageConverterTest {
 
         lateinit var loggingInterceptor: LoggingInterceptor
         private val mockHeader = Mockito.mock(CommonHeader::class.java)
-        private val keyPairGenerator = KeyPairGenerator.getInstance("EC", LinkManagerTest.provider)
-        private val KEY = ByteBuffer.wrap("KEY".toByteArray())
+        private val keyPairGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
 
         @BeforeAll
         @JvmStatic

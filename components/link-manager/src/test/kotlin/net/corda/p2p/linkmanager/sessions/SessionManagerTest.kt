@@ -25,6 +25,7 @@ import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromFlowMessageAndKey
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.p2p.payload.FlowMessage
 import net.corda.p2p.payload.FlowMessageAndKey
 import net.corda.p2p.payload.FlowMessageHeader
@@ -97,66 +98,6 @@ class SessionManagerTest {
     @AfterEach
     fun resetLogging() {
         loggingInterceptor.reset()
-    }
-
-    class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
-        private val provider = BouncyCastleProvider()
-        private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-        private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
-
-        val keys = HashMap<LinkManagerNetworkMap.HoldingIdentity, KeyPair>()
-        private val holdingIdentityForHash = HashMap<Int, LinkManagerNetworkMap.HoldingIdentity>()
-
-        private fun MessageDigest.hash(data: ByteArray): ByteArray {
-            this.reset()
-            this.update(data)
-            return digest()
-        }
-
-        init {
-            for (node in nodes) {
-                val keyPair = keyPairGenerator.generateKeyPair()
-                keys[node] = keyPair
-                holdingIdentityForHash[messageDigest.hash(keyPair.public.encoded).contentHashCode()] = node
-            }
-        }
-
-        interface MockLinkManagerNetworkMap : LinkManagerNetworkMap {
-            fun getPrivateKeyFromPublicKey(publicKey: PublicKey): PrivateKey
-            fun getKeyPair(): KeyPair
-            fun getOurMemberInfo(): LinkManagerNetworkMap.MemberInfo
-        }
-
-        fun getSessionNetworkMapForNode(node: LinkManagerNetworkMap.HoldingIdentity): MockLinkManagerNetworkMap {
-            return object : MockLinkManagerNetworkMap {
-                override fun getPrivateKeyFromPublicKey(publicKey: PublicKey): PrivateKey {
-                    assertArrayEquals(keys[node]!!.public.encoded, publicKey.encoded)
-                    return keys[node]!!.private
-                }
-
-                override fun getKeyPair(): KeyPair {
-                    return keys[node]!!
-                }
-
-                override fun getOurMemberInfo(): LinkManagerNetworkMap.MemberInfo {
-                    return LinkManagerNetworkMap.MemberInfo(node, getKeyPair().public, FAKE_ENDPOINT)
-                }
-
-                override fun getMemberInfo(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
-                    val publicKey = keys[holdingIdentity]?.public ?: return null
-                    return LinkManagerNetworkMap.MemberInfo(holdingIdentity, publicKey, FAKE_ENDPOINT)
-                }
-
-                override fun getMemberInfoFromPublicKeyHash(hash: ByteArray): LinkManagerNetworkMap.MemberInfo? {
-                    val holdingIdentity = holdingIdentityForHash[hash.contentHashCode()] ?: return null
-                    return getMemberInfo(holdingIdentity)
-                }
-
-                override fun getNetworkType(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.NetworkType? {
-                    return LinkManagerNetworkMap.NetworkType.CORDA_5
-                }
-            }
-        }
     }
 
     class MockCryptoService(private val mockNetworkMap: MockNetworkMap.MockLinkManagerNetworkMap) : LinkManagerCryptoService {
