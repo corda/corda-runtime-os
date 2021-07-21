@@ -142,7 +142,7 @@ class FlowStateMachineImpl<R>(
 //                }
             }
         }
-        transientValues.suspended = null
+        transientValues.suspended.complete(null)
     }
 
     @Suspendable
@@ -159,7 +159,7 @@ class FlowStateMachineImpl<R>(
             }
             parkAndSerialize { _, _ ->
                 val fiberState = transientValues.checkpointSerializationService.serialize(this)
-                transientValues.suspended = uncheckedCast(fiberState)
+                transientValues.suspended?.complete(fiberState.bytes)
             }
             setLoggingContext()
         }
