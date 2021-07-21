@@ -2,19 +2,17 @@ package net.corda.kryoserialization.serializers
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.util.MapReferenceResolver
-import com.nhaarman.mockito_kotlin.mock
 import net.corda.cipher.suite.internal.BasicHashingServiceImpl
 import net.corda.classinfo.ClassInfoService
 import net.corda.internal.serialization.CheckpointSerializationContext
 import net.corda.internal.serialization.CheckpointSerializer
-import net.corda.kryoserialization.CheckpointSerializeAsTokenContextImpl
-import net.corda.kryoserialization.KryoCheckpointSerializerBuilder
-import net.corda.kryoserialization.withTokenContext
 import net.corda.internal.serialization.DefaultWhitelist
 import net.corda.internal.serialization.KRYO_CHECKPOINT_CONTEXT
+import net.corda.kryoserialization.CheckpointSerializeAsTokenContextImpl
+import net.corda.kryoserialization.KryoCheckpointSerializerBuilder
 import net.corda.kryoserialization.osgi.SandboxClassResolver
+import net.corda.kryoserialization.withTokenContext
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.serialization.SerializeAsTokenContext
 import net.corda.v5.serialization.SingletonSerializationToken
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -22,6 +20,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import org.objenesis.strategy.SerializingInstantiatorStrategy
 import kotlin.test.assertSame
 
