@@ -9,10 +9,7 @@ dependencies {
 
     implementation "net.corda:corda-application:$cordaVersion"
     implementation "net.corda:corda-base:$cordaVersion"
-    implementation "net.corda:corda-crypto-impl:$cordaVersion"
     implementation "net.corda:corda-serialization:$cordaVersion"
-    implementation "net.corda:corda-serialization-internal:$cordaVersion"
-
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
