@@ -1,4 +1,4 @@
-package net.corda.flow.statemachine.impl
+package net.corda.flow.statemachine
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.KryoSerializable

@@ -12,6 +12,8 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.flow.statemachine.FlowIORequest
 import net.corda.flow.statemachine.FlowStateMachine
+import net.corda.flow.statemachine.TransientState
+import net.corda.flow.statemachine.TransientValues
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowSession

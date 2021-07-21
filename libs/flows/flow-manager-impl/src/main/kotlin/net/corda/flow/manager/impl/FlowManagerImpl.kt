@@ -8,8 +8,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
 import net.corda.flow.statemachine.impl.FlowStateMachineImpl
-import net.corda.flow.statemachine.impl.TransientState
-import net.corda.flow.statemachine.impl.TransientValues
+import net.corda.flow.statemachine.TransientState
+import net.corda.flow.statemachine.TransientValues
 import net.corda.internal.di.DependencyInjectionService
 import net.corda.sandbox.cache.FlowMetadata
 import net.corda.sandbox.cache.SandboxCache
