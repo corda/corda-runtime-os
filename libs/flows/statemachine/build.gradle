@@ -6,11 +6,14 @@ plugins {
 description "State Machine"
 
 dependencies {
+    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
+    implementation "com.esotericsoftware:kryo:$kryoVersion"
+
     implementation "net.corda:corda-application:$cordaVersion"
     implementation "net.corda:corda-base:$cordaVersion"
     implementation "net.corda:corda-crypto-api:$cordaVersion"
+    implementation "net.corda:corda-flow-dependency-injection-internal:$cordaVersion"
 
-    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
 
     implementation project(':data:avro-schema')
 }

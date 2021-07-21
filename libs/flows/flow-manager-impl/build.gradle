@@ -13,6 +13,7 @@ dependencies {
     implementation "net.corda:corda-packaging:$cordaVersion"
     implementation "net.corda:corda-sandbox:$cordaVersion"
     implementation "net.corda:corda-crypto-api:$cordaVersion"
+    implementation "net.corda:corda-flow-dependency-injection-internal:$cordaVersion"
 
     implementation project(':data:avro-schema')
     implementation project(':libs:flows:flow-manager')

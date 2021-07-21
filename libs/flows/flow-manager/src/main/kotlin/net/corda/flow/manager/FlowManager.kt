@@ -2,7 +2,7 @@ package net.corda.flow.manager
 
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.event.FlowSessionMessage
-import net.corda.v5.application.flows.FlowId
+import net.corda.sandbox.cache.FlowMetadata
 import org.apache.kafka.clients.producer.ProducerRecord
 
 data class FlowResult(
@@ -12,14 +12,13 @@ data class FlowResult(
 
 interface FlowManager {
     fun startInitiatingFlow(
-        newFlowId: FlowId,
+        newFlowMetadata: FlowMetadata,
         clientId: String,
-        flowName: String,
         args: List<Any?>,
     ): FlowResult
 
     fun startRemoteInitiatedFlow(
-        newFlowId: FlowId,
+        newFlowMetadata: FlowMetadata,
         flowSessionMessage: FlowSessionMessage,
     ): FlowResult
 

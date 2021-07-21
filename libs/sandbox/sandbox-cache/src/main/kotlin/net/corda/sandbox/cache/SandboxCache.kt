@@ -1,11 +1,16 @@
 package net.corda.sandbox.cache
 
+import net.corda.data.flow.FlowKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.packaging.Cpk
-import net.corda.sandbox.Sandbox
+import net.corda.sandbox.SandboxGroup
+import java.nio.file.Path
 
-data class FlowId(val cpkId: Cpk.Identifier, val name: String)
+data class FlowMetadata(val cpkId: Cpk.Identifier, val name: String, val key: FlowKey)
 
 interface SandboxCache {
-    fun getSandboxFor(identity: HoldingIdentity, flow: FlowId): Sandbox
+    fun getSandboxGroupFor(identity: HoldingIdentity, flow: FlowMetadata): SandboxGroup
+//    fun getSandboxById(id: FlowMetadata): SandboxGroup
+
+    fun loadCpbs(CPBs: List<Path>)
 }

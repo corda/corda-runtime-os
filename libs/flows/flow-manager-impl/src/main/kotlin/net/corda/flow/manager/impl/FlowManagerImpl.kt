@@ -1,16 +1,27 @@
 package net.corda.flow.manager.impl
 
-import co.paralleluniverse.fibers.FiberScheduler
+import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
+import co.paralleluniverse.fibers.FiberExecutorScheduler
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.event.FlowSessionMessage
+import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
-import net.corda.v5.application.flows.FlowId
+import net.corda.flow.statemachine.impl.FlowStateMachineImpl
+import net.corda.internal.di.DependencyInjectionService
+import net.corda.sandbox.cache.FlowMetadata
+import net.corda.sandbox.cache.SandboxCache
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.identity.Party
 import net.corda.v5.application.services.IdentityService
 import net.corda.v5.application.services.persistence.PersistenceService
 import net.corda.v5.application.services.serialization.SerializationService
-import java.util.concurrent.ScheduledExecutorService
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.uncheckedCast
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Reference
+import java.time.Clock
+import java.util.concurrent.CompletableFuture
 
 data class FlowTopics(
     val flowEventTopic: String,
@@ -20,32 +31,62 @@ data class FlowTopics(
     val flowSessionMappingTopic: String
 )
 
-class FlowManagerImpl : FlowManager {
+class FlowManagerImpl @Activate constructor(
+    @Reference
+    private val sandboxCache: SandboxCache,
+    @Reference
+    private val identityService: IdentityService,
+    ) : FlowManager {
 
-    val checkpointSerialisationService: SerializationService
+    companion object {
+        val log = contextLogger()
+    }
+
+    private val scheduler = FiberExecutorScheduler("Same thread scheduler", ScheduledSingleThreadExecutor())
+
+    private val checkpointSerialisationService: SerializationService
         get() = TODO("Not yet implemented")
-    val persistenceService: PersistenceService
+    private val persistenceService: PersistenceService
         get() = TODO("Not yet implemented")
-    val ourIdentity: Party
+    private val ourIdentity: Party
         get() = TODO("Not yet implemented")
-    val flowExecutor: ScheduledExecutorService
-        get() = TODO("Not yet implemented")
-    val fiberScheduler: FiberScheduler
-        get() = TODO("Not yet implemented")
-    val identityService: IdentityService
+    private val dependencyInjector: DependencyInjectionService
         get() = TODO("Not yet implemented")
 
     override fun startInitiatingFlow(
-        newFlowId: FlowId,
+        newFlowMetadata: FlowMetadata,
         clientId: String,
-        flowName: String,
         args: List<Any?>
     ): FlowResult {
-        TODO("Not yet implemented")
+        log.info("start new flow clientId: $clientId flowName: ${newFlowMetadata.name} args $args")
+
+        val flow = getOrCreate(newFlowMetadata.key.identity, newFlowMetadata, args)
+        val stateMachine = FlowStateMachineImpl(
+            clientId,
+            newFlowMetadata.key,
+            flow,
+            ourIdentity,
+            scheduler,
+        )
+
+        stateMachine.transientState = FlowStateMachineImpl.TransientState(
+            0,
+            ourIdentity,
+            false,
+            mutableListOf()
+        )
+        setupFlow(stateMachine)
+        stateMachine.startFlow()
+        val checkpoint = stateMachine.waitForCheckpoint()
+
+        return FlowResult(
+            checkpoint,
+            emptyList()
+        )
     }
 
     override fun startRemoteInitiatedFlow(
-        newFlowId: FlowId,
+        newFlowMetadata: FlowMetadata,
         flowSessionMessage: FlowSessionMessage
     ): FlowResult {
         TODO("Not yet implemented")
@@ -56,4 +97,22 @@ class FlowManagerImpl : FlowManager {
     ): FlowResult {
         TODO("Not yet implemented")
     }
+
+    private fun getOrCreate(identity: HoldingIdentity, flow: FlowMetadata, args: List<Any?>): Flow<*> {
+        val flowClazz: Class<Flow<*>> =
+            uncheckedCast(sandboxCache.getSandboxGroupFor(identity, flow).loadClass(flow.cpkId, flow.name))
+        return flowClazz.getDeclaredConstructor().newInstance(args)
+    }
+
+    private fun setupFlow(flow: FlowStateMachineImpl<*>) {
+        flow.transientValues = FlowStateMachineImpl.TransientValues<*>(
+            CompletableFuture(),
+            scheduler,
+            checkpointSerialisationService,
+            dependencyInjector,
+            Clock.systemUTC()
+        )
+        dependencyInjector.injectDependencies(flow.logic, flow)
+    }
+
 }
