@@ -30,7 +30,7 @@ enum class LifeCycleState {
 }
 
 @Component
-class DemoApp @Activate constructor(
+class DemoFlowRun @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = Shutdown::class)
@@ -54,7 +54,7 @@ class DemoApp @Activate constructor(
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
-        consoleLogger.info("Starting demo application...")
+        consoleLogger.info("Starting demo flow run application...")
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
 
