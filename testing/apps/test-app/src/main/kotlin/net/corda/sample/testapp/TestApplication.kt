@@ -12,7 +12,7 @@ import org.osgi.service.component.annotations.Reference
 /**
  * This class is the entry point of the didactic application showing how to run an *Application* from a bootable JAR.
  *
- * The application shutdowns automatically after [SHUTDOWN_DELAY] ms to allow aotomatic tests.
+ * The application shutdowns automatically after [SHUTDOWN_DELAY] ms to allow automatic tests.
  *
  * @param sandboxService    Set automatically because both [SandboxService] and this class are OSGi components.
  */

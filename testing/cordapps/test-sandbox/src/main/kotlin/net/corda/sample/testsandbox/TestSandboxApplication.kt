@@ -31,7 +31,7 @@ import java.util.*
  *
  * to create tke CPK artifact used in this Application.
  *
- * The *CordApp* shutdowns automatically after [SHUTDOWN_DELAY] ms to allow aotomatic tests.
+ * The *CordApp* shutdowns automatically after [SHUTDOWN_DELAY] ms to allow automatic tests.
  *
  * @param configAdmin       Set automatically because both [ConfigurationAdmin] and this class are OSGi components.
  * @param installService    Set automatically because both [InstallService] and this class are OSGi components.
