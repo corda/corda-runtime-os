@@ -98,7 +98,7 @@ To build the bootable JAR, run the Gradle task
 * `appJar` - builds the application module as OSGI bundle. It zips those dependencies are OSGi bundles and the bundle of
   the application itself in the bootable JAR. It defines the bootable JAR manifest to bootstrap Felix and activates all
   the bundles zipped.
-
+  
 
 ### Logging
 
@@ -114,7 +114,8 @@ dependencies {
 }
 ```
 
-or, if the module uses `net.corda.lifecycle.LifeCycle`, this includes **Log4j2**, hence declare
+or, if the module uses `net.corda.lifecycle.LifeCycle`, this depends on `net.corda:corda-base` and includes **Log4j2**, 
+hence declare
 
 ```groovy
 implementation project(":libs:lifecycle")
@@ -352,6 +353,29 @@ The classpath or executable JAR has the following structure.
   +--- system_bundles
   \___ system_packages_extra
 ```
+
+## Common Flask Plugin 
+
+The **Common Flask** plugin wraps the bootable JAR built by the **Common App** plugin to make a new bootable JAR
+instrumented with [Quasar](https://docs.paralleluniverse.co/quasar/).
+
+To build the *Flask* bootable jar instrumented with *Quasar* apply the plugin in the `build.gradle`
+of application module with
+
+```groovy
+plugins {
+    id 'corda.publish'
+    id 'corda.common-flask'
+}
+```
+
+### How to build an application
+
+To build the bootable JAR, run the Gradle task
+
+* `appFlask` - builds a bootable JAR of JAR files. When the JAR runs, instruments the JVM and spawns the OSGi framework
+bootstrap module, this one starts the OSGI framework, and runs the applications contained the bootable JAR.
+   
 
 ## Common Library Plugin
 

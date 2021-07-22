@@ -18,7 +18,7 @@ import java.nio.file.Paths
 import java.util.*
 
 /**
- * This class is the entry point of the didactic application showing how to run CordApps from a bootable JAR.
+ * This class is the entry point of the didactic application showing how to run *CordApps* from a bootable JAR.
  *
  * The CordApp used in this demo application is in the module `:applications:examples:test-cpk`.
  * The full qualified name of [Runnable] implementation in the CordApp is
@@ -26,10 +26,12 @@ import java.util.*
  * Run
  *
  * ```
- * ./gradlew :applications:examples:test-cpk:cpk
+ * ./gradlew :testing:cordapps:test-cpk:cpk
  * ```
  *
  * to create tke CPK artifact used in this Application.
+ *
+ * The *CordApp* shutdowns automatically after [SHUTDOWN_DELAY] ms to allow aotomatic tests.
  *
  * @param configAdmin       Set automatically because both [ConfigurationAdmin] and this class are OSGi components.
  * @param installService    Set automatically because both [InstallService] and this class are OSGi components.
@@ -49,6 +51,8 @@ class TestSandboxApplication @Activate constructor(
 
     private companion object {
 
+        private val logger = contextLogger()
+
         /**
          * Full qualified name of the [Runnable] implementation called to run `test-cpk` CordApp.
          */
@@ -59,8 +63,6 @@ class TestSandboxApplication @Activate constructor(
          */
         private val SHUTDOWN_DELAY = 5000L
 
-        private val logger = contextLogger()
-
     } //~ companion object
 
     /**
@@ -70,9 +72,13 @@ class TestSandboxApplication @Activate constructor(
     private lateinit var coordinator: SimpleLifeCycleCoordinator
 
     /**
+     * The `osgi-framework-bootstrap` module calls this method as entry point of the application.
+     *
      * This method is called by after the OSGI framework wired all bundles and services.
      *
      * Properties annotated with `@Reference` are already set when this method is called.
+     *
+     * @param args passed from the OS starting the bootable JAR.
      */
     override fun startup(args: Array<String>) {
         val path = args[0]
@@ -107,7 +113,14 @@ class TestSandboxApplication @Activate constructor(
     /**
      * This method is called when the bootable JAR is requested to terminate by the application itself or the
      * operating system because the JVM terminates.
-     */
+     *
+     * The `osgi-framework-bootstrap` module calls this method before to stop the OSGi framework.
+     *
+     * *WARNING! Do not call [Shutdown] service from here because it calls this method
+     * resulting in an infinite recursive loop.
+     *
+     * *NOTE. The module `osgi-framework-bootstrap` implements an experimental solution to avoid shutdown loops'.
+    */
     override fun shutdown() {
         logger.info("Shutdown.")
         coordinator.stop()

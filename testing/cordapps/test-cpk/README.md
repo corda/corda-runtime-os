@@ -5,7 +5,7 @@ This module is a *cordapp* with minimal dependencies used to check this `flow-wo
 To build the CPK, run the OS shell
 
 ```shell
-./gradlew :applications:examples:test-cpk:clean :applications:examples:test-cpk:cpk
+./gradlew :testing:cordapps:test-cpk:clean :testing:cordapps:test-cpk:cpk
 ```
 
 The module `test-sandbox` implements `net.corda.osgi.api.Application` to run this `test-cpk` *cordapp*.

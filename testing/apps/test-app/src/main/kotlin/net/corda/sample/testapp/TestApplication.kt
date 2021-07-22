@@ -9,6 +9,13 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+/**
+ * This class is the entry point of the didactic application showing how to run an *Application* from a bootable JAR.
+ *
+ * The application shutdowns automatically after [SHUTDOWN_DELAY] ms to allow aotomatic tests.
+ *
+ * @param sandboxService    Set automatically because both [SandboxService] and this class are OSGi components.
+ */
 @Component(immediate = true)
 class TestApplication @Activate constructor(
     @Reference(service = Shutdown::class)
@@ -29,6 +36,10 @@ class TestApplication @Activate constructor(
     /**
      * The `osgi-framework-bootstrap` module calls this method as entry point of the application.
      *
+     * This method is called by after the OSGI framework wired all bundles and services.
+     *
+     * Properties annotated with `@Reference` are already set when this method is called.
+     *
      * @param args passed from the OS starting the bootable JAR.
      */
     override fun startup(args: Array<String>) {
@@ -42,6 +53,9 @@ class TestApplication @Activate constructor(
     }
 
     /**
+     * This method is called when the bootable JAR is requested to terminate by the application itself or the
+     * operating system because the JVM terminates.
+     *
      * The `osgi-framework-bootstrap` module calls this method before to stop the OSGi framework.
      *
      * *WARNING! Do not call [Shutdown] service from here because it calls this method

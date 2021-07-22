@@ -16,5 +16,11 @@ To build it, in the Corda 5 repository runs the Gradle task `publishToMavenLocal
 To build the JAR bootable application for this module, run
 
 ```shell
-./gradlew :applications:examples:test-sandbox:clean :applications:examples:test-sandbox:appJar
+./gradlew :testing:cordapps:test-sandbox:clean :testing:cordapps:test-sandbox:appJar
+```
+
+To build the JAR bootable application integrated with **Flask* and **Quasar** agents for this module, run
+
+```shell
+./gradlew :testing:cordapps:test-sandbox:clean :testing:cordapps:test-sandbox:appFlask
 ```
