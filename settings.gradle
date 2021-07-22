@@ -94,6 +94,4 @@ include 'libs:schema-registry:schema-registry-impl'
 include 'osgi-framework-api'
 include 'osgi-framework-bootstrap'
 include 'testing:apps:test-app'
-include 'testing:cordapps:test-cpk'
-include 'testing:cordapps:test-sandbox'
 

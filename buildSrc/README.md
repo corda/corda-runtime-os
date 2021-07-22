@@ -375,6 +375,8 @@ To build the bootable JAR, run the Gradle task
 
 * `appFlask` - builds a bootable JAR of JAR files. When the JAR runs, instruments the JVM and spawns the OSGi framework
 bootstrap module, this one starts the OSGI framework, and runs the applications contained the bootable JAR.
+  
+*NOTE! The `appFlask` depends on the `appJar` plugin.*
    
 
 ## Common Library Plugin

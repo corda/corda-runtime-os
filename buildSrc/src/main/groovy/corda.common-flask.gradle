@@ -1,5 +1,5 @@
-
 plugins {
+    id 'corda.common-app'
     id 'net.corda.plugins.flask'
     id 'net.corda.plugins.quasar-utils'
 }
