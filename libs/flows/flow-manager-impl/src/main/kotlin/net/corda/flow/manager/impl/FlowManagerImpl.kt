@@ -25,13 +25,13 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Clock
 
-data class FlowTopics(
-    val flowEventTopic: String,
-    val checkpointsTopic: String,
-    val p2pOutTopic: String,
-    val rpcResponseTopic: String,
-    val flowSessionMappingTopic: String
-)
+//data class FlowTopics(
+//    val flowEventTopic: String,
+//    val checkpointsTopic: String,
+//    val p2pOutTopic: String,
+//    val rpcResponseTopic: String,
+//    val flowSessionMappingTopic: String
+//)
 
 @Component
 class FlowManagerImpl @Activate constructor(
@@ -39,7 +39,11 @@ class FlowManagerImpl @Activate constructor(
     private val sandboxCache: SandboxCache,
     @Reference
     private val identityService: IdentityService,
-    ) : FlowManager {
+    @Reference
+    private val checkpointSerialisationService: SerializationService,
+    @Reference
+    private val dependencyInjector: DependencyInjectionService,
+) : FlowManager {
 
     companion object {
         val log = contextLogger()
@@ -47,13 +51,9 @@ class FlowManagerImpl @Activate constructor(
 
     private val scheduler = FiberExecutorScheduler("Same thread scheduler", ScheduledSingleThreadExecutor())
 
-    private val checkpointSerialisationService: SerializationService
-        get() = TODO("Not yet implemented")
     private val persistenceService: PersistenceService
         get() = TODO("Not yet implemented")
     private val ourIdentity: Party
-        get() = TODO("Not yet implemented")
-    private val dependencyInjector: DependencyInjectionService
         get() = TODO("Not yet implemented")
 
     override fun startInitiatingFlow(
@@ -114,5 +114,4 @@ class FlowManagerImpl @Activate constructor(
         )
         dependencyInjector.injectDependencies(flow.logic, flow)
     }
-
 }

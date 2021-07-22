@@ -22,11 +22,11 @@ class RunFlow(
 
     companion object {
         val log: Logger = contextLogger()
-        const val groupName = "pubsubGroup"
-        const val pubsubTopic = "PubsubTopic"
+        const val groupName = "flowRunGroup"
+        const val flowRunTopic = "FlowRunTopic"
     }
 
-    private var subscription: StateAndEventSubscription<String, Checkpoint, FlowEvent>? = null
+    private lateinit var subscription: StateAndEventSubscription<String, Checkpoint, FlowEvent>
 
     override var isRunning: Boolean = false
 
@@ -36,19 +36,19 @@ class RunFlow(
             isRunning = true
             val processor = DemoRunFlowProcessor(flowManager)
             subscription = subscriptionFactory.createStateAndEventSubscription(
-                SubscriptionConfig(groupName, pubsubTopic),
+                SubscriptionConfig(groupName, flowRunTopic),
                 processor,
                 config
             )
 
             log.info("Starting flow runner")
-            subscription?.start()
+            subscription.start()
         }
     }
 
     override fun stop() {
         log.info("Stopping flow runner.")
         isRunning = false
-        subscription?.stop()
+        subscription.stop()
     }
 }
