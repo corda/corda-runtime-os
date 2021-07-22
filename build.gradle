@@ -21,7 +21,6 @@ plugins {
     id 'maven-publish'
     id 'corda.publish' apply false
     id 'jacoco'
-    id 'corda.common-library' apply false
 }
 
 wrapper {
