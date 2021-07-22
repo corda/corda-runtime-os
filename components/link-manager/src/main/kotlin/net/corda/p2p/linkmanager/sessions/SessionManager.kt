@@ -7,7 +7,7 @@ import net.corda.p2p.payload.FlowMessageAndKey
 
 interface SessionManager {
     fun processOutboundFlowMessage(message: FlowMessageAndKey): SessionState
-    fun getInboundSession(uuid: String): Session?
+    fun getSessionById(uuid: String): SessionDirection
     fun processSessionMessage(message: LinkInMessage): LinkOutMessage?
 
     sealed class SessionState {
@@ -15,5 +15,11 @@ interface SessionManager {
         object SessionAlreadyPending: SessionState()
         data class SessionEstablished(val session: Session): SessionState()
         object CannotEstablishSession: SessionState()
+    }
+
+    sealed class SessionDirection {
+        data class Inbound(val session: Session): SessionDirection()
+        data class Outbound(val session: Session): SessionDirection()
+        object NoSession: SessionDirection()
     }
 }

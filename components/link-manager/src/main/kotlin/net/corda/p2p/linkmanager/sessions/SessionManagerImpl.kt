@@ -59,6 +59,7 @@ open class SessionManagerImpl(
 
     private val pendingOutboundSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
     private val activeOutboundSessions = ConcurrentHashMap<SessionKey, Session>()
+    private val activeOutboundSessionsById = ConcurrentHashMap<String, Session>()
 
     private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
     private val activeInboundSessions = ConcurrentHashMap<String, Session>()
@@ -84,8 +85,17 @@ open class SessionManagerImpl(
         }
     }
 
-    override fun getInboundSession(uuid: String): Session? {
-        return activeInboundSessions[uuid]
+    override fun getSessionById(uuid: String): SessionManager.SessionDirection {
+        val inboundSession = activeInboundSessions[uuid]
+        if (inboundSession != null) {
+            return SessionManager.SessionDirection.Inbound(inboundSession)
+        }
+        val outboundSession = activeOutboundSessionsById[uuid]
+        return if (outboundSession != null) {
+            SessionManager.SessionDirection.Outbound(outboundSession)
+        } else {
+            SessionManager.SessionDirection.NoSession
+        }
     }
 
     override fun processSessionMessage(message: LinkInMessage): LinkOutMessage? {
@@ -201,6 +211,7 @@ open class SessionManagerImpl(
         val authenticatedSession = session.getSession()
         sessionNegotiationLock.withLock {
             activeOutboundSessions[sessionInfo] = authenticatedSession
+            activeOutboundSessionsById[message.header.sessionId] = authenticatedSession
             pendingOutboundSessions.remove(message.header.sessionId)
             pendingOutboundSessionMessageQueues.sessionNegotiatedCallback(sessionInfo, authenticatedSession, networkMap)
         }

@@ -25,6 +25,7 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMes
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromFlowMessageAndKey
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.SessionKey
 import net.corda.p2p.payload.FlowMessage
@@ -33,7 +34,6 @@ import net.corda.p2p.markers.FlowMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.payload.FlowMessageAndKey
-import net.corda.p2p.payload.LinkManagerPayload
 import net.corda.p2p.payload.MessageAck
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
@@ -216,30 +216,25 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun processDataMessage(sessionId: String, message: DataMessage): List<Record<*, *>> {
-            val session =  sessionManager.getInboundSession(sessionId)
-            if (session == null) {
-                logger.warn("Received message with SessionId = $sessionId for which there is no active session." +
-                        " The message was discarded.")
-                return emptyList()
-            }
-            val payload = extractPayload(session, sessionId, message)
-            return payload?.let { processLinkManagerPayload(it, session) } ?: return emptyList()
-        }
-
-        private fun processLinkManagerPayload(payload: LinkManagerPayload, session: Session): List<Record<*, *>> {
-            return when(val content = payload.content) {
-                is FlowMessageAndKey -> { 
-                    val messages = mutableListOf<Record<*, *>>()
-                    messages.add(Record(Schema.P2P_IN_TOPIC, content.key, content.flowMessage))
-                    makeAckMessageForFlowMessage(content.flowMessage, session)?.let { messages.add(it) }
-                    messages
+            val messages = mutableListOf<Record<*, *>>()
+            when (val sessionDirection = sessionManager.getSessionById(sessionId)) {
+                is SessionDirection.Inbound -> {
+                    extractPayload(sessionDirection.session, sessionId, message, FlowMessageAndKey::fromByteBuffer)?.let {
+                        messages.add(Record(Schema.P2P_IN_TOPIC, it.key, it.flowMessage))
+                        makeAckMessageForFlowMessage(it.flowMessage, sessionDirection.session)?.let { ack -> messages.add(ack) }
+                    }
                 }
-                is MessageAck -> listOf(makeMarkerForAckMessage(content))
-                else -> {
-                    logger.error("Received message payload content type ${content::class.java.simpleName} that cannot be processed.")
-                    emptyList()
+                is SessionDirection.Outbound -> {
+                    extractPayload(sessionDirection.session, sessionId, message, MessageAck::fromByteBuffer)?.let {
+                        messages.add(makeMarkerForAckMessage(it))
+                    }
+                }
+                is SessionDirection.NoSession -> {
+                    logger.warn("Received message with SessionId = $sessionId for which there is no active session." +
+                            " The message was discarded.")
                 }
             }
+            return messages
         }
 
         private fun makeAckMessageForFlowMessage(message: FlowMessage, session: Session): Record<String, LinkOutMessage>? {

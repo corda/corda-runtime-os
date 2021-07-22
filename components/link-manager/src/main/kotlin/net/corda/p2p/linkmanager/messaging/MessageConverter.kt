@@ -20,7 +20,6 @@ import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import net.corda.p2p.payload.FlowMessage
 import net.corda.p2p.payload.FlowMessageAndKey
 import net.corda.p2p.payload.HoldingIdentity
-import net.corda.p2p.payload.LinkManagerPayload
 import net.corda.p2p.payload.MessageAck
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -52,7 +51,13 @@ class MessageConverter {
             session: Session,
             networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
-            return createLinkOutMessageFromPayload(LinkManagerPayload(message), source, destination, session, networkMap)
+            val serializedMessage = try {
+                message.toByteBuffer()
+            } catch (exception: IOException) {
+                logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
+                return null
+            }
+            return createLinkOutMessageFromPayload(serializedMessage, source, destination, session, networkMap)
         }
 
         fun linkOutMessageFromFlowMessageAndKey(
@@ -60,8 +65,14 @@ class MessageConverter {
             session: Session,
             networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
+            val serializedMessage = try {
+                message.toByteBuffer()
+            } catch (exception: IOException) {
+                logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
+                return null
+            }
             return createLinkOutMessageFromPayload(
-                LinkManagerPayload(message),
+                serializedMessage,
                 message.flowMessage.header.source,
                 message.flowMessage.header.destination,
                 session,
@@ -70,13 +81,12 @@ class MessageConverter {
         }
 
         private fun createLinkOutMessageFromPayload(
-            payload: LinkManagerPayload,
+            serializedPayload: ByteBuffer,
             source: HoldingIdentity,
             destination: HoldingIdentity,
             session: Session,
             networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
-            val serializedPayload = payload.toByteBuffer()
             val result = when (session) {
                 is AuthenticatedSession -> {
                     val result = session.createMac(serializedPayload.array())
@@ -112,17 +122,19 @@ class MessageConverter {
             return createLinkOutMessage(result, destMemberInfo, networkType)
         }
 
-        fun extractPayload(session: Session, sessionId: String, message: DataMessage): LinkManagerPayload? {
+        fun <T> extractPayload(session: Session, sessionId: String, message: DataMessage, deserialize: (ByteBuffer) -> T): T? {
             val sessionAndMessage = SessionAndMessage.create(session, sessionId, message) ?: return null
             return when (sessionAndMessage) {
-                is SessionAndMessage.Authenticated -> extractPayloadFromAuthenticatedMessage(sessionAndMessage)
-                is SessionAndMessage.AuthenticatedEncrypted -> extractPayloadFromAuthenticatedEncryptedMessage(sessionAndMessage)
+                is SessionAndMessage.Authenticated -> extractPayloadFromAuthenticatedMessage(sessionAndMessage, deserialize)
+                is SessionAndMessage.AuthenticatedEncrypted ->
+                    extractPayloadFromAuthenticatedEncryptedMessage(sessionAndMessage, deserialize)
             }
         }
 
-        fun extractPayloadFromAuthenticatedEncryptedMessage(
-            sessionAndMessage: SessionAndMessage.AuthenticatedEncrypted
-        ): LinkManagerPayload? {
+        fun <T> extractPayloadFromAuthenticatedEncryptedMessage(
+            sessionAndMessage: SessionAndMessage.AuthenticatedEncrypted,
+            deserialize: (ByteBuffer) -> T
+        ): T? {
             val message = sessionAndMessage.message
             val session = sessionAndMessage.session
             val decryptedData = try {
@@ -133,14 +145,17 @@ class MessageConverter {
                 return null
             }
             return try {
-                LinkManagerPayload.fromByteBuffer(ByteBuffer.wrap(decryptedData))
+                deserialize(ByteBuffer.wrap(decryptedData))
             } catch (exception: IOException) {
                 logger.warn("Could not deserialize message for session ${message.header.sessionId}. The message was discarded.")
                 null
             }
         }
 
-        fun extractPayloadFromAuthenticatedMessage(sessionAndMessage: SessionAndMessage.Authenticated): LinkManagerPayload? {
+        fun <T> extractPayloadFromAuthenticatedMessage(
+            sessionAndMessage: SessionAndMessage.Authenticated,
+            deserialize: (ByteBuffer) -> T
+        ): T? {
             val message = sessionAndMessage.message
             val session = sessionAndMessage.session
             try {
@@ -150,7 +165,7 @@ class MessageConverter {
                 return null
             }
             return try {
-                LinkManagerPayload.fromByteBuffer(message.payload)
+                deserialize(message.payload)
             } catch (exception: IOException) {
                 logger.warn("Could not deserialize message for session ${message.header.sessionId}. The message was discarded.")
                 null

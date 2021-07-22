@@ -9,11 +9,11 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.LinkManagerTest
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.createSessionPair
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.flowMessageAndKey
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+import net.corda.p2p.payload.FlowMessageAndKey
 import net.corda.p2p.payload.HoldingIdentity
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -55,7 +55,9 @@ class MessageConverterTest {
         Mockito.`when`(mockMessage.header).thenReturn(mockHeader)
 
         assertNull(MessageConverter.extractPayloadFromAuthenticatedEncryptedMessage(
-            SessionAndMessage.AuthenticatedEncrypted(session as AuthenticatedEncryptionSession, mockMessage))
+            SessionAndMessage.AuthenticatedEncrypted(session as AuthenticatedEncryptionSession, mockMessage),
+            FlowMessageAndKey::fromByteBuffer
+            )
         )
         loggingInterceptor.assertSingleWarning("Decryption failed for message for session null. Reason: Decryption failed due to bad authentication tag. The message was discarded.")
     }
@@ -69,7 +71,9 @@ class MessageConverterTest {
         Mockito.`when`(mockMessage.header).thenReturn(mockHeader)
 
         assertNull(MessageConverter.extractPayloadFromAuthenticatedMessage(
-            SessionAndMessage.Authenticated(session as AuthenticatedSession, mockMessage))
+            SessionAndMessage.Authenticated(session as AuthenticatedSession, mockMessage),
+            FlowMessageAndKey::fromByteBuffer
+            )
         )
         loggingInterceptor.assertSingleWarning("MAC check failed for message for session null. The message was discarded.")
     }

@@ -32,8 +32,8 @@ import net.corda.p2p.payload.FlowMessageHeader
 import net.corda.p2p.payload.HoldingIdentity
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
@@ -41,14 +41,11 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import java.nio.ByteBuffer
-import java.security.KeyPair
-import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
 import java.util.*
-import kotlin.collections.HashMap
 
 class SessionManagerTest {
 
@@ -325,10 +322,10 @@ class SessionManagerTest {
         assertTrue(messageFromQueue.payload is AuthenticatedDataMessage)
         val authenticatedDataMessage = (messageFromQueue.payload as AuthenticatedDataMessage)
 
-        val responderMessage = extractPayload(responderSession, "", DataMessage.Authenticated(authenticatedDataMessage))
-        assertTrue(responderMessage!!.content is FlowMessageAndKey)
+        val responderMessage = extractPayload(responderSession, "", DataMessage.Authenticated(authenticatedDataMessage), FlowMessageAndKey::fromByteBuffer)
 
-        assertEquals(wrappedMessage.flowMessage.payload, (responderMessage.content as FlowMessageAndKey).flowMessage.payload)
+        assertNotNull(responderMessage)
+        assertEquals(wrappedMessage.flowMessage.payload, responderMessage!!.flowMessage.payload)
     }
 
     @Test
@@ -344,10 +341,10 @@ class SessionManagerTest {
         assertTrue(messageFromQueue.payload is AuthenticatedEncryptedDataMessage)
         val authenticatedDataMessage = (messageFromQueue.payload as AuthenticatedEncryptedDataMessage)
 
-        val responderMessage = extractPayload(responderSession, "", DataMessage.AuthenticatedAndEncrypted(authenticatedDataMessage))
-        assertTrue(responderMessage!!.content is FlowMessageAndKey)
+        val responderMessage = extractPayload(responderSession, "", DataMessage.AuthenticatedAndEncrypted(authenticatedDataMessage), FlowMessageAndKey::fromByteBuffer)
+        assertNotNull(responderMessage)
 
-        assertEquals(wrappedMessage.flowMessage.payload, (responderMessage.content as FlowMessageAndKey).flowMessage.payload)
+        assertEquals(wrappedMessage.flowMessage.payload, responderMessage!!.flowMessage.payload)
     }
 
     @Test
@@ -360,14 +357,21 @@ class SessionManagerTest {
 
         val authenticatedMessage = linkOutMessageFromFlowMessageAndKey(wrappedMessage, initiatorSession, netMapInbound)
         assertTrue(authenticatedMessage!!.payload is AuthenticatedDataMessage)
-        val inboundSession = inboundSessionManager.getInboundSession(sessionId)
+        val sessionDirection = inboundSessionManager.getSessionById(sessionId)
 
+        assertTrue(sessionDirection is SessionManager.SessionDirection.Inbound)
+        val inboundSession = (sessionDirection as SessionManager.SessionDirection.Inbound).session
         assertTrue(inboundSession is AuthenticatedSession)
 
-        val responderMessage = extractPayload(inboundSession!!, "", DataMessage.Authenticated(authenticatedMessage.payload as AuthenticatedDataMessage))
-        assertTrue(responderMessage!!.content is FlowMessageAndKey)
+        val responderMessage = extractPayload(
+            inboundSession,
+            "",
+            DataMessage.Authenticated(authenticatedMessage.payload as AuthenticatedDataMessage),
+            FlowMessageAndKey::fromByteBuffer
+        )
+        assertNotNull(responderMessage)
 
-        assertEquals(wrappedMessage.flowMessage.payload, (responderMessage.content as FlowMessageAndKey).flowMessage.payload)
+        assertEquals(wrappedMessage.flowMessage.payload, responderMessage!!.flowMessage.payload)
     }
 
     @Test
@@ -380,18 +384,20 @@ class SessionManagerTest {
 
         val authenticatedEncryptedMessage = linkOutMessageFromFlowMessageAndKey(wrappedMessage, initiatorSession, netMapInbound)
         assertTrue(authenticatedEncryptedMessage!!.payload is AuthenticatedEncryptedDataMessage)
-        val inboundSession = inboundSessionManager.getInboundSession(sessionId)
+        val sessionDirection = inboundSessionManager.getSessionById(sessionId)
+        assertTrue(sessionDirection is SessionManager.SessionDirection.Inbound)
+        val inboundSession = (sessionDirection as SessionManager.SessionDirection.Inbound).session
 
         assertTrue(inboundSession is AuthenticatedEncryptionSession)
 
         val responderMessage = extractPayload(
-            inboundSession!!,
+            inboundSession,
             "",
-            DataMessage.AuthenticatedAndEncrypted(authenticatedEncryptedMessage.payload as AuthenticatedEncryptedDataMessage)
+            DataMessage.AuthenticatedAndEncrypted(authenticatedEncryptedMessage.payload as AuthenticatedEncryptedDataMessage),
+            FlowMessageAndKey::fromByteBuffer
         )
-        assertTrue(responderMessage!!.content is FlowMessageAndKey)
 
-        assertEquals(wrappedMessage.flowMessage.payload, (responderMessage.content as FlowMessageAndKey).flowMessage.payload)
+        assertEquals(wrappedMessage.flowMessage.payload, responderMessage!!.flowMessage.payload)
     }
 
     @Test
