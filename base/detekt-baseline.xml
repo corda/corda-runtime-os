@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>SpreadOperator:ByteArrays.kt$OpaqueBytes.Companion$(*b)</ID>
+    <ID>TooGenericExceptionCaught:Try.kt$Try.Companion$t: Throwable</ID>
+    <ID>TooManyFunctions:EncodingUtils.kt$net.corda.v5.base.util.EncodingUtils.kt</ID>
+  </CurrentIssues>
+</SmellBaseline>

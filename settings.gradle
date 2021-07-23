@@ -1,0 +1,48 @@
+pluginManagement {
+    repositories {
+        def cordaUseCache = System.getenv("CORDA_USE_CACHE")
+        if (cordaUseCache != null) {
+            maven {
+                url = "$artifactoryContextUrl/$cordaUseCache"
+                name = "R3 Maven remote repositories"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        } else {
+            maven {
+                url "$artifactoryContextUrl/corda-dev"
+                content {
+                    includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
+                }
+            }
+            maven {
+                url "$artifactoryContextUrl/corda-releases"
+                content {
+                    includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
+                }
+            }
+            gradlePluginPortal()
+        }
+    }
+
+    plugins {
+        id 'org.jetbrains.kotlin.jvm' version kotlinVersion
+        id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
+        id 'org.jetbrains.kotlin.plugin.noarg' version kotlinVersion
+        id 'org.openjfx.javafxplugin' version javaFxPluginVersion
+        id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
+        id 'org.ajoberstar.grgit' version grgitPluginVersion // used for GIT interaction (e.g. extract commit hash)
+        id 'com.jfrog.artifactory' version jfrogArtifactoryPluginVersion
+        id 'com.dorongold.task-tree' version taskTreePluginVersion // utility to visualise Gradle task DAG
+        id 'biz.aQute.bnd.builder' version bndVersion // used to create OSGi bundles
+    }
+}
+
+rootProject.name = "corda-project"
+
+include 'base'

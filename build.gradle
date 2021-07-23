@@ -1,0 +1,366 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import io.gitlab.arturbosch.detekt.DetektPlugin
+import static org.gradle.api.JavaVersion.*
+
+buildscript {
+    repositories {
+        maven {
+            url = "$artifactoryContextUrl/corda-releases"
+        }
+    }
+    ext {
+        // Remember where our Java executable lives (until Bnd supports Gradle toolchains).
+        javaExecutable = file("${System.getProperty('java.home')}/bin/java")
+    }
+}
+
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm' apply false
+    id 'org.jetbrains.kotlin.plugin.allopen' apply false
+    id 'org.jetbrains.kotlin.plugin.noarg' apply false
+    id 'io.gitlab.arturbosch.detekt' apply false
+    id 'org.ajoberstar.grgit' // used for GIT interaction (e.g. extract commit hash)
+    id 'com.jfrog.artifactory'
+    id 'maven-publish'
+    id 'jacoco' // test coverage
+    id 'com.dorongold.task-tree' // utility to visualise Gradle task DAG
+}
+
+def rootProjectDir = rootDir
+def revision = {
+    if (System.getenv("CORDA_REVISION")) {
+        return System.getenv("CORDA_REVISION")
+    }
+    try {
+        return "git rev-parse HEAD".execute().text.trim()
+    } catch (Exception error) {
+        logger.warn("git is unavailable in build environment", error)
+        "unknown"
+    }
+}()
+
+// Ensure that we both compile and run using Kotlin OSGi bundles.
+// We must ONLY invoke this for Kotlin's classpath configurations.
+void configureKotlinForOSGi(Configuration configuration) {
+    configuration.resolutionStrategy {
+        dependencySubstitution {
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') with module("net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') with module("net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-reflect') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+        }
+    }
+}
+
+def releaseType = System.getenv('RELEASE_TYPE') ?: "SNAPSHOT"
+artifactory {
+    publish {
+        contextUrl = artifactoryContextUrl
+        repository {
+            repoKey = System.getenv('CORDA_PUBLISH_REPOSITORY_KEY') ?: 'corda-os-maven-dev'
+            username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+            password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+            maven = true
+        }
+        defaults {
+            publishPom = true
+            publishArtifacts = true
+            publishBuildInfo = true
+
+            properties = ['release.type': releaseType, 'source.revision': revision]
+        }
+    }
+}
+
+allprojects {
+    repositories {
+        def cordaUseCache = System.getenv("CORDA_USE_CACHE")
+        if (cordaUseCache != null) {
+            maven {
+                url = "$artifactoryContextUrl/$cordaUseCache"
+                name = "R3 Maven remote repositories"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        } else {
+            maven {
+                url = "$artifactoryContextUrl/corda-dependencies-dev"
+            }
+            maven {
+                url = "$artifactoryContextUrl/corda-releases"
+            }
+            maven {
+                url = "$artifactoryContextUrl/corda-dependencies"
+            }
+            maven {
+                url = "$artifactoryContextUrl/corda-dev"
+            }
+            mavenCentral()
+            jcenter()
+            maven {
+                url = "https://kotlin.bintray.com/kotlinx"
+            }
+            maven {
+                url = "https://repo.gradle.org/gradle/libs-releases-local/"
+            }
+            maven {
+                url = "https://dl.bintray.com/palantir/releases/"
+            }
+            maven {
+                // For Apache ServiceMix.
+                url = 'https://repository.mulesoft.org/nexus/content/repositories/public'
+                content {
+                    // The repo contains this artifact but without its jar.
+                    excludeGroup 'com.github.detro'
+                }
+            }
+            maven {
+                url = "$artifactoryContextUrl/${System.getenv('CORDA_CONSUME_REPOSITORY_KEY') ?: 'corda-os-maven'}"
+            }
+            mavenLocal()
+        }
+    }
+}
+
+def javaVersion = VERSION_11
+
+logger.quiet("********************** CORDA BUILD **********************")
+if (JavaVersion.current() != javaVersion) {
+    throw new GradleException("The java version used ${JavaVersion.current()} is not the expected version ${javaVersion}.")
+}
+logger.quiet("SDK version: {}", JavaVersion.current())
+logger.quiet("JAVA HOME {}", System.getProperty("java.home"))
+if (System.getenv("RELEASE_VERSION")?.trim()) {
+    version = System.getenv("RELEASE_VERSION")
+} else {
+    def versionSuffix = System.getenv('VERSION_SUFFIX') ?: "0-SNAPSHOT"
+    version = "$cordaVersion-$versionSuffix"
+}
+
+logger.quiet("Corda release version: {}", version)
+logger.quiet("Corda baseVersion: {}", cordaVersion)
+logger.quiet("Release Type: {}", releaseType)
+
+subprojects {
+    buildscript {
+        configurations.classpath {
+            // FORCE Gradle to use latest SNAPSHOT plugins.
+            resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+        }
+    }
+
+    version rootProject.version
+    group 'net.corda'
+
+    apply plugin: 'kotlin'
+    apply plugin: DetektPlugin
+    apply plugin: 'jacoco'
+
+    // NOTE: question whether it is "ok" to force dependencies on all modules like this
+    //  thinking is that for the test dependencies it's ok as it'll keep things consistent.
+    //  we can add exclusions, or review this if necessary.
+    dependencies {
+        // Test libraries -> keep consistent across modules
+        testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+        testImplementation "org.mockito:mockito-core:$mockitoVersion"
+        testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
+            // Excluding mockito-core and adding it implicitly above. This is done to allow the use of the latest version of mockito.
+            exclude group: 'mockito-core'
+        }
+
+        testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
+
+        // Test runtime libraries -> also keep consistent
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+
+        detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
+    }
+
+    java {
+        sourceCompatibility = javaVersion
+        targetCompatibility = javaVersion
+    }
+
+    // Making all persistence entity open and with an empty constructor to allow Hibernate to work.
+    apply plugin: 'kotlin-allopen'
+    allOpen {
+        annotations(
+                "javax.persistence.Entity",
+                "javax.persistence.Embeddable",
+                "javax.persistence.MappedSuperclass"
+        )
+    }
+    apply plugin: 'kotlin-noarg'
+    noArg {
+        annotations(
+                "javax.persistence.Entity",
+                "javax.persistence.Embeddable",
+                "javax.persistence.MappedSuperclass"
+        )
+    }
+
+    // This block should be remove when the junit 4 tests are removed
+    sourceSets {
+        junit4Test {
+            kotlin {
+                srcDirs += file("$projectDir/src/junit4Test/kotlin")
+            }
+            java {
+                srcDirs += file("$projectDir/src/junit4Test/java")
+            }
+            resources {
+                srcDirs += file("$projectDir/src/junit4Test/resources")
+            }
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+        }
+    }
+
+    dependencies {
+        // TODO: remove vintage engine when existing tests labelled "junit4Test" and we don't have a dependency on 4 anymore
+        junit4TestRuntimeOnly "org.junit.vintage:junit-vintage-engine:$junitVersion"
+    }
+
+    kotlin {
+        target {
+            java
+            compilations.junit4Test {
+                associateWith compilations.main
+                associateWith compilations.test
+
+                configurations {
+                    junit4TestApi.extendsFrom testApi
+                    junit4TestImplementation.extendsFrom testImplementation
+                    junit4TestRuntimeOnly.extendsFrom testRuntimeOnly
+
+                    [ junit4TestCompileClasspath, junit4TestRuntimeClasspath ].forEach { cfg ->
+                        configureKotlinForOSGi(cfg)
+                    }
+                }
+            }
+        }
+    }
+
+    tasks.register('junit4Test', Test) {
+        description = 'Runs junit4 tests'
+        group = 'verification'
+
+        testClassesDirs = project.sourceSets['junit4Test'].output.classesDirs
+        classpath = project.sourceSets['junit4Test'].runtimeClasspath
+        shouldRunAfter tasks.named('test')
+    }
+
+    tasks.named('test') {
+        dependsOn tasks.named('junit4Test')
+    }
+
+
+    configurations {
+        all {
+            resolutionStrategy {
+                dependencySubstitution {
+                    // Replace any Logback SLF4J back-end with Log4J2.
+                    substitute module('ch.qos.logback:logback-classic') using module("org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion")
+                }
+            }
+        }
+
+        [ compileClasspath, testCompileClasspath, runtimeClasspath, testRuntimeClasspath ].forEach { cfg ->
+            configureKotlinForOSGi(cfg)
+        }
+    }
+
+    tasks.withType(KotlinCompile).configureEach {
+        kotlinOptions {
+            allWarningsAsErrors = true
+            languageVersion = '1.4'
+            apiVersion = '1.4'
+            verbose = true
+            jvmTarget = javaVersion
+            freeCompilerArgs += [
+                "-Xjvm-default=all",
+                // Prevent Kotlin from warning about kotlin.* classes inside the OSGi bundle.
+                "-Xskip-runtime-version-check",
+                "-java-parameters"
+            ]
+        }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        def compilerArgs = options.compilerArgs
+        compilerArgs << '-parameters'
+
+        options.encoding = 'UTF-8'
+    }
+
+    // TODO: does this really need to apply to all modules or can this be moved to the modules that need it only?
+    tasks.named('compileTestJava', JavaCompile) {
+        def compilerArgs = options.compilerArgs
+        compilerArgs << '--add-exports'
+        compilerArgs << 'java.base/sun.security.x509=ALL-UNNAMED'
+        compilerArgs << '--add-exports'
+        compilerArgs << 'java.base/sun.security.util=ALL-UNNAMED'
+    }
+
+    // TODO: as above, this may not apply to all modules, so maybe should be moved out
+    tasks.withType(Jar).matching { it.name != 'cpk' }.configureEach {
+        manifest {
+            attributes("Corda-Release-Version": archiveVersion.get())
+            attributes("Corda-Revision": revision)
+            attributes("Automatic-Module-Name": "net.corda.${project.name.replace('-', '.')}")
+            // NOTE: this needs to be reverted to a URL with the version once the URL structure has been defined.
+//            attributes("Corda-Docs-Link": "https://docs.corda.net/docs/corda-os/$cordaVersion")
+            attributes("Corda-Docs-Link": "https://docs.r3.com/")
+        }
+    }
+
+    // Added to support junit5 tests
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
+
+    tasks.register('compileAll') { task ->
+        description = "Compiles all the Kotlin and Java classes, including all of the test classes."
+        group = "verification"
+
+        task.dependsOn tasks.withType(AbstractCompile)
+    }
+
+    detekt {
+        baseline = file("$projectDir/detekt-baseline.xml")
+        config.setFrom(files("$rootProjectDir/detekt-config.yml"))
+        parallel = true
+        reports {
+            xml {
+                enabled = true
+                destination = file("$projectDir/build/detekt-report.xml")
+            }
+            html {
+                enabled = false
+            }
+            txt {
+                enabled = false
+            }
+        }
+    }
+
+    tasks.named('jacocoTestReport') {
+        def jacocoExecutionDataFiles = fileTree(buildDir).include("/jacoco/*.exec")
+        executionData.setFrom(jacocoExecutionDataFiles)
+
+        dependsOn tasks.named('test') // tests are required to run before generating the report
+
+        reports {
+            xml.enabled true
+            html.enabled true
+        }
+    }
+
+}
