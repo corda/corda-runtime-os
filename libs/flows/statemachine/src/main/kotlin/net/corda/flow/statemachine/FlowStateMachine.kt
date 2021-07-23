@@ -30,6 +30,10 @@ data class FlowStackSnapshot(
 
 @DoNotImplement
 interface FlowStateMachine<FLOWRETURN> : FlowStateMachineInjectable {
+    val logic: Flow<FLOWRETURN>
+    val nonSerializableState: NonSerializableState?
+    val housekeepingState: HousekeepingState?
+
     @Suspendable
     fun <SUSPENDRETURN : Any> suspend(ioRequest: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN
 
@@ -44,4 +48,8 @@ interface FlowStateMachine<FLOWRETURN> : FlowStateMachineInjectable {
     fun waitForCheckpoint(): Checkpoint?
 
     fun startFlow(): Fiber<Unit>
+
+    fun nonSerializableState(nonSerializableState: NonSerializableState)
+
+    fun houseKeepingState(housekeepingState: HousekeepingState)
 }
