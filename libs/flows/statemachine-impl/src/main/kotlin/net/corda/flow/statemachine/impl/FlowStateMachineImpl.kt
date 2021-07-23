@@ -1,6 +1,5 @@
 package net.corda.flow.statemachine.impl
 
-
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.data.crypto.SecureHash
@@ -29,14 +28,11 @@ import org.slf4j.Logger
 import org.slf4j.MDC
 import java.nio.ByteBuffer
 
-class TransientReference<out A>(@Transient val value: A)
-
-
-@Suppress("ForbiddenComment", "ComplexMethod", "TooGenericExceptionCaught")
+@Suppress("TooManyFunctions", "ComplexMethod", "TooGenericExceptionCaught")
 class FlowStateMachineImpl<R>(
     private val clientId: String?,
     private val id: FlowKey,
-    val logic: Flow<R>,
+    override val logic: Flow<R>,
     val ourIdentity: Party,
     scheduler: FiberScheduler
 ) : Fiber<Unit>(id.toString(), scheduler), FlowStateMachine<R> {
@@ -45,24 +41,10 @@ class FlowStateMachineImpl<R>(
         private val log: Logger = contextLogger()
     }
 
-    private var nonSerializableStateReference: TransientReference<NonSerializableState>? = null
-    var nonSerializableState: NonSerializableState
-        // After the flow has been created, the transient values should never be null
-        get() = nonSerializableStateReference!!.value
-        set(values) {
-            check(nonSerializableStateReference?.value == null) { "The transient values should only be set once when initialising a flow" }
-            nonSerializableStateReference = TransientReference(values)
-        }
+    override var nonSerializableState: NonSerializableState? = null
+    override var housekeepingState: HousekeepingState? = null
 
-    private var housekeepingStateReference: TransientReference<HousekeepingState>? = null
-    var housekeepingState: HousekeepingState
-        // After the flow has been created, the transient state should never be null
-        get() = housekeepingStateReference!!.value
-        set(state) {
-            housekeepingStateReference = TransientReference(state)
-        }
-
-    val isKilled: Boolean get() = housekeepingState.isKilled
+    val isKilled: Boolean get() = housekeepingState!!.isKilled
     val creationTime: Long = System.currentTimeMillis()
 
     private fun setLoggingContext() {
@@ -74,84 +56,90 @@ class FlowStateMachineImpl<R>(
     private fun Throwable.isUnrecoverable(): Boolean = this is VirtualMachineError && this !is StackOverflowError
 
     private fun logFlowError(throwable: Throwable) {
-        log.warn("Flow raised an error: ${throwable.message}. Sending it to flow hospital to be triaged.")
+        log.warn("Flow raised an error: ${throwable.message}")
     }
 
     @Suspendable
     override fun run() {
         setLoggingContext()
         log.debug { "Calling flow: $logic" }
-        val resultOrError = try {
-            //TODO: we might need the sandbox class loader
-            Thread.currentThread().contextClassLoader = logic.javaClass.classLoader
-            suspend(FlowIORequest.ForceCheckpoint)
-            val result = logic.call()
-            Try.Success(result)
-        } catch (t: Throwable) {
-            if (t.isUnrecoverable()) {
-                errorAndTerminate(
-                    "Caught unrecoverable error from flow. Forcibly terminating the JVM, this might leave " +
-                            "resources open, and most likely will.",
-                    t
-                )
-            }
-            logFlowError(t)
-            Try.Failure(t)
-        }
-
+        val resultOrError = executeFlowLogic()
         log.info("flow ended $id")
+
         when (resultOrError) {
             is Try.Success -> {
-                val clientId = clientId
-                if (clientId != null) {
-                    nonSerializableState.eventsOut += FlowEvent(
-                        id,
-                        RPCFlowResult(
-                            clientId,
-                            logic.javaClass.name,
-                            resultOrError.value.toString(),
-                            SecureHash(),
-                            null
-                        )
-                    )
-                }
+                handleSuccess(resultOrError)
             }
             is Try.Failure -> {
-                val clientId = clientId
-                if (clientId != null) {
-                    nonSerializableState.eventsOut += FlowEvent(
-                        id,
-                        RPCFlowResult(
-                            clientId,
-                            logic.javaClass.name,
-                            null,
-                            SecureHash(),
-                            FlowError(
-                                resultOrError.exception.cause.toString(),
-                                resultOrError.exception.message
-                            )
-                        )
-                    )
-                }
-//                } else if (transientState.initiatedBy != null) {
-//                    transientValues.eventsOut += RemoteFlowError(
-//                        id,
-//                        transientState.ourIdentity,
-//                        transientState.initiatedBy!!.counterparty,
-//                        transientState.initiatedBy!!.sourceSessionId,
-//                        transientState.initiatedBy!!.sequenceNo++,
-//                        resultOrError.exception.message ?: "remote error"
-//                    )
-//                }
+                handleFailure(resultOrError)
             }
         }
-        nonSerializableState.suspended.complete(null)
+        nonSerializableState!!.suspended.complete(null)
+    }
+
+    private fun executeFlowLogic() = try {
+        //TODOs: we might need the sandbox class loader
+        Thread.currentThread().contextClassLoader = logic.javaClass.classLoader
+        suspend(FlowIORequest.ForceCheckpoint)
+        val result = logic.call()
+        Try.Success(result)
+    } catch (t: Throwable) {
+        if (t.isUnrecoverable()) {
+            errorAndTerminate(
+                "Caught unrecoverable error from flow. Forcibly terminating the JVM, this might leave " +
+                        "resources open, and most likely will.",
+                t
+            )
+        }
+        logFlowError(t)
+        Try.Failure(t)
+    }
+
+    private fun handleSuccess(resultOrError: Try.Success<R>) {
+        if (clientId != null) {
+            nonSerializableState!!.eventsOut += FlowEvent(
+                id,
+                RPCFlowResult(
+                    clientId,
+                    logic.javaClass.name,
+                    resultOrError.value.toString(),
+                    SecureHash(),
+                    null
+                )
+            )
+        }
+    }
+
+    private fun handleFailure(resultOrError: Try.Failure<R>) {
+        if (clientId != null) {
+            nonSerializableState!!.eventsOut += FlowEvent(
+                id,
+                RPCFlowResult(
+                    clientId,
+                    logic.javaClass.name,
+                    null,
+                    SecureHash(),
+                    FlowError(
+                        resultOrError.exception.cause.toString(),
+                        resultOrError.exception.message
+                    )
+                )
+            )
+        }
+//        else if (transientState.initiatedBy != null) {
+//            transientValues.eventsOut += RemoteFlowError(
+//                id,
+//                transientState.ourIdentity,
+//                transientState.initiatedBy!!.counterparty,
+//                transientState.initiatedBy!!.sourceSessionId,
+//                transientState.initiatedBy!!.sequenceNo++,
+//                resultOrError.exception.message ?: "remote error"
+//            )
+//        }
     }
 
     @Suspendable
-    override fun <SUSPENDRETURN : Any> suspend(
-        ioRequest: FlowIORequest<SUSPENDRETURN>
-    ): SUSPENDRETURN {
+    override fun <SUSPENDRETURN : Any> suspend(ioRequest: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
         log.info("suspend $ioRequest")
         sendEvents(ioRequest)
         while (true) {
@@ -161,20 +149,18 @@ class FlowStateMachineImpl<R>(
                 return uncheckedCast(ret)
             }
             parkAndSerialize { _, _ ->
-                val fiberState = nonSerializableState.checkpointSerializationService.serialize(this)
-                nonSerializableState.suspended.complete(fiberState.bytes)
+                val fiberState = nonSerializableState!!.checkpointSerializationService.serialize(this)
+                nonSerializableState!!.suspended.complete(fiberState.bytes)
             }
             setLoggingContext()
         }
     }
 
-    private fun sendEvents(
-        ioRequest: FlowIORequest<*>
-    ) {
+    private fun sendEvents(ioRequest: FlowIORequest<*>) {
         log.info("sendEvents $ioRequest")
         when (ioRequest) {
             FlowIORequest.ForceCheckpoint -> {
-                nonSerializableState.eventsOut += FlowEvent(
+                nonSerializableState!!.eventsOut += FlowEvent(
                     id,
                     Wakeup()
                 )
@@ -189,15 +175,13 @@ class FlowStateMachineImpl<R>(
         }
     }
 
-    private fun processEvent(
-        ioRequest: FlowIORequest<*>
-    ): Pair<Any?, Boolean> {
+    private fun processEvent(ioRequest: FlowIORequest<*>): Pair<Any?, Boolean> {
         log.info("processEvent $ioRequest")
         return when (ioRequest) {
-            FlowIORequest.ForceCheckpoint -> {
-                val wakeup = housekeepingState.eventsIn.firstOrNull { it is Wakeup }
+            is FlowIORequest.ForceCheckpoint -> {
+                val wakeup = housekeepingState!!.eventsIn.firstOrNull { it is Wakeup }
                 if (wakeup != null) {
-                    housekeepingState.eventsIn.remove(wakeup)
+                    housekeepingState!!.eventsIn.remove(wakeup)
                 }
                 Pair(Unit, (wakeup == null))
             }
@@ -225,10 +209,9 @@ class FlowStateMachineImpl<R>(
     }
 
     override fun waitForCheckpoint(): Checkpoint? {
-        val fibreState = nonSerializableState.suspended.getOrThrow() ?: return null
+        val fibreState = nonSerializableState!!.suspended.getOrThrow() ?: return null
 
         val stateMachineState = StateMachineState(
-
         )
         return Checkpoint(
             id,
@@ -238,5 +221,13 @@ class FlowStateMachineImpl<R>(
     }
 
     override fun startFlow(): Fiber<Unit> = start()
+
+    override fun houseKeepingState(housekeepingState: HousekeepingState) {
+        this.housekeepingState = housekeepingState
+    }
+
+    override fun nonSerializableState(nonSerializableState: NonSerializableState) {
+        this.nonSerializableState = nonSerializableState
+    }
 
 }

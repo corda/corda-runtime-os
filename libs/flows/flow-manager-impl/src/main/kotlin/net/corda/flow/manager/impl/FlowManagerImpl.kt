@@ -7,9 +7,10 @@ import net.corda.data.flow.event.FlowSessionMessage
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
+import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.flow.statemachine.HousekeepingState
 import net.corda.flow.statemachine.NonSerializableState
-import net.corda.flow.statemachine.impl.FlowStateMachineImpl
+import net.corda.flow.statemachine.factory.FlowStateMachineFactory
 import net.corda.internal.di.DependencyInjectionService
 import net.corda.sandbox.cache.FlowMetadata
 import net.corda.sandbox.cache.SandboxCache
@@ -43,6 +44,8 @@ class FlowManagerImpl @Activate constructor(
     private val checkpointSerialisationService: SerializationService,
     @Reference
     private val dependencyInjector: DependencyInjectionService,
+    @Reference(service = FlowStateMachineFactory::class)
+    private val flowStateMachineFactory: FlowStateMachineFactory
 ) : FlowManager {
 
     companion object {
@@ -64,7 +67,7 @@ class FlowManagerImpl @Activate constructor(
         log.info("start new flow clientId: $clientId flowName: ${newFlowMetadata.name} args $args")
 
         val flow = getOrCreate(newFlowMetadata.key.identity, newFlowMetadata, args)
-        val stateMachine = FlowStateMachineImpl(
+        val stateMachine = flowStateMachineFactory.createStateMachine(
             clientId,
             newFlowMetadata.key,
             flow,
@@ -72,12 +75,12 @@ class FlowManagerImpl @Activate constructor(
             scheduler,
         )
 
-        stateMachine.housekeepingState = HousekeepingState(
+        stateMachine.houseKeepingState(HousekeepingState(
             0,
             ourIdentity,
             false,
             mutableListOf()
-        )
+        ))
         setupFlow(stateMachine)
         stateMachine.startFlow()
         val checkpoint = stateMachine.waitForCheckpoint()
@@ -107,11 +110,11 @@ class FlowManagerImpl @Activate constructor(
         return flowClazz.getDeclaredConstructor().newInstance(args)
     }
 
-    private fun setupFlow(flow: FlowStateMachineImpl<*>) {
-        flow.nonSerializableState = NonSerializableState(
+    private fun setupFlow(flow: FlowStateMachine<*>) {
+        flow.nonSerializableState(NonSerializableState(
             checkpointSerialisationService,
             Clock.systemUTC()
-        )
+        ))
         dependencyInjector.injectDependencies(flow.logic, flow)
     }
 }
