@@ -24,6 +24,10 @@ dependencies {
     systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
     systemPackages project(":osgi-framework-api")
+    // Should be moved to apps once we can
+    systemPackages("co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent") {
+        exclude group: "com.esotericsoftware", module: "reflectasm"
+    }
 }
 
 def jarTask = tasks.named("jar", Jar) {
