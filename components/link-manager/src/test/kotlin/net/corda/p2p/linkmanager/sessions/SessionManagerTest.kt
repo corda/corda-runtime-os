@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.sessions
 
-import com.nhaarman.mockito_kotlin.any
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.Step2Message
@@ -38,6 +37,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
+import org.mockito.kotlin.any
 import java.nio.ByteBuffer
 import java.security.KeyPair
 import java.security.KeyPairGenerator

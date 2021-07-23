@@ -2,6 +2,7 @@ package net.corda.osgi.framework
 
 import com.google.common.jimfs.Jimfs
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -14,10 +15,6 @@ import java.io.IOException
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
-
 
 /**
  * This class tests the [OSGiFrameworkWrap] class.
@@ -111,7 +108,7 @@ internal class OSGiFrameworkWrapTest {
     fun setUp() {
         fileSystem = Jimfs.newFileSystem()
         frameworkStorageDir = Files.createDirectory(fileSystem.getPath(TEMP_DIR))
-        assertTrue { Files.exists(frameworkStorageDir) }
+        assertTrue(Files.exists(frameworkStorageDir))
     }
 
     @ParameterizedTest

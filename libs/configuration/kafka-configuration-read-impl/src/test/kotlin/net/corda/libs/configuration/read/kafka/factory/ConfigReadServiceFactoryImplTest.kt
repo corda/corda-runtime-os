@@ -1,6 +1,6 @@
 package net.corda.libs.configuration.read.kafka.factory
 
-import com.nhaarman.mockito_kotlin.mock
+import org.mockito.kotlin.mock
 import com.typesafe.config.Config
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.junit.jupiter.api.Assertions

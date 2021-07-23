@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.messaging
 
-import com.nhaarman.mockito_kotlin.any
+import org.mockito.kotlin.any
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.CommonHeader
