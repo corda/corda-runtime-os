@@ -5,10 +5,11 @@ import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import net.corda.v5.serialization.CheckpointCustomSerializer
-import net.corda.internal.serialization.amqp.CORDAPP_TYPE
 import java.lang.reflect.Type
 import kotlin.reflect.jvm.javaType
 import kotlin.reflect.jvm.jvmErasure
+
+const val CORDAPP_TYPE = 0
 
 /**
  * Adapts CheckpointCustomSerializer for use in Kryo

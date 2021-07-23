@@ -1,4 +1,4 @@
 @Export
-package net.corda.kryoserialization.osgi;
+package net.corda.kryoserialization.serializers;
 
 import org.osgi.annotation.bundle.Export;

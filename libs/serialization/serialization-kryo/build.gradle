@@ -6,12 +6,14 @@ plugins {
 dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
+    compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
 
     implementation "net.corda:corda-application:$cordaVersion"
     implementation "net.corda:corda-base:$cordaVersion"
-    implementation "net.corda:corda-crypto-impl:$cordaVersion"
+    implementation "net.corda:corda-base-internal:$cordaVersion"
+    implementation "net.corda:corda-crypto-api:$cordaVersion"
     implementation "net.corda:corda-serialization:$cordaVersion"
-    implementation "net.corda:corda-serialization-internal:$cordaVersion"
+    implementation "net.corda:corda-serialization-encoding:$cordaVersion"
 
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
@@ -20,6 +22,6 @@ dependencies {
 
     testImplementation "org.osgi:osgi.core:$osgiVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

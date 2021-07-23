@@ -26,7 +26,6 @@ import net.corda.v5.serialization.SerializationWhitelist
 import net.corda.v5.serialization.SerializeAsToken
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import net.corda.internal.serialization.MutableClassWhitelist
 import org.objenesis.instantiator.ObjectInstantiator
 import org.objenesis.strategy.InstantiatorStrategy
 import org.objenesis.strategy.StdInstantiatorStrategy
