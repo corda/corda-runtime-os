@@ -28,11 +28,13 @@ import org.slf4j.Logger
 import org.slf4j.MDC
 import java.nio.ByteBuffer
 
+class TransientReference<out A>(@Transient val value: A)
+
 @Suppress("TooManyFunctions", "ComplexMethod", "TooGenericExceptionCaught")
 class FlowStateMachineImpl<R>(
     private val clientId: String?,
     private val id: FlowKey,
-    override val logic: Flow<R>,
+    private val logic: Flow<R>,
     val ourIdentity: Party,
     scheduler: FiberScheduler
 ) : Fiber<Unit>(id.toString(), scheduler), FlowStateMachine<R> {
@@ -41,10 +43,23 @@ class FlowStateMachineImpl<R>(
         private val log: Logger = contextLogger()
     }
 
-    override var nonSerializableState: NonSerializableState? = null
-    override var housekeepingState: HousekeepingState? = null
+    private var nonSerializableStateReference: TransientReference<NonSerializableState>? = null
+    private var nonSerializableState: NonSerializableState
+        // After the flow has been created, the transient values should never be null
+        get() = nonSerializableStateReference!!.value
+        set(values) {
+            check(nonSerializableStateReference?.value == null) { "The transient values should only be set once when initialising a flow" }
+            nonSerializableStateReference = TransientReference(values)
+        }
+    private var housekeepingStateReference: TransientReference<HousekeepingState>? = null
+    private var housekeepingState: HousekeepingState
+        // After the flow has been created, the transient state should never be null
+        get() = housekeepingStateReference!!.value
+        set(state) {
+            housekeepingStateReference = TransientReference(state)
+        }
 
-    val isKilled: Boolean get() = housekeepingState!!.isKilled
+    val isKilled: Boolean get() = housekeepingState.isKilled
     val creationTime: Long = System.currentTimeMillis()
 
     private fun setLoggingContext() {
@@ -74,7 +89,7 @@ class FlowStateMachineImpl<R>(
                 handleFailure(resultOrError)
             }
         }
-        nonSerializableState!!.suspended.complete(null)
+        nonSerializableState.suspended.complete(null)
     }
 
     private fun executeFlowLogic() = try {
@@ -97,7 +112,7 @@ class FlowStateMachineImpl<R>(
 
     private fun handleSuccess(resultOrError: Try.Success<R>) {
         if (clientId != null) {
-            nonSerializableState!!.eventsOut += FlowEvent(
+            nonSerializableState.eventsOut += FlowEvent(
                 id,
                 RPCFlowResult(
                     clientId,
@@ -112,7 +127,7 @@ class FlowStateMachineImpl<R>(
 
     private fun handleFailure(resultOrError: Try.Failure<R>) {
         if (clientId != null) {
-            nonSerializableState!!.eventsOut += FlowEvent(
+            nonSerializableState.eventsOut += FlowEvent(
                 id,
                 RPCFlowResult(
                     clientId,
@@ -149,8 +164,8 @@ class FlowStateMachineImpl<R>(
                 return uncheckedCast(ret)
             }
             parkAndSerialize { _, _ ->
-                val fiberState = nonSerializableState!!.checkpointSerializationService.serialize(this)
-                nonSerializableState!!.suspended.complete(fiberState.bytes)
+                val fiberState = nonSerializableState.checkpointSerializationService.serialize(this)
+                nonSerializableState.suspended.complete(fiberState.bytes)
             }
             setLoggingContext()
         }
@@ -160,7 +175,7 @@ class FlowStateMachineImpl<R>(
         log.info("sendEvents $ioRequest")
         when (ioRequest) {
             FlowIORequest.ForceCheckpoint -> {
-                nonSerializableState!!.eventsOut += FlowEvent(
+                nonSerializableState.eventsOut += FlowEvent(
                     id,
                     Wakeup()
                 )
@@ -179,9 +194,9 @@ class FlowStateMachineImpl<R>(
         log.info("processEvent $ioRequest")
         return when (ioRequest) {
             is FlowIORequest.ForceCheckpoint -> {
-                val wakeup = housekeepingState!!.eventsIn.firstOrNull { it is Wakeup }
+                val wakeup = housekeepingState.eventsIn.firstOrNull { it is Wakeup }
                 if (wakeup != null) {
-                    housekeepingState!!.eventsIn.remove(wakeup)
+                    housekeepingState.eventsIn.remove(wakeup)
                 }
                 Pair(Unit, (wakeup == null))
             }
@@ -209,7 +224,7 @@ class FlowStateMachineImpl<R>(
     }
 
     override fun waitForCheckpoint(): Checkpoint? {
-        val fibreState = nonSerializableState!!.suspended.getOrThrow() ?: return null
+        val fibreState = nonSerializableState.suspended.getOrThrow() ?: return null
 
         val stateMachineState = StateMachineState(
         )
@@ -222,12 +237,16 @@ class FlowStateMachineImpl<R>(
 
     override fun startFlow(): Fiber<Unit> = start()
 
-    override fun houseKeepingState(housekeepingState: HousekeepingState) {
+    override fun nonSerializableState(nonSerializableState: NonSerializableState) {
+        this.nonSerializableState = nonSerializableState
+    }
+
+    override fun housekeepingState(housekeepingState: HousekeepingState) {
         this.housekeepingState = housekeepingState
     }
 
-    override fun nonSerializableState(nonSerializableState: NonSerializableState) {
-        this.nonSerializableState = nonSerializableState
+    override fun getFlowLogic(): Flow<R> {
+        return logic
     }
 
 }

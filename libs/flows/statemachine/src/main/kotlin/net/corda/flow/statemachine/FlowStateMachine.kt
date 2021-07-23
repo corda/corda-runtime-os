@@ -11,7 +11,6 @@ import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import java.time.Instant
 
-
 /**
  * Main data object representing snapshot of the flow stack, extracted from the Quasar stack.
  */
@@ -30,9 +29,6 @@ data class FlowStackSnapshot(
 
 @DoNotImplement
 interface FlowStateMachine<FLOWRETURN> : FlowStateMachineInjectable {
-    val logic: Flow<FLOWRETURN>
-    val nonSerializableState: NonSerializableState?
-    val housekeepingState: HousekeepingState?
 
     @Suspendable
     fun <SUSPENDRETURN : Any> suspend(ioRequest: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN
@@ -51,5 +47,7 @@ interface FlowStateMachine<FLOWRETURN> : FlowStateMachineInjectable {
 
     fun nonSerializableState(nonSerializableState: NonSerializableState)
 
-    fun houseKeepingState(housekeepingState: HousekeepingState)
+    fun housekeepingState(housekeepingState: HousekeepingState)
+
+    fun getFlowLogic(): Flow<FLOWRETURN>
 }
