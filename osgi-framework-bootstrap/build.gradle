@@ -1,15 +1,6 @@
 import java.nio.file.Files
 import java.util.jar.JarFile
 
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath "biz.aQute.bnd:biz.aQute.bndlib:$bndVersion"
-    }
-}
-
 description("OSGi Framework Bootstrap")
 
 dependencies {
