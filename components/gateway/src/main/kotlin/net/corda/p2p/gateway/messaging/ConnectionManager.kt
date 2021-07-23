@@ -73,10 +73,10 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
      * @throws [TimeoutException] if a successful connection cannot established
      */
     @Throws(ConnectTimeoutException::class)
-    fun acquire(target: URI): HttpClient {
+    fun acquire(target: URI, sni: String): HttpClient {
         return connectionPool.get(target) {
             logger.info("Creating new connection to ${target.authority}")
-            val client = HttpClient(target, sslConfiguration, sharedEventLoopGroup)
+            val client = HttpClient(target, sni, sslConfiguration, sharedEventLoopGroup)
             val connectionLock = CountDownLatch(1)
             val connectionSub = client.onConnection.subscribe { evt ->
                 if (evt.connected) {

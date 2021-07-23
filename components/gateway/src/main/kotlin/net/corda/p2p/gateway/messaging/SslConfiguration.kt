@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging
 
+import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfig
 import java.security.KeyStore
 
 /**

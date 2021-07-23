@@ -1,46 +1,31 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
-import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.TestBase
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.FileInputStream
 import java.net.URI
-import java.security.KeyStore
 import java.time.Instant
 import java.util.Arrays
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
-class HttpTest {
+class HttpTest : TestBase() {
 
-    private val clientMessageContent = "PING"
-    private val serverResponseContent = "PONG"
-    private val keystorePass = "cordacadevpass"
-    private val truststorePass = "trustpass"
     private val serverAddress = URI.create("http://localhost:10000")
-    private val sslConfiguration = object : SslConfiguration {
-        override val keyStore: KeyStore = KeyStore.getInstance("JKS").also {
-            it.load(FileInputStream(javaClass.classLoader.getResource("sslkeystore.jks")!!.file), keystorePass.toCharArray())
-        }
-        override val keyStorePassword: String = keystorePass
-        override val trustStore: KeyStore = KeyStore.getInstance("JKS").also {
-            it.load(FileInputStream(javaClass.classLoader.getResource("truststore.jks")!!.file), truststorePass.toCharArray())
-        }
-        override val trustStorePassword: String = truststorePass
-    }
 
     @Test
     fun `simple client POST request`() {
-        HttpServer(serverAddress.host, serverAddress.port, sslConfiguration).use { server ->
+        HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
             server.onReceive.subscribe {
                 assertEquals(clientMessageContent, String(it.payload))
                 server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
             }
             server.start()
-            HttpClient(serverAddress, sslConfiguration).use { client ->
+            HttpClient(serverAddress, aliceSNI[0], chipSslConfig).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
                 client.onConnection.subscribe {
                     if (it.connected) {
@@ -57,8 +42,6 @@ class HttpTest {
                 clientReceivedResponses.await(5, TimeUnit.SECONDS)
                 assertTrue(responseReceived)
             }
-
-            Thread.sleep(10000)
         }
     }
 
@@ -68,7 +51,7 @@ class HttpTest {
         val threadNo = 2
         val threads = mutableListOf<Thread>()
         val times = mutableListOf<Long>()
-        val httpServer = HttpServer(serverAddress.host, serverAddress.port, sslConfiguration)
+        val httpServer = HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig)
         httpServer.use { server ->
             server.onReceive.subscribe {
                 assertEquals(clientMessageContent, String(it.payload))
@@ -79,7 +62,7 @@ class HttpTest {
                 val t = thread {
                     var startTime: Long = 0
                     var endTime: Long = 0
-                    val httpClient = HttpClient(serverAddress, sslConfiguration)
+                    val httpClient = HttpClient(serverAddress, aliceSNI[1], chipSslConfig)
                     val clientReceivedResponses = CountDownLatch(requestNo)
                     httpClient.use {
                         httpClient.onReceive.subscribe {
@@ -116,13 +99,13 @@ class HttpTest {
     fun `large payload`() {
         val hugePayload = FileInputStream(javaClass.classLoader.getResource("10mb.txt")!!.file).readAllBytes()
 
-        HttpServer(serverAddress.host, serverAddress.port, sslConfiguration).use { server ->
+        HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
             server.onReceive.subscribe {
                 assert(Arrays.equals(hugePayload, it.payload))
                 server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
             }
             server.start()
-            HttpClient(serverAddress, sslConfiguration).use { client ->
+            HttpClient(serverAddress, aliceSNI[0], bobSslConfig).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
                 client.onConnection.subscribe {
                     if (it.connected) {
@@ -141,4 +124,27 @@ class HttpTest {
             }
         }
     }
+
+//    @Test
+//    fun `tls handshake fails - requested SNI is not recognized`() {
+//        HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
+//            server.start()
+//            HttpClient(serverAddress, bobSNI[0], chipSslConfig).use { client ->
+//                val connectedLatch = CountDownLatch(1)
+//                client.onConnection.subscribe {
+//                    if (it.connected) {
+//                        connectedLatch.countDown()
+//                    }
+//                }
+//
+//                client.start()
+////                connectedLatch.await(1, TimeUnit.SECONDS)
+//            }
+//        }
+//    }
+//
+//    @Test
+//    fun `tls handshake fails - server presents revoked certifiacte`() {
+//
+//    }
 }

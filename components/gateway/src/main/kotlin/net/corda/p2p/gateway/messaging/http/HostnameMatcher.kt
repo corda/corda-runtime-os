@@ -1,6 +1,8 @@
+@file:Suppress("JAVA_MODULE_DOES_NOT_EXPORT_PACKAGE")
 package net.corda.p2p.gateway.messaging.http
 
 import net.corda.nodeapi.internal.crypto.x509
+import net.corda.p2p.NetworkType
 import net.corda.v5.application.identity.CordaX500Name
 import org.slf4j.LoggerFactory
 import java.security.KeyStore
@@ -8,6 +10,9 @@ import javax.net.ssl.SNIHostName
 import javax.net.ssl.SNIMatcher
 import javax.net.ssl.SNIServerName
 import javax.net.ssl.StandardConstants
+import sun.security.util.HostnameChecker
+import sun.security.util.HostnameChecker.TYPE_TLS
+import java.security.cert.CertificateException
 
 class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
 
@@ -18,14 +23,26 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
     var matchedServerName: String? = null
         private set
 
+    /**
+     * Verifies the keystore entries against the provided *serverName*. The method will verify C4 and C5 SNI values.
+     * For C4, the value is calculated as a hash of the x500Name. For C5, the CN component as well as the alt subject names
+     * are compared with the *serverName*
+     */
     override fun matches(serverName: SNIServerName): Boolean {
+        val serverNameString = (serverName as SNIHostName).asciiName
         if (serverName.type == StandardConstants.SNI_HOST_NAME) {
             keyStore.aliases().toList().forEach { alias ->
-                val x500Name = keyStore.getCertificate(alias).x509.subjectX500Principal
-                val cordaX500Name = CordaX500Name.build(x500Name)
-                // Convert the CordaX500Name into the expected host name and compare
-                // E.g. O=Corda B, L=London, C=GB becomes 3c6dd991936308edb210555103ffc1bb.corda.net
-                if ((serverName as SNIHostName).asciiName == cordaX500Name.toSNI()) {
+                val certificate = keyStore.getCertificate(alias).x509
+                val cordaX500Name = CordaX500Name.build(certificate.subjectX500Principal)
+                val c4SniValue = SniCalculator.calculateSni(cordaX500Name.toString(), NetworkType.CORDA_4, "")
+                val c5Check = try {
+                    HostnameChecker.getInstance(TYPE_TLS).match(serverNameString, certificate)
+                    true
+                } catch (e: CertificateException) {
+                    false
+                }
+
+                if (serverNameString == c4SniValue || cordaX500Name.commonName == serverNameString || c5Check) {
                     matchedAlias = alias
                     matchedServerName = serverName.asciiName
                     return true
@@ -33,13 +50,8 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
             }
         }
 
-        val knownSNIValues = keyStore.aliases().toList().joinToString {
-            val x500Name = keyStore.getCertificate(it).x509.subjectX500Principal
-            val cordaX500Name = CordaX500Name.build(x500Name)
-            "hostname = ${cordaX500Name.toSNI()} alias = $it"
-        }
-        val requestedSNIValue = "hostname = ${(serverName as SNIHostName).asciiName}"
-        logger.warn("The requested SNI value [$requestedSNIValue] does not match any of the following known SNI values [$knownSNIValues]")
+        val requestedSNIValue = "hostname = $serverNameString"
+        logger.warn("Could not find a certificate matching the requested SNI value [$requestedSNIValue]")
         return false
     }
 }

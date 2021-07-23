@@ -13,6 +13,7 @@ import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.http.HttpMessage
+import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -43,16 +44,20 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
 
     @Suppress("TooGenericExceptionCaught", "ComplexMethod")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
-        val destinationToMessagesMap = mutableMapOf<URI, MutableList<LinkInMessage>>()
+        val destinationToMessagesMap = mutableMapOf<Pair<URI, String>, MutableList<LinkInMessage>>()
         val workResults = mutableListOf<Future<*>>()
         events.forEach { evt ->
             // Separate records by destination. This way, we can continue processing messages to connected targets while
             // trying to establish connections for others; if connection times out, we abandon all messages for the unreachable target
             evt.value?.let { peerMessage ->
                 val destination = URI.create(peerMessage.header.address)
-                val messages = destinationToMessagesMap.getOrDefault(destination, mutableListOf())
+                val sni = SniCalculator.calculateSni(
+                    peerMessage.header.destinationX500Name,
+                    peerMessage.header.destinationNetworkType,
+                    peerMessage.header.address)
+                val messages = destinationToMessagesMap.getOrDefault(Pair(destination, sni), mutableListOf())
                 messages.add(LinkInMessage(peerMessage.payload))
-                destinationToMessagesMap[destination] = messages
+                destinationToMessagesMap[Pair(destination, sni)] = messages
             }
         }
 
@@ -60,7 +65,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
             workResults.add(workers.submit {
                 val messagesToRetry = LinkedList<LinkInMessage>()
                 try {
-                    val client = connectionPool.acquire(entry.key)
+                    val client = connectionPool.acquire(entry.key.first, entry.key.second)
                     entry.value.forEach { message ->
                         try {
                             val responseBarrier = CountDownLatch(1)
@@ -100,12 +105,12 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun resend(target: URI, messages: LinkedList<LinkInMessage>) {
-        logger.debug("Retrying delivery of message to $target. No of messages to retry ${messages.size}")
+    private fun resend(targetInfo: Pair<URI, String>, messages: LinkedList<LinkInMessage>) {
+        logger.debug("Retrying delivery of message to $targetInfo. No of messages to retry ${messages.size}")
         var successCounter = 0
         messages.forEach { message ->
             try {
-                val client = connectionPool.acquire(target)
+                val client = connectionPool.acquire(targetInfo.first, targetInfo.second)
                 val responseBarrier = CountDownLatch(1)
                 val responseSub = client.onReceive.subscribe { response ->
                     responseMessageHandler(response)
@@ -116,9 +121,9 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                 responseBarrier.await(1000, TimeUnit.MILLISECONDS)
                 responseSub.unsubscribe()
             } catch (e: Exception) {
-                logger.warn("Could not re-send message to $target", e)
+                logger.warn("Could not re-send message to $targetInfo", e)
             } finally {
-                logger.info("Successfully re-delivered $successCounter out of ${messages.size} messages to $target")
+                logger.info("Successfully re-delivered $successCounter out of ${messages.size} messages to $targetInfo")
             }
         }
     }

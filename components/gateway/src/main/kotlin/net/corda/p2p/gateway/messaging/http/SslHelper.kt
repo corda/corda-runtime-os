@@ -72,6 +72,7 @@ fun createServerSslHandler(keyStore: KeyStore,
         it.enabledCipherSuites = CIPHER_SUITES
         it.enableSessionCreation = true
         val sslParameters = it.sslParameters
+        // need to provide
         sslParameters.sniMatchers = listOf(HostnameMatcher(keyStore))
         it.sslParameters = sslParameters
     }
@@ -79,11 +80,6 @@ fun createServerSslHandler(keyStore: KeyStore,
     sslHandler.handshakeTimeoutMillis = HANDSHAKE_TIMEOUT
     return sslHandler
 }
-
-/**
- * Extension to convert Corda names into String representing SNI values to be used for TLS handshakes
- */
-fun CordaX500Name.toSNI() = "temp"
 
 fun getCertCheckingParameters(trustStore: KeyStore, revocationConfig: RevocationConfig): ManagerFactoryParameters {
     val pkixParams = PKIXBuilderParameters(trustStore, X509CertSelector())

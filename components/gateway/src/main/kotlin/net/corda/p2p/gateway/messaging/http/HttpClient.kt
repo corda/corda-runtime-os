@@ -37,11 +37,13 @@ import kotlin.concurrent.withLock
  * updates on important events.
  *
  * @param destination the target URI
+ * @param sni the target server name
  * @param sslConfiguration the configuration to be used for the one-way TLS handshake
  * @param sharedThreadPool optional thread pool
  * @param traceLogging optional setting to enable Netty logging inside the channel pipeline. Should be set to *true* only when debugging
  */
 class HttpClient(private val destination: URI,
+                 private val sni: String,
                  private val sslConfiguration: SslConfiguration,
                  private val sharedThreadPool: EventLoopGroup? = null,
                  private val traceLogging: Boolean = false) : LifeCycle {
@@ -166,7 +168,7 @@ class HttpClient(private val destination: URI,
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createClientSslHandler("temp",
+            pipeline.addLast("sslHandler", createClientSslHandler(parent.sni,
                                                                         parent.destination,
                                                                         trustManagerFactory))
             if (parent.traceLogging) pipeline.addLast("logger", LoggingHandler(LogLevel.INFO))
