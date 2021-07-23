@@ -75,7 +75,7 @@ class FlowManagerImpl @Activate constructor(
             scheduler,
         )
 
-        stateMachine.houseKeepingState(HousekeepingState(
+        stateMachine.housekeepingState(HousekeepingState(
             0,
             ourIdentity,
             false,
@@ -115,6 +115,6 @@ class FlowManagerImpl @Activate constructor(
             checkpointSerialisationService,
             Clock.systemUTC()
         ))
-        dependencyInjector.injectDependencies(flow.logic, flow)
+        dependencyInjector.injectDependencies(flow.getFlowLogic(), flow)
     }
 }
