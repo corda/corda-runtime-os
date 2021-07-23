@@ -1,7 +1,35 @@
+
 plugins {
     id 'corda.common-app'
     id 'net.corda.plugins.flask'
     id 'net.corda.plugins.quasar-utils'
+}
+
+quasar {
+    // Global configuration for our quasar-utils Gradle plugin.
+    suspendableAnnotation = "net.corda.v5.base.annotations.Suspendable"
+    group = 'co.paralleluniverse'
+    version = "0.8.6_r3"
+    excludePackages = [
+            'co.paralleluniverse**',
+            'com.esotericsoftware.**',
+            'jdk**',
+            'junit**',
+            'kotlin**',
+            'net.rubygrapefruit.**',
+            'org.gradle.**',
+            'org.apache.**',
+            'org.jacoco.**',
+            'org.junit**',
+            'org.slf4j**',
+            'worker.org.gradle.**',
+            'com.nhaarman.mockito_kotlin**',
+            'org.assertj**',
+            'org.hamcrest**',
+            'org.mockito**',
+            'org.opentest4j**',
+            'org.eclipse**'
+    ]
 }
 
 project.tasks.register("appFlask", net.corda.gradle.flask.FlaskJarTask) {
