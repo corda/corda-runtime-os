@@ -12,6 +12,9 @@ dependencies {
     implementation "net.corda:corda-base:$cordaVersion"
     implementation "net.corda:corda-base-internal:$cordaVersion"
     implementation "net.corda:corda-crypto-api:$cordaVersion"
+    implementation "net.corda:corda-class-info:$cordaVersion"
+    implementation "net.corda:corda-packaging:$cordaVersion"
+    implementation "net.corda:corda-sandbox:$cordaVersion"
     implementation "net.corda:corda-serialization:$cordaVersion"
     implementation "net.corda:corda-serialization-encoding:$cordaVersion"
 

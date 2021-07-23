@@ -17,7 +17,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.BasicHashingService
 import net.corda.v5.crypto.SecureHash
-import java.util.TreeSet
+import java.util.*
 
 open class SandboxClassResolver(
     val classInfoService: Any?,

@@ -10,17 +10,14 @@ import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.esotericsoftware.kryo.util.Util
-import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.internal.base.kotlinObjectInstance
 import net.corda.internal.base.writer
-import net.corda.v5.base.util.contextLogger
-import net.corda.v5.serialization.ClassWhitelist
-import net.corda.internal.serialization.CheckpointSerializationContext
-import net.corda.internal.serialization.MutableClassWhitelist
-import net.corda.internal.serialization.TransientClassWhiteList
-import net.corda.internal.serialization.amqp.hasCordaSerializable
 import net.corda.kryoserialization.osgi.SandboxClassResolver
+import net.corda.kryoserialization.serializers.ThrowableSerializer
+import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.BasicHashingService
+import net.corda.v5.serialization.ClassWhitelist
 import java.io.PrintWriter
 import java.lang.reflect.Modifier.isAbstract
 import java.nio.charset.StandardCharsets.UTF_8
@@ -28,7 +25,8 @@ import java.nio.file.Paths
 import java.nio.file.StandardOpenOption.APPEND
 import java.nio.file.StandardOpenOption.CREATE
 import java.nio.file.StandardOpenOption.WRITE
-import java.util.Collections
+import java.util.*
+import kotlin.collections.ArrayList
 
 /**
  * Corda specific class resolver which enables extra customisation for the purposes of serialization using Kryo
@@ -81,7 +79,7 @@ class CordaClassResolver(
         // If we use a whitelist with blacklisting capabilities, whitelist.hasListed(type) may throw an
         // IllegalStateException if input class is blacklisted.
         // Thus, blacklisting precedes annotation checking.
-        if (!whitelist.hasListed(type) && !checkForAnnotation(type)) {
+        if (!whitelist.hasListed(type) && !isSerializable(type)) {
             throw KryoException("Class ${Util.className(type)} is not annotated or on the whitelist, so cannot " +
                     "be used in serialization")
         }
@@ -125,10 +123,16 @@ class CordaClassResolver(
     // We also do not allow extension of KryoSerializable for annotated classes, or combination with @DefaultSerializer
     // for custom serialisation.
     // TODO: Later we can support annotations on attachment classes and spin up a proxy via bytecode that we know is harmless.
-    private fun checkForAnnotation(type: Class<*>): Boolean {
+    private fun isSerializable(type: Class<*>): Boolean {
         return !KryoSerializable::class.java.isAssignableFrom(type)
                 && !type.isAnnotationPresent(DefaultSerializer::class.java)
                 && hasCordaSerializable(type)
+    }
+
+    private fun hasCordaSerializable(type: Class<*>): Boolean {
+        return type.isAnnotationPresent(CordaSerializable::class.java)
+                || type.interfaces.any(::hasCordaSerializable)
+                || (type.superclass != null && hasCordaSerializable(type.superclass))
     }
 
     // Need to clear out class names from attachments.

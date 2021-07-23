@@ -1,10 +1,8 @@
 package net.corda.kryoserialization
 
-import net.corda.internal.serialization.CheckpointSerializationContext
-import net.corda.internal.serialization.CheckpointSerializer
+import net.corda.v5.serialization.SerializationToken
 import net.corda.v5.serialization.SerializeAsToken
 import net.corda.v5.serialization.SerializeAsTokenContext
-import net.corda.v5.serialization.SerializationToken
 import net.corda.v5.serialization.SingletonSerializeAsToken
 
 val serializationContextKey = SerializeAsTokenContext::class.java
