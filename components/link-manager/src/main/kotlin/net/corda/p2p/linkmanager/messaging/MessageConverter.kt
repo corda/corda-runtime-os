@@ -21,6 +21,7 @@ import net.corda.p2p.payload.FlowMessage
 import net.corda.p2p.payload.FlowMessageAndKey
 import net.corda.p2p.payload.HoldingIdentity
 import net.corda.p2p.payload.MessageAck
+import org.apache.avro.AvroRuntimeException
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -42,6 +43,19 @@ class MessageConverter {
 
         private fun generateLinkOutHeaderFromPeer(peer: MemberInfo, networkType: NetworkType): LinkOutHeader {
             return LinkOutHeader(peer.holdingIdentity.x500Name, networkType.toNetworkType(), peer.endPoint.address)
+        }
+
+        private fun <T> deserializeHandleAvroErrors(deserialize: (ByteBuffer) -> T, data: ByteBuffer, sessionId: String): T? {
+            return try {
+                deserialize(data)
+            } catch (exception: IOException) {
+                logger.warn("Could not deserialize message for session ${sessionId}. The message was discarded.")
+                null
+            } catch (exception: AvroRuntimeException) {
+                logger.error("Could not deserialize message for session ${sessionId}. Error: $exception.message." +
+                        " The message was discarded.")
+                null
+            }
         }
 
         fun linkOutMessageFromAck(
@@ -144,12 +158,7 @@ class MessageConverter {
                         "The message was discarded.")
                 return null
             }
-            return try {
-                deserialize(ByteBuffer.wrap(decryptedData))
-            } catch (exception: IOException) {
-                logger.warn("Could not deserialize message for session ${message.header.sessionId}. The message was discarded.")
-                null
-            }
+            return deserializeHandleAvroErrors(deserialize, ByteBuffer.wrap(decryptedData), message.header.sessionId)
         }
 
         fun <T> extractPayloadFromAuthenticatedMessage(
@@ -164,12 +173,7 @@ class MessageConverter {
                 logger.warn("MAC check failed for message for session ${message.header.sessionId}. The message was discarded.")
                 return null
             }
-            return try {
-                deserialize(message.payload)
-            } catch (exception: IOException) {
-                logger.warn("Could not deserialize message for session ${message.header.sessionId}. The message was discarded.")
-                null
-            }
+            return deserializeHandleAvroErrors(deserialize, message.payload, message.header.sessionId)
         }
     }
 

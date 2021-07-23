@@ -568,4 +568,47 @@ class LinkManagerTest {
         loggingInterceptor.assertSingleWarning("Received message with SessionId = $SESSION_ID for which there is no active session. " +
             "The message was discarded.")
     }
+
+    @Test
+    fun `InboundMessageProcessor discards a FlowMessage on a OutboundSession`() {
+        val session = createSessionPair()
+
+        val header = FlowMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "")
+        val flowMessageWrapper = FlowMessageAndKey(FlowMessage(header, PAYLOAD), KEY_BYTES)
+
+        val linkOutMessage = linkOutMessageFromFlowMessageAndKey(flowMessageWrapper, session.initiatorSession, netMap)
+        val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
+
+        val messages = listOf(EventLogRecord(TOPIC, KEY, linkInMessage, 0, 0))
+
+        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
+        Mockito.`when`(mockSessionManager.getSessionById(any())).thenReturn(
+            SessionManager.SessionDirection.Outbound(session.responderSession)
+        )
+
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
+
+        val records = processor.onNext(messages)
+        assertEquals(records.size, 0)
+
+        loggingInterceptor.assertErrorContains("Could not deserialize message for session $SESSION_ID.")
+        loggingInterceptor.assertErrorContains("The message was discarded.")
+    }
+
+    @Test
+    fun `InboundMessageProcessor discards a MessageAck on a InboundSession`() {
+        val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
+        val linkOutMessage = linkOutMessageFromAck(MessageAck(MESSAGE_ID), FIRST_SOURCE, FIRST_DEST, session.initiatorSession, netMap)
+        val message = LinkInMessage(linkOutMessage?.payload)
+
+        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
+        Mockito.`when`(mockSessionManager.getSessionById(any())).thenReturn(SessionManager.SessionDirection.Inbound(session.responderSession))
+
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
+        val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, message, 0, 0)) )
+        assertEquals(records.size, 0)
+
+        loggingInterceptor.assertErrorContains("Could not deserialize message for session $SESSION_ID.")
+        loggingInterceptor.assertErrorContains("The message was discarded.")
+    }
 }
