@@ -64,5 +64,5 @@ enum class CordaSerializationEncoding(private val encoderType: EncoderType) : Se
     fun decompress(stream: InputStream): InputStream = get(encoderType).decompress(stream)
 }
 
-const val encodingNotPermittedFormat = "Encoding not permitted: %s"
+const val ENCODING_NOT_PERMITTED_FORMAT = "Encoding not permitted: %s"
 

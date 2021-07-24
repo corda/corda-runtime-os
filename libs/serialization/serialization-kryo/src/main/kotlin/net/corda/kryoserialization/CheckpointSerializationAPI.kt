@@ -39,7 +39,8 @@ interface CheckpointSerializationContext {
     val whitelist: ClassWhitelist
 
     /**
-     * A whitelist that determines (mostly for security purposes) whether a particular encoding may be used when deserializing.
+     * A whitelist that determines (mostly for security purposes) whether a particular encoding may be used when
+     * deserializing.
      */
     val encodingWhitelist: EncodingWhitelist
 
@@ -114,5 +115,6 @@ interface CheckpointSerializationContext {
     /**
      * A shallow copy of this context but with the given custom serializers.
      */
-    fun withCheckpointCustomSerializers(checkpointCustomSerializers: Iterable<CheckpointCustomSerializer<*, *>>): CheckpointSerializationContext
+    fun withCheckpointCustomSerializers(checkpointCustomSerializers: Iterable<CheckpointCustomSerializer<*, *>>):
+            CheckpointSerializationContext
 }

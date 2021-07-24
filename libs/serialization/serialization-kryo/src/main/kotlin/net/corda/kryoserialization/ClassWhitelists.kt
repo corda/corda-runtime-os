@@ -21,7 +21,10 @@ class BuiltInExceptionsWhitelist : ClassWhitelist {
     }
 }
 
-sealed class AbstractMutableClassWhitelist(private val whitelist: MutableSet<String>, private val delegate: ClassWhitelist) : MutableClassWhitelist {
+sealed class AbstractMutableClassWhitelist(
+    private val whitelist: MutableSet<String>,
+    private val delegate: ClassWhitelist
+) : MutableClassWhitelist {
     override fun hasListed(type: Class<*>): Boolean {
         /**
          * There are certain delegates like [net.corda.serialization.internal.AllButBlacklisted]
@@ -40,9 +43,10 @@ sealed class AbstractMutableClassWhitelist(private val whitelist: MutableSet<Str
  * A whitelist that can be customised via the [net.corda.core.serialization.SerializationWhitelist],
  * since it implements [MutableClassWhitelist].
  */
-class TransientClassWhiteList(delegate: ClassWhitelist) : AbstractMutableClassWhitelist(Collections.synchronizedSet(mutableSetOf()), delegate)
+class TransientClassWhiteList(delegate: ClassWhitelist) :
+    AbstractMutableClassWhitelist(Collections.synchronizedSet(mutableSetOf()), delegate)
 
-// TODO: Need some concept of from which class loader
+// TODOs: Need some concept of from which class loader
 class GlobalTransientClassWhiteList(delegate: ClassWhitelist) : AbstractMutableClassWhitelist(whitelist, delegate) {
     companion object {
         private val whitelist: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())

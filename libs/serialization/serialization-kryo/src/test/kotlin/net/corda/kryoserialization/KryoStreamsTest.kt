@@ -1,19 +1,18 @@
 package net.corda.kryoserialization
 
 import net.corda.internal.base.declaredField
-import net.corda.internal.serialization.ByteBufferOutputStream
 import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.jupiter.api.Assertions.assertArrayEquals
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.BufferOverflowException
-import java.util.Random
+import java.util.*
 import java.util.zip.DeflaterOutputStream
 import java.util.zip.InflaterInputStream
-import kotlin.test.assertEquals
-import kotlin.test.assertSame
 
 class KryoStreamsTest {
     class NegOutputStream(private val stream: OutputStream) : OutputStream() {
@@ -72,7 +71,7 @@ class KryoStreamsTest {
         val getBuf = stream.declaredField<ByteArray>(ByteArrayOutputStream::class, "buf")::value
         assertEquals(3, getBuf().size)
         repeat(2) {
-            assertSame<Any>(BufferOverflowException::class.java, catchThrowable {
+            assertSame(BufferOverflowException::class.java, catchThrowable {
                 stream.alsoAsByteBuffer(9) {
                     it.put("0123456789".toByteArray())
                 }
