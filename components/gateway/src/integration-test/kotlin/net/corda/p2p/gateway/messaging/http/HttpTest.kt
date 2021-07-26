@@ -1,9 +1,13 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.p2p.gateway.LoggingInterceptor
 import net.corda.p2p.gateway.TestBase
+import org.apache.logging.log4j.Level
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import java.io.FileInputStream
 import java.net.URI
@@ -14,6 +18,21 @@ import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 class HttpTest : TestBase() {
+
+    companion object {
+        lateinit var loggingInterceptor: LoggingInterceptor
+
+        @BeforeAll
+        @JvmStatic
+        fun setup() {
+            loggingInterceptor = LoggingInterceptor.setupLogging()
+        }
+
+        @AfterEach
+        fun teardown() {
+            loggingInterceptor.reset()
+        }
+    }
 
     private val serverAddress = URI.create("http://localhost:10000")
 
@@ -125,26 +144,49 @@ class HttpTest : TestBase() {
         }
     }
 
-//    @Test
-//    fun `tls handshake fails - requested SNI is not recognized`() {
-//        HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
-//            server.start()
-//            HttpClient(serverAddress, bobSNI[0], chipSslConfig).use { client ->
-//                val connectedLatch = CountDownLatch(1)
-//                client.onConnection.subscribe {
-//                    if (it.connected) {
-//                        connectedLatch.countDown()
-//                    }
-//                }
-//
-//                client.start()
-////                connectedLatch.await(1, TimeUnit.SECONDS)
-//            }
-//        }
-//    }
-//
-//    @Test
-//    fun `tls handshake fails - server presents revoked certifiacte`() {
-//
-//    }
+    @Test
+    fun `tls handshake fails - requested SNI is not recognized`() {
+        HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
+            server.start()
+            HttpClient(serverAddress, bobSNI[0], chipSslConfig).use { client ->
+                val connectedLatch = CountDownLatch(1)
+                client.onConnection.subscribe {
+                    if (it.connected) {
+                        connectedLatch.countDown()
+                    }
+                }
+
+                client.start()
+                connectedLatch.await(1, TimeUnit.SECONDS)
+            }
+        }
+
+        loggingInterceptor.assertMessageExists(
+            "Could not find a certificate matching the requested SNI value [hostname = ${bobSNI[0]}",
+            Level.WARN
+        )
+    }
+
+    @Test
+    fun `tls handshake fails - server presents revoked certificate`() {
+        HttpServer(serverAddress.host, serverAddress.port, bobSslConfig).use { server ->
+            server.start()
+            HttpClient(serverAddress, bobSNI[0], chipSslConfig).use { client ->
+                val connectedLatch = CountDownLatch(1)
+                client.onConnection.subscribe {
+                    if (it.connected) {
+                        connectedLatch.countDown()
+                    }
+                }
+
+                client.start()
+                connectedLatch.await(1, TimeUnit.SECONDS)
+            }
+        }
+
+        loggingInterceptor.assertMessageExists(
+            "Bad certificate path PKIX path validation failed: java.security.cert.CertPathValidatorException: Certificate has been revoked",
+            Level.ERROR
+        )
+    }
 }

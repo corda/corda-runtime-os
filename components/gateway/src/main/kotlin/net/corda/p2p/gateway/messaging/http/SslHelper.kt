@@ -3,8 +3,6 @@ package net.corda.p2p.gateway.messaging.http
 import io.netty.handler.ssl.SslHandler
 import net.corda.nodeapi.internal.protonwrapper.netty.LoggingTrustManagerWrapper
 import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfig
-import net.corda.v5.application.identity.CordaX500Name
-import net.corda.v5.base.util.NetworkHostAndPort
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.security.KeyStore
@@ -63,7 +61,8 @@ fun createServerSslHandler(keyStore: KeyStore,
      * We shall initialise the SSLContext with an SNI enabled key manager instead
      */
     val keyManagers = keyManagerFactory.keyManagers
-    sslContext.init(arrayOf(SNIKeyManager(keyManagers.first() as X509ExtendedKeyManager)), null, SecureRandom()) //May need to use secure random from crypto-api module
+    //May need to use secure random from crypto-api module
+    sslContext.init(arrayOf(SNIKeyManager(keyManagers.first() as X509ExtendedKeyManager)), null, SecureRandom())
 
     val sslEngine = sslContext.createSSLEngine().also {
         it.useClientMode = false

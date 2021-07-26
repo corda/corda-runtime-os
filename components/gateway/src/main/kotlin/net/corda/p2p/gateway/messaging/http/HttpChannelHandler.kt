@@ -144,7 +144,7 @@ class HttpChannelHandler(
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
         logger.warn("Closing channel due to unrecoverable exception ${cause.message}")
-        cause.printStackTrace()
+        logger.debug(cause.stackTraceToString())
         ctx.close()
     }
 
