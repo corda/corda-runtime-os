@@ -147,7 +147,6 @@ internal class SimpleLifeCycleCoordinatorTest {
             when (event) {
                 is StartEvent -> {
                     startLatch.countDown()
-                    stopLatch = CountDownLatch(1)
                 }
                 is ThrowException -> {
                     throw expectedException
@@ -163,11 +162,12 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is StopEvent -> {
                     assertTrue(stopLatch.count > 0)
                     stopLatch.countDown()
-                    startLatch = CountDownLatch(1)
                 }
             }
         }.use { coordinator ->
             for (i in 0..NUM_LOOPS) {
+                startLatch = CountDownLatch(1)
+                stopLatch = CountDownLatch(1)
                 coordinator.start()
                 assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
                 coordinator.postEvent(object : ThrowException {})
@@ -178,14 +178,14 @@ internal class SimpleLifeCycleCoordinatorTest {
 
     @Test
     fun postHandledButRethrowErrorEvent() {
-        var stopLatch = CountDownLatch(2)
+        var stopLatch = CountDownLatch(1)
         var startLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
         val unexpectedException = Exception("unexpected exception")
+        var exceptionCount = 0
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             when (event) {
                 is StartEvent -> {
-                    stopLatch = CountDownLatch(2)
                     startLatch.countDown()
                 }
                 is ThrowException -> {
@@ -194,8 +194,8 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is ErrorEvent -> {
                     when (event.cause) {
                         expectedException -> {
-                            stopLatch.countDown()
                             event.isHandled = true
+                            exceptionCount++
                             throw unexpectedException
                         }
                         else -> {
@@ -206,30 +206,32 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is StopEvent -> {
                     stopLatch.countDown()
                     assertTrue(stopLatch.count == 0L)
-                    startLatch = CountDownLatch(1)
                 }
             }
         }.use { coordinator ->
             for (i in 0..NUM_LOOPS) {
+                startLatch = CountDownLatch(1)
+                stopLatch = CountDownLatch(1)
                 coordinator.start()
                 assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
                 coordinator.postEvent(object : ThrowException {})
                 assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             }
         }
+        assertEquals(NUM_LOOPS + 1, exceptionCount)
     }
 
 
     @Test
     fun postUnhandledErrorEvent() {
-        var stopLatch = CountDownLatch(2)
+        var stopLatch = CountDownLatch(1)
         var startLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
+        var exceptionCount = 0
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
             when (event) {
                 is StartEvent -> {
                     startLatch.countDown()
-                    stopLatch = CountDownLatch(2)
                 }
                 is ThrowException -> {
                     throw expectedException
@@ -237,7 +239,7 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is ErrorEvent -> {
                     when (event.cause) {
                         expectedException -> {
-                            stopLatch.countDown()
+                            exceptionCount++
                         }
                         else -> {
                             fail("Unexpected ${event.cause}!")
@@ -247,17 +249,19 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is StopEvent -> {
                     stopLatch.countDown()
                     assertTrue(stopLatch.count == 0L)
-                    startLatch = CountDownLatch(1)
                 }
             }
         }.use { coordinator ->
             for(i in 0 .. NUM_LOOPS) {
+                startLatch = CountDownLatch(1)
+                stopLatch = CountDownLatch(1)
                 coordinator.start()
                 assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
                 coordinator.postEvent(object : ThrowException {})
                 assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             }
         }
+        assertEquals(NUM_LOOPS + 1, exceptionCount)
     }
 
     @Test
