@@ -121,7 +121,7 @@ class SimpleLifeCycleCoordinator(
      *
      */
     override fun cancelTimer(key: String) {
-        lifecycleState.cancelTimer(key)
+        postEvent(CancelTimer(key))
     }
 
     /**
