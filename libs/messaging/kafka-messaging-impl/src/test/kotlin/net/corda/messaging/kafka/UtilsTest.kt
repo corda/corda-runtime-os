@@ -5,12 +5,15 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.kafka.Utils.Companion.resolvePublisherConfiguration
 import net.corda.messaging.kafka.getEventsByBatch
+import net.corda.messaging.kafka.getRecordListOffsets
 import net.corda.messaging.kafka.mergeProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBLISHER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
+import net.corda.messaging.kafka.subscription.generateMockConsumerRecords
 import net.corda.messaging.kafka.toConfig
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -132,5 +135,18 @@ class UtilsTest {
         val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
         val eventsByBatch  = getEventsByBatch(records)
         assertThat(eventsByBatch.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `test generated offsets for list of records`() {
+        val records = generateMockConsumerRecords(3, "TOPIC1", 0) +
+                generateMockConsumerRecords(4, "TOPIC1", 1) +
+                generateMockConsumerRecords(3, "TOPIC2", 0)
+
+        val recordOffsets  = getRecordListOffsets(records)
+        assertThat(recordOffsets.size).isEqualTo(3)
+        assertThat(recordOffsets[TopicPartition("TOPIC1", 0)]!!.offset()).isEqualTo(3)
+        assertThat(recordOffsets[TopicPartition("TOPIC1", 1)]!!.offset()).isEqualTo(4)
+        assertThat(recordOffsets[TopicPartition("TOPIC2", 0)]!!.offset()).isEqualTo(3)
     }
 }

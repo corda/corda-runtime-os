@@ -11,6 +11,9 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.GROUP
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.INSTANCE_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
+import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.common.TopicPartition
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import java.net.URL
@@ -159,4 +162,31 @@ fun<K: Any, E : Any> getEventsByBatch(events: List<ConsumerRecordAndMeta<K, E>>)
     }
 
     return eventBatches
+}
+
+
+/**
+ * Generate the consumer offsets for a given list of [records]
+ */
+fun getRecordListOffsets(records: List<ConsumerRecord<*, *>>): Map<TopicPartition, OffsetAndMetadata> {
+    if (records.isEmpty()) {
+        return mutableMapOf()
+    }
+
+    val map = mutableMapOf<Pair<String, Int>, Long>()
+    for (record in records) {
+        val currentMapVal = map[Pair(record.topic(), record.partition())]
+        if (currentMapVal == null || currentMapVal < record.offset()) {
+            map[Pair(record.topic(), record.partition())] = record.offset()
+        }
+    }
+
+    val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
+    for (entry in map.entries) {
+        val currentKey = entry.key
+        val topicPartition = TopicPartition(currentKey.first, currentKey.second)
+        offsets[topicPartition] = OffsetAndMetadata(entry.value + 1)
+    }
+
+    return offsets
 }

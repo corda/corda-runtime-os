@@ -287,7 +287,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         producer.beginTransaction()
         producer.sendRecords(outputRecords)
-        producer.sendRecordOffsetToTransaction(eventConsumer, events.last().record)
+        producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it.record })
         producer.tryCommitTransaction()
         log.trace { "Processing of events(size: ${events.size}) complete" }
 
