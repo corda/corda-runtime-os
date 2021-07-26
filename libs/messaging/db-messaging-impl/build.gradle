@@ -7,7 +7,7 @@ description 'Database Messaging API Implementation'
 
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation "com.zaxxer:HikariCP:$hikariCpVersion"
     implementation "com.google.guava:guava:$guavaVersion"
     implementation project(":libs:lifecycle")

@@ -7,7 +7,7 @@ dependencies {
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation project(":osgi-framework-api")
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"

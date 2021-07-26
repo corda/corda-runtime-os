@@ -7,7 +7,7 @@ description 'In-Memory Messaging API Impl'
 
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation project(":libs:lifecycle")
     implementation project(":libs:messaging:messaging")
 

@@ -88,7 +88,7 @@ or, if the module declare the dependency on `net.corda:corda-base`, for example,
 
 ```groovy
 dependencies {
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
 }
 ```
 
