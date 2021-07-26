@@ -13,8 +13,6 @@ import io.netty.handler.codec.http.HttpContentDecompressor
 import io.netty.handler.logging.LogLevel
 import io.netty.handler.logging.LoggingHandler
 import net.corda.lifecycle.LifeCycle
-import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfig
-import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfigImpl
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.slf4j.LoggerFactory
 import rx.Observable
