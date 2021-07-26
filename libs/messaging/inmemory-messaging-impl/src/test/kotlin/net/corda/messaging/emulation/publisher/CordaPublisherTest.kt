@@ -1,6 +1,6 @@
 package net.corda.messaging.emulation.publisher
 
-import com.nhaarman.mockito_kotlin.*
+import org.mockito.kotlin.*
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory

@@ -13,7 +13,4 @@ dependencies {
     compileOnly "org.osgi:osgi.core:$osgiVersion"
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
-
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 }

@@ -1,6 +1,6 @@
 package net.corda.messaging.db.subscription
 
-import com.nhaarman.mockito_kotlin.anyOrNull
+import org.mockito.kotlin.anyOrNull
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -10,12 +10,11 @@ import net.corda.messaging.db.partition.PartitionAllocationListener
 import net.corda.messaging.db.partition.PartitionAllocator
 import net.corda.messaging.db.partition.PartitionAssignor
 import net.corda.messaging.db.persistence.DBAccessProvider
-import net.corda.messaging.db.persistence.DbSchema
 import net.corda.messaging.db.persistence.FetchWindow
 import net.corda.messaging.db.persistence.RecordDbEntry
 import net.corda.messaging.db.sync.OffsetTrackersManager
+import net.corda.messaging.db.util.eventually
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.testing.common.internal.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
