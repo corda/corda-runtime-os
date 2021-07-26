@@ -13,7 +13,7 @@ interface LifeCycleCoordinator : LifeCycle {
     /**
      * Define the method processing the events of this coordinator.
      */
-    val lifeCycleProcessor: (LifeCycleEvent, LifeCycleCoordinator) -> Unit
+    val lifeCycleProcessor: LifecycleEventHandler
 
     fun cancelTimer(key: String)
 

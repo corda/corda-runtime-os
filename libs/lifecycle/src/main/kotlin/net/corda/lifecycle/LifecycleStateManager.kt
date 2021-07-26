@@ -15,7 +15,7 @@ import java.util.concurrent.ScheduledFuture
  * @param batchSize The number of events to process in a single call to `processEvents`.
  * @param processor The function to invoke to process each individual event.
  */
-internal class LifecycleEventQueueManager(
+internal class LifecycleStateManager(
     private val batchSize: Int,
     private val processor: (lifecycleEvent: LifeCycleEvent) -> Unit
 ) {
@@ -28,8 +28,7 @@ internal class LifecycleEventQueueManager(
 
     private val timerMap = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
-    val isEmpty: Boolean
-        get() = eventQueue.isEmpty()
+    var isRunning: Boolean = false
 
     /**
      * Post a new event to the queue.
@@ -64,25 +63,25 @@ internal class LifecycleEventQueueManager(
      */
     fun cancelTimer(key: String) {
         timerMap[key]?.cancel(false)
-        clearTimerEventsFromQueue(setOf(key))
         timerMap.remove(key)
     }
 
     /**
-     * Cancel all outstanding timers and remove all remaining events from the queue.
+     * Checks to see if a timer is currently running.
      *
-     * Events up to the next stop event are processed normally. Any events after this are discarded.
+     * @param key The timer key to check
      */
-    fun cleanup() {
-        val keys = timerMap.keys().toList()
-        timerMap.values.forEach { it.cancel(false) }
-        clearTimerEventsFromQueue(keys)
-        timerMap.clear()
-        for (event in eventQueue) {
-            processEvent(event)
-            if (event is StopEvent) break
+    fun isTimerRunning(key: String) : Boolean {
+        return key in timerMap.keys
+    }
+
+    fun nextBatch() : List<LifeCycleEvent> {
+        val batch = mutableListOf<LifeCycleEvent>()
+        for (i in 0..batchSize) {
+            val event = eventQueue.poll() ?: break
+            batch.add(event)
         }
-        eventQueue.clear()
+        return batch
     }
 
     /**
@@ -130,20 +129,6 @@ internal class LifecycleEventQueueManager(
                 errorEvent.isHandled = false
             }
             errorEvent.isHandled
-        }
-    }
-
-    /**
-     * Remove any timer events from the event queue
-     *
-     * @param keys The set of keys to remove timer events for.
-     */
-    private fun clearTimerEventsFromQueue(keys: Collection<String>) {
-        val eventQueueIterator = eventQueue.iterator()
-        for (event in eventQueueIterator) {
-            if (event is TimerEvent && event.key in keys) {
-                eventQueueIterator.remove()
-            }
         }
     }
 }
