@@ -19,7 +19,6 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "net.corda:corda-test-common:$cordaTestCommonVersion"
 
     integrationTestImplementation "com.h2database:h2:$h2Version"
     integrationTestImplementation "org.postgresql:postgresql:$postgresDriverVersion"

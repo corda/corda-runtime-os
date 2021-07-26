@@ -29,13 +29,10 @@ pluginManagement {
                 }
 
                 if (settings.hasProperty("cordaArtifactoryPassword")) {
-                    password = settings.cordaArtifactoryUsername
+                    password = settings.cordaArtifactoryPassword
                 } else {
                     password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
                 }
-            }
-            content {
-                includeGroupByRegex 'com\\.r3\\.internal(\\..*)?'
             }
         }
     }
@@ -45,8 +42,8 @@ pluginManagement {
         id 'org.jetbrains.kotlin.plugin.noarg' version kotlinVersion
         id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
         id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
-        id 'biz.aQute.bnd.builder' version bndVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
+        id 'corda.common-library' version internalPublishVersion
     }
 }
 

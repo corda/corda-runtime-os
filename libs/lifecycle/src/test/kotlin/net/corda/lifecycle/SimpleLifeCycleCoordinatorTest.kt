@@ -16,7 +16,9 @@ internal class SimpleLifeCycleCoordinatorTest {
 
         const val BATCH_SIZE: Int = 128
 
-        const val TIMEOUT: Long = 100L
+        const val TIMEOUT: Long = 5000L
+
+        private const val TIMER_DELAY = 100L
 
         val logger: Logger = contextLogger()
     }
@@ -95,12 +97,12 @@ internal class SimpleLifeCycleCoordinatorTest {
                     override val key: String
                         get() = i.toString()
                 }
-                val delay = Random.nextLong(0, TIMEOUT / 2)
+                val delay = Random.nextLong(0, TIMER_DELAY)
                 coordinator.setTimer(onTime.key, delay) { onTime }
             }
             Thread {
                 while (countDownLatch.count >= BATCH_SIZE / 2) {
-                    Thread.sleep(Random.nextLong(0, TIMEOUT / 20))
+                    Thread.sleep(Random.nextLong(0, TIMER_DELAY / 20))
                 }
                 coordinator.stop()
             }.start()
@@ -125,14 +127,14 @@ internal class SimpleLifeCycleCoordinatorTest {
         }.use { coordinator ->
             coordinator.start()
             assertTrue(startLatch.await(TIMEOUT * 2, TimeUnit.MILLISECONDS))
-            coordinator.setTimer(key, TIMEOUT / 2) {
+            coordinator.setTimer(key, TIMER_DELAY) {
                 object : TimerEvent {
                     override val key: String
                         get() = key
                 }
             }
             coordinator.cancelTimer(key)
-            assertFalse(timerLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertFalse(timerLatch.await(TIMER_DELAY, TimeUnit.MILLISECONDS))
         }
     }
 
@@ -275,7 +277,7 @@ internal class SimpleLifeCycleCoordinatorTest {
         }.use { coordinator ->
             coordinator.start()
             assertTrue(startLatch.await(TIMEOUT * 2, TimeUnit.MILLISECONDS))
-            coordinator.setTimer(key, TIMEOUT / 2) {
+            coordinator.setTimer(key, TIMER_DELAY) {
                 object : TimerEvent {
                     override val key: String
                         get() = key
