@@ -174,7 +174,7 @@ class AvroSchemaRegistryImpl(
         encoder: ((T) -> ByteArray)?,
         decoder: ((ByteArray, Schema, T?) -> T)?
     ) {
-        log.debug { "Adding Schema: ${schema.fullName} for class $clazz" }
+        log.debug("hello") { "Adding Schema: ${schema.fullName} for class $clazz" }
         // Quick exit before we do the heavy fingerprint operation
         if (!fingerprintsBySchema.containsKey(schema)) {
             val fingerprint = Fingerprint(SchemaNormalization.parsingFingerprint("SHA-256", schema))
@@ -183,7 +183,7 @@ class AvroSchemaRegistryImpl(
             fingerprintsBySchema.putIfAbsent(schema, fingerprint)
             schemasByFingerprint.putIfAbsent(fingerprint, schema)
             if (clazz == null || encoder == null || decoder == null) {
-                log.debug { "Skipping class type, encoder, and decoder registration as one or more values are missing." }
+                log.debug("hello") { "Skipping class type, encoder, and decoder registration as one or more values are missing." }
                 return
             }
             fingerprintsByClazz.putIfAbsent(clazz, fingerprint)
@@ -253,7 +253,7 @@ class AvroSchemaRegistryImpl(
     }
 
     private fun zipPayload(payload: ByteArray): ByteArray {
-        log.debug { "Zipping payload" }
+        log.debug("hello") { "Zipping payload" }
         val baos = ByteArrayOutputStream()
         DeflaterOutputStream(baos).use {
             it.write(payload)
@@ -263,7 +263,7 @@ class AvroSchemaRegistryImpl(
     }
 
     private fun unzipPayload(payload: ByteBuffer): ByteBuffer {
-        log.debug { "Unzipping payload" }
+        log.debug("hello") { "Unzipping payload" }
         val bytes = InflaterInputStream(payload.array().inputStream()).readAllBytes()
         return ByteBuffer.wrap(bytes)
     }

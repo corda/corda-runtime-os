@@ -53,7 +53,7 @@ class Topic (private val topicName : String, private val maxSize: Int) {
         if (records.size == maxSize) {
             records.removeFirst()
             oldestRecordOffset = records.first.offset
-            log.debug { "Max record count reached for topic $topicName. Deleting oldest record with offset $oldestRecordOffset." }
+            log.debug("hello") { "Max record count reached for topic $topicName. Deleting oldest record with offset $oldestRecordOffset." }
         }
         records.add(RecordMetadata(newestRecordOffset, record))
         newestRecordOffset++

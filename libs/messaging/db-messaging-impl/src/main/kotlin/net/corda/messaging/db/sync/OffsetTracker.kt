@@ -73,7 +73,7 @@ class OffsetTracker(private val topic: String,
                     processOffsetsBacklogAndNotifyWaiters(maxVisibleOffset() + 1)
                 }, periodicChecksInterval.toMillis(), periodicChecksInterval.toMillis(), TimeUnit.MILLISECONDS)
                 running = true
-                log.debug { "Offset tracker for (topic $topic, partition $partition) started with max visible offset " +
+                log.debug("hello") { "Offset tracker for (topic $topic, partition $partition) started with max visible offset " +
                         "${maxVisibleOffset.get()} and next offset ${nextOffset.get()}." }
             }
         }
@@ -84,7 +84,7 @@ class OffsetTracker(private val topic: String,
             if (running) {
                 backgroundTask?.cancel(false)
                 running = false
-                log.debug { "Offset tracker for (topic $topic, partition $partition) stopped." }
+                log.debug("hello") { "Offset tracker for (topic $topic, partition $partition) stopped." }
             }
         }
     }

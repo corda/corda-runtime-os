@@ -143,7 +143,7 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
                 hikariDatasource = HikariDataSource(hikariConfig)
                 executor = Executors.newFixedThreadPool(threadPoolSize)
                 running = true
-                log.debug { "Database access provider started configured with database: $jdbcUrl" }
+                log.debug("hello") { "Database access provider started configured with database: $jdbcUrl" }
             }
         }
 
@@ -154,7 +154,7 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
             if (running) {
                 executor.shutdown()
                 running = false
-                log.debug { "Database access provider stopped." }
+                log.debug("hello") { "Database access provider stopped." }
             }
         }
     }

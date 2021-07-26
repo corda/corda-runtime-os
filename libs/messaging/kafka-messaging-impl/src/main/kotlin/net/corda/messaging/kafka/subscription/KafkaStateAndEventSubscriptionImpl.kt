@@ -95,7 +95,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
 
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config.render()}" }
+        log.debug("hello") { "Starting subscription with config:\n${config.render()}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
@@ -192,7 +192,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val eventPartitions = eventConsumer.getPartitions(eventTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
         if (statePartitions.size != eventPartitions.size) {
             val errorMsg = "Mismatch between state and event partitions."
-            log.debug {
+            log.debug("hello") {
                 errorMsg + "\n" +
                         "state: ${statePartitions.joinToString()}\n" +
                         "event: ${eventPartitions.joinToString()}"
@@ -206,7 +206,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      *  keeps up
      */
     override fun onPartitionsAssigned(newEventPartitions: MutableCollection<TopicPartition>) {
-        log.debug { "Updating state partitions to match new event partitions: $newEventPartitions" }
+        log.debug("hello") { "Updating state partitions to match new event partitions: $newEventPartitions" }
         val newStatePartitions = newEventPartitions.toStateTopics()
         val statePartitions = stateConsumer.assignment() + newStatePartitions
         stateConsumer.assign(statePartitions)
@@ -215,7 +215,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         // Initialise the housekeeping here but the sync and updates
         // will be handled in the normal poll cycle
         val syncablePartitions = filterSyncablePartitions(newStatePartitions)
-        log.debug { "Syncing the following new state partitions: $syncablePartitions" }
+        log.debug("hello") { "Syncing the following new state partitions: $syncablePartitions" }
         statePartitionsToSync.putAll(syncablePartitions)
         eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) })
     }
@@ -239,7 +239,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      *  keeps up
      */
     override fun onPartitionsRevoked(removedEventPartitions: MutableCollection<TopicPartition>) {
-        log.debug { "Updating state partitions to match removed event partitions: $removedEventPartitions" }
+        log.debug("hello") { "Updating state partitions to match removed event partitions: $removedEventPartitions" }
         val removedStatePartitions = removedEventPartitions.toStateTopics()
         val statePartitions = stateConsumer.assignment() - removedStatePartitions
         stateConsumer.assign(statePartitions)
@@ -323,7 +323,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 if (endOffset != null && endOffset >= state.record.offset()) {
                     statePartitionsToSync.remove(currentPartition)
                     val resumablePartition = TopicPartition(eventTopic.topic, currentPartition)
-                    log.debug { "State consumer is up to date for $resumablePartition.  Resuming event feed." }
+                    log.debug("hello") { "State consumer is up to date for $resumablePartition.  Resuming event feed." }
                     eventConsumer.resume(setOf(resumablePartition))
                 }
             }

@@ -144,7 +144,7 @@ class CordaKafkaPublisherImpl(
                 if (transactionalId == null) {
                     future.complete(Unit)
                 } else {
-                    log.debug { "Asynchronous send completed completed successfully." }
+                    log.debug("hello") { "Asynchronous send completed completed successfully." }
                 }
             }
             fatalSendExceptions.contains(exception::class.java) -> {

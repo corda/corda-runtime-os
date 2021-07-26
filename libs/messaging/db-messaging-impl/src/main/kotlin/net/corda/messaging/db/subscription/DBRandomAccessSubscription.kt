@@ -38,7 +38,7 @@ class DBRandomAccessSubscription<K: Any, V: Any>(private val subscriptionConfig:
         startStopLock.withLock {
             if (!running) {
                 running = true
-                log.debug { "Random access subscription for topic ${subscriptionConfig.eventTopic} " +
+                log.debug("hello") { "Random access subscription for topic ${subscriptionConfig.eventTopic} " +
                         "and group ${subscriptionConfig.groupName} started." }
             }
         }
@@ -48,7 +48,7 @@ class DBRandomAccessSubscription<K: Any, V: Any>(private val subscriptionConfig:
         startStopLock.withLock {
             if (running) {
                 running = false
-                log.debug { "Random access subscription for topic ${subscriptionConfig.eventTopic} " +
+                log.debug("hello") { "Random access subscription for topic ${subscriptionConfig.eventTopic} " +
                         "and group ${subscriptionConfig.groupName} stopped." }
             }
         }

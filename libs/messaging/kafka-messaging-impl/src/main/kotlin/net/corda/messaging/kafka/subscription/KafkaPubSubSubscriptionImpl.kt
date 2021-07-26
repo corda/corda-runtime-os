@@ -74,7 +74,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
      * @throws CordaMessageAPIFatalException if unrecoverable error occurs
      */
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config.render()}" }
+        log.debug("hello") { "Starting subscription with config:\n${config.render()}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false

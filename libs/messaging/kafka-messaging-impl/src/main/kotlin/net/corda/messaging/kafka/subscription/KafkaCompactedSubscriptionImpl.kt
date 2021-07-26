@@ -63,7 +63,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     }
 
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config.render()}" }
+        log.debug("hello") { "Starting subscription with config:\n${config.render()}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
@@ -90,7 +90,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
         while (!stopped) {
             attempts++
             try {
-                log.debug { "Creating compacted consumer.  Attempt: $attempts" }
+                log.debug("hello") { "Creating compacted consumer.  Attempt: $attempts" }
                 consumerBuilder.createCompactedConsumer(config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass).use {
                     val partitions = it.getPartitions(
                         topicPrefix + topic,

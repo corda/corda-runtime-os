@@ -60,7 +60,7 @@ class PubSubSubscription<K : Any, V : Any>(
      * with the given [processor].
      */
     override fun start() {
-        log.debug { "Starting subscription with config: $config" }
+        log.debug("hello") { "Starting subscription with config: $config" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false

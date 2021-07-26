@@ -51,7 +51,7 @@ class ConfigWriteServiceImpl(
         val content = Configuration(config.root().render(ConfigRenderOptions.concise()), configKey.componentVersion.version)
         val recordKey = "${configKey.packageVersion.name}.${configKey.componentVersion.name}"
         val record = Record(topicName, recordKey, content)
-        log.debug { "Producing record: $recordKey\t$content" }
+        log.debug("hello") { "Producing record: $recordKey\t$content" }
         publisher.publish(listOf(record)).forEach { it.getOrThrow() }
     }
 }

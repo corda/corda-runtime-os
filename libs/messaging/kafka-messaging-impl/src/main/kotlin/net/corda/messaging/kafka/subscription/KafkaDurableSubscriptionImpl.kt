@@ -74,7 +74,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
      * @throws CordaMessageAPIFatalException if unrecoverable error occurs
      */
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config.render()}" }
+        log.debug("hello") { "Starting subscription with config:\n${config.render()}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
@@ -121,7 +121,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
         while (!stopped) {
             attempts++
             try {
-                log.debug { "Attempt: $attempts" }
+                log.debug("hello") { "Attempt: $attempts" }
                 consumer = consumerBuilder.createDurableConsumer(
                     config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass
                 )

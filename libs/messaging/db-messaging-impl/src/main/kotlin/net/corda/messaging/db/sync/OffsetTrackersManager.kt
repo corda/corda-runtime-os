@@ -45,7 +45,7 @@ class OffsetTrackersManager(private val dbAccessProvider: DBAccessProvider): Lif
                     offsetTrackerPerPartition.forEach { (_, offsetTracker) -> offsetTracker.start() }
                 }
                 running = true
-                log.debug { "Offset trackers manager started. " +
+                log.debug("hello") { "Offset trackers manager started. " +
                         "Offset trackers initialised for topics: ${offsetTrackerPerTopicPartition.keys}" }
             }
         }
@@ -59,7 +59,7 @@ class OffsetTrackersManager(private val dbAccessProvider: DBAccessProvider): Lif
                 }
                 executorService.shutdown()
                 running = false
-                log.debug { "Offset trackers manager stopped." }
+                log.debug("hello") { "Offset trackers manager stopped." }
             }
         }
     }
