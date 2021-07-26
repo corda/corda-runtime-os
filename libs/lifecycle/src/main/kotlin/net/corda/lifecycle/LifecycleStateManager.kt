@@ -71,11 +71,11 @@ internal class LifecycleStateManager(
      *
      * @param key The timer key to check
      */
-    fun isTimerRunning(key: String) : Boolean {
+    fun isTimerRunning(key: String): Boolean {
         return key in timerMap.keys
     }
 
-    fun nextBatch() : List<LifeCycleEvent> {
+    fun nextBatch(): List<LifeCycleEvent> {
         val batch = mutableListOf<LifeCycleEvent>()
         for (i in 0..batchSize) {
             val event = eventQueue.poll() ?: break
@@ -113,7 +113,7 @@ internal class LifecycleStateManager(
      * @return true if the event was processed successfully or any errors were properly handled, false otherwise.
      */
     @Suppress("TooGenericExceptionCaught")
-    private fun processEvent(event: LifeCycleEvent) : Boolean {
+    private fun processEvent(event: LifeCycleEvent): Boolean {
         return try {
             processor(event)
             true
@@ -123,9 +123,11 @@ internal class LifecycleStateManager(
             try {
                 processor(errorEvent)
             } catch (e: Throwable) {
-                logger.error("Life-Cycle coordinator caught unexpected ${e.message}" +
-                        " during ErrorEvent processing. Will now stop coordinator!",
-                    e)
+                logger.error(
+                    "Life-Cycle coordinator caught unexpected ${e.message}" +
+                            " during ErrorEvent processing. Will now stop coordinator!",
+                    e
+                )
                 errorEvent.isHandled = false
             }
             errorEvent.isHandled

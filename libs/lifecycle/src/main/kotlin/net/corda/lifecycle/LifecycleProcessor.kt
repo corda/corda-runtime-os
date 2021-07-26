@@ -93,6 +93,7 @@ internal class LifecycleProcessor(
         return true
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun runUserEventHandler(event: LifeCycleEvent, coordinator: LifeCycleCoordinator): Boolean {
         return try {
             userEventHandler.processEvent(event, coordinator)

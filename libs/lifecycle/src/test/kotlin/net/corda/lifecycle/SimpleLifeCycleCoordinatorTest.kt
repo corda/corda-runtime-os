@@ -525,4 +525,39 @@ internal class SimpleLifeCycleCoordinatorTest {
         assertEquals(3, whileStartedProcessed)
         assertEquals(0, whileStoppedProcessed)
     }
+
+    @Test
+    fun `an unhandled error in the start handler causes a stop event to be delivered`() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        val exceptionLatch = CountDownLatch(2)
+        val exception = Exception("A bad thing happened")
+        var startCount = 0
+        var stopCount = 0
+        SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startCount++
+                    startLatch.countDown()
+                    throw exception
+                }
+                is ErrorEvent -> {
+                    assertEquals(exception, event.cause)
+                    exceptionLatch.countDown()
+                }
+                is StopEvent -> {
+                    stopCount++
+                    stopLatch.countDown()
+                    throw exception
+                }
+            }
+        }.use {
+            it.start()
+            assertTrue(exceptionLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(1, startCount)
+            assertEquals(1, stopCount)
+        }
+    }
 }

@@ -24,14 +24,14 @@ class ErrorEvent internal constructor(val cause: Throwable, var isHandled: Boole
  *
  * @see [LifeCycleCoordinator.start]
  */
-class StartEvent internal constructor(): LifeCycleEvent
+class StartEvent internal constructor() : LifeCycleEvent
 
 /**
  * Define an event submitted by a [LifeCycleCoordinator] when it stops.
  *
  * @see [LifeCycleCoordinator.stop]
  */
-class StopEvent internal constructor(): LifeCycleEvent
+class StopEvent internal constructor() : LifeCycleEvent
 
 /**
  * Define a scheduled event submitted by a [LifeCycleCoordinator] when the event happens.
