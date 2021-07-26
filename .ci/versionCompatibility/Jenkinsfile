@@ -62,6 +62,9 @@ pipeline {
         stage('Build') {
             steps {
                 sh "./gradlew clean build -Dmaven.repo.local=/tmp/artifacts/mavenLocal"
+                // TODO: this is a bit of a hack, but we'd like to know which dependencies where used
+                //  and the dependency task only works per module.
+                sh "./gradlew :applications:examples:demo-app:dependencies"
             }
         }
     }
