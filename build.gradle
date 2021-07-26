@@ -65,6 +65,12 @@ allprojects {
     }
 
     repositories {
+        // TODO: you really need to use the cache, otherwise no complaining when upstream repos throttle us!
+        // It would make sense to follow the template!
+
+        // first mavenLocal to support local development in multi-repo setup.
+        mavenLocal()
+
         //repo for CI builds,
         maven {
             url = "$artifactoryContextUrl/corda-ent-maven-unstable"
@@ -96,7 +102,6 @@ allprojects {
         mavenCentral()
         //TODO remove this when we can as its only needed for kotlinx-html-jvm
         jcenter()
-        mavenLocal()
     }
 
     sourceSets {
