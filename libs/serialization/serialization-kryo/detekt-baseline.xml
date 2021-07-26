@@ -2,10 +2,5 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>ComplexCondition:CordaClassResolver.kt$CordaClassResolver$type.isPrimitive || type == Any::class.java || type == String::class.java || (!type.isEnum &amp;&amp; isAbstract(type.modifiers))</ID>
-    <ID>ComplexMethod:CordaClassResolver.kt$CordaClassResolver$private fun checkClass(type: Class&lt;*&gt;): Registration?</ID>
-    <ID>ForbiddenComment:CordaClassResolver.kt$CordaClassResolver$// TODO: Later we can support annotations on attachment classes and spin up a proxy via bytecode that we know is harmless.</ID>
-    <ID>ForbiddenComment:CordaClassResolver.kt$CordaClassResolver$// TODO: come up with a more efficient way. e.g. segregate the name space by class loader.</ID>
-    <ID>TooGenericExceptionCaught:CordaClassResolver.kt$LoggingWhitelist.Companion$ioEx: Exception</ID>
   </CurrentIssues>
 </SmellBaseline>

@@ -31,6 +31,7 @@ import kotlin.collections.ArrayList
 /**
  * Corda specific class resolver which enables extra customisation for the purposes of serialization using Kryo
  */
+@Suppress("ComplexMethod", "ComplexCondition")
 class CordaClassResolver(
     serializationContext: CheckpointSerializationContext,
     hashingService: BasicHashingService
@@ -122,7 +123,7 @@ class CordaClassResolver(
     // we have the CorDapp installed.
     // We also do not allow extension of KryoSerializable for annotated classes, or combination with @DefaultSerializer
     // for custom serialisation.
-    // TODO: Later we can support annotations on attachment classes and spin up a proxy via bytecode that we know is harmless.
+    // TODOs: Later we can support annotations on attachment classes and spin up a proxy via bytecode that we know is harmless.
     private fun isSerializable(type: Class<*>): Boolean {
         return !KryoSerializable::class.java.isAssignableFrom(type)
                 && !type.isAnnotationPresent(DefaultSerializer::class.java)
@@ -139,7 +140,7 @@ class CordaClassResolver(
     override fun reset() {
         super.reset()
         // Kryo creates a cache of class name to Class<*> which does not work so well with multiple class loaders.
-        // TODO: come up with a more efficient way.  e.g. segregate the name space by class loader.
+        // TODOs: come up with a more efficient way.  e.g. segregate the name space by class loader.
         if (nameToClass != null) {
             val classesToRemove: MutableList<String> = ArrayList(nameToClass.size)
             nameToClass.entries()
@@ -155,7 +156,7 @@ class CordaClassResolver(
  * This class is not currently used, but can be installed to log a large number of missing entries from the whitelist
  * and was used to track down the initial set.
  */
-@Suppress("unused")
+@Suppress("unused", "TooGenericExceptionCaught")
 class LoggingWhitelist(val delegate: ClassWhitelist, val global: Boolean = true) : MutableClassWhitelist {
     companion object {
         private val log = contextLogger()
