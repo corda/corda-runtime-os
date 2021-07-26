@@ -84,13 +84,6 @@ fun getCertCheckingParameters(trustStore: KeyStore, revocationConfig: Revocation
     val pkixParams = PKIXBuilderParameters(trustStore, X509CertSelector())
     val revocationChecker = when (revocationConfig.mode) {
         RevocationConfig.Mode.OFF -> AllowAllRevocationChecker
-        RevocationConfig.Mode.EXTERNAL_SOURCE -> {
-            // We need to figure out if this is still needed. Likely not as the GW should never be in the DMZ, so
-            // outbound connections are allowed
-//            require(revocationConfig.externalCrlSource != null) { "externalCrlSource must not be null" }
-//            ExternalSourceRevocationChecker(revocationConfig.externalCrlSource!!) { Date() }
-            AllowAllRevocationChecker
-        }
         else -> {
             val certPathBuilder = CertPathBuilder.getInstance("PKIX")
             val pkixRevocationChecker = certPathBuilder.revocationChecker as PKIXRevocationChecker

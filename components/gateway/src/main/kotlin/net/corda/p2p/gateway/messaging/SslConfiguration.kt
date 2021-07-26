@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging
 
+import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfig
 import java.security.KeyStore
 
 /**
@@ -28,4 +29,9 @@ interface SslConfiguration {
      * The trust store password
      */
     val trustStorePassword: String
+
+    /**
+     * Property determining how the revocation check will be made for the server certificate
+     */
+    val revocationCheck: RevocationConfig
 }

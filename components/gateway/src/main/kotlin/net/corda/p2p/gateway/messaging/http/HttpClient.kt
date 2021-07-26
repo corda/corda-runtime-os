@@ -160,8 +160,7 @@ class HttpClient(private val destination: URI,
 
         init {
             parent.sslConfiguration.run {
-                // TODO: get mode from config
-                val pkixParams = getCertCheckingParameters(trustStore, RevocationConfigImpl(RevocationConfig.Mode.HARD_FAIL))
+                val pkixParams = getCertCheckingParameters(trustStore, revocationCheck)
                 trustManagerFactory.init(pkixParams)
             }
         }

@@ -145,6 +145,25 @@ class HttpTest : TestBase() {
     }
 
     @Test
+
+    fun `tls handshake succeeds - revocation checking disabled`() {
+        HttpServer(serverAddress.host, serverAddress.port, bobSslConfig).use { server ->
+            server.start()
+            HttpClient(serverAddress, bobSNI[0], aliceSslConfig).use { client ->
+                val connectedLatch = CountDownLatch(1)
+                client.onConnection.subscribe {
+                    if (it.connected) {
+                        connectedLatch.countDown()
+                    }
+                }
+
+                client.start()
+                assert(connectedLatch.await(1, TimeUnit.SECONDS))
+            }
+        }
+    }
+
+    @Test
     fun `tls handshake fails - requested SNI is not recognized`() {
         HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
             server.start()

@@ -1,5 +1,7 @@
 package net.corda.p2p.gateway
 
+import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfig
+import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfigImpl
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import java.io.FileInputStream
 import java.security.KeyStore
@@ -22,6 +24,7 @@ open class TestBase {
             it.load(FileInputStream(javaClass.classLoader.getResource("truststore.jks")!!.file), truststorePass.toCharArray())
         }
         override val trustStorePassword: String = truststorePass
+        override val revocationCheck = RevocationConfigImpl(RevocationConfig.Mode.OFF)
     }
     protected val bobSslConfig = object : SslConfiguration {
         override val keyStore: KeyStore = KeyStore.getInstance("JKS").also {
@@ -32,6 +35,7 @@ open class TestBase {
             it.load(FileInputStream(javaClass.classLoader.getResource("truststore.jks")!!.file), truststorePass.toCharArray())
         }
         override val trustStorePassword: String = truststorePass
+        override val revocationCheck = RevocationConfigImpl(RevocationConfig.Mode.HARD_FAIL)
     }
     protected val chipSslConfig = object : SslConfiguration {
         override val keyStore: KeyStore = KeyStore.getInstance("JKS").also {
@@ -42,6 +46,7 @@ open class TestBase {
             it.load(FileInputStream(javaClass.classLoader.getResource("truststore.jks")!!.file), truststorePass.toCharArray())
         }
         override val trustStorePassword: String = truststorePass
+        override val revocationCheck = RevocationConfigImpl(RevocationConfig.Mode.HARD_FAIL)
     }
     protected val daleSslConfig = object : SslConfiguration {
         override val keyStore: KeyStore = KeyStore.getInstance("JKS").also {
@@ -52,5 +57,6 @@ open class TestBase {
             it.load(FileInputStream(javaClass.classLoader.getResource("truststore.jks")!!.file), truststorePass.toCharArray())
         }
         override val trustStorePassword: String = truststorePass
+        override val revocationCheck = RevocationConfigImpl(RevocationConfig.Mode.SOFT_FAIL)
     }
 }
