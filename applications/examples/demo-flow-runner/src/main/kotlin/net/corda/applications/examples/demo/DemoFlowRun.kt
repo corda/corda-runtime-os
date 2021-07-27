@@ -29,7 +29,7 @@ enum class LifeCycleState {
     UNINITIALIZED, STARTINGMESSAGING, STOPPED
 }
 
-@Component
+@Component(immediate = true)
 class DemoFlowRun @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
