@@ -88,10 +88,25 @@ class BatchUtilsTest {
                 generateMockConsumerRecords(4, "TOPIC1", 1) +
                 generateMockConsumerRecords(3, "TOPIC2", 0)
 
-        val recordOffsets  = getRecordListOffsets(records)
+        val recordOffsets  = getRecordListOffsets(records.shuffled())
         assertThat(recordOffsets.size).isEqualTo(3)
         assertThat(recordOffsets[TopicPartition("TOPIC1", 0)]!!.offset()).isEqualTo(3)
         assertThat(recordOffsets[TopicPartition("TOPIC1", 1)]!!.offset()).isEqualTo(4)
         assertThat(recordOffsets[TopicPartition("TOPIC2", 0)]!!.offset()).isEqualTo(3)
     }
+
+    @Test
+    fun `test generated offsets for list of size one`() {
+        val records = generateMockConsumerRecords(1, "TOPIC1", 0)
+        val recordOffsets  = getRecordListOffsets(records.toList())
+        assertThat(recordOffsets.size).isEqualTo(1)
+        assertThat(recordOffsets[TopicPartition("TOPIC1", 0)]!!.offset()).isEqualTo(1)
+    }
+
+    @Test
+    fun `test generated offsets for list of size zero`() {
+        val recordOffsets  = getRecordListOffsets(emptyList())
+        assertThat(recordOffsets.size).isEqualTo(0)
+    }
+
 }
