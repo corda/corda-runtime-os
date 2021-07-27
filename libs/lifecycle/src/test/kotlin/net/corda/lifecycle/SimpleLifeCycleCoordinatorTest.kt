@@ -143,6 +143,7 @@ internal class SimpleLifeCycleCoordinatorTest {
         var stopLatch = CountDownLatch(1)
         var startLatch = CountDownLatch(1)
         val expectedException = Exception("expected exception")
+        var exceptionCount = 0
         SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, coordinator: LifeCycleCoordinator ->
             when (event) {
                 is StartEvent -> {
@@ -154,6 +155,7 @@ internal class SimpleLifeCycleCoordinatorTest {
                 is ErrorEvent -> {
                     assertEquals(expectedException, event.cause)
                     event.isHandled = true
+                    exceptionCount++
                     coordinator.postEvent(object : PostEvent {})
                 }
                 is PostEvent -> {
@@ -174,6 +176,7 @@ internal class SimpleLifeCycleCoordinatorTest {
                 assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             }
         }
+        assertEquals(NUM_LOOPS + 1, exceptionCount)
     }
 
     @Test
