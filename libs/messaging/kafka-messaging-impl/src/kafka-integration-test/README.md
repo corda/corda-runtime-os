@@ -26,7 +26,7 @@ docker-compose -f two-kafka-clusters.yml up -d
 
 To run the tests
 ```
-gradlew kafkaIntegrationTest
+gradlew clean kafkaIntegrationTest
 ```
 
 ### Tearing down the environment
