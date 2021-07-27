@@ -38,20 +38,12 @@ fun getRecordListOffsets(records: List<ConsumerRecord<*, *>>): Map<TopicPartitio
         return mutableMapOf()
     }
 
-    val map = mutableMapOf<Pair<String, Int>, Long>()
-    for (record in records) {
-        val currentMapVal = map[Pair(record.topic(), record.partition())]
-        if (currentMapVal == null || currentMapVal < record.offset()) {
-            map[Pair(record.topic(), record.partition())] = record.offset()
+    return records.fold(mutableMapOf()) { offsets, record ->
+        val key = TopicPartition(record.topic(), record.partition())
+        val currentOffset = offsets[key]?.offset() ?: 0L
+        if (currentOffset <= record.offset()) {
+            offsets[key] = OffsetAndMetadata(record.offset() + 1)
         }
+        offsets
     }
-
-    val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
-    for (entry in map.entries) {
-        val currentKey = entry.key
-        val topicPartition = TopicPartition(currentKey.first, currentKey.second)
-        offsets[topicPartition] = OffsetAndMetadata(entry.value + 1)
-    }
-
-    return offsets
 }
