@@ -27,7 +27,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
         private const val TIMER_DELAY = 100L
 
-        private const val NUM_LOOPS = 100
+        private const val NUM_LOOPS = 5
 
         val logger: Logger = contextLogger()
     }
