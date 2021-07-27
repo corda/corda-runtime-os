@@ -7,7 +7,7 @@ import com.google.common.collect.testing.features.CollectionSize
 import junit.framework.TestSuite
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Suite
 
@@ -33,12 +33,12 @@ class NonEmptySetTest {
     }
 
     class General {
-        @Test(timeout = 300_000)
+        @Test
         fun `copyOf - empty source`() {
             assertThatThrownBy { NonEmptySet.copyOf(HashSet<Int>()) }.isInstanceOf(IllegalArgumentException::class.java)
         }
 
-        @Test(timeout = 300_000)
+        @Test
         fun head() {
             assertThat(NonEmptySet.of(1, 2).head()).isEqualTo(1)
         }
