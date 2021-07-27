@@ -103,6 +103,7 @@ class FlowManagerImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
+    @Suppress("SpreadOperator")
     private fun getOrCreate(identity: HoldingIdentity, flow: FlowMetadata, args: List<Any?>): Flow<*> {
         val flowClazz: Class<Flow<*>> =
             uncheckedCast(sandboxCache.getSandboxGroupFor(identity, flow).loadClass(flow.name, Flow::class.java))
