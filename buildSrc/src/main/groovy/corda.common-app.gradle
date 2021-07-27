@@ -24,9 +24,6 @@ dependencies {
     systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
     systemPackages project(":osgi-framework-api")
-    // Should be moved to apps once we can
-    systemPackages "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
-    systemPackages "com.esotericsoftware:reflectasm:1.11.9"
 }
 
 def jarTask = tasks.named("jar", Jar) {
@@ -52,7 +49,6 @@ private addBundle(
     Files.deleteIfExists(target.toPath())
     Files.copy(source.toPath(), target.toPath())
     systemBundleSet.add("bundles/${source.name}")
-    println "OSGI Bundle $source.name included as resource."
     logger.info "OSGI Bundle $source.name included as resource."
 }
 
@@ -93,7 +89,6 @@ private def addSystemPackagesExtra(
                             final def export = exportEntry.key + ";" + exportEntry.value.toString()
                             systemBundleExtraSet.add(export)
                             logger.info "OSGI $export included as system package extra."
-                            println "1: OSGI $export included as system package extra."
                         }
                     }
                 } else {
@@ -106,7 +101,6 @@ private def addSystemPackagesExtra(
                             final def export = entryName.substring(0, end).replace('/', '.')
                             systemBundleExtraSet.add(export)
                             logger.info "OSGI $export included as system package extra."
-                            println "2: OSGI $export included as system package extra."
                         }
                     }
                 }
@@ -140,28 +134,23 @@ def cordaAssembleBundlesTask = tasks.register("cordaAssembleBundles") {
         }
         final Set<String> systemPackageSet = new TreeSet<>()
         configurations.systemPackages.resolve().each { file ->
-            println "Adding $file.name to system package set"
             systemPackageSet.add(file.name)
         }
         final Set<String> systemBundleSet = new TreeSet<>()
         configurations.runtimeClasspath.incoming.each { resolvableDependencies ->
-            println "Adding runtimeClasspath dependencies"
             addBundles(resolvableDependencies.artifacts as ArtifactCollection, bundlesDir, systemBundleSet, systemPackageSet)
         }
         new File(project.buildDir, "libs").listFiles().findAll { file ->
             isJar(file) && !systemPackageSet.contains(file.name)
         }.each { jar ->
-            println "Adding libs that aren't system package dependencies"
             addBundle(jar, new File(bundlesDir, jar.name), systemBundleSet)
         }
         new File(project.buildDir, "libs").listFiles().findAll { file -> isJar(file) }.each { jar ->
-            println "Adding libs jars dependencies"
             addBundle(jar, new File(bundlesDir, jar.name), systemBundleSet)
         }
         final systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
         systemBundlesFile.withWriter { writer ->
             systemBundleSet.each { line ->
-                println "Adding $line to system_bundles"
                 writer.writeLine(line)
             }
         }
