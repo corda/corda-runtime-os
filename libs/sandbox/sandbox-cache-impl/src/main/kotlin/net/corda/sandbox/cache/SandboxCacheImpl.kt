@@ -1,6 +1,5 @@
 package net.corda.sandbox.cache
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.install.InstallService
 import net.corda.packaging.Cpb
@@ -8,15 +7,17 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.SandboxService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 
+@Component
 class SandboxCacheImpl @Activate constructor(
-    @Reference
+    @Reference(service = InstallService::class)
     private val installService: InstallService,
-    @Reference
+    @Reference(service = SandboxService::class)
     private val sandboxService: SandboxService,
 ) : SandboxCache {
 
@@ -25,7 +26,7 @@ class SandboxCacheImpl @Activate constructor(
     /**
      * Given a flow, where do I go for the cpb (and sandbox)
      */
-    private val cpbForFlow = ConcurrentHashMap<FlowMetadata, Cpb.Identifier>()
+    private val cpbForFlow = ConcurrentHashMap<String, Cpb.Identifier>()
 
     // This might need to go somewhere else...?
     override fun loadCpbs(
@@ -39,7 +40,7 @@ class SandboxCacheImpl @Activate constructor(
             cpbEx?.cpks?.forEach { cpk ->
                 cpk.cordappManifest.flows.forEach { flow ->
                     // HMM: We don't know what to put for FlowKey here.  It might not belong in the key to the map.
-                    cpbForFlow.computeIfAbsent(FlowMetadata(flow, FlowKey())) { cpb.identifier }
+                    cpbForFlow.computeIfAbsent(flow) { cpb.identifier }
                 }
             }
         }
@@ -47,7 +48,7 @@ class SandboxCacheImpl @Activate constructor(
 
     override fun getSandboxGroupFor(identity: HoldingIdentity, flow: FlowMetadata): SandboxGroup {
         return cache.computeIfAbsent(identity) {
-            val cpb = cpbForFlow[flow]
+            val cpb = cpbForFlow[flow.name]
                 ?: throw CordaRuntimeException("Flow not available in cordapp")
             sandboxService.createSandboxes(cpb)
         }

@@ -32,7 +32,7 @@ dependencies {
     runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 
-    // from crypto-imple (via the Sandbox)
+    // from crypto-impl (via the Sandbox)
     runtimeOnly "antlr:antlr.osgi:2.7.7"
     runtimeOnly "dom4j:dom4j.osgi:1.6.1"
     runtimeOnly "com.sun.msv:com.springsource.com.sun.msv.datatype:0.0.0.20060615"
@@ -40,7 +40,8 @@ dependencies {
     // from net.corda.install service...
     runtimeOnly "org.osgi:org.osgi.service.cm:1.6.0"
     // from flow-manager-impl
-    runtimeOnly "org.objectweb.asm:com.springsource.org.objectweb.asm:3.2.0"
+//    runtimeOnly "org.objectweb.asm:com.springsource.org.objectweb.asm:3.2.0"
+    runtimeOnly "org.objectweb.asm:org.objectweb.asm:3.3.1.v201105211655"
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"

@@ -2,6 +2,7 @@ package net.corda.flow.statemachine
 
 import co.paralleluniverse.fibers.Fiber
 import net.corda.data.flow.Checkpoint
+import net.corda.data.flow.event.FlowEvent
 import net.corda.internal.di.FlowStateMachineInjectable
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
@@ -41,7 +42,7 @@ interface FlowStateMachine<FLOWRETURN> : FlowStateMachineInjectable {
 
     fun updateTimedFlowTimeout(timeoutSeconds: Long)
 
-    fun waitForCheckpoint(): Checkpoint?
+    fun waitForCheckpoint(): Pair<Checkpoint?, List<FlowEvent>>
 
     fun startFlow(): Fiber<Unit>
 

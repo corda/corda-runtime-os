@@ -20,5 +20,9 @@ dependencies {
     implementation project(':libs:flows:flow-manager')
     implementation project(':libs:flows:statemachine')
     implementation project(':libs:flows:statemachine-impl')
+    implementation project(':libs:messaging:messaging')
     implementation project(':libs:sandbox:sandbox-cache')
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

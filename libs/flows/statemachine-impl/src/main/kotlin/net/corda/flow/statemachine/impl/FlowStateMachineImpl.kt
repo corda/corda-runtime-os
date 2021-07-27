@@ -35,7 +35,7 @@ class FlowStateMachineImpl<R>(
     private val clientId: String?,
     private val id: FlowKey,
     private val logic: Flow<R>,
-    val ourIdentity: Party,
+//    val ourIdentity: Party,
     scheduler: FiberScheduler
 ) : Fiber<Unit>(id.toString(), scheduler), FlowStateMachine<R> {
 
@@ -223,15 +223,25 @@ class FlowStateMachineImpl<R>(
         TODO("Not yet implemented")
     }
 
-    override fun waitForCheckpoint(): Checkpoint? {
-        val fibreState = nonSerializableState.suspended.getOrThrow() ?: return null
+    override fun waitForCheckpoint(): Pair<Checkpoint?, List<FlowEvent>> {
+        val fibreState = nonSerializableState.suspended.getOrThrow() ?: return Pair(null, emptyList())
 
-        val stateMachineState = StateMachineState(
+        return Pair(
+            Checkpoint(
+                id,
+                ByteBuffer.wrap(fibreState),
+                buildStateMachineState()
+            ),
+            nonSerializableState.eventsOut
         )
-        return Checkpoint(
-            id,
-            ByteBuffer.wrap(fibreState),
-            stateMachineState
+    }
+
+    private fun buildStateMachineState(): StateMachineState {
+        return StateMachineState(
+            housekeepingState.suspendCount,
+            housekeepingState.isKilled,
+            ByteBuffer.wrap(clientId?.toByteArray()),
+            housekeepingState.eventsIn
         )
     }
 
