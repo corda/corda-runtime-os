@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.core.LogEvent
 import org.apache.logging.log4j.core.LoggerContext
 import org.apache.logging.log4j.core.appender.AbstractAppender
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 
 class LoggingInterceptor private constructor(private val testAppender: TestAppender) {
@@ -46,6 +47,11 @@ class LoggingInterceptor private constructor(private val testAppender: TestAppen
     fun assertSingleWarning(expectedMessage: String) {
         assertEquals(Level.WARN, testAppender.levels.single())
         assertEquals(expectedMessage, testAppender.messages.single())
+    }
+
+    fun assertErrorContains(message: String) {
+        assertEquals(Level.ERROR, testAppender.levels.single())
+        assertThat(testAppender.messages.single()).contains(message)
     }
 
 }
