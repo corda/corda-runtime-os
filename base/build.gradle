@@ -1,6 +1,9 @@
 plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'biz.aQute.bnd.builder'
 }
+
+description 'Corda Base'
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"

@@ -28,6 +28,17 @@ pluginManagement {
             }
             gradlePluginPortal()
         }
+
+        maven {
+            url "$artifactoryContextUrl/engineering-tools-maven"
+            credentials {
+                username = System.getenv('CORDA_ARTIFACTORY_USERNAME') ?: cordaArtifactoryUsername
+                password = System.getenv('CORDA_ARTIFACTORY_PASSWORD') ?: cordaArtifactoryPassword
+            }
+            content {
+                includeGroupByRegex 'com\\.r3\\.internal(\\..*)?'
+            }
+        }
     }
 
     plugins {
@@ -37,12 +48,14 @@ pluginManagement {
         id 'org.openjfx.javafxplugin' version javaFxPluginVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'org.ajoberstar.grgit' version grgitPluginVersion // used for GIT interaction (e.g. extract commit hash)
-        id 'com.jfrog.artifactory' version jfrogArtifactoryPluginVersion
+        id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
+        id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
         id 'com.dorongold.task-tree' version taskTreePluginVersion // utility to visualise Gradle task DAG
         id 'biz.aQute.bnd.builder' version bndVersion // used to create OSGi bundles
+        id 'org.jetbrains.dokka' version dokkaVersion
     }
 }
 
-rootProject.name = "corda-project"
+rootProject.name = "corda-api"
 
 include 'base'

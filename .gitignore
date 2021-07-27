@@ -36,6 +36,7 @@ local.properties
 # IntelliJ
 **/out/
 /classes/
+*.hprof
 
 # mpeltonen/sbt-idea plugin
 .idea_modules/
@@ -63,3 +64,4 @@ TODO
 
 # Directory generated during Resolve and TestOSGi gradle tasks
 bnd/
+
