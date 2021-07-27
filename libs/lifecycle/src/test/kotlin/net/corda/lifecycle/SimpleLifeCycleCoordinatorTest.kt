@@ -18,7 +18,7 @@ internal class SimpleLifeCycleCoordinatorTest {
 
         private const val TIMER_DELAY = 100L
 
-        private const val NUM_LOOPS = 5
+        private const val NUM_LOOPS = 100
 
         val logger: Logger = contextLogger()
     }
@@ -162,7 +162,6 @@ internal class SimpleLifeCycleCoordinatorTest {
                     coordinator.stop()
                 }
                 is StopEvent -> {
-                    assertTrue(stopLatch.count > 0)
                     stopLatch.countDown()
                 }
             }
@@ -208,7 +207,6 @@ internal class SimpleLifeCycleCoordinatorTest {
                 }
                 is StopEvent -> {
                     stopLatch.countDown()
-                    assertTrue(stopLatch.count == 0L)
                 }
             }
         }.use { coordinator ->
@@ -251,7 +249,6 @@ internal class SimpleLifeCycleCoordinatorTest {
                 }
                 is StopEvent -> {
                     stopLatch.countDown()
-                    assertTrue(stopLatch.count == 0L)
                 }
             }
         }.use { coordinator ->
