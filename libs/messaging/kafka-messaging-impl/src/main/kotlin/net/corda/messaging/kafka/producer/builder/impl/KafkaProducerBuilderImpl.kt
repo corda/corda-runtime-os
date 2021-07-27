@@ -7,7 +7,7 @@ import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.producer.wrapper.impl.CordaKafkaProducerImpl
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
-import net.corda.messaging.kafka.toProperties
+import net.corda.messaging.kafka.utils.toProperties
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.producer.KafkaProducer

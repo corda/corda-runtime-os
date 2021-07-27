@@ -4,11 +4,11 @@ import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.kafka.getRecordListOffsets
-import net.corda.messaging.kafka.getStringOrNull
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.utils.getRecordListOffsets
+import net.corda.messaging.kafka.utils.getStringOrNull
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
