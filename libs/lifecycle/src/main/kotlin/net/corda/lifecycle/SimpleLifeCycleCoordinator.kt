@@ -31,6 +31,27 @@ class SimpleLifeCycleCoordinator(
 
     companion object {
         private val logger: Logger = contextLogger()
+
+        /**
+         * The minimum number of threads to keep active in the threadpool.
+         *
+         * Under load, the number of threads may increase. By keeping a minimum of one, the lifecycle library should
+         * remain responsive to change while not consuming excessive resources.
+         */
+        private const val MIN_THREADS = 100
+
+        /**
+         * The executor on which events are processed. Note that all events should be processed on an executor thread,
+         * but they may be posted from any thread. Different events may be processed on different executor threads.
+         *
+         * By sharing a threadpool among coordinators, it should be possible to reduce resource usage when in a stable
+         * state.
+         */
+        private val executor = Executors.newScheduledThreadPool(MIN_THREADS) { runnable ->
+            val thread = Thread(runnable)
+            thread.isDaemon = true
+            thread
+        }
     }
 
     /**
@@ -48,16 +69,6 @@ class SimpleLifeCycleCoordinator(
      * scheduled at a time.
      */
     private val isScheduled = AtomicBoolean(false)
-
-    /**
-     * The executor on which events are processed. Note that all events should be processed in the executor thread, but
-     * may be posted from any other thread.
-     */
-    private val executor = Executors.newSingleThreadScheduledExecutor { runnable ->
-        val thread = Thread(runnable)
-        thread.isDaemon = true
-        thread
-    }
 
     /**
      * Process the events in [eventQueue].

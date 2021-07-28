@@ -7,9 +7,7 @@ import java.util.concurrent.ScheduledFuture
 /**
  * Manages the event queue for a lifecycle coordinator and associated timer state.
  *
- * This class ensures underlying state is updated atomically but is otherwise not thread safe. In particular, posting
- * events or starting timers while the manager is being cleaned up is non-deterministic - the event/timer may or may not
- * get cleaned up, depending on the timing.
+ * This class ensures that updates to the state is thread safe.
  *
  * @param batchSize The number of events to process in a single call to `processEvents`
  */
@@ -21,6 +19,7 @@ internal class LifecycleStateManager(
 
     private val timerMap = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
+    @Volatile
     var isRunning: Boolean = false
 
     /**
