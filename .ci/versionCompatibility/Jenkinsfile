@@ -64,11 +64,10 @@ pipeline {
         }
         stage('Build') {
             steps {
-                sh "./gradlew clean build -Dmaven.repo.local=/tmp/artifacts/mavenLocal"
-                // TODO: this is a bit of a hack, but we'd like to know (print) which dependencies where used
-                //  by the build, and the dependency task only works per module.
-                //  It would be nice if this was a generic step.
-                sh "./gradlew :applications:examples:demo-app:dependencies"
+                // This first step is simply to log how the dynamic dependencies are resolved. This is useful for troubleshooting.
+                //  NOTE: this depends on the custom allDependencyInsight task being available.
+                sh "./gradlew clean allDependencyInsight --configuration compileClasspath  --dependency net.corda --singlepath"
+                sh "./gradlew build -Dmaven.repo.local=/tmp/artifacts/mavenLocal"
             }
         }
     }
