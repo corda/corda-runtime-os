@@ -10,7 +10,7 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation project(":osgi-framework-api")
 
     implementation project(":libs:messaging:messaging")
