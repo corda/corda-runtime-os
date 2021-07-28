@@ -68,7 +68,9 @@ allprojects {
         // TODO: you really need to use the cache, otherwise no complaining when upstream repos throttle us!
         // It would make sense to follow the template!
 
-        // first mavenLocal to support local development in multi-repo setup.
+        // Listed the mavenLocal repository first in case people are doing a local publication of an upstream
+        //  module (e.g in corda-api repo).
+        //  This would ensure that the local copy is picked up if it is available.
         mavenLocal()
 
         //repo for CI builds,
@@ -167,5 +169,7 @@ subprojects {
     dependencies {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
     }
+
+    task allDependencyInsight(type: DependencyInsightReportTask) {}
 }
 
