@@ -5,6 +5,6 @@ cordaPipeline(
     runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
     runE2eTests: true,
-    e2eTestName: 'flowworker-e2e-tests',
+    e2eTestName: 'flowworker-e2e-tests'
     )
 
