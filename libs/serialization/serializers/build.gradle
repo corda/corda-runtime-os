@@ -1,0 +1,15 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    implementation "net.corda:corda-crypto-api:$cordaVersion"
+    implementation "net.corda:corda-ledger:$cordaVersion"
+
+    implementation project(":libs:serialization:serialization-kryo")
+
+}
