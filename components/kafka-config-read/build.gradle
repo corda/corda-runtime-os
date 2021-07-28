@@ -7,7 +7,7 @@ description "Kafka Config Read Component"
 
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation project(':data:avro-schema')
     implementation project(':libs:configuration:configuration-read')
     implementation project(":libs:lifecycle")

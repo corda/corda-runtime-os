@@ -6,7 +6,7 @@ plugins {
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation project(":libs:kafka-utils:topic-admin")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
