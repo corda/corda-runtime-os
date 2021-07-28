@@ -7,4 +7,6 @@ description "LifeCycle API"
 
 dependencies {
     implementation "net.corda:corda-base:$cordaApiVersion"
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
