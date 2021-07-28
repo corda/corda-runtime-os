@@ -47,6 +47,14 @@ internal class LifecycleProcessor(
                 state.cancelTimer(event.key)
                 true
             }
+            is TimerEvent -> {
+                if (state.isRunning && state.isTimerRunning(event.key)) {
+                    runUserEventHandler(event, coordinator)
+                } else {
+                    logger.trace { "Did not process lifecycle event $event as coordinator is shutdown" }
+                    true
+                }
+            }
             else -> {
                 if (state.isRunning) {
                     runUserEventHandler(event, coordinator)

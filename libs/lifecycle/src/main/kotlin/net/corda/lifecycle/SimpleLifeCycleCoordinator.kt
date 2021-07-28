@@ -29,9 +29,7 @@ class SimpleLifeCycleCoordinator(
     /**
      * The event queue and timer state for this lifecycle processor.
      */
-    private val lifecycleState = LifecycleStateManager(batchSize) { lifecycleEvent ->
-        lifeCycleProcessor.processEvent(lifecycleEvent, this)
-    }
+    private val lifecycleState = LifecycleStateManager(batchSize)
 
     /**
      * The processor for this coordinator.

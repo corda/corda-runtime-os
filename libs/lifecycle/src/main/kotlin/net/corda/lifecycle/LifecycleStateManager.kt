@@ -12,17 +12,11 @@ import java.util.concurrent.ScheduledFuture
  * events or starting timers while the manager is being cleaned up is non-deterministic - the event/timer may or may not
  * get cleaned up, depending on the timing.
  *
- * @param batchSize The number of events to process in a single call to `processEvents`.
- * @param processor The function to invoke to process each individual event.
+ * @param batchSize The number of events to process in a single call to `processEvents`
  */
 internal class LifecycleStateManager(
-    private val batchSize: Int,
-    private val processor: (lifecycleEvent: LifeCycleEvent) -> Unit
+    private val batchSize: Int
 ) {
-
-    companion object {
-        private val logger = contextLogger()
-    }
 
     private val eventQueue = ConcurrentLinkedDeque<LifeCycleEvent>()
 
@@ -77,60 +71,10 @@ internal class LifecycleStateManager(
 
     fun nextBatch(): List<LifeCycleEvent> {
         val batch = mutableListOf<LifeCycleEvent>()
-        for (i in 0..batchSize) {
+        for (i in 0 until batchSize) {
             val event = eventQueue.poll() ?: break
             batch.add(event)
         }
         return batch
-    }
-
-    /**
-     * Process a batch of events on the event queue.
-     *
-     * If the processor throws an error, then the error is posted back to the processor to give it the opportunity to
-     * handle it. If the error is not marked as handled, or a subsequent error is thrown, the remainder of the batch is
-     * delivered but this invocation of processEvents is considered to have failed.
-     *
-     * @return true if there were no errors, false if there was an unhandled error during processing
-     */
-    fun processEvents(): Boolean {
-        val batch = mutableListOf<LifeCycleEvent>()
-        for (i in 0..batchSize) {
-            val event = eventQueue.poll() ?: break
-            batch.add(event)
-        }
-
-        return batch.map { processEvent(it) }.all { it }
-    }
-
-    /**
-     * Process a single event.
-     *
-     * If an error occurs, a second event is delivered to give the processor a chance to handle the problem. An error
-     * event is considered handled only if the `isHandled` flag is set by the processor to `true`.
-     *
-     * @param event The event to process.
-     * @return true if the event was processed successfully or any errors were properly handled, false otherwise.
-     */
-    @Suppress("TooGenericExceptionCaught")
-    private fun processEvent(event: LifeCycleEvent): Boolean {
-        return try {
-            processor(event)
-            true
-        } catch (e: Throwable) {
-            val errorEvent = ErrorEvent(e)
-            logger.warn("Life-Cycle coordinator caught ${e.message} starting ErrorEvent processing.", e)
-            try {
-                processor(errorEvent)
-            } catch (e: Throwable) {
-                logger.error(
-                    "Life-Cycle coordinator caught unexpected ${e.message}" +
-                            " during ErrorEvent processing. Will now stop coordinator!",
-                    e
-                )
-                errorEvent.isHandled = false
-            }
-            errorEvent.isHandled
-        }
     }
 }
