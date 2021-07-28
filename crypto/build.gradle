@@ -1,0 +1,34 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'biz.aQute.bnd.builder'
+}
+
+description 'Corda Crypto'
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
+    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
+
+    api project(':base')
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = 'corda-crypto'
+    bnd """\
+Bundle-Name: Corda Crypto
+Bundle-SymbolicName: \${project.group}.crypto
+Import-Package:\
+    net.i2p.crypto.eddsa.math;resolution:=optional,\
+    *
+"""
+}
