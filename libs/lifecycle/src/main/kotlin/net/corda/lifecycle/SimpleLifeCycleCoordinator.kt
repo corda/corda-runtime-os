@@ -10,11 +10,18 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
- * The class coordinates [LifeCycleEvent] submitted with [postEvent] and [TimerEvent] timers set with [setTimer].
+ * A manager of lifecycle events for a single component.
+ *
+ * This class implements the coordinator API, which can be used to model component lifecycle as a queue of events to be
+ * handled. The main responsibility of this class is to receive API calls and schedule the processing of lifecycle
+ * events.
+ *
+ * Events are scheduled to be processed on a thread pool. This class ensures that only one call to process is scheduled
+ * at once.
  *
  * @param batchSize max number of events processed in a single [processEvents] call.
  * @param timeout in milliseconds this coordinator stops before to log a warning.
- * @param lifeCycleProcessor method receiving the [LifeCycleEvent] notifications coordinated by this object.
+ * @param lifeCycleProcessor The user event handler for lifecycle events.
  */
 class SimpleLifeCycleCoordinator(
     private val batchSize: Int,
@@ -55,21 +62,10 @@ class SimpleLifeCycleCoordinator(
     /**
      * Process the events in [eventQueue].
      *
-     * To improve performance, events are buffered in an array list of [batchSize] length
-     * to be accessed by the [lifeCycleProcessor].
+     * The main processing functionality is delegated to the LifecycleProcessor class. On a processing error, the
+     * coordinator is stopped.
      *
-     * Exceptions thrown by the [lifeCycleProcessor] are wrapped in an [ErrorEvent] instance,
-     * notified immediately to the [lifeCycleProcessor].
-     *
-     * If [lifeCycleProcessor] thrown an exception handing an [ErrorEvent], this coordinator stops.
-     *
-     * **NOTE!**
-     * **Exception thrown in the processor always stop the coordinator.**
-     * **The processor can handle error events and re-post them to the coordinator**
-     * **but if they the processor throw an exception, the coordinator stops.**
-     *
-     * @throws RejectedExecutionException if [eventQueue] is not empty and next execution of this method can't
-     *      be scheduled by [scheduleIfRequired].
+     * @throws RejectedExecutionException if the executor cannot schedule the next process attempt.
      */
     @Throws(
         RejectedExecutionException::class
@@ -86,13 +82,11 @@ class SimpleLifeCycleCoordinator(
     }
 
     /**
-     * Call [processEvents] if not processing and if this coordinator is running, else do nothing.
+     * Schedule the processing of any lifecycle events.
      *
-     * @throws RejectedExecutionException if [processEvents] can't be scheduled for execution by [executorService].
+     * This function ensures that only a single task to process events is scheduled at once. This prevents race
+     * conditions is processing events.
      */
-    @Throws(
-        RejectedExecutionException::class
-    )
     private fun scheduleIfRequired() {
         if (!isScheduled.getAndSet(true)) {
             executor.submit(::processEvents)
@@ -113,51 +107,30 @@ class SimpleLifeCycleCoordinator(
      * If [key] doesn't identify any [TimerEvent] scheduled with [setTimer], this method doesn't anything.
      *
      * @param key identifying the [TimerEvent] to cancel,
-     *
-     * @see [setTimer]
-     *
      */
     override fun cancelTimer(key: String) {
         postEvent(CancelTimer(key))
     }
 
     /**
-     * Post the [lifeCycleEvent] to be processed as soon is possible by [lifeCycleProcessor].
+     * Post the [event] to be processed as soon is possible by [lifeCycleProcessor].
      *
      * Events are processed in the order they are posted.
      *
-     * **Note! Events posted between last [stop] and next [start] are ignored: this method lags a warning message.**
-     *
-     * @param lifeCycleEvent to be processed.
-     *
-     * @throws RejectedExecutionException if [processEvents] can't be scheduled for execution by [executorService].
+     * @param event to be processed.
      */
-    @Throws(
-        RejectedExecutionException::class
-    )
-    override fun postEvent(lifeCycleEvent: LifeCycleEvent) {
-        lifecycleState.postEvent(lifeCycleEvent)
+    override fun postEvent(event: LifeCycleEvent) {
+        lifecycleState.postEvent(event)
         scheduleIfRequired()
     }
 
     /**
-     * Schedule the [onTime] event to be processed after [delay] ms.
-     *
-     * **NOTE! Pending [TimerEvent] are cancelled when [stop] is called.
-     *
-     * **Note! Timers set between last [stop] and next [start] are ignored: this method logs a warning message.**
+     * Schedule a timer event to be posted to the event queue after some delay.
      *
      * @param key unique [TimerEvent] identifier.
      * @param delay in milliseconds, when [onTime] is processed.
-     * @param onTime scheduled [TimerEvent].
-     *
-     * @see [cancelTimer]
-     *
-     * @throws RejectedExecutionException if [executorService] can't schedule [onTime].
+     * @param onTime Function generating the timer event to post to the queue. The input parameter is the key.
      */
-    @Throws(
-        RejectedExecutionException::class
-    )
     override fun setTimer(key: String, delay: Long, onTime: (String) -> TimerEvent) {
         postEvent(SetUpTimer(key, delay, onTime))
     }
@@ -170,30 +143,16 @@ class SimpleLifeCycleCoordinator(
 
     /**
      * Start this coordinator.
-     *
-     * This should never be called from the event processor function. Doing so could result in a deadlock.
-     *
-     * @throws RejectedExecutionException if [executorService] can't schedule [processEvents].
      */
-    @Throws(
-        RejectedExecutionException::class
-    )
     override fun start() {
         postEvent(StartEvent())
     }
 
     /**
-     * Stop this [LifeCycleCoordinator] processing remaining [LifeCycleEvent] in [eventQueue] but
-     * cancelling all pending [TimerEvent].
+     * Stop this coordinator.
      *
-     * Before to stop, this method submits [StopEvent] assuring it is processed.
-     *
-     * The queue of events submitted with [postEvent] is cleared.
-     *
-     * If this method spends more than [timeout] milliseconds to stop, it logs a warning message.
-     *
-     * **NOTE! Events posted after stop and before [start] are ignored.**
-     *
+     * Note that this does not immediately stop, instead a graceful shutdown is attempted where any outstanding events
+     * are delivered to the user code.
      */
     override fun stop() {
         postEvent(StopEvent())

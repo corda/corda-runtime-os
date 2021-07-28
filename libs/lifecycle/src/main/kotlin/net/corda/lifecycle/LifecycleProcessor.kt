@@ -11,6 +11,9 @@ import java.util.concurrent.ScheduledFuture
  * Any modification of the lifecycle coordinator state should occur in this class. This ensures that lifecycle
  * coordinator state is always modified on an executor thread. The coordinator itself ensures that only one attempt to
  * process events is scheduled at once, which in turn prevents race conditions when modifying the state.
+ *
+ * @param state The state for this lifecycle coordinator
+ * @param userEventHandler The event handler the user has registered for use with this coordinator
  */
 internal class LifecycleProcessor(
     private val state: LifecycleStateManager,
@@ -21,6 +24,12 @@ internal class LifecycleProcessor(
         private val logger = contextLogger()
     }
 
+    /**
+     * Process a batch of events.
+     *
+     * @param coordinator The coordinator scheduling processing of this processor.
+     * @param timerGenerator A function to create timers for use if a SetUpTimer event is encountered.
+     */
     fun processEvents(
         coordinator: LifeCycleCoordinator,
         timerGenerator: (TimerEvent, Long) -> ScheduledFuture<*>
@@ -51,7 +60,9 @@ internal class LifecycleProcessor(
                 if (state.isRunning && state.isTimerRunning(event.key)) {
                     runUserEventHandler(event, coordinator)
                 } else {
-                    logger.trace { "Did not process lifecycle event $event as coordinator is shutdown" }
+                    logger.trace {
+                        "Did not process timer lifecycle event $event with key ${event.key} as coordinator is shutdown"
+                    }
                     true
                 }
             }
@@ -108,16 +119,21 @@ internal class LifecycleProcessor(
             true
         } catch (e: Throwable) {
             val errorEvent = ErrorEvent(e)
-            logger.warn("Life-Cycle coordinator caught ${e.message} starting ErrorEvent processing.", e)
+            logger.info(
+                "An error occurred during the processing of event $event by a lifecycle coordinator: ${e.message}." +
+                        " Triggering user event handling.", e
+            )
             try {
                 userEventHandler.processEvent(errorEvent, coordinator)
             } catch (e: Throwable) {
+                errorEvent.isHandled = false
+            }
+            if (!errorEvent.isHandled) {
                 logger.error(
-                    "Life-Cycle coordinator caught unexpected ${e.message}" +
-                            " during ErrorEvent processing. Will now stop coordinator!",
+                    "An unhandled error was encountered while processing $event in a lifecycle coordinator: " +
+                            "${e.message}. This coordinator will now shut down.",
                     e
                 )
-                errorEvent.isHandled = false
             }
             errorEvent.isHandled
         }

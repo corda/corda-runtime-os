@@ -6,15 +6,15 @@ package net.corda.lifecycle
  * any one time, this ensures there is no race condition in updating coordinator state.
  */
 
-internal typealias TimerEventGenerator = (String) -> TimerEvent
-
 /**
  * Create a new timer.
+ *
+ * This takes the parameters of the `createTimer` function on the API and packages them for processing elsewhere.
  */
 internal data class SetUpTimer(
     val key: String,
     val delay: Long,
-    val timerEventGenerator: TimerEventGenerator
+    val timerEventGenerator: (String) -> TimerEvent
 ) : LifeCycleEvent
 
 /**

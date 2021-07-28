@@ -69,6 +69,9 @@ internal class LifecycleStateManager(
         return key in timerMap.keys
     }
 
+    /**
+     * Creates the next batch of events for processing and removes those events from the queue.
+     */
     fun nextBatch(): List<LifeCycleEvent> {
         val batch = mutableListOf<LifeCycleEvent>()
         for (i in 0 until batchSize) {
