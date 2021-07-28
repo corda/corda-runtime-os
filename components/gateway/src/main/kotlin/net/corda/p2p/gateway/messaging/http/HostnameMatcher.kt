@@ -12,7 +12,9 @@ import javax.net.ssl.SNIServerName
 import javax.net.ssl.StandardConstants
 import sun.security.util.HostnameChecker
 import sun.security.util.HostnameChecker.TYPE_TLS
+import java.lang.NumberFormatException
 import java.security.cert.CertificateException
+import java.security.cert.X509Certificate
 
 class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
 
@@ -53,5 +55,56 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
         val requestedSNIValue = "hostname = $serverNameString"
         logger.warn("Could not find a certificate matching the requested SNI value [$requestedSNIValue]")
         return false
+    }
+
+    private fun match(name: String, certificate: X509Certificate): Boolean {
+        if (isIpAddress(name)) {
+            matchIp(name, certificate)
+        } else {
+            matchDNS(name, certificate)
+        }
+    }
+
+    private fun isIpAddress(str: String): Boolean {
+        return isIpV4Address(str) || isIpV6Address(str)
+    }
+
+    private fun isIpV4Address(str: String): Boolean {
+        val octets = str.split(".")
+        if (octets.size != 4)
+            return false
+        try {
+            octets.forEach {
+                val intValue = it.toInt()
+                if (intValue < 1 || intValue > 255)
+                    return false
+            }
+        } catch (e: NumberFormatException) {
+            return false
+        }
+        return true
+    }
+
+    private fun isIpV6Address(str: String): Boolean {
+        // A lot more tricky to do
+        return false
+    }
+
+    private fun matchIp(name: String, certificate: X509Certificate): Boolean {
+        val names = certificate.subjectAlternativeNames
+        if (names.isEmpty()) {
+            logger.debug("No subject alternative names found in the certificate")
+            return false
+        }
+
+        names.forEach {
+            if (7 == it[0]) {
+                val address = it[1
+            }
+        }
+    }
+
+    private fun matchDNS(name: String, certificate: X509Certificate): Boolean {
+
     }
 }
