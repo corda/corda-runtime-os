@@ -58,7 +58,9 @@ internal class LifecycleProcessor(
             }
             is TimerEvent -> {
                 if (state.isRunning && state.isTimerRunning(event.key)) {
-                    runUserEventHandler(event, coordinator)
+                    val succeeded = runUserEventHandler(event, coordinator)
+                    state.cancelTimer(event.key)
+                    succeeded
                 } else {
                     logger.trace {
                         "Did not process timer lifecycle event $event with key ${event.key} as coordinator is shutdown"
@@ -91,6 +93,8 @@ internal class LifecycleProcessor(
         return if (state.isRunning) {
             state.isRunning = false
             runUserEventHandler(event, coordinator)
+            // Always return true regardless in stop, to ensure a second stop is not delivered.
+            true
         } else {
             logger.debug { "An attempt was made to stop an already terminated coordinator" }
             true

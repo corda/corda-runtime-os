@@ -112,6 +112,7 @@ class LifecycleProcessorTest {
         state.setTimer(key, timerGenerator(event, 100L))
         process(processor)
         assertEquals(key, timerKey)
+        assertFalse(state.isTimerRunning(key))
     }
 
     @Test
