@@ -50,10 +50,10 @@ class ByteArraysTest {
 
     @Test
     fun `test hex parsing strictly uppercase`() {
-        val HEX_REGEX = "^[0-9A-F]+\$".toRegex()
+        val hexRegex = "^[0-9A-F]+\$".toRegex()
 
         val opaqueBytes = OpaqueBytes.of(1, 23, 63, 127, 34, 44, 55, 66, 22, 110)
         val hexString = opaqueBytes.bytes.toHexString()
-        assertTrue(hexString.matches(HEX_REGEX))
+        assertTrue(hexString.matches(hexRegex))
     }
 }
