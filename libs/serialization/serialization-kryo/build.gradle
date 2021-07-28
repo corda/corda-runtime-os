@@ -9,7 +9,7 @@ dependencies {
     compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
 
     implementation "net.corda:corda-application:$cordaVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation "net.corda:corda-base-internal:$cordaVersion"
     implementation "net.corda:corda-crypto-api:$cordaVersion"
     implementation "net.corda:corda-crypto-impl:$cordaVersion"
