@@ -1,5 +1,8 @@
+// The purpose of this pipeline is to validate that a change in a downstream repo does not cause a break here.
+//  Currently, it just tries to build. This could be extended later by running more comprehensive tests.
+
 // NOTE: this is pretty much a subset of the regular build pipeline, and quite general, so maybe this needs to move to
-//   the common library.
+//   the common library
 pipeline {
     agent {
         docker {
@@ -62,8 +65,9 @@ pipeline {
         stage('Build') {
             steps {
                 sh "./gradlew clean build -Dmaven.repo.local=/tmp/artifacts/mavenLocal"
-                // TODO: this is a bit of a hack, but we'd like to know which dependencies where used
-                //  and the dependency task only works per module.
+                // TODO: this is a bit of a hack, but we'd like to know (print) which dependencies where used
+                //  by the build, and the dependency task only works per module.
+                //  It would be nice if this was a generic step.
                 sh "./gradlew :applications:examples:demo-app:dependencies"
             }
         }
