@@ -49,6 +49,9 @@ dependencies {
     //runtime implementation dependencies
     kafkaIntegrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     kafkaIntegrationTestRuntimeOnly project(":libs:kafka-utils:topic-admin-impl")
+    kafkaIntegrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    kafkaIntegrationTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    kafkaIntegrationTestRuntimeOnly "org.apache.logging.log4j:log4j-api:$log4jVersion"
 }
 
 

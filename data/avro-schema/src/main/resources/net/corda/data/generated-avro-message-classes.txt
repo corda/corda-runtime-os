@@ -44,5 +44,4 @@ net.corda.p2p.payload.FlowMessage
 net.corda.p2p.payload.FlowMessageAndKey
 net.corda.p2p.payload.FlowMessageHeader
 net.corda.p2p.payload.HoldingIdentity
-net.corda.p2p.payload.LinkManagerPayload
 net.corda.p2p.payload.MessageAck
