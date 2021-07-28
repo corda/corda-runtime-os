@@ -99,11 +99,12 @@ if (JavaVersion.current() != javaVersion) {
 }
 logger.quiet("SDK version: {}", JavaVersion.current())
 logger.quiet("JAVA HOME {}", System.getProperty("java.home"))
+def cordaVersion = "$cordaProductVersion.$cordaApiRevision"
 if (System.getenv("RELEASE_VERSION")?.trim()) {
     version = System.getenv("RELEASE_VERSION")
 } else {
-    def versionSuffix = System.getenv('VERSION_SUFFIX') ?: "0-SNAPSHOT"
-    version = "$cordaVersion-$versionSuffix"
+    def versionSuffix = System.getenv('VERSION_SUFFIX') ?: "-SNAPSHOT"
+    version = "$cordaVersion$versionSuffix"
 }
 
 logger.quiet("Corda release version: {}", version)
