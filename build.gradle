@@ -29,6 +29,7 @@ wrapper {
     distributionUrl="https://gradleproxy:gradleproxy@software.r3.com/artifactory/gradle-proxy/gradle-$gradleVersion-bin.zip"
 }
 
+def javaVersion = VERSION_11
 
 allprojects {
     if (!project.hasProperty('cordaArtifactoryUsername')) {
@@ -42,8 +43,8 @@ allprojects {
     apply plugin: 'org.jetbrains.kotlin.jvm'
 
     tasks.withType(JavaCompile) {
-        sourceCompatibility = VERSION_11
-        targetCompatibility = VERSION_11
+        sourceCompatibility = javaVersion
+        targetCompatibility = javaVersion
         options.encoding = 'UTF-8'
         options.compilerArgs += '-XDenableSunApiLintControl'
     }
@@ -53,7 +54,7 @@ allprojects {
             allWarningsAsErrors = true
             languageVersion = '1.4'
             apiVersion = '1.4'
-            jvmTarget = VERSION_11
+            jvmTarget = javaVersion
             javaParameters = true   // Useful for reflection.
             freeCompilerArgs += [
                     // Prevent Kotlin from warning about kotlin.* classes inside the OSGi bundle.
@@ -139,6 +140,26 @@ allprojects {
         useJUnitPlatform()
     }
 }
+
+logger.quiet("********************** CORDA FLOW WORKER BUILD **********************")
+if (JavaVersion.current() != javaVersion) {
+    throw new GradleException("The java version used ${JavaVersion.current()} is not the expected version ${javaVersion}.")
+}
+logger.quiet("SDK version: {}", JavaVersion.current())
+logger.quiet("JAVA HOME {}", System.getProperty("java.home"))
+// TODO: release and publish things are different in this repo, which is a bit unfortunate as somebody will need to
+//   re-implement it
+//if (System.getenv("RELEASE_VERSION")?.trim()) {
+//    version = System.getenv("RELEASE_VERSION")
+//} else {
+//    def versionSuffix = System.getenv('VERSION_SUFFIX') ?: "0-SNAPSHOT"
+//    version = "$cordaVersion-$versionSuffix"
+//}
+
+logger.quiet("Flow worker: {}", version)
+logger.quiet("Corda API dependency version spec: {}", cordaApiVersion)
+logger.quiet("Old Corda dependencies version spec: {}", cordaVersion)
+//logger.quiet("Release Type: {}", releaseType)
 
 subprojects {
     apply plugin: 'java-library'
