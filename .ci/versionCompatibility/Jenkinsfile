@@ -1,3 +1,3 @@
-@Library('corda-shared-build-pipeline-steps@driessamyn/INFRA-1541/move-compatibility-check-pipeline') _
+@Library('corda-shared-build-pipeline-steps@5.0') _
 
 cordaCompatibilityCheckPipeline()
