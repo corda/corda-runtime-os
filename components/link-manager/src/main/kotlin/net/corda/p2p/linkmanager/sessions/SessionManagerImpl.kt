@@ -19,6 +19,10 @@ import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
+import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer.SessionMessageReplay
+import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer.DestIdLookup.PublicKeyHash
+import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer.DestIdLookup.HoldingIdentity
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
@@ -39,7 +43,8 @@ open class SessionManagerImpl(
     private val networkMap: LinkManagerNetworkMap,
     private val cryptoService: LinkManagerCryptoService,
     private val maxMessageSize: Int,
-    private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues
+    private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues,
+    private val sessionReplayer: InMemorySessionReplayer
     ): SessionManager {
 
     companion object {
@@ -110,14 +115,22 @@ open class SessionManagerImpl(
         }
     }
 
+    override fun acknowledgeInboundSessionNegotiation(sessionId: String) {
+        if (activeOutboundSessions.contains(sessionId)) {
+            sessionReplayer.removeMessageFromReplay(sessionId)
+        }
+    }
+
     private fun getSessionInitMessage(sessionKey: SessionKey): Pair<String, LinkOutMessage>? {
         val sessionId = UUID.randomUUID().toString()
+
         val networkType = networkMap.getNetworkType(sessionKey.ourId.groupId)
         if (networkType == null) {
             logger.warn("Could not find the network type in the NetworkMap for groupId ${sessionKey.ourId.groupId}." +
                 " The sessionInit message was not sent.")
             return null
         }
+
         val ourMemberInfo = networkMap.getMemberInfo(sessionKey.ourId)
         if (ourMemberInfo == null) {
             logger.warn("Attempted to start session negotiation with peer ${sessionKey.responderId} but our identity ${sessionKey.ourId}" +
@@ -131,6 +144,7 @@ open class SessionManagerImpl(
                     "The sessionInit message was not sent.")
             return null
         }
+
         val session = AuthenticationProtocolInitiator(
             sessionId,
             supportedModes,
@@ -139,11 +153,14 @@ open class SessionManagerImpl(
             ourMemberInfo.holdingIdentity.groupId
         )
         pendingOutboundSessions[sessionId] = Pair(sessionKey, session)
-        val message = createLinkOutMessage(
-            session.generateInitiatorHello(),
-            responderMemberInfo,
-            networkType
+
+        val sessionInitPayload = session.generateInitiatorHello()
+        sessionReplayer.addMessageForReplay(
+            sessionId,
+            SessionMessageReplay(sessionInitPayload, sessionKey.ourId, HoldingIdentity(sessionKey.responderId))
         )
+
+        val message = createLinkOutMessage(sessionInitPayload, responderMemberInfo, networkType)
         return sessionId to message
     }
 
@@ -187,6 +204,11 @@ open class SessionManagerImpl(
                 " was discarded.")
             return null
         }
+        sessionReplayer.removeMessageFromReplay(message.header.sessionId)
+        sessionReplayer.addMessageForReplay(
+            message.header.sessionId,
+            SessionMessageReplay(payload, sessionInfo.ourId, HoldingIdentity(sessionInfo.responderId))
+        )
 
         val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
         if (networkType == null) {
@@ -218,6 +240,7 @@ open class SessionManagerImpl(
             return null
         }
         val authenticatedSession = session.getSession()
+        sessionReplayer.removeMessageFromReplay(message.header.sessionId)
         sessionNegotiationLock.withLock {
             activeOutboundSessions[sessionInfo] = authenticatedSession
             activeOutboundSessionsById[message.header.sessionId] = authenticatedSession
@@ -322,6 +345,14 @@ open class SessionManagerImpl(
         activeInboundSessions[message.header.sessionId] = session.getSession()
         pendingInboundSessions.remove(message.header.sessionId)
 
+        sessionReplayer.addMessageForReplay(
+            message.header.sessionId,
+            SessionMessageReplay(
+                response,
+                ourMemberInfo.holdingIdentity,
+                PublicKeyHash(identityData.initiatorPublicKeyHash, identityData.groupId)
+            )
+        )
         return createLinkOutMessage(response, peer, networkType)
     }
 }

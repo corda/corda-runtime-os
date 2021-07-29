@@ -9,6 +9,7 @@ interface SessionManager {
     fun processOutboundFlowMessage(message: AuthenticatedMessageAndKey): SessionState
     fun getSessionById(uuid: String): SessionDirection
     fun processSessionMessage(message: LinkInMessage): LinkOutMessage?
+    fun acknowledgeInboundSessionNegotiation(sessionId: String)
 
     sealed class SessionState {
         data class NewSessionNeeded(val sessionId: String, val sessionInitMessage: LinkOutMessage): SessionState()

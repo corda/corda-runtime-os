@@ -24,6 +24,8 @@ import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.delivery.DeliveryTracker
+import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutFromUnauthenticatedMessage
@@ -34,8 +36,8 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.SessionKey
+import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.schema.Schema
-import net.corda.p2p.markers.FlowMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
@@ -75,19 +77,24 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private val inboundAssignmentListener = InboundAssignmentListener()
 
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory)
+    private val sessionReplayer: InMemorySessionReplayer =
+        InMemorySessionReplayer(config.sessionMessageReplayPeriod, publisherFactory, linkManagerNetworkMap)
     private val sessionManager: SessionManager = SessionManagerImpl(
         config.protocolModes,
         linkManagerNetworkMap,
         linkManagerCryptoService,
         config.maxMessageSize,
-        messagesPendingSession
+        messagesPendingSession,
+        sessionReplayer
     )
+    private val messageReplayer: DeliveryTracker
 
     init {
         val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, 1)
+        val outboundMessageProcessor = OutboundMessageProcessor(sessionManager, linkManagerHostingMap, linkManagerNetworkMap, inboundAssignmentListener)
         outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             outboundMessageSubscriptionConfig,
-            OutboundMessageProcessor(sessionManager, linkManagerHostingMap, linkManagerNetworkMap, inboundAssignmentListener),
+            outboundMessageProcessor,
             partitionAssignmentListener = null
         )
         val inboundMessageSubscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, 1)
@@ -96,15 +103,18 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
             partitionAssignmentListener = inboundAssignmentListener
         )
+        messageReplayer = DeliveryTracker(config.flowMessageReplayPeriod, publisherFactory, subscriptionFactory, outboundMessageProcessor)
     }
 
     override fun start() {
         startStopLock.withLock {
             if (!running) {
+                sessionReplayer.start()
                 inboundMessageSubscription.start()
                 /*We must wait for partitions to be assigned to the inbound subscription before we can start the outbound
                 *subscription otherwise the gateway won't know which partition to route message back to.*/
                 inboundAssignmentListener.awaitFirstAssignment()
+                messageReplayer.start()
                 outboundMessageSubscription.start()
                 running = true
             }
@@ -143,7 +153,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return records
         }
 
-        private fun processEvent(event: EventLogRecord<String, AppMessage>): List<Record<String, *>> {
+        fun processEvent(event: EventLogRecord<String, AppMessage>, addMarker: Boolean = true): List<Record<String, *>> {
+
             val message = event.value?.message
             if (message == null) {
                 logger.error("Received null message. The message was discarded.")
@@ -212,13 +223,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return records
         }
 
-        private fun recordForLMSentMarker(partition: Int, offset: Long, messageId: String): Record<String, FlowMessageMarker> {
-            val marker = FlowMessageMarker(LinkManagerSentMarker(partition.toLong(), offset))
+        private fun recordForLMSentMarker(partition: Int, offset: Long, messageId: String): Record<String, AppMessageMarker> {
+            val marker = AppMessageMarker(LinkManagerSentMarker(partition.toLong(), offset))
             return Record(Schema.P2P_OUT_MARKERS, messageId, marker)
         }
 
-        private fun recordForLMReceivedMarker(messageId: String): Record<String, FlowMessageMarker> {
-            val marker = FlowMessageMarker(LinkManagerReceivedMarker())
+        private fun recordForLMReceivedMarker(messageId: String): Record<String, AppMessageMarker> {
+            val marker = AppMessageMarker(LinkManagerReceivedMarker())
             return Record(Schema.P2P_OUT_MARKERS, messageId, marker)
         }
     }
@@ -299,8 +310,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             )
         }
 
-        private fun makeMarkerForAckMessage(message: MessageAck): Record<String, FlowMessageMarker> {
-            return Record(Schema.P2P_OUT_MARKERS, message.messageId, FlowMessageMarker(LinkManagerReceivedMarker()))
+        private fun makeMarkerForAckMessage(message: MessageAck): Record<String, AppMessageMarker> {
+            return Record(Schema.P2P_OUT_MARKERS, message.messageId, AppMessageMarker(LinkManagerReceivedMarker()))
         }
 
         override val keyClass = String::class.java
