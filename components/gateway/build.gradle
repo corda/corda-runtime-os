@@ -22,6 +22,7 @@ dependencies {
     implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
+    implementation "commons-validator:commons-validator:$commonsVersion"
 
     // Log4J: logging framework (with SLF4J bindings) - TEMPORARY UNTIL I FIGURE OUT LOGGING IN THIS PROJECT
     compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
