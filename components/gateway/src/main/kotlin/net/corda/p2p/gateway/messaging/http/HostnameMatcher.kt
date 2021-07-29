@@ -45,7 +45,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(1) {
                 val c4SniValue = SniCalculator.calculateSni(cordaX500Name.toString(), NetworkType.CORDA_4, "")
                 val c5Check = match(serverNameString, certificate)
 
-                if (serverNameString == c4SniValue || cordaX500Name.commonName == serverNameString || c5Check) {
+                if (serverNameString == c4SniValue || c5Check) {
                     matchedAlias = alias
                     matchedServerName = serverName.asciiName
                     return true
@@ -96,6 +96,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(1) {
      * hostname. In this case, the iPAddress subjectAltName must be present
      * in the certificate and must exactly match the IP in the URI.
      */
+    @Suppress("NestedBlockDepth")
     private fun matchIp(hostIP: String, certificate: X509Certificate): Boolean {
         val names = certificate.subjectAlternativeNames
         if (names.isEmpty()) {
@@ -142,7 +143,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(1) {
      */
     private fun matchDNS(hostName: String, certificate: X509Certificate): Boolean {
         val names = certificate.subjectAlternativeNames
-        if (names.isEmpty()) {
+        if (names.isNullOrEmpty()) {
             logger.debug("No subject alternative names found in the certificate")
             return false
         }
