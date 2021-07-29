@@ -15,11 +15,11 @@ internal data class SetUpTimer(
     val key: String,
     val delay: Long,
     val timerEventGenerator: (String) -> TimerEvent
-) : LifeCycleEvent
+) : LifecycleEvent
 
 /**
  * Cancel a timer.
  */
 internal data class CancelTimer(
     val key: String
-) : LifeCycleEvent
+) : LifecycleEvent

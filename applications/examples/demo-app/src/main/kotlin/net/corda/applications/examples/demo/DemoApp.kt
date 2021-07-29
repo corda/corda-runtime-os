@@ -11,9 +11,9 @@ import net.corda.components.examples.durable.RunDurableSub
 import net.corda.components.examples.pubsub.RunPubSub
 import net.corda.components.examples.stateevent.RunStateEventSub
 import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
-import net.corda.lifecycle.LifeCycleCoordinator
-import net.corda.lifecycle.LifeCycleEvent
-import net.corda.lifecycle.SimpleLifeCycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.SimpleLifecycleCoordinator
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -56,7 +56,7 @@ class DemoApp @Activate constructor(
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
-    private var lifeCycleCoordinator: LifeCycleCoordinator? = null
+    private var lifeCycleCoordinator: LifecycleCoordinator? = null
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
@@ -79,7 +79,7 @@ class DemoApp @Activate constructor(
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
-                SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+                SimpleLifecycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifecycleEvent, _: LifecycleCoordinator ->
                     log.info("LifecycleEvent received: $event")
                     when (event) {
                         is StartEvent -> {

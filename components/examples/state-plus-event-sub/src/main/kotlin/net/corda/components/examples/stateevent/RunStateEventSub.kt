@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import net.corda.components.examples.stateevent.processor.DemoStateAndEventProcessor
 import net.corda.data.demo.DemoRecord
 import net.corda.data.demo.DemoStateRecord
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -19,7 +19,7 @@ class RunStateEventSub(
     private val subscriptionFactory: SubscriptionFactory,
     private val killProcessOnRecord: Int = 0,
     private val delayOnNext: Long = 0
-) : LifeCycle {
+) : Lifecycle {
 
     private companion object {
         val log: Logger = contextLogger()

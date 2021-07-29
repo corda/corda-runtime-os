@@ -15,7 +15,7 @@ internal class LifecycleStateManager(
     private val batchSize: Int
 ) {
 
-    private val eventQueue = ConcurrentLinkedDeque<LifeCycleEvent>()
+    private val eventQueue = ConcurrentLinkedDeque<LifecycleEvent>()
 
     private val timerMap = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
@@ -27,7 +27,7 @@ internal class LifecycleStateManager(
      *
      * @param event The event to post
      */
-    fun postEvent(event: LifeCycleEvent) {
+    fun postEvent(event: LifecycleEvent) {
         eventQueue.offer(event)
     }
 
@@ -70,8 +70,8 @@ internal class LifecycleStateManager(
     /**
      * Creates the next batch of events for processing and removes those events from the queue.
      */
-    fun nextBatch(): List<LifeCycleEvent> {
-        val batch = mutableListOf<LifeCycleEvent>()
+    fun nextBatch(): List<LifecycleEvent> {
+        val batch = mutableListOf<LifecycleEvent>()
         for (i in 0 until batchSize) {
             val event = eventQueue.poll() ?: break
             batch.add(event)

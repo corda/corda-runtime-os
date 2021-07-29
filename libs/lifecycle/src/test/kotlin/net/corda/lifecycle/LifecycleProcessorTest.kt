@@ -13,7 +13,7 @@ class LifecycleProcessorTest {
     fun `events are processed in delivery order`() {
         val state = LifecycleStateManager(5)
         val expectedEvents = listOf(TestEvent1, TestEvent2, TestEvent3)
-        val processedEvents = mutableListOf<LifeCycleEvent>()
+        val processedEvents = mutableListOf<LifecycleEvent>()
         val processor = LifecycleProcessor(state) { event, _ ->
             processedEvents.add(event)
         }
@@ -139,7 +139,7 @@ class LifecycleProcessorTest {
     fun `batching delivers the right number of events to the processor`() {
         val state = LifecycleStateManager(2)
         state.isRunning = true
-        val processedEvents = mutableListOf<LifeCycleEvent>()
+        val processedEvents = mutableListOf<LifecycleEvent>()
         val processor = LifecycleProcessor(state) { event, _ ->
             processedEvents.add(event)
         }
@@ -241,9 +241,9 @@ class LifecycleProcessorTest {
         assertTrue(processedExtraEvents)
     }
 
-    private object TestEvent1 : LifeCycleEvent
-    private object TestEvent2 : LifeCycleEvent
-    private object TestEvent3 : LifeCycleEvent
+    private object TestEvent1 : LifecycleEvent
+    private object TestEvent2 : LifecycleEvent
+    private object TestEvent3 : LifecycleEvent
 
     private class TestTimerEvent(override val key: String) : TimerEvent
 

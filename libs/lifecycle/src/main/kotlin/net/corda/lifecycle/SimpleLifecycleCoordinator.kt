@@ -23,11 +23,11 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @param timeout in milliseconds this coordinator stops before to log a warning.
  * @param lifeCycleProcessor The user event handler for lifecycle events.
  */
-class SimpleLifeCycleCoordinator(
+class SimpleLifecycleCoordinator(
     private val batchSize: Int,
     private val timeout: Long,
     override val lifeCycleProcessor: LifecycleEventHandler,
-) : LifeCycleCoordinator {
+) : LifecycleCoordinator {
 
     companion object {
         private val logger: Logger = contextLogger()
@@ -130,7 +130,7 @@ class SimpleLifeCycleCoordinator(
      *
      * @param event to be processed.
      */
-    override fun postEvent(event: LifeCycleEvent) {
+    override fun postEvent(event: LifecycleEvent) {
         lifecycleState.postEvent(event)
         scheduleIfRequired()
     }

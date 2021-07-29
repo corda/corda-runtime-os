@@ -31,15 +31,15 @@ internal class LifecycleProcessor(
      * @param timerGenerator A function to create timers for use if a SetUpTimer event is encountered.
      */
     fun processEvents(
-        coordinator: LifeCycleCoordinator,
+        coordinator: LifecycleCoordinator,
         timerGenerator: (TimerEvent, Long) -> ScheduledFuture<*>
     ): Boolean {
         return state.nextBatch().map { processEvent(it, coordinator, timerGenerator) }.all { it }
     }
 
     private fun processEvent(
-        event: LifeCycleEvent,
-        coordinator: LifeCycleCoordinator,
+        event: LifecycleEvent,
+        coordinator: LifecycleCoordinator,
         timerGenerator: (TimerEvent, Long) -> ScheduledFuture<*>
     ): Boolean {
         return when (event) {
@@ -79,7 +79,7 @@ internal class LifecycleProcessor(
         }
     }
 
-    private fun processStartEvent(event: LifeCycleEvent, coordinator: LifeCycleCoordinator): Boolean {
+    private fun processStartEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
         return if (!state.isRunning) {
             state.isRunning = true
             runUserEventHandler(event, coordinator)
@@ -89,7 +89,7 @@ internal class LifecycleProcessor(
         }
     }
 
-    private fun processStopEvent(event: LifeCycleEvent, coordinator: LifeCycleCoordinator): Boolean {
+    private fun processStopEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
         if (state.isRunning) {
             state.isRunning = false
             runUserEventHandler(event, coordinator)
@@ -115,7 +115,7 @@ internal class LifecycleProcessor(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun runUserEventHandler(event: LifeCycleEvent, coordinator: LifeCycleCoordinator): Boolean {
+    private fun runUserEventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
         return try {
             userEventHandler.processEvent(event, coordinator)
             true

@@ -1,14 +1,14 @@
 package net.corda.lifecycle
 
 /**
- * This interface defines a component as coordinator of [LifeCycleEvent] events
+ * This interface defines a component as coordinator of [LifecycleEvent] events
  * processed by the [lifeCycleProcessor].
  *
  * Events are executed in sequence they are submitted calling [postEvent],
  * or when planned calling [setTimer].
  *
  */
-interface LifeCycleCoordinator : LifeCycle {
+interface LifecycleCoordinator : Lifecycle {
 
     /**
      * Define the method processing the events of this coordinator.
@@ -28,7 +28,7 @@ interface LifeCycleCoordinator : LifeCycle {
      *
      * @param event The event to post
      */
-    fun postEvent(event: LifeCycleEvent)
+    fun postEvent(event: LifecycleEvent)
 
     /**
      * Submit an event to be asynchronously processed.
