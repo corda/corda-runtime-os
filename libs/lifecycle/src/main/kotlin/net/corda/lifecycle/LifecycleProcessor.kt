@@ -90,15 +90,13 @@ internal class LifecycleProcessor(
     }
 
     private fun processStopEvent(event: LifeCycleEvent, coordinator: LifeCycleCoordinator): Boolean {
-        return if (state.isRunning) {
+        if (state.isRunning) {
             state.isRunning = false
             runUserEventHandler(event, coordinator)
-            // Always return true regardless in stop, to ensure a second stop is not delivered.
-            true
         } else {
             logger.debug { "An attempt was made to stop an already terminated coordinator" }
-            true
         }
+        return true
     }
 
     private fun processSetupTimerEvent(
