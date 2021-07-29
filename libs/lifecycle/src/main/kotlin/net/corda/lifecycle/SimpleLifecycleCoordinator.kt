@@ -38,7 +38,7 @@ class SimpleLifecycleCoordinator(
          * Under load, the number of threads may increase. By keeping a minimum of one, the lifecycle library should
          * remain responsive to change while not consuming excessive resources.
          */
-        private const val MIN_THREADS = 100
+        private const val MIN_THREADS = 1
 
         /**
          * The executor on which events are processed. Note that all events should be processed on an executor thread,
