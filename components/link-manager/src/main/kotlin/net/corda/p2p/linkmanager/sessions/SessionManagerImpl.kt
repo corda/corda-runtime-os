@@ -19,10 +19,10 @@ import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
-import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer.SessionMessageReplay
-import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer.DestIdLookup.PublicKeyHash
-import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer.DestIdLookup.HoldingIdentity
+import net.corda.p2p.linkmanager.delivery.SessionReplayer
+import net.corda.p2p.linkmanager.delivery.SessionReplayer.SessionMessageReplay
+import net.corda.p2p.linkmanager.delivery.SessionReplayer.IdentityLookup.PublicKeyHash
+import net.corda.p2p.linkmanager.delivery.SessionReplayer.IdentityLookup.HoldingIdentity
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
@@ -44,7 +44,7 @@ open class SessionManagerImpl(
     private val cryptoService: LinkManagerCryptoService,
     private val maxMessageSize: Int,
     private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues,
-    private val sessionReplayer: InMemorySessionReplayer
+    private val sessionReplayer: SessionReplayer
     ): SessionManager {
 
     companion object {
@@ -116,7 +116,7 @@ open class SessionManagerImpl(
     }
 
     override fun acknowledgeInboundSessionNegotiation(sessionId: String) {
-        if (activeOutboundSessions.contains(sessionId)) {
+        if (activeInboundSessions.containsKey(sessionId)) {
             sessionReplayer.removeMessageFromReplay(sessionId)
         }
     }

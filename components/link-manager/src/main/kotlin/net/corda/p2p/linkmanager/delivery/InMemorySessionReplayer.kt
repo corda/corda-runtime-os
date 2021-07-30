@@ -7,6 +7,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.messaging.MessageConverter
+import net.corda.p2p.linkmanager.delivery.SessionReplayer.IdentityLookup
 import net.corda.p2p.schema.Schema
 import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
@@ -16,7 +17,7 @@ class InMemorySessionReplayer(
     sessionMessageReplayPeriod: Long,
     publisherFactory: PublisherFactory,
     private val networkMap: LinkManagerNetworkMap
-): Lifecycle {
+): Lifecycle, SessionReplayer {
 
     companion object {
         const val MESSAGE_REPLAYER_CLIENT_ID = "session-message-replayer-client"
@@ -51,42 +52,15 @@ class InMemorySessionReplayer(
         }
     }
 
-    sealed class DestIdLookup {
-        data class HoldingIdentity(val id: LinkManagerNetworkMap.HoldingIdentity): DestIdLookup()
-
-        data class PublicKeyHash(val hash: ByteArray, val groupId: String): DestIdLookup() {
-            override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (javaClass != other?.javaClass) return false
-
-                other as PublicKeyHash
-
-                if (!hash.contentEquals(other.hash)) return false
-
-                return true
-            }
-
-            override fun hashCode(): Int {
-                return hash.contentHashCode()
-            }
-        }
-    }
-
-    data class SessionMessageReplay(
-        val message: Any,
-        val source: LinkManagerNetworkMap.HoldingIdentity,
-        val dest: DestIdLookup
-    )
-
-    fun addMessageForReplay(uniqueId: String, messageReplay: SessionMessageReplay) {
+    override fun addMessageForReplay(uniqueId: String, messageReplay: SessionReplayer.SessionMessageReplay) {
         replayManager.addForReplay(uniqueId, messageReplay)
     }
 
-    fun removeMessageFromReplay(uniqueId: String) {
+    override fun removeMessageFromReplay(uniqueId: String) {
         replayManager.removeFromReplay(uniqueId)
     }
 
-    private fun replayMessage(messageReplay: SessionMessageReplay) {
+    private fun replayMessage(messageReplay: SessionReplayer.SessionMessageReplay) {
         val networkType = networkMap.getNetworkType(messageReplay.source.groupId)
         if (networkType == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay::class.java.simpleName}) but could not" +
@@ -95,7 +69,7 @@ class InMemorySessionReplayer(
         }
 
         val responderMemberInfo = when (val dest = messageReplay.dest) {
-            is DestIdLookup.HoldingIdentity -> {
+            is IdentityLookup.HoldingIdentity -> {
                 val memberInfo = networkMap.getMemberInfo(dest.id)
                 if (memberInfo == null) {
                     logger.warn("Attempted to replay a session negotiation message (type ${messageReplay::class.java.simpleName}) with" +
@@ -104,7 +78,7 @@ class InMemorySessionReplayer(
                 }
                 memberInfo
             }
-            is DestIdLookup.PublicKeyHash -> {
+            is IdentityLookup.PublicKeyHash -> {
                 val memberInfo = networkMap.getMemberInfo(dest.hash, dest.groupId)
                 if (memberInfo == null) {
                     logger.warn("Attempted to replay a session negotiation message (type ${messageReplay::class.java.simpleName}) with" +

@@ -283,6 +283,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     extractPayload(sessionDirection.session, sessionId, message, AuthenticatedMessageAndKey::fromByteBuffer)?.let {
                         messages.add(Record(Schema.P2P_IN_TOPIC, it.key, AppMessage(it.message)))
                         makeAckMessageForFlowMessage(it.message, sessionDirection.session)?.let { ack -> messages.add(ack) }
+                        sessionManager.acknowledgeInboundSessionNegotiation(sessionId)
                     }
                 }
                 is SessionDirection.Outbound -> {

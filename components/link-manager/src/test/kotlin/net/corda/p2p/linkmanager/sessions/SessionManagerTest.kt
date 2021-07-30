@@ -25,6 +25,7 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.delivery.SessionReplayer
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromFlowMessageAndKey
@@ -34,6 +35,7 @@ import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.v5.base.util.toBase64
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -63,16 +65,24 @@ class SessionManagerTest {
         private val signature = Signature.getInstance(ECDSA_SIGNATURE_ALGO, provider)
         lateinit var loggingInterceptor: LoggingInterceptor
 
+        val noReplayer = object: SessionReplayer {
+            override fun addMessageForReplay(uniqueId: String, messageReplay: SessionReplayer.SessionMessageReplay) {}
+
+            override fun removeMessageFromReplay(uniqueId: String) {}
+        }
+
         private fun sessionManagerWithNetMap(
             netMap: LinkManagerNetworkMap,
-            cryptoService: LinkManagerCryptoService = Mockito.mock(LinkManagerCryptoService::class.java)
+            cryptoService: LinkManagerCryptoService = Mockito.mock(LinkManagerCryptoService::class.java),
+            messageReplayer: SessionReplayer = noReplayer
         ): SessionManagerImpl {
             return SessionManagerImpl(
                 setOf(ProtocolMode.AUTHENTICATION_ONLY),
                 netMap,
                 cryptoService,
                 MAX_MESSAGE_SIZE,
-                MockSessionMessageQueues()
+                MockSessionMessageQueues(),
+                messageReplayer
             )
         }
 
@@ -131,6 +141,29 @@ class SessionManagerTest {
         }
     }
 
+    class MockSessionReplayer: SessionReplayer {
+
+        val messagesForReplay = mutableMapOf<String, SessionReplayer.SessionMessageReplay>()
+
+        override fun addMessageForReplay(uniqueId: String, messageReplay: SessionReplayer.SessionMessageReplay) {
+            messagesForReplay[uniqueId] = messageReplay
+        }
+
+        override fun removeMessageFromReplay(uniqueId: String) {
+            messagesForReplay.remove(uniqueId)
+        }
+
+        inline fun <reified T> assertSingleReplayMessage(source: LinkManagerNetworkMap.HoldingIdentity, dest: LinkManagerNetworkMap.HoldingIdentity) {
+            assertEquals(1, messagesForReplay.size)
+            val messageReplay = messagesForReplay.entries.single().value
+            assertTrue(messageReplay.message is T)
+            assertEquals(source, messageReplay.source)
+            assertTrue(messageReplay.dest is SessionReplayer.IdentityLookup.HoldingIdentity)
+            assertEquals(dest, (messageReplay.dest as SessionReplayer.IdentityLookup.HoldingIdentity).id)
+        }
+
+    }
+
     private val globalNetMap = MockNetworkMap(listOf(OUTBOUND_PARTY, INBOUND_PARTY))
     private val netMapOutbound = globalNetMap.getSessionNetworkMapForNode(OUTBOUND_PARTY)
     private val netMapInbound = globalNetMap.getSessionNetworkMapForNode(INBOUND_PARTY)
@@ -155,8 +188,9 @@ class SessionManagerTest {
         party: LinkManagerNetworkMap.HoldingIdentity,
         queues: MockSessionMessageQueues = MockSessionMessageQueues(),
         mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY,
-        cryptoService: LinkManagerCryptoService? = null
-    ): SessionManagerImpl {
+        cryptoService: LinkManagerCryptoService? = null,
+        messageReplayer: SessionReplayer = noReplayer
+    ) : SessionManagerImpl {
         val netMap = globalNetMap.getSessionNetworkMapForNode(party)
         val realCryptoService = cryptoService ?: MockCryptoService(netMap)
         return SessionManagerImpl(
@@ -164,7 +198,8 @@ class SessionManagerTest {
             netMap,
             realCryptoService,
             MAX_MESSAGE_SIZE,
-            queues
+            queues,
+            messageReplayer
         )
     }
 
@@ -493,6 +528,60 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `The session manager sends session negotiation messages to the InMemorySessionReplayer for replay when negotiating an outbound session`() {
+        val messageReplayer = MockSessionReplayer()
+        val mode = ProtocolMode.AUTHENTICATION_ONLY
+
+        val outboundManager = sessionManager(OUTBOUND_PARTY, messageReplayer = messageReplayer)
+        val state = outboundManager.processOutboundFlowMessage(wrappedMessage)
+
+        messageReplayer.assertSingleReplayMessage<InitiatorHelloMessage>(OUTBOUND_PARTY, INBOUND_PARTY)
+        val initiatorHelloMessage = (state as NewSessionNeeded).sessionInitMessage.payload as InitiatorHelloMessage
+        val sessionId = initiatorHelloMessage.header.sessionId
+
+        val protocolResponder = AuthenticationProtocolResponder(sessionId, setOf(mode), MAX_MESSAGE_SIZE)
+        protocolResponder.receiveInitiatorHello(initiatorHelloMessage)
+
+        val responderHelloMessage = LinkInMessage(protocolResponder.generateResponderHello())
+        val initiatorHandshakeMessage = outboundManager.processSessionMessage(responderHelloMessage)
+
+        assertTrue(initiatorHandshakeMessage!!.payload is InitiatorHandshakeMessage)
+
+        protocolResponder.generateHandshakeSecrets()
+        protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage.payload as InitiatorHandshakeMessage,
+            netMapOutbound.getKeyPair().public,
+            KeyAlgorithm.ECDSA
+        )
+
+        protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
+            signDataWithKey(netMapInbound.getKeyPair().private, it)
+        }
+        assertEquals(0, messageReplayer.messagesForReplay.size)
+    }
+
+    @Test
+    fun `The session manager sends session negotiation messages to the InMemorySessionReplayer for replay when negotiating an inbound session`() {
+        val messageReplayer = MockSessionReplayer()
+
+        val sessionId = "FakeSession"
+        val inboundManager = sessionManager(INBOUND_PARTY, messageReplayer = messageReplayer)
+
+        val initiatorHandshakeMessage = negotiateToInitiatorHandshake(inboundManager, sessionId)
+
+        inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
+        assertEquals(1, messageReplayer.messagesForReplay.size)
+        val messageReplay = messageReplayer.messagesForReplay.entries.single().value
+        assertEquals(INBOUND_PARTY, messageReplay.source)
+        assertTrue(messageReplay.dest is SessionReplayer.IdentityLookup.PublicKeyHash)
+        assertArrayEquals(hashKey(netMapOutbound.getKeyPair().public), (messageReplay.dest as SessionReplayer.IdentityLookup.PublicKeyHash).hash)
+        assertTrue(messageReplay.message is ResponderHandshakeMessage)
+
+        inboundManager.acknowledgeInboundSessionNegotiation(sessionId)
+        assertEquals(0, messageReplayer.messagesForReplay.size)
+    }
+
+    @Test
     fun `Duplicated session negotiation messages (InitiatorHelloMessage, InitiatorHandshake) is dropped (with appropriate logging)`() {
         val mode = ProtocolMode.AUTHENTICATION_ONLY
         val sessionId = "FakeSession"
@@ -551,7 +640,8 @@ class SessionManagerTest {
 
     @Test
     fun `ResponderHandshakeMessage is dropped (with appropriate logging) if authentication fails`() {
-        val outboundManager = sessionManager(OUTBOUND_PARTY)
+        val messageReplayer = MockSessionReplayer()
+        val outboundManager = sessionManager(OUTBOUND_PARTY, messageReplayer = messageReplayer)
         val sessionId = negotiateToResponderHandshake(outboundManager, wrappedMessage).header.sessionId
 
         val mockHeader = Mockito.mock(CommonHeader::class.java)
@@ -568,6 +658,9 @@ class SessionManagerTest {
             "Received ${mockResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId," +
                 " which failed validation with: The handshake message was invalid. The message was discarded."
         )
+
+        //The ResponderHandshakeMessage acts as ack for InitiatorHandshake, so this should be queued for replay
+        messageReplayer.assertSingleReplayMessage<InitiatorHandshakeMessage>(OUTBOUND_PARTY, INBOUND_PARTY)
     }
 
     @Test
@@ -659,6 +752,8 @@ class SessionManagerTest {
 
     @Test
     fun `Responder hello message is dropped if we are not in the network map`() {
+        val messageReplayer = MockSessionReplayer()
+
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         val outboundInfo = netMapOutbound.getOurMemberInfo()
@@ -674,10 +769,15 @@ class SessionManagerTest {
                 " ${responderHello.header.sessionId} but cannot find public key for our identity ${outboundInfo.holdingIdentity}." +
                 " The message was discarded."
         )
+
+        //The ResponderHelloMessage acts as ack for InitiatorHello, so this should be queued for replay
+        messageReplayer.assertSingleReplayMessage<InitiatorHandshakeMessage>(OUTBOUND_PARTY, INBOUND_PARTY)
     }
 
     @Test
     fun `Responder hello message is dropped if the receiver is not in the network map`() {
+        val messageReplayer = MockSessionReplayer()
+
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
@@ -691,10 +791,14 @@ class SessionManagerTest {
             "Received ResponderHelloMessage with sessionId ${responderHello.header.sessionId}" +
                 " from peer $INBOUND_PARTY which is not in the network map. The message was discarded."
         )
+        //The ResponderHelloMessage acts as ack for InitiatorHello, so this should be queued for replay
+        messageReplayer.assertSingleReplayMessage<InitiatorHelloMessage>(OUTBOUND_PARTY, INBOUND_PARTY)
     }
 
     @Test
     fun `Responder hello message is dropped if we are removed from the network map during processSessionMessage`() {
+        val messageReplayer = MockSessionReplayer()
+
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
@@ -714,6 +818,9 @@ class SessionManagerTest {
             "Could not find the private key corresponding to public key" +
                 " $key. The ResponderHelloMessage with sessionId ${responderHello.header.sessionId} was discarded."
         )
+
+        //The ResponderHelloMessage acts as ack for InitiatorHello, so this should be queued for replay
+        messageReplayer.assertSingleReplayMessage<InitiatorHelloMessage>(OUTBOUND_PARTY, INBOUND_PARTY)
     }
 
     @Test
@@ -893,6 +1000,8 @@ class SessionManagerTest {
 
     @Test
     fun `Responder handshake message is dropped if the sender is not in the network map`() {
+        val messageReplayer = MockSessionReplayer()
+
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
 
@@ -908,16 +1017,19 @@ class SessionManagerTest {
         Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapOutbound.getOurMemberInfo())
 
-        val outboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapOutbound))
+        val outboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapOutbound), messageReplayer)
 
         val message = negotiateToResponderHandshake(outboundManager, wrappedMessage)
         val response = outboundManager.processSessionMessage(LinkInMessage(message))
         assertNull(response)
 
         val sessionId = message.header.sessionId
+
         loggingInterceptor.assertSingleWarning(
             "Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId " +
                 "$sessionId from peer $INBOUND_PARTY which is not in the network map. The message was discarded."
         )
+        messageReplayer.assertSingleReplayMessage<InitiatorHandshakeMessage>(OUTBOUND_PARTY, INBOUND_PARTY)
+
     }
 }
