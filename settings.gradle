@@ -45,7 +45,6 @@ pluginManagement {
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.noarg' version kotlinVersion
-        id 'org.openjfx.javafxplugin' version javaFxPluginVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'org.ajoberstar.grgit' version grgitPluginVersion // used for GIT interaction (e.g. extract commit hash)
         id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion

@@ -3,11 +3,6 @@ import io.gitlab.arturbosch.detekt.DetektPlugin
 import static org.gradle.api.JavaVersion.*
 
 buildscript {
-    repositories {
-        maven {
-            url = "$artifactoryContextUrl/corda-releases"
-        }
-    }
     ext {
         // Remember where our Java executable lives (until Bnd supports Gradle toolchains).
         javaExecutable = file("${System.getProperty('java.home')}/bin/java")
