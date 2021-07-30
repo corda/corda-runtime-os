@@ -15,7 +15,7 @@ import java.net.InetAddress
 import java.net.UnknownHostException
 import java.security.cert.X509Certificate
 
-class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(1) {
+class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HostnameMatcher::class.java)
