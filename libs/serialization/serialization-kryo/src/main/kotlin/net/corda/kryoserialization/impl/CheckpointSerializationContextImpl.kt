@@ -1,20 +1,22 @@
-package net.corda.kryoserialization
+package net.corda.kryoserialization.impl
 
+import net.corda.kryoserialization.CheckpointSerializationContext
+import net.corda.kryoserialization.NullEncodingWhitelist
 import net.corda.v5.serialization.CheckpointCustomSerializer
 import net.corda.v5.serialization.ClassWhitelist
 import net.corda.v5.serialization.EncodingWhitelist
 import net.corda.v5.serialization.SerializationEncoding
 
 data class CheckpointSerializationContextImpl @JvmOverloads constructor(
-        override val deserializationClassLoader: ClassLoader,
-        override val whitelist: ClassWhitelist,
-        override val properties: Map<Any, Any>,
-        override val objectReferencesEnabled: Boolean,
-        override val encoding: SerializationEncoding?,
-        override val encodingWhitelist: EncodingWhitelist = NullEncodingWhitelist,
-        override val checkpointCustomSerializers: Iterable<CheckpointCustomSerializer<*, *>> = emptyList(),
-        override val classInfoService: Any? = null,
-        override val sandboxGroup: Any? = null
+    override val deserializationClassLoader: ClassLoader,
+    override val whitelist: ClassWhitelist,
+    override val properties: Map<Any, Any>,
+    override val objectReferencesEnabled: Boolean,
+    override val encoding: SerializationEncoding?,
+    override val encodingWhitelist: EncodingWhitelist = NullEncodingWhitelist,
+    override val checkpointCustomSerializers: Iterable<CheckpointCustomSerializer<*, *>> = emptyList(),
+    override val classInfoService: Any? = null,
+    override val sandboxGroup: Any? = null
 ) : CheckpointSerializationContext {
 
     override fun withClassInfoService(classInfoService: Any): CheckpointSerializationContext = copy(classInfoService = classInfoService)

@@ -5,13 +5,13 @@ import com.esotericsoftware.kryo.util.MapReferenceResolver
 import net.corda.cipher.suite.internal.BasicHashingServiceImpl
 import net.corda.classinfo.ClassInfoService
 import net.corda.kryoserialization.CheckpointSerializationContext
-import net.corda.kryoserialization.CheckpointSerializeAsTokenContextImpl
 import net.corda.kryoserialization.CheckpointSerializer
 import net.corda.kryoserialization.DefaultWhitelist
 import net.corda.kryoserialization.KRYO_CHECKPOINT_CONTEXT
 import net.corda.kryoserialization.KryoCheckpointSerializerBuilder
+import net.corda.kryoserialization.impl.CheckpointSerializeAsTokenContextImpl
+import net.corda.kryoserialization.impl.withTokenContext
 import net.corda.kryoserialization.osgi.SandboxClassResolver
-import net.corda.kryoserialization.withTokenContext
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.serialization.SerializationToken
 import net.corda.v5.serialization.SerializeAsToken
