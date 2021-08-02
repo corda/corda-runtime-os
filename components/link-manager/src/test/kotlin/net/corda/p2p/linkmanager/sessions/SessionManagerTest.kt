@@ -771,7 +771,7 @@ class SessionManagerTest {
         )
 
         //The ResponderHelloMessage acts as ack for InitiatorHello, so this should be queued for replay
-        messageReplayer.assertSingleReplayMessage<InitiatorHandshakeMessage>(OUTBOUND_PARTY, INBOUND_PARTY)
+        messageReplayer.assertSingleReplayMessage<InitiatorHelloMessage>(OUTBOUND_PARTY, INBOUND_PARTY)
     }
 
     @Test

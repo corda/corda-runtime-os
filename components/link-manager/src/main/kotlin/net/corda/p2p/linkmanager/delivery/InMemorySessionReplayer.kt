@@ -39,6 +39,7 @@ class InMemorySessionReplayer(
         startStopLock.withLock {
             if (!isRunning) {
                 publisher.start()
+                replayManager.start()
                 running = true
             }
         }
@@ -63,8 +64,9 @@ class InMemorySessionReplayer(
     private fun replayMessage(messageReplay: SessionReplayer.SessionMessageReplay) {
         val networkType = networkMap.getNetworkType(messageReplay.source.groupId)
         if (networkType == null) {
-            logger.warn("Attempted to replay a session negotiation message (type ${messageReplay::class.java.simpleName}) but could not" +
-                " find the network type in the NetworkMap for our identity ${messageReplay.source}. The message was not replayed.")
+            logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
+                " could not find the network type in the NetworkMap for our identity ${messageReplay.source}. The message was not" +
+                " replayed.")
             return
         }
 
@@ -72,8 +74,8 @@ class InMemorySessionReplayer(
             is IdentityLookup.HoldingIdentity -> {
                 val memberInfo = networkMap.getMemberInfo(dest.id)
                 if (memberInfo == null) {
-                    logger.warn("Attempted to replay a session negotiation message (type ${messageReplay::class.java.simpleName}) with" +
-                            " peer ${messageReplay.dest} which is not in the network map. The message was not replayed.")
+                    logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
+                    " with peer ${dest.id} which is not in the network map. The message was not replayed.")
                     return
                 }
                 memberInfo
@@ -81,8 +83,8 @@ class InMemorySessionReplayer(
             is IdentityLookup.PublicKeyHash -> {
                 val memberInfo = networkMap.getMemberInfo(dest.hash, dest.groupId)
                 if (memberInfo == null) {
-                    logger.warn("Attempted to replay a session negotiation message (type ${messageReplay::class.java.simpleName}) with" +
-                        " peer ${messageReplay.dest} which is not in the network map. The message was not replayed.")
+                    logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
+                        " with public key hash ${messageReplay.dest} which is not in the network map. The message was not replayed.")
                     return
                 }
                 memberInfo
