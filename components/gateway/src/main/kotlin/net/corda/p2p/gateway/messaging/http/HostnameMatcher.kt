@@ -237,6 +237,11 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
             return true
         }
 
+        // Cannot have other groups before the wildcard (www.*.test.net)
+        if (name.substring(0, wildcardIndex).contains('.')) {
+            return true
+        }
+
         val nameAfterWildcard = name.substring(wildcardIndex + 2)
         // Name after wildcard group must be a valid domain
         if (!DomainValidator.getInstance().isValid("filler.$nameAfterWildcard")) {

@@ -48,12 +48,15 @@ class HostnameMatcherTest {
         // Use of wildcard
         assertTrue(matcher.illegalWildcard("*"))
         assertTrue(matcher.illegalWildcard("*."))
-//        assertTrue(matcher.illegalWildcard("*.*.net")) // Should this be legal?
-//        assertTrue(matcher.illegalWildcard("www.*.foo.bar.net")) // Should this be legal?
+        assertTrue(matcher.illegalWildcard("*.*.net"))
+        assertTrue(matcher.illegalWildcard("www.*.foo.bar.net"))
         assertTrue(matcher.illegalWildcard("www.*foo.bar.net"))
         assertTrue(matcher.illegalWildcard("www.f*o.bar.net"))
         assertTrue(matcher.illegalWildcard("www.foo.*"))
         assertTrue(matcher.illegalWildcard("www.foo.ne*"))
         assertTrue(matcher.illegalWildcard("www.foo.*et"))
+
+        assertFalse(matcher.illegalWildcard("*.r3.com"))
+        assertFalse(matcher.illegalWildcard("*.corda.r3.com"))
     }
 }
