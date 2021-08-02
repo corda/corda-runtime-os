@@ -1,6 +1,5 @@
 package net.corda.v5.base.util
 
-import org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.fail
@@ -23,9 +22,10 @@ class EncodingUtilsTest {
 
     @Test
     fun `empty encoding`() {
-        assertEquals("", EMPTY_BYTE_ARRAY.toBase58())
-        assertEquals("", EMPTY_BYTE_ARRAY.toBase64())
-        assertEquals("", EMPTY_BYTE_ARRAY.toHex())
+        val emptyByteArray = byteArrayOf()
+        assertEquals("", emptyByteArray.toBase58())
+        assertEquals("", emptyByteArray.toBase64())
+        assertEquals("", emptyByteArray.toHex())
     }
 
     @Test

@@ -1,6 +1,5 @@
 package net.corda.v5.base.util
 
-import org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY
 import org.junit.jupiter.api.Test
 import java.math.BigInteger
 import java.util.*
@@ -27,7 +26,8 @@ class Base58Test {
         assertEquals("1111111", Base58.encode(zeroBytes7))
 
         // test empty encode
-        assertEquals("", Base58.encode(EMPTY_BYTE_ARRAY))
+        val emptyByteArray = byteArrayOf()
+        assertEquals("", Base58.encode(emptyByteArray))
     }
 
     @Test
