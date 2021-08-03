@@ -1,13 +1,15 @@
 package net.corda.messaging.kafka.subscription
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.doAnswer
-import com.nhaarman.mockito_kotlin.doReturn
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import com.typesafe.config.Config
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_COMPACTED
@@ -31,7 +33,7 @@ import java.util.concurrent.TimeUnit
 class KafkaCompactedSubscriptionImplTest {
 
     companion object {
-        private const val TEST_TIMEOUT_SECONDS = 5L
+        private const val TEST_TIMEOUT_SECONDS = 2L
     }
 
     private val mapFactory = object : SubscriptionMapFactory<String, String> {
@@ -56,12 +58,15 @@ class KafkaCompactedSubscriptionImplTest {
         override val valueClass: Class<String>
             get() = String::class.java
 
-        var failSnapshot = false
+        var fatalFailSnapshot = false
+        var intermittentFailSnapshot = false
         val snapshotMap = mutableMapOf<String, String>()
         override fun onSnapshot(currentData: Map<String, String>) {
             log.info("Processing snapshot: $currentData")
-            if (failSnapshot) {
-                throw RuntimeException("Abandon Ship!")
+            if (intermittentFailSnapshot) {
+                throw CordaMessageAPIIntermittentException("Torpedo ahead!")
+            } else if (fatalFailSnapshot) {
+                throw CordaMessageAPIFatalException("Abandon Ship!")
             }
             snapshotMap.putAll(currentData)
         }
@@ -73,7 +78,7 @@ class KafkaCompactedSubscriptionImplTest {
             log.info("Processing new record: $newRecord")
             log.info("Current Data: $currentData")
             if (failNext) {
-                throw RuntimeException("Abandon Ship!")
+                throw CordaMessageAPIIntermittentException("Abandon Ship!")
             }
             incomingRecords += newRecord
             latestCurrentData = currentData
@@ -81,6 +86,7 @@ class KafkaCompactedSubscriptionImplTest {
     }
 
     @Test
+    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `compacted subscription returns correct results`() {
         val latch = CountDownLatch(4)
         val processor = TestProcessor()
@@ -92,7 +98,7 @@ class KafkaCompactedSubscriptionImplTest {
                 4L -> {
                     initialSnapshotResult
                 }
-                0L -> emptyList() // Don't return anything on errant extra polls
+                0L -> throw CordaMessageAPIFatalException("Stop here")
                 else -> {
                     listOf(
                         ConsumerRecordAndMeta<String, String>(
@@ -117,8 +123,7 @@ class KafkaCompactedSubscriptionImplTest {
             processor,
         )
         subscription.start()
-        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        subscription.stop()
+        while (subscription.isRunning) { Thread.sleep(10) }
 
         verify(kafkaConsumer, times(1)).assign(listOf(TopicPartition(TOPIC, 0)))
         assertThat(processor.snapshotMap.size).isEqualTo(10)
@@ -131,6 +136,7 @@ class KafkaCompactedSubscriptionImplTest {
     }
 
     @Test
+    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `compacted subscription removes record on null value`() {
         val latch = CountDownLatch(5)
         val processor = TestProcessor()
@@ -149,7 +155,7 @@ class KafkaCompactedSubscriptionImplTest {
                         )
                     )
                 }
-                0L -> emptyList() // Don't return anything on errant extra polls
+                0L -> throw CordaMessageAPIFatalException("Stop here")
                 else -> {
                     listOf(
                         ConsumerRecordAndMeta(
@@ -170,8 +176,7 @@ class KafkaCompactedSubscriptionImplTest {
             processor,
         )
         subscription.start()
-        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        subscription.stop()
+        while (subscription.isRunning) { Thread.sleep(10) }
 
         assertThat(processor.incomingRecords.size).isEqualTo(4)
         assertThat(processor.incomingRecords[0]).isEqualTo(Record(TOPIC, "4", "4"))
@@ -186,13 +191,13 @@ class KafkaCompactedSubscriptionImplTest {
     }
 
     @Test
-    @Timeout(2, unit = TimeUnit.SECONDS)
+    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `subscription stops on processor snapshot error`() {
         val processor = TestProcessor()
         val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
         doAnswer { initialSnapshotResult }.whenever(kafkaConsumer).poll()
 
-        processor.failSnapshot = true
+        processor.fatalFailSnapshot = true
         val subscription = KafkaCompactedSubscriptionImpl(
             config,
             mapFactory,
@@ -201,21 +206,21 @@ class KafkaCompactedSubscriptionImplTest {
         )
         subscription.start()
 
-        while (subscription.isRunning) {
-            Thread.sleep(500)
-        }
+        while (subscription.isRunning) { Thread.sleep(10) }
     }
 
     @Test
+    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `subscription attempts to reconnect after intermittent failure`() {
-        val latch = CountDownLatch(6)
+        val latch = CountDownLatch(7)
         val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
         val processor = TestProcessor()
 
         doAnswer {
             latch.countDown()
-            if (latch.count == 4L || latch.count == 2L) {
-                throw Exception("Kaboom!")
+            when (latch.count) {
+                4L, 2L -> throw CordaMessageAPIIntermittentException("Kaboom!")
+                0L -> throw CordaMessageAPIFatalException("Stop here.")
             }
             emptyList<ConsumerRecordAndMeta<String, String>>()
         }.whenever(kafkaConsumer).poll()
@@ -227,14 +232,16 @@ class KafkaCompactedSubscriptionImplTest {
             processor,
         )
         subscription.start()
-        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        subscription.stop()
+        while (subscription.isRunning) {
+            Thread.sleep(10)
+        }
 
         // Three calls: First time and after each exception thrown
-        verify(consumerBuilder, times(3)).createCompactedConsumer(any(), any())
+        verify(consumerBuilder, times(3)).createCompactedConsumer(any(), any(), any(), any())
     }
 
     @Test
+    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `subscription attempts to reconnect after processor failure`() {
         val latch = CountDownLatch(6)
         val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
@@ -252,7 +259,7 @@ class KafkaCompactedSubscriptionImplTest {
                 6L, 4L, 2L -> {
                     initialSnapshotResult
                 }
-                0L -> emptyList() // Don't return anything on errant extra polls
+                0L -> throw CordaMessageAPIFatalException("Stop here.")
                 else -> {
                     listOf(
                         ConsumerRecordAndMeta<String, String>(
@@ -274,17 +281,16 @@ class KafkaCompactedSubscriptionImplTest {
             processor,
         )
         subscription.start()
-        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.DAYS)
-        subscription.stop()
+        while (subscription.isRunning) { Thread.sleep(10) }
 
-        // Three calls: First time and after each exception thrown
-        verify(consumerBuilder, times(3)).createCompactedConsumer(any(), any())
+        // Four calls: First time and after each exception thrown
+        verify(consumerBuilder, times(4)).createCompactedConsumer(any(), any(), any(), any())
     }
 
     private fun setupStandardMocks(): Pair<CordaKafkaConsumer<String, String>, ConsumerBuilder<String, String>> {
         val kafkaConsumer: CordaKafkaConsumer<String, String> = mock()
         val consumerBuilder: ConsumerBuilder<String, String> = mock()
-        doReturn(kafkaConsumer).whenever(consumerBuilder).createCompactedConsumer(any(), any())
+        doReturn(kafkaConsumer).whenever(consumerBuilder).createCompactedConsumer(any(), any(), any(), any())
         doReturn(mutableMapOf(TopicPartition(TOPIC, 0) to 0L, TopicPartition(TOPIC, 1) to 0L)).whenever(kafkaConsumer)
             .beginningOffsets(any())
         doReturn(

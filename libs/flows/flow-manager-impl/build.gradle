@@ -9,7 +9,7 @@ dependencies {
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation "net.corda:corda-application:$cordaVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation "net.corda:corda-crypto-api:$cordaVersion"
 
     implementation project(':data:avro-schema')

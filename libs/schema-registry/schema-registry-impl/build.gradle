@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation "org.apache.avro:avro:$avroVersion"
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":data:avro-schema")

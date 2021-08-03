@@ -1,11 +1,11 @@
 package net.corda.messaging.kafka.subscription
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.doAnswer
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
@@ -59,8 +59,8 @@ class KafkaStateAndEventSubscriptionImplTest {
             ConsumerRecord(TOPIC, 0, 0, "key", "state5")
         )
 
-        doAnswer { eventConsumer }.whenever(builder).createEventConsumer(any(), any())
-        doAnswer { stateConsumer }.whenever(builder).createStateConsumer(any())
+        doAnswer { eventConsumer }.whenever(builder).createEventConsumer(any(), any(), any(), any())
+        doAnswer { stateConsumer }.whenever(builder).createStateConsumer(any(), any(), any())
         doAnswer { producer }.whenever(builder).createProducer(any())
         doAnswer { setOf(topicPartition) }.whenever(stateConsumer).assignment()
         doAnswer { listOf(state) }.whenever(stateConsumer).poll()
@@ -115,8 +115,8 @@ class KafkaStateAndEventSubscriptionImplTest {
         while (subscription.isRunning) { Thread.sleep(10) }
         assertThat(latch.count).isEqualTo(0)
 
-        verify(builder, times(1)).createEventConsumer(any(), any())
-        verify(builder, times(1)).createStateConsumer(any())
+        verify(builder, times(1)).createEventConsumer(any(), any(), any(), any())
+        verify(builder, times(1)).createStateConsumer(any(), any(), any())
         verify(builder, times(1)).createProducer(any())
         verify(stateConsumer, times(6)).poll()
         verify(eventConsumer, times(7)).poll()
@@ -154,8 +154,8 @@ class KafkaStateAndEventSubscriptionImplTest {
         while (subscription.isRunning) { Thread.sleep(10) }
         assertThat(latch.count).isEqualTo(0)
 
-        verify(builder, times(1)).createEventConsumer(any(), any())
-        verify(builder, times(1)).createStateConsumer(any())
+        verify(builder, times(1)).createEventConsumer(any(), any(), any(), any())
+        verify(builder, times(1)).createStateConsumer(any(), any(), any())
         verify(builder, times(1)).createProducer(any())
         verify(stateConsumer, times(6)).poll()
         verify(eventConsumer, times(6)).poll()
