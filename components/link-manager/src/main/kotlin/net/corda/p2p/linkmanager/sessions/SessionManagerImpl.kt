@@ -39,10 +39,9 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 open class SessionManagerImpl(
-    private val supportedModes: Set<ProtocolMode>,
+    private val sessionNegotiationParameters: ParametersForSessionNegotiation,
     private val networkMap: LinkManagerNetworkMap,
     private val cryptoService: LinkManagerCryptoService,
-    private val maxMessageSize: Int,
     private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues,
     private val sessionReplayer: SessionReplayer
     ): SessionManager {
@@ -59,6 +58,14 @@ open class SessionManagerImpl(
     data class SessionKey(
         val ourId: LinkManagerNetworkMap.HoldingIdentity,
         val responderId: LinkManagerNetworkMap.HoldingIdentity
+    )
+
+    /**
+     * The set of parameters negotiated during Session Negotiation.
+     */
+    data class ParametersForSessionNegotiation(
+        val maxMessageSize: Int,
+        val supportedModes: Set<ProtocolMode>
     )
 
     private val pendingOutboundSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
@@ -147,11 +154,12 @@ open class SessionManagerImpl(
 
         val session = AuthenticationProtocolInitiator(
             sessionId,
-            supportedModes,
-            maxMessageSize,
+            sessionNegotiationParameters.supportedModes,
+            sessionNegotiationParameters.maxMessageSize,
             ourMemberInfo.publicKey,
             ourMemberInfo.holdingIdentity.groupId
         )
+
         pendingOutboundSessions[sessionId] = Pair(sessionKey, session)
 
         val sessionInitPayload = session.generateInitiatorHello()
@@ -257,7 +265,11 @@ open class SessionManagerImpl(
             return null
         }
 
-        val session = AuthenticationProtocolResponder(message.header.sessionId, supportedModes, maxMessageSize)
+        val session = AuthenticationProtocolResponder(
+            message.header.sessionId,
+            sessionNegotiationParameters.supportedModes,
+            sessionNegotiationParameters.maxMessageSize
+        )
         session.receiveInitiatorHello(message)
         val responderHello = session.generateResponderHello()
 

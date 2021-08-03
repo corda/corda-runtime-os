@@ -80,10 +80,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private val sessionReplayer: InMemorySessionReplayer =
         InMemorySessionReplayer(config.sessionMessageReplayPeriod, publisherFactory, linkManagerNetworkMap)
     private val sessionManager: SessionManager = SessionManagerImpl(
-        config.protocolModes,
+        SessionManagerImpl.ParametersForSessionNegotiation(config.maxMessageSize, config.protocolModes),
         linkManagerNetworkMap,
         linkManagerCryptoService,
-        config.maxMessageSize,
         messagesPendingSession,
         sessionReplayer
     )

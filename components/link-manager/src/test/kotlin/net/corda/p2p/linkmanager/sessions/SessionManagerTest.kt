@@ -77,10 +77,9 @@ class SessionManagerTest {
             messageReplayer: SessionReplayer = noReplayer
         ): SessionManagerImpl {
             return SessionManagerImpl(
-                setOf(ProtocolMode.AUTHENTICATION_ONLY),
+                SessionManagerImpl.ParametersForSessionNegotiation(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
                 netMap,
                 cryptoService,
-                MAX_MESSAGE_SIZE,
                 MockSessionMessageQueues(),
                 messageReplayer
             )
@@ -194,10 +193,9 @@ class SessionManagerTest {
         val netMap = globalNetMap.getSessionNetworkMapForNode(party)
         val realCryptoService = cryptoService ?: MockCryptoService(netMap)
         return SessionManagerImpl(
-            setOf(mode),
+            SessionManagerImpl.ParametersForSessionNegotiation(MAX_MESSAGE_SIZE, setOf(mode)),
             netMap,
             realCryptoService,
-            MAX_MESSAGE_SIZE,
             queues,
             messageReplayer
         )

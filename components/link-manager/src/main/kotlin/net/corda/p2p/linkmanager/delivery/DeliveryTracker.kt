@@ -188,7 +188,9 @@ class DeliveryTracker(
             publisher.publish(records)
         }
 
-        private fun <K: Any, V : Any> Record<K, V>.toEventLogRecord(positionInTopic: HighWaterMarkTracker.PositionInTopic): EventLogRecord<K, V> {
+        private fun <K: Any, V : Any> Record<K, V>.toEventLogRecord(
+            positionInTopic: HighWaterMarkTracker.PositionInTopic)
+        : EventLogRecord<K, V> {
             return EventLogRecord(topic, key, value, positionInTopic.partition, positionInTopic.offset)
         }
     }
