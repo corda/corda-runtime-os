@@ -146,10 +146,8 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
             logger.debug("No subject alternative names found in the certificate")
             return false
         }
-        var usingDNS = false
         names.forEach {
             if(ALTNAME_DNS == it[0]) {
-                usingDNS = true
                 val altName = it[1] as String
                 if (matchWithWildcard(hostName.toLowerCase(), altName.toLowerCase())) {
                     return true
@@ -157,11 +155,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
             }
         }
 
-        if (usingDNS) {
-            // If subject alternate names contain DNS names and none match, we don't check the CN
-            return false
-        }
-
+        // If the SNI doesn't match any of the alternate subject names, we check against the CN component of the main
         val cn = CordaX500Name.build(certificate.subjectX500Principal).commonName
         if (matchWithWildcard(hostName.toLowerCase(), cn?.toLowerCase())) {
             return true

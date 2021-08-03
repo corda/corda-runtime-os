@@ -36,10 +36,7 @@ class HostnameMatcherTest {
         assertTrue(matcher.matches(SNIHostName("alice.test.net"))) // matches with *.test.net
         assertTrue(matcher.matches(SNIHostName("bob.test.net"))) // matches with *.test.net
         assertTrue(matcher.matches(SNIHostName("10.11.12.13")))
-//        assertTrue(matcher.matches(SNIHostName("2001:db8:3333:4444:cccc:dddd:eeee:ffff"))) // regular IPv6
-//        assertTrue(matcher.matches(SNIHostName("2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b"))) // regular IPv6 which can be abbreviated
-//        assertTrue(matcher.matches(SNIHostName("2001:db8:3c4d:15::1a2f:1a2b"))) // abbreviated IPv6
-//        assertTrue(matcher.matches(SNIHostName("2001:db8:3c4d:15:0:0:1a2f:1a2b"))) // another abbreviation of the above IPv6 address
+        assertTrue(matcher.matches(SNIHostName("Test2"))) // matches the CN in the subject name
 
         // Certificate tool wouldn't allow using a DNS name with only part of a group wildcarded, even though the RFC allows it
         // We test this match using the direct HostnameMatcher method
