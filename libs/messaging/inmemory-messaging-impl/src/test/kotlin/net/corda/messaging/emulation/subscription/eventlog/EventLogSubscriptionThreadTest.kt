@@ -1,6 +1,5 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
-import io.mockk.called
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -63,8 +62,9 @@ class EventLogSubscriptionThreadTest {
                 any(),
                 any(),
                 any()
-            ) } answers {
-            if(counter.incrementAndGet() >= 10) {
+            )
+        } answers {
+            if (counter.incrementAndGet() >= 10) {
                 testObject.stop()
             }
             emptyList()
@@ -82,7 +82,8 @@ class EventLogSubscriptionThreadTest {
                 any(),
                 any(),
                 any()
-            ) } answers {
+            )
+        } answers {
             testObject.stop()
             emptyList()
         }
@@ -103,23 +104,24 @@ class EventLogSubscriptionThreadTest {
                 any(),
                 any(),
                 any()
-            ) } answers {
+            )
+        } answers {
             testObject.stop()
             listOf(
-                mockk() {
+                mockk {
                     every { record.value } returns "String"
                 },
-                mockk() {
+                mockk {
                     every { record.value } returns value
                     every { record.key } returns 33
                 },
-                mockk() {
+                mockk {
                     every { record.value } returns value
                     every { record.key } returns "key"
                     every { record.topic } returns "record-topic"
                     every { offset } returns 123
                 },
-                mockk() {
+                mockk {
                     every { record.value } returns null
                 },
             )
@@ -137,16 +139,17 @@ class EventLogSubscriptionThreadTest {
                 any(),
                 any(),
                 any()
-            ) } answers {
+            )
+        } answers {
             testObject.stop()
             listOf(
-                mockk() {
+                mockk {
                     every { record.value } returns null
                 },
-                mockk() {
+                mockk {
                     every { record.value } returns null
                 },
-                mockk() {
+                mockk {
                     every { record.value } returns null
                 },
             )

@@ -2,10 +2,10 @@ package net.corda.messaging.emulation.subscription.eventlog
 
 import io.mockk.mockk
 import io.mockk.verify
-import org.junit.jupiter.api.Test
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 
 class PartitionerTest {
 
@@ -15,12 +15,12 @@ class PartitionerTest {
         val record = Record(
             "topic",
             -332,
-            mockk())
+            mockk()
+        )
 
         val partition = testObject.invoke(record)
 
         assertThat(partition).isEqualTo(2)
-
     }
 
     @Test
@@ -29,12 +29,12 @@ class PartitionerTest {
         val record = Record(
             "topic",
             9,
-            mockk())
+            mockk()
+        )
 
         val partition = testObject.invoke(record)
 
         assertThat(partition).isEqualTo(9)
-
     }
 
     @Test
@@ -43,12 +43,12 @@ class PartitionerTest {
         val record = Record(
             "topic",
             10,
-            mockk())
+            mockk()
+        )
 
         val partition = testObject.invoke(record)
 
         assertThat(partition).isEqualTo(0)
-
     }
 
     @Test
@@ -58,14 +58,14 @@ class PartitionerTest {
         val record = Record(
             "topic",
             1,
-            mockk())
+            mockk()
+        )
 
         testObject.invoke(record)
 
         verify {
             listener.onPartitionsAssigned(listOf("topic" to 1))
         }
-
     }
 
     @Test
@@ -75,15 +75,18 @@ class PartitionerTest {
         val record1 = Record(
             "topic",
             1,
-            mockk())
+            mockk()
+        )
         val record2 = Record(
             "topic",
             11,
-            mockk())
+            mockk()
+        )
         val record3 = Record(
             "topic",
             111,
-            mockk())
+            mockk()
+        )
 
         testObject.invoke(record1)
         testObject.invoke(record2)
@@ -92,7 +95,6 @@ class PartitionerTest {
         verify(exactly = 1) {
             listener.onPartitionsAssigned(any())
         }
-
     }
 
     @Test
@@ -102,11 +104,13 @@ class PartitionerTest {
         val record1 = Record(
             "topic1",
             1,
-            mockk())
+            mockk()
+        )
         val record2 = Record(
             "topic2",
             11,
-            mockk())
+            mockk()
+        )
 
         testObject.invoke(record1)
         testObject.invoke(record2)
@@ -115,6 +119,5 @@ class PartitionerTest {
             listener.onPartitionsAssigned(listOf("topic1" to 1))
             listener.onPartitionsAssigned(listOf("topic2" to 1))
         }
-
     }
 }

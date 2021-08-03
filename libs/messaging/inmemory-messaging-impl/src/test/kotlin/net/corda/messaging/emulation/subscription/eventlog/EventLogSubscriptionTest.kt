@@ -13,8 +13,8 @@ class EventLogSubscriptionTest {
         config,
         mockk(relaxed = true),
         null,
-        mockk(relaxed = true) ,
-        {thread}
+        mockk(relaxed = true),
+        { thread }
     )
 
     @Test

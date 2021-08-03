@@ -18,7 +18,7 @@ class EventLogSubscription<K : Any, V : Any>(
     internal val partitionAssignmentListener: PartitionAssignmentListener?,
     internal val topicService: TopicService,
     private val threadFactory:
-        (EventLogSubscription<K, V>)->EventLogSubscriptionThread<K, V> = { EventLogSubscriptionThread(it) }
+        (EventLogSubscription<K, V>) -> EventLogSubscriptionThread<K, V> = { EventLogSubscriptionThread(it) }
 ) : Subscription<K, V> {
 
     companion object {
@@ -36,7 +36,6 @@ class EventLogSubscription<K : Any, V : Any>(
         Partitioner(partitionAssignmentListener)
     }
 
-
     private val currentLoop = AtomicReference<EventLogSubscriptionThread<K, V>>(null)
     private val lock = ReentrantLock()
 
@@ -51,13 +50,12 @@ class EventLogSubscription<K : Any, V : Any>(
         logger.debug { "Starting event log subscription with config: $subscriptionConfig" }
         lock.withLock {
             val currentThread = currentLoop.get()
-            if(currentThread != null) {
+            if (currentThread != null) {
                 return
             }
             val newThread = threadFactory(this)
             currentLoop.set(newThread)
             newThread.start()
-
         }
     }
 

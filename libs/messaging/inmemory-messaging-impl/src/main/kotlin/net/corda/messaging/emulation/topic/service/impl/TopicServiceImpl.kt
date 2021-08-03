@@ -1,6 +1,7 @@
 package net.corda.messaging.emulation.topic.service.impl
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.Record
@@ -17,7 +18,7 @@ import kotlin.concurrent.withLock
 class TopicServiceImpl : TopicService {
     //TODO - replace with config service injection
     private val config: Config = ConfigFactory.load("tmpInMemDefaults")
-    private val topicMaxSize = config.getInt(TOPICS_MAX_SIZE)
+    private val topicMaxSize = config.getInt(TOPICS_MAX_SIZE, 5)
     private val topics: ConcurrentHashMap<String, Topic> = ConcurrentHashMap()
 
     override fun subscribe(topicName: String, consumerGroup: String, offsetStrategy: OffsetStrategy) {
@@ -68,5 +69,12 @@ class TopicServiceImpl : TopicService {
     override fun commitOffset(topicName: String, consumerGroup: String, offset: Long) {
         val topic = topics[topicName] ?: throw CordaMessageAPIFatalException("Topic $topicName does not exist")
         topic.commitOffset(consumerGroup, offset)
+    }
+}
+fun Config.getInt(path: String, default: Int): Int {
+    return try {
+        this.getInt(path)
+    } catch (e: ConfigException) {
+        default
     }
 }

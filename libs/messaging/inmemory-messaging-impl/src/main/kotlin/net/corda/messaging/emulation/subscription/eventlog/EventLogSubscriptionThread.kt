@@ -7,10 +7,10 @@ import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import java.util.concurrent.atomic.AtomicBoolean
 
-class EventLogSubscriptionThread<K: Any, V: Any>(
+class EventLogSubscriptionThread<K : Any, V : Any>(
     private val subscription: EventLogSubscription<K, V>,
-    private val threadFactory: (Runnable)->Thread = { Thread(it) }
-): Runnable {
+    private val threadFactory: (Runnable) -> Thread = { Thread(it) }
+) : Runnable {
 
     companion object {
         private val logger: Logger = contextLogger()
@@ -36,16 +36,18 @@ class EventLogSubscriptionThread<K: Any, V: Any>(
             consumerGroup = subscription.group,
             OffsetStrategy.LATEST,
         )
-        while(keepRunning.get()) {
+        while (keepRunning.get()) {
             val records = subscription.topicService.getRecords(
                 topicName = subscription.topic,
                 consumerGroup = subscription.group,
                 numberOfRecords = POLL_SIZE
             )
                 .filter {
-                    subscription.processor.valueClass.isInstance(it.record.value) }
+                    subscription.processor.valueClass.isInstance(it.record.value)
+                }
                 .filter {
-                    subscription.processor.keyClass.isInstance(it.record.key) }
+                    subscription.processor.keyClass.isInstance(it.record.key)
+                }
                 .map {
                     EventLogRecord(
                         topic = it.record.topic,
@@ -53,15 +55,19 @@ class EventLogSubscriptionThread<K: Any, V: Any>(
                         value = it.record.value,
                         partition = subscription.partitioner(it.record),
                         offset = it.offset
-                    ) }
+                    )
+                }
 
-            if(records.isNotEmpty()) {
+            if (records.isNotEmpty()) {
                 @Suppress("TooGenericExceptionCaught")
                 try {
                     subscription.processor.onNext(uncheckedCast(records))
                 } catch (ex: Exception) {
-                    logger.warn("Error processing processing records for consumer ${subscription.group}, topic ${subscription.topic}. " +
-                            "Skipping to offset ${records.last().offset}", ex)
+                    logger.warn(
+                        "Error processing processing records for consumer ${subscription.group}, topic ${subscription.topic}. " +
+                            "Skipping to offset ${records.last().offset}",
+                        ex
+                    )
                 }
             }
         }
@@ -75,5 +81,4 @@ class EventLogSubscriptionThread<K: Any, V: Any>(
         keepRunning.set(false)
         thread.join()
     }
-
 }

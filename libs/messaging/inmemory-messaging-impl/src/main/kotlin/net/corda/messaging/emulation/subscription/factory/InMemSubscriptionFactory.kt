@@ -1,6 +1,7 @@
 package net.corda.messaging.emulation.subscription.factory
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -96,3 +97,4 @@ class InMemSubscriptionFactory @Activate constructor(
         TODO("Not yet implemented")
     }
 }
+
