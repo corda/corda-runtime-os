@@ -2,18 +2,19 @@ package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.stubs
 
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 
 class StubStateAndEventProcessor(
     private val latch: CountDownLatch? = null,
     private val exceptionOnFirstCall: Exception? = null
-) : StateAndEventProcessor<String, String, String> {
+) : StateAndEventProcessor<String, String, ByteBuffer> {
 
     var exceptionThrown = false
-    val inputs = mutableListOf<Pair<String?, Record<String, String>>>()
+    val inputs = mutableListOf<Pair<String?, Record<String, ByteBuffer>>>()
     override fun onNext(
         state: String?,
-        event: Record<String, String>
+        event: Record<String, ByteBuffer>
     ): StateAndEventProcessor.Response<String> {
         if (!exceptionThrown && exceptionOnFirstCall != null) {
             exceptionThrown = true
@@ -30,6 +31,6 @@ class StubStateAndEventProcessor(
         get() = String::class.java
     override val stateValueClass: Class<String>
         get() = String::class.java
-    override val eventValueClass: Class<String>
-        get() = String::class.java
+    override val eventValueClass: Class<ByteBuffer>
+        get() = ByteBuffer::class.java
 }
