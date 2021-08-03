@@ -30,7 +30,6 @@ class EventLogSubscriptionThreadTest {
         verify {
             thread.name = any()
             thread.isDaemon = true
-            thread.priority = -1
             thread.start()
         }
     }

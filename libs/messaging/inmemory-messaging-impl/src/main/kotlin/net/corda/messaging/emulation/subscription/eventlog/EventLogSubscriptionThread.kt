@@ -14,10 +14,6 @@ class EventLogSubscriptionThread<K : Any, V : Any>(
 
     companion object {
         private val logger: Logger = contextLogger()
-
-        @Suppress("ForbiddenComment")
-        // TODO: Where do I get those?
-        private const val POLL_SIZE = 5
     }
 
     private val keepRunning = AtomicBoolean(true)
@@ -26,7 +22,6 @@ class EventLogSubscriptionThread<K : Any, V : Any>(
         thread.name = "events log processing thread ${subscription.group}-${subscription.topic}"
         thread.isDaemon = true
         thread.contextClassLoader = null
-        thread.priority = -1
         thread
     }
 
@@ -40,7 +35,7 @@ class EventLogSubscriptionThread<K : Any, V : Any>(
             val records = subscription.topicService.getRecords(
                 topicName = subscription.topic,
                 consumerGroup = subscription.group,
-                numberOfRecords = POLL_SIZE
+                numberOfRecords = subscription.config.pollSize
             )
                 .filter {
                     subscription.processor.valueClass.isInstance(it.record.value)

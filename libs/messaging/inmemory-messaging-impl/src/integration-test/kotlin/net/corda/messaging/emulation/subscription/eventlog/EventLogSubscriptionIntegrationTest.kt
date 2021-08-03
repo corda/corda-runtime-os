@@ -1,63 +1,121 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
 import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 @ExtendWith(ServiceExtension::class)
 class EventLogSubscriptionIntegrationTest {
+
     private data class Event(val name: String, val id: Int)
 
     private val group = "net.corda.messaging.emulation.subscription.eventlog"
     private val topic = "eventlog.test"
-    private val config = SubscriptionConfig(groupName = group, eventTopic = topic)
-
-    private val processed = mutableListOf<List<EventLogRecord<String, Event>>>()
-    private val processor = object : EventLogProcessor<String, Event> {
-        override fun onNext(events: List<EventLogRecord<String, Event>>): List<Record<*, *>> {
-            processed.add(events)
-            return emptyList()
-        }
-
-        override val keyClass = String::class.java
-        override val valueClass = Event::class.java
-    }
-
-    private val assigned = mutableMapOf<String, Int>()
-
-    private val partitionAssignmentListener = object : PartitionAssignmentListener {
-        override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
-            assigned.putAll(topicPartitions.toMap())
-        }
-
-        override fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>) {
-        }
-    }
+    private val clientId = "testId"
 
     @InjectService(timeout = 4000)
-    private lateinit var subscriptionFactory: SubscriptionFactory
+    lateinit var subscriptionFactory: SubscriptionFactory
 
-    @Test
-    fun `test events log subscription`() {
-        println("QQQ subscriptionFactory = $subscriptionFactory")
-        val subscription = subscriptionFactory.createEventLogSubscription(
+    @InjectService(timeout = 4000)
+    lateinit var publisherFactory: PublisherFactory
+
+    private val processed = mutableListOf<EventLogRecord<String, Event>>()
+
+    private val waitForProcessed = AtomicReference<CountDownLatch>(null)
+
+    private val assigned = mutableSetOf<Int>()
+
+    private val subscription by lazy {
+        val config = SubscriptionConfig(groupName = group, eventTopic = topic)
+        val processor = object : EventLogProcessor<String, Event> {
+            override fun onNext(events: List<EventLogRecord<String, Event>>): List<Record<*, *>> {
+                processed.addAll(events)
+                events.forEach {
+                    waitForProcessed.get()?.countDown()
+                }
+                return emptyList()
+            }
+
+            override val keyClass = String::class.java
+            override val valueClass = Event::class.java
+        }
+        val partitionAssignmentListener = object : PartitionAssignmentListener {
+            override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
+            }
+
+            override fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>) {
+                assigned += topicPartitions.map { it.second }
+            }
+        }
+        subscriptionFactory.createEventLogSubscription(
             subscriptionConfig = config,
             processor = processor,
             partitionAssignmentListener = partitionAssignmentListener
         )
+    }
 
-        println("QQQ subscription = $subscription")
-        println("QQQ isRunning = ${subscription.isRunning}")
+    val publisher by lazy {
+        val publisherConfig = PublisherConfig(clientId)
+        publisherFactory.createPublisher(publisherConfig)
+    }
+
+    @Test
+    fun `test events log subscription`() {
+        assertThat(subscription.isRunning).isFalse
+
         subscription.start()
-        println("QQQ isRunning = ${subscription.isRunning}")
+        assertThat(subscription.isRunning).isTrue
+        assertThat(processed).isEmpty()
+        waitForProcessed.set(CountDownLatch(3))
+        publisher.publish(
+            listOf(
+                Record(topic, "key1", Event("one", 1)),
+                Record("another.topic", "key4", Event("four", 4)),
+                Record(topic, "key2", Event("two", 2)),
+                Record(topic, "key3", Event("three", 3)),
+            )
+        )
+        waitForProcessed.getAndSet(null).await(10, TimeUnit.SECONDS)
+        assertThat(processed).contains(
+            EventLogRecord(
+                topic = topic,
+                key = "key1",
+                value = Event("one", 1),
+                partition = 8,
+                offset = 0
+            ),
+            EventLogRecord(
+                topic = topic,
+                key = "key2",
+                value = Event("two", 2),
+                partition = 9,
+                offset = 1
+            ),
+            EventLogRecord(
+                topic = topic,
+                key = "key3",
+                value = Event("three", 3),
+                partition = 0,
+                offset = 2
+            ),
+        ).hasSize(3)
+
+        assertThat(assigned).contains(8, 9, 0)
+
         subscription.stop()
-        println("QQQ isRunning = ${subscription.isRunning}")
+        assertThat(subscription.isRunning).isFalse
     }
 }

@@ -11,7 +11,7 @@ class PartitionerTest {
 
     @Test
     fun `invoke return the correct value`() {
-        val testObject = Partitioner(null)
+        val testObject = Partitioner(null, 10)
         val record = Record(
             "topic",
             -332,
@@ -25,7 +25,7 @@ class PartitionerTest {
 
     @Test
     fun `invoke return 9 for 9`() {
-        val testObject = Partitioner(null)
+        val testObject = Partitioner(null, 10)
         val record = Record(
             "topic",
             9,
@@ -39,7 +39,7 @@ class PartitionerTest {
 
     @Test
     fun `invoke return 0 for 10`() {
-        val testObject = Partitioner(null)
+        val testObject = Partitioner(null, 10)
         val record = Record(
             "topic",
             10,
@@ -54,7 +54,7 @@ class PartitionerTest {
     @Test
     fun `invoke sends new partition when the partition is new`() {
         val listener = mockk<PartitionAssignmentListener>(relaxed = true)
-        val testObject = Partitioner(listener)
+        val testObject = Partitioner(listener, 10)
         val record = Record(
             "topic",
             1,
@@ -71,7 +71,7 @@ class PartitionerTest {
     @Test
     fun `invoke sends new partition only once`() {
         val listener = mockk<PartitionAssignmentListener>(relaxed = true)
-        val testObject = Partitioner(listener)
+        val testObject = Partitioner(listener, 10)
         val record1 = Record(
             "topic",
             1,
@@ -100,7 +100,7 @@ class PartitionerTest {
     @Test
     fun `invoke sends two partitions for two different tropics`() {
         val listener = mockk<PartitionAssignmentListener>(relaxed = true)
-        val testObject = Partitioner(listener)
+        val testObject = Partitioner(listener, 10)
         val record1 = Record(
             "topic1",
             1,

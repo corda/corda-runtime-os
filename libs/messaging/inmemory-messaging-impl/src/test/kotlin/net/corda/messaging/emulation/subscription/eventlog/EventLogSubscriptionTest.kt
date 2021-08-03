@@ -1,5 +1,6 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -7,7 +8,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class EventLogSubscriptionTest {
-    private val config = SubscriptionConfig("group", "topic")
+    private val config = mockk<InMemoryEventLogSubscriptionConfig> {
+        every { subscriptionConfig } returns SubscriptionConfig("group", "topic")
+    }
     private val thread = mockk<EventLogSubscriptionThread<String, Long>>(relaxed = true)
     private val subscription = EventLogSubscription<String, Long>(
         config,
