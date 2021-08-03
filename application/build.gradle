@@ -1,0 +1,47 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'biz.aQute.bnd.builder'
+}
+
+description 'Corda Application'
+
+dependencies {
+    api "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+
+    api project(":base")
+    api project(":serialization")
+
+    implementation project(":crypto")
+
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
+
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+}
+
+// Added to facilitate core-tests
+configurations {
+    testArtifacts.extendsFrom testRuntimeClasspath
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = 'corda-application'
+    bnd """\
+Bundle-Name: Corda application library
+Bundle-SymbolicName: \${project.group}.application
+"""
+}
+
+def testJar = tasks.register('testJar', Jar) {
+    archiveClassifier = "tests"
+    from sourceSets.test.output
+}
+
+// Exposes test classes for other modules
+artifacts {
+    testArtifacts testJar
+}
