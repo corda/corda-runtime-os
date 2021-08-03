@@ -1,9 +1,9 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.ssl.SslHandler
-import net.corda.nodeapi.internal.protonwrapper.netty.LoggingTrustManagerWrapper
-import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfig
+import net.corda.p2p.gateway.messaging.RevocationConfig
 import org.slf4j.LoggerFactory
+import java.net.Socket
 import java.net.URI
 import java.security.KeyStore
 import java.security.SecureRandom
@@ -13,12 +13,14 @@ import java.security.cert.Certificate
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.PKIXRevocationChecker
 import java.security.cert.X509CertSelector
+import java.security.cert.X509Certificate
 import java.util.LinkedList
 import javax.net.ssl.CertPathTrustManagerParameters
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.ManagerFactoryParameters
 import javax.net.ssl.SNIHostName
 import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509ExtendedKeyManager
 import javax.net.ssl.X509ExtendedTrustManager
@@ -33,7 +35,7 @@ fun createClientSslHandler(targetServerName: String,
                            trustManagerFactory: TrustManagerFactory): SslHandler {
     val sslContext = SSLContext.getInstance("TLS")
     val trustManagers = trustManagerFactory.trustManagers.filterIsInstance(X509ExtendedTrustManager::class.java)
-        .map { LoggingTrustManagerWrapper(it) }.toTypedArray()
+        .map { IdentityCheckingTrustManager(it) }.toTypedArray()
     sslContext.init(null, trustManagers, SecureRandom()) //May need to use secure random from crypto-api module
 
     val sslEngine = sslContext.createSSLEngine(target.host, target.port).also {
@@ -99,6 +101,8 @@ fun getCertCheckingParameters(trustStore: KeyStore, revocationConfig: Revocation
     return CertPathTrustManagerParameters(pkixParams)
 }
 
+fun Certificate.x509(): X509Certificate = requireNotNull(this as? X509Certificate) { "Not an X.509 certificate: $this" }
+
 object AllowAllRevocationChecker : PKIXRevocationChecker() {
 
     private val logger = LoggerFactory.getLogger(AllowAllRevocationChecker::class.java)
@@ -123,4 +127,35 @@ object AllowAllRevocationChecker : PKIXRevocationChecker() {
     override fun getSoftFailExceptions(): MutableList<CertPathValidatorException> {
         return LinkedList()
     }
+}
+
+class IdentityCheckingTrustManager(val wrapped: X509ExtendedTrustManager) : X509ExtendedTrustManager() {
+    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
+        TODO("Not yet implemented")
+    }
+
+    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, engine: SSLEngine?) {
+        TODO("Not yet implemented")
+    }
+
+    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+        TODO("Not yet implemented")
+    }
+
+    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
+        TODO("Not yet implemented")
+    }
+
+    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?, engine: SSLEngine?) {
+        TODO("Not yet implemented")
+    }
+
+    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+        TODO("Not yet implemented")
+    }
+
+    override fun getAcceptedIssuers(): Array<X509Certificate> {
+        TODO("Not yet implemented")
+    }
+
 }

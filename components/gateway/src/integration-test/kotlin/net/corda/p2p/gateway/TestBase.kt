@@ -1,7 +1,7 @@
 package net.corda.p2p.gateway
 
-import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfig
-import net.corda.nodeapi.internal.protonwrapper.netty.RevocationConfigImpl
+import net.corda.p2p.gateway.messaging.RevocationConfig
+import net.corda.p2p.gateway.messaging.RevocationConfigImpl
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import java.io.FileInputStream
 import java.security.KeyStore

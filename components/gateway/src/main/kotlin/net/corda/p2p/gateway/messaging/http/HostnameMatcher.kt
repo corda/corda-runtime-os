@@ -1,6 +1,5 @@
 package net.corda.p2p.gateway.messaging.http
 
-import net.corda.nodeapi.internal.crypto.x509
 import net.corda.p2p.NetworkType
 import net.corda.v5.application.identity.CordaX500Name
 import org.apache.commons.validator.routines.DomainValidator
@@ -40,7 +39,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
         val serverNameString = (serverName as SNIHostName).asciiName
         if (serverName.type == StandardConstants.SNI_HOST_NAME) {
             keyStore.aliases().toList().forEach { alias ->
-                val certificate = keyStore.getCertificate(alias).x509
+                val certificate = keyStore.getCertificate(alias).x509()
                 val cordaX500Name = CordaX500Name.build(certificate.subjectX500Principal)
                 val c4SniValue = SniCalculator.calculateSni(cordaX500Name.toString(), NetworkType.CORDA_4, "")
                 val c5Check = match(serverNameString, certificate)
