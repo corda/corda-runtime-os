@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka
+package net.corda.messaging.kafka.utils
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -16,7 +16,7 @@ import java.net.URL
 import java.util.*
 
 
-class Utils {
+class ConfigUtils {
 
     companion object {
         private val enforced = ConfigFactory.parseURL(getResourceURL("messaging-enforced.conf"))
@@ -134,4 +134,3 @@ fun PublisherConfig.toConfig(): Config {
     }
     return config
 }
-

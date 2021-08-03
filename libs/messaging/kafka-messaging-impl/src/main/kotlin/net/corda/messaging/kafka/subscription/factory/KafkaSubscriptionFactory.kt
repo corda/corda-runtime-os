@@ -14,7 +14,6 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.kafka.Utils.Companion.resolveSubscriptionConfiguration
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_COMPACTED
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_DURABLE
@@ -26,7 +25,8 @@ import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaStateAndEventSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.StateAndEventBuilderImpl
-import net.corda.messaging.kafka.toConfig
+import net.corda.messaging.kafka.utils.ConfigUtils.Companion.resolveSubscriptionConfiguration
+import net.corda.messaging.kafka.utils.toConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
