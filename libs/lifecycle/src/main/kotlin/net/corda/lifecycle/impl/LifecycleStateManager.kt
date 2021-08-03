@@ -1,5 +1,6 @@
-package net.corda.lifecycle
+package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.LifecycleEvent
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ScheduledFuture

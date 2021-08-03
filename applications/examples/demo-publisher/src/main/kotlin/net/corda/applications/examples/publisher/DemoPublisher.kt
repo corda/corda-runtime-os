@@ -36,7 +36,6 @@ class DemoPublisher @Activate constructor(
         val log: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val BATCH_SIZE: Int = 128
-        const val TIMEOUT: Long = 10000L
         const val TOPIC_PREFIX = "messaging.topic.prefix"
         const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
@@ -58,7 +57,7 @@ class DemoPublisher @Activate constructor(
             val instanceId = parameters.instanceId?.toInt()
             var publisher: RunPublisher? = null
 
-            lifeCycleCoordinator = SimpleLifecycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifecycleEvent, _: LifecycleCoordinator ->
+            lifeCycleCoordinator = SimpleLifecycleCoordinator(BATCH_SIZE) { event: LifecycleEvent, _: LifecycleCoordinator ->
                 log.info("LifecycleEvent received: $event")
                 when (event) {
                     is StartEvent -> {

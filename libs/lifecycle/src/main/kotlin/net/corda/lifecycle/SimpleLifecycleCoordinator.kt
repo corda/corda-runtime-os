@@ -1,5 +1,9 @@
 package net.corda.lifecycle
 
+import net.corda.lifecycle.impl.CancelTimer
+import net.corda.lifecycle.impl.LifecycleProcessor
+import net.corda.lifecycle.impl.LifecycleStateManager
+import net.corda.lifecycle.impl.SetUpTimer
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
 import java.util.concurrent.Executors
@@ -20,12 +24,10 @@ import java.util.concurrent.atomic.AtomicBoolean
  * at once.
  *
  * @param batchSize max number of events processed in a single [processEvents] call.
- * @param timeout in milliseconds this coordinator stops before to log a warning.
  * @param lifeCycleProcessor The user event handler for lifecycle events.
  */
 class SimpleLifecycleCoordinator(
     private val batchSize: Int,
-    private val timeout: Long,
     override val lifeCycleProcessor: LifecycleEventHandler,
 ) : LifecycleCoordinator {
 

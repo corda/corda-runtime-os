@@ -49,7 +49,6 @@ class DemoApp @Activate constructor(
         val log: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val BATCH_SIZE: Int = 128
-        const val TIMEOUT: Long = 10000L
         const val TOPIC_PREFIX = "messaging.topic.prefix"
         const val CONFIG_TOPIC_NAME = "config.topic.name"
         const val BOOTSTRAP_SERVERS = "bootstrap.servers"
@@ -79,7 +78,7 @@ class DemoApp @Activate constructor(
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
-                SimpleLifecycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifecycleEvent, _: LifecycleCoordinator ->
+                SimpleLifecycleCoordinator(BATCH_SIZE) { event: LifecycleEvent, _: LifecycleCoordinator ->
                     log.info("LifecycleEvent received: $event")
                     when (event) {
                         is StartEvent -> {
