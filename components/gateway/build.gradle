@@ -7,12 +7,12 @@ description 'P2P gateway component'
 
 dependencies {
     implementation project(":libs:p2p-crypto")
-    implementation "net.corda:corda-application:$cordaVersion"
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle")
     implementation project(":data:avro-schema")
     implementation project(":data:topic-schema")
 
+    implementation "net.corda:corda-application:$cordaVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "io.reactivex:rxjava:$rxjavaVersion"
     implementation "io.netty:netty-transport:$nettyVersion"

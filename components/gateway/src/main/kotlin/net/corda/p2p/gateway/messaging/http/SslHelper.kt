@@ -2,7 +2,21 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.ssl.SslHandler
 import net.corda.p2p.gateway.messaging.RevocationConfig
+import net.corda.v5.base.util.toHex
+import org.bouncycastle.asn1.ASN1InputStream
+import org.bouncycastle.asn1.DERIA5String
+import org.bouncycastle.asn1.DEROctetString
+import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier
+import org.bouncycastle.asn1.x509.CRLDistPoint
+import org.bouncycastle.asn1.x509.DistributionPointName
+import org.bouncycastle.asn1.x509.Extension
+import org.bouncycastle.asn1.x509.GeneralName
+import org.bouncycastle.asn1.x509.GeneralNames
+import org.bouncycastle.asn1.x509.SubjectKeyIdentifier
+import org.bouncycastle.cert.X509CertificateHolder
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.io.ByteArrayInputStream
 import java.net.Socket
 import java.net.URI
 import java.security.KeyStore
@@ -10,6 +24,7 @@ import java.security.SecureRandom
 import java.security.cert.CertPathBuilder
 import java.security.cert.CertPathValidatorException
 import java.security.cert.Certificate
+import java.security.cert.CertificateException
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.PKIXRevocationChecker
 import java.security.cert.X509CertSelector
@@ -35,7 +50,7 @@ fun createClientSslHandler(targetServerName: String,
                            trustManagerFactory: TrustManagerFactory): SslHandler {
     val sslContext = SSLContext.getInstance("TLS")
     val trustManagers = trustManagerFactory.trustManagers.filterIsInstance(X509ExtendedTrustManager::class.java)
-        .map { IdentityCheckingTrustManager(it) }.toTypedArray()
+        .map { LoggingTrustManager(it) }.toTypedArray()
     sslContext.init(null, trustManagers, SecureRandom()) //May need to use secure random from crypto-api module
 
     val sslEngine = sslContext.createSSLEngine(target.host, target.port).also {
@@ -45,6 +60,9 @@ fun createClientSslHandler(targetServerName: String,
         it.enableSessionCreation = true
         val sslParameters = it.sslParameters
         sslParameters.serverNames = listOf(SNIHostName(targetServerName))
+        // To enable the JSSE client side checking of server identity, we need to specify and endpoint identification algorithm
+        // Supported names are documented here https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html
+        sslParameters.endpointIdentificationAlgorithm = "HTTPS"
         it.sslParameters = sslParameters
     }
     val sslHandler = SslHandler(sslEngine)
@@ -73,7 +91,7 @@ fun createServerSslHandler(keyStore: KeyStore,
         it.enabledCipherSuites = CIPHER_SUITES
         it.enableSessionCreation = true
         val sslParameters = it.sslParameters
-        // need to provide
+        sslParameters.applicationProtocols = arrayOf("http/1.1")
         sslParameters.sniMatchers = listOf(HostnameMatcher(keyStore))
         it.sslParameters = sslParameters
     }
@@ -101,7 +119,72 @@ fun getCertCheckingParameters(trustStore: KeyStore, revocationConfig: Revocation
     return CertPathTrustManagerParameters(pkixParams)
 }
 
+fun X509Certificate.distributionPoints() : Set<String> {
+    val logger = LoggerFactory.getLogger("net.corda.p2p.gateway.messaging.http.SSLHelper")
+
+    logger.debug("Checking CRLDPs for $subjectX500Principal")
+
+    val crldpExtBytes = getExtensionValue(Extension.cRLDistributionPoints.id)
+    if (crldpExtBytes == null) {
+        logger.debug("NO CRLDP ext")
+        return emptySet()
+    }
+
+    val derObjCrlDP = ASN1InputStream(ByteArrayInputStream(crldpExtBytes)).readObject()
+    val dosCrlDP = derObjCrlDP as? DEROctetString
+    if (dosCrlDP == null) {
+        logger.error("Expected to have DEROctetString, actual type: ${derObjCrlDP.javaClass}")
+        return emptySet()
+    }
+    val crldpExtOctetsBytes = dosCrlDP.octets
+    val dpObj = ASN1InputStream(ByteArrayInputStream(crldpExtOctetsBytes)).readObject()
+    val distPoint = CRLDistPoint.getInstance(dpObj)
+    if (distPoint == null) {
+        logger.error("Could not instantiate CRLDistPoint, from: $dpObj")
+        return emptySet()
+    }
+
+    val dpNames = distPoint.distributionPoints.mapNotNull { it.distributionPoint }.filter { it.type == DistributionPointName.FULL_NAME }
+    val generalNames = dpNames.flatMap { GeneralNames.getInstance(it.name).names.asList() }
+    return generalNames.filter { it.tagNo == GeneralName.uniformResourceIdentifier}.map { DERIA5String.getInstance(it.name).string }.toSet()
+}
+
+fun X509Certificate.toBc() = X509CertificateHolder(encoded)
+
 fun Certificate.x509(): X509Certificate = requireNotNull(this as? X509Certificate) { "Not an X.509 certificate: $this" }
+
+fun X509Certificate.distributionPointsToString() : String {
+    return with(distributionPoints()) {
+        if(isEmpty()) {
+            "NO CRLDP ext"
+        } else {
+            sorted().joinToString()
+        }
+    }
+}
+
+fun certPathToString(certPath: Array<out X509Certificate>?): String {
+    if (certPath == null) {
+        return "<empty certpath>"
+    }
+    val certs = certPath.map {
+        val bcCert = it.toBc()
+        val subject = bcCert.subject.toString()
+        val issuer = bcCert.issuer.toString()
+        val keyIdentifier = try {
+            SubjectKeyIdentifier.getInstance(bcCert.getExtension(Extension.subjectKeyIdentifier).parsedValue).keyIdentifier.toHex()
+        } catch (ex: Exception) {
+            "null"
+        }
+        val authorityKeyIdentifier = try {
+            AuthorityKeyIdentifier.getInstance(bcCert.getExtension(Extension.authorityKeyIdentifier).parsedValue).keyIdentifier.toHex()
+        } catch (ex: Exception) {
+            "null"
+        }
+        "  $subject[$keyIdentifier] issued by $issuer[$authorityKeyIdentifier] [${it.distributionPointsToString()}]"
+    }
+    return certs.joinToString("\r\n")
+}
 
 object AllowAllRevocationChecker : PKIXRevocationChecker() {
 
@@ -129,33 +212,64 @@ object AllowAllRevocationChecker : PKIXRevocationChecker() {
     }
 }
 
-class IdentityCheckingTrustManager(val wrapped: X509ExtendedTrustManager) : X509ExtendedTrustManager() {
+/**
+ * Wrapper which adds useful logging about certificates being checked.
+ */
+class LoggingTrustManager(private val wrapped: X509ExtendedTrustManager) : X509ExtendedTrustManager() {
+
+    companion object {
+        val logger: Logger = LoggerFactory.getLogger(LoggingTrustManager::class.java)
+    }
+
+    private fun certPathToStringFull(chain: Array<out X509Certificate>?): String {
+        if (chain == null) {
+            return "<empty certpath>"
+        }
+        return chain.joinToString(", ") { it.toString() }
+    }
+
+    private fun logErrors(chain: Array<out X509Certificate>?, block: () -> Unit) {
+        try {
+            block()
+        } catch (ex: CertificateException) {
+            logger.error("Bad certificate path ${ex.message}:\r\n${certPathToStringFull(chain)}")
+            throw ex
+        }
+    }
+
+    /**
+     * We're using one way authentication, therefore this trust manager will only be used for server checks.
+     * The [checkClientTrusted] methods should never be called. However, we simply call the parent methods.
+     */
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
-        TODO("Not yet implemented")
+        logger.info("Check Client Certpath:\r\n${certPathToString(chain)}")
+        logErrors(chain) { wrapped.checkClientTrusted(chain, authType, socket) }
     }
 
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?, engine: SSLEngine?) {
-        TODO("Not yet implemented")
+        logger.info("Check Client Certpath:\r\n${certPathToString(chain)}")
+        logErrors(chain) { wrapped.checkClientTrusted(chain, authType, engine) }
     }
 
     override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
-        TODO("Not yet implemented")
+        logger.info("Check Client Certpath:\r\n${certPathToString(chain)}")
+        logErrors(chain) { wrapped.checkClientTrusted(chain, authType) }
     }
 
     override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
-        TODO("Not yet implemented")
+        logger.info("Check Server Certpath:\r\n${certPathToString(chain)}")
+        logErrors(chain) { wrapped.checkServerTrusted(chain, authType, socket) }
     }
 
     override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?, engine: SSLEngine?) {
-        TODO("Not yet implemented")
+        logger.info("Check Server Certpath:\r\n${certPathToString(chain)}")
+        logErrors(chain) { wrapped.checkServerTrusted(chain, authType, engine) }
     }
 
     override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
-        TODO("Not yet implemented")
+        logger.info("Check Server Certpath:\r\n${certPathToString(chain)}")
+        logErrors(chain) { wrapped.checkServerTrusted(chain, authType) }
     }
 
-    override fun getAcceptedIssuers(): Array<X509Certificate> {
-        TODO("Not yet implemented")
-    }
-
+    override fun getAcceptedIssuers(): Array<X509Certificate> = wrapped.acceptedIssuers
 }
