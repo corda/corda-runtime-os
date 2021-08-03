@@ -4,7 +4,6 @@ import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
-import io.netty.channel.socket.SocketChannel
 import io.netty.handler.codec.http.DefaultFullHttpResponse
 import io.netty.handler.codec.http.HttpContent
 import io.netty.handler.codec.http.HttpHeaderNames
@@ -17,18 +16,15 @@ import io.netty.handler.codec.http.HttpVersion
 import io.netty.handler.codec.http.LastHttpContent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
 import net.corda.p2p.gateway.messaging.http.HttpHelper.Companion.validate
-import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 import java.lang.IndexOutOfBoundsException
 import java.nio.channels.ClosedChannelException
 import javax.net.ssl.SSLException
 
 class HttpChannelHandler(
-    private val onOpen: (SocketChannel, ConnectionChangeEvent) -> Unit,
-    private val onClose: (SocketChannel, ConnectionChangeEvent) -> Unit,
-    private val onReceive: (HttpMessage) -> Unit
+    private val eventListener: HttpEventListener,
+    private val logger: Logger
 ) : SimpleChannelInboundHandler<HttpObject>() {
-
-    private val logger = LoggerFactory.getLogger(HttpChannelHandler::class.java)
 
     private var messageBodyBuf: ByteBuf? = null
     private var responseCode: HttpResponseStatus? = null
@@ -81,19 +77,7 @@ class HttpChannelHandler(
             val targetAddress = ctx.channel().localAddress()
             val returnByteArray = ByteArray(messageBodyBuf!!.readableBytes())
             messageBodyBuf!!.readBytes(returnByteArray)
-            if (responseCode != null) {
-                // Client
-                onReceive(
-                    HttpMessage(responseCode!!, returnByteArray,
-                        sourceAddress, targetAddress)
-                )
-            } else {
-                // Server
-                onReceive(
-                    HttpMessage(responseCode!!, returnByteArray,
-                        sourceAddress, targetAddress)
-                )
-            }
+            eventListener.onMessage(HttpMessage(responseCode!!, returnByteArray, sourceAddress, targetAddress))
 
             messageBodyBuf?.release()
             responseCode = null
@@ -112,7 +96,7 @@ class HttpChannelHandler(
             if (it.refCnt() > 0)
                 it.release()
         }
-        onClose(ch as SocketChannel, ConnectionChangeEvent(ch.remoteAddress(), false))
+        eventListener.onClose(HttpConnectionEvent(ch))
         ctx.fireChannelInactive()
     }
 
@@ -122,7 +106,7 @@ class HttpChannelHandler(
                 if (evt.isSuccess) {
                     val ch = ctx.channel()
                     logger.info("Handshake with ${ctx.channel().remoteAddress()} successful")
-                    onOpen(ch as SocketChannel, ConnectionChangeEvent(ch.remoteAddress(), true))
+                    eventListener.onOpen(HttpConnectionEvent(ch))
                 } else {
                     val cause = evt.cause()
                     if (cause is ClosedChannelException) {

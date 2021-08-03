@@ -7,6 +7,8 @@ import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.http.HttpClient
+import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
+import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import org.slf4j.LoggerFactory
 import java.lang.NullPointerException
 import java.net.SocketAddress
@@ -78,14 +80,15 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
             logger.info("Creating new connection to ${target.authority}")
             val client = HttpClient(target, sslConfiguration, sharedEventLoopGroup)
             val connectionLock = CountDownLatch(1)
-            val connectionSub = client.onConnection.subscribe { evt ->
-                if (evt.connected) {
+            val connectionListener = object : HttpEventListener {
+                override fun onOpen(event: HttpConnectionEvent) {
                     connectionLock.countDown()
                 }
             }
+            client.addListener(connectionListener)
             client.start()
             val connected = connectionLock.await(config.acquireTimeout, TimeUnit.MILLISECONDS)
-            connectionSub.unsubscribe()
+            client.removeListener(connectionListener)
             if (!connected) {
                 throw ConnectTimeoutException("Could not acquire connection to ${target.authority} " +
                         "in ${config.acquireTimeout} milliseconds")

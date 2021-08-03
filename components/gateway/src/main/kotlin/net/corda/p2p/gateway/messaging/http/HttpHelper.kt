@@ -67,8 +67,7 @@ class HttpHelper {
 
         /**
          * Extension function which validates an incoming request.
-         * @return an [HttpResponse] containing the status code and potentially an error message in the response body should
-         * there be a need
+         * @return an [HttpResponseStatus] containing the status code
          */
         fun HttpRequest.validate(): HttpResponseStatus {
             try {

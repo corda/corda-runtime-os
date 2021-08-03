@@ -35,24 +35,28 @@ class HttpTest {
     @Test
     fun `simple client POST request`() {
         HttpServer(serverAddress.host, serverAddress.port, sslConfiguration).use { server ->
-            server.onReceive.subscribe {
-                assertEquals(clientMessageContent, String(it.payload))
-                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
-            }
+            server.addListener(object : HttpEventListener {
+                override fun onMessage(message: HttpMessage) {
+                    assertEquals(clientMessageContent, String(message.payload))
+                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
+                }
+            })
             server.start()
             HttpClient(serverAddress, sslConfiguration).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
-                client.onConnection.subscribe {
-                    if (it.connected) {
+                var responseReceived = false
+                val clientListener = object : HttpEventListener {
+                    override fun onOpen(event: HttpConnectionEvent) {
                         client.send(clientMessageContent.toByteArray(Charsets.UTF_8))
                     }
+
+                    override fun onMessage(message: HttpMessage) {
+                        assertEquals(serverResponseContent, String(message.payload))
+                        responseReceived = true
+                        clientReceivedResponses.countDown()
+                    }
                 }
-                var responseReceived = false
-                client.onReceive.subscribe {
-                    assertEquals(serverResponseContent, String(it.payload))
-                    responseReceived = true
-                    clientReceivedResponses.countDown()
-                }
+                client.addListener(clientListener)
                 client.start()
                 clientReceivedResponses.await(5, TimeUnit.SECONDS)
                 assertTrue(responseReceived)
@@ -68,10 +72,12 @@ class HttpTest {
         val times = mutableListOf<Long>()
         val httpServer = HttpServer(serverAddress.host, serverAddress.port, sslConfiguration)
         httpServer.use { server ->
-            server.onReceive.subscribe {
-                assertEquals(clientMessageContent, String(it.payload))
-                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
-            }
+            server.addListener(object : HttpEventListener {
+                override fun onMessage(message: HttpMessage) {
+                    assertEquals(clientMessageContent, String(message.payload))
+                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
+                }
+            })
             server.start()
             repeat(threadNo) {
                 val t = thread {
@@ -80,21 +86,24 @@ class HttpTest {
                     val httpClient = HttpClient(serverAddress, sslConfiguration)
                     val clientReceivedResponses = CountDownLatch(requestNo)
                     httpClient.use {
-                        httpClient.onReceive.subscribe {
-                            assertEquals(serverResponseContent, String(it.payload))
-                            clientReceivedResponses.countDown()
-                        }
-                        httpClient.onConnection.subscribe {
-                            if (it.connected) {
+                        val clientListener = object : HttpEventListener {
+                            override fun onMessage(message: HttpMessage) {
+                                assertEquals(serverResponseContent, String(message.payload))
+                                clientReceivedResponses.countDown()
+                            }
+
+                            override fun onOpen(event: HttpConnectionEvent) {
                                 startTime = Instant.now().toEpochMilli()
                                 repeat(requestNo) {
                                     httpClient.send(clientMessageContent.toByteArray(Charsets.UTF_8))
                                 }
                             }
-                            if (!it.connected) {
+
+                            override fun onClose(event: HttpConnectionEvent) {
                                 endTime = Instant.now().toEpochMilli()
                             }
                         }
+                        httpClient.addListener(clientListener)
                         httpClient.start()
                         clientReceivedResponses.await()
                     }
@@ -115,24 +124,28 @@ class HttpTest {
         val hugePayload = FileInputStream(javaClass.classLoader.getResource("10mb.txt")!!.file).readAllBytes()
 
         HttpServer(serverAddress.host, serverAddress.port, sslConfiguration).use { server ->
-            server.onReceive.subscribe {
-                assert(Arrays.equals(hugePayload, it.payload))
-                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
-            }
+            server.addListener(object : HttpEventListener {
+                override fun onMessage(message: HttpMessage) {
+                    assert(Arrays.equals(hugePayload, message.payload))
+                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
+                }
+            })
             server.start()
             HttpClient(serverAddress, sslConfiguration).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
-                client.onConnection.subscribe {
-                    if (it.connected) {
+                var responseReceived = false
+                val clientListener = object : HttpEventListener {
+                    override fun onOpen(event: HttpConnectionEvent) {
                         client.send(hugePayload)
                     }
+
+                    override fun onMessage(message: HttpMessage) {
+                        assertEquals(serverResponseContent, String(message.payload))
+                        responseReceived = true
+                        clientReceivedResponses.countDown()
+                    }
                 }
-                var responseReceived = false
-                client.onReceive.subscribe {
-                    assertEquals(serverResponseContent, String(it.payload))
-                    responseReceived = true
-                    clientReceivedResponses.countDown()
-                }
+                client.addListener(clientListener)
                 client.start()
                 clientReceivedResponses.await()
                 assertTrue(responseReceived)

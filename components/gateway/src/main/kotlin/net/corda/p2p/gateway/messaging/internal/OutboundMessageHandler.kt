@@ -12,6 +12,7 @@ import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.ConnectionManager
+import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.slf4j.LoggerFactory
@@ -61,24 +62,27 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                 val messagesToRetry = LinkedList<LinkInMessage>()
                 try {
                     val client = connectionPool.acquire(entry.key)
-                    entry.value.forEach { message ->
+                    entry.value.forEach { linkInMessage ->
                         try {
                             val responseBarrier = CountDownLatch(1)
-                            val responseSub = client.onReceive.subscribe { response ->
-                                responseMessageHandler(response)
-                                responseBarrier.countDown()
+                            val responseListener = object : HttpEventListener {
+                                override fun onMessage(message: HttpMessage) {
+                                    responseMessageHandler(message)
+                                    responseBarrier.countDown()
+                                }
                             }
-                            client.send(message.toByteBuffer().array())
+                            client.addListener(responseListener)
+                            client.send(linkInMessage.toByteBuffer().array())
                             if (!responseBarrier.await(connectionPool.config.responseTimeout, TimeUnit.MILLISECONDS)) {
                                 logger.info("Response from ${entry.key} has not arrived in time. Scheduling for re-send")
                                 // If the response has not arrived in the specified time, the message
                                 // is queued for redelivery
-                                messagesToRetry.add(message)
+                                messagesToRetry.add(linkInMessage)
                             }
-                            responseSub.unsubscribe()
+                            client.removeListener(responseListener)
                         } catch (e: IllegalStateException) {
                             logger.warn("Could not send message to target ${entry.key}. Scheduling for re-send", e)
-                            messagesToRetry.add(message)
+                            messagesToRetry.add(linkInMessage)
                         }
                     }
                 } catch (e: ConnectTimeoutException) {
@@ -103,18 +107,21 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
     private fun resend(target: URI, messages: LinkedList<LinkInMessage>) {
         logger.debug("Retrying delivery of message to $target. No of messages to retry ${messages.size}")
         var successCounter = 0
-        messages.forEach { message ->
+        messages.forEach { linkInMessage ->
             try {
                 val client = connectionPool.acquire(target)
                 val responseBarrier = CountDownLatch(1)
-                val responseSub = client.onReceive.subscribe { response ->
-                    responseMessageHandler(response)
-                    successCounter++
-                    responseBarrier.countDown()
+                val responseListener = object : HttpEventListener {
+                    override fun onMessage(message: HttpMessage) {
+                        responseMessageHandler(message)
+                        successCounter++
+                        responseBarrier.countDown()
+                    }
                 }
-                client.send(message.toByteBuffer().array())
+                client.addListener(responseListener)
+                client.send(linkInMessage.toByteBuffer().array())
                 responseBarrier.await(1000, TimeUnit.MILLISECONDS)
-                responseSub.unsubscribe()
+                client.removeListener(responseListener)
             } catch (e: Exception) {
                 logger.warn("Could not re-send message to $target", e)
             } finally {
@@ -129,7 +136,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
      * contain information which then needs to be forwarded to the LinkManager
      */
     private fun responseMessageHandler(message: HttpMessage) {
-        logger.debug("Processing response message from ${message.source} with status $${message.statusCode}")
+        logger.debug("Processing response message from ${message.source} with status ${message.statusCode}")
         if (HttpResponseStatus.OK == message.statusCode) {
             // response messages should have empty payloads unless they are part of the initial session handshake
             if (message.payload.isNotEmpty()) {

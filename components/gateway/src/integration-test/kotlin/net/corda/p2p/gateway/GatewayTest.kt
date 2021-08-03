@@ -12,11 +12,9 @@ import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
-import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.SslConfiguration
-import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.p2p.gateway.messaging.http.HttpServer
+import net.corda.p2p.gateway.messaging.http.*
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import org.junit.jupiter.api.AfterEach
@@ -27,7 +25,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.io.FileInputStream
 import java.net.InetSocketAddress
-import java.net.SocketAddress
 import java.net.URI
 import java.nio.ByteBuffer
 import java.security.KeyStore
@@ -68,26 +65,28 @@ class GatewayTest {
     @Timeout(30)
     fun `http client to gateway`() {
         val serverAddress = URI.create("http://localhost:10000")
-        val message = LinkInMessage(authenticatedP2PMessage(String()))
+        val linkInMessage = LinkInMessage(authenticatedP2PMessage(String()))
         Gateway(GatewayConfiguration(serverAddress.host, serverAddress.port, sslConfiguration),
                 SubscriptionFactoryStub(topicServiceAlice!!),
                 PublisherFactoryStub(topicServiceAlice!!)
         ).use {
             it.start()
             HttpClient(serverAddress, sslConfiguration).use { client->
-                client.start()
                 val responseReceived = CountDownLatch(1)
-                client.onConnection.subscribe { evt ->
-                    if (evt.connected) {
-                        client.send(message.toByteBuffer().array())
+                val clientListener = object : HttpEventListener {
+                    override fun onOpen(event: HttpConnectionEvent) {
+                        client.send(linkInMessage.toByteBuffer().array())
+                    }
+
+                    override fun onMessage(message: HttpMessage) {
+                        assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port), message.source)
+                        assertEquals(HttpResponseStatus.OK, message.statusCode)
+                        assertTrue(message.payload.isEmpty())
+                        responseReceived.countDown()
                     }
                 }
-                client.onReceive.subscribe { msg ->
-                    assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port) as SocketAddress, msg.source)
-                    assertEquals(HttpResponseStatus.OK, msg.statusCode)
-                    assertTrue(msg.payload.isEmpty())
-                    responseReceived.countDown()
-                }
+                client.addListener(clientListener)
+                client.start()
                 responseReceived.await()
             }
         }
@@ -98,7 +97,7 @@ class GatewayTest {
         val receivedMessage = publishedRecords.first().record.value
         assertTrue(receivedMessage is LinkInMessage)
         val payload = (receivedMessage as LinkInMessage).payload as AuthenticatedDataMessage
-        assertEquals(message.payload, payload)
+        assertEquals(linkInMessage.payload, payload)
     }
 
 
@@ -116,18 +115,20 @@ class GatewayTest {
             val responseReceived = CountDownLatch(clientNumber)
             repeat(clientNumber) { index ->
                 val client = HttpClient(serverAddress, sslConfiguration, threadPool)
-                client.onConnection.subscribe { evt ->
-                    if (evt.connected) {
+                val clientListener = object : HttpEventListener {
+                    override fun onOpen(event: HttpConnectionEvent) {
                         val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-${index + 1}"))
                         client.send(p2pOutMessage.toByteBuffer().array())
                     }
+
+                    override fun onMessage(message: HttpMessage) {
+                        assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port), message.source)
+                        assertEquals(HttpResponseStatus.OK, message.statusCode)
+                        assertTrue(message.payload.isEmpty())
+                        responseReceived.countDown()
+                    }
                 }
-                client.onReceive.subscribe { msg ->
-                    assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port) as SocketAddress, msg.source)
-                    assertEquals(HttpResponseStatus.OK, msg.statusCode)
-                    assertTrue(msg.payload.isEmpty())
-                    responseReceived.countDown()
-                }
+                client.addListener(clientListener)
                 client.start()
                 clients.add(client)
             }
@@ -166,12 +167,14 @@ class GatewayTest {
             }
             val serverURI = URI.create(serverAddresses[id])
             servers.add(HttpServer(serverURI.host, serverURI.port, sslConfiguration).also {
-                it.onReceive.subscribe { rcv ->
-                    val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(rcv.payload))
-                    assertEquals("Target-${serverAddresses[id]}", String((p2pMessage.payload as AuthenticatedDataMessage).payload.array()))
-                    it.write(HttpResponseStatus.OK, ByteArray(0), rcv.source)
-                    deliveryLatch.countDown()
-                }
+                it.addListener(object : HttpEventListener {
+                    override fun onMessage(message: HttpMessage) {
+                        val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
+                        assertEquals("Target-${serverAddresses[id]}", String((p2pMessage.payload as AuthenticatedDataMessage).payload.array()))
+                        it.write(HttpResponseStatus.OK, ByteArray(0), message.source)
+                        deliveryLatch.countDown()
+                    }
+                })
                 it.start()
             })
         }

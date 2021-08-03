@@ -9,18 +9,14 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.HttpClientCodec
-import io.netty.handler.codec.http.HttpContentDecompressor
-import io.netty.handler.logging.LogLevel
-import io.netty.handler.logging.LoggingHandler
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.slf4j.LoggerFactory
-import rx.Observable
-import rx.subjects.PublishSubject
 import java.lang.IllegalStateException
 import java.net.URI
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509CertSelector
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.CertPathTrustManagerParameters
 import javax.net.ssl.TrustManagerFactory
@@ -34,18 +30,13 @@ import kotlin.concurrent.withLock
  * response body)
  * The client will never close a connection. It is the responsibility of the upstream services to decide when to close a connection.
  *
- * The client provides two observables [onReceive] and [onConnection] which upstream services can subscribe to receive
- * updates on important events.
- *
  * @param destination the target URI
  * @param sslConfiguration the configuration to be used for the one-way TLS handshake
  * @param sharedThreadPool optional thread pool
- * @param traceLogging optional setting to enable Netty logging inside the channel pipeline. Should be set to *true* only when debugging
  */
 class HttpClient(private val destination: URI,
                  private val sslConfiguration: SslConfiguration,
-                 private val sharedThreadPool: EventLoopGroup? = null,
-                 private val traceLogging: Boolean = false) : LifeCycle {
+                 private val sharedThreadPool: EventLoopGroup? = null) : LifeCycle, HttpEventListener {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HttpClient::class.java)
@@ -64,13 +55,7 @@ class HttpClient(private val destination: URI,
     override val isRunning: Boolean
         get() = started
 
-    private val _onReceive = PublishSubject.create<HttpMessage>().toSerialized()
-    val onReceive: Observable<HttpMessage>
-        get() = _onReceive
-
-    private val _onConnection = PublishSubject.create<ConnectionChangeEvent>().toSerialized()
-    val onConnection: Observable<ConnectionChangeEvent>
-        get() = _onConnection
+    private val eventListeners = CopyOnWriteArrayList<HttpEventListener>()
 
     private val connectListener = ChannelFutureListener { future ->
         if (!future.isSuccess) {
@@ -120,6 +105,17 @@ class HttpClient(private val destination: URI,
     }
 
     /**
+     * Adds an [HttpEventListener] which upstream services can provide to receive updates on important events.
+     */
+    fun addListener(eventListener: HttpEventListener) {
+        eventListeners.add(eventListener)
+    }
+
+    fun removeListener(eventListener: HttpEventListener) {
+        eventListeners.remove(eventListener)
+    }
+
+    /**
      * Creates and sends a POST request. The body content type is JSON and will contain the [message].
      * @param message the bytes payload to be sent
      * @throws IllegalStateException if the connection is down
@@ -152,9 +148,19 @@ class HttpClient(private val destination: URI,
         return channel?.let { channel.isOpen && channel.isActive } ?: false
     }
 
+    override fun onOpen(event: HttpConnectionEvent) {
+        eventListeners.forEach { it.onOpen(event) }
+    }
+
+    override fun onClose(event: HttpConnectionEvent) {
+        eventListeners.forEach { it.onClose(event) }
+    }
+
+    override fun onMessage(message: HttpMessage) {
+        eventListeners.forEach { it.onMessage(message) }
+    }
+
     private class ClientChannelInitializer(val parent: HttpClient) : ChannelInitializer<SocketChannel>() {
-        @Volatile
-        private lateinit var httpChannelHandler: HttpChannelHandler
         private val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
 
         init {
@@ -168,15 +174,8 @@ class HttpClient(private val destination: URI,
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
             pipeline.addLast("sslHandler", createClientSslHandler(parent.destination, trustManagerFactory))
-            if (parent.traceLogging) pipeline.addLast("logger", LoggingHandler(LogLevel.INFO))
             pipeline.addLast(HttpClientCodec())
-            pipeline.addLast(HttpContentDecompressor())
-            httpChannelHandler = HttpChannelHandler(
-                onOpen = { _, change -> parent._onConnection.onNext(change) },
-                onClose = { _, change -> parent._onConnection.onNext(change) },
-                onReceive = { rcv -> parent._onReceive.onNext(rcv) }
-            )
-            pipeline.addLast(httpChannelHandler)
+            pipeline.addLast(HttpChannelHandler(parent, logger))
         }
     }
 }
