@@ -1,9 +1,9 @@
 package net.corda.messaging.kafka.subscription.consumer.listener
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.apache.kafka.clients.consumer.Consumer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

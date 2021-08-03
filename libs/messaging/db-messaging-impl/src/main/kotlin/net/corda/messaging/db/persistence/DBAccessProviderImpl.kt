@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import net.corda.messaging.db.persistence.DbSchema.CommittedOffsetsTable.Companion.COMMITTED_OFFSET_COLUMN_NAME
 import net.corda.messaging.db.persistence.DbSchema.CommittedOffsetsTable.Companion.CONSUMER_GROUP_COLUMN_NAME
+import net.corda.messaging.db.persistence.DbSchema.CommittedOffsetsTable.Companion.OFFSET_TIMESTAMP_COLUMN_NAME
 import net.corda.messaging.db.persistence.DbSchema.RecordsTable.Companion.PARTITION_COLUMN_NAME
 import net.corda.messaging.db.persistence.DbSchema.RecordsTable.Companion.RECORD_KEY_COLUMN_NAME
 import net.corda.messaging.db.persistence.DbSchema.RecordsTable.Companion.RECORD_OFFSET_COLUMN_NAME
@@ -33,6 +34,7 @@ import kotlin.concurrent.withLock
 /**
  * @property threadPoolSize the size of the thread pool size used to execute queries in parallel, when needed
  *                          (i.e. for requests that perform multiple queries to the database).
+ * @property maxConnectionPoolSize the max size of the database connection pool.
  */
 @Suppress("TooManyFunctions", "LongParameterList")
 class DBAccessProviderImpl(private val jdbcUrl: String,
@@ -40,7 +42,8 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
                            private val password: String,
                            private val dbType: DBType,
                            private val threadPoolSize: Int,
-                           private val dbTimeout: Duration = 5.seconds): DBAccessProvider {
+                           private val dbTimeout: Duration = 5.seconds,
+                           private val maxConnectionPoolSize: Int = 10): DBAccessProvider {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -55,8 +58,8 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
 
     private val commitOffsetStmt = "insert into ${DbSchema.CommittedOffsetsTable.TABLE_NAME} " +
             "(${DbSchema.CommittedOffsetsTable.TOPIC_COLUMN_NAME}, $CONSUMER_GROUP_COLUMN_NAME, " +
-            "${DbSchema.CommittedOffsetsTable.PARTITION_COLUMN_NAME}, $COMMITTED_OFFSET_COLUMN_NAME)" +
-            "values (?, ?, ?, ?)"
+            "${DbSchema.CommittedOffsetsTable.PARTITION_COLUMN_NAME}, $COMMITTED_OFFSET_COLUMN_NAME, ${OFFSET_TIMESTAMP_COLUMN_NAME}) " +
+            "values (?, ?, ?, ?, ?)"
 
     private val maxCommittedOffsetsStmt =
             "select ${DbSchema.CommittedOffsetsTable.PARTITION_COLUMN_NAME}, max($COMMITTED_OFFSET_COLUMN_NAME) " +
@@ -117,6 +120,14 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
             "(${DbSchema.TopicsTable.TOPIC_COLUMN_NAME}, ${DbSchema.TopicsTable.PARTITIONS_COLUMN_NAME}) " +
             "values (?, ?)"
 
+    private val deleteRecordsStmt = "delete from ${DbSchema.RecordsTable.TABLE_NAME} " +
+            "where ${DbSchema.RecordsTable.TOPIC_COLUMN_NAME} = ? and " +
+            "$RECORD_TIMESTAMP_COLUMN_NAME < ?"
+
+    private val deleteOffsetsStmt = "delete from ${DbSchema.CommittedOffsetsTable.TABLE_NAME} " +
+            "where ${DbSchema.CommittedOffsetsTable.TOPIC_COLUMN_NAME} = ? and " +
+            "$OFFSET_TIMESTAMP_COLUMN_NAME < ?"
+
     override val isRunning: Boolean
         get() = running
 
@@ -128,6 +139,7 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
                 hikariConfig.username = username
                 hikariConfig.password = password
                 hikariConfig.isAutoCommit = false
+                hikariConfig.maximumPoolSize = maxConnectionPoolSize
                 hikariDatasource = HikariDataSource(hikariConfig)
                 executor = Executors.newFixedThreadPool(threadPoolSize)
                 running = true
@@ -337,6 +349,26 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
             { postTxFn(records) })
     }
 
+    override fun deleteRecordsOlderThan(topic: String, timestamp: Instant) {
+        executeWithErrorHandling({
+            val stmt = it.prepareStatement(deleteRecordsStmt)
+            stmt.setString(1, topic)
+            stmt.setTimestamp(2, Timestamp.from(timestamp))
+
+            stmt.execute()
+        }, "clean up records older than $timestamp")
+    }
+
+    override fun deleteOffsetsOlderThan(topic: String, timestamp: Instant) {
+        executeWithErrorHandling({
+            val stmt = it.prepareStatement(deleteOffsetsStmt)
+            stmt.setString(1, topic)
+            stmt.setTimestamp(2, Timestamp.from(timestamp))
+
+            stmt.execute()
+        }, "clean up offsets older than $timestamp")
+    }
+
     private fun writeOffsets(topic: String, consumerGroup: String, offsetsPerPartition: Map<Int, Long>, connection: Connection) {
         offsetsPerPartition.forEach { (partition, offset) ->
             val stmt = connection.prepareStatement(commitOffsetStmt)
@@ -344,6 +376,7 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
             stmt.setString(2, consumerGroup)
             stmt.setInt(3, partition)
             stmt.setLong(4, offset)
+            stmt.setTimestamp(5, Timestamp.from(Instant.now()))
 
             try {
                 stmt.execute()

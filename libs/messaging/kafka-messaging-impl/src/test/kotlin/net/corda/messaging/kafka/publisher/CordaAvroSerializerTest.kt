@@ -1,8 +1,8 @@
 package net.corda.messaging.kafka.publisher
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -28,5 +28,15 @@ class CordaAvroSerializerTest {
     @Test
     fun testNullValue() {
         assertThat(cordaAvroSerializer.serialize(topic, null) == null)
+    }
+
+    @Test
+    fun testStringValue() {
+        assertThat(cordaAvroSerializer.serialize(topic, "string") != null)
+    }
+
+    @Test
+    fun testByteArrayValue() {
+        assertThat(cordaAvroSerializer.serialize(topic, "bytearray".toByteArray()) != null)
     }
 }

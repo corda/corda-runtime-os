@@ -1,6 +1,5 @@
 package net.corda.messaging.kafka.subscription.factory
 
-import com.nhaarman.mockito_kotlin.mock
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -9,6 +8,7 @@ import net.corda.schema.registry.AvroSchemaRegistry
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
 
 class KafkaSubscriptionFactoryTest {
 

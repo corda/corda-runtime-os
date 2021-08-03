@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "FlowMessageMarker",
+  "namespace": "net.corda.p2p.markers",
+  "fields": [
+    {
+      "name": "marker",
+      "type": [
+        "net.corda.p2p.markers.LinkManagerReceivedMarker",
+        "net.corda.p2p.markers.LinkManagerSentMarker",
+        "net.corda.p2p.markers.ApplicationProcessedMarker",
+        "net.corda.p2p.markers.ApplicationRejectedStaleMarker",
+        "net.corda.p2p.markers.GatewaySentMarker",
+        "net.corda.p2p.markers.TtlExpiredMarker"
+      ]
+    }
+  ],
+  "doc": "Used by the sending side to track the end to end delivery of a {@link net.corda.p2p.FlowMessage}. When processing a FlowMessage a component can persist a FlowMessageMarker to communicate the status to other components."
+}
