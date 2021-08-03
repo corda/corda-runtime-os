@@ -67,28 +67,33 @@ class EventLogSubscriptionIntegrationTest {
         )
     }
 
-    val publisher by lazy {
+    private fun publish(vararg records: Record<String, Event>) {
         val publisherConfig = PublisherConfig(clientId)
-        publisherFactory.createPublisher(publisherConfig)
+        publisherFactory.createPublisher(publisherConfig).use {
+            it.publish(records.toList())
+        }
     }
 
     @Test
     fun `test events log subscription`() {
         assertThat(subscription.isRunning).isFalse
 
+        // Start the subscription
         subscription.start()
         assertThat(subscription.isRunning).isTrue
         assertThat(processed).isEmpty()
+
+        // Publish a few events
         waitForProcessed.set(CountDownLatch(3))
-        publisher.publish(
-            listOf(
-                Record(topic, "key1", Event("one", 1)),
-                Record("another.topic", "key4", Event("four", 4)),
-                Record(topic, "key2", Event("two", 2)),
-                Record(topic, "key3", Event("three", 3)),
-            )
+        publish(
+            Record(topic, "key1", Event("one", 1)),
+            Record("another.topic", "key4", Event("four", 4)),
+            Record(topic, "key2", Event("two", 2)),
+            Record(topic, "key3", Event("three", 3)),
         )
-        waitForProcessed.getAndSet(null).await(10, TimeUnit.SECONDS)
+
+        // Wait for the events
+        waitForProcessed.get().await(1, TimeUnit.SECONDS)
         assertThat(processed).contains(
             EventLogRecord(
                 topic = topic,
@@ -112,9 +117,37 @@ class EventLogSubscriptionIntegrationTest {
                 offset = 2
             ),
         ).hasSize(3)
-
         assertThat(assigned).contains(8, 9, 0)
 
+        // Stop the subscription
+        subscription.stop()
+        assertThat(subscription.isRunning).isFalse
+
+        // Publish an event
+        processed.clear()
+        publish(Record(topic, "key4", Event("four", 4)),)
+
+        // Verify it was not processed
+        Thread.sleep(1000)
+        assertThat(processed).isEmpty()
+
+        // Restart the subscription
+        subscription.start()
+        assertThat(subscription.isRunning).isTrue
+        assertThat(processed).isEmpty()
+
+        // Publish a few events
+        waitForProcessed.set(CountDownLatch(2))
+        publish(
+            Record(topic, "key5", Event("five", 5)),
+            Record(topic, "key6", Event("six", 6)),
+        )
+
+        // Wait for the events
+        waitForProcessed.get().await(1, TimeUnit.SECONDS)
+        assertThat(processed).hasSize(2)
+
+        // Stop the subscriber
         subscription.stop()
         assertThat(subscription.isRunning).isFalse
     }
