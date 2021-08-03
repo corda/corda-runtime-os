@@ -370,30 +370,34 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
     }
 
     private fun writeOffsets(topic: String, consumerGroup: String, offsetsPerPartition: Map<Int, Long>, connection: Connection) {
+        val stmt = connection.prepareStatement(commitOffsetStmt)
+
         offsetsPerPartition.forEach { (partition, offset) ->
-            val stmt = connection.prepareStatement(commitOffsetStmt)
             stmt.setString(1, topic)
             stmt.setString(2, consumerGroup)
             stmt.setInt(3, partition)
             stmt.setLong(4, offset)
             stmt.setTimestamp(5, Timestamp.from(Instant.now()))
 
-            try {
-                stmt.execute()
-            } catch (e: SQLException) {
-                if (isPrimaryKeyViolation(e)) {
-                    log.warn("Attempted to write offset that has already been committed", e)
-                    throw OffsetsAlreadyCommittedException()
-                }
+            stmt.addBatch()
+        }
 
-                throw e
+        try {
+            stmt.executeBatch()
+        } catch (e: SQLException) {
+            if (isPrimaryKeyViolation(e)) {
+                log.warn("Attempted to write offset that has already been committed", e)
+                throw OffsetsAlreadyCommittedException()
             }
+
+            throw e
         }
     }
 
     private fun writeRecords(records: List<RecordDbEntry>, connection: Connection) {
+        val stmt = connection.prepareStatement(insertRecordStatement)
+
         records.forEach { record ->
-            val stmt = connection.prepareStatement(insertRecordStatement)
             stmt.setString(1, record.topic)
             stmt.setInt(2, record.partition)
             stmt.setLong(3, record.offset)
@@ -405,8 +409,10 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
             }
             stmt.setTimestamp(6, Timestamp.from(Instant.now()))
 
-            stmt.execute()
+            stmt.addBatch()
         }
+
+        stmt.executeBatch()
     }
 
     /**
@@ -455,8 +461,10 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
     private fun isPrimaryKeyViolation(e: SQLException): Boolean {
         return e is SQLIntegrityConstraintViolationException ||
                 (e.message != null &&
+                        e.message!!.contains("Unique index or primary key violation") || //h2
                         e.message!!.contains("duplicate key value violates unique constraint") || // postgres
-                        e.message!!.contains("Violation of PRIMARY KEY constraint") // SQL Server
+                        e.message!!.contains("Violation of PRIMARY KEY constraint") || // SQL Server
+                        e.message!!.contains(Regex("unique constraint .* violated")) //Oracle
                 )
     }
 

@@ -233,7 +233,7 @@ class KafkaDurableSubscriptionImplTest {
         verify(producerBuilder, times(1)).createProducer(any())
         verify(mockCordaProducer, times(1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
-        verify(mockCordaProducer, times(0)).sendRecordOffsetToTransaction(any(), anyOrNull())
+        verify(mockCordaProducer, times(0)).sendRecordOffsetsToTransaction(any(), anyOrNull())
         verify(mockCordaProducer, times(0)).tryCommitTransaction()
     }
 }
