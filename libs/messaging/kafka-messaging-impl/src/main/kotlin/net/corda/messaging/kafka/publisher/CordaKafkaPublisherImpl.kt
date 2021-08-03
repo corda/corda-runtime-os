@@ -135,11 +135,8 @@ class CordaKafkaPublisherImpl(
      * @return future set to true if transaction was successful.
      */
     private fun publishTransaction(records: List<Record<*, *>>): CompletableFuture<Unit> {
-        return executeInTransaction { future ->
-            cordaKafkaProducer.beginTransaction()
-            cordaKafkaProducer.sendRecords(records)
-            cordaKafkaProducer.tryCommitTransaction()
-            future.complete(Unit)
+        return executeInTransaction {
+            it.sendRecords(records)
         }
     }
 
@@ -147,20 +144,20 @@ class CordaKafkaPublisherImpl(
      * Same as [publishTransaction] but publishing records to specific partitions.
      */
     private fun publishTransactionWithPartitions(recordsWithPartitions: List<Pair<Int, Record<*, *>>>): CompletableFuture<Unit> {
-        return executeInTransaction { future ->
-            cordaKafkaProducer.beginTransaction()
-            cordaKafkaProducer.sendRecordsToPartitions(recordsWithPartitions)
-            cordaKafkaProducer.tryCommitTransaction()
-            future.complete(Unit)
+        return executeInTransaction {
+            it.sendRecordsToPartitions(recordsWithPartitions)
         }
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun executeInTransaction(block: (CompletableFuture<Unit>) -> Unit): CompletableFuture<Unit> {
+    private fun executeInTransaction(block: (CordaKafkaProducer) -> Unit): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
 
         try {
-            block(future)
+            cordaKafkaProducer.beginTransaction()
+            block(cordaKafkaProducer)
+            cordaKafkaProducer.tryCommitTransaction()
+            future.complete(Unit)
         } catch (ex: Exception) {
             when (ex) {
                 is CordaMessageAPIIntermittentException -> {
