@@ -5,15 +5,17 @@
  */
 package net.corda.data.flow;
 
-import org.apache.avro.message.BinaryMessageDecoder;
-import org.apache.avro.message.BinaryMessageEncoder;
-import org.apache.avro.message.SchemaStore;
+import org.apache.avro.generic.GenericArray;
 import org.apache.avro.specific.SpecificData;
+import org.apache.avro.util.Utf8;
+import org.apache.avro.message.BinaryMessageEncoder;
+import org.apache.avro.message.BinaryMessageDecoder;
+import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 7234427434928271975L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"RPCFlowResult\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"result\",\"type\":[\"null\",\"bytes\"]},{\"name\":\"CPIIdentifier\",\"type\":{\"type\":\"record\",\"name\":\"SecureHash\",\"namespace\":\"net.corda.data.crypto\",\"fields\":[{\"name\":\"algorithm\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"serverHash\",\"type\":\"bytes\"}]}},{\"name\":\"error\",\"type\":[\"null\",{\"type\":\"record\",\"name\":\"FlowError\",\"fields\":[{\"name\":\"errorType\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}],\"doc\":\"The flow exception (if any) that caused an error\"}]}");
+  private static final long serialVersionUID = -8094825451810369865L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"RPCFlowResult\",\"namespace\":\"net.corda.data.flow\",\"fields\":[{\"name\":\"clientId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"result\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}]},{\"name\":\"CPIIdentifier\",\"type\":{\"type\":\"record\",\"name\":\"SecureHash\",\"namespace\":\"net.corda.data.crypto\",\"fields\":[{\"name\":\"algorithm\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"serverHash\",\"type\":\"bytes\"}]}},{\"name\":\"error\",\"type\":[\"null\",{\"type\":\"record\",\"name\":\"FlowError\",\"fields\":[{\"name\":\"errorType\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"errorMessage\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}],\"doc\":\"The flow exception (if any) that caused an error\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -71,7 +73,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
 
    private java.lang.String clientId;
    private java.lang.String flowName;
-   private java.nio.ByteBuffer result;
+   private java.lang.String result;
    private net.corda.data.crypto.SecureHash CPIIdentifier;
   /** The flow exception (if any) that caused an error */
    private net.corda.data.flow.FlowError error;
@@ -91,7 +93,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
    * @param CPIIdentifier The new value for CPIIdentifier
    * @param error The flow exception (if any) that caused an error
    */
-  public RPCFlowResult(java.lang.String clientId, java.lang.String flowName, java.nio.ByteBuffer result, net.corda.data.crypto.SecureHash CPIIdentifier, net.corda.data.flow.FlowError error) {
+  public RPCFlowResult(java.lang.String clientId, java.lang.String flowName, java.lang.String result, net.corda.data.crypto.SecureHash CPIIdentifier, net.corda.data.flow.FlowError error) {
     this.clientId = clientId;
     this.flowName = flowName;
     this.result = result;
@@ -119,7 +121,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
     switch (field$) {
     case 0: clientId = value$ != null ? value$.toString() : null; break;
     case 1: flowName = value$ != null ? value$.toString() : null; break;
-    case 2: result = (java.nio.ByteBuffer)value$; break;
+    case 2: result = value$ != null ? value$.toString() : null; break;
     case 3: CPIIdentifier = (net.corda.data.crypto.SecureHash)value$; break;
     case 4: error = (net.corda.data.flow.FlowError)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
@@ -164,7 +166,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
    * Gets the value of the 'result' field.
    * @return The value of the 'result' field.
    */
-  public java.nio.ByteBuffer getResult() {
+  public java.lang.String getResult() {
     return result;
   }
 
@@ -173,7 +175,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
    * Sets the value of the 'result' field.
    * @param value the value to set.
    */
-  public void setResult(java.nio.ByteBuffer value) {
+  public void setResult(java.lang.String value) {
     this.result = value;
   }
 
@@ -255,7 +257,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
 
     private java.lang.String clientId;
     private java.lang.String flowName;
-    private java.nio.ByteBuffer result;
+    private java.lang.String result;
     private net.corda.data.crypto.SecureHash CPIIdentifier;
     private net.corda.data.crypto.SecureHash.Builder CPIIdentifierBuilder;
     /** The flow exception (if any) that caused an error */
@@ -415,7 +417,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * Gets the value of the 'result' field.
       * @return The value.
       */
-    public java.nio.ByteBuffer getResult() {
+    public java.lang.String getResult() {
       return result;
     }
 
@@ -425,7 +427,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       * @param value The value of 'result'.
       * @return This builder.
       */
-    public net.corda.data.flow.RPCFlowResult.Builder setResult(java.nio.ByteBuffer value) {
+    public net.corda.data.flow.RPCFlowResult.Builder setResult(java.lang.String value) {
       validate(fields()[2], value);
       this.result = value;
       fieldSetFlags()[2] = true;
@@ -617,7 +619,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
         RPCFlowResult record = new RPCFlowResult();
         record.clientId = fieldSetFlags()[0] ? this.clientId : (java.lang.String) defaultValue(fields()[0]);
         record.flowName = fieldSetFlags()[1] ? this.flowName : (java.lang.String) defaultValue(fields()[1]);
-        record.result = fieldSetFlags()[2] ? this.result : (java.nio.ByteBuffer) defaultValue(fields()[2]);
+        record.result = fieldSetFlags()[2] ? this.result : (java.lang.String) defaultValue(fields()[2]);
         if (CPIIdentifierBuilder != null) {
           try {
             record.CPIIdentifier = this.CPIIdentifierBuilder.build();
@@ -679,7 +681,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
       out.writeNull();
     } else {
       out.writeIndex(1);
-      out.writeBytes(this.result);
+      out.writeString(this.result);
     }
 
     this.CPIIdentifier.customEncode(out);
@@ -707,7 +709,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
         in.readNull();
         this.result = null;
       } else {
-        this.result = in.readBytes(this.result);
+        this.result = in.readString();
       }
 
       if (this.CPIIdentifier == null) {
@@ -741,7 +743,7 @@ public class RPCFlowResult extends org.apache.avro.specific.SpecificRecordBase i
             in.readNull();
             this.result = null;
           } else {
-            this.result = in.readBytes(this.result);
+            this.result = in.readString();
           }
           break;
 
