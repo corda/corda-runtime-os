@@ -11,7 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.util.concurrent.atomic.AtomicInteger
 
-class EventLogSubscriptionThreadTest {
+class EventLogSubscriptionMainLoopTest {
     private val eventsSent = slot< List<EventLogRecord<String, SubscriptionConfig>>>()
     private val eventLogSubscription = mockk<EventLogSubscription<String, SubscriptionConfig>>(relaxed = true) {
         every { topic } returns "topic"
@@ -21,7 +21,7 @@ class EventLogSubscriptionThreadTest {
         every { processor.onNext(capture(eventsSent)) } returns emptyList()
     }
     private val thread = mockk<Thread>(relaxed = true)
-    private val testObject = EventLogSubscriptionThread(eventLogSubscription, { thread })
+    private val testObject = EventLogSubscriptionMainLoop(eventLogSubscription, { thread })
 
     @Test
     fun `start set the thread properties and start it`() {

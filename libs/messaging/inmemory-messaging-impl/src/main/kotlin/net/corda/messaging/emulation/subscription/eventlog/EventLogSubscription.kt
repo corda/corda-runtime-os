@@ -18,15 +18,17 @@ import kotlin.concurrent.withLock
  * @property processor - The processor to feed the event record to.
  * @property partitionAssignmentListener - Optional listener to partition assignments.
  * @property topicService - A topic service to supply events records.
- * @property threadFactory - a factory to create a subscription for a single lifecycle.
+ * @property mainLoopFactory - a factory to create a subscription for a single lifecycle.
  */
 class EventLogSubscription<K : Any, V : Any>(
     internal val config: InMemoryEventLogSubscriptionConfig,
     internal val processor: EventLogProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?,
     internal val topicService: TopicService,
-    private val threadFactory:
-        (EventLogSubscription<K, V>) -> EventLogSubscriptionThread<K, V> = { EventLogSubscriptionThread(it) }
+    private val mainLoopFactory:
+        (EventLogSubscription<K, V>) -> EventLogSubscriptionMainLoop<K, V> = {
+            EventLogSubscriptionMainLoop(it)
+        }
 ) : Subscription<K, V> {
 
     companion object {
@@ -44,7 +46,7 @@ class EventLogSubscription<K : Any, V : Any>(
         Partitioner(partitionAssignmentListener, config.partitionSize)
     }
 
-    private val currentLoop = AtomicReference<EventLogSubscriptionThread<K, V>>(null)
+    private val currentLoop = AtomicReference<EventLogSubscriptionMainLoop<K, V>>(null)
     private val lock = ReentrantLock()
 
     override fun stop() {
@@ -58,7 +60,7 @@ class EventLogSubscription<K : Any, V : Any>(
         logger.debug { "Starting event log subscription with config: ${config.subscriptionConfig}" }
         lock.withLock {
             if (currentLoop.get() == null) {
-                val newThread = threadFactory(this)
+                val newThread = mainLoopFactory(this)
                 currentLoop.set(newThread)
                 newThread.start()
             }

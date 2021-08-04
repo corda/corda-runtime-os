@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @property subscription - the detail of the subscription.
  * @property threadFactory - A factory to create threads.
  */
-class EventLogSubscriptionThread<K : Any, V : Any>(
+class EventLogSubscriptionMainLoop<K : Any, V : Any>(
     private val subscription: EventLogSubscription<K, V>,
     private val threadFactory: (Runnable) -> Thread = { Thread(it) }
 ) : Runnable {
