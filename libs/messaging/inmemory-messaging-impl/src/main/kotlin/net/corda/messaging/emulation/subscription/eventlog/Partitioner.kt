@@ -5,6 +5,12 @@ import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
+/**
+ * A utility to assign partition to record.
+ *
+ * @property partitionAssignmentListener - Optional listener to any new partition.
+ * @property partitionCounts - the number of partitions.
+ */
 internal class Partitioner(
     private val partitionAssignmentListener: PartitionAssignmentListener?,
     private val partitionCounts: Int

@@ -5,6 +5,12 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.properties.InMemProperties
 import net.corda.messaging.emulation.properties.getIntOrDefault
 
+/**
+ * Configuration for the in memory event log subscription.
+ *
+ * @property subscriptionConfig - The subscription configuration
+ * @property nodeConfig - Any specific node configuration (to overwrite the default partition size and poll size).
+ */
 class InMemoryEventLogSubscriptionConfig(
     internal val subscriptionConfig: SubscriptionConfig,
     private val nodeConfig: Config

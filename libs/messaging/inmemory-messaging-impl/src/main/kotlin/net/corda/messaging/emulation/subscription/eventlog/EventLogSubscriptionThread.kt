@@ -7,6 +7,12 @@ import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import java.util.concurrent.atomic.AtomicBoolean
 
+/**
+ * A single lifecycle of the EventLogSubscription. This can not be rerun.
+ *
+ * @property subscription - the detail of the subscription.
+ * @property threadFactory - A factory to create threads.
+ */
 class EventLogSubscriptionThread<K : Any, V : Any>(
     private val subscription: EventLogSubscription<K, V>,
     private val threadFactory: (Runnable) -> Thread = { Thread(it) }
