@@ -1,7 +1,5 @@
 package net.corda.messaging.db.persistence
 
-import com.nhaarman.mockito_kotlin.anyOrNull
-import com.nhaarman.mockito_kotlin.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
@@ -11,6 +9,8 @@ import org.mockito.Mockito.`when`
 import org.mockito.Mockito.anyString
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.verify
 import java.lang.RuntimeException
 
 class DbAccessProviderCachedTest {
