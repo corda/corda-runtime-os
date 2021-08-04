@@ -50,6 +50,9 @@ class LifecycleCoordinatorImpl(
          * The executor on which events are processed. Note that all events should be processed on an executor thread,
          * but they may be posted from any thread. Different events may be processed on different executor threads.
          *
+         * The coordinator guarantees that the event processing task is only scheduled once. This means that event
+         * processing is effectively single threaded in the sense that no event processing will happen concurrently.
+         *
          * By sharing a threadpool among coordinators, it should be possible to reduce resource usage when in a stable
          * state.
          */
@@ -68,7 +71,7 @@ class LifecycleCoordinatorImpl(
     /**
      * The processor for this coordinator.
      */
-    private val processor = LifecycleProcessor(lifecycleState, lifeCycleProcessor)
+    private val processor = LifecycleProcessor(name, lifecycleState, lifeCycleProcessor)
 
     /**
      * `true` if [processEvents] is executing. This is used to ensure only one attempt at processing the event queue is
@@ -91,7 +94,7 @@ class LifecycleCoordinatorImpl(
         val shutdown = !processor.processEvents(this, ::createTimer)
         isScheduled.set(false)
         if (shutdown) {
-            logger.warn("Unhandled error event! Life-Cycle coordinator stops.")
+            logger.warn("$name Lifecycle: An unhandled error was encountered. Stopping component.")
             stop()
         } else {
             scheduleIfRequired()

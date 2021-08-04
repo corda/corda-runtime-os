@@ -1,7 +1,13 @@
 package net.corda.lifecycle.impl
 
-import net.corda.lifecycle.*
-import org.junit.jupiter.api.Assertions.*
+import net.corda.lifecycle.ErrorEvent
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.TimerEvent
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import java.util.concurrent.Delayed
@@ -10,12 +16,16 @@ import java.util.concurrent.TimeUnit
 
 class LifecycleProcessorTest {
 
+    companion object {
+        private const val NAME = "Lifecycle-Processor-Test"
+    }
+
     @Test
     fun `events are processed in delivery order`() {
         val state = LifecycleStateManager(5)
         val expectedEvents = listOf(TestEvent1, TestEvent2, TestEvent3)
         val processedEvents = mutableListOf<LifecycleEvent>()
-        val processor = LifecycleProcessor(state) { event, _ ->
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
             processedEvents.add(event)
         }
         state.isRunning = true
@@ -31,7 +41,7 @@ class LifecycleProcessorTest {
         val state = LifecycleStateManager(5)
         var runningOnStartDelivery = false
         var notRunningOnStopDelivery = false
-        val processor = LifecycleProcessor(state) { event, _ ->
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
             when (event) {
                 is StartEvent -> {
                     if (state.isRunning) {
@@ -59,7 +69,7 @@ class LifecycleProcessorTest {
     fun `events processed while not running are removed and not delivered to user code`() {
         val state = LifecycleStateManager(5)
         var processedEvents = 0
-        val processor = LifecycleProcessor(state) { _, _ ->
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
             processedEvents++
         }
         state.postEvent(TestEvent1)
@@ -77,7 +87,7 @@ class LifecycleProcessorTest {
     fun `setting and cancelling a timer updates the state correctly without delivering to user code`() {
         val state = LifecycleStateManager(5)
         var processedEvents = 0
-        val processor = LifecycleProcessor(state) { _, _ ->
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
             processedEvents++
         }
         state.isRunning = true
@@ -100,7 +110,7 @@ class LifecycleProcessorTest {
         val state = LifecycleStateManager(5)
         state.isRunning = true
         var timerKey = "the wrong key"
-        val processor = LifecycleProcessor(state) { event, _ ->
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
             when (event) {
                 is TimerEvent -> {
                     timerKey = event.key
@@ -121,7 +131,7 @@ class LifecycleProcessorTest {
         val state = LifecycleStateManager(5)
         state.isRunning = true
         var processedEvents = 0
-        val processor = LifecycleProcessor(state) { _, _ ->
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
             processedEvents++
         }
         val key = "my_key"
@@ -141,7 +151,7 @@ class LifecycleProcessorTest {
         val state = LifecycleStateManager(2)
         state.isRunning = true
         val processedEvents = mutableListOf<LifecycleEvent>()
-        val processor = LifecycleProcessor(state) { event, _ ->
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
             processedEvents.add(event)
         }
         state.postEvent(TestEvent1)
@@ -158,7 +168,7 @@ class LifecycleProcessorTest {
         val state = LifecycleStateManager(5)
         state.isRunning = true
         var processedErrors = 0
-        val processor = LifecycleProcessor(state) { event, _ ->
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
             when (event) {
                 is TestEvent1 -> {
                     throw Exception("This didn't work")
@@ -178,7 +188,7 @@ class LifecycleProcessorTest {
         val state = LifecycleStateManager(5)
         state.isRunning = true
         var processedErrors = 0
-        val processor = LifecycleProcessor(state) { event, _ ->
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
             when (event) {
                 is TestEvent1 -> {
                     throw Exception("This didn't work")
@@ -199,7 +209,7 @@ class LifecycleProcessorTest {
         val state = LifecycleStateManager(5)
         state.isRunning = true
         var processedErrors = 0
-        val processor = LifecycleProcessor(state) { event, _ ->
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
             when (event) {
                 is TestEvent1 -> {
                     throw Exception("This didn't work")
@@ -222,7 +232,7 @@ class LifecycleProcessorTest {
         state.isRunning = true
         var processedErrors = 0
         var processedExtraEvents = false
-        val processor = LifecycleProcessor(state) { event, _ ->
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
             when (event) {
                 is TestEvent1 -> {
                     throw Exception("This didn't work")
