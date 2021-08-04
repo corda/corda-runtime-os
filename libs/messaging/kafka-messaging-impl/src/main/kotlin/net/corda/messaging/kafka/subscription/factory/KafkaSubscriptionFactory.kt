@@ -17,11 +17,15 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_COMPACTED
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_DURABLE
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_EVENTLOG
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBSUB
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RANDOMACCESS
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_STATEANDEVENT
 import net.corda.messaging.kafka.subscription.KafkaCompactedSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
+import net.corda.messaging.kafka.subscription.KafkaEventLogSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
+import net.corda.messaging.kafka.subscription.KafkaRandomAccessSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaStateAndEventSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.StateAndEventBuilderImpl
@@ -96,7 +100,8 @@ class KafkaSubscriptionFactory @Activate constructor(
             config,
             consumerBuilder,
             producerBuilder,
-            processor
+            processor,
+            partitionAssignmentListener
         )
     }
 
@@ -167,13 +172,44 @@ class KafkaSubscriptionFactory @Activate constructor(
         nodeConfig: Config,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
-        TODO("Not yet implemented")
+        if (subscriptionConfig.instanceId == null) {
+            throw CordaMessageAPIFatalException(
+                "Cannot create durable subscription producer for $subscriptionConfig. No instanceId configured"
+            )
+        }
+
+        val config = resolveSubscriptionConfiguration(
+            subscriptionConfig.toConfig(),
+            nodeConfig,
+            clientIdCounter.getAndIncrement(),
+            PATTERN_EVENTLOG
+        )
+        val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
+        val producerBuilder = KafkaProducerBuilderImpl(avroSchemaRegistry)
+
+        return KafkaEventLogSubscriptionImpl(
+            config,
+            consumerBuilder,
+            producerBuilder,
+            processor,
+            partitionAssignmentListener
+        )
     }
 
     override fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
-        nodeConfig: Config
+        nodeConfig: Config,
+        keyClass: Class<K>,
+        valueClass: Class<V>
     ): RandomAccessSubscription<K, V> {
-        TODO("Not yet implemented")
+        val config = resolveSubscriptionConfiguration(
+            subscriptionConfig.toConfig(),
+            nodeConfig,
+            clientIdCounter.getAndIncrement(),
+            PATTERN_RANDOMACCESS
+        )
+        val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
+
+        return KafkaRandomAccessSubscriptionImpl(config, consumerBuilder, keyClass, valueClass)
     }
 }

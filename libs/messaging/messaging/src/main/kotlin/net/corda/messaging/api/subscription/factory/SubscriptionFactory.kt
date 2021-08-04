@@ -108,6 +108,8 @@ interface SubscriptionFactory {
     fun <K: Any, V: Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
         nodeConfig: Config = ConfigFactory.empty(),
+        keyClass: Class<K>,
+        valueClass: Class<V>
     ): RandomAccessSubscription<K, V>
     
 }

@@ -85,7 +85,9 @@ class InMemSubscriptionFactory @Activate constructor(
 
     override fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
-        nodeConfig: Config
+        nodeConfig: Config,
+        keyClass: Class<K>,
+        valueClass: Class<V>
     ): RandomAccessSubscription<K, V> {
         TODO("Not yet implemented")
     }
