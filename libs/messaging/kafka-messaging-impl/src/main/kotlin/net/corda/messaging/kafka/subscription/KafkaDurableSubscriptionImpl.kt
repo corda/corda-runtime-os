@@ -12,15 +12,20 @@ import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 
 /**
  * Kafka implementation of a DurableSubscription.
- * Subscription will continuously try connect to Kafka based on the [subscriptionConfig] and [config].
+ * Subscription will continuously try connect to Kafka based on the [config].
  * After connection is successful subscription will attempt to poll and process records until subscription is stopped.
  * Records are processed using the [processor]. Records outputted from the [processor] are sent back to kafka using a
  * producer built by [producerBuilder]. Records are consumed and produced atomically via transactions.
- * @property subscriptionConfig Describes what topic to poll from and what the consumer group name should be.
+ *
+ * Note: the semantics of a [KafkaDurableSubscriptionImpl] are the same with an [KafkaEventLogSubscriptionImpl] with the only difference
+ * being the latter exposes a few more attributes for each record. As a result, the former is being implemented by delegating
+ * any processing to the latter and filtering out the attributes that are not exposed.
+ *
  * @property config configuration
  * @property consumerBuilder builder to generate a kafka consumer.
  * @property producerBuilder builder to generate a kafka producer.
  * @property processor processes records from kafka topic. Produces list of output records.
+ * @property partitionAssignmentListener a callback listener that reacts to reassignments of partitions.
  *
  */
 class KafkaDurableSubscriptionImpl<K : Any, V : Any>(

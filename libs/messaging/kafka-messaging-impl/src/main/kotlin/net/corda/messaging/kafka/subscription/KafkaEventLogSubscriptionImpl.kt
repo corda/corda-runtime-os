@@ -15,34 +15,38 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAnd
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asEventLogRecord
 import net.corda.messaging.kafka.utils.render
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 /**
  * Kafka implementation of an EventLogSubscription.
- * Subscription will continuously try connect to Kafka based on the [subscriptionConfig] and [config].
+ * Subscription will continuously try connect to Kafka based on the [config].
  * After connection is successful subscription will attempt to poll and process records until subscription is stopped.
  * Records are processed using the [processor]. Records outputted from the [processor] are sent back to kafka using a
  * producer built by [producerBuilder]. Records are consumed and produced atomically via transactions.
- * @property subscriptionConfig Describes what topic to poll from and what the consumer group name should be.
+ *
  * @property config configuration
  * @property consumerBuilder builder to generate a kafka consumer.
  * @property producerBuilder builder to generate a kafka producer.
  * @property processor processes records from kafka topic. Produces list of output records.
+ * @property partitionAssignmentListener a callback listener that reacts to reassignments of partitions.
  *
  */
-class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(private val config: Config,
-                                    private val consumerBuilder: ConsumerBuilder<K, V>,
-                                    private val producerBuilder: ProducerBuilder,
-                                    private val processor: EventLogProcessor<K, V>,
-                                    private val partitionAssignmentListener: PartitionAssignmentListener?): Subscription<K, V> {
+class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
+    private val config: Config,
+    private val consumerBuilder: ConsumerBuilder<K, V>,
+    private val producerBuilder: ProducerBuilder,
+    private val processor: EventLogProcessor<K, V>,
+    private val partitionAssignmentListener: PartitionAssignmentListener?
+): Subscription<K, V> {
 
-    private val log: Logger = LoggerFactory.getLogger(config.getString(KafkaProperties.PRODUCER_CLIENT_ID))
+    companion object {
+        private val log = contextLogger()
+    }
 
     private val consumerThreadStopTimeout = config.getLong(KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT)
     private val consumerPollAndProcessRetries = config.getLong(KafkaProperties.CONSUMER_POLL_AND_PROCESS_RETRIES)
