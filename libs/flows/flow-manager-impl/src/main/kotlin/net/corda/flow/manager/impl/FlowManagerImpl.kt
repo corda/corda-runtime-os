@@ -31,8 +31,6 @@ import java.time.Clock
 class FlowManagerImpl @Activate constructor(
     @Reference(service = SandboxCache::class)
     private val sandboxCache: SandboxCache,
-//    @Reference(service = IdentityService::class)
-//    private val identityService: IdentityService,
     @Reference(service = SerializationService::class)
     private val checkpointSerialisationService: SerializationService,
     @Reference(service = DependencyInjectionService::class)
@@ -51,10 +49,6 @@ class FlowManagerImpl @Activate constructor(
     private val resultTopic = ""
     private val wakeupTopic = ""
     private val deadLetterTopic = ""
-//    private val persistenceService: PersistenceService
-//        get() = TODO("Not yet implemented")
-//    private val ourIdentity: Party
-//        get() = TODO("Not yet implemented")
 
     override fun startInitiatingFlow(
         newFlowMetadata: FlowMetadata,
