@@ -1,9 +1,11 @@
-package net.corda.lifecycle
+package net.corda.lifecycle.impl
 
-import net.corda.lifecycle.impl.CancelTimer
-import net.corda.lifecycle.impl.LifecycleProcessor
-import net.corda.lifecycle.impl.LifecycleStateManager
-import net.corda.lifecycle.impl.SetUpTimer
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.TimerEvent
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
 import java.util.concurrent.Executors
@@ -23,12 +25,14 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Events are scheduled to be processed on a thread pool. This class ensures that only one call to process is scheduled
  * at once.
  *
+ * @param name The name of the component for this lifecycle coordinator.
  * @param batchSize max number of events processed in a single [processEvents] call.
  * @param lifeCycleProcessor The user event handler for lifecycle events.
  */
-class SimpleLifecycleCoordinator(
-    private val batchSize: Int,
-    override val lifeCycleProcessor: LifecycleEventHandler,
+class LifecycleCoordinatorImpl(
+    private val name: String,
+    batchSize: Int,
+    lifeCycleProcessor: LifecycleEventHandler,
 ) : LifecycleCoordinator {
 
     companion object {

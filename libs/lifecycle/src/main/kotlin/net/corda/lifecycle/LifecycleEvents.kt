@@ -1,10 +1,9 @@
 package net.corda.lifecycle
 
 /**
- * Define an event submitted by a [LifecycleCoordinator]:
- * events are processed by the [LifecycleCoordinator]'s processor.
+ * A lifecycle event to be processed by a coordinator.
  *
- * See the [SimpleLifecycleCoordinator.lifeCycleProcessor] as example of coordinator's processor.
+ * This interface should be used by client code to define lifecycle events for the component.
  *
  * @see [LifecycleCoordinator.postEvent]
  */

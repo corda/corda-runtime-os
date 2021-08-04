@@ -1,9 +1,6 @@
-package net.corda.lifecycle
+package net.corda.lifecycle.impl
 
-import net.corda.lifecycle.impl.CancelTimer
-import net.corda.lifecycle.impl.LifecycleProcessor
-import net.corda.lifecycle.impl.LifecycleStateManager
-import net.corda.lifecycle.impl.SetUpTimer
+import net.corda.lifecycle.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
