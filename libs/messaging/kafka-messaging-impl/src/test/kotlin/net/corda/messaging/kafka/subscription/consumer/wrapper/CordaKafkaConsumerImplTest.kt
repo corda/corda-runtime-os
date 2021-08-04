@@ -1,13 +1,13 @@
 package net.corda.messaging.kafka.subscription.consumer.wrapper
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.anyOrNull
-import com.nhaarman.mockito_kotlin.doReturn
-import com.nhaarman.mockito_kotlin.doThrow
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -16,7 +16,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONS
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBSUB
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
 import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
-import net.corda.messaging.kafka.subscription.generateMockConsumerRecordsList
+import net.corda.messaging.kafka.subscription.generateMockConsumerRecords
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.CommitFailedException
@@ -74,7 +74,7 @@ class CordaKafkaConsumerImplTest {
 
     @Test
     fun testPollInvoked() {
-        val consumerRecords = generateMockConsumerRecordsList(2, eventTopic, 1)
+        val consumerRecords = generateMockConsumerRecords(2, eventTopic, 1)
 
         consumer = mock()
         doReturn(consumerRecords).whenever(consumer).poll(Mockito.any(Duration::class.java))

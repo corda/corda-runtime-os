@@ -51,7 +51,9 @@ class KafkaRandomAccessSubscriptionIntegrationTest {
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val randomAccessSub = subscriptionFactory.createRandomAccessSubscription<String, String>(
             SubscriptionConfig("group-1", TOPIC, 1),
-            kafkaConfig
+            kafkaConfig,
+            String::class.java,
+            String::class.java
         )
         randomAccessSub.start()
 

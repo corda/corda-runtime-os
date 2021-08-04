@@ -14,7 +14,6 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.kafka.Utils.Companion.resolveSubscriptionConfiguration
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_COMPACTED
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_DURABLE
@@ -30,7 +29,8 @@ import net.corda.messaging.kafka.subscription.KafkaRandomAccessSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaStateAndEventSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.StateAndEventBuilderImpl
-import net.corda.messaging.kafka.toConfig
+import net.corda.messaging.kafka.utils.ConfigUtils.Companion.resolveSubscriptionConfiguration
+import net.corda.messaging.kafka.utils.toConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -198,7 +198,9 @@ class KafkaSubscriptionFactory @Activate constructor(
 
     override fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
-        nodeConfig: Config
+        nodeConfig: Config,
+        keyClass: Class<K>,
+        valueClass: Class<V>
     ): RandomAccessSubscription<K, V> {
         val config = resolveSubscriptionConfiguration(
             subscriptionConfig.toConfig(),
@@ -208,6 +210,6 @@ class KafkaSubscriptionFactory @Activate constructor(
         )
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
 
-        return KafkaRandomAccessSubscriptionImpl(config, consumerBuilder)
+        return KafkaRandomAccessSubscriptionImpl(config, consumerBuilder, keyClass, valueClass)
     }
 }

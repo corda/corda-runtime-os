@@ -1,6 +1,5 @@
 package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription
 
-import com.nhaarman.mockito_kotlin.anyOrNull
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.kafka.properties.KafkaProperties
@@ -17,32 +16,34 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.`when`
-import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 class KafkaRandomAccessSubscriptionImplTest {
 
     private val topic = "test.topic"
     private val partitions = 10
+    val topicPartitions = (1..partitions).map { TopicPartition(topic, it) }
 
     private val config = createStandardTestConfig().getConfig(PATTERN_RANDOMACCESS)
         .withValue(KafkaProperties.TOPIC_NAME, ConfigValueFactory.fromAnyRef(topic))
-    private val consumer = mock(CordaKafkaConsumer::class.java).apply {
-        val topicPartitions = (1..partitions).map { TopicPartition(topic, it) }
-        `when`(getPartitions(topic, 5.seconds)).thenReturn(topicPartitions)
-    }
+    private val consumer: CordaKafkaConsumer<String, String> = mock()
     @Suppress("UNCHECKED_CAST")
-    private val consumerBuilder = mock(ConsumerBuilder::class.java).apply {
-        `when`(createDurableConsumer(anyOrNull(), anyOrNull(), anyOrNull())).thenReturn(consumer)
-    } as ConsumerBuilder<String, String>
+    private val consumerBuilder: ConsumerBuilder<String, String> = mock()
 
     private lateinit var randomAccessSubscription: KafkaRandomAccessSubscriptionImpl<String, String>
 
     @BeforeEach
     fun setup() {
-        randomAccessSubscription = KafkaRandomAccessSubscriptionImpl(config, consumerBuilder)
+        doReturn(topicPartitions).whenever(consumer).getPartitions(topic, 5.seconds)
+        doReturn(consumer).whenever(consumerBuilder).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
+
+        randomAccessSubscription = KafkaRandomAccessSubscriptionImpl(config, consumerBuilder, String::class.java, String::class.java)
         randomAccessSubscription.start()
         randomAccessSubscription.stop()
     }
@@ -55,7 +56,7 @@ class KafkaRandomAccessSubscriptionImplTest {
     @Test
     fun `when poll finds the record, subscription returns it to the user`() {
         val recordReturnedFromPoll = ConsumerRecordAndMeta("", ConsumerRecord(topic, 1, 4, "key", "value"))
-        `when`(consumer.poll()).thenReturn(listOf(recordReturnedFromPoll))
+        doReturn(listOf(recordReturnedFromPoll)).whenever(consumer).poll()
 
         val record = randomAccessSubscription.getRecord(1, 4)
 
@@ -72,7 +73,7 @@ class KafkaRandomAccessSubscriptionImplTest {
     @Test
     fun `when poll returns other records, a null is returned by subscription`() {
         val recordReturnedFromPoll = ConsumerRecordAndMeta("", ConsumerRecord(topic, 1, 6, "key", "value"))
-        `when`(consumer.poll()).thenReturn(listOf(recordReturnedFromPoll))
+        doReturn(listOf(recordReturnedFromPoll)).whenever(consumer).poll()
 
         val record = randomAccessSubscription.getRecord(1, 4)
 
@@ -86,7 +87,7 @@ class KafkaRandomAccessSubscriptionImplTest {
 
     @Test
     fun `when poll returns no records, a null is returned by subscription`() {
-        `when`(consumer.poll()).thenReturn(emptyList())
+        doReturn(listOf<ConsumerRecordAndMeta<String, String>>()).whenever(consumer).poll()
 
         val record = randomAccessSubscription.getRecord(1, 4)
 
@@ -101,7 +102,7 @@ class KafkaRandomAccessSubscriptionImplTest {
     @Test
     fun `when poll returns the same record multiple times, subscription throws an error`() {
         val recordReturnedFromPoll = ConsumerRecordAndMeta("", ConsumerRecord(topic, 1, 4, "key", "value"))
-        `when`(consumer.poll()).thenReturn(listOf(recordReturnedFromPoll, recordReturnedFromPoll))
+        doReturn(listOf(recordReturnedFromPoll, recordReturnedFromPoll)).whenever(consumer).poll()
 
         assertThatThrownBy { randomAccessSubscription.getRecord(1, 4) }
             .isInstanceOf(CordaMessageAPIFatalException::class.java)

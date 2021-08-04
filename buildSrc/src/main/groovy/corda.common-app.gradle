@@ -193,14 +193,6 @@ task appJar(type: Jar) {
     }
 }
 
-afterEvaluate {
-    artifactoryPublish.dependsOn(appJar)
-}
-
-artifactoryPublish {
-    publications('mavenAppJar')
-}
-
 publishing {
     publications {
         mavenAppJar(MavenPublication) {

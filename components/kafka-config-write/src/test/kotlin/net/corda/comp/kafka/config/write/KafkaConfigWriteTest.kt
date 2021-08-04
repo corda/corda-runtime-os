@@ -1,10 +1,5 @@
 package net.corda.comp.kafka.config.write
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.capture
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
 import com.typesafe.config.Config
 import net.corda.libs.configuration.write.ConfigWriteService
 import net.corda.libs.configuration.write.CordaConfigurationKey
@@ -16,6 +11,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import org.mockito.Captor
 import org.mockito.Mockito
+import org.mockito.kotlin.*
 import java.io.BufferedReader
 
 class KafkaConfigWriteTest {

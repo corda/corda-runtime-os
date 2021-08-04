@@ -7,11 +7,9 @@ description "Kafka Config Write Component"
 
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation project(':libs:configuration:configuration-write')
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
-        exclude group: 'mockito-core'
-    }
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

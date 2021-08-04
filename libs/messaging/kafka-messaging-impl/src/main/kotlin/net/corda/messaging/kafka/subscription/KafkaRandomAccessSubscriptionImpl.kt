@@ -19,6 +19,8 @@ import kotlin.concurrent.withLock
 class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     private val config: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,
+    private val keyClass: Class<K>,
+    private val valueClass: Class<V>
 ): RandomAccessSubscription<K, V> {
 
     companion object {
@@ -41,7 +43,7 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
             if (!running) {
                 val configWithOverrides = config.getConfig(KafkaProperties.KAFKA_CONSUMER)
                     .withValue(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, ConfigValueFactory.fromAnyRef(1))
-                consumer = consumerBuilder.createDurableConsumer(configWithOverrides)
+                consumer = consumerBuilder.createDurableConsumer(configWithOverrides, keyClass, valueClass)
                 val allPartitions = consumer.getPartitions(topic, 5.seconds).map { it.partition() }.toSet()
                 consumer.assignPartitionsManually(allPartitions)
                 assignedPartitions = allPartitions

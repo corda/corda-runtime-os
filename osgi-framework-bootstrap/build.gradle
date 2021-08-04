@@ -1,28 +1,17 @@
 import java.nio.file.Files
 import java.util.jar.JarFile
 
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath "biz.aQute.bnd:biz.aQute.bndlib:$bndVersion"
-    }
-}
-
 description("OSGi Framework Bootstrap")
 
 dependencies {
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     implementation project(":osgi-framework-api")
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-params:$jupiterVersion"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }
 
 private boolean isBundle(JarFile jarFile) {
@@ -61,8 +50,8 @@ private addBundles(
 }
 
 test {
-    dependsOn('framework-app-tester:appJar')
-    final def appTesterProject = project("framework-app-tester")
+    dependsOn(':testing:apps:test-app:appJar')
+    final def appTesterProject = project(":testing:apps:test-app")
     doFirst {
         final File source = new File(appTesterProject.buildDir, "libs")
         final File target = new File(buildDir, "resources/test/bundles")

@@ -8,14 +8,12 @@ description 'Kafka Configuration Read API Impl'
 dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation project(':data:avro-schema')
     implementation project(':libs:configuration:configuration-read')
     implementation project(":libs:lifecycle")
     implementation project(":libs:messaging:messaging")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
-        exclude group: 'mockito-core'
-    }
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

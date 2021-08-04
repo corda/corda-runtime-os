@@ -9,12 +9,12 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.render
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asEventLogRecord
+import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.Logger
@@ -120,10 +120,11 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(private val config: Config
                 consumer = if (partitionAssignmentListener != null) {
                     val consumerGroup = config.getString(KafkaProperties.CONSUMER_GROUP_ID)
                     val rebalanceListener = ForwardingRebalanceListener(topic, consumerGroup, partitionAssignmentListener)
-                    consumerBuilder.createDurableConsumer(config.getConfig(KafkaProperties.KAFKA_CONSUMER),
-                        consumerRebalanceListener = rebalanceListener)
+                    consumerBuilder.createDurableConsumer(config.getConfig(KafkaProperties.KAFKA_CONSUMER), processor.keyClass,
+                        processor.valueClass, consumerRebalanceListener = rebalanceListener)
                 } else {
-                    consumerBuilder.createDurableConsumer(config.getConfig(KafkaProperties.KAFKA_CONSUMER))
+                    consumerBuilder.createDurableConsumer(config.getConfig(KafkaProperties.KAFKA_CONSUMER),
+                        processor.keyClass, processor.valueClass)
                 }
                 producer = producerBuilder.createProducer(config.getConfig(KafkaProperties.KAFKA_PRODUCER))
                 consumer.use { cordaConsumer ->

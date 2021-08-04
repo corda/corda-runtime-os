@@ -1,5 +1,6 @@
 package net.corda.messaging.kafka.subscription
 
+import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.MockConsumer
@@ -51,9 +52,22 @@ fun generateMockConsumerRecordList(numberOfRecords: Long, topic: String, partiti
  * Assigned to [partition] and [topic]
  * @return ConsumerRecords
  */
-fun generateMockConsumerRecordsList(numberOfRecords: Long, topic: String, partition: Int) : ConsumerRecords<String, ByteBuffer> {
+fun generateMockConsumerRecords(numberOfRecords: Long, topic: String, partition: Int): ConsumerRecords<String, ByteBuffer> {
     val recordList = generateMockConsumerRecordList(numberOfRecords, topic, partition)
     val topicPartition = TopicPartition(topic, partition)
-    val records = ConsumerRecords(mutableMapOf(Pair(topicPartition, recordList)))
-    return records
+    return ConsumerRecords(mutableMapOf(Pair(topicPartition, recordList)))
+}
+
+/**
+ * Generate a list of [ConsumerRecordAndMeta] of size [numberOfRecords].
+ * Assigned to [partition] and [topic]
+ * @return ConsumerRecordAndMeta
+ */
+fun generateMockConsumerRecordAndMetaList(
+    numberOfRecords: Long,
+    topic: String,
+    partition: Int
+): List<ConsumerRecordAndMeta<String, ByteBuffer>> {
+    return generateMockConsumerRecordList(numberOfRecords, topic, partition)
+        .map { ConsumerRecordAndMeta("", it) }
 }
