@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "LinkOutHeader",
+  "namespace": "net.corda.p2p",
+  "fields": [
+    {
+      "name": "destinationX500Name",
+      "type": "string"
+    },
+    {
+      "name": "destinationNetworkType",
+      "type": "net.corda.p2p.NetworkType"
+    },
+    {
+      "name": "address",
+      "type": "string"
+    }
+  ]
+}

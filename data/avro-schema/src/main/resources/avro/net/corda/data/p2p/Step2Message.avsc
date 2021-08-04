@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "Step2Message",
+  "namespace": "net.corda.p2p",
+  "fields": [
+    {
+      "name": "initiatorHello",
+      "type":"net.corda.p2p.crypto.InitiatorHelloMessage"
+    },
+    {
+      "name": "responderHello",
+      "type": "net.corda.p2p.crypto.ResponderHelloMessage"
+    },
+    {
+        "name": "privateKey",
+        "type": "bytes"
+    }
+  ]
+}

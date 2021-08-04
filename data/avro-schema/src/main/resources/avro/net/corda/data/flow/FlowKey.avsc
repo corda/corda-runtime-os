@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "FlowKey",
+  "namespace": "net.corda.data.flow",
+  "fields": [
+    {
+      "name": "flowId",
+      "type": "string"
+    },
+    {
+      "name": "identity",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    }
+  ]
+}

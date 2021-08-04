@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "FlowMessageAndKey",
+  "namespace": "net.corda.p2p.payload",
+  "fields": [
+    {
+      "name": "flowMessage",
+      "type": "net.corda.p2p.payload.FlowMessage"
+    },
+    {
+      "name": "key",
+      "type": "bytes"
+    }
+  ]
+}

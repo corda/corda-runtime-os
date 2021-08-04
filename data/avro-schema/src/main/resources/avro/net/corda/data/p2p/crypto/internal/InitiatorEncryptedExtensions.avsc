@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "InitiatorEncryptedExtensions",
+  "namespace": "net.corda.p2p.crypto.internal",
+  "fields": [
+    {
+      "name": "responderPublicKeyHash",
+      "type": "bytes"
+    },
+    {
+      "name": "groupId",
+      "type": "string"
+    },
+    {
+      "name": "maxMessageSize",
+      "type": "int"
+    }
+  ]
+}
