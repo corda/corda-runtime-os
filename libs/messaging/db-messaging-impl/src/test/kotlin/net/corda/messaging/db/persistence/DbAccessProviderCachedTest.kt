@@ -181,4 +181,13 @@ class DbAccessProviderCachedTest {
         verify(dbAccessProviderImpl, times(0)).readRecords(topic, cachedFetchWindows)
     }
 
+    @Test
+    fun `create topic adds the new topic to the cache`() {
+        val newTopic = "test.topic-2"
+        dbAccessProviderCached.createTopic( newTopic, 5)
+
+        verify(dbAccessProviderImpl, times(1)).createTopic(newTopic, 5)
+        assertThat(dbAccessProviderCached.getCache().getAllEntries(newTopic, 2)).isNotNull
+    }
+
 }

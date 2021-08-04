@@ -94,9 +94,6 @@ class PerformanceTests {
 
         listOf(topic1, topic2).forEach { dbAccessProvider.createTopic(it, numberOfPartitions) }
 
-        dbAccessProvider.stop()
-        dbAccessProvider.start()
-
         offsetTrackersManager = OffsetTrackersManager(dbAccessProvider)
         offsetTrackersManager.start()
 

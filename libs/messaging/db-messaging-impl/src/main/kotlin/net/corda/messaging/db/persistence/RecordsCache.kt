@@ -1,6 +1,8 @@
 package net.corda.messaging.db.persistence
 
 import net.corda.v5.base.annotations.VisibleForTesting
+import java.lang.IllegalArgumentException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentSkipListMap
 
 /**
@@ -15,12 +17,12 @@ import java.util.concurrent.ConcurrentSkipListMap
  */
 class RecordsCache(topicPartitions: Map<String, Int>, private val entriesPerPartition: Int){
 
-    private val cache: ConcurrentSkipListMap<String, ConcurrentSkipListMap<Int, ConcurrentSkipListMap<Long, RecordDbEntry>>> =
-        ConcurrentSkipListMap()
+    private val cache: ConcurrentHashMap<String, ConcurrentHashMap<Int, ConcurrentSkipListMap<Long, RecordDbEntry>>> =
+        ConcurrentHashMap()
 
     init {
         topicPartitions.forEach { (topic, partitions) ->
-            cache[topic] = ConcurrentSkipListMap()
+            cache[topic] = ConcurrentHashMap()
             (1..partitions).forEach { partition ->
                 cache[topic]!![partition] = ConcurrentSkipListMap()
             }
@@ -68,6 +70,16 @@ class RecordsCache(topicPartitions: Map<String, Int>, private val entriesPerPart
             }
         }
         return cachedRecords
+    }
+
+    fun addTopic(topic: String, partitions: Int) {
+        if (cache.putIfAbsent(topic, ConcurrentHashMap()) == null) {
+            (1..partitions).forEach { partition ->
+                cache[topic]!![partition] = ConcurrentSkipListMap()
+            }
+        } else {
+            throw IllegalArgumentException("Tried to add topic ($topic) to the cache that already existed.")
+        }
     }
 
     @VisibleForTesting

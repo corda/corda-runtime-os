@@ -94,4 +94,9 @@ class DBAccessProviderCached(private val dbAccessProviderImpl: DBAccessProviderI
         }
     }
 
+    override fun createTopic(topic: String, partitions: Int) {
+        dbAccessProviderImpl.createTopic(topic, partitions)
+        recordsCache.addTopic(topic, partitions)
+    }
+
 }

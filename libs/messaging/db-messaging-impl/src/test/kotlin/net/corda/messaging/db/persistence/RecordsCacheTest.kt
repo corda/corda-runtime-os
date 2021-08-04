@@ -1,7 +1,9 @@
 package net.corda.messaging.db.persistence
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import java.lang.IllegalArgumentException
 
 class RecordsCacheTest {
 
@@ -62,6 +64,26 @@ class RecordsCacheTest {
         recordsCache.addRecords(records.values.toList())
 
         assertThat(recordsCache.readRecords(topic, 1, 1, 5, 5)).isEqualTo(records.values.toList())
+    }
+
+    @Test
+    fun `added records are returned for a topic that is added on an initialised cache`() {
+        val recordsCache = RecordsCache(emptyMap(), cacheEntriesPerPartition)
+        recordsCache.addTopic(topic, 5)
+        val records = (1L..5L).map {  index ->
+            index to RecordDbEntry(topic, 1, index, "key-$index".toByteArray(), "value-$index".toByteArray())
+        }.toMap()
+
+        recordsCache.addRecords(records.values.toList())
+
+        assertThat(recordsCache.readRecords(topic, 1, 1, 5, 5)).isEqualTo(records.values.toList())
+    }
+
+    @Test
+    fun `if an existing topic is added, an exception is thrown`() {
+        val recordsCache = RecordsCache(topicPartitions, cacheEntriesPerPartition)
+        assertThatThrownBy { recordsCache.addTopic(topic, 5) }
+            .isInstanceOf(IllegalArgumentException::class.java)
     }
 
 }
