@@ -1,22 +1,15 @@
 package net.corda.p2p.gateway.messaging
 
-import com.github.benmanes.caffeine.cache.Caffeine
-import com.github.benmanes.caffeine.cache.RemovalListener
-import io.netty.channel.ConnectTimeoutException
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import org.slf4j.LoggerFactory
-import java.lang.NullPointerException
-import java.net.SocketAddress
 import java.net.URI
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
-import java.util.stream.Collectors
+import java.util.concurrent.*
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * The [ConnectionManager] is responsible for creating an HTTP connection and caching it. If a connection to the requested
@@ -32,107 +25,72 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
 
     companion object {
         private val logger = LoggerFactory.getLogger(ConnectionManager::class.java)
+
+        private const val NUM_CLIENT_WRITE_THREADS = 2
+        private const val NUM_CLIENT_NETTY_THREADS = 2
     }
 
-    private val connectionPool = Caffeine.newBuilder()
-        .maximumSize(config.maxClientConnections)
-        .expireAfterAccess(config.connectionIdleTimeout, TimeUnit.MILLISECONDS)
-        .removalListener(RemovalListener<URI, HttpClient> { key, value, cause ->
-            logger.debug("Removing connection for target $key. Reason: $cause")
-            value?.close()
-        })
-        //T0DO: replace with scheduled task to do clean-up every now and then. With Runnable::run, clean-up happens when cache is used
-        .executor(Runnable::run) //Specify an executor thread for async background tasks such as clean-up of expired connections
-        .build<URI, HttpClient>()
+    private val lock = ReentrantLock()
+    private val clientPool = ConcurrentHashMap<URI, HttpClient>()
+    private var writeGroup: EventLoopGroup? = null
+    private var nettyGroup: EventLoopGroup? = null
 
-    private var sharedEventLoopGroup: EventLoopGroup? = null
+    private val eventListeners = CopyOnWriteArrayList<HttpEventListener>()
 
     private var started = false
     override val isRunning: Boolean
         get() = started
 
     override fun start() {
-        sharedEventLoopGroup = NioEventLoopGroup(4)
-        started = true
+        lock.withLock {
+            logger.info("Starting connection manager")
+            writeGroup = NioEventLoopGroup(NUM_CLIENT_WRITE_THREADS)
+            nettyGroup = NioEventLoopGroup(NUM_CLIENT_NETTY_THREADS)
+            started = true
+        }
     }
 
     override fun stop() {
-        logger.info("Stopping")
-        started = false
-        connectionPool.invalidateAll()
-        connectionPool.cleanUp()
-        sharedEventLoopGroup?.shutdownGracefully()
-        sharedEventLoopGroup?.terminationFuture()?.sync()
-        sharedEventLoopGroup = null
-        logger.info("Stopped")
-    }
-
-
-    /**
-     * Return an existing or new [HttpClient]. The client will be started connected to the specified remote address. This
-     * method blocks until either it returns or throws.
-     * @param target the [URI] to connect to
-     * @throws [TimeoutException] if a successful connection cannot established
-     */
-    @Throws(ConnectTimeoutException::class)
-    fun acquire(target: URI): HttpClient {
-        return connectionPool.get(target) {
-            logger.info("Creating new connection to ${target.authority}")
-            val client = HttpClient(target, sslConfiguration, sharedEventLoopGroup)
-            val connectionLock = CountDownLatch(1)
-            val connectionListener = object : HttpEventListener {
-                override fun onOpen(event: HttpConnectionEvent) {
-                    connectionLock.countDown()
-                }
-            }
-            client.addListener(connectionListener)
-            client.start()
-            val connected = connectionLock.await(config.acquireTimeout, TimeUnit.MILLISECONDS)
-            client.removeListener(connectionListener)
-            if (!connected) {
-                throw ConnectTimeoutException("Could not acquire connection to ${target.authority} " +
-                        "in ${config.acquireTimeout} milliseconds")
-            }
-            client
-        }!!
-    }
-
-    /**
-     * Clears the cached connections corresponding to the given remote address
-     * @param remoteAddress the [SocketAddress] of the peer
-     */
-    @Suppress("TooGenericExceptionCaught")
-    fun dispose(remoteAddress: URI) {
-        val toDispose = connectionPool.asMap()
-            .entries
-            .stream()
-            .filter { e -> e.key == remoteAddress }
-            .collect(Collectors.toList())
-        toDispose.forEach { entry ->
+        lock.withLock {
             try {
-                logger.info("Disposing connection for ${entry.key}")
-                connectionPool.invalidate(entry.key)
-                entry.value.close()
-            } catch (ex: NullPointerException) {
-                logger.warn("Could not remove connection for ${entry.key}")
+                logger.info("Stopping connection manager")
+
+                clientPool.entries.forEach { it.value.stop() }
+                clientPool.clear()
+
+                writeGroup?.shutdownGracefully()
+                nettyGroup?.shutdownGracefully()
+                writeGroup?.terminationFuture()?.sync()
+                nettyGroup?.terminationFuture()?.sync()
+                writeGroup = null
+                nettyGroup = null
+            } finally {
+                started = false
+                logger.info("Connection manager stopped")
             }
         }
     }
 
-    /**
-     * Returns the current number of active connections. Does not count connections which are being started or at the time
-     * of the call.
-     */
-    fun activeConnections() = connectionPool.estimatedSize()
+    fun addListener(eventListener: HttpEventListener) {
+        eventListeners.add(eventListener)
+        clientPool.forEach { it.value.addListener(eventListener) }
+    }
+
+    fun removeListener(eventListener: HttpEventListener) {
+        eventListeners.remove(eventListener)
+        clientPool.forEach { it.value.removeListener(eventListener) }
+    }
 
     /**
-     * Returns the current number of active connections for the given host address. Does not count connections which
-     * are being started at the time of the call.
-     * @param remoteAddress the [SocketAddress] of the peer
+     * Return an existing or new [HttpClient].
+     * @param target the [URI] to connect to
      */
-    fun activeConnectionsForHost(remoteAddress: URI) =
-        connectionPool.asMap()
-            .entries
-            .filter { e -> e.key == remoteAddress && e.value?.connected!! }
-            .size
+    fun acquire(target: URI): HttpClient {
+        return clientPool.computeIfAbsent(target) {
+            val client = HttpClient(target, sslConfiguration, writeGroup!!, nettyGroup!!)
+            eventListeners.forEach { client.addListener(it) }
+            client.start()
+            client
+        }
+    }
 }

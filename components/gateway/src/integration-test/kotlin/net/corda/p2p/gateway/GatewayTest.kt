@@ -71,13 +71,9 @@ class GatewayTest {
                 PublisherFactoryStub(topicServiceAlice!!)
         ).use {
             it.start()
-            HttpClient(serverAddress, sslConfiguration).use { client->
+            HttpClient(serverAddress, sslConfiguration, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client->
                 val responseReceived = CountDownLatch(1)
                 val clientListener = object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        client.send(linkInMessage.toByteBuffer().array())
-                    }
-
                     override fun onMessage(message: HttpMessage) {
                         assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port), message.source)
                         assertEquals(HttpResponseStatus.OK, message.statusCode)
@@ -87,6 +83,7 @@ class GatewayTest {
                 }
                 client.addListener(clientListener)
                 client.start()
+                client.write(linkInMessage.toByteBuffer().array())
                 responseReceived.await()
             }
         }
@@ -114,13 +111,8 @@ class GatewayTest {
             it.start()
             val responseReceived = CountDownLatch(clientNumber)
             repeat(clientNumber) { index ->
-                val client = HttpClient(serverAddress, sslConfiguration, threadPool)
+                val client = HttpClient(serverAddress, sslConfiguration, threadPool, threadPool)
                 val clientListener = object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-${index + 1}"))
-                        client.send(p2pOutMessage.toByteBuffer().array())
-                    }
-
                     override fun onMessage(message: HttpMessage) {
                         assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port), message.source)
                         assertEquals(HttpResponseStatus.OK, message.statusCode)
@@ -130,6 +122,8 @@ class GatewayTest {
                 }
                 client.addListener(clientListener)
                 client.start()
+                val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-${index + 1}"))
+                client.write(p2pOutMessage.toByteBuffer().array())
                 clients.add(client)
             }
             responseReceived.await()

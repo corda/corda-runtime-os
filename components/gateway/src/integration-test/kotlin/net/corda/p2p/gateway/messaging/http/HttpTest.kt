@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.http
 
+import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -42,14 +43,10 @@ class HttpTest {
                 }
             })
             server.start()
-            HttpClient(serverAddress, sslConfiguration).use { client ->
+            HttpClient(serverAddress, sslConfiguration, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
                 var responseReceived = false
                 val clientListener = object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        client.send(clientMessageContent.toByteArray(Charsets.UTF_8))
-                    }
-
                     override fun onMessage(message: HttpMessage) {
                         assertEquals(serverResponseContent, String(message.payload))
                         responseReceived = true
@@ -58,6 +55,7 @@ class HttpTest {
                 }
                 client.addListener(clientListener)
                 client.start()
+                client.write(clientMessageContent.toByteArray(Charsets.UTF_8))
                 clientReceivedResponses.await(5, TimeUnit.SECONDS)
                 assertTrue(responseReceived)
             }
@@ -66,11 +64,12 @@ class HttpTest {
 
     @Test
     fun `multiple clients multiple requests`() {
-        val requestNo = 100
+        val requestNo = 1000
         val threadNo = 2
         val threads = mutableListOf<Thread>()
         val times = mutableListOf<Long>()
         val httpServer = HttpServer(serverAddress.host, serverAddress.port, sslConfiguration)
+        val threadPool = NioEventLoopGroup(threadNo)
         httpServer.use { server ->
             server.addListener(object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
@@ -82,8 +81,7 @@ class HttpTest {
             repeat(threadNo) {
                 val t = thread {
                     var startTime: Long = 0
-                    var endTime: Long = 0
-                    val httpClient = HttpClient(serverAddress, sslConfiguration)
+                    val httpClient = HttpClient(serverAddress, sslConfiguration, threadPool, threadPool)
                     val clientReceivedResponses = CountDownLatch(requestNo)
                     httpClient.use {
                         val clientListener = object : HttpEventListener {
@@ -94,20 +92,22 @@ class HttpTest {
 
                             override fun onOpen(event: HttpConnectionEvent) {
                                 startTime = Instant.now().toEpochMilli()
-                                repeat(requestNo) {
-                                    httpClient.send(clientMessageContent.toByteArray(Charsets.UTF_8))
-                                }
                             }
 
                             override fun onClose(event: HttpConnectionEvent) {
-                                endTime = Instant.now().toEpochMilli()
+                                val endTime = Instant.now().toEpochMilli()
+                                times.add(endTime - startTime)
                             }
                         }
                         httpClient.addListener(clientListener)
                         httpClient.start()
+
+                        repeat(requestNo) {
+                            httpClient.write(clientMessageContent.toByteArray(Charsets.UTF_8))
+                        }
+
                         clientReceivedResponses.await()
                     }
-                    times.add(endTime - startTime)
                 }
                 threads.add(t)
             }
@@ -131,14 +131,10 @@ class HttpTest {
                 }
             })
             server.start()
-            HttpClient(serverAddress, sslConfiguration).use { client ->
+            HttpClient(serverAddress, sslConfiguration, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
                 var responseReceived = false
                 val clientListener = object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        client.send(hugePayload)
-                    }
-
                     override fun onMessage(message: HttpMessage) {
                         assertEquals(serverResponseContent, String(message.payload))
                         responseReceived = true
@@ -147,6 +143,7 @@ class HttpTest {
                 }
                 client.addListener(clientListener)
                 client.start()
+                client.write(hugePayload)
                 clientReceivedResponses.await()
                 assertTrue(responseReceived)
             }

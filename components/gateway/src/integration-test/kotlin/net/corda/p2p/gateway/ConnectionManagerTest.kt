@@ -1,6 +1,5 @@
 package net.corda.p2p.gateway
 
-import io.netty.channel.ConnectTimeoutException
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.ConnectionManager
@@ -40,6 +39,7 @@ class ConnectionManagerTest {
     @Timeout(30)
     fun `acquire connection`() {
         val manager = ConnectionManager(sslConfiguration, ConnectionConfiguration())
+        manager.start()
         val (host, port) = URI.create(serverAddresses.first()).let { Pair(it.host, it.port) }
         HttpServer(host, port, sslConfiguration).use { server ->
             server.addListener(object : HttpEventListener {
@@ -58,7 +58,7 @@ class ConnectionManagerTest {
                         responseReceived.countDown()
                     }
                 })
-                client.send(clientMessageContent.toByteArray())
+                client.write(clientMessageContent.toByteArray())
                 responseReceived.await()
             }
         }
@@ -67,6 +67,8 @@ class ConnectionManagerTest {
     @Test
     fun `reuse connection`() {
         val manager = ConnectionManager(sslConfiguration,  ConnectionConfiguration())
+        manager.start()
+        val requestReceived = CountDownLatch(2)
         val serverURI = URI.create((serverAddresses.first()))
         HttpServer(serverURI.host, serverURI.port, sslConfiguration).use { server ->
             val remotePeers = mutableListOf<SocketAddress>()
@@ -74,28 +76,17 @@ class ConnectionManagerTest {
                 override fun onOpen(event: HttpConnectionEvent) {
                     remotePeers.add(event.channel.remoteAddress())
                 }
+                override fun onMessage(message: HttpMessage) {
+                    requestReceived.countDown()
+                }
             })
             server.start()
 
-            manager.acquire(serverURI)
-            assertEquals( 1, manager.activeConnectionsForHost(serverURI))
-            manager.acquire(serverURI)
-            assertEquals( 1, manager.activeConnectionsForHost(serverURI))
+            manager.acquire(serverURI).write(clientMessageContent.toByteArray())
+            manager.acquire(serverURI).write(clientMessageContent.toByteArray())
+            requestReceived.await()
             assertEquals(1, remotePeers.size)
             manager.acquire(serverURI).stop()
         }
-    }
-
-    @Test
-    fun `acquire times out`() {
-        var gotException = false
-        try {
-            val config =  ConnectionConfiguration(10, 100, 1000)
-            ConnectionManager(sslConfiguration, config).acquire(URI.create(serverAddresses.first().toString()))
-        } catch (e: Exception) {
-            assert(e is ConnectTimeoutException)
-            gotException = true
-        }
-        assert(gotException)
     }
 }

@@ -9,6 +9,7 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpServerCodec
+import io.netty.handler.timeout.IdleStateHandler
 import net.corda.lifecycle.LifeCycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.slf4j.LoggerFactory
@@ -47,6 +48,11 @@ class HttpServer(private val host: String,
          * Default number of thread to use for the worker group
          */
         private const val NUM_SERVER_THREADS = 4
+
+        /**
+         * The channel will be closed if neither read nor write was performed for the specified period of time.
+         */
+        private const val SERVER_IDLE_TIME_SECONDS = 5
     }
 
     private val lock = ReentrantLock()
@@ -162,6 +168,7 @@ class HttpServer(private val host: String,
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
             pipeline.addLast("sslHandler", createServerSslHandler(keyManagerFactory))
+            pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
             pipeline.addLast(HttpChannelHandler(parent, logger))
         }

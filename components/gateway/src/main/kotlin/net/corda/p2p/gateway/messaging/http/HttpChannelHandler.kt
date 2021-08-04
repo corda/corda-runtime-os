@@ -15,6 +15,7 @@ import io.netty.handler.codec.http.HttpUtil
 import io.netty.handler.codec.http.HttpVersion
 import io.netty.handler.codec.http.LastHttpContent
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
+import io.netty.handler.timeout.IdleStateEvent
 import net.corda.p2p.gateway.messaging.http.HttpHelper.Companion.validate
 import org.slf4j.Logger
 import java.lang.IndexOutOfBoundsException
@@ -117,6 +118,11 @@ class HttpChannelHandler(
                     logger.error("Handshake failure ${evt.cause().message}")
                     ctx.close()
                 }
+            }
+            is IdleStateEvent -> {
+                val ch = ctx.channel()
+                logger.debug("Closing connection with ${ch.remoteAddress()} due to inactivity")
+                ctx.close()
             }
         }
     }
