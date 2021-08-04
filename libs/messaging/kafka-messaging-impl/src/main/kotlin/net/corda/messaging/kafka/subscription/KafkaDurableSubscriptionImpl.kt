@@ -14,11 +14,11 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONS
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.render
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
+import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.Logger
@@ -122,7 +122,9 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 log.debug { "Attempt: $attempts" }
-                consumer = consumerBuilder.createDurableConsumer(config.getConfig(KAFKA_CONSUMER))
+                consumer = consumerBuilder.createDurableConsumer(
+                    config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass
+                )
                 producer = producerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribeToTopic()

@@ -19,15 +19,32 @@ pluginManagement {
             }
         }
         gradlePluginPortal()
+        maven {
+            url "$artifactoryContextUrl/engineering-tools-maven"
+            credentials {
+                if (settings.hasProperty("cordaArtifactoryUsername")) {
+                    username = settings.cordaArtifactoryUsername
+                } else {
+                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                }
+
+                if (settings.hasProperty("cordaArtifactoryPassword")) {
+                    password = settings.cordaArtifactoryPassword
+                } else {
+                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        }
     }
     plugins {
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.noarg' version kotlinVersion
+        id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
         id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
-        id 'com.jfrog.artifactory' version jfrogArtifactoryPluginVersion
-        id 'biz.aQute.bnd.builder' version bndVersion
+        id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
+        id 'corda.common-library' version internalPublishVersion
     }
 }
 
@@ -74,6 +91,9 @@ include 'libs:messaging:inmemory-messaging-impl'
 include 'libs:p2p-crypto'
 include 'libs:schema-registry:schema-registry'
 include 'libs:schema-registry:schema-registry-impl'
+include 'libs:serialization:serialization-kryo'
+include 'libs:serialization:kryo-custom-serializers'
 include 'osgi-framework-api'
 include 'osgi-framework-bootstrap'
-include 'osgi-framework-bootstrap:framework-app-tester'
+include 'testing:apps:test-app'
+

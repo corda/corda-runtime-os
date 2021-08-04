@@ -7,7 +7,7 @@ description 'Database Messaging API Implementation'
 
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation "com.zaxxer:HikariCP:$hikariCpVersion"
     implementation "com.google.guava:guava:$guavaVersion"
     implementation project(":libs:lifecycle")
@@ -18,10 +18,7 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
-    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
-        exclude group: 'mockito-core'
-    }
-    testImplementation "net.corda:corda-test-common:$cordaTestCommonVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation "com.h2database:h2:$h2Version"
     integrationTestImplementation "org.postgresql:postgresql:$postgresDriverVersion"

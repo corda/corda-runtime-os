@@ -7,13 +7,11 @@ description 'In-Memory Messaging API Impl'
 
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation project(":libs:lifecycle")
     implementation project(":libs:messaging:messaging")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
-        exclude group: 'mockito-core'
-    }
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

@@ -1,11 +1,11 @@
 package net.corda.messaging.kafka.publisher
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.doThrow
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -22,7 +22,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_C
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
-import net.corda.v5.base.internal.uncheckedCast
+import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.InterruptException

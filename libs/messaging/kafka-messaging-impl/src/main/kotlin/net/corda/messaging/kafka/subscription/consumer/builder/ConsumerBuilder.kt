@@ -19,7 +19,9 @@ interface ConsumerBuilder<K : Any, V : Any> {
      */
     fun createPubSubConsumer(
         consumerConfig: Config,
-        onError: (String, ByteArray) -> Unit = {_, _ ->}
+        kClazz: Class<K>,
+        vClazz: Class<V>,
+        onError: (String, ByteArray) -> Unit = {_, _ ->},
     ) : CordaKafkaConsumer<K, V>
 
     /**
@@ -32,8 +34,10 @@ interface ConsumerBuilder<K : Any, V : Any> {
      */
     fun createDurableConsumer(
         consumerConfig: Config,
+        kClazz: Class<K>,
+        vClazz: Class<V>,
         onError: (String, ByteArray) -> Unit = {_, _ ->},
-        consumerRebalanceListener: ConsumerRebalanceListener? = null,
+        consumerRebalanceListener: ConsumerRebalanceListener? = null
     ) : CordaKafkaConsumer<K, V>
 
     /**
@@ -44,6 +48,8 @@ interface ConsumerBuilder<K : Any, V : Any> {
      */
     fun createCompactedConsumer(
         consumerConfig: Config,
+        kClazz: Class<K>,
+        vClazz: Class<V>,
         onError: (String, ByteArray) -> Unit = {_, _ ->},
     ) : CordaKafkaConsumer<K, V>
 

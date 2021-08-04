@@ -1,7 +1,7 @@
 package net.corda.data
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.internal.uncheckedCast
+import net.corda.v5.base.util.uncheckedCast
 import org.apache.avro.specific.SpecificRecordBase
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil

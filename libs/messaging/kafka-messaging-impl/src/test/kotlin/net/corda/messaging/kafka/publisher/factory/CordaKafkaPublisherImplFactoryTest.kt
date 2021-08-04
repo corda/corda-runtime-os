@@ -1,6 +1,6 @@
 package net.corda.messaging.kafka.publisher.factory
 
-import com.nhaarman.mockito_kotlin.mock
+import org.mockito.kotlin.mock
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
