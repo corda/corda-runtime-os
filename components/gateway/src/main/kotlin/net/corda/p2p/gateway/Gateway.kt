@@ -81,6 +81,8 @@ class Gateway(config: GatewayConfiguration,
             closeActions += { httpServer.close() }
             inboundMessageProcessor.start()
             closeActions += { inboundMessageProcessor.close() }
+            outboundMessageProcessor.start()
+            closeActions += { outboundMessageProcessor.close() }
             p2pMessageSubscription.start()
             closeActions += { p2pMessageSubscription.close() }
             logger.info("Gateway started")
