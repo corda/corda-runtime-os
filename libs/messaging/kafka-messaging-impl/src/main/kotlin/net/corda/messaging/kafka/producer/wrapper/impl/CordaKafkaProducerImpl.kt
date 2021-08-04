@@ -4,10 +4,11 @@ import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.kafka.getStringOrNull
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.utils.getRecordListOffsets
+import net.corda.messaging.kafka.utils.getStringOrNull
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
@@ -58,6 +59,12 @@ class CordaKafkaProducerImpl(
     override fun sendRecords(records: List<Record<*, *>>) {
         for (record in records) {
             producer.send(ProducerRecord(topicPrefix + record.topic, record.key, record.value))
+        }
+    }
+
+    override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, Record<*, *>>>) {
+        for ((partition, record) in recordsWithPartitions) {
+            producer.send(ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value))
         }
     }
 
@@ -163,14 +170,14 @@ class CordaKafkaProducerImpl(
         trySendOffsetsToTransaction(consumer, null)
     }
 
-    override fun sendRecordOffsetToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>) {
-        trySendOffsetsToTransaction(consumer, record)
+    override fun sendRecordOffsetsToTransaction(consumer: Consumer<*, *>, records: List<ConsumerRecord<*, *>>) {
+        trySendOffsetsToTransaction(consumer, records)
     }
 
     @Suppress("ThrowsCount")
-    private fun trySendOffsetsToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>? = null) {
+    private fun trySendOffsetsToTransaction(consumer: Consumer<*, *>, records: List<ConsumerRecord<*, *>>? = null) {
         try {
-            producer.sendOffsetsToTransaction(consumerOffsets(consumer, record), consumer.groupMetadata())
+            producer.sendOffsetsToTransaction(consumerOffsets(consumer, records), consumer.groupMetadata())
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException,
@@ -221,15 +228,24 @@ class CordaKafkaProducerImpl(
     /**
      * Generate the consumer offsets.
      */
-    private fun consumerOffsets(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>? = null): Map<TopicPartition, OffsetAndMetadata> {
-        val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
-        if (record == null) {
-            for (topicPartition in consumer.assignment()) {
-                offsets[topicPartition] = OffsetAndMetadata(consumer.position(topicPartition))
-            }
+    private fun consumerOffsets(
+        consumer: Consumer<*, *>,
+        records: List<ConsumerRecord<*, *>>? = null
+    ): Map<TopicPartition, OffsetAndMetadata> {
+        return if (records == null) {
+            getConsumerOffsets(consumer)
         } else {
-            val topicPartition = TopicPartition(record.topic(), record.partition())
-            offsets[topicPartition] = OffsetAndMetadata(record.offset() + 1)
+            getRecordListOffsets(records)
+        }
+    }
+
+    /**
+     * Generate the consumer offsets for poll position in each consumer partition
+     */
+    private fun getConsumerOffsets(consumer: Consumer<*, *>): Map<TopicPartition, OffsetAndMetadata> {
+        val offsets =  mutableMapOf<TopicPartition, OffsetAndMetadata>()
+        for (topicPartition in consumer.assignment()) {
+            offsets[topicPartition] = OffsetAndMetadata(consumer.position(topicPartition))
         }
         return offsets
     }
