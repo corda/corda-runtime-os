@@ -1,17 +1,16 @@
 package net.corda.flow.statemachine
 
+import co.paralleluniverse.fibers.Fiber
+import net.corda.data.flow.Checkpoint
+import net.corda.data.flow.event.FlowEvent
+import net.corda.internal.di.FlowStateMachineInjectable
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.flows.FlowId
 import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.application.identity.Party
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.serialization.SerializedBytes
-import org.slf4j.Logger
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
-
 
 /**
  * Main data object representing snapshot of the flow stack, extracted from the Quasar stack.
@@ -30,19 +29,10 @@ data class FlowStackSnapshot(
 }
 
 @DoNotImplement
-interface FlowStateMachineHandle<FLOWRETURN> {
-    val logic: Flow<FLOWRETURN>?
-    val id: FlowId
-    val resultFuture: CompletableFuture<FLOWRETURN>
-    val clientId: String?
-}
+interface FlowStateMachine<FLOWRETURN> : FlowStateMachineInjectable {
 
-@DoNotImplement
-interface FlowStateMachine<FLOWRETURN> : FlowStateMachineHandle<FLOWRETURN> {
     @Suspendable
-    fun <SUSPENDRETURN : Any> suspend(ioRequest: FlowIORequest<SUSPENDRETURN>, maySkipCheckpoint: Boolean): SUSPENDRETURN
-
-    fun serialize(payloads: Map<FlowSession, Any>): Map<FlowSession, SerializedBytes<Any>>
+    fun <SUSPENDRETURN : Any> suspend(ioRequest: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN
 
     @Suspendable
     fun initiateFlow(destination: Destination, wellKnownParty: Party): FlowSession
@@ -50,17 +40,15 @@ interface FlowStateMachine<FLOWRETURN> : FlowStateMachineHandle<FLOWRETURN> {
     @Suspendable
     fun <SUBFLOWRETURN> subFlow(currentFlow: Flow<*>, subFlow: Flow<SUBFLOWRETURN>): SUBFLOWRETURN
 
-    @Suspendable
-    fun flowStackSnapshot(flowClass: Class<out Flow<*>>): FlowStackSnapshot?
-
-    @Suspendable
-    fun persistFlowStackSnapshot(flowClass: Class<out Flow<*>>)
-
     fun updateTimedFlowTimeout(timeoutSeconds: Long)
 
-    val logger: Logger
-    val ourIdentity: Party
-    val ourSenderUUID: String?
-    val creationTime: Long
-    val isKilled: Boolean
+    fun waitForCheckpoint(): Pair<Checkpoint?, List<FlowEvent>>
+
+    fun startFlow(): Fiber<Unit>
+
+    fun nonSerializableState(nonSerializableState: NonSerializableState)
+
+    fun housekeepingState(housekeepingState: HousekeepingState)
+
+    fun getFlowLogic(): Flow<FLOWRETURN>
 }
