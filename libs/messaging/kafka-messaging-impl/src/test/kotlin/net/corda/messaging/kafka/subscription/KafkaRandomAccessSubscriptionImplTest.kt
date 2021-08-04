@@ -45,7 +45,6 @@ class KafkaRandomAccessSubscriptionImplTest {
 
         randomAccessSubscription = KafkaRandomAccessSubscriptionImpl(config, consumerBuilder, String::class.java, String::class.java)
         randomAccessSubscription.start()
-        randomAccessSubscription.stop()
     }
 
     @Test
@@ -113,6 +112,14 @@ class KafkaRandomAccessSubscriptionImplTest {
         verify(consumer, times(1)).pause(pausedPartitions)
         verify(consumer, times(1)).resume(listOf(resumedPartition))
         verify(consumer, times(1)).seek(resumedPartition, 4)
+    }
+
+    @Test
+    fun `subscription throws an error if getRecord is called when it's not started`() {
+        randomAccessSubscription.stop()
+
+        assertThatThrownBy { randomAccessSubscription.getRecord(1, 4) }
+            .isInstanceOf(IllegalStateException::class.java)
     }
 
 }

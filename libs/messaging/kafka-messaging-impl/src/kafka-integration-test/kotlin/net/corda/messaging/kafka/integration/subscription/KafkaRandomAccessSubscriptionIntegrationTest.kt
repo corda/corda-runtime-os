@@ -47,27 +47,28 @@ class KafkaRandomAccessSubscriptionIntegrationTest {
 
     @Test
     fun `random access subscription can successfully retrieve records at specific partition and offset`() {
+        val partition = 4
         publisherConfig = PublisherConfig(CLIENT_ID)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        val randomAccessSub = subscriptionFactory.createRandomAccessSubscription<String, String>(
+        val randomAccessSub = subscriptionFactory.createRandomAccessSubscription(
             SubscriptionConfig("group-1", TOPIC, 1),
             kafkaConfig,
             String::class.java,
-            String::class.java
+            DemoRecord::class.java
         )
         randomAccessSub.start()
 
-        val records = (1..100).map { Record(TOPIC, "key-$it", DemoRecord(it)) }
-        // TODO - this can be refactored to use publisher.publishToPartition once it's implemented.
-        val futures = publisher.publish(records)
+        val records = (1..10).map { partition to Record(TOPIC, "key-$it", DemoRecord(it)) }
+        val futures = publisher.publishToPartition(records)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
         publisher.close()
 
         randomAccessSub.use {
-            val record = it.getRecord(1, 1)
+            val record = it.getRecord(4, 2)
             assertThat(record).isNotNull
+            assertThat(record).isEqualTo(records[2].second)
 
-            assertThat(it.getRecord(1, 300)).isNull()
+            assertThat(it.getRecord(4, 100)).isNull()
         }
     }
 

@@ -13,8 +13,9 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.TopicPartition
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     private val config: Config,
@@ -29,23 +30,23 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
 
     @Volatile
     private var running = false
-    private val startStopLock = ReentrantLock()
+    private val startStopLock = ReentrantReadWriteLock()
 
     private val topic = config.getString(KafkaProperties.TOPIC_NAME)
-    private lateinit var consumer: CordaKafkaConsumer<K, V>
+    private var consumer: CordaKafkaConsumer<K, V>? = null
     private var assignedPartitions = emptySet<Int>()
 
     override val isRunning: Boolean
         get() = running
 
     override fun start() {
-        startStopLock.withLock {
+        startStopLock.write {
             if (!running) {
                 val configWithOverrides = config.getConfig(KafkaProperties.KAFKA_CONSUMER)
                     .withValue(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, ConfigValueFactory.fromAnyRef(1))
                 consumer = consumerBuilder.createDurableConsumer(configWithOverrides, keyClass, valueClass)
-                val allPartitions = consumer.getPartitions(topic, 5.seconds).map { it.partition() }.toSet()
-                consumer.assignPartitionsManually(allPartitions)
+                val allPartitions = consumer!!.getPartitions(topic, 5.seconds).map { it.partition() }.toSet()
+                consumer!!.assignPartitionsManually(allPartitions)
                 assignedPartitions = allPartitions
                 running = true
             }
@@ -53,9 +54,9 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     }
 
     override fun stop() {
-        startStopLock.withLock {
+        startStopLock.write {
             if (running) {
-                consumer.close()
+                consumer!!.close()
                 running = false
             }
         }
@@ -63,32 +64,38 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
 
     @Synchronized
     override fun getRecord(partition: Int, offset: Long): Record<K, V>? {
-        checkForPartitionsChange(partition)
-        if (partition !in assignedPartitions) {
-            return null
-        }
+        startStopLock.read {
+            if (running) {
+                checkForPartitionsChange(partition)
+                if (partition !in assignedPartitions) {
+                    return null
+                }
 
-        val partitionToBeQueried = TopicPartition(topic, partition)
-        val partitionsToBePaused = assignedPartitions
-            .filter { it != partitionToBeQueried.partition() }
-            .map { TopicPartition(topic, it) }
-        consumer.pause(partitionsToBePaused)
-        consumer.resume(listOf(partitionToBeQueried))
-        consumer.seek(partitionToBeQueried, offset)
-        val records = consumer.poll()
-            .filter { it.record.partition() == partition && it.record.offset() == offset }
+                val partitionToBeQueried = TopicPartition(topic, partition)
+                val partitionsToBePaused = assignedPartitions
+                    .filter { it != partitionToBeQueried.partition() }
+                    .map { TopicPartition(topic, it) }
+                consumer!!.pause(partitionsToBePaused)
+                consumer!!.resume(listOf(partitionToBeQueried))
+                consumer!!.seek(partitionToBeQueried, offset)
+                val records = consumer!!.poll()
+                    .filter { it.record.partition() == partition && it.record.offset() == offset }
 
-        return when {
-            records.isEmpty() -> {
-                null
-            }
-            records.size == 1 -> {
-                records.single().asRecord()
-            }
-            else -> {
-                val errorMsg = "Multiple records located for partition=$partition, offset=$offset, topic=$topic : $records."
-                log.warn(errorMsg)
-                throw CordaMessageAPIFatalException(errorMsg)
+                return when {
+                    records.isEmpty() -> {
+                        null
+                    }
+                    records.size == 1 -> {
+                        records.single().asRecord()
+                    }
+                    else -> {
+                        val errorMsg = "Multiple records located for partition=$partition, offset=$offset, topic=$topic : $records."
+                        log.warn(errorMsg)
+                        throw CordaMessageAPIFatalException(errorMsg)
+                    }
+                }
+            } else {
+                throw IllegalStateException("getRecords invoked when subscription was not running.")
             }
         }
     }
@@ -97,8 +104,8 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
         // Since we manually assign all partitions, this is only possible if an operator increased the number of partitions of the topic.
         // In this case, we refresh the assignment so there is no need to restart the system and everything keeps working smoothly.
         if (partition !in assignedPartitions) {
-            val allPartitions = consumer.getPartitions(topic, 5.seconds).map { it.partition() }.toSet()
-            consumer.assignPartitionsManually(allPartitions)
+            val allPartitions = consumer!!.getPartitions(topic, 5.seconds).map { it.partition() }.toSet()
+            consumer!!.assignPartitionsManually(allPartitions)
             assignedPartitions = allPartitions
         }
     }
