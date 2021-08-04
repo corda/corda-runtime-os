@@ -1,51 +1,91 @@
 package net.corda.flow.manager.impl
 
-import co.paralleluniverse.fibers.FiberScheduler
+import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
+import co.paralleluniverse.fibers.FiberExecutorScheduler
 import net.corda.data.flow.Checkpoint
+import net.corda.data.flow.RPCFlowResult
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.FlowSessionMessage
+import net.corda.data.flow.event.Wakeup
+import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
-import net.corda.v5.application.flows.FlowId
-import net.corda.v5.application.identity.Party
-import net.corda.v5.application.services.IdentityService
-import net.corda.v5.application.services.persistence.PersistenceService
+import net.corda.flow.statemachine.FlowStateMachine
+import net.corda.flow.statemachine.HousekeepingState
+import net.corda.flow.statemachine.NonSerializableState
+import net.corda.flow.statemachine.factory.FlowStateMachineFactory
+import net.corda.internal.di.DependencyInjectionService
+import net.corda.messaging.api.records.Record
+import net.corda.sandbox.cache.FlowMetadata
+import net.corda.sandbox.cache.SandboxCache
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.services.serialization.SerializationService
-import java.util.concurrent.ScheduledExecutorService
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.uncheckedCast
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import java.time.Clock
 
-data class FlowTopics(
-    val flowEventTopic: String,
-    val checkpointsTopic: String,
-    val p2pOutTopic: String,
-    val rpcResponseTopic: String,
-    val flowSessionMappingTopic: String
-)
+@Component(service = [FlowManager::class])
+class FlowManagerImpl @Activate constructor(
+    @Reference(service = SandboxCache::class)
+    private val sandboxCache: SandboxCache,
+    @Reference(service = SerializationService::class)
+    private val checkpointSerialisationService: SerializationService,
+    @Reference(service = DependencyInjectionService::class)
+    private val dependencyInjector: DependencyInjectionService,
+    @Reference(service = FlowStateMachineFactory::class)
+    private val flowStateMachineFactory: FlowStateMachineFactory
+) : FlowManager {
 
-class FlowManagerImpl : FlowManager {
+    companion object {
+        val log = contextLogger()
+    }
 
-    val checkpointSerialisationService: SerializationService
-        get() = TODO("Not yet implemented")
-    val persistenceService: PersistenceService
-        get() = TODO("Not yet implemented")
-    val ourIdentity: Party
-        get() = TODO("Not yet implemented")
-    val flowExecutor: ScheduledExecutorService
-        get() = TODO("Not yet implemented")
-    val fiberScheduler: FiberScheduler
-        get() = TODO("Not yet implemented")
-    val identityService: IdentityService
-        get() = TODO("Not yet implemented")
+    private val scheduler = FiberExecutorScheduler("Same thread scheduler", ScheduledSingleThreadExecutor())
+
+    // Should be set up by the configration service
+    private val resultTopic = ""
+    private val wakeupTopic = ""
+    private val deadLetterTopic = ""
 
     override fun startInitiatingFlow(
-        newFlowId: FlowId,
+        newFlowMetadata: FlowMetadata,
         clientId: String,
-        flowName: String,
         args: List<Any?>
     ): FlowResult {
-        TODO("Not yet implemented")
+        log.info("start new flow clientId: $clientId flowName: ${newFlowMetadata.name} args $args")
+
+        val flow = getOrCreate(newFlowMetadata.key.identity, newFlowMetadata, args)
+        val stateMachine = flowStateMachineFactory.createStateMachine(
+            clientId,
+            newFlowMetadata.key,
+            flow,
+//            ourIdentity,
+            scheduler,
+        )
+
+        stateMachine.housekeepingState(
+            HousekeepingState(
+                0,
+//            ourIdentity,
+                false,
+                mutableListOf()
+            )
+        )
+        setupFlow(stateMachine)
+        stateMachine.startFlow()
+        val (checkpoint, events) = stateMachine.waitForCheckpoint()
+
+        return FlowResult(
+            checkpoint,
+            events.toRecordsWithKey(newFlowMetadata.name)
+        )
     }
 
     override fun startRemoteInitiatedFlow(
-        newFlowId: FlowId,
+        newFlowMetadata: FlowMetadata,
         flowSessionMessage: FlowSessionMessage
     ): FlowResult {
         TODO("Not yet implemented")
@@ -55,5 +95,41 @@ class FlowManagerImpl : FlowManager {
         lastCheckpoint: Checkpoint
     ): FlowResult {
         TODO("Not yet implemented")
+    }
+
+    @Suppress("SpreadOperator")
+    private fun getOrCreate(identity: HoldingIdentity, flow: FlowMetadata, args: List<Any?>): Flow<*> {
+        val flowClazz: Class<Flow<*>> =
+            uncheckedCast(sandboxCache.getSandboxGroupFor(identity, flow).loadClass(flow.name, Flow::class.java))
+        val constructor = flowClazz.getDeclaredConstructor(*args.map { it!!::class.java }.toTypedArray())
+        return constructor.newInstance(*args.toTypedArray())
+    }
+
+    private fun setupFlow(flow: FlowStateMachine<*>) {
+        flow.nonSerializableState(
+            NonSerializableState(
+                checkpointSerialisationService,
+                Clock.systemUTC()
+            )
+        )
+        dependencyInjector.injectDependencies(flow.getFlowLogic(), flow)
+    }
+
+    private fun List<FlowEvent>.toRecordsWithKey(key: String): List<Record<String, ByteArray>> {
+        return this.map { event ->
+            val outputTopic = when (event.payload) {
+                is RPCFlowResult -> resultTopic
+                is Wakeup -> wakeupTopic
+                else -> {
+                    log.error("No topic available for $event")
+                    deadLetterTopic
+                }
+            }
+            Record(
+                outputTopic,
+                key,
+                checkpointSerialisationService.serialize(event).bytes
+            )
+        }
     }
 }

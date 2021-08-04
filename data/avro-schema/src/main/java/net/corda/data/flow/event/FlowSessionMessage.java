@@ -5,15 +5,17 @@
  */
 package net.corda.data.flow.event;
 
-import org.apache.avro.message.BinaryMessageDecoder;
-import org.apache.avro.message.BinaryMessageEncoder;
-import org.apache.avro.message.SchemaStore;
+import org.apache.avro.generic.GenericArray;
 import org.apache.avro.specific.SpecificData;
+import org.apache.avro.util.Utf8;
+import org.apache.avro.message.BinaryMessageEncoder;
+import org.apache.avro.message.BinaryMessageDecoder;
+import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = 6188956699936329209L;
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FlowSessionMessage\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.data.identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}},{\"name\":\"destination\",\"type\":\"net.corda.data.identity.HoldingIdentity\"},{\"name\":\"sessionId\",\"type\":\"bytes\"},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"message\",\"type\":\"bytes\"}]}");
+  private static final long serialVersionUID = 3248249429180352764L;
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"FlowSessionMessage\",\"namespace\":\"net.corda.data.flow.event\",\"fields\":[{\"name\":\"flowName\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"source\",\"type\":{\"type\":\"record\",\"name\":\"HoldingIdentity\",\"namespace\":\"net.corda.data.identity\",\"fields\":[{\"name\":\"x500Name\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"groupId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}}]}},{\"name\":\"destination\",\"type\":\"net.corda.data.identity.HoldingIdentity\"},{\"name\":\"sessionId\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"}},{\"name\":\"sequenceNo\",\"type\":\"int\"},{\"name\":\"message\",\"type\":\"bytes\"}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static SpecificData MODEL$ = new SpecificData();
@@ -72,7 +74,7 @@ public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordB
    private java.lang.String flowName;
    private net.corda.data.identity.HoldingIdentity source;
    private net.corda.data.identity.HoldingIdentity destination;
-   private java.nio.ByteBuffer sessionId;
+   private java.lang.String sessionId;
    private int sequenceNo;
    private java.nio.ByteBuffer message;
 
@@ -92,7 +94,7 @@ public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordB
    * @param sequenceNo The new value for sequenceNo
    * @param message The new value for message
    */
-  public FlowSessionMessage(java.lang.String flowName, net.corda.data.identity.HoldingIdentity source, net.corda.data.identity.HoldingIdentity destination, java.nio.ByteBuffer sessionId, java.lang.Integer sequenceNo, java.nio.ByteBuffer message) {
+  public FlowSessionMessage(java.lang.String flowName, net.corda.data.identity.HoldingIdentity source, net.corda.data.identity.HoldingIdentity destination, java.lang.String sessionId, java.lang.Integer sequenceNo, java.nio.ByteBuffer message) {
     this.flowName = flowName;
     this.source = source;
     this.destination = destination;
@@ -123,7 +125,7 @@ public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordB
     case 0: flowName = value$ != null ? value$.toString() : null; break;
     case 1: source = (net.corda.data.identity.HoldingIdentity)value$; break;
     case 2: destination = (net.corda.data.identity.HoldingIdentity)value$; break;
-    case 3: sessionId = (java.nio.ByteBuffer)value$; break;
+    case 3: sessionId = value$ != null ? value$.toString() : null; break;
     case 4: sequenceNo = (java.lang.Integer)value$; break;
     case 5: message = (java.nio.ByteBuffer)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
@@ -185,7 +187,7 @@ public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordB
    * Gets the value of the 'sessionId' field.
    * @return The value of the 'sessionId' field.
    */
-  public java.nio.ByteBuffer getSessionId() {
+  public java.lang.String getSessionId() {
     return sessionId;
   }
 
@@ -194,7 +196,7 @@ public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordB
    * Sets the value of the 'sessionId' field.
    * @param value the value to set.
    */
-  public void setSessionId(java.nio.ByteBuffer value) {
+  public void setSessionId(java.lang.String value) {
     this.sessionId = value;
   }
 
@@ -278,7 +280,7 @@ public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordB
     private net.corda.data.identity.HoldingIdentity.Builder sourceBuilder;
     private net.corda.data.identity.HoldingIdentity destination;
     private net.corda.data.identity.HoldingIdentity.Builder destinationBuilder;
-    private java.nio.ByteBuffer sessionId;
+    private java.lang.String sessionId;
     private int sequenceNo;
     private java.nio.ByteBuffer message;
 
@@ -555,7 +557,7 @@ public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordB
       * Gets the value of the 'sessionId' field.
       * @return The value.
       */
-    public java.nio.ByteBuffer getSessionId() {
+    public java.lang.String getSessionId() {
       return sessionId;
     }
 
@@ -565,7 +567,7 @@ public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordB
       * @param value The value of 'sessionId'.
       * @return This builder.
       */
-    public net.corda.data.flow.event.FlowSessionMessage.Builder setSessionId(java.nio.ByteBuffer value) {
+    public net.corda.data.flow.event.FlowSessionMessage.Builder setSessionId(java.lang.String value) {
       validate(fields()[3], value);
       this.sessionId = value;
       fieldSetFlags()[3] = true;
@@ -696,7 +698,7 @@ public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordB
         } else {
           record.destination = fieldSetFlags()[2] ? this.destination : (net.corda.data.identity.HoldingIdentity) defaultValue(fields()[2]);
         }
-        record.sessionId = fieldSetFlags()[3] ? this.sessionId : (java.nio.ByteBuffer) defaultValue(fields()[3]);
+        record.sessionId = fieldSetFlags()[3] ? this.sessionId : (java.lang.String) defaultValue(fields()[3]);
         record.sequenceNo = fieldSetFlags()[4] ? this.sequenceNo : (java.lang.Integer) defaultValue(fields()[4]);
         record.message = fieldSetFlags()[5] ? this.message : (java.nio.ByteBuffer) defaultValue(fields()[5]);
         return record;
@@ -737,7 +739,7 @@ public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordB
 
     this.destination.customEncode(out);
 
-    out.writeBytes(this.sessionId);
+    out.writeString(this.sessionId);
 
     out.writeInt(this.sequenceNo);
 
@@ -762,7 +764,7 @@ public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordB
       }
       this.destination.customDecode(in);
 
-      this.sessionId = in.readBytes(this.sessionId);
+      this.sessionId = in.readString();
 
       this.sequenceNo = in.readInt();
 
@@ -790,7 +792,7 @@ public class FlowSessionMessage extends org.apache.avro.specific.SpecificRecordB
           break;
 
         case 3:
-          this.sessionId = in.readBytes(this.sessionId);
+          this.sessionId = in.readString();
           break;
 
         case 4:
