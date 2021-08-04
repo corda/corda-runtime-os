@@ -1,4 +1,4 @@
-## Deploying Kafka clusters locally using Docker
+## Deploying Kafka clusters locally using Docker and running the Kafka integration tests
 
 You can use the scripts included in this folder to perform local deployments of full-blown Kafka clusters using Docker.
 
@@ -20,6 +20,13 @@ docker-compose -f single-kafka-cluster.yml up -d
 You can deploy the 2-cluster environment using the following command:
 ```
 docker-compose -f two-kafka-clusters.yml up -d
+```
+
+### Running the Kafka Integration Tests
+
+To run the tests
+```
+gradlew clean kafkaIntegrationTest
 ```
 
 ### Tearing down the environment
