@@ -4,6 +4,10 @@
   "namespace": "net.corda.data.flow",
   "fields": [
     {
+      "name": "clientId",
+      "type": ["null", "string"]
+    },
+    {
       "name": "suspendCount",
       "type": "int"
     },
@@ -14,6 +18,13 @@
     {
       "name": "initiatedBy",
       "type": "bytes"
+    },
+    {
+      "name": "eventQueue",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.flow.event.FlowEvent"
+      }
     }
   ]
 }
