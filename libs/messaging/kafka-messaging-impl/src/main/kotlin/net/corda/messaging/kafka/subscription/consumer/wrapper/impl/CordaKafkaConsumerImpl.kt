@@ -204,6 +204,11 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
+    override fun assignPartitionsManually(partitions: Set<Int>) {
+        val topicPartitions = partitions.map { TopicPartition(topic, it) }
+        consumer.assign(topicPartitions)
+    }
+
     /**
      * Handle retry logic. If max attempts have not been reached log a warning.
      * otherwise throw [CordaMessageAPIFatalException]
