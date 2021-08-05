@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -8,12 +9,12 @@ import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.render
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
+import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.apache.kafka.common.TopicPartition
@@ -90,7 +91,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 log.debug { "Creating compacted consumer.  Attempt: $attempts" }
-                consumerBuilder.createCompactedConsumer(config.getConfig(KAFKA_CONSUMER)).use {
+                consumerBuilder.createCompactedConsumer(config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass).use {
                     val partitions = it.getPartitions(
                         topicPrefix + topic,
                         Duration.ofSeconds(consumerThreadStopTimeout)
@@ -152,11 +153,21 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<K, V>) {
         while (!stopped) {
+            val consumerRecords = consumer.poll()
             try {
-                val consumerRecords = consumer.poll()
                 processCompactedRecords(consumerRecords)
             } catch (ex: Exception) {
-                throw CordaMessageAPIIntermittentException("$errorMsg.", ex)
+                when (ex) {
+                    is CordaMessageAPIFatalException,
+                    is CordaMessageAPIIntermittentException -> {
+                        throw ex
+                    }
+                    else -> {
+                        throw CordaMessageAPIFatalException(
+                            "Failed to process records from topic $topic, group $groupName.", ex
+                        )
+                    }
+                }
             }
         }
     }

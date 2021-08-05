@@ -1,0 +1,20 @@
+plugins {
+    id 'corda.publish'
+    id 'corda.common-library'
+}
+
+description "Sandbox Cache Implementation"
+
+dependencies {
+    implementation "net.corda:corda-application:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-install:$cordaVersion"
+    implementation "net.corda:corda-packaging:$cordaVersion"
+    implementation "net.corda:corda-sandbox:$cordaVersion"
+
+    implementation project(':data:avro-schema')
+    implementation project(":libs:sandbox:sandbox-cache")
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

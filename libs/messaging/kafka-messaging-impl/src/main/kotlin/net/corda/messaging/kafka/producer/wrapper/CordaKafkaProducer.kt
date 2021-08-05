@@ -13,12 +13,18 @@ interface CordaKafkaProducer : AutoCloseable, Producer<Any, Any> {
     fun sendRecords(records: List<Record<*, *>>)
 
     /**
-     * Send the [consumer] offsets back to kafka for a given [record].
-     * Otherwise commit back the offset for the last consumer poll position.
+     * Send the records to the specified partitions.
+     *
+     * @param recordsWithPartitions a list of pairs, where the first element is the partition and the second is the record.
+     */
+    fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, Record<*, *>>>)
+
+    /**
+     * Send the [consumer] offsets back to kafka for a list of given [records].
      * @throws CordaMessageAPIFatalException Fatal error
      * @throws CordaMessageAPIIntermittentException Retryable error
      */
-    fun sendRecordOffsetToTransaction(consumer: Consumer<*, *>, record: ConsumerRecord<*, *>)
+    fun sendRecordOffsetsToTransaction(consumer: Consumer<*, *>, records: List<ConsumerRecord<*, *>>)
 
 
     /**

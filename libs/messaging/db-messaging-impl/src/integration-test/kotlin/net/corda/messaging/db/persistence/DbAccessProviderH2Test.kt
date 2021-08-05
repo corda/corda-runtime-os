@@ -1,12 +1,10 @@
 package net.corda.messaging.db.persistence
 
-import net.corda.core.internal.delete
-import net.corda.core.internal.deleteRecursively
 import net.corda.messaging.db.util.DbUtils.Companion.createOffsetsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicRecordsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicsTableStmt
+import net.corda.messaging.db.util.deleteRecursively
 import org.h2.tools.Server
-import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
 import java.sql.DriverManager
