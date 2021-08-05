@@ -8,6 +8,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.db.partition.PartitionAllocator
 import net.corda.messaging.db.partition.PartitionAssignor
 import net.corda.messaging.db.persistence.DBAccessProvider
+import net.corda.messaging.db.persistence.DBAccessProviderCached
 import net.corda.messaging.db.persistence.DBAccessProviderImpl
 import net.corda.messaging.db.persistence.DBType
 import net.corda.messaging.db.publisher.DBPublisher
@@ -87,7 +88,8 @@ class PerformanceTests {
             it.prepareStatement(DbUtils.createTopicsTableStmt).execute()
         }
 
-        dbAccessProvider = DBAccessProviderImpl(jdbcUrl, jdbcUsername, jdbcPassword, dbType, persistenceLayerThreadPoolSize, 5.seconds, dbConnectionPoolSize)
+        val dbAccessProviderImpl = DBAccessProviderImpl(jdbcUrl, jdbcUsername, jdbcPassword, dbType, persistenceLayerThreadPoolSize, 5.seconds, dbConnectionPoolSize)
+        dbAccessProvider = DBAccessProviderCached(dbAccessProviderImpl, 1_000)
         dbAccessProvider.start()
 
         listOf(topic1, topic2).forEach { dbAccessProvider.createTopic(it, numberOfPartitions) }

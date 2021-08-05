@@ -1,14 +1,13 @@
 package net.corda.lifecycle
 
 /**
- * Define an event submitted by a [LifeCycleCoordinator]:
- * events are processed by the [LifeCycleCoordinator]'s processor.
+ * A lifecycle event to be processed by a coordinator.
  *
- * See the [SimpleLifeCycleCoordinator.lifeCycleProcessor] as example of coordinator's processor.
+ * This interface should be used by client code to define lifecycle events for the component.
  *
- * @see [LifeCycleCoordinator.postEvent]
+ * @see [LifecycleCoordinator.postEvent]
  */
-interface LifeCycleEvent
+interface LifecycleEvent
 
 /**
  * An event representing any error that occurred during the processing of another lifecycle event.
@@ -23,14 +22,14 @@ interface LifeCycleEvent
  * @param isHandled flag if the error event is handled by the processor.
  *  If [isHandled] is `false` on return from the processor, this will trigger the coordinator to stop.
  */
-class ErrorEvent internal constructor(val cause: Throwable, var isHandled: Boolean = false) : LifeCycleEvent
+class ErrorEvent internal constructor(val cause: Throwable, var isHandled: Boolean = false) : LifecycleEvent
 
 /**
  * The event delivered on the coordinator starting up.
  *
  * The user event handler is guaranteed to see this event first on start up of the coordinator.
  */
-class StartEvent internal constructor() : LifeCycleEvent
+class StartEvent internal constructor() : LifecycleEvent
 
 /**
  * The event delivered on the coordinator shutting down.
@@ -39,15 +38,15 @@ class StartEvent internal constructor() : LifeCycleEvent
  *
  * Note that on delivery of this event, the coordinator will be marked as not running.
  */
-class StopEvent internal constructor() : LifeCycleEvent
+class StopEvent internal constructor() : LifecycleEvent
 
 /**
  * An event delivered after a scheduled timer has fired.
  *
  * Implement this to define an event tied to a timer. The key should match the key that the timer was scheduled under
- * when calling [LifeCycleCoordinator.setTimer].
+ * when calling [LifecycleCoordinator.setTimer].
  */
-interface TimerEvent : LifeCycleEvent {
+interface TimerEvent : LifecycleEvent {
 
     /**
      * The key for the timer that fired this event.

@@ -4,23 +4,23 @@ import com.typesafe.config.Config
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReadService
 import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
-import net.corda.lifecycle.LifeCycle
-import net.corda.lifecycle.LifeCycleCoordinator
-import net.corda.lifecycle.LifeCycleEvent
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
 
-class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifeCycleEvent
-class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifeCycleEvent
+class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
+class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 
 class ConfigReader(
-    private val lifeCycleCoordinator: LifeCycleCoordinator,
+    private val lifeCycleCoordinator: LifecycleCoordinator,
     @Reference(service = ConfigReadServiceFactory::class)
 private val readServiceFactory: ConfigReadServiceFactory
-) : LifeCycle {
+) : Lifecycle {
 
     companion object {
         private val log: Logger = contextLogger()

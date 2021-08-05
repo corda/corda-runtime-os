@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReadService
 import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -21,7 +21,7 @@ import org.slf4j.Logger
 class KafkaConfigRead @Activate constructor(
     @Reference(service = ConfigReadServiceFactory::class)
     private val readServiceFactory: ConfigReadServiceFactory
-) : LifeCycle {
+) : Lifecycle {
 
     private companion object {
         private val logger: Logger = contextLogger()

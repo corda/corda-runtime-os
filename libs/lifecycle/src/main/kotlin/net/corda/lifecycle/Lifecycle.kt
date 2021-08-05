@@ -9,7 +9,7 @@ package net.corda.lifecycle
  *
  * When the component goes out of scope, [close] is automatically called, hence [stop].
  */
-interface LifeCycle : AutoCloseable {
+interface Lifecycle : AutoCloseable {
 
    /**
     * It is `true` the component is running.

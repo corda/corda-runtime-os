@@ -4,9 +4,9 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.components.examples.publisher.RunPublisher
-import net.corda.lifecycle.LifeCycleCoordinator
-import net.corda.lifecycle.LifeCycleEvent
-import net.corda.lifecycle.SimpleLifeCycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -36,13 +36,12 @@ class DemoPublisher @Activate constructor(
         val log: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val BATCH_SIZE: Int = 128
-        const val TIMEOUT: Long = 10000L
         const val TOPIC_PREFIX = "messaging.topic.prefix"
         const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
-    private var lifeCycleCoordinator: LifeCycleCoordinator? = null
+    private var lifeCycleCoordinator: LifecycleCoordinator? = null
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
@@ -58,7 +57,9 @@ class DemoPublisher @Activate constructor(
             val instanceId = parameters.instanceId?.toInt()
             var publisher: RunPublisher? = null
 
-            lifeCycleCoordinator = SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+            lifeCycleCoordinator = LifecycleCoordinatorFactory.createCoordinator<DemoPublisher>(
+                BATCH_SIZE
+            ) { event: LifecycleEvent, _: LifecycleCoordinator ->
                 log.info("LifecycleEvent received: $event")
                 when (event) {
                     is StartEvent -> {

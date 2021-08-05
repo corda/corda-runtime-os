@@ -1,5 +1,12 @@
-package net.corda.lifecycle
+package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.ErrorEvent
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.TimerEvent
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -12,10 +19,12 @@ import java.util.concurrent.ScheduledFuture
  * coordinator state is always modified on an executor thread. The coordinator itself ensures that only one attempt to
  * process events is scheduled at once, which in turn prevents race conditions when modifying the state.
  *
+ * @param name The name of the component using this processor
  * @param state The state for this lifecycle coordinator
  * @param userEventHandler The event handler the user has registered for use with this coordinator
  */
 internal class LifecycleProcessor(
+    private val name: String,
     private val state: LifecycleStateManager,
     private val userEventHandler: LifecycleEventHandler
 ) {
@@ -31,15 +40,15 @@ internal class LifecycleProcessor(
      * @param timerGenerator A function to create timers for use if a SetUpTimer event is encountered.
      */
     fun processEvents(
-        coordinator: LifeCycleCoordinator,
+        coordinator: LifecycleCoordinator,
         timerGenerator: (TimerEvent, Long) -> ScheduledFuture<*>
     ): Boolean {
         return state.nextBatch().map { processEvent(it, coordinator, timerGenerator) }.all { it }
     }
 
     private fun processEvent(
-        event: LifeCycleEvent,
-        coordinator: LifeCycleCoordinator,
+        event: LifecycleEvent,
+        coordinator: LifecycleCoordinator,
         timerGenerator: (TimerEvent, Long) -> ScheduledFuture<*>
     ): Boolean {
         return when (event) {
@@ -63,7 +72,8 @@ internal class LifecycleProcessor(
                     succeeded
                 } else {
                     logger.trace {
-                        "Did not process timer lifecycle event $event with key ${event.key} as coordinator is shutdown"
+                        "$name Lifecycle: Did not process timer lifecycle event $event with key ${event.key} " +
+                                "as coordinator is shutdown"
                     }
                     true
                 }
@@ -72,29 +82,31 @@ internal class LifecycleProcessor(
                 if (state.isRunning) {
                     runUserEventHandler(event, coordinator)
                 } else {
-                    logger.trace { "Did not process lifecycle event $event as coordinator is shutdown" }
+                    logger.trace {
+                        "$name Lifecycle: Did not process lifecycle event $event as coordinator is shutdown"
+                    }
                     true
                 }
             }
         }
     }
 
-    private fun processStartEvent(event: LifeCycleEvent, coordinator: LifeCycleCoordinator): Boolean {
+    private fun processStartEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
         return if (!state.isRunning) {
             state.isRunning = true
             runUserEventHandler(event, coordinator)
         } else {
-            logger.debug { "An attempt was made to start an already running coordinator" }
+            logger.debug { "$name Lifecycle: An attempt was made to start an already running coordinator" }
             true
         }
     }
 
-    private fun processStopEvent(event: LifeCycleEvent, coordinator: LifeCycleCoordinator): Boolean {
+    private fun processStopEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
         if (state.isRunning) {
             state.isRunning = false
             runUserEventHandler(event, coordinator)
         } else {
-            logger.debug { "An attempt was made to stop an already terminated coordinator" }
+            logger.debug { "$name Lifecycle: An attempt was made to stop an already terminated coordinator" }
         }
         return true
     }
@@ -109,21 +121,22 @@ internal class LifecycleProcessor(
                 timerGenerator(event.timerEventGenerator(event.key), event.delay)
             )
         } else {
-            logger.debug { "Not setting timer with key ${event.key} as coordinator is not running" }
+            logger.debug { "$name Lifecycle: Not setting timer with key ${event.key} as coordinator is not running" }
         }
         return true
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun runUserEventHandler(event: LifeCycleEvent, coordinator: LifeCycleCoordinator): Boolean {
+    private fun runUserEventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
         return try {
             userEventHandler.processEvent(event, coordinator)
             true
         } catch (e: Throwable) {
             val errorEvent = ErrorEvent(e)
             logger.info(
-                "An error occurred during the processing of event $event by a lifecycle coordinator: ${e.message}." +
-                        " Triggering user event handling.", e
+                "$name Lifecycle: An error occurred during the processing of event $event by a lifecycle " +
+                        "coordinator: ${e.message}. Triggering user event handling.",
+                e
             )
             try {
                 userEventHandler.processEvent(errorEvent, coordinator)
@@ -132,8 +145,8 @@ internal class LifecycleProcessor(
             }
             if (!errorEvent.isHandled) {
                 logger.error(
-                    "An unhandled error was encountered while processing $event in a lifecycle coordinator: " +
-                            "${e.message}. This coordinator will now shut down.",
+                    "$name Lifecycle: An unhandled error was encountered while processing $event in a lifecycle " +
+                            "coordinator: ${e.message}. This coordinator will now shut down.",
                     e
                 )
             }

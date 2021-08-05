@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -49,7 +49,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   linkManagerNetworkMap: LinkManagerNetworkMap,
                   linkManagerCryptoService: LinkManagerCryptoService,
                   config: LinkManagerConfig
-) : LifeCycle {
+) : Lifecycle {
 
     companion object {
         const val LINK_MANAGER_PUBLISHER_CLIENT_ID = "linkmanager"
