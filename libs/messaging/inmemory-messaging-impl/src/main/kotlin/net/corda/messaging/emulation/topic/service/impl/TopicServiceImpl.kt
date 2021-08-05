@@ -4,9 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.emulation.properties.InMemProperties.Companion.DEFAULT_POLL_SIZE
 import net.corda.messaging.emulation.properties.InMemProperties.Companion.TOPICS_MAX_SIZE
-import net.corda.messaging.emulation.properties.getIntOrDefault
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.model.Topic
@@ -18,8 +16,14 @@ import kotlin.concurrent.withLock
 @Component
 class TopicServiceImpl : TopicService {
     //TODO - replace with config service injection
-    private val config: Config = ConfigFactory.load("tmpInMemDefaults")
-    private val topicMaxSize = config.getIntOrDefault(TOPICS_MAX_SIZE, DEFAULT_POLL_SIZE)
+    private val config: Config = let {
+        val fallBack = ConfigFactory.load(
+            TopicServiceImpl::class.java.classLoader,
+            "inMemDefaults"
+        )
+        ConfigFactory.load("tmpInMemDefaults").withFallback(fallBack)
+    }
+    private val topicMaxSize = config.getInt(TOPICS_MAX_SIZE)
     private val topics: ConcurrentHashMap<String, Topic> = ConcurrentHashMap()
 
     override fun subscribe(topicName: String, consumerGroup: String, offsetStrategy: OffsetStrategy) {

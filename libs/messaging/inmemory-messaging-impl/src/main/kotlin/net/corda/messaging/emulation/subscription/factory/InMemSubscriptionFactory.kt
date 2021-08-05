@@ -44,7 +44,7 @@ class InMemSubscriptionFactory @Activate constructor(
         executor: ExecutorService?,
         nodeConfig: Config
     ): Subscription<K, V> {
-        //TODO - replace with config service
+        // TODO - replace with config service
         val config = ConfigFactory.load("tmpInMemDefaults")
             .withValue(GROUP_NAME, ConfigValueFactory.fromAnyRef(subscriptionConfig.groupName))
             .withValue(EVENT_TOPIC, ConfigValueFactory.fromAnyRef(subscriptionConfig.eventTopic))
@@ -81,13 +81,19 @@ class InMemSubscriptionFactory @Activate constructor(
         processor: EventLogProcessor<K, V>,
         nodeConfig: Config,
         partitionAssignmentListener: PartitionAssignmentListener?
-    ): Subscription<K, V> =
-        EventLogSubscription(
-            InMemoryEventLogSubscriptionConfig(subscriptionConfig, nodeConfig),
+    ): Subscription<K, V> {
+        val fallBack = ConfigFactory.load(
+            InMemoryEventLogSubscriptionConfig::class.java.classLoader,
+            "inMemDefaults"
+        )
+        val config = nodeConfig.withFallback(fallBack)
+        return EventLogSubscription(
+            InMemoryEventLogSubscriptionConfig(subscriptionConfig, config),
             processor,
             partitionAssignmentListener,
             topicService,
         )
+    }
 
     override fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
@@ -96,4 +102,3 @@ class InMemSubscriptionFactory @Activate constructor(
         TODO("Not yet implemented")
     }
 }
-
