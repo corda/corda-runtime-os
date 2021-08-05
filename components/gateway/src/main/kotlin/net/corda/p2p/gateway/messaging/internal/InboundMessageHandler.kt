@@ -2,7 +2,7 @@ package net.corda.p2p.gateway.messaging.internal
 
 import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -25,7 +25,7 @@ import java.nio.ByteBuffer
  */
 class InboundMessageHandler(private val server: HttpServer,
                             private val maxMessageSize: Int,
-                            private val publisherFactory: PublisherFactory) : LifeCycle, HttpEventListener {
+                            private val publisherFactory: PublisherFactory) : Lifecycle, HttpEventListener {
 
     companion object {
         private var logger = LoggerFactory.getLogger(InboundMessageHandler::class.java)

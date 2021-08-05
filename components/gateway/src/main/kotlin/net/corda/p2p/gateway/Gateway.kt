@@ -1,7 +1,7 @@
 package net.corda.p2p.gateway
 
 import com.typesafe.config.ConfigFactory
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -36,7 +36,7 @@ class Gateway(config: GatewayConfiguration,
               subscriptionFactory: SubscriptionFactory,
               @Reference(service = PublisherFactory::class)
               publisherFactory: PublisherFactory
-) : LifeCycle {
+) : Lifecycle {
 
     companion object {
         private val logger = LoggerFactory.getLogger(Gateway::class.java)

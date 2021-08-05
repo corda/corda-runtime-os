@@ -10,7 +10,7 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.HttpClientCodec
 import io.netty.handler.timeout.IdleStateHandler
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.slf4j.LoggerFactory
 import java.lang.IllegalStateException
@@ -44,7 +44,7 @@ import kotlin.concurrent.withLock
 class HttpClient(private val destination: URI,
                  private val sslConfiguration: SslConfiguration,
                  private val writeGroup: EventLoopGroup,
-                 private val nettyGroup: EventLoopGroup) : LifeCycle, HttpEventListener {
+                 private val nettyGroup: EventLoopGroup) : Lifecycle, HttpEventListener {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HttpClient::class.java)

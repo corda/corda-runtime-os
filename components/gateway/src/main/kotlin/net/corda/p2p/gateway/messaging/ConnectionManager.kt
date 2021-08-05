@@ -2,7 +2,7 @@ package net.corda.p2p.gateway.messaging
 
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import org.slf4j.LoggerFactory
@@ -21,7 +21,7 @@ import kotlin.concurrent.withLock
  *
  */
 class ConnectionManager(private val sslConfiguration: SslConfiguration,
-                        val config: ConnectionConfiguration) : LifeCycle {
+                        val config: ConnectionConfiguration) : Lifecycle {
 
     companion object {
         private val logger = LoggerFactory.getLogger(ConnectionManager::class.java)

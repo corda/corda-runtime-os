@@ -2,7 +2,7 @@ package net.corda.p2p.gateway.messaging.internal
 
 import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -27,7 +27,7 @@ import java.nio.ByteBuffer
  */
 class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                              private val publisherFactory: PublisherFactory
-) : EventLogProcessor<String, LinkOutMessage>, LifeCycle, HttpEventListener {
+) : EventLogProcessor<String, LinkOutMessage>, Lifecycle, HttpEventListener {
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
     }
