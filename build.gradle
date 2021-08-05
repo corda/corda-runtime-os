@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import static org.gradle.api.JavaVersion.VERSION_11
 import io.gitlab.arturbosch.detekt.DetektPlugin
 
@@ -49,7 +48,7 @@ allprojects {
         options.compilerArgs += '-XDenableSunApiLintControl'
     }
 
-    tasks.withType(KotlinCompile) {
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
         kotlinOptions {
             allWarningsAsErrors = true
             languageVersion = '1.4'
