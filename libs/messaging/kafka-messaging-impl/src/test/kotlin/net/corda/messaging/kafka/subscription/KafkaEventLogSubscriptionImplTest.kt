@@ -11,16 +11,15 @@ import org.mockito.kotlin.whenever
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_DURABLE
-import net.corda.messaging.kafka.stubs.StubDurableProcessor
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
+import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.stubs.StubEventLogProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -28,7 +27,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-class KafkaDurableSubscriptionImplTest {
+class KafkaEventLogSubscriptionImplTest {
     private companion object {
         private const val TEST_TIMEOUT_SECONDS = 3L
     }
@@ -46,8 +45,8 @@ class KafkaDurableSubscriptionImplTest {
             .toList()
     private var pollInvocationCount : Int = 0
     private var builderInvocationCount : Int = 0
-    private lateinit var kafkaDurableSubscriptionImpl: KafkaDurableSubscriptionImpl<String, ByteBuffer>
-    private lateinit var processor: DurableProcessor<String, ByteBuffer>
+    private lateinit var kafkaEventLogSubscription: KafkaEventLogSubscriptionImpl<String, ByteBuffer>
+    private lateinit var processor: StubEventLogProcessor<String, ByteBuffer>
     private lateinit var pollInvocationLatch: CountDownLatch
     private lateinit var eventsLatch: CountDownLatch
 
@@ -55,7 +54,7 @@ class KafkaDurableSubscriptionImplTest {
     fun setup() {
         pollInvocationLatch = CountDownLatch(1)
         eventsLatch = CountDownLatch(mockRecordCount.toInt())
-        processor = StubDurableProcessor(pollInvocationLatch, eventsLatch)
+        processor = StubEventLogProcessor(pollInvocationLatch, eventsLatch, null, String::class.java, ByteBuffer::class.java)
 
         pollInvocationCount = 0
         doAnswer{
@@ -76,18 +75,19 @@ class KafkaDurableSubscriptionImplTest {
      * Test processor is executed when a new record is added to the consumer.
      */
     @Test
-    fun testDurableSubscription() {
-        kafkaDurableSubscriptionImpl = KafkaDurableSubscriptionImpl(
+    fun testSubscription() {
+        kafkaEventLogSubscription = KafkaEventLogSubscriptionImpl(
             config,
             consumerBuilder,
             producerBuilder,
-            processor
+            processor,
+            null
         )
-        kafkaDurableSubscriptionImpl.start()
+        kafkaEventLogSubscription.start()
 
         eventsLatch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
 
-        kafkaDurableSubscriptionImpl.stop()
+        kafkaEventLogSubscription.stop()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
         verify(producerBuilder, times(1)).createProducer(any())
         verify(mockCordaProducer, times(1)).beginTransaction()
@@ -104,15 +104,16 @@ class KafkaDurableSubscriptionImplTest {
         whenever(consumerBuilder.createDurableConsumer(any(), any(), any(), any(), anyOrNull()))
             .thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
-        kafkaDurableSubscriptionImpl = KafkaDurableSubscriptionImpl(
+        kafkaEventLogSubscription = KafkaEventLogSubscriptionImpl(
             config,
             consumerBuilder,
             producerBuilder,
-            processor
+            processor,
+            null
         )
 
-        kafkaDurableSubscriptionImpl.start()
-        while (kafkaDurableSubscriptionImpl.isRunning) { Thread.sleep(10) }
+        kafkaEventLogSubscription.start()
+        while (kafkaEventLogSubscription.isRunning) { Thread.sleep(10) }
 
         verify(mockCordaConsumer, times(0)).poll()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
@@ -127,15 +128,16 @@ class KafkaDurableSubscriptionImplTest {
     fun testFatalExceptionProducerBuild() {
         whenever(producerBuilder.createProducer(any())).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
-        kafkaDurableSubscriptionImpl = KafkaDurableSubscriptionImpl(
+        kafkaEventLogSubscription = KafkaEventLogSubscriptionImpl(
             config,
             consumerBuilder,
             producerBuilder,
-            processor
+            processor,
+            null
         )
 
-        kafkaDurableSubscriptionImpl.start()
-        while (kafkaDurableSubscriptionImpl.isRunning) { Thread.sleep(10) }
+        kafkaEventLogSubscription.start()
+        while (kafkaEventLogSubscription.isRunning) { Thread.sleep(10) }
 
         verify(mockCordaConsumer, times(0)).poll()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
@@ -159,15 +161,16 @@ class KafkaDurableSubscriptionImplTest {
         }.whenever(consumerBuilder).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
         whenever(mockCordaConsumer.poll()).thenThrow(CordaMessageAPIIntermittentException("Error", Exception()))
 
-        kafkaDurableSubscriptionImpl = KafkaDurableSubscriptionImpl(
+        kafkaEventLogSubscription = KafkaEventLogSubscriptionImpl(
             config,
             consumerBuilder,
             producerBuilder,
-            processor
+            processor,
+            null
         )
 
-        kafkaDurableSubscriptionImpl.start()
-        while (kafkaDurableSubscriptionImpl.isRunning) { Thread.sleep(10) }
+        kafkaEventLogSubscription.start()
+        while (kafkaEventLogSubscription.isRunning) { Thread.sleep(10) }
 
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
         verify(consumerBuilder, times(2)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
@@ -189,18 +192,20 @@ class KafkaDurableSubscriptionImplTest {
         }.whenever(consumerBuilder).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
 
         pollInvocationLatch = CountDownLatch(consumerPollAndProcessRetriesCount)
-        processor = StubDurableProcessor(pollInvocationLatch, eventsLatch, CordaMessageAPIIntermittentException(""))
+        processor = StubEventLogProcessor(pollInvocationLatch, eventsLatch, CordaMessageAPIIntermittentException(""),
+            String::class.java, ByteBuffer::class.java)
         doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
 
-        kafkaDurableSubscriptionImpl = KafkaDurableSubscriptionImpl(
+        kafkaEventLogSubscription = KafkaEventLogSubscriptionImpl(
             config,
             consumerBuilder,
             producerBuilder,
-            processor
+            processor,
+            null
         )
 
-        kafkaDurableSubscriptionImpl.start()
-        while (kafkaDurableSubscriptionImpl.isRunning) { Thread.sleep(10) }
+        kafkaEventLogSubscription.start()
+        while (kafkaEventLogSubscription.isRunning) { Thread.sleep(10) }
 
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
@@ -215,17 +220,19 @@ class KafkaDurableSubscriptionImplTest {
     @Test
     fun testFatalExceptionDuringTransaction() {
         pollInvocationLatch = CountDownLatch(consumerPollAndProcessRetriesCount)
-        processor = StubDurableProcessor(pollInvocationLatch, eventsLatch, CordaMessageAPIFatalException(""))
+        processor = StubEventLogProcessor(pollInvocationLatch, eventsLatch, CordaMessageAPIFatalException(""),
+            String::class.java, ByteBuffer::class.java)
 
-        kafkaDurableSubscriptionImpl = KafkaDurableSubscriptionImpl(
+        kafkaEventLogSubscription = KafkaEventLogSubscriptionImpl(
             config,
             consumerBuilder,
             producerBuilder,
-            processor
+            processor,
+            null
         )
 
-        kafkaDurableSubscriptionImpl.start()
-        while (kafkaDurableSubscriptionImpl.isRunning) { Thread.sleep(10) }
+        kafkaEventLogSubscription.start()
+        while (kafkaEventLogSubscription.isRunning) { Thread.sleep(10) }
 
         verify(mockCordaConsumer, times(0)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(1)).poll()
@@ -233,7 +240,7 @@ class KafkaDurableSubscriptionImplTest {
         verify(producerBuilder, times(1)).createProducer(any())
         verify(mockCordaProducer, times(1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
-        verify(mockCordaProducer, times(0)).sendRecordOffsetToTransaction(any(), anyOrNull())
+        verify(mockCordaProducer, times(0)).sendRecordOffsetsToTransaction(any(), anyOrNull())
         verify(mockCordaProducer, times(0)).tryCommitTransaction()
     }
 }

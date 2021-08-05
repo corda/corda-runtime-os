@@ -16,7 +16,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONS
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBSUB
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
 import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
-import net.corda.messaging.kafka.subscription.generateMockConsumerRecordsList
+import net.corda.messaging.kafka.subscription.generateMockConsumerRecords
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.CommitFailedException
@@ -74,7 +74,7 @@ class CordaKafkaConsumerImplTest {
 
     @Test
     fun testPollInvoked() {
-        val consumerRecords = generateMockConsumerRecordsList(2, eventTopic, 1)
+        val consumerRecords = generateMockConsumerRecords(2, eventTopic, 1)
 
         consumer = mock()
         doReturn(consumerRecords).whenever(consumer).poll(Mockito.any(Duration::class.java))

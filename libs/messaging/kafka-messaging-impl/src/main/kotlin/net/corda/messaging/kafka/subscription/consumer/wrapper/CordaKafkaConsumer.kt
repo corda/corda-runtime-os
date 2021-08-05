@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription.consumer.wrapper
 
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -17,6 +18,11 @@ data class ConsumerRecordAndMeta<K : Any, V : Any>(
 fun <K : Any, V : Any> ConsumerRecordAndMeta<K, V>.asRecord(): Record<K, V> {
     val topic = record.topic().substringAfter(topicPrefix)
     return Record(topic, record.key(), record.value())
+}
+
+fun <K: Any, V: Any> ConsumerRecordAndMeta<K, V>.asEventLogRecord(): EventLogRecord<K, V> {
+    val topic = record.topic().substringAfter(topicPrefix)
+    return EventLogRecord(topic, record.key(), record.value(), record.partition(), record.offset())
 }
 
 /**
@@ -54,4 +60,14 @@ interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable, Consumer<K, V> {
      * Similar to [KafkaConsumer.partitionsFor] but returning a [TopicPartition].
      */
     fun getPartitions(topic: String, duration: Duration): List<TopicPartition>
+
+    /**
+     * Manually assigns the specified partitions of the configured topic to this consumer.
+     *
+     * Note: manual assignment is an alternative to subscription, where Kafka does not execute any partition assignment logic and lets
+     * the client assign partitions. So, do not use this in conjunction with [subscribeToTopic] as they satisfy different use-cases.
+     */
+    fun assignPartitionsManually(partitions: Set<Int>)
+
+
 }

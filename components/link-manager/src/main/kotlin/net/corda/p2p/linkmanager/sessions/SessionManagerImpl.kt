@@ -26,6 +26,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerH
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
 import net.corda.p2p.payload.FlowMessage
+import net.corda.p2p.payload.FlowMessageAndKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
@@ -58,6 +59,7 @@ open class SessionManagerImpl(
 
     private val pendingOutboundSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
     private val activeOutboundSessions = ConcurrentHashMap<SessionKey, Session>()
+    private val activeOutboundSessionsById = ConcurrentHashMap<String, Session>()
 
     private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
     private val activeInboundSessions = ConcurrentHashMap<String, Session>()
@@ -66,9 +68,9 @@ open class SessionManagerImpl(
 
     private val sessionNegotiationLock = ReentrantLock()
 
-    override fun processOutboundFlowMessage(message: FlowMessage): SessionState {
+    override fun processOutboundFlowMessage(message: FlowMessageAndKey): SessionState {
         sessionNegotiationLock.withLock {
-            val key = getSessionKeyFromMessage(message)
+            val key = getSessionKeyFromMessage(message.flowMessage)
 
             val activeSession = activeOutboundSessions[key]
             if (activeSession != null) {
@@ -83,8 +85,17 @@ open class SessionManagerImpl(
         }
     }
 
-    override fun getInboundSession(uuid: String): Session? {
-        return activeInboundSessions[uuid]
+    override fun getSessionById(uuid: String): SessionManager.SessionDirection {
+        val inboundSession = activeInboundSessions[uuid]
+        if (inboundSession != null) {
+            return SessionManager.SessionDirection.Inbound(inboundSession)
+        }
+        val outboundSession = activeOutboundSessionsById[uuid]
+        return if (outboundSession != null) {
+            SessionManager.SessionDirection.Outbound(outboundSession)
+        } else {
+            SessionManager.SessionDirection.NoSession
+        }
     }
 
     override fun processSessionMessage(message: LinkInMessage): LinkOutMessage? {
@@ -115,7 +126,7 @@ open class SessionManagerImpl(
                     "The sessionInit message was not sent.")
             return null
         }
-        val message = createLinkOutMessage(session.generateInitiatorHello(), responderMemberInfo, networkType) ?: return null
+        val message = createLinkOutMessage(session.generateInitiatorHello(), responderMemberInfo, networkType)
         return sessionId to message
     }
 
@@ -200,6 +211,7 @@ open class SessionManagerImpl(
         val authenticatedSession = session.getSession()
         sessionNegotiationLock.withLock {
             activeOutboundSessions[sessionInfo] = authenticatedSession
+            activeOutboundSessionsById[message.header.sessionId] = authenticatedSession
             pendingOutboundSessions.remove(message.header.sessionId)
             pendingOutboundSessionMessageQueues.sessionNegotiatedCallback(sessionInfo, authenticatedSession, networkMap)
         }
