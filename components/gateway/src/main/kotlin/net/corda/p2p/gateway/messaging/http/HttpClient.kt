@@ -1,7 +1,11 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.bootstrap.Bootstrap
-import io.netty.channel.*
+import io.netty.channel.Channel
+import io.netty.channel.ChannelFutureListener
+import io.netty.channel.ChannelInitializer
+import io.netty.channel.EventLoop
+import io.netty.channel.EventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.HttpClientCodec
@@ -13,7 +17,7 @@ import java.lang.IllegalStateException
 import java.net.URI
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509CertSelector
-import java.util.*
+import java.util.LinkedList
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.CertPathTrustManagerParameters
