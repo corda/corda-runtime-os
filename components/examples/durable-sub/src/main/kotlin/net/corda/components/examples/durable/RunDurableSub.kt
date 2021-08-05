@@ -3,7 +3,7 @@ package net.corda.components.examples.durable
 import com.typesafe.config.Config
 import net.corda.components.examples.durable.processor.DemoDurableProcessor
 import net.corda.data.demo.DemoRecord
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -18,7 +18,7 @@ class RunDurableSub(
     private val instanceId: Int,
     private val killProcessOnRecord: Int = 0,
     private val delayOnNext: Long = 0,
-    ) : LifeCycle {
+    ) : Lifecycle {
 
     private companion object {
         val log: Logger = contextLogger()

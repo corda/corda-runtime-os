@@ -24,5 +24,5 @@ fun interface LifecycleEventHandler {
      * @param event The event to process
      * @param coordinator A handle to the coordinator. This can be used to post follow up events or set/cancel timers.
      */
-    fun processEvent(event: LifeCycleEvent, coordinator: LifeCycleCoordinator)
+    fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator)
 }

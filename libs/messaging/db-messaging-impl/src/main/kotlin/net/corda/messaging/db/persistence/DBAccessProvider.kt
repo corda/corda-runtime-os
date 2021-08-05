@@ -1,6 +1,6 @@
 package net.corda.messaging.db.persistence
 
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.time.Instant
 
@@ -10,7 +10,7 @@ import java.time.Instant
  * In case of an error coming from the database, all the methods reading/writing data should rollback the corresponding transaction
  * and let the exception propagate to the client that invoked the method, so that it can be handled appropriately.
  */
-interface DBAccessProvider: LifeCycle {
+interface DBAccessProvider: Lifecycle {
 
     /**
      * Writes the specified offsets to the database

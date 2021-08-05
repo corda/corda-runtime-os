@@ -1,6 +1,6 @@
 package net.corda.messaging.db.subscription
 
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
@@ -26,7 +26,7 @@ class DBDurableSubscription<K: Any, V: Any>(subscriptionConfig: SubscriptionConf
                                             partitionAssignor: PartitionAssignor,
                                             dbAccessProvider: DBAccessProvider,
                                             pollingTimeout: Duration = 1.seconds,
-                                            batchSize: Int = 100): Subscription<K, V>, LifeCycle {
+                                            batchSize: Int = 100): Subscription<K, V>, Lifecycle {
 
     private val eventLogSubscription = DBEventLogSubscription(subscriptionConfig,
         ForwardingEventLogProcessor(durableProcessor), partitionAssignmentListener, avroSchemaRegistry,

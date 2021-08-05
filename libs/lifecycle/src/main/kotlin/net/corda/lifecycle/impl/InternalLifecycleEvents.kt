@@ -1,4 +1,7 @@
-package net.corda.lifecycle
+package net.corda.lifecycle.impl
+
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.TimerEvent
 
 /**
  * Purely internal events for the lifecycle coordinator to process. These are used to ensure that state changes to the
@@ -15,11 +18,11 @@ internal data class SetUpTimer(
     val key: String,
     val delay: Long,
     val timerEventGenerator: (String) -> TimerEvent
-) : LifeCycleEvent
+) : LifecycleEvent
 
 /**
  * Cancel a timer.
  */
 internal data class CancelTimer(
     val key: String
-) : LifeCycleEvent
+) : LifecycleEvent
