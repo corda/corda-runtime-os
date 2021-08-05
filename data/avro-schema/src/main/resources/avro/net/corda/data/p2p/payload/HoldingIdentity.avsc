@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "HoldingIdentity",
+  "namespace": "net.corda.p2p.payload",
+  "fields": [
+    {
+      "name": "x500Name",
+      "type": "string"
+    },
+    {
+      "name": "groupId",
+      "type": "string"
+    }
+  ]
+}

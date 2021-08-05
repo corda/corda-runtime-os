@@ -13,6 +13,7 @@ class TestStateEventProcessor(
     private val updateState: Boolean,
     private val throwException: Boolean = false,
     private val outputTopic: String? = null,
+    private val delayProcessor: Long? = null,
 ) :
     StateAndEventProcessor<String,
             DemoStateRecord,
@@ -29,6 +30,10 @@ class TestStateEventProcessor(
 
     override fun onNext(state: DemoStateRecord?, event: Record<String, DemoRecord>): Response<DemoStateRecord> {
         onNextLatch.countDown()
+
+        if (delayProcessor != null) {
+            Thread.sleep(delayProcessor)
+        }
 
         if (throwException && !exceptionThrown) {
             exceptionThrown = true
