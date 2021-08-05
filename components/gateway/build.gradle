@@ -28,7 +28,7 @@ dependencies {
     compile "com.lmax:disruptor:$disruptorVersion"
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
     }
 
