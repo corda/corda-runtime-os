@@ -17,7 +17,6 @@ dependencies {
     implementation "io.reactivex:rxjava:$rxjavaVersion"
     implementation "io.netty:netty-transport:$nettyVersion"
     implementation "io.netty:netty-codec-http:$nettyVersion"
-    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
 
     // Log4J: logging framework (with SLF4J bindings) - TEMPORARY UNTIL I FIGURE OUT LOGGING IN THIS PROJECT
     compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
