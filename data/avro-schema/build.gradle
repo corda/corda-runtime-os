@@ -18,14 +18,22 @@ dependencies {
 
 description 'Data Model Definitions'
 
-def generatedPackageInfoDir = "src/main/java"
+def generatedAvroDir = layout.buildDirectory.dir('generated-avro')
+def generatedPackageInfoDir = layout.buildDirectory.dir('generated-packages')
+def generatedClassesDir = layout.buildDirectory.dir('generated-txt')
 
-sourceSets.main.java.srcDirs generatedPackageInfoDir
+sourceSets {
+    main {
+        java {
+            srcDirs generatedAvroDir, generatedPackageInfoDir
+        }
+    }
+}
 
 def generateAvro = tasks.register("generateAvro", GenerateAvroJavaTask) {
     group = "codeGeneration"
     source("src/main/resources/avro")
-    outputDir = file(generatedPackageInfoDir)
+    outputDir = generatedAvroDir
 }
 
 avro {
@@ -38,11 +46,14 @@ avro {
 
 def generateOSGiPackageInfo = tasks.register("generateOSGiPackageInfo", Task) {
     group = "codeGeneration"
-    def packages = [] as Set
-    def classes = [] as Set
+    def packages = [] as Set<String>
+    def classes = [] as Set<String>
+
+    inputs.files generateAvro
+    outputs.dirs generatedPackageInfoDir, generatedClassesDir
 
     doLast {
-        file(generatedPackageInfoDir).eachFileRecurse(FileType.FILES) {
+        generatedAvroDir.get().asFile.eachFileRecurse(FileType.FILES) {
             if (!it.name.contains("package-info") && it.name.endsWith('.java')) {
                 def packageName = ((it.text =~ "package (.+);")[0][1])
                 packages << packageName
@@ -53,25 +64,23 @@ def generateOSGiPackageInfo = tasks.register("generateOSGiPackageInfo", Task) {
             }
         }
 
-        packages.each {
-            def dir = "$generatedPackageInfoDir/${it.replaceAll(/\./, '/')}"
-            def outputFile = file(dir + '/package-info.java').newWriter()
-            outputFile << applyPackageInfoTemplate(it)
-            outputFile.close()
+        def packageInfoDir = generatedPackageInfoDir.get()
+        packages.each { String pkg ->
+            def dir = packageInfoDir.dir(pkg.replaceAll(/\./, '/'))
+            mkdir dir
+            dir.file('package-info.java').asFile.withWriter { outputFile ->
+                outputFile << applyPackageInfoTemplate(pkg)
+            }
         }
 
-        sourceSets.main.resources {
-            def generatedClassesDir = 'src/main/resources/net/corda/data'
-            mkdir generatedClassesDir
-            def outputFile = file(generatedClassesDir + '/generated-avro-message-classes.txt').newWriter()
-            for (generatedClass in classes.sort()) {
-                outputFile.println generatedClass.toString().denormalize()
+        generatedClassesDir.map { dir ->
+            dir.file('generated-avro-message-classes.txt')
+        }.get().asFile.withPrintWriter { outputFile ->
+            for (String generatedClass in classes.sort()) {
+                outputFile.println generatedClass.denormalize()
             }
-            outputFile.close()
         }
     }
-
-    dependsOn(generateAvro)
 }
 
 private static String applyPackageInfoTemplate(packageName) {
@@ -93,11 +102,17 @@ import org.osgi.annotation.bundle.Export;
 // endregion
 
 tasks.named("compileKotlin") {
-    dependsOn generateAvro
+    dependsOn generateOSGiPackageInfo
 }
 
-tasks.named("assemble") {
-    dependsOn generateAvro, generateOSGiPackageInfo
+def generatedResources = files(generatedClassesDir) {
+    builtBy generateOSGiPackageInfo
+}
+
+tasks.named('processResources', ProcessResources) {
+    from(generatedResources) {
+        into 'net/corda/data'
+    }
 }
 
 /**
@@ -107,8 +122,8 @@ tasks.named("assemble") {
 tasks.named('jar', Jar) {
     archiveBaseName = project.name
     bnd """
-Bundle-Name: $project.description
-Bundle-SymbolicName: ${project.group}.${project.name}
+Bundle-Name: \${project.description}
+Bundle-SymbolicName: \${project.group}.\${project.name}
 Fragment-Host: avro
 """
 }
