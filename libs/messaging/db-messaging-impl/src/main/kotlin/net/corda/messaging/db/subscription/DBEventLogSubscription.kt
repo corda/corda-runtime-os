@@ -177,13 +177,13 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
     private fun publishNewRecordsAndCommitOffset(records: List<Record<*, *>>, offsetsPerPartition: Map<Int, Long>) {
         val newDbRecords = records.map { toDbRecord(it) }
         if (subscriptionConfig.instanceId == null) {
-            dbAccessProvider.writeRecords(newDbRecords) { writtenRecords ->
+            dbAccessProvider.writeRecords(newDbRecords) { writtenRecords, _ ->
                 writtenRecords.forEach { offsetTrackersManager.offsetReleased(it.topic, it.partition, it.offset) }
             }
             dbAccessProvider.writeOffsets(subscriptionConfig.eventTopic, subscriptionConfig.groupName, offsetsPerPartition)
         } else {
             dbAccessProvider.writeOffsetsAndRecordsAtomically(subscriptionConfig.eventTopic, subscriptionConfig.groupName,
-                offsetsPerPartition, newDbRecords) { writtenRecords ->
+                offsetsPerPartition, newDbRecords) { writtenRecords, _ ->
                 writtenRecords.forEach { offsetTrackersManager.offsetReleased(it.topic, it.partition, it.offset) }
             }
         }
