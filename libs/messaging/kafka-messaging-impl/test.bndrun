@@ -49,6 +49,7 @@
 	net.corda.base;version='[5.0.0,5.0.1)',\
 	net.corda.kafka-messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.kafka-topic-admin;version='[5.0.0,5.0.1)',\
+	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.21,1.4.22)',\
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
 	net.corda.schema-registry;version='[5.0.0,5.0.1)',\
