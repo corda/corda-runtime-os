@@ -35,12 +35,9 @@ class EventLogSubscription<K : Any, V : Any>(
         private val logger: Logger = contextLogger()
     }
 
-    internal val topic by lazy {
-        config.subscriptionConfig.eventTopic
-    }
-    internal val group by lazy {
-        config.subscriptionConfig.groupName
-    }
+    internal val topic = config.subscriptionConfig.eventTopic
+
+    internal val group = config.subscriptionConfig.groupName
 
     internal val partitioner: (net.corda.messaging.api.records.Record<*, *>) -> Int by lazy {
         Partitioner(partitionAssignmentListener, config.partitionSize)

@@ -1,46 +1,59 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.slot
-import io.mockk.verify
+import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
+import net.corda.messaging.emulation.topic.model.RecordMetadata
+import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.util.concurrent.atomic.AtomicInteger
 
 class EventLogSubscriptionMainLoopTest {
-    private val eventsSent = slot< List<EventLogRecord<String, SubscriptionConfig>>>()
-    private val eventLogSubscription = mockk<EventLogSubscription<String, SubscriptionConfig>>(relaxed = true) {
-        every { topic } returns "topic"
-        every { group } returns "group"
-        every { processor.valueClass } returns SubscriptionConfig::class.java
-        every { processor.keyClass } returns String::class.java
-        every { processor.onNext(capture(eventsSent)) } returns emptyList()
+    private val eventsSent = argumentCaptor<List<EventLogRecord<String, SubscriptionConfig>>>()
+    private val processor = mock<EventLogProcessor<String, SubscriptionConfig>> {
+        on { keyClass } doReturn String::class.java
+        on { valueClass } doReturn SubscriptionConfig::class.java
+        on { onNext(eventsSent.capture()) } doReturn emptyList()
     }
-    private val thread = mockk<Thread>(relaxed = true)
+    private val topicService = mock<TopicService>()
+    private val config = mock<InMemoryEventLogSubscriptionConfig>()
+    private val partitioner = mock<Partitioner>()
+    private val eventLogSubscription = mock<EventLogSubscription<String, SubscriptionConfig>> {
+        on { topic } doReturn "topic"
+        on { group } doReturn "group"
+        on { processor } doReturn processor
+        on { topicService } doReturn topicService
+        on { config } doReturn config
+        on { partitioner } doReturn partitioner
+    }
+    private val thread = mock<Thread>()
     private val testObject = EventLogSubscriptionMainLoop(eventLogSubscription, { thread })
 
     @Test
     fun `start set the thread properties and start it`() {
         testObject.start()
 
-        verify {
-            thread.name = any()
-            thread.isDaemon = true
-            thread.start()
-        }
+        verify(thread).name = any()
+        verify(thread).isDaemon = true
+        verify(thread).start()
     }
 
     @Test
     fun `stop will join the thread`() {
         testObject.stop()
 
-        verify {
-            thread.join()
-        }
+        verify(thread).join()
     }
 
     @Test
@@ -48,26 +61,19 @@ class EventLogSubscriptionMainLoopTest {
         testObject.stop()
         testObject.run()
 
-        verify {
-            eventLogSubscription.topicService.subscribe("topic", "group", OffsetStrategy.LATEST)
-        }
+        verify(topicService).subscribe("topic", "group", OffsetStrategy.LATEST)
     }
 
     @Test
     fun `run will stop once stop is called`() {
         val counter = AtomicInteger()
-        every {
-            eventLogSubscription.topicService.getRecords(
-                any(),
-                any(),
-                any()
-            )
-        } answers {
-            if (counter.incrementAndGet() >= 10) {
-                testObject.stop()
+        whenever(topicService.getRecords(any(), any(), any(), any()))
+            .doAnswer {
+                if (counter.incrementAndGet() >= 10) {
+                    testObject.stop()
+                }
+                emptyList()
             }
-            emptyList()
-        }
 
         testObject.run()
 
@@ -76,86 +82,85 @@ class EventLogSubscriptionMainLoopTest {
 
     @Test
     fun `run will get the correct records`() {
-        every {
-            eventLogSubscription.topicService.getRecords(
-                any(),
-                any(),
-                any()
-            )
-        } answers {
-            testObject.stop()
-            emptyList()
-        }
+        whenever(topicService.getRecords(any(), any(), any(), any()))
+            .doAnswer {
+                testObject.stop()
+                emptyList()
+            }
 
         testObject.run()
 
-        verify {
-            eventLogSubscription.topicService.getRecords("topic", "group", any())
-        }
+        verify(topicService).getRecords(eq("topic"), eq("group"), any(), any())
     }
 
     @Test
     fun `run will send the correct record to the processor`() {
         val value = SubscriptionConfig("t1", "g1")
-        every { eventLogSubscription.partitioner(any()) } returns 32
-        every {
-            eventLogSubscription.topicService.getRecords(
+        whenever(partitioner(any())).doReturn(32)
+        whenever(
+            topicService.getRecords(
+                any(),
                 any(),
                 any(),
                 any()
             )
-        } answers {
+        ).doAnswer {
             testObject.stop()
-            listOf(
-                mockk {
-                    every { record.value } returns "String"
+            listOf<Record<Any, Any>>(
+                mock {
+                    on { this@on.value } doReturn "String"
                 },
-                mockk {
-                    every { record.value } returns value
-                    every { record.key } returns 33
+                mock {
+                    on { this@on.value } doReturn value
+                    on { this.key } doReturn 33
                 },
-                mockk {
-                    every { record.value } returns value
-                    every { record.key } returns "key"
-                    every { record.topic } returns "record-topic"
-                    every { offset } returns 123
+                mock {
+                    on { this@on.value } doReturn value
+                    on { this.key } doReturn "key"
+                    on { this.topic } doReturn "record-topic"
                 },
-                mockk {
-                    every { record.value } returns null
+                mock {
+                    on { this@on.value } doReturn null
                 },
-            )
+            ).map {
+                RecordMetadata(offset = 123, record = it)
+            }
         }
 
         testObject.run()
 
-        assertThat(eventsSent.captured).isEqualTo(listOf(EventLogRecord("record-topic", "key", value, 32, 123)))
+        assertThat(eventsSent.firstValue)
+            .isEqualTo(
+                listOf(
+                    EventLogRecord(
+                        "record-topic",
+                        "key",
+                        value,
+                        32,
+                        123
+                    )
+                )
+            )
     }
 
     @Test
-    fun `run will not send the emty list`() {
-        every {
-            eventLogSubscription.topicService.getRecords(
+    fun `run will not send the empty list`() {
+        whenever(
+            topicService.getRecords(
+                any(),
                 any(),
                 any(),
                 any()
             )
-        } answers {
+        ).doAnswer {
             testObject.stop()
-            listOf(
-                mockk {
-                    every { record.value } returns null
-                },
-                mockk {
-                    every { record.value } returns null
-                },
-                mockk {
-                    every { record.value } returns null
-                },
-            )
+            (1..3).map {
+                RecordMetadata(offset = 1, record = mock<Record<String, SubscriptionConfig>>())
+            }
         }
 
         testObject.run()
 
-        assertThat(eventsSent.isCaptured).isFalse
+        assertThat(eventsSent.allValues).isEmpty()
     }
 }

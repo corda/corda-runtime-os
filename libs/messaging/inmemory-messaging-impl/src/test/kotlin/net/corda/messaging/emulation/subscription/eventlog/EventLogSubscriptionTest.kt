@@ -1,22 +1,24 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 
 class EventLogSubscriptionTest {
-    private val config = mockk<InMemoryEventLogSubscriptionConfig> {
-        every { subscriptionConfig } returns SubscriptionConfig("group", "topic")
+    private val config = mock<InMemoryEventLogSubscriptionConfig> {
+        on { subscriptionConfig } doReturn SubscriptionConfig("group", "topic")
     }
-    private val thread = mockk<EventLogSubscriptionMainLoop<String, Long>>(relaxed = true)
+    private val thread = mock<EventLogSubscriptionMainLoop<String, Long>>()
     private val subscription = EventLogSubscription<String, Long>(
         config,
-        mockk(relaxed = true),
+        mock(),
         null,
-        mockk(relaxed = true),
+        mock(),
         { thread }
     )
 
@@ -24,9 +26,7 @@ class EventLogSubscriptionTest {
     fun `start will start the thread`() {
         subscription.start()
 
-        verify {
-            thread.start()
-        }
+        verify(thread).start()
     }
 
     @Test
@@ -35,9 +35,7 @@ class EventLogSubscriptionTest {
         subscription.start()
         subscription.start()
 
-        verify(exactly = 1) {
-            thread.start()
-        }
+        verify(thread, times(1)).start()
     }
 
     @Test
@@ -65,18 +63,14 @@ class EventLogSubscriptionTest {
         subscription.start()
         subscription.stop()
 
-        verify {
-            thread.stop()
-        }
+        verify(thread).stop()
     }
 
     @Test
     fun `stop will not stop the thread if it was not started`() {
         subscription.stop()
 
-        verify(exactly = 0) {
-            thread.stop()
-        }
+        verify(thread, never()).stop()
     }
 
     @Test

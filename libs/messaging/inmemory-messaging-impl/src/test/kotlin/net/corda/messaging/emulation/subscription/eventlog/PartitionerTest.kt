@@ -1,11 +1,13 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
-import io.mockk.mockk
-import io.mockk.verify
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 
 class PartitionerTest {
 
@@ -15,7 +17,7 @@ class PartitionerTest {
         val record = Record(
             "topic",
             -332,
-            mockk()
+            mock()
         )
 
         val partition = testObject.invoke(record)
@@ -29,7 +31,7 @@ class PartitionerTest {
         val record = Record(
             "topic",
             9,
-            mockk()
+            mock()
         )
 
         val partition = testObject.invoke(record)
@@ -43,7 +45,7 @@ class PartitionerTest {
         val record = Record(
             "topic",
             10,
-            mockk()
+            mock()
         )
 
         val partition = testObject.invoke(record)
@@ -53,71 +55,67 @@ class PartitionerTest {
 
     @Test
     fun `invoke sends new partition when the partition is new`() {
-        val listener = mockk<PartitionAssignmentListener>(relaxed = true)
+        val listener = mock<PartitionAssignmentListener>()
         val testObject = Partitioner(listener, 10)
         val record = Record(
             "topic",
             1,
-            mockk()
+            mock()
         )
 
         testObject.invoke(record)
 
-        verify {
-            listener.onPartitionsAssigned(listOf("topic" to 1))
-        }
+        verify(listener).onPartitionsAssigned(listOf("topic" to 1))
     }
 
     @Test
     fun `invoke sends new partition only once`() {
-        val listener = mockk<PartitionAssignmentListener>(relaxed = true)
+        val listener = mock<PartitionAssignmentListener>()
         val testObject = Partitioner(listener, 10)
         val record1 = Record(
             "topic",
             1,
-            mockk()
+            mock()
         )
         val record2 = Record(
             "topic",
             11,
-            mockk()
+            mock()
         )
         val record3 = Record(
             "topic",
             111,
-            mockk()
+            mock()
         )
 
         testObject.invoke(record1)
         testObject.invoke(record2)
         testObject.invoke(record3)
 
-        verify(exactly = 1) {
+        verify(times(1)) {
             listener.onPartitionsAssigned(any())
         }
     }
 
     @Test
     fun `invoke sends two partitions for two different tropics`() {
-        val listener = mockk<PartitionAssignmentListener>(relaxed = true)
+        val listener = mock<PartitionAssignmentListener>()
         val testObject = Partitioner(listener, 10)
         val record1 = Record(
             "topic1",
             1,
-            mockk()
+            mock()
         )
         val record2 = Record(
             "topic2",
             11,
-            mockk()
+            mock()
         )
 
         testObject.invoke(record1)
         testObject.invoke(record2)
 
-        verify {
-            listener.onPartitionsAssigned(listOf("topic1" to 1))
-            listener.onPartitionsAssigned(listOf("topic2" to 1))
-        }
+        verify(listener).onPartitionsAssigned(listOf("topic1" to 1))
+        verify(listener).onPartitionsAssigned(listOf("topic2" to 1))
     }
 }

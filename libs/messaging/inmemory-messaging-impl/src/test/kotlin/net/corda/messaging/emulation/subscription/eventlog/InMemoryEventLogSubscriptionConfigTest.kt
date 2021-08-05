@@ -1,19 +1,19 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
 import com.typesafe.config.Config
-import io.mockk.every
-import io.mockk.mockk
 import net.corda.messaging.emulation.properties.InMemProperties.Companion.PARTITION_SIZE
 import net.corda.messaging.emulation.properties.InMemProperties.Companion.TOPICS_POLL_SIZE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 
 class InMemoryEventLogSubscriptionConfigTest {
-    private val conf = mockk<Config> {
-        every { getInt(PARTITION_SIZE) } returns 100
-        every { getInt(TOPICS_POLL_SIZE) } returns 35
+    private val conf = mock<Config> {
+        on { getInt(PARTITION_SIZE) } doReturn 100
+        on { getInt(TOPICS_POLL_SIZE) } doReturn 35
     }
-    private val testObject = InMemoryEventLogSubscriptionConfig(mockk(), conf)
+    private val testObject = InMemoryEventLogSubscriptionConfig(mock(), conf)
 
     @Test
     fun `partitionSize test`() {
