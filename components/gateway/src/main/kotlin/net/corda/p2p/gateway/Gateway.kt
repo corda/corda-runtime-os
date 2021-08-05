@@ -49,6 +49,7 @@ class Gateway(config: GatewayConfiguration,
     private val connectionManager = ConnectionManager(config.sslConfig, config.connectionConfig)
     private var p2pMessageSubscription: Subscription<String, LinkOutMessage>
     private val inboundMessageProcessor = InboundMessageHandler(httpServer, config.maxMessageSize, publisherFactory)
+    private val outboundMessageProcessor = OutboundMessageHandler(connectionManager, publisherFactory)
 
     private val lock = ReentrantLock()
 
@@ -61,7 +62,7 @@ class Gateway(config: GatewayConfiguration,
     init {
         val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, LINK_OUT_TOPIC)
         p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
-            OutboundMessageHandler(connectionManager, publisherFactory),
+            outboundMessageProcessor,
             ConfigFactory.empty(),
             PartitionAssignmentListenerImpl())
     }
@@ -80,6 +81,8 @@ class Gateway(config: GatewayConfiguration,
             closeActions += { httpServer.close() }
             inboundMessageProcessor.start()
             closeActions += { inboundMessageProcessor.close() }
+            outboundMessageProcessor.start()
+            closeActions += { outboundMessageProcessor.close() }
             p2pMessageSubscription.start()
             closeActions += { p2pMessageSubscription.close() }
             logger.info("Gateway started")

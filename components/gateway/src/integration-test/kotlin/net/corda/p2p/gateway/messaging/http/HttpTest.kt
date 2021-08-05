@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.http
 
+import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -35,25 +36,26 @@ class HttpTest {
     @Test
     fun `simple client POST request`() {
         HttpServer(serverAddress.host, serverAddress.port, sslConfiguration).use { server ->
-            server.onReceive.subscribe {
-                assertEquals(clientMessageContent, String(it.payload))
-                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
-            }
+            server.addListener(object : HttpEventListener {
+                override fun onMessage(message: HttpMessage) {
+                    assertEquals(clientMessageContent, String(message.payload))
+                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
+                }
+            })
             server.start()
-            HttpClient(serverAddress, sslConfiguration).use { client ->
+            HttpClient(serverAddress, sslConfiguration, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
-                client.onConnection.subscribe {
-                    if (it.connected) {
-                        client.send(clientMessageContent.toByteArray(Charsets.UTF_8))
+                var responseReceived = false
+                val clientListener = object : HttpEventListener {
+                    override fun onMessage(message: HttpMessage) {
+                        assertEquals(serverResponseContent, String(message.payload))
+                        responseReceived = true
+                        clientReceivedResponses.countDown()
                     }
                 }
-                var responseReceived = false
-                client.onReceive.subscribe {
-                    assertEquals(serverResponseContent, String(it.payload))
-                    responseReceived = true
-                    clientReceivedResponses.countDown()
-                }
+                client.addListener(clientListener)
                 client.start()
+                client.write(clientMessageContent.toByteArray(Charsets.UTF_8))
                 clientReceivedResponses.await(5, TimeUnit.SECONDS)
                 assertTrue(responseReceived)
             }
@@ -62,43 +64,50 @@ class HttpTest {
 
     @Test
     fun `multiple clients multiple requests`() {
-        val requestNo = 100
+        val requestNo = 1000
         val threadNo = 2
         val threads = mutableListOf<Thread>()
         val times = mutableListOf<Long>()
         val httpServer = HttpServer(serverAddress.host, serverAddress.port, sslConfiguration)
+        val threadPool = NioEventLoopGroup(threadNo)
         httpServer.use { server ->
-            server.onReceive.subscribe {
-                assertEquals(clientMessageContent, String(it.payload))
-                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
-            }
+            server.addListener(object : HttpEventListener {
+                override fun onMessage(message: HttpMessage) {
+                    assertEquals(clientMessageContent, String(message.payload))
+                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
+                }
+            })
             server.start()
             repeat(threadNo) {
                 val t = thread {
                     var startTime: Long = 0
-                    var endTime: Long = 0
-                    val httpClient = HttpClient(serverAddress, sslConfiguration)
+                    val httpClient = HttpClient(serverAddress, sslConfiguration, threadPool, threadPool)
                     val clientReceivedResponses = CountDownLatch(requestNo)
                     httpClient.use {
-                        httpClient.onReceive.subscribe {
-                            assertEquals(serverResponseContent, String(it.payload))
-                            clientReceivedResponses.countDown()
-                        }
-                        httpClient.onConnection.subscribe {
-                            if (it.connected) {
+                        val clientListener = object : HttpEventListener {
+                            override fun onMessage(message: HttpMessage) {
+                                assertEquals(serverResponseContent, String(message.payload))
+                                clientReceivedResponses.countDown()
+                            }
+
+                            override fun onOpen(event: HttpConnectionEvent) {
                                 startTime = Instant.now().toEpochMilli()
-                                repeat(requestNo) {
-                                    httpClient.send(clientMessageContent.toByteArray(Charsets.UTF_8))
-                                }
                             }
-                            if (!it.connected) {
-                                endTime = Instant.now().toEpochMilli()
+
+                            override fun onClose(event: HttpConnectionEvent) {
+                                val endTime = Instant.now().toEpochMilli()
+                                times.add(endTime - startTime)
                             }
                         }
+                        httpClient.addListener(clientListener)
                         httpClient.start()
+
+                        repeat(requestNo) {
+                            httpClient.write(clientMessageContent.toByteArray(Charsets.UTF_8))
+                        }
+
                         clientReceivedResponses.await()
                     }
-                    times.add(endTime - startTime)
                 }
                 threads.add(t)
             }
@@ -115,25 +124,26 @@ class HttpTest {
         val hugePayload = FileInputStream(javaClass.classLoader.getResource("10mb.txt")!!.file).readAllBytes()
 
         HttpServer(serverAddress.host, serverAddress.port, sslConfiguration).use { server ->
-            server.onReceive.subscribe {
-                assert(Arrays.equals(hugePayload, it.payload))
-                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), it.source)
-            }
+            server.addListener(object : HttpEventListener {
+                override fun onMessage(message: HttpMessage) {
+                    assert(Arrays.equals(hugePayload, message.payload))
+                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
+                }
+            })
             server.start()
-            HttpClient(serverAddress, sslConfiguration).use { client ->
+            HttpClient(serverAddress, sslConfiguration, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
-                client.onConnection.subscribe {
-                    if (it.connected) {
-                        client.send(hugePayload)
+                var responseReceived = false
+                val clientListener = object : HttpEventListener {
+                    override fun onMessage(message: HttpMessage) {
+                        assertEquals(serverResponseContent, String(message.payload))
+                        responseReceived = true
+                        clientReceivedResponses.countDown()
                     }
                 }
-                var responseReceived = false
-                client.onReceive.subscribe {
-                    assertEquals(serverResponseContent, String(it.payload))
-                    responseReceived = true
-                    clientReceivedResponses.countDown()
-                }
+                client.addListener(clientListener)
                 client.start()
+                client.write(hugePayload)
                 clientReceivedResponses.await()
                 assertTrue(responseReceived)
             }

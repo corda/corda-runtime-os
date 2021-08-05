@@ -25,6 +25,7 @@ import net.corda.v5.base.internal.uncheckedCast
 import rx.Observable
 import rx.subjects.PublishSubject
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -34,13 +35,11 @@ import kotlin.concurrent.withLock
  * The topics are append-only and will always be read completely.
  */
 class TopicServiceStub : TopicService {
-    private val topics = mutableMapOf<String, List<Record<*, *>>>()
+    private val topics = ConcurrentHashMap<String, List<Record<*, *>>>()
 
     override fun addRecords(records: List<Record<*, *>>) {
         records.forEach {
-            val topicName = it.topic
-            val existingRecords = topics.getOrDefault(topicName, mutableListOf())
-            topics[topicName] = existingRecords + listOf(it)
+            topics.merge(it.topic, listOf(it)) { x, y -> x + y }
         }
 
         // Notify subscribers that new records have been published
