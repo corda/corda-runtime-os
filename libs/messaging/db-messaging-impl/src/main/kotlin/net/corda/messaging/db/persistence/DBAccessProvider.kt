@@ -48,7 +48,7 @@ interface DBAccessProvider: Lifecycle {
      *
      * @param postTxFn a function to be called after the transaction has been completed (either committed or rolled back).
      */
-    fun writeRecords(records: List<RecordDbEntry>, postTxFn: (records: List<RecordDbEntry>) -> Unit)
+    fun writeRecords(records: List<RecordDbEntry>, postTxFn: (records: List<RecordDbEntry>, txResult: TransactionResult) -> Unit)
 
     /**
      * Fetch records from the specified topic within the offset windows specified.
@@ -88,7 +88,7 @@ interface DBAccessProvider: Lifecycle {
     fun writeOffsetsAndRecordsAtomically(topic: String, consumerGroup: String,
                                         offsetsPerPartition: Map<Int, Long>,
                                         records: List<RecordDbEntry>,
-                                        postTxFn: (records: List<RecordDbEntry>) -> Unit)
+                                        postTxFn: (records: List<RecordDbEntry>, txResult: TransactionResult) -> Unit)
 
     /**
      * Deletes records from the specified topic that are older than the specified timestamp.
@@ -144,3 +144,8 @@ data class FetchWindow(val partition: Int, val startOffset: Long, val endOffset:
  * Thrown when an attempt is made to commit offsets that have already been committed.
  */
 class OffsetsAlreadyCommittedException: CordaRuntimeException("Offsets were already committed.")
+
+enum class TransactionResult {
+    COMMITTED,
+    ROLLED_BACK
+}
