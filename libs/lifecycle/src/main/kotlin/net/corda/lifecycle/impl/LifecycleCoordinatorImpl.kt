@@ -1,5 +1,11 @@
-package net.corda.lifecycle
+package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.TimerEvent
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
 import java.util.concurrent.Executors
@@ -19,18 +25,42 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Events are scheduled to be processed on a thread pool. This class ensures that only one call to process is scheduled
  * at once.
  *
+ * @param name The name of the component for this lifecycle coordinator.
  * @param batchSize max number of events processed in a single [processEvents] call.
- * @param timeout in milliseconds this coordinator stops before to log a warning.
  * @param lifeCycleProcessor The user event handler for lifecycle events.
  */
-class SimpleLifeCycleCoordinator(
-    private val batchSize: Int,
-    private val timeout: Long,
-    override val lifeCycleProcessor: LifecycleEventHandler,
-) : LifeCycleCoordinator {
+class LifecycleCoordinatorImpl(
+    private val name: String,
+    batchSize: Int,
+    lifeCycleProcessor: LifecycleEventHandler,
+) : LifecycleCoordinator {
 
     companion object {
         private val logger: Logger = contextLogger()
+
+        /**
+         * The minimum number of threads to keep active in the threadpool.
+         *
+         * Under load, the number of threads may increase. By keeping a minimum of one, the lifecycle library should
+         * remain responsive to change while not consuming excessive resources.
+         */
+        private const val MIN_THREADS = 1
+
+        /**
+         * The executor on which events are processed. Note that all events should be processed on an executor thread,
+         * but they may be posted from any thread. Different events may be processed on different executor threads.
+         *
+         * The coordinator guarantees that the event processing task is only scheduled once. This means that event
+         * processing is effectively single threaded in the sense that no event processing will happen concurrently.
+         *
+         * By sharing a threadpool among coordinators, it should be possible to reduce resource usage when in a stable
+         * state.
+         */
+        private val executor = Executors.newScheduledThreadPool(MIN_THREADS) { runnable ->
+            val thread = Thread(runnable)
+            thread.isDaemon = true
+            thread
+        }
     }
 
     /**
@@ -41,23 +71,13 @@ class SimpleLifeCycleCoordinator(
     /**
      * The processor for this coordinator.
      */
-    private val processor = LifecycleProcessor(lifecycleState, lifeCycleProcessor)
+    private val processor = LifecycleProcessor(name, lifecycleState, lifeCycleProcessor)
 
     /**
      * `true` if [processEvents] is executing. This is used to ensure only one attempt at processing the event queue is
      * scheduled at a time.
      */
     private val isScheduled = AtomicBoolean(false)
-
-    /**
-     * The executor on which events are processed. Note that all events should be processed in the executor thread, but
-     * may be posted from any other thread.
-     */
-    private val executor = Executors.newSingleThreadScheduledExecutor { runnable ->
-        val thread = Thread(runnable)
-        thread.isDaemon = true
-        thread
-    }
 
     /**
      * Process the events in [eventQueue].
@@ -74,7 +94,7 @@ class SimpleLifeCycleCoordinator(
         val shutdown = !processor.processEvents(this, ::createTimer)
         isScheduled.set(false)
         if (shutdown) {
-            logger.warn("Unhandled error event! Life-Cycle coordinator stops.")
+            logger.warn("$name Lifecycle: An unhandled error was encountered. Stopping component.")
             stop()
         } else {
             scheduleIfRequired()
@@ -119,7 +139,7 @@ class SimpleLifeCycleCoordinator(
      *
      * @param event to be processed.
      */
-    override fun postEvent(event: LifeCycleEvent) {
+    override fun postEvent(event: LifecycleEvent) {
         lifecycleState.postEvent(event)
         scheduleIfRequired()
     }
