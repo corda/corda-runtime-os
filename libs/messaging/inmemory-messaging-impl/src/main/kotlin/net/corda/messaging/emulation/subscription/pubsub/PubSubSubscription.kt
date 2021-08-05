@@ -110,7 +110,7 @@ class PubSubSubscription<K : Any, V : Any>(
                     processRecord(uncheckedCast(recordMetaData.record))
                 }
             } catch (ex: Exception) {
-                log.warn("Error processing processing records for consumer $groupName, topic $topic. " +
+                log.warn("Error processing records for consumer $groupName, topic $topic. " +
                         "Skipping to offset ${records.last().offset}")
             }
         }

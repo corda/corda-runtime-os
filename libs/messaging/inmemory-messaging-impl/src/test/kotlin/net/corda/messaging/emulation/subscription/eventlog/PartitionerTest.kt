@@ -22,7 +22,7 @@ class PartitionerTest {
 
         val partition = testObject.invoke(record)
 
-        assertThat(partition).isEqualTo(2)
+        assertThat(partition).isEqualTo(3)
     }
 
     @Test
@@ -36,7 +36,7 @@ class PartitionerTest {
 
         val partition = testObject.invoke(record)
 
-        assertThat(partition).isEqualTo(9)
+        assertThat(partition).isEqualTo(10)
     }
 
     @Test
@@ -50,7 +50,7 @@ class PartitionerTest {
 
         val partition = testObject.invoke(record)
 
-        assertThat(partition).isEqualTo(0)
+        assertThat(partition).isEqualTo(1)
     }
 
     @Test
@@ -65,7 +65,7 @@ class PartitionerTest {
 
         testObject.invoke(record)
 
-        verify(listener).onPartitionsAssigned(listOf("topic" to 1))
+        verify(listener).onPartitionsAssigned(listOf("topic" to 2))
     }
 
     @Test
@@ -115,7 +115,7 @@ class PartitionerTest {
         testObject.invoke(record1)
         testObject.invoke(record2)
 
-        verify(listener).onPartitionsAssigned(listOf("topic1" to 1))
-        verify(listener).onPartitionsAssigned(listOf("topic2" to 1))
+        verify(listener).onPartitionsAssigned(listOf("topic1" to 2))
+        verify(listener).onPartitionsAssigned(listOf("topic2" to 2))
     }
 }

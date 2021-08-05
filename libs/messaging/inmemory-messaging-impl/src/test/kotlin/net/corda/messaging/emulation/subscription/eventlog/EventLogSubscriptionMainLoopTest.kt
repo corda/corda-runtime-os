@@ -15,8 +15,10 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 class EventLogSubscriptionMainLoopTest {
@@ -29,6 +31,7 @@ class EventLogSubscriptionMainLoopTest {
     private val topicService = mock<TopicService>()
     private val config = mock<InMemoryEventLogSubscriptionConfig>()
     private val partitioner = mock<Partitioner>()
+    private val subscribed = AtomicBoolean(false)
     private val eventLogSubscription = mock<EventLogSubscription<String, SubscriptionConfig>> {
         on { topic } doReturn "topic"
         on { group } doReturn "group"
@@ -36,6 +39,7 @@ class EventLogSubscriptionMainLoopTest {
         on { topicService } doReturn topicService
         on { config } doReturn config
         on { partitioner } doReturn partitioner
+        on { subscribedToTopic } doReturn subscribed
     }
     private val thread = mock<Thread>()
     private val testObject = EventLogSubscriptionMainLoop(eventLogSubscription, { thread })
@@ -61,7 +65,16 @@ class EventLogSubscriptionMainLoopTest {
         testObject.stop()
         testObject.run()
 
-        verify(topicService).subscribe("topic", "group", OffsetStrategy.LATEST)
+        verify(topicService).subscribe("topic", "group", OffsetStrategy.EARLIEST)
+    }
+
+    @Test
+    fun `run will not subscribe twice`() {
+        testObject.stop()
+        subscribed.set(true)
+        testObject.run()
+
+        verify(topicService, never()).subscribe("topic", "group", OffsetStrategy.EARLIEST)
     }
 
     @Test
@@ -155,7 +168,7 @@ class EventLogSubscriptionMainLoopTest {
         ).doAnswer {
             testObject.stop()
             (1..3).map {
-                RecordMetadata(offset = 1, record = mock<Record<String, SubscriptionConfig>>())
+                RecordMetadata(offset = it.toLong(), record = mock<Record<String, SubscriptionConfig>>())
             }
         }
 

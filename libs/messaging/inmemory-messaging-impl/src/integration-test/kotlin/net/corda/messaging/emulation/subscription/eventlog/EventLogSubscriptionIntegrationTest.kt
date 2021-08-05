@@ -43,7 +43,7 @@ class EventLogSubscriptionIntegrationTest {
         val processor = object : EventLogProcessor<String, Event> {
             override fun onNext(events: List<EventLogRecord<String, Event>>): List<Record<*, *>> {
                 processed.addAll(events)
-                events.forEach {
+                repeat(events.size) {
                     waitForProcessed.get()?.countDown()
                 }
                 return emptyList()
@@ -67,7 +67,7 @@ class EventLogSubscriptionIntegrationTest {
         )
     }
 
-    private fun publish(vararg records: Record<String, Event>) {
+    private fun publish(vararg records: Record<Any, Any>) {
         val publisherConfig = PublisherConfig(clientId)
         publisherFactory.createPublisher(publisherConfig).use {
             it.publish(records.toList())
@@ -87,7 +87,7 @@ class EventLogSubscriptionIntegrationTest {
         waitForProcessed.set(CountDownLatch(3))
         publish(
             Record(topic, "key1", Event("one", 1)),
-            Record("another.topic", "key4", Event("four", 4)),
+            Record("another.$topic", "key4", Event("four", 4)),
             Record(topic, "key2", Event("two", 2)),
             Record(topic, "key3", Event("three", 3)),
         )
@@ -99,25 +99,25 @@ class EventLogSubscriptionIntegrationTest {
                 topic = topic,
                 key = "key1",
                 value = Event("one", 1),
-                partition = 8,
+                partition = 9,
                 offset = 0
             ),
             EventLogRecord(
                 topic = topic,
                 key = "key2",
                 value = Event("two", 2),
-                partition = 9,
+                partition = 10,
                 offset = 1
             ),
             EventLogRecord(
                 topic = topic,
                 key = "key3",
                 value = Event("three", 3),
-                partition = 0,
+                partition = 1,
                 offset = 2
             ),
         ).hasSize(3)
-        assertThat(assigned).contains(8, 9, 0)
+        assertThat(assigned).contains(9, 10, 1)
 
         // Stop the subscription
         subscription.stop()
@@ -125,7 +125,7 @@ class EventLogSubscriptionIntegrationTest {
 
         // Publish an event
         processed.clear()
-        publish(Record(topic, "key4", Event("four", 4)),)
+        publish(Record(topic, "key4", Event("four", 4)))
 
         // Verify it was not processed
         Thread.sleep(1000)
@@ -137,15 +137,23 @@ class EventLogSubscriptionIntegrationTest {
         assertThat(processed).isEmpty()
 
         // Publish a few events
-        waitForProcessed.set(CountDownLatch(2))
+        waitForProcessed.set(CountDownLatch(3))
         publish(
+            Record("another $topic", "keya", Event("five", 5)),
             Record(topic, "key5", Event("five", 5)),
+            Record(topic, 12, Event("five", 5)),
+            Record(topic, "keyb", 31),
             Record(topic, "key6", Event("six", 6)),
         )
 
         // Wait for the events
         waitForProcessed.get().await(1, TimeUnit.SECONDS)
-        assertThat(processed).hasSize(2)
+        assertThat(processed.map { it.key })
+            .hasSize(3).contains(
+                "key4",
+                "key5",
+                "key6"
+            )
 
         // Stop the subscriber
         subscription.stop()

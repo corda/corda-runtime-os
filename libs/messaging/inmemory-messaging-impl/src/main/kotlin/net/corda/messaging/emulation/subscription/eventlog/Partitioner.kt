@@ -19,7 +19,7 @@ internal class Partitioner(
     private val assignedPartitions = ConcurrentHashMap<String, MutableCollection<Int>>()
 
     override fun invoke(record: Record<*, *>): Int {
-        val partition = abs(record.key.hashCode() % partitionCounts)
+        val partition = abs(record.key.hashCode() % partitionCounts) + 1
         val newPartition = assignedPartitions.computeIfAbsent(record.topic) {
             ConcurrentHashMap.newKeySet()
         }.add(partition)

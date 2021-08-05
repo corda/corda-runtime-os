@@ -32,16 +32,19 @@ class EventLogSubscriptionMainLoop<K : Any, V : Any>(
     }
 
     override fun run() {
-        subscription.topicService.subscribe(
-            topicName = subscription.topic,
-            consumerGroup = subscription.group,
-            OffsetStrategy.LATEST,
-        )
+        // Subscribe only once...
+        if (!subscription.subscribedToTopic.getAndSet(true)) {
+            subscription.topicService.subscribe(
+                topicName = subscription.topic,
+                consumerGroup = subscription.group,
+                OffsetStrategy.EARLIEST,
+            )
+        }
         while (keepRunning.get()) {
             val records = subscription.topicService.getRecords(
                 topicName = subscription.topic,
                 consumerGroup = subscription.group,
-                numberOfRecords = subscription.config.pollSize
+                numberOfRecords = subscription.config.pollSize,
             )
                 .filter {
                     subscription.processor.valueClass.isInstance(it.record.value)
@@ -65,8 +68,8 @@ class EventLogSubscriptionMainLoop<K : Any, V : Any>(
                     subscription.processor.onNext(uncheckedCast(records))
                 } catch (ex: Exception) {
                     logger.warn(
-                        "Error processing processing records for consumer ${subscription.group}, topic ${subscription.topic}. " +
-                            "Skipping to offset ${records.last().offset}",
+                        "Error processing records for consumer ${subscription.group}, topic ${subscription.topic}. " +
+                            "Skipping to offset ${records.maxOf { it.offset }}",
                         ex
                     )
                 }

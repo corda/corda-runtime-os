@@ -7,6 +7,7 @@ import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -42,6 +43,8 @@ class EventLogSubscription<K : Any, V : Any>(
     internal val partitioner: (net.corda.messaging.api.records.Record<*, *>) -> Int by lazy {
         Partitioner(partitionAssignmentListener, config.partitionSize)
     }
+
+    internal val subscribedToTopic = AtomicBoolean(false)
 
     private val currentLoop = AtomicReference<EventLogSubscriptionMainLoop<K, V>>(null)
     private val lock = ReentrantLock()
