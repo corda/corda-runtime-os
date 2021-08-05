@@ -45,6 +45,7 @@ class EventLogSubscriptionMainLoop<K : Any, V : Any>(
                 topicName = subscription.topic,
                 consumerGroup = subscription.group,
                 numberOfRecords = subscription.config.pollSize,
+                autoCommitOffset = false,
             )
                 .filter {
                     subscription.processor.valueClass.isInstance(it.record.value)
@@ -63,13 +64,20 @@ class EventLogSubscriptionMainLoop<K : Any, V : Any>(
                 }
 
             if (records.isNotEmpty()) {
+                val maxOffset = records.maxOf { it.offset }
+                val minOffset = records.minOf { it.offset }
                 @Suppress("TooGenericExceptionCaught")
                 try {
                     subscription.processor.onNext(uncheckedCast(records))
+                    subscription.topicService.commitOffset(
+                        topicName = subscription.topic,
+                        consumerGroup = subscription.group,
+                        offset = maxOffset + 1
+                    )
                 } catch (ex: Exception) {
                     logger.warn(
                         "Error processing records for consumer ${subscription.group}, topic ${subscription.topic}. " +
-                            "Skipping to offset ${records.maxOf { it.offset }}",
+                            "Will try again ($minOffset - $maxOffset)",
                         ex
                     )
                 }

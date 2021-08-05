@@ -13,6 +13,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -103,7 +104,7 @@ class EventLogSubscriptionMainLoopTest {
 
         testObject.run()
 
-        verify(topicService).getRecords(eq("topic"), eq("group"), any(), any())
+        verify(topicService).getRecords(eq("topic"), eq("group"), any(), eq(false))
     }
 
     @Test
@@ -154,6 +155,63 @@ class EventLogSubscriptionMainLoopTest {
                     )
                 )
             )
+    }
+
+    @Test
+    fun `run will commit the correct offset if process didn't fail`() {
+        val value = SubscriptionConfig("t1", "g1")
+        whenever(partitioner(any())).doReturn(32)
+        whenever(
+            topicService.getRecords(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer {
+            testObject.stop()
+            (1..5).map {
+                val record = mock<Record<Any, Any>> {
+                    on { this@on.value } doReturn value
+                    on { this.key } doReturn "key"
+                    on { this.topic } doReturn "record-topic"
+                }
+                RecordMetadata(offset = 300 + it.toLong(), record = record)
+            }
+        }
+
+        testObject.run()
+
+        verify(topicService).commitOffset(topicName = "topic", consumerGroup = "group", offset = 306)
+    }
+
+    @Test
+    fun `run will not commit the correct offset if process failed`() {
+        val value = SubscriptionConfig("t1", "g1")
+        whenever(partitioner(any())).doReturn(32)
+        whenever(
+            topicService.getRecords(
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        ).doAnswer {
+            testObject.stop()
+            (1..5).map {
+                val record = mock<Record<Any, Any>> {
+                    on { this@on.value } doReturn value
+                    on { this.key } doReturn "key"
+                    on { this.topic } doReturn "record-topic"
+                }
+                RecordMetadata(offset = 300 + it.toLong(), record = record)
+            }
+        }
+        whenever(processor.onNext(any())).doThrow(NullPointerException())
+
+        testObject.run()
+
+        verify(topicService, never()).commitOffset(topicName = "topic", consumerGroup = "group", offset = 306)
     }
 
     @Test
