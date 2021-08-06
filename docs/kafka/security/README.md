@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This guide describes how to setup and enable encryption, authentication and authorization in a local deployment of a kafka cluster with 3 brokers, 1 zookeeper, 1 consumer client and 1 producer client.
+This guide describes how to setup and enable encryption, authentication and authorization in a local deployment of a kafka cluster with multiple brokers, zookeeper,  consumer client and producer client.
 
 Encryption will be provided via TLS.
 
@@ -16,11 +16,11 @@ Authorization will be provided via Access Control Lists stored in zookeeper.
 ## 1. Setting up TLS certificates
 This step can be skipped. The certificates located in ./certificates can be used locally.
 
-Example usage of output of the commands listed below can be found in ./example-logs/key-ceremony-cmds.txt. 
+Example usage output of the commands listed below can be found in ./example-logs/key-ceremony-cmds.txt. 
 
 Some commands require user input. e.g values for CommonName (CN). 
 Some input requests refer to CN as "What is your first and last name?".
-This should always be set to `localhost` for all certificates generated as this will be matched against requests between clients and servers.
+This should always be set to `localhost` for all certificates generated as this will be matched against requests between clients and servers in your local deployment.
 
 ### Set up Certificate Authority
 
@@ -39,7 +39,7 @@ Note: the CN for this certificate is not validated and can be set to any value.
 
 copy `ca-cert` & `ca-key` files from `ca` dir to `zookeeper` dir
 
-Generate the key and the certificate for each Kafka broker in the cluster.
+Generate the key and the certificate for each zookeeper in the cluster.
 ```
 keytool -keystore zookeeper.server.keystore.jks -alias zookeeper -validity 365 -genkey -storepass password -keypass password -keyalg RSA
 ```
@@ -47,7 +47,7 @@ output: `zookeeper.server.keystore.jks`
 
 
 
-Add the generated CA to the brokers’ truststore so that the brokers can trust this CA
+Add the generated CA to zookeepers truststore so that the zookeepers can trust this CA
 ```
 keytool -keystore zookeeper.server.truststore.jks -alias CARoot -importcert -file ca-cert
 ```
@@ -70,7 +70,7 @@ openssl x509 -req -CA ca-cert -CAkey ca-key -in cert-file -out cert-signed -days
 
 
 
-Import both the certificate of the CA and the signed certificate into the broker keystore:
+Import both the certificate of the CA and the signed certificate into the zookeeper keystore:
 ```
 keytool -keystore zookeeper.server.keystore.jks -alias CARoot -importcert -file ca-cert
 keytool -keystore zookeeper.server.keystore.jks -alias zookeeper -importcert -file cert-signed
@@ -124,8 +124,8 @@ keytool -keystore kafka.server.keystore.jks -alias brokerN -importcert -file cer
 
 ### Consumer and Producer Clients
 
-add the generated CA to the clients’ truststore so that the clients can trust this CA.
-This will be shared by the consumer and producer clients for the purpose of this tutorial.
+Add the generated CA to the clients truststore so that the clients can trust this CA.
+This will be shared by the consumer and producer clients for the purpose of this setup.
 ```
 keytool -keystore kafka.client.truststore.jks -alias CARoot -importcert -file ca-cert
 ```
@@ -154,10 +154,10 @@ listeners=SASL_SSL://localhost:9094
 security.inter.broker.protocol=SASL_SSL
 
 #Paths to keystore and truststore
-ssl.keystore.location=C:/kafka-security-demo/broker1/kafka.server.keystore.jks
+ssl.keystore.location=C:/kafka-security-demo/brokerN/kafka.server.keystore.jks
 ssl.keystore.password=password
 ssl.key.password=password
-ssl.truststore.location=C:/kafka-security-demo/broker1/kafka.server.truststore.jks
+ssl.truststore.location=C:/kafka-security-demo/brokerN/kafka.server.truststore.jks
 ssl.truststore.password=password
 
 #Enable SASL mechanism
@@ -182,7 +182,7 @@ zookeeper.ssl.client.enable=true
 # Required to use TLS to ZooKeeper
 zookeeper.clientCnxnSocket=org.apache.zookeeper.ClientCnxnSocketNetty
 # Define trust store to use TLS to ZooKeeper; ignored unless zookeeper.ssl.client.enable=true
-zookeeper.ssl.truststore.location=C:/kafka-security-demo/broker1/kafka.server.truststore.jks
+zookeeper.ssl.truststore.location=C:/kafka-security-demo/brokerN/kafka.server.truststore.jks
 zookeeper.ssl.truststore.password=password
 
 #Disable auto create of topics
@@ -193,7 +193,7 @@ auto.create.topics.enable=false
 
 #### Kafka JAAS Config
 
-The credentials kafka uses to authenticate with zookeeper is stored in a JAAS config file.
+The credentials kafka uses to authenticate against zookeeper is stored in a JAAS config file.
 
 ```
 Client {
