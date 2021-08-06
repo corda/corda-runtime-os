@@ -9,6 +9,7 @@ import com.esotericsoftware.kryo.pool.KryoPool
 import com.esotericsoftware.kryo.serializers.ClosureSerializer
 import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.CordaClosureSerializer
+import net.corda.serialization.CheckpointInternalCustomSerializer
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.uncheckedCast
@@ -37,12 +38,10 @@ private object AutoCloseableSerialisationDetector : Serializer<AutoCloseable>() 
 
 class KryoCheckpointSerializerBuilder(
     private val kryoFromQuasar: () -> Kryo,
-    private val defaultWhiteList: SerializationWhitelist,
     private val hashingService: BasicHashingService
 ) {
-
-    val serializers = mutableMapOf<Class<*>, CheckpointInternalCustomSerializer<*>>()
-    val noReferenceWithin = mutableListOf<Class<*>>()
+    private val noReferenceWithin = mutableListOf<Class<*>>()
+    private val serializers = mutableMapOf<Class<*>, CheckpointInternalCustomSerializer<*>>()
 
     fun addSerializer(clazz: Class<*>, serializer: CheckpointInternalCustomSerializer<*>) {
         serializers[clazz] = serializer
@@ -63,7 +62,7 @@ class KryoCheckpointSerializerBuilder(
             kryoFromQuasar,
             serializers,
             noReferenceWithin,
-            defaultWhiteList,
+            DefaultWhitelist,
             hashingService
         )
     }

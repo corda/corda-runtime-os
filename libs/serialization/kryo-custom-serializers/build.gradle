@@ -9,6 +9,6 @@ dependencies {
 
     implementation "net.corda:corda-crypto-api:$cordaVersion"
 
-    implementation project(":libs:serialization:serialization-kryo")
+    implementation project(":libs:serialization:serialization-api")
 
 }

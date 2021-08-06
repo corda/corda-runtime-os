@@ -6,7 +6,6 @@ import net.corda.cipher.suite.internal.BasicHashingServiceImpl
 import net.corda.classinfo.ClassInfoService
 import net.corda.kryoserialization.CheckpointSerializationContext
 import net.corda.kryoserialization.CheckpointSerializer
-import net.corda.kryoserialization.DefaultWhitelist
 import net.corda.kryoserialization.KRYO_CHECKPOINT_CONTEXT
 import net.corda.kryoserialization.KryoCheckpointSerializerBuilder
 import net.corda.kryoserialization.impl.CheckpointSerializeAsTokenContextImpl
@@ -131,7 +130,7 @@ class SerializeAsTokenSerializerTest {
         val hashingService = BasicHashingServiceImpl()
         val kryo = Kryo(SandboxClassResolver(classInfoService, sandboxGroup, hashingService), MapReferenceResolver())
         kryo.instantiatorStrategy = SerializingInstantiatorStrategy()
-        val serializerBuilder = KryoCheckpointSerializerBuilder({ kryo }, DefaultWhitelist, hashingService)
+        val serializerBuilder = KryoCheckpointSerializerBuilder({ kryo }, hashingService)
         return serializerBuilder.build()
     }
 }

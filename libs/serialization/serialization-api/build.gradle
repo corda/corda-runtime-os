@@ -1,0 +1,8 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+}
+
+dependencies {
+    implementation "net.corda:corda-base:$cordaApiVersion"
+}

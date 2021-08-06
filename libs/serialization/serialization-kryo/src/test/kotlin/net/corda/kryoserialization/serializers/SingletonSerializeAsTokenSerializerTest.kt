@@ -122,7 +122,7 @@ class SingletonSerializeAsTokenSerializerTest {
         val hashingService = BasicHashingServiceImpl()
         val kryo = Kryo(SandboxClassResolver(classInfoService, sandboxGroup, hashingService), MapReferenceResolver())
         kryo.instantiatorStrategy = SerializingInstantiatorStrategy()
-        val serializerBuilder = KryoCheckpointSerializerBuilder({ kryo }, DefaultWhitelist, hashingService)
+        val serializerBuilder = KryoCheckpointSerializerBuilder({ kryo }, hashingService)
         return serializerBuilder.build()
     }
 }
