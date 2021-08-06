@@ -1,9 +1,12 @@
 package net.corda.p2p.gateway
 
-import io.netty.channel.ConnectTimeoutException
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.ConnectionManager
+import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
+import net.corda.p2p.gateway.messaging.http.HttpEventListener
+import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -19,22 +22,27 @@ class ConnectionManagerTest : TestBase() {
     @Test
     @Timeout(30)
     fun `acquire connection`() {
-        val manager = ConnectionManager(aliceSslConfig, ConnectionConfiguration())
-        val (host, port) = serverAddress.let { Pair(it.host, it.port) }
-        HttpServer(host, port, aliceSslConfig).use { server ->
-            server.onReceive.subscribe {
-                assertEquals(clientMessageContent, String(it.payload))
-                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), it.source)
-            }
+        val manager = ConnectionManager(sslConfiguration, ConnectionConfiguration())
+        manager.start()
+        val (host, port) = URI.create(serverAddresses.first()).let { Pair(it.host, it.port) }
+        HttpServer(host, port, sslConfiguration).use { server ->
+            server.addListener(object : HttpEventListener {
+                override fun onMessage(message: HttpMessage) {
+                    assertEquals(clientMessageContent, String(message.payload))
+                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), message.source)
+                }
+            })
             server.start()
-            manager.acquire(serverAddress, aliceSNI[0]).use { client ->
+            manager.acquire(URI.create(serverAddresses.first().toString())).use { client ->
                 // Client is connected at this point
                 val responseReceived = CountDownLatch(1)
-                client.onReceive.subscribe {
-                    assertEquals(serverResponseContent, String(it.payload))
-                    responseReceived.countDown()
-                }
-                client.send(clientMessageContent.toByteArray())
+                client.addListener(object : HttpEventListener {
+                    override fun onMessage(message: HttpMessage) {
+                        assertEquals(serverResponseContent, String(message.payload))
+                        responseReceived.countDown()
+                    }
+                })
+                client.write(clientMessageContent.toByteArray())
                 responseReceived.await()
             }
         }
@@ -42,35 +50,27 @@ class ConnectionManagerTest : TestBase() {
 
     @Test
     fun `reuse connection`() {
-        val manager = ConnectionManager(aliceSslConfig,  ConnectionConfiguration())
-        HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
+        val manager = ConnectionManager(sslConfiguration,  ConnectionConfiguration())
+        manager.start()
+        val requestReceived = CountDownLatch(2)
+        val serverURI = URI.create((serverAddresses.first()))
+        HttpServer(serverURI.host, serverURI.port, sslConfiguration).use { server ->
             val remotePeers = mutableListOf<SocketAddress>()
-            server.onConnection.subscribe {
-                if (it.connected) {
-                    remotePeers.add(it.remoteAddress)
+            server.addListener(object : HttpEventListener {
+                override fun onOpen(event: HttpConnectionEvent) {
+                    remotePeers.add(event.channel.remoteAddress())
                 }
-            }
+                override fun onMessage(message: HttpMessage) {
+                    requestReceived.countDown()
+                }
+            })
             server.start()
 
-            manager.acquire(serverAddress, aliceSNI[0])
-            assertEquals( 1, manager.activeConnectionsForHost(serverAddress))
-            manager.acquire(serverAddress, aliceSNI[0])
-            assertEquals( 1, manager.activeConnectionsForHost(serverAddress))
+            manager.acquire(serverURI).write(clientMessageContent.toByteArray())
+            manager.acquire(serverURI).write(clientMessageContent.toByteArray())
+            requestReceived.await()
             assertEquals(1, remotePeers.size)
-            manager.acquire(serverAddress, aliceSNI[0]).stop()
+            manager.acquire(serverURI).stop()
         }
-    }
-
-    @Test
-    fun `acquire times out`() {
-        var gotException = false
-        try {
-            val config =  ConnectionConfiguration(10, 100, 1000)
-            ConnectionManager(aliceSslConfig, config).acquire(serverAddress, aliceSNI[0])
-        } catch (e: Exception) {
-            assert(e is ConnectTimeoutException)
-            gotException = true
-        }
-        assert(gotException)
     }
 }

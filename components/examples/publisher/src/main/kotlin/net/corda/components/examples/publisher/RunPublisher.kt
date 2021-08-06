@@ -2,8 +2,8 @@ package net.corda.components.examples.publisher
 
 import com.typesafe.config.Config
 import net.corda.data.demo.DemoRecord
-import net.corda.lifecycle.LifeCycle
-import net.corda.lifecycle.LifeCycleCoordinator
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -16,13 +16,13 @@ import org.slf4j.Logger
 @Component
 @Suppress("LongParameterList")
 class RunPublisher (
-    private val lifeCycleCoordinator: LifeCycleCoordinator,
+    private val lifeCycleCoordinator: LifecycleCoordinator,
     private val publisherFactory: PublisherFactory,
     private val instanceId: Int?,
     private val numberOfRecords: Int,
     private val numberOfKeys: Int,
     private val config: Config
-    ) : LifeCycle {
+    ) : Lifecycle {
 
     private var publisher: Publisher? = null
 

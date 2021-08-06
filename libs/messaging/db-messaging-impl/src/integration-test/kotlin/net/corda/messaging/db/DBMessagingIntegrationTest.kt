@@ -1,6 +1,6 @@
 package net.corda.messaging.db
 
-import com.nhaarman.mockito_kotlin.anyOrNull
+import org.mockito.kotlin.anyOrNull
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -10,6 +10,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.db.partition.PartitionAllocator
 import net.corda.messaging.db.partition.PartitionAssignor
 import net.corda.messaging.db.persistence.DBAccessProvider
+import net.corda.messaging.db.persistence.DBAccessProviderCached
 import net.corda.messaging.db.persistence.DBAccessProviderImpl
 import net.corda.messaging.db.persistence.DBType
 import net.corda.messaging.db.publisher.DBPublisher
@@ -20,8 +21,8 @@ import net.corda.messaging.db.sync.OffsetTrackersManager
 import net.corda.messaging.db.util.DbUtils.Companion.createOffsetsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicRecordsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicsTableStmt
+import net.corda.messaging.db.util.eventually
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.testing.common.internal.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
@@ -88,11 +89,15 @@ class DBMessagingIntegrationTest {
         connection.prepareStatement(createOffsetsTableStmt).execute()
         connection.prepareStatement(createTopicsTableStmt).execute()
 
-        dbAccessProvider = DBAccessProviderImpl(jdbcUrl, username, password, DBType.H2, 5)
+        val dbAccessProviderImpl = DBAccessProviderImpl(jdbcUrl, username, password, DBType.H2, 5)
+        dbAccessProvider = DBAccessProviderCached(dbAccessProviderImpl, 50)
         dbAccessProvider.start()
 
-        dbAccessProvider.createTopic(topic1, partitions)
-        dbAccessProvider.createTopic(topic2, partitions)
+        dbAccessProviderImpl.createTopic(topic1, partitions)
+        dbAccessProviderImpl.createTopic(topic2, partitions)
+
+        dbAccessProvider.stop()
+        dbAccessProvider.start()
 
         offsetTrackersManager = OffsetTrackersManager(dbAccessProvider)
         offsetTrackersManager.start()

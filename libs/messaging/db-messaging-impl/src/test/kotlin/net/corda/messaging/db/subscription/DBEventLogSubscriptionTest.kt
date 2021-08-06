@@ -1,6 +1,6 @@
 package net.corda.messaging.db.subscription
 
-import com.nhaarman.mockito_kotlin.anyOrNull
+import org.mockito.kotlin.anyOrNull
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -10,12 +10,12 @@ import net.corda.messaging.db.partition.PartitionAllocationListener
 import net.corda.messaging.db.partition.PartitionAllocator
 import net.corda.messaging.db.partition.PartitionAssignor
 import net.corda.messaging.db.persistence.DBAccessProvider
-import net.corda.messaging.db.persistence.DbSchema
 import net.corda.messaging.db.persistence.FetchWindow
 import net.corda.messaging.db.persistence.RecordDbEntry
+import net.corda.messaging.db.persistence.TransactionResult
 import net.corda.messaging.db.sync.OffsetTrackersManager
+import net.corda.messaging.db.util.eventually
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.testing.common.internal.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
@@ -58,17 +58,20 @@ class DBEventLogSubscriptionTest {
         `when`(writeRecords(anyList(), anyOrNull()))
             .thenAnswer { invocation ->
                 val records = (invocation.arguments.first() as List<RecordDbEntry>)
-                val postTxFn = invocation.arguments[1] as ((records: List<RecordDbEntry>) -> Unit)
+                val postTxFn = invocation.arguments[1] as ((records: List<RecordDbEntry>, txResult: TransactionResult) -> Unit)
 
+                var transactionResult: TransactionResult? = null
                 try {
                     if (failuresToSimulateForDbRecordsWrite > 0) {
+                        transactionResult = TransactionResult.ROLLED_BACK
                         failuresToSimulateForDbRecordsWrite--
                         throw SQLTransientException()
                     }
 
                     records.forEach { dbRecords[it.topic]!![it.partition]!!.add(it) }
+                    transactionResult = TransactionResult.COMMITTED
                 } finally {
-                    postTxFn(records)
+                    postTxFn(records, transactionResult!!)
                 }
 
             }
@@ -102,10 +105,10 @@ class DBEventLogSubscriptionTest {
                 val consumerGroup = invocation.arguments[1] as String
                 val offsets = invocation.arguments[2] as Map<Int, Long>
                 val records = invocation.arguments[3] as List<RecordDbEntry>
-                val postTxFn = invocation.arguments[4] as ((records: List<RecordDbEntry>) -> Unit)
+                val postTxFn = invocation.arguments[4] as ((records: List<RecordDbEntry>, txResult: TransactionResult) -> Unit)
 
                 if (failuresToSimulateForAtomicDbWrite > 0) {
-                    postTxFn(records)
+                    postTxFn(records, TransactionResult.ROLLED_BACK)
                     failuresToSimulateForAtomicDbWrite--
                     throw SQLTransientException()
                 }

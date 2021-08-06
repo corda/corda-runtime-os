@@ -7,20 +7,17 @@ import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
-import io.netty.handler.codec.http.HttpRequestDecoder
-import io.netty.handler.codec.http.HttpResponseEncoder
 import io.netty.handler.codec.http.HttpResponseStatus
-import io.netty.handler.logging.LogLevel
-import io.netty.handler.logging.LoggingHandler
-import net.corda.lifecycle.LifeCycle
+import io.netty.handler.codec.http.HttpServerCodec
+import io.netty.handler.timeout.IdleStateHandler
+import net.corda.lifecycle.Lifecycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.slf4j.LoggerFactory
-import rx.Observable
-import rx.subjects.PublishSubject
 import java.lang.IllegalStateException
 import java.net.BindException
 import java.net.SocketAddress
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.KeyManagerFactory
 import kotlin.concurrent.withLock
@@ -36,18 +33,13 @@ import kotlin.concurrent.withLock
  * and a response is sent back to the client. The response body is empty unless it follows a session handshake request,
  * in which case the body will contain additional information.
  *
- * The server provides two observables [onReceive] and [onConnection] which upstream services can subscribe to receive
- * updates on important events.
- *
  * @param host [String] value representing a host name or IP address used when binding the server
  * @param port port number used when binding the server
  * @param sslConfig the configuration to be used for the one-way TLS handshake
- * @param traceLogging optional setting to enable Netty logging inside the channel pipeline. Should be set to *true* only when debugging
  */
 class HttpServer(private val host: String,
                  private val port: Int,
-                 private val sslConfig: SslConfiguration,
-                 private val traceLogging: Boolean = false) : LifeCycle {
+                 private val sslConfig: SslConfiguration) : Lifecycle, HttpEventListener {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HttpServer::class.java)
@@ -56,25 +48,24 @@ class HttpServer(private val host: String,
          * Default number of thread to use for the worker group
          */
         private const val NUM_SERVER_THREADS = 4
+
+        /**
+         * The channel will be closed if neither read nor write was performed for the specified period of time.
+         */
+        private const val SERVER_IDLE_TIME_SECONDS = 5
     }
 
     private val lock = ReentrantLock()
     private var bossGroup: EventLoopGroup? = null
     private var workerGroup: EventLoopGroup? = null
     private var serverChannel: Channel? = null
-    private val clientChannels = ConcurrentHashMap<SocketAddress, SocketChannel>()
+    private val clientChannels = ConcurrentHashMap<SocketAddress, Channel>()
 
     private var started = false
     override val isRunning: Boolean
         get() = started
 
-    private val _onReceive = PublishSubject.create<HttpMessage>().toSerialized()
-    val onReceive: Observable<HttpMessage>
-        get() = _onReceive
-
-    private val _onConnection = PublishSubject.create<ConnectionChangeEvent>().toSerialized()
-    val onConnection: Observable<ConnectionChangeEvent>
-        get() = _onConnection
+    private val eventListeners = CopyOnWriteArrayList<HttpEventListener>()
 
     /**
      * @throws BindException if the server cannot bind to the address provided in the constructor
@@ -100,7 +91,7 @@ class HttpServer(private val host: String,
         lock.withLock {
             try {
                 logger.info("Stopping HTTP server")
-                serverChannel?.apply { close() }
+                serverChannel?.close()
                 serverChannel = null
 
                 workerGroup?.shutdownGracefully()
@@ -116,6 +107,17 @@ class HttpServer(private val host: String,
                 logger.info("HTTP server stopped")
             }
         }
+    }
+
+    /**
+     * Adds an [HttpEventListener] which upstream services can provide to receive updates on important events.
+     */
+    fun addListener(eventListener: HttpEventListener) {
+        eventListeners.add(eventListener)
+    }
+
+    fun removeListener(eventListener: HttpEventListener) {
+        eventListeners.remove(eventListener)
     }
 
     /**
@@ -139,6 +141,20 @@ class HttpServer(private val host: String,
         }
     }
 
+    override fun onOpen(event: HttpConnectionEvent) {
+        clientChannels[event.channel.remoteAddress()] = event.channel
+        eventListeners.forEach { it.onOpen(event) }
+    }
+
+    override fun onClose(event: HttpConnectionEvent) {
+        clientChannels.remove(event.channel.remoteAddress())
+        eventListeners.forEach { it.onClose(event) }
+    }
+
+    override fun onMessage(message: HttpMessage) {
+        eventListeners.forEach { it.onMessage(message) }
+    }
+
     private class ServerChannelInitializer(private val parent: HttpServer) : ChannelInitializer<SocketChannel>() {
 
         private val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
@@ -151,27 +167,10 @@ class HttpServer(private val host: String,
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createServerSslHandler(parent.sslConfig.keyStore, keyManagerFactory))
-            if (parent.traceLogging) pipeline.addLast("logger", LoggingHandler(LogLevel.INFO))
-            pipeline.addLast(HttpRequestDecoder())
-            pipeline.addLast(HttpResponseEncoder())
-            pipeline.addLast(HttpChannelHandler(
-                onOpen = { channel, change ->
-                    parent.run {
-                        clientChannels[channel.remoteAddress()] = channel
-                        _onConnection.onNext(change)
-                    }
-                },
-                onClose = { channel, change ->
-                    parent.run {
-                        clientChannels.remove(channel.remoteAddress())
-                        _onConnection.onNext(change)
-                    }
-                },
-                onReceive = { msg ->
-                    parent._onReceive.onNext(msg)
-                }
-            ))
+            pipeline.addLast("sslHandler", createServerSslHandler(keyManagerFactory))
+            pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
+            pipeline.addLast(HttpServerCodec())
+            pipeline.addLast(HttpChannelHandler(parent, logger))
         }
     }
 }

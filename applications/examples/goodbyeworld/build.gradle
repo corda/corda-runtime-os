@@ -7,7 +7,7 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
     compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation project(":libs:examples:helloworld")
     implementation project(":osgi-framework-api")
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"

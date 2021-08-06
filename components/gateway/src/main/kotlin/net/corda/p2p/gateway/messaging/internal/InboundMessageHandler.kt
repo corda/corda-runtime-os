@@ -2,7 +2,7 @@ package net.corda.p2p.gateway.messaging.internal
 
 import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -12,11 +12,11 @@ import net.corda.p2p.Step2Message
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
+import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.slf4j.LoggerFactory
-import rx.Subscription
 import java.io.IOException
 import java.nio.ByteBuffer
 
@@ -25,15 +25,13 @@ import java.nio.ByteBuffer
  */
 class InboundMessageHandler(private val server: HttpServer,
                             private val maxMessageSize: Int,
-                            private val publisherFactory: PublisherFactory) : LifeCycle {
+                            private val publisherFactory: PublisherFactory) : Lifecycle, HttpEventListener {
 
     companion object {
         private var logger = LoggerFactory.getLogger(InboundMessageHandler::class.java)
     }
 
-    private var inboundMessageListener: Subscription? = null
     private var p2pInPublisher: Publisher? = null
-    private var connectionListener: Subscription? = null
 
     private var started = false
     override val isRunning: Boolean
@@ -43,17 +41,14 @@ class InboundMessageHandler(private val server: HttpServer,
         logger.info("Starting P2P message receiver")
         val publisherConfig = PublisherConfig(PUBLISHER_ID)
         p2pInPublisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty())
-        inboundMessageListener = server.onReceive.subscribe { handleRequestMessage(it) }
+        server.addListener(this)
         started = true
         logger.info("Started P2P message receiver")
     }
 
     override fun stop() {
         started = false
-        inboundMessageListener?.unsubscribe()
-        inboundMessageListener = null
-        connectionListener?.unsubscribe()
-        connectionListener = null
+        server.removeListener(this)
         p2pInPublisher?.close()
         p2pInPublisher = null
     }
@@ -62,7 +57,7 @@ class InboundMessageHandler(private val server: HttpServer,
      * Handler for direct P2P messages. The payload is deserialized and then published to the ingress topic.
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
-    private fun handleRequestMessage(message: HttpMessage) {
+    override fun onMessage(message: HttpMessage) {
         var responseBytes = ByteArray(0)
         var statusCode = message.statusCode
         try {

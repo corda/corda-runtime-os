@@ -10,11 +10,11 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_P
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.render
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
+import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -121,7 +121,9 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
         while (!stopped) {
             attempts++
             try {
-                consumerBuilder.createPubSubConsumer(config.getConfig(KAFKA_CONSUMER), ::logFailedDeserialize).use {
+                consumerBuilder.createPubSubConsumer(
+                    config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass,::logFailedDeserialize
+                ).use {
                     it.subscribeToTopic()
                     pollAndProcessRecords(it)
                 }

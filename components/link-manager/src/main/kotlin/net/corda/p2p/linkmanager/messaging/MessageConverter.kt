@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.messaging
 
-import net.corda.p2p.FlowMessage
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
@@ -12,10 +11,17 @@ import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.MemberInfo
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.NetworkType
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toNetworkType
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.MemberInfo
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.NetworkType
+import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
+import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
+import net.corda.p2p.payload.FlowMessage
+import net.corda.p2p.payload.FlowMessageAndKey
+import net.corda.p2p.payload.HoldingIdentity
+import net.corda.p2p.payload.MessageAck
+import org.apache.avro.AvroRuntimeException
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -30,7 +36,7 @@ class MessageConverter {
 
         private val logger = LoggerFactory.getLogger(this::class.java.name)
 
-        internal fun createLinkOutMessage(payload: Any, dest: MemberInfo, networkType: NetworkType): LinkOutMessage? {
+        internal fun createLinkOutMessage(payload: Any, dest: MemberInfo, networkType: NetworkType): LinkOutMessage {
             val header = generateLinkOutHeaderFromPeer(dest, networkType)
             return LinkOutMessage(header, payload)
         }
@@ -39,19 +45,69 @@ class MessageConverter {
             return LinkOutHeader(peer.holdingIdentity.x500Name, networkType.toNetworkType(), peer.endPoint.address)
         }
 
-        fun createLinkOutMessageFromFlowMessage(
-            message: FlowMessage,
+        private fun <T> deserializeHandleAvroErrors(deserialize: (ByteBuffer) -> T, data: ByteBuffer, sessionId: String): T? {
+            return try {
+                deserialize(data)
+            } catch (exception: IOException) {
+                logger.warn("Could not deserialize message for session ${sessionId}. The message was discarded.")
+                null
+            } catch (exception: AvroRuntimeException) {
+                logger.error("Could not deserialize message for session ${sessionId}. Error: $exception.message." +
+                        " The message was discarded.")
+                null
+            }
+        }
+
+        fun linkOutMessageFromAck(
+            message: MessageAck,
+            source: HoldingIdentity,
+            destination: HoldingIdentity,
             session: Session,
             networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
-            val payload = message.toByteBuffer()
+            val serializedMessage = try {
+                message.toByteBuffer()
+            } catch (exception: IOException) {
+                logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
+                return null
+            }
+            return createLinkOutMessageFromPayload(serializedMessage, source, destination, session, networkMap)
+        }
+
+        fun linkOutMessageFromFlowMessageAndKey(
+            message: FlowMessageAndKey,
+            session: Session,
+            networkMap: LinkManagerNetworkMap
+        ): LinkOutMessage? {
+            val serializedMessage = try {
+                message.toByteBuffer()
+            } catch (exception: IOException) {
+                logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
+                return null
+            }
+            return createLinkOutMessageFromPayload(
+                serializedMessage,
+                message.flowMessage.header.source,
+                message.flowMessage.header.destination,
+                session,
+                networkMap
+            )
+        }
+
+        private fun createLinkOutMessageFromPayload(
+            serializedPayload: ByteBuffer,
+            source: HoldingIdentity,
+            destination: HoldingIdentity,
+            session: Session,
+            networkMap: LinkManagerNetworkMap
+        ): LinkOutMessage? {
             val result = when (session) {
                 is AuthenticatedSession -> {
-                    val result = session.createMac(payload.array())
-                    AuthenticatedDataMessage(result.header, payload, ByteBuffer.wrap(result.mac))
+                    val result = session.createMac(serializedPayload.array())
+                    AuthenticatedDataMessage(result.header, serializedPayload, ByteBuffer.wrap(result.mac))
                 }
                 is AuthenticatedEncryptionSession -> {
-                    val result = session.encryptData(payload.array())
+                    val result = session.encryptData(serializedPayload.array())
                     AuthenticatedEncryptedDataMessage(
                         result.header,
                         ByteBuffer.wrap(result.encryptedPayload),
@@ -66,52 +122,35 @@ class MessageConverter {
                 }
             }
 
-            val destMemberInfo = networkMap.getMemberInfo(message.header.destination.toHoldingIdentity())
+            val destMemberInfo = networkMap.getMemberInfo(destination.toHoldingIdentity())
             if (destMemberInfo == null) {
-                logger.warn("Attempted to send message to peer ${message.header.destination} which is not in the network map." +
-                    " The message was discarded.")
+                logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
                 return null
             }
-            val networkType = networkMap.getNetworkType(message.header.source.toHoldingIdentity())
+            val networkType = networkMap.getNetworkType(source.toHoldingIdentity())
             if (networkType == null) {
-                logger.warn("Could not find the network type in the NetworkMap for our identity = ${message.header.source}. The message" +
-                    " was discarded.")
+                logger.warn("Could not find the network type in the NetworkMap for our identity = ${source}. The message was discarded.")
                 return null
             }
 
             return createLinkOutMessage(result, destMemberInfo, networkType)
         }
 
-        fun convertToFlowMessage(session: Session, sessionId: String, message: LinkInMessage): FlowMessage? {
-            val innerMessage = message.payload
-            when (session) {
-                is AuthenticatedSession -> {
-                    if (innerMessage is AuthenticatedDataMessage) {
-                        return convertAuthenticatedMessageToFlowMessage(innerMessage, session)
-                    } else {
-                        logger.warn("Received encrypted message for session with SessionId = $sessionId which is " +
-                                "Authentication only. The message was discarded.")
-                    }
-                }
-                is AuthenticatedEncryptionSession -> {
-                    if (innerMessage is AuthenticatedEncryptedDataMessage) {
-                        return convertAuthenticatedEncryptedMessageToFlowMessage(innerMessage, session)
-                    } else {
-                        logger.warn("Received encrypted message for session with SessionId = $sessionId which is " +
-                                "AuthenticationAndEncryption. The message was discarded.")
-                    }
-                }
-                else -> {
-                    logger.warn("Invalid session type ${session::class.java} SessionId = $sessionId. The message was discarded.")
-                }
+        fun <T> extractPayload(session: Session, sessionId: String, message: DataMessage, deserialize: (ByteBuffer) -> T): T? {
+            val sessionAndMessage = SessionAndMessage.create(session, sessionId, message) ?: return null
+            return when (sessionAndMessage) {
+                is SessionAndMessage.Authenticated -> extractPayloadFromAuthenticatedMessage(sessionAndMessage, deserialize)
+                is SessionAndMessage.AuthenticatedEncrypted ->
+                    extractPayloadFromAuthenticatedEncryptedMessage(sessionAndMessage, deserialize)
             }
-            return null
         }
 
-        fun convertAuthenticatedEncryptedMessageToFlowMessage(
-            message: AuthenticatedEncryptedDataMessage,
-            session: AuthenticatedEncryptionSession
-        ): FlowMessage? {
+        fun <T> extractPayloadFromAuthenticatedEncryptedMessage(
+            sessionAndMessage: SessionAndMessage.AuthenticatedEncrypted,
+            deserialize: (ByteBuffer) -> T
+        ): T? {
+            val message = sessionAndMessage.message
+            val session = sessionAndMessage.session
             val decryptedData = try {
                 session.decryptData(message.header, message.encryptedPayload.array(), message.authTag.array())
             } catch (exception: DecryptionFailedError) {
@@ -119,27 +158,22 @@ class MessageConverter {
                         "The message was discarded.")
                 return null
             }
-            return try {
-                FlowMessage.fromByteBuffer(ByteBuffer.wrap(decryptedData))
-            } catch (exception: IOException) {
-                logger.warn("Could not deserialize message for session ${message.header.sessionId}. The message was discarded.")
-                null
-            }
+            return deserializeHandleAvroErrors(deserialize, ByteBuffer.wrap(decryptedData), message.header.sessionId)
         }
 
-        fun convertAuthenticatedMessageToFlowMessage(message: AuthenticatedDataMessage, session: AuthenticatedSession): FlowMessage? {
+        fun <T> extractPayloadFromAuthenticatedMessage(
+            sessionAndMessage: SessionAndMessage.Authenticated,
+            deserialize: (ByteBuffer) -> T
+        ): T? {
+            val message = sessionAndMessage.message
+            val session = sessionAndMessage.session
             try {
                 session.validateMac(message.header, message.payload.array(), message.authTag.array())
             } catch (exception: InvalidMac) {
                 logger.warn("MAC check failed for message for session ${message.header.sessionId}. The message was discarded.")
                 return null
             }
-            return try {
-                FlowMessage.fromByteBuffer(message.payload)
-            } catch (exception: IOException) {
-                logger.warn("Could not deserialize message for session ${message.header.sessionId}. The message was discarded.")
-                null
-            }
+            return deserializeHandleAvroErrors(deserialize, message.payload, message.header.sessionId)
         }
     }
 
