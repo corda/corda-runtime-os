@@ -9,7 +9,7 @@ import net.corda.messaging.kafka.subscription.consumer.listener.DurableConsumerR
 import net.corda.messaging.kafka.subscription.consumer.listener.PubSubConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
-import net.corda.messaging.kafka.toProperties
+import net.corda.messaging.kafka.utils.toProperties
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs

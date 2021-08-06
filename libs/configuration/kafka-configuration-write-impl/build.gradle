@@ -8,7 +8,7 @@ description 'Kafka Configuration Write API Impl'
 
 dependencies {
 
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 

@@ -3,7 +3,7 @@ package net.corda.components.examples.pubsub
 import com.typesafe.config.Config
 import net.corda.components.examples.pubsub.processor.DemoPubSubProcessor
 import net.corda.data.demo.DemoRecord
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -15,7 +15,7 @@ import org.slf4j.Logger
 class RunPubSub(
     private val subscriptionFactory: SubscriptionFactory,
     private var config: Config
-) : LifeCycle {
+) : Lifecycle {
 
     companion object {
         val log: Logger = contextLogger()

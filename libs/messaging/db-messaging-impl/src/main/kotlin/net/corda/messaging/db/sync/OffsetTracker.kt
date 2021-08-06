@@ -1,6 +1,6 @@
 package net.corda.messaging.db.sync
 
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.v5.base.util.contextLogger
@@ -36,7 +36,7 @@ class OffsetTracker(private val topic: String,
                     private val partition: Int,
                     initialMaxOffset: Long,
                     private val executorService: ScheduledExecutorService,
-                    private val periodicChecksInterval: Duration = 2.seconds): LifeCycle {
+                    private val periodicChecksInterval: Duration = 2.seconds): Lifecycle {
 
     companion object {
         private val log: Logger = contextLogger()

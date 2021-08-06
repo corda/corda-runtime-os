@@ -25,7 +25,7 @@ class FetchWindowCalculator(private val offsetTrackersManager: OffsetTrackersMan
             val maxNumberOfRecordsForPartition = floor((partitionRecords.toDouble() / totalRecords.toDouble()) * totalBatchSize).toInt()
             remainingRecords -= maxNumberOfRecordsForPartition
             FetchWindow(partition, offsets.first, offsets.second, maxNumberOfRecordsForPartition)
-        }
+        }.filter { it.endOffset >= it.startOffset }
 
         // allocate remaining records
         return windows.map {

@@ -4,7 +4,7 @@ import java.util.jar.JarFile
 description("OSGi Framework Bootstrap")
 
 dependencies {
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     implementation project(":osgi-framework-api")
 
@@ -50,8 +50,8 @@ private addBundles(
 }
 
 test {
-    dependsOn('framework-app-tester:appJar')
-    final def appTesterProject = project("framework-app-tester")
+    dependsOn(':testing:apps:test-app:appJar')
+    final def appTesterProject = project(":testing:apps:test-app")
     doFirst {
         final File source = new File(appTesterProject.buildDir, "libs")
         final File target = new File(buildDir, "resources/test/bundles")

@@ -20,7 +20,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation "net.corda:corda-base:$cordaApiVersion"
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
