@@ -2,6 +2,8 @@ package net.corda.flow.manager.impl
 
 import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
 import co.paralleluniverse.fibers.FiberExecutorScheduler
+import co.paralleluniverse.io.serialization.kryo.KryoUtil
+import net.corda.cipher.suite.internal.BasicHashingServiceImpl
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.RPCFlowResult
 import net.corda.data.flow.event.FlowEvent
@@ -15,11 +17,15 @@ import net.corda.flow.statemachine.HousekeepingState
 import net.corda.flow.statemachine.NonSerializableState
 import net.corda.flow.statemachine.factory.FlowStateMachineFactory
 import net.corda.internal.di.DependencyInjectionService
+import net.corda.kryoserialization.CheckpointSerializationService
+import net.corda.kryoserialization.DefaultWhitelist
+import net.corda.kryoserialization.KRYO_CHECKPOINT_CONTEXT
+import net.corda.kryoserialization.KryoCheckpointSerializerBuilder
+import net.corda.kryoserialization.factory.CheckpointSerializationServiceFactory
 import net.corda.messaging.api.records.Record
 import net.corda.sandbox.cache.FlowMetadata
 import net.corda.sandbox.cache.SandboxCache
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
@@ -31,8 +37,8 @@ import java.time.Clock
 class FlowManagerImpl @Activate constructor(
     @Reference(service = SandboxCache::class)
     private val sandboxCache: SandboxCache,
-    @Reference(service = SerializationService::class)
-    private val checkpointSerialisationService: SerializationService,
+    @Reference(service = CheckpointSerializationServiceFactory::class)
+    private val checkpointSerializationServiceFactory: CheckpointSerializationServiceFactory,
     @Reference(service = DependencyInjectionService::class)
     private val dependencyInjector: DependencyInjectionService,
     @Reference(service = FlowStateMachineFactory::class)
@@ -44,6 +50,7 @@ class FlowManagerImpl @Activate constructor(
     }
 
     private val scheduler = FiberExecutorScheduler("Same thread scheduler", ScheduledSingleThreadExecutor())
+    private var checkpointSerialisationService: CheckpointSerializationService? = null
 
     // Should be set up by the configration service
     private val resultTopic = ""
@@ -56,6 +63,13 @@ class FlowManagerImpl @Activate constructor(
         args: List<Any?>
     ): FlowResult {
         log.info("start new flow clientId: $clientId flowName: ${newFlowMetadata.name} args $args")
+
+        val kryoCheckpointSerializerBuilder =
+            KryoCheckpointSerializerBuilder({ KryoUtil.newKryo() }, DefaultWhitelist, BasicHashingServiceImpl())
+        checkpointSerialisationService = checkpointSerializationServiceFactory.createCheckpointSerializationService(
+            KRYO_CHECKPOINT_CONTEXT,
+            kryoCheckpointSerializerBuilder.build()
+        )
 
         val flow = getOrCreate(newFlowMetadata.key.identity, newFlowMetadata, args)
         val stateMachine = flowStateMachineFactory.createStateMachine(
@@ -108,7 +122,7 @@ class FlowManagerImpl @Activate constructor(
     private fun setupFlow(flow: FlowStateMachine<*>) {
         flow.nonSerializableState(
             NonSerializableState(
-                checkpointSerialisationService,
+                checkpointSerialisationService!!,
                 Clock.systemUTC()
             )
         )
@@ -128,7 +142,7 @@ class FlowManagerImpl @Activate constructor(
             Record(
                 outputTopic,
                 key,
-                checkpointSerialisationService.serialize(event).bytes
+                checkpointSerialisationService?.serialize(event)?.bytes
             )
         }
     }

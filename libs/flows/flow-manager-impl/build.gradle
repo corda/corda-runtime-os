@@ -10,6 +10,7 @@ dependencies {
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation "net.corda:corda-application:$cordaVersion"
     implementation "net.corda:corda-base-internal:$cordaVersion"
+    implementation "net.corda:corda-crypto-impl:$cordaVersion"
     implementation "net.corda:corda-install:$cordaVersion"
     implementation "net.corda:corda-packaging:$cordaVersion"
     implementation "net.corda:corda-sandbox:$cordaVersion"
@@ -22,6 +23,7 @@ dependencies {
     implementation project(':libs:flows:statemachine-impl')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:sandbox:sandbox-cache')
+    implementation project(':libs:serialization:serialization-kryo')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

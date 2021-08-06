@@ -5,9 +5,9 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.components.examples.runflow.RunFlow
 import net.corda.flow.manager.FlowManager
-import net.corda.lifecycle.LifeCycleCoordinator
-import net.corda.lifecycle.LifeCycleEvent
-import net.corda.lifecycle.SimpleLifeCycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -50,7 +50,7 @@ class DemoFlowRun @Activate constructor(
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
-    private var lifeCycleCoordinator: LifeCycleCoordinator? = null
+    private var lifeCycleCoordinator: LifecycleCoordinator? = null
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
@@ -69,7 +69,9 @@ class DemoFlowRun @Activate constructor(
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
-                SimpleLifeCycleCoordinator(BATCH_SIZE, TIMEOUT) { event: LifeCycleEvent, _: LifeCycleCoordinator ->
+                LifecycleCoordinatorFactory.createCoordinator<DemoFlowRun>(
+                    BATCH_SIZE
+                ) { event: LifecycleEvent, _: LifecycleCoordinator ->
                     log.info("While in ($state) received LifeCycleEvent: $event")
                     when (event) {
                         is StartEvent -> {
