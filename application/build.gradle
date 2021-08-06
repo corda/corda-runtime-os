@@ -1,5 +1,6 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'org.jetbrains.kotlin.jvm'
     id 'biz.aQute.bnd.builder'
 }
 
@@ -9,6 +10,7 @@ dependencies {
     api "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
     api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
 
+    api platform(project(':corda-platform'))
     api project(":base")
     api project(":serialization")
 

@@ -1,11 +1,13 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'org.jetbrains.kotlin.jvm'
     id 'biz.aQute.bnd.builder'
 }
 
 description 'Corda Serialization'
 
 dependencies {
+    api platform(project(':corda-platform'))
     api project(":base")
 
     implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"

@@ -15,12 +15,6 @@ pluginManagement {
             }
         } else {
             maven {
-                url "$artifactoryContextUrl/corda-dev"
-                content {
-                    includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
-                }
-            }
-            maven {
                 url "$artifactoryContextUrl/corda-releases"
                 content {
                     includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
@@ -32,8 +26,8 @@ pluginManagement {
         maven {
             url "$artifactoryContextUrl/engineering-tools-maven"
             credentials {
-                username = System.getenv('CORDA_ARTIFACTORY_USERNAME') ?: cordaArtifactoryUsername
-                password = System.getenv('CORDA_ARTIFACTORY_PASSWORD') ?: cordaArtifactoryPassword
+                username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
             }
             content {
                 includeGroupByRegex 'com\\.r3\\.internal(\\..*)?'
@@ -56,10 +50,45 @@ pluginManagement {
     }
 }
 
+dependencyResolutionManagement {
+    repositories {
+        def cordaUseCache = System.getenv("CORDA_USE_CACHE")
+        if (cordaUseCache != null) {
+            maven {
+                url = "$artifactoryContextUrl/$cordaUseCache"
+                name = "R3 Maven remote repositories"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        } else {
+            mavenLocal()
+            mavenCentral()
+
+            maven {
+                url = "$artifactoryContextUrl/corda-dependencies"
+            }
+
+            maven {
+                url = "$artifactoryContextUrl/${System.getenv('CORDA_CONSUME_REPOSITORY_KEY') ?: 'corda-os-maven'}"
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        }
+    }
+}
+
 rootProject.name = "corda-api"
 
 include 'application'
 include 'base'
+include 'corda-platform'
 include 'crypto'
 include 'data:avro-schema'
 include 'data:topic-schema'

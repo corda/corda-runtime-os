@@ -1,5 +1,10 @@
 plugins {
+    id 'org.jetbrains.kotlin.jvm'
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
 description 'Definition of Topics'
+
+dependencies {
+    implementation platform(project(':corda-platform'))
+}

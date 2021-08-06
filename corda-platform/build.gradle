@@ -1,0 +1,48 @@
+plugins {
+    id 'java-platform'
+    id 'maven-publish'
+    id 'com.jfrog.artifactory'
+}
+
+dependencies {
+    constraints {
+        api project(':application')
+        api project(':base')
+        api project(':crypto')
+        api project(':data:avro-schema')
+        api project(':data:topic-schema')
+        api project(':serialization')
+    }
+}
+
+publishing {
+    publications {
+        platformConfiguration(MavenPublication) {
+            from components.javaPlatform
+
+            pom {
+                name = 'Corda API Platform'
+
+                licenses {
+                    license {
+                        name = licenseName
+                        url = licenseUrl
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
+            }
+        }
+    }
+}
+
+artifactoryPublish {
+    publications('platformConfiguration')
+}
