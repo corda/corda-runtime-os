@@ -31,7 +31,7 @@ class SNIKeyManager(private val keyManager: X509ExtendedKeyManager): X509Extende
             return null
         }
 
-        logger.debug("Checking aliases: $aliases")
+        logger.debug("Checking aliases: ${aliases.joinToString(",")}")
         matcher?.let {
             val matchedAlias = (it as HostnameMatcher).matchedAlias
             if (aliases.contains(matchedAlias)) {

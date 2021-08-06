@@ -1,6 +1,5 @@
 package net.corda.p2p.gateway.messaging.http
 
-import net.corda.p2p.HoldingIdentity
 import net.corda.p2p.NetworkType
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -10,7 +9,7 @@ import javax.net.ssl.SNIHostName
 class SniCalculatorTest {
 
     companion object {
-        val SOURCE = HoldingIdentity("PartyA", "Group")
+        val SOURCE = "PartyA"
         const val MAX_SNI_SIZE = 255 //Under RCF-1035 the total sni can be at most 255 bytes
         const val MAX_SNI_LABEL_SIZE = 63 //Under RCF-1035 each label can be at most 63 bytes
         const val LABEL_DELIMITER = "."
@@ -23,7 +22,7 @@ class SniCalculatorTest {
         Assertions.assertEquals(
             hostName,
             SniCalculator.calculateSni(
-                SOURCE.x500Name,
+                SOURCE,
                 NetworkType.CORDA_5,
                 address
             )
@@ -37,7 +36,7 @@ class SniCalculatorTest {
         Assertions.assertEquals(
             hostName,
             SniCalculator.calculateSni(
-                SOURCE.x500Name,
+                SOURCE,
                 NetworkType.CORDA_5,
                 address
             )
@@ -51,7 +50,7 @@ class SniCalculatorTest {
         Assertions.assertEquals(
             ip,
             SniCalculator.calculateSni(
-                SOURCE.x500Name,
+                SOURCE,
                 NetworkType.CORDA_5,
                 address
             )
@@ -61,7 +60,7 @@ class SniCalculatorTest {
     @Test
     fun `sni conforms to rcf1035 for a corda4 identity`() {
         val address = ""
-        val sni = SniCalculator.calculateSni(SOURCE.x500Name,
+        val sni = SniCalculator.calculateSni(SOURCE,
             NetworkType.CORDA_4, address)
         println(sni)
         SNIHostName(sni)

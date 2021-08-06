@@ -14,21 +14,8 @@ import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.http.HttpMessage
-import net.corda.p2p.gateway.messaging.http.SniCalculator
-import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
-import org.slf4j.LoggerFactory
-import java.io.IOException
-import java.lang.IllegalStateException
-import java.net.URI
-import java.nio.ByteBuffer
-import java.util.LinkedList
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
-import net.corda.p2p.gateway.messaging.http.HttpMessage
+import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -71,8 +58,12 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
         events.forEach { evt ->
             evt.value?.let { peerMessage ->
                 val destination = URI.create(peerMessage.header.address)
+                val sni = SniCalculator.calculateSni(
+                    peerMessage.header.destinationX500Name,
+                    peerMessage.header.destinationNetworkType,
+                    peerMessage.header.address)
                 val message = LinkInMessage(peerMessage.payload).toByteBuffer().array()
-                connectionPool.acquire(destination).write(message)
+                connectionPool.acquire(destination, sni).write(message)
             }
         }
         return emptyList()

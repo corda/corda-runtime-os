@@ -15,12 +15,9 @@ import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.slf4j.LoggerFactory
 import java.lang.IllegalStateException
 import java.net.URI
-import java.security.cert.PKIXBuilderParameters
-import java.security.cert.X509CertSelector
 import java.util.LinkedList
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
-import javax.net.ssl.CertPathTrustManagerParameters
 import javax.net.ssl.TrustManagerFactory
 import kotlin.concurrent.withLock
 
@@ -37,11 +34,13 @@ import kotlin.concurrent.withLock
  * [HttpClient] uses shared thread pool for Netty callbacks and another one for message queuing.
  *
  * @param destination the target URI
+ * @param sni the target server name
  * @param sslConfiguration the configuration to be used for the one-way TLS handshake
  * @param writeGroup event loop group (thread pool) for processing message writes and reconnects
  * @param nettyGroup event loop group (thread pool) for processing netty callbacks
  */
 class HttpClient(private val destination: URI,
+                 private val sni: String,
                  private val sslConfiguration: SslConfiguration,
                  private val writeGroup: EventLoopGroup,
                  private val nettyGroup: EventLoopGroup) : Lifecycle, HttpEventListener {
@@ -204,7 +203,7 @@ class HttpClient(private val destination: URI,
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createClientSslHandler(parent.destination, trustManagerFactory))
+            pipeline.addLast("sslHandler", createClientSslHandler(parent.sni, parent.destination, trustManagerFactory))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, CLIENT_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpClientCodec())
             pipeline.addLast(HttpChannelHandler(parent, logger))

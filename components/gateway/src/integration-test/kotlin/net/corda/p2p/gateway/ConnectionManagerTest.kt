@@ -3,7 +3,6 @@ package net.corda.p2p.gateway
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.ConnectionManager
-import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
@@ -22,10 +21,10 @@ class ConnectionManagerTest : TestBase() {
     @Test
     @Timeout(30)
     fun `acquire connection`() {
-        val manager = ConnectionManager(sslConfiguration, ConnectionConfiguration())
+        val manager = ConnectionManager(aliceSslConfig, ConnectionConfiguration())
         manager.start()
-        val (host, port) = URI.create(serverAddresses.first()).let { Pair(it.host, it.port) }
-        HttpServer(host, port, sslConfiguration).use { server ->
+        val (host, port) = serverAddress.let { Pair(it.host, it.port) }
+        HttpServer(host, port, aliceSslConfig).use { server ->
             server.addListener(object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
                     assertEquals(clientMessageContent, String(message.payload))
@@ -33,7 +32,7 @@ class ConnectionManagerTest : TestBase() {
                 }
             })
             server.start()
-            manager.acquire(URI.create(serverAddresses.first().toString())).use { client ->
+            manager.acquire(serverAddress, aliceSNI[0]).use { client ->
                 // Client is connected at this point
                 val responseReceived = CountDownLatch(1)
                 client.addListener(object : HttpEventListener {
@@ -50,11 +49,10 @@ class ConnectionManagerTest : TestBase() {
 
     @Test
     fun `reuse connection`() {
-        val manager = ConnectionManager(sslConfiguration,  ConnectionConfiguration())
+        val manager = ConnectionManager(aliceSslConfig,  ConnectionConfiguration())
         manager.start()
         val requestReceived = CountDownLatch(2)
-        val serverURI = URI.create((serverAddresses.first()))
-        HttpServer(serverURI.host, serverURI.port, sslConfiguration).use { server ->
+        HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
             val remotePeers = mutableListOf<SocketAddress>()
             server.addListener(object : HttpEventListener {
                 override fun onOpen(event: HttpConnectionEvent) {
@@ -66,11 +64,11 @@ class ConnectionManagerTest : TestBase() {
             })
             server.start()
 
-            manager.acquire(serverURI).write(clientMessageContent.toByteArray())
-            manager.acquire(serverURI).write(clientMessageContent.toByteArray())
+            manager.acquire(serverAddress, aliceSNI[0]).write(clientMessageContent.toByteArray())
+            manager.acquire(serverAddress, aliceSNI[0]).write(clientMessageContent.toByteArray())
             requestReceived.await()
             assertEquals(1, remotePeers.size)
-            manager.acquire(serverURI).stop()
+            manager.acquire(serverAddress, aliceSNI[0]).stop()
         }
     }
 }

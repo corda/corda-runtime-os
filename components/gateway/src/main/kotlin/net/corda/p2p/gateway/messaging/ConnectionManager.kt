@@ -84,10 +84,11 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
     /**
      * Return an existing or new [HttpClient].
      * @param target the [URI] to connect to
+     * @param sni [String] value of the target's Server Name Indication
      */
-    fun acquire(target: URI): HttpClient {
+    fun acquire(target: URI, sni: String): HttpClient {
         return clientPool.computeIfAbsent(target) {
-            val client = HttpClient(target, sslConfiguration, writeGroup!!, nettyGroup!!)
+            val client = HttpClient(target, sni, sslConfiguration, writeGroup!!, nettyGroup!!)
             eventListeners.forEach { client.addListener(it) }
             client.start()
             client
