@@ -1,0 +1,53 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.publish'
+}
+
+description 'P2P gateway component'
+
+dependencies {
+    implementation "net.corda:corda-base:$cordaVersion"
+    implementation project(":libs:p2p-crypto")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:lifecycle")
+    implementation project(":data:avro-schema")
+    implementation project(":data:topic-schema")
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "io.reactivex:rxjava:$rxjavaVersion"
+    implementation "io.netty:netty-transport:$nettyVersion"
+    implementation "io.netty:netty-codec-http:$nettyVersion"
+
+    // Log4J: logging framework (with SLF4J bindings) - TEMPORARY UNTIL I FIGURE OUT LOGGING IN THIS PROJECT
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    compile "org.slf4j:jul-to-slf4j:$slf4jVersion"
+    compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+    // For async logging
+    compile "com.lmax:disruptor:$disruptorVersion"
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
+
+    testImplementation project(":libs:messaging:inmemory-messaging-impl")
+}
+
+sourceSets {
+    integrationTest {
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+tasks.register('integrationTest', Test) {
+    description = "Runs integration tests."
+
+    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
+    classpath = project.sourceSets["integrationTest"].runtimeClasspath
+}
+
+tasks.named("integrationTest", Test).configure {
+    useJUnitPlatform()
+}

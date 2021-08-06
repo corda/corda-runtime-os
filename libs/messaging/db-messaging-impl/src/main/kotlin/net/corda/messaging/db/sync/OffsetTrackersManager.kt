@@ -1,7 +1,7 @@
 package net.corda.messaging.db.sync
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.db.persistence.DBAccessProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -17,7 +17,7 @@ import kotlin.concurrent.withLock
  * This component manages a set of [OffsetTracker]s, one per topic.
  * It makes sure they are initialised properly with the right offsets and then delegates calls to the right tracker.
  */
-class OffsetTrackersManager(private val dbAccessProvider: DBAccessProvider): LifeCycle {
+class OffsetTrackersManager(private val dbAccessProvider: DBAccessProvider): Lifecycle {
 
     companion object {
         private val log: Logger = contextLogger()

@@ -216,10 +216,10 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
         return maxOffsetsPerTopic
     }
 
-    override fun writeRecords(records: List<RecordDbEntry>, postTxFn: (records: List<RecordDbEntry>) -> Unit) {
+    override fun writeRecords(records: List<RecordDbEntry>, postTxFn: (records: List<RecordDbEntry>, txResult: TransactionResult) -> Unit) {
         executeWithErrorHandling({
             writeRecords(records, it)
-        }, "write records", { postTxFn(records) })
+        }, "write records", { txResult ->  postTxFn(records, txResult) })
     }
 
     override fun readRecords(topic: String, fetchWindows: List<FetchWindow>): List<RecordDbEntry> {
@@ -341,12 +341,12 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
     override fun writeOffsetsAndRecordsAtomically(topic: String, consumerGroup: String,
                                                   offsetsPerPartition: Map<Int, Long>,
                                                   records: List<RecordDbEntry>,
-                                                  postTxFn: (records: List<RecordDbEntry>) -> Unit) {
+                                                  postTxFn: (records: List<RecordDbEntry>, txResult: TransactionResult) -> Unit) {
         executeWithErrorHandling({
             writeOffsets(topic, consumerGroup, offsetsPerPartition, it)
             writeRecords(records, it)
         }, "write offset $offsetsPerPartition for consumer group $consumerGroup on topic $topic and records atomically.",
-            { postTxFn(records) })
+            { txResult -> postTxFn(records, txResult) })
     }
 
     override fun deleteRecordsOlderThan(topic: String, timestamp: Instant) {
@@ -417,18 +417,22 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
 
     /**
      * Executes the specified operation with the necessary error handling.
-     * If an SQL error arises during execution, the transaction is rolled back and the exception is re-thrown.
+     * If an error arises during execution, the transaction is rolled back and the exception is re-thrown.
      *
      * The provided callback function [postTxFn] will be invoked in the end regardless of whether the transaction was successful or not.
      */
     @Suppress("TooGenericExceptionCaught")
-    private fun executeWithErrorHandling(operation: (connection: Connection) -> Unit, operationName: String, postTxFn: () -> Unit = {}) {
+    private fun executeWithErrorHandling(operation: (connection: Connection) -> Unit,
+                                         operationName: String, postTxFn: (txResult: TransactionResult) -> Unit = {}) {
+        var txResult: TransactionResult? = null
         hikariDatasource.connection.use {
             try {
                 operation(it)
 
                 it.commit()
+                txResult = TransactionResult.COMMITTED
             } catch (e: Exception) {
+                txResult = TransactionResult.ROLLED_BACK
                 log.error("Error while trying to $operationName. Transaction will be rolled back.", e)
                 try {
                     it.rollback()
@@ -438,7 +442,7 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
                 }
                 throw e
             } finally {
-                postTxFn()
+                postTxFn(txResult!!)
             }
         }
     }
