@@ -1,6 +1,6 @@
 package net.corda.messaging.db.subscription
 
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.records.Record
@@ -25,7 +25,7 @@ class DBRandomAccessSubscription<K: Any, V: Any>(private val subscriptionConfig:
                                                  private val offsetTrackersManager: OffsetTrackersManager,
                                                  private val dbAccessProvider: DBAccessProvider,
                                                  private val keyClass: Class<K>,
-                                                 private val valueClass: Class<V>): RandomAccessSubscription<K, V>, LifeCycle {
+                                                 private val valueClass: Class<V>): RandomAccessSubscription<K, V>, Lifecycle {
 
     companion object {
         private val log: Logger = contextLogger()

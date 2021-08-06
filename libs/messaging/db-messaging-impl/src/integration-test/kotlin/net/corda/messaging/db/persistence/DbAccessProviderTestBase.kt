@@ -87,7 +87,7 @@ abstract class DbAccessProviderTestBase {
             RecordDbEntry(topic2, 2, 8, "key-4".toByteArray(), "value-4".toByteArray()),
             RecordDbEntry(topic2, 2, 9, "key-5".toByteArray(), "value-4".toByteArray())
         )
-        dbAccessProvider.writeRecords(records) {}
+        dbAccessProvider.writeRecords(records) { _, _ -> }
 
         val maxOffsetsPerTopic = dbAccessProvider.getMaxOffsetsPerTopic()
 
@@ -148,7 +148,7 @@ abstract class DbAccessProviderTestBase {
 
         assertThatThrownBy { dbAccessProvider.writeOffsets(topic1, consumer1, mapOf(1 to 3)) }
             .isInstanceOf(OffsetsAlreadyCommittedException::class.java)
-        assertThatThrownBy { dbAccessProvider.writeOffsetsAndRecordsAtomically(topic1, consumer1, mapOf(1 to 3), records) {} }
+        assertThatThrownBy { dbAccessProvider.writeOffsetsAndRecordsAtomically(topic1, consumer1, mapOf(1 to 3), records) { _, _ -> } }
             .isInstanceOf(OffsetsAlreadyCommittedException::class.java)
     }
 
@@ -176,7 +176,7 @@ abstract class DbAccessProviderTestBase {
             RecordDbEntry(topic2, 1, 8, "key-4".toByteArray(), "value-4".toByteArray()),
             RecordDbEntry(topic2, 1, 9, "key-5".toByteArray(), "value-5".toByteArray())
         )
-        dbAccessProvider.writeRecords(records) { called = true }
+        dbAccessProvider.writeRecords(records) { _, _ -> called = true }
 
         val topic1Records = dbAccessProvider.readRecords(topic1, listOf(FetchWindow(1, 0, 10, 10)))
         val topic2Records = dbAccessProvider.readRecords(topic2, listOf(FetchWindow(1, 0, 10, 10)))
@@ -195,7 +195,7 @@ abstract class DbAccessProviderTestBase {
             RecordDbEntry(topic1, 1, 4, "key-4".toByteArray(), "value-4".toByteArray()),
             RecordDbEntry(topic1, 1, 5, "key-5".toByteArray(), "value-5".toByteArray()),
         )
-        dbAccessProvider.writeRecords(records) {}
+        dbAccessProvider.writeRecords(records) { _, _ -> }
 
         val returnedRecords = dbAccessProvider.readRecords(topic1, listOf(FetchWindow(1, 0, 3, 10)))
 
@@ -211,7 +211,7 @@ abstract class DbAccessProviderTestBase {
             RecordDbEntry(topic1, 1, 4, "key-4".toByteArray(), "value-4".toByteArray()),
             RecordDbEntry(topic1, 1, 5, "key-5".toByteArray(), "value-5".toByteArray()),
         )
-        dbAccessProvider.writeRecords(records) {}
+        dbAccessProvider.writeRecords(records) { _, _ -> }
 
         val returnedRecords = dbAccessProvider.readRecords(topic1, listOf(FetchWindow(1, 0, 5, 2)))
 
@@ -228,7 +228,7 @@ abstract class DbAccessProviderTestBase {
             RecordDbEntry(topic1, 2, 2, "key-4".toByteArray(), "value-4".toByteArray()),
             RecordDbEntry(topic1, 2, 3, "key-5".toByteArray(), "value-5".toByteArray())
         )
-        dbAccessProvider.writeRecords(records) { called = true }
+        dbAccessProvider.writeRecords(records) { _, _ -> called = true }
 
         val fetchWindows = listOf(
             FetchWindow(1, 0, 5, 10),
@@ -248,7 +248,7 @@ abstract class DbAccessProviderTestBase {
             RecordDbEntry(topic1, 1, 5, "key-2".toByteArray(), "value-2".toByteArray()),
             RecordDbEntry(topic1, 1, 6, "key-3".toByteArray(), "value-3".toByteArray())
         )
-        dbAccessProvider.writeOffsetsAndRecordsAtomically(topic1, consumer1, mapOf(1 to committedOffset), records) {}
+        dbAccessProvider.writeOffsetsAndRecordsAtomically(topic1, consumer1, mapOf(1 to committedOffset), records) { _, _ -> }
 
         val returnedRecords = dbAccessProvider.readRecords(topic1, listOf(FetchWindow(1, 0, 10, 10)))
         assertThat(returnedRecords).containsExactlyElementsOf(records)
@@ -267,7 +267,7 @@ abstract class DbAccessProviderTestBase {
             RecordDbEntry(topic1, 1, 2, "key-2".toByteArray(), "value-2".toByteArray()),
             RecordDbEntry(topic1, 1, 3, "key-3".toByteArray(), "value-3".toByteArray())
         )
-        dbAccessProvider.writeOffsetsAndRecordsAtomically(topic1, consumer1, mapOf(1 to committedOffset), records) {}
+        dbAccessProvider.writeOffsetsAndRecordsAtomically(topic1, consumer1, mapOf(1 to committedOffset), records) { _, _ -> }
 
         val existingRecord = dbAccessProvider.getRecord(topic1, 1, 2)
         assertThat(existingRecord).isEqualTo(records[1])
@@ -288,9 +288,9 @@ abstract class DbAccessProviderTestBase {
             RecordDbEntry(topic1, 1, 5, "key-5".toByteArray(), "value-5".toByteArray())
         )
 
-        dbAccessProvider.writeRecords(recordsBeforeWindow) {}
+        dbAccessProvider.writeRecords(recordsBeforeWindow) { _, _ -> }
         val cutoffWindow = Instant.now()
-        dbAccessProvider.writeRecords(recordsAfterWindow) {}
+        dbAccessProvider.writeRecords(recordsAfterWindow) { _, _ -> }
 
         dbAccessProvider.deleteRecordsOlderThan(topic1, cutoffWindow)
 

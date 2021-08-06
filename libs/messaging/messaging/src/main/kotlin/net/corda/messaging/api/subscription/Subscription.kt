@@ -1,6 +1,6 @@
 package net.corda.messaging.api.subscription
 
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -13,7 +13,7 @@ import net.corda.messaging.api.records.Record
  * Subscription will begin consuming events upon start().
  * Subscription will stop consuming events and close the connection upon close()/stop()
  */
-interface Subscription<K, V> : LifeCycle {
+interface Subscription<K, V> : Lifecycle {
 
     /**
      * Start a subscription.
@@ -33,7 +33,7 @@ interface Subscription<K, V> : LifeCycle {
  * Consumption of records, processing and production of new records is done atomically
  * (that is, within a single _transaction_).
  */
-interface StateAndEventSubscription<K, S, E> : LifeCycle {
+interface StateAndEventSubscription<K, S, E> : Lifecycle {
     /**
      *  Queries the topic values for the most recent state [S] of the given [key].
      *  For partitioned topics not all values may be available.  However, any key

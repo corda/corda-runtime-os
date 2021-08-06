@@ -8,6 +8,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.db.partition.PartitionAssignor
 import net.corda.messaging.db.persistence.DBAccessProvider
 import net.corda.messaging.db.persistence.RecordDbEntry
+import net.corda.messaging.db.persistence.TransactionResult
 import net.corda.messaging.db.sync.OffsetTrackersManager
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.assertj.core.api.Assertions.assertThat
@@ -39,16 +40,19 @@ class DBPublisherTest {
         @Suppress("UNCHECKED_CAST")
         `when`(writeRecords(anyList(), anyOrNull())).thenAnswer { invocation ->
             val records = invocation.arguments[0] as List<RecordDbEntry>
-            val postTxFn = invocation.arguments[1] as ((records: List<RecordDbEntry>) -> Unit)
+            val postTxFn = invocation.arguments[1] as ((records: List<RecordDbEntry>, txResult: TransactionResult) -> Unit)
 
+            var transactionResult: TransactionResult? = null
             try {
                 if (failureToSimulateForDbWrite != null) {
+                    transactionResult = TransactionResult.ROLLED_BACK
                     throw failureToSimulateForDbWrite!!
                 }
 
                 writtenDbRecords.addAll(records)
+                transactionResult = TransactionResult.COMMITTED
             } finally {
-                postTxFn(records)
+                postTxFn(records, transactionResult!!)
             }
         }
         `when`(getTopics()).thenReturn(mapOf(topic to topicPartitions))
