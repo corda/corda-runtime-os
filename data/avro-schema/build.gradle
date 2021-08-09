@@ -107,6 +107,10 @@ tasks.named("compileKotlin") {
     dependsOn generateOSGiPackageInfo
 }
 
+tasks.named('dokkaHtml') {
+    inputs.files generateAvro, generateOSGiPackageInfo
+}
+
 def generatedResources = files(generatedClassesDir) {
     builtBy generateOSGiPackageInfo
 }
