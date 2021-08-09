@@ -99,22 +99,22 @@ class EventLogSubscriptionIntegrationTest {
                 topic = topic,
                 key = "key1",
                 value = Event("one", 1),
-                partition = 9,
-                offset = 0
+                partition = 5,
+                offset = 1,
             ),
             EventLogRecord(
                 topic = topic,
                 key = "key2",
                 value = Event("two", 2),
-                partition = 10,
+                partition = 6,
                 offset = 1
             ),
             EventLogRecord(
                 topic = topic,
                 key = "key3",
                 value = Event("three", 3),
-                partition = 1,
-                offset = 2
+                partition = 7,
+                offset = 1
             ),
         ).hasSize(3)
         assertThat(assigned).contains(9, 10, 1)

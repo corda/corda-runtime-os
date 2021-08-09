@@ -83,8 +83,14 @@ internal class ConsumerGroup(
     }
 
     fun unsubscribe(consumer: Consumer) {
-        if (consumers.remove(consumer) != null) {
-            repartition()
+        val partitions = consumers.remove(consumer)
+        if (partitions != null) {
+            consumer.partitionAssignmentListener?.onPartitionsUnassigned(partitions.map { topicName to it.partitionId })
+            if (consumers.isNotEmpty()) {
+                repartition()
+            } else {
+                wakeUp()
+            }
         }
     }
 

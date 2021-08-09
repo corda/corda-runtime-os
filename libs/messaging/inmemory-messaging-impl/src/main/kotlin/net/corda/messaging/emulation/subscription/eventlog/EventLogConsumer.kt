@@ -1,5 +1,6 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
+import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.emulation.topic.model.Consumer
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
@@ -15,8 +16,24 @@ class EventLogConsumer<K : Any, V : Any>(
     override val offsetStrategy = OffsetStrategy.EARLIEST
 
     override fun handleRecords(records: Collection<RecordMetadata>) {
-        records.forEach { recordMetaData ->
-            subscription.processor.onNext(uncheckedCast(recordMetaData))
-        }
+        subscription.processor.onNext(
+            records.filter {
+                subscription.processor.keyClass.isInstance(it.record.key)
+            }.filter {
+                subscription.processor.valueClass.isInstance(it.record.value)
+            }.map {
+                it.toRecord()
+            }.toList()
+        )
+    }
+
+    private fun RecordMetadata.toRecord(): EventLogRecord<K, V> {
+        return EventLogRecord(
+            subscription.topicName,
+            uncheckedCast(this.record.key),
+            uncheckedCast(this.record.value),
+            this.partition,
+            this.offset
+        )
     }
 }
