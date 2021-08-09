@@ -13,7 +13,7 @@ import org.junit.jupiter.api.TestFactory
 import java.util.stream.Stream
 import kotlin.streams.asStream
 
-class NonEmptySetTest {
+class NonEmptySetTestOld {
 
     /**
      * Builds a new NonEmptySet with provided elements for testing
@@ -27,8 +27,7 @@ class NonEmptySetTest {
      */
     @TestFactory
     fun suite(): Stream<DynamicTest> {
-        return SetTestSuiteBuilder
-            .using(NonEmptySetGenerator)
+        return SetTestSuiteBuilder.using(NonEmptySetGenerator)
             .named("Guava test suite")
             .withFeatures(
                 CollectionSize.SEVERAL,
