@@ -86,9 +86,11 @@ dependencyResolutionManagement {
 
 rootProject.name = "corda-api"
 
+includeBuild 'cordapp-configuration'
 include 'application'
 include 'base'
 include 'corda-platform'
+include 'cordapp-configuration-publish'
 include 'crypto'
 include 'data:avro-schema'
 include 'data:topic-schema'
