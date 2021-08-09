@@ -238,6 +238,7 @@ class FlowStateMachineImpl<R>(
 
     private fun buildStateMachineState(): StateMachineState {
         return StateMachineState(
+            clientId,
             housekeepingState.suspendCount,
             housekeepingState.isKilled,
             ByteBuffer.wrap(clientId?.toByteArray()),
