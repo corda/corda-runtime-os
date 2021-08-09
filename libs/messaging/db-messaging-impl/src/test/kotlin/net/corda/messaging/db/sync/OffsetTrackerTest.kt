@@ -81,7 +81,7 @@ class OffsetTrackerTest {
     fun `if offset gets advanced before the timeout expires, the awaiting method returns true`() {
         val newOffset = offsetTracker.getNextOffset()
 
-        val waitResult = executorService.submit(Callable { offsetTracker.waitForOffset(newOffset, 5.millis) } )
+        val waitResult = executorService.submit(Callable { offsetTracker.waitForOffset(newOffset, 50.millis) } )
 
         offsetTracker.offsetReleased(newOffset)
 
