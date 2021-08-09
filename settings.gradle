@@ -52,6 +52,8 @@ pluginManagement {
 
 dependencyResolutionManagement {
     repositories {
+        mavenLocal()
+
         def cordaUseCache = System.getenv("CORDA_USE_CACHE")
         if (cordaUseCache != null) {
             maven {
@@ -66,7 +68,6 @@ dependencyResolutionManagement {
                 }
             }
         } else {
-            mavenLocal()
             mavenCentral()
 
             maven {
