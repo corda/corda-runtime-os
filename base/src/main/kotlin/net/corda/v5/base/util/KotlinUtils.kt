@@ -1,7 +1,6 @@
 package net.corda.v5.base.util
 
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.base.types.NonEmptySet
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -121,9 +120,6 @@ private class TransientProperty<out T> internal constructor(private val initiali
         return uncheckedCast(value)
     }
 }
-
-/** @see NonEmptySet.copyOf */
-fun <T> Collection<T>.toNonEmptySet(): NonEmptySet<T> = NonEmptySet.copyOf(this)
 
 @Suppress("UNCHECKED_CAST")
 fun <T, U : T> uncheckedCast(obj: T) = obj as U
