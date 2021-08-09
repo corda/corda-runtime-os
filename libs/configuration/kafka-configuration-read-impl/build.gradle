@@ -9,7 +9,7 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base:$cordaApiVersion"
-    implementation project(':data:avro-schema')
+    implementation "net.corda:avro-schema:$cordaApiVersion"
     implementation project(':libs:configuration:configuration-read')
     implementation project(":libs:lifecycle")
     implementation project(":libs:messaging:messaging")
