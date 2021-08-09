@@ -69,7 +69,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private lateinit var producer: CordaKafkaProducer
     private lateinit var eventConsumer: CordaKafkaConsumer<K, E>
     private lateinit var stateConsumer: CordaKafkaConsumer<K, S>
-    private var currentStates: MutableMap<Int, MutableMap<K, Pair<Long, S>>>? = null
+    private val currentStates: MutableMap<Int, MutableMap<K, Pair<Long, S>>> = mapFactory.createMap()
 
     @Volatile
     private var stopped = false
@@ -130,26 +130,26 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      * This is not guaranteed to be thread-safe!
      */
     override fun getValue(key: K): S? {
-        getCurrentStates().forEach {
-            if (it.value[key] != null) {
-                return it.value[key]!!.second
+        currentStates.forEach {
+            val state = it.value[key]
+            if (state != null) {
+                return state.second
             }
         }
 
         return null
     }
 
-    private fun getCurrentStatesByPartition(partitionId : Int) : MutableMap<K, Pair<Long, S>> {
-        return getCurrentStates()[partitionId]!!
-    }
-
-    private fun getCurrentStates(): MutableMap<Int, MutableMap<K, Pair<Long, S>>> {
-        var current = currentStates
-        if (current == null) {
-            current = mapFactory.createMap()
-            currentStates = current
+    /**
+     * TODO - im sure theres a better kotlin way to do this
+     */
+    private fun getStatesForPartition(partitionId : Int) : Map<K, S> {
+        val currentStatesForPartition = mutableMapOf<K, S>()
+        currentStates[partitionId]?.forEach { state ->
+            currentStatesForPartition[state.key] = state.value.second
         }
-        return current
+
+        return currentStatesForPartition
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -232,7 +232,6 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         statePartitionsToSync.putAll(syncablePartitions)
         eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) })
 
-        val currentStates = getCurrentStates()
         statePartitions.forEach {
             currentStates.putIfAbsent(it.partition(), mutableMapOf())
         }
@@ -265,11 +264,11 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             val partitionId = topicPartition.partition()
             statePartitionsToSync.remove(partitionId)
 
-            val currentPartitionStates = getCurrentStatesByPartition(partitionId)
+            val currentPartitionStates = currentStates[partitionId]
             if (currentPartitionStates != null) {
-                stateAndEventListener?.onPartitionLost(partitionId, currentPartitionStates)
+                stateAndEventListener?.onPartitionLost(getStatesForPartition(partitionId))
             }
-            getCurrentStates().remove(partitionId)
+            currentStates.remove(partitionId)
         }
     }
 
@@ -335,19 +334,22 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun onProcessorStateUpdated(updatedStates: MutableMap<Int, MutableMap<K, S?>>) {
+        val updatedStatesByKey = mutableMapOf<K, S?>()
         updatedStates.forEach { (partitionId, updatedStates) ->
             for (entry in updatedStates) {
                 val key = entry.key
                 val value = entry.value
                 if (value != null) {
-                    getCurrentStatesByPartition(partitionId)[key] = Pair(clock.instant().toEpochMilli(), value)
+                    updatedStatesByKey[key] = value
+                    currentStates[partitionId]!![key] = Pair(clock.instant().toEpochMilli(), value)
                 } else {
-                    getCurrentStatesByPartition(partitionId).remove(key)
+                    updatedStatesByKey[key] = null
+                    currentStates[partitionId]!!.remove(key)
                 }
             }
         }
 
-        stateAndEventListener?.onPostCommit(updatedStates)
+        stateAndEventListener?.onPostCommit(updatedStatesByKey)
     }
 
     private fun updateStates() {
@@ -358,7 +360,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val states = stateConsumer.poll()
         for (state in states) {
             log.trace { "Updating state: $state" }
-            getCurrentStatesByPartition(state.record.partition())?.compute(state.record.key()) { _, currentState ->
+            currentStates[state.record.partition()]?.compute(state.record.key()) { _, currentState ->
                 if (currentState == null || currentState.first <= state.record.timestamp()) {
                     if (state.record.value() == null) {
                         // Removes this state from the map
@@ -381,7 +383,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     val resumablePartition = TopicPartition(eventTopic.topic, currentPartition)
                     log.debug { "State consumer is up to date for $resumablePartition.  Resuming event feed." }
                     eventConsumer.resume(setOf(resumablePartition))
-                    stateAndEventListener?.onPartitionsSynced(getCurrentStates())
+                    stateAndEventListener?.onPartitionSynced(getStatesForPartition(currentPartition))
                 }
             }
         }

@@ -7,7 +7,6 @@ interface SubscriptionMapFactory<K : Any, V : Any> {
      */
     fun createMap(): MutableMap<K, V>
 
-
     /**
      * Destroys a map created by [createMap].
      */
