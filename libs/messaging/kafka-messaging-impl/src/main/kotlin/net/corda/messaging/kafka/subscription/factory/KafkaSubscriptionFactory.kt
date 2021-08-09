@@ -155,7 +155,7 @@ class KafkaSubscriptionFactory @Activate constructor(
             producerBuilder,
         )
 
-        val mapFactory = object : StateEventSubscriptionMapFactory<K, S> {
+        val mapFactory = object : SubscriptionMapFactory<Int, MutableMap<K, Pair<Long, S>>> {
             override fun createMap(): MutableMap<Int,  MutableMap<K, Pair<Long, S>>> = ConcurrentHashMap()
             override fun destroyMap(map: MutableMap<Int, MutableMap<K, Pair<Long, S>>>) = map.clear()
         }

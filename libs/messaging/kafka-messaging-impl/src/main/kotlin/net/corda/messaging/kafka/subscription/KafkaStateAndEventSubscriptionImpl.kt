@@ -18,7 +18,7 @@ import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuil
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
-import net.corda.messaging.kafka.subscription.factory.StateEventSubscriptionMapFactory
+import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.utils.getEventsByBatch
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -45,10 +45,10 @@ class Topic(val prefix: String, val suffix: String) {
 @Suppress("TooManyFunctions")
 class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val config: Config,
-    private val mapFactory: StateEventSubscriptionMapFactory<K, S>,
+    private val mapFactory: SubscriptionMapFactory<Int,  MutableMap<K, Pair<Long, S>>>,
     private val builder: StateAndEventBuilder<K, S, E>,
     private val processor: StateAndEventProcessor<K, S, E>,
-    private val stateAndEventListener: StateAndEventListener<K, S>,
+    private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val clock: Clock = Clock.systemUTC(),
 ) : StateAndEventSubscription<K, S, E>, ConsumerRebalanceListener {
 
@@ -139,8 +139,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         return null
     }
 
-    private fun getCurrentStatesByPartition(partitionId : Int) : MutableMap<K, Pair<Long, S>>? {
-        return getCurrentStates()[partitionId]
+    private fun getCurrentStatesByPartition(partitionId : Int) : MutableMap<K, Pair<Long, S>> {
+        return getCurrentStates()[partitionId]!!
     }
 
     private fun getCurrentStates(): MutableMap<Int, MutableMap<K, Pair<Long, S>>> {
@@ -231,7 +231,11 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         log.debug { "Syncing the following new state partitions: $syncablePartitions" }
         statePartitionsToSync.putAll(syncablePartitions)
         eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) })
-        //Do nothing here right as handle the assignment after updateStates()?
+
+        val currentStates = getCurrentStates()
+        statePartitions.forEach {
+            currentStates.putIfAbsent(it.partition(), mutableMapOf())
+        }
     }
 
     private fun filterSyncablePartitions(newStatePartitions: List<TopicPartition>): List<Pair<Int, Long>> {
@@ -260,7 +264,12 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         for (topicPartition in removedStatePartitions) {
             val partitionId = topicPartition.partition()
             statePartitionsToSync.remove(partitionId)
-            stateAndEventListener.onPartitionLost(partitionId, getCurrentStatesByPartition(partitionId))
+
+            val currentPartitionStates = getCurrentStatesByPartition(partitionId)
+            if (currentPartitionStates != null) {
+                stateAndEventListener?.onPartitionLost(partitionId, currentPartitionStates)
+            }
+            getCurrentStates().remove(partitionId)
         }
     }
 
@@ -293,7 +302,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private fun tryProcessBatchOfEvents(events: List<ConsumerRecordAndMeta<K, E>>) {
         val outputRecords = mutableListOf<Record<*, *>>()
-        val updatedStates: MutableMap<K, S?> = mutableMapOf()
+        val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
         log.trace { "Processing events(size: ${events.size})" }
         for (event in events) {
@@ -312,30 +321,33 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun processEvent(
         event: ConsumerRecordAndMeta<K, E>,
         outputRecords: MutableList<Record<*, *>>,
-        updatedStates: MutableMap<K, S?>
+        updatedStates: MutableMap<Int, MutableMap<K, S?>>
     ) {
         log.trace { "Processing event: $event" }
         val key = event.record.key()
+        val partitionId = event.record.partition()
         val thisEventUpdates = processor.onNext(getValue(key), event.asRecord())
         outputRecords.addAll(thisEventUpdates.responseEvents)
         val updatedState = thisEventUpdates.updatedState
         outputRecords.add(Record(stateTopic.suffix, key, updatedState))
-        updatedStates[key] = updatedState
+        updatedStates.putIfAbsent(partitionId, mutableMapOf())!![key] = updatedState
         log.trace { "Completed event: $event" }
     }
 
-    private fun onProcessorStateUpdated(updatedStates: MutableMap<K, S?>) {
-        for (entry in updatedStates) {
-            val key = entry.key
-            val value = entry.value
-            if (value != null) {
-                getCurrentStates()[key] = Pair(clock.instant().toEpochMilli(), value)
-            } else {
-                getCurrentStates().remove(key)
+    private fun onProcessorStateUpdated(updatedStates: MutableMap<Int, MutableMap<K, S?>>) {
+        updatedStates.forEach { (partitionId, updatedStates) ->
+            for (entry in updatedStates) {
+                val key = entry.key
+                val value = entry.value
+                if (value != null) {
+                    getCurrentStatesByPartition(partitionId)[key] = Pair(clock.instant().toEpochMilli(), value)
+                } else {
+                    getCurrentStatesByPartition(partitionId).remove(key)
+                }
             }
         }
 
-        stateAndEventListener.onPostCommit(updatedStates)
+        stateAndEventListener?.onPostCommit(updatedStates)
     }
 
     private fun updateStates() {
@@ -369,7 +381,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     val resumablePartition = TopicPartition(eventTopic.topic, currentPartition)
                     log.debug { "State consumer is up to date for $resumablePartition.  Resuming event feed." }
                     eventConsumer.resume(setOf(resumablePartition))
-                    stateAndEventListener.onPartitionsSynced(getCurrentStates())
+                    stateAndEventListener?.onPartitionsSynced(getCurrentStates())
                 }
             }
         }
