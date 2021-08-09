@@ -1,7 +1,6 @@
 package net.corda.p2p.gateway.messaging.http
 
 import net.corda.p2p.NetworkType
-import net.corda.v5.application.identity.CordaX500Name
 import org.apache.commons.validator.routines.DomainValidator
 import org.apache.commons.validator.routines.InetAddressValidator
 import org.slf4j.LoggerFactory
@@ -13,6 +12,9 @@ import javax.net.ssl.StandardConstants
 import java.net.InetAddress
 import java.net.UnknownHostException
 import java.security.cert.X509Certificate
+import org.bouncycastle.asn1.x500.AttributeTypeAndValue
+import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.asn1.x500.style.BCStyle
 
 class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
 
@@ -22,8 +24,6 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
         private const val ALTNAME_DNS = 2
         private const val ALTNAME_IP = 7
     }
-
-
 
     var matchedAlias: String? = null
         private set
@@ -40,8 +40,8 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
         if (serverName.type == StandardConstants.SNI_HOST_NAME) {
             keyStore.aliases().toList().forEach { alias ->
                 val certificate = keyStore.getCertificate(alias).x509()
-                val cordaX500Name = CordaX500Name.build(certificate.subjectX500Principal)
-                val c4SniValue = SniCalculator.calculateSni(cordaX500Name.toString(), NetworkType.CORDA_4, "")
+                val x500Name = X500Name.getInstance(certificate.subjectX500Principal.encoded)
+                val c4SniValue = SniCalculator.calculateSni(x500Name.toString(), NetworkType.CORDA_4, "")
                 val c5Check = match(serverNameString, certificate)
 
                 if (serverNameString == c4SniValue || c5Check) {
@@ -64,31 +64,6 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
             matchDNS(name, certificate)
         }
     }
-
-//    private fun isIpAddress(str: String): Boolean {
-//        return isIpV4Address(str) || isIpV6Address(str)
-//    }
-//
-//    private fun isIpV4Address(str: String): Boolean {
-//        val octets = str.split(".")
-//        if (octets.size != 4)
-//            return false
-//        try {
-//            octets.forEach {
-//                val intValue = it.toInt()
-//                if (intValue < 1 || intValue > 255)
-//                    return false
-//            }
-//        } catch (e: NumberFormatException) {
-//            return false
-//        }
-//        return true
-//    }
-//
-//    private fun isIpV6Address(str: String): Boolean {
-//        // Tricky to do
-//        return false
-//    }
 
     /**
      * RFC2818: In some cases, the URI is specified as an IP address rather than a
@@ -156,7 +131,12 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
         }
 
         // If the SNI doesn't match any of the alternate subject names, we check against the CN component of the main
-        val cn = CordaX500Name.build(certificate.subjectX500Principal).commonName
+        val x500Name = X500Name.getInstance(certificate.subjectX500Principal.encoded)
+        val attrs = x500Name.rdNs
+            .flatMap { it.typesAndValues.asList() }
+            .groupBy(AttributeTypeAndValue::getType, AttributeTypeAndValue::getValue)
+            .mapValues { it.value[0].toString() }
+        val cn = attrs[BCStyle.CN]
         if (matchWithWildcard(hostName.toLowerCase(), cn?.toLowerCase())) {
             return true
         }

@@ -1,13 +1,14 @@
 package net.corda.p2p.gateway.messaging.http
 
 import net.corda.p2p.NetworkType
-import net.corda.v5.application.identity.CordaX500Name
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.FileInputStream
 import java.security.KeyStore
 import javax.net.ssl.SNIHostName
+import javax.security.auth.x500.X500Principal
+import org.bouncycastle.asn1.x500.X500Name
 
 class HostnameMatcherTest {
     @Test
@@ -15,8 +16,8 @@ class HostnameMatcherTest {
         val keyStore: KeyStore = KeyStore.getInstance("JKS").also {
             it.load(FileInputStream(javaClass.classLoader.getResource("sslkeystore_c4.jks")!!.file), "cordacadevpass".toCharArray())
         }
-        val cordaX500Name = CordaX500Name.parse("O=PartyA,L=London,C=GB")
-        val calculatedSNI = SniCalculator.calculateSni(cordaX500Name.toString(), NetworkType.CORDA_4, "")
+        val x500Name = X500Name.getInstance(X500Principal("O=PartyA,L=London,C=GB").encoded)
+        val calculatedSNI = SniCalculator.calculateSni(x500Name.toString(), NetworkType.CORDA_4, "")
         val matcher = HostnameMatcher(keyStore)
         assertTrue(matcher.matches(SNIHostName(calculatedSNI)))
         assertFalse(matcher.matches(SNIHostName("PartyA.net")))

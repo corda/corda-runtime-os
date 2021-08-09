@@ -4,7 +4,6 @@ import net.corda.p2p.NetworkType
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import javax.net.ssl.SNIHostName
 
 class SniCalculatorTest {
 
@@ -62,8 +61,6 @@ class SniCalculatorTest {
         val address = ""
         val sni = SniCalculator.calculateSni(SOURCE,
             NetworkType.CORDA_4, address)
-        println(sni)
-        SNIHostName(sni)
         assertTrue(sni.length < MAX_SNI_SIZE)
         for (label in sni.split(LABEL_DELIMITER)) {
             assertTrue(label.length <= MAX_SNI_LABEL_SIZE)

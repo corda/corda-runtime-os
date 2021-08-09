@@ -12,7 +12,6 @@ dependencies {
     implementation project(":data:avro-schema")
     implementation project(":data:topic-schema")
 
-    implementation "net.corda:corda-application:$cordaVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "io.reactivex:rxjava:$rxjavaVersion"
     implementation "io.netty:netty-transport:$nettyVersion"
