@@ -54,7 +54,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = 'flow-worker'
+rootProject.name = 'corda-runtime-os'
 include 'applications:examples:demo-app'
 include 'applications:examples:demo-publisher'
 include 'applications:examples:goodbyeworld'
