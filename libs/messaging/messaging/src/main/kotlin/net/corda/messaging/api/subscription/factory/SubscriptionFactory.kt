@@ -13,6 +13,7 @@ import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import java.util.concurrent.ExecutorService
 
 /**
@@ -78,12 +79,14 @@ interface SubscriptionFactory {
      * any new records have been committed back to the topic.
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param properties Map of properties to override the default settings for the connection to the source of events
+     * //TODO - update this
      * @return A subscription to manage lifecycle.
      */
     fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        nodeConfig: Config = ConfigFactory.empty()
+        nodeConfig: Config = ConfigFactory.empty(),
+        stateAndEventListener: StateAndEventListener<K, S>
     ) : StateAndEventSubscription<K, S, E>
 
     /**

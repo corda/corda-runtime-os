@@ -6,6 +6,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
@@ -17,7 +18,7 @@ import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuil
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
-import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
+import net.corda.messaging.kafka.subscription.factory.StateEventSubscriptionMapFactory
 import net.corda.messaging.kafka.utils.getEventsByBatch
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -44,10 +45,11 @@ class Topic(val prefix: String, val suffix: String) {
 @Suppress("TooManyFunctions")
 class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val config: Config,
-    private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
+    private val mapFactory: StateEventSubscriptionMapFactory<K, S>,
     private val builder: StateAndEventBuilder<K, S, E>,
     private val processor: StateAndEventProcessor<K, S, E>,
-    private val clock: Clock = Clock.systemUTC()
+    private val stateAndEventListener: StateAndEventListener<K, S>,
+    private val clock: Clock = Clock.systemUTC(),
 ) : StateAndEventSubscription<K, S, E>, ConsumerRebalanceListener {
 
     companion object {
@@ -67,7 +69,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private lateinit var producer: CordaKafkaProducer
     private lateinit var eventConsumer: CordaKafkaConsumer<K, E>
     private lateinit var stateConsumer: CordaKafkaConsumer<K, S>
-    private var currentStates: MutableMap<K, Pair<Long, S>>? = null
+    private var currentStates: MutableMap<Int, MutableMap<K, Pair<Long, S>>>? = null
 
     @Volatile
     private var stopped = false
@@ -128,10 +130,20 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      * This is not guaranteed to be thread-safe!
      */
     override fun getValue(key: K): S? {
-        return getCurrentStates()[key]?.second
+        getCurrentStates().forEach {
+            if (it.value[key] != null) {
+                return it.value[key]!!.second
+            }
+        }
+
+        return null
     }
 
-    private fun getCurrentStates(): MutableMap<K, Pair<Long, S>> {
+    private fun getCurrentStatesByPartition(partitionId : Int) : MutableMap<K, Pair<Long, S>>? {
+        return getCurrentStates()[partitionId]
+    }
+
+    private fun getCurrentStates(): MutableMap<Int, MutableMap<K, Pair<Long, S>>> {
         var current = currentStates
         if (current == null) {
             current = mapFactory.createMap()
@@ -219,6 +231,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         log.debug { "Syncing the following new state partitions: $syncablePartitions" }
         statePartitionsToSync.putAll(syncablePartitions)
         eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) })
+        //Do nothing here right as handle the assignment after updateStates()?
     }
 
     private fun filterSyncablePartitions(newStatePartitions: List<TopicPartition>): List<Pair<Int, Long>> {
@@ -245,7 +258,9 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val statePartitions = stateConsumer.assignment() - removedStatePartitions
         stateConsumer.assign(statePartitions)
         for (topicPartition in removedStatePartitions) {
-            statePartitionsToSync.remove(topicPartition.partition())
+            val partitionId = topicPartition.partition()
+            statePartitionsToSync.remove(partitionId)
+            stateAndEventListener.onPartitionLost(partitionId, getCurrentStatesByPartition(partitionId))
         }
     }
 
@@ -301,7 +316,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     ) {
         log.trace { "Processing event: $event" }
         val key = event.record.key()
-        val thisEventUpdates = processor.onNext(getCurrentStates()[key]?.second, event.asRecord())
+        val thisEventUpdates = processor.onNext(getValue(key), event.asRecord())
         outputRecords.addAll(thisEventUpdates.responseEvents)
         val updatedState = thisEventUpdates.updatedState
         outputRecords.add(Record(stateTopic.suffix, key, updatedState))
@@ -319,6 +334,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 getCurrentStates().remove(key)
             }
         }
+
+        stateAndEventListener.onPostCommit(updatedStates)
     }
 
     private fun updateStates() {
@@ -329,7 +346,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val states = stateConsumer.poll()
         for (state in states) {
             log.trace { "Updating state: $state" }
-            getCurrentStates().compute(state.record.key()) { _, currentState ->
+            getCurrentStatesByPartition(state.record.partition())?.compute(state.record.key()) { _, currentState ->
                 if (currentState == null || currentState.first <= state.record.timestamp()) {
                     if (state.record.value() == null) {
                         // Removes this state from the map
@@ -352,6 +369,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     val resumablePartition = TopicPartition(eventTopic.topic, currentPartition)
                     log.debug { "State consumer is up to date for $resumablePartition.  Resuming event feed." }
                     eventConsumer.resume(setOf(resumablePartition))
+                    stateAndEventListener.onPartitionsSynced(getCurrentStates())
                 }
             }
         }
