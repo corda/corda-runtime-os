@@ -9,15 +9,22 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.Step2Message
+import net.corda.p2p.crypto.AuthenticatedDataMessage
+import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
+import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
+import net.corda.p2p.crypto.ResponderHandshakeMessage
+import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
+import net.corda.p2p.gateway.messaging.session.SessionPartitionMapper
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.slf4j.LoggerFactory
 import java.io.IOException
+import java.lang.IllegalStateException
 import java.nio.ByteBuffer
 
 /**
@@ -25,7 +32,8 @@ import java.nio.ByteBuffer
  */
 class InboundMessageHandler(private val server: HttpServer,
                             private val maxMessageSize: Int,
-                            private val publisherFactory: PublisherFactory) : Lifecycle, HttpEventListener {
+                            private val publisherFactory: PublisherFactory,
+                            private val sessionPartitionMapper: SessionPartitionMapper) : Lifecycle, HttpEventListener {
 
     companion object {
         private var logger = LoggerFactory.getLogger(InboundMessageHandler::class.java)
@@ -63,7 +71,8 @@ class InboundMessageHandler(private val server: HttpServer,
         try {
             logger.debug("Processing request message from ${message.source}")
             val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
-            val record = when (p2pMessage.payload) {
+            logger.debug("Received message of type ${p2pMessage.schema.name}")
+            when (p2pMessage.payload) {
                 is InitiatorHelloMessage -> {
                     // Generate a response containing the server hello and the DH secret
                     val sessionRequest = p2pMessage.payload as InitiatorHelloMessage
@@ -79,20 +88,41 @@ class InboundMessageHandler(private val server: HttpServer,
                         responderHello = sessionInitResponse
                         privateKey = ByteBuffer.wrap(pKey)
                     }
-                    Record(LINK_IN_TOPIC, "key", LinkInMessage(step2Message))
+                    val record = Record(LINK_IN_TOPIC, "key", LinkInMessage(step2Message))
+                    p2pInPublisher?.publish(listOf(record))
                 }
                 else -> {
-                    Record(LINK_IN_TOPIC, "key", p2pMessage)
+                    val sessionId = getSessionId(p2pMessage)
+                    val partitions = sessionPartitionMapper.getPartitions(sessionId)
+                    if (partitions == null) {
+                        logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
+                        statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR
+                    } else {
+                        val selectedPartition = partitions.random()
+                        val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
+                        p2pInPublisher?.publishToPartition(listOf(selectedPartition to record))
+                    }
                 }
             }
-            logger.debug("Received message of type ${p2pMessage.schema.name}")
-            p2pInPublisher?.publish(listOf(record))
         } catch (e: IOException) {
             logger.warn("Invalid message received. Cannot deserialize")
             logger.debug(e.stackTraceToString())
             statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR
         } finally {
             server.write(statusCode, responseBytes, message.source)
+        }
+    }
+
+    private fun getSessionId(message: LinkInMessage): String {
+        return when (message.payload) {
+            is AuthenticatedDataMessage -> (message.payload as AuthenticatedDataMessage).header.sessionId
+            is AuthenticatedEncryptedDataMessage -> (message.payload as AuthenticatedEncryptedDataMessage).header.sessionId
+            is InitiatorHelloMessage -> (message.payload as InitiatorHelloMessage).header.sessionId
+            is InitiatorHandshakeMessage -> (message.payload as InitiatorHandshakeMessage).header.sessionId
+            is ResponderHelloMessage -> (message.payload as ResponderHelloMessage).header.sessionId
+            is ResponderHandshakeMessage -> (message.payload as ResponderHandshakeMessage).header.sessionId
+            is Step2Message -> (message.payload as Step2Message).initiatorHello.header.sessionId
+            else -> throw IllegalStateException("Invalid payload of LinkInMessage: ${message.payload::class.java}")
         }
     }
 }
