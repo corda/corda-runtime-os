@@ -1,6 +1,8 @@
 package net.corda.lifecycle.impl
 
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleState
 import net.corda.lifecycle.TimerEvent
 
 /**
@@ -26,3 +28,11 @@ internal data class SetUpTimer(
 internal data class CancelTimer(
     val key: String
 ) : LifecycleEvent
+
+internal data class StartFollowing(val components: List<LifecycleCoordinator>) : LifecycleEvent
+
+internal data class StopFollowing(val components: List<LifecycleCoordinator>) : LifecycleEvent
+
+internal data class ActiveChangeInternal(val component: LifecycleCoordinator) : LifecycleEvent
+
+internal data class CoordinatorStateChange(val newState: LifecycleState) : LifecycleEvent

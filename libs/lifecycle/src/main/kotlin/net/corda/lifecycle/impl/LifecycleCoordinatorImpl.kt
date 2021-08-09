@@ -3,6 +3,7 @@ package net.corda.lifecycle.impl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleState
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
@@ -80,6 +81,20 @@ class LifecycleCoordinatorImpl(
     private val isScheduled = AtomicBoolean(false)
 
     /**
+     * The current state of this coordinator.
+     *
+     * Updates to this property only trigger a state change event to be sent if the new value differs from the old one,
+     * to prevent spurious updates. Defaults to DOWN.
+     */
+    override var activeState = LifecycleState.DOWN
+        set(value) {
+            if (field != value) {
+                field = value
+                postEvent(CoordinatorStateChange(value))
+            }
+        }
+
+    /**
      * Process the events in [eventQueue].
      *
      * The main processing functionality is delegated to the LifecycleProcessor class. On a processing error, the
@@ -120,6 +135,14 @@ class LifecycleCoordinatorImpl(
      */
     private fun createTimer(timerEvent: TimerEvent, delay: Long): ScheduledFuture<*> {
         return executor.schedule({ postEvent(timerEvent) }, delay, TimeUnit.MILLISECONDS)
+    }
+
+    fun setStatusHook(coordinator: LifecycleCoordinator) {
+        // Add to watchlist.
+    }
+
+    fun cancelStatusHook(coordinator: LifecycleCoordinator) {
+        // Remove from watchlist.
     }
 
     /**

@@ -65,6 +65,10 @@ internal class LifecycleProcessor(
                 state.cancelTimer(event.key)
                 true
             }
+            is CoordinatorStateChange -> {
+                // Post update to dependent coordinators.
+                true
+            }
             is TimerEvent -> {
                 if (state.isRunning && state.isTimerRunning(event.key)) {
                     val succeeded = runUserEventHandler(event, coordinator)

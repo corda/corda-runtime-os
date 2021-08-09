@@ -53,4 +53,15 @@ interface LifecycleCoordinator : Lifecycle {
      * @param key The key of the timer to cancel.
      */
     fun cancelTimer(key: String)
+
+    /**
+     * The current state of this lifecycle coordinator.
+     *
+     * Components should use this to signal when they go up or down. This can be used by dependent components to trigger
+     * them to go up or down in turn.
+     */
+    var activeState: LifecycleState
+
+    // Multiple calls give multiple lists being followed.
+    fun follow(coordinators: List<String>) : AutoCloseable
 }

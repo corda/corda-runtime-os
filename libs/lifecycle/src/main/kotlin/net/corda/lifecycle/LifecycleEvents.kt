@@ -54,3 +54,8 @@ interface TimerEvent : LifecycleEvent {
     val key: String
 
 }
+
+class ActiveStateChangeEvent(
+    val followingComponents: List<LifecycleCoordinator>,
+    val active: Boolean
+) : LifecycleEvent
