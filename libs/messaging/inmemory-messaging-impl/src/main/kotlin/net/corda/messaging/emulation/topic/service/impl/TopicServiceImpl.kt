@@ -1,78 +1,42 @@
 package net.corda.messaging.emulation.topic.service.impl
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.lifecycle.LifeCycle
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.emulation.properties.InMemProperties.Companion.TOPICS_MAX_SIZE
-import net.corda.messaging.emulation.topic.model.OffsetStrategy
-import net.corda.messaging.emulation.topic.model.RecordMetadata
+import net.corda.messaging.emulation.properties.TopicsConfiguration
+import net.corda.messaging.emulation.topic.model.Consumer
+import net.corda.messaging.emulation.topic.model.ConsumerThread
 import net.corda.messaging.emulation.topic.model.Topic
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Component
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.concurrent.withLock
 
 @Component
 class TopicServiceImpl : TopicService {
-    //TODO - replace with config service injection
-    private val config: Config = let {
-        val fallBack = ConfigFactory.load(
-            TopicServiceImpl::class.java.classLoader,
-            "inMemDefaults"
-        )
-        ConfigFactory.load("tmpInMemDefaults").withFallback(fallBack)
-    }
-    private val topicMaxSize = config.getInt(TOPICS_MAX_SIZE)
+    private val config = TopicsConfiguration()
     private val topics: ConcurrentHashMap<String, Topic> = ConcurrentHashMap()
 
-    override fun subscribe(topicName: String, consumerGroup: String, offsetStrategy: OffsetStrategy) {
-        val topic = topics.computeIfAbsent(topicName) {
-            Topic(topicName, topicMaxSize)
-        }
-        topic.lock.withLock {
-            topic.subscribe(consumerGroup, offsetStrategy)
+    override fun subscribe(consumer: Consumer): LifeCycle {
+        val topic = getTopic(consumer.topicName)
+        val thread = ConsumerThread(consumer, topic)
+        thread.start()
+        return thread
+    }
+
+    private fun getTopic(topicName: String): Topic {
+        return topics.computeIfAbsent(topicName) {
+            Topic(topicName, config.configuration(topicName))
         }
     }
 
     override fun addRecords(records: List<Record<*, *>>) {
-        val sortedTopics = records.map { record ->
+        records.groupBy { record ->
             record.topic
-        }.toHashSet().sorted()
-
-        val topicLocks = sortedTopics.map { topicName ->
-            topics.computeIfAbsent(topicName) { Topic(topicName, topicMaxSize) }.lock
-        }
-
-        try {
-            topicLocks.forEach { it.lock() }
+        }.mapKeys {
+            getTopic(it.key)
+        }.forEach { (topic, records) ->
             records.forEach {
-                val topic = topics[it.topic] ?: throw CordaMessageAPIFatalException("Topic ${it.topic} does not exist")
                 topic.addRecord(it)
             }
-        } finally {
-            topicLocks.forEach {
-                if (it.isHeldByCurrentThread) {
-                    it.unlock()
-                }
-            }
         }
-    }
-
-    override fun getRecords(
-        topicName: String,
-        consumerGroup: String,
-        numberOfRecords: Int,
-        autoCommitOffset: Boolean
-    ): List<RecordMetadata> {
-        val topic = topics[topicName] ?: throw CordaMessageAPIFatalException("Topic $topicName does not exist")
-        return topic.lock.withLock {
-            topic.getRecords(consumerGroup, numberOfRecords, autoCommitOffset)
-        }
-    }
-
-    override fun commitOffset(topicName: String, consumerGroup: String, offset: Long) {
-        val topic = topics[topicName] ?: throw CordaMessageAPIFatalException("Topic $topicName does not exist")
-        topic.commitOffset(consumerGroup, offset)
     }
 }

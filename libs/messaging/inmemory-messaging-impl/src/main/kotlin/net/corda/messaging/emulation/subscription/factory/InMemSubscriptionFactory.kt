@@ -16,7 +16,6 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.subscription.eventlog.EventLogSubscription
-import net.corda.messaging.emulation.subscription.eventlog.InMemoryEventLogSubscriptionConfig
 import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
@@ -82,13 +81,8 @@ class InMemSubscriptionFactory @Activate constructor(
         nodeConfig: Config,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
-        val fallBack = ConfigFactory.load(
-            InMemoryEventLogSubscriptionConfig::class.java.classLoader,
-            "inMemDefaults"
-        )
-        val config = nodeConfig.withFallback(fallBack)
         return EventLogSubscription(
-            InMemoryEventLogSubscriptionConfig(subscriptionConfig, config),
+            subscriptionConfig,
             processor,
             partitionAssignmentListener,
             topicService,
