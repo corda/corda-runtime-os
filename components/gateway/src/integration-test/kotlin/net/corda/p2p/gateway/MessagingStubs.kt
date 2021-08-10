@@ -127,7 +127,8 @@ class CompactedSubscriptionStub<K: Any, V: Any>(
                 eventLoopThread = thread {
                     while (running) {
                         val records = topicService.getRecords(config.eventTopic, config.groupName, -1).map {
-                            Record<K, V>(it.record.topic, uncheckedCast(it.record.key), uncheckedCast(it.record.value)) }
+                            @Suppress("UNCHECKED_CAST")
+                            Record(it.record.topic, it.record.key as K, it.record.value as V) }
                         records.forEach {
                             val oldValue = mapping[it.key]
                             if (it.value != null) {
@@ -161,7 +162,8 @@ class CompactedSubscriptionStub<K: Any, V: Any>(
     private fun calculateInitialSnapshot() {
         do {
             val records = topicService.getRecords(config.eventTopic, config.groupName, -1).map {
-                Record<K, V>(it.record.topic, uncheckedCast(it.record.key), uncheckedCast(it.record.value)) }
+                @Suppress("UNCHECKED_CAST")
+                Record(it.record.topic, it.record.key as K, it.record.value as V) }
             records.forEach {
                 if (it.value != null) {
                     mapping[it.key] = it.value!!

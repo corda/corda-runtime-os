@@ -5,7 +5,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.SessionPartitions
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
-import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -20,7 +19,8 @@ class SessionPartitionMapperImplTest {
 
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), any<CompactedProcessor<String, SessionPartitions>>(), any()) } doAnswer {
-            processor = uncheckedCast(it.arguments[1])
+            @Suppress("UNCHECKED_CAST")
+            processor = it.arguments[1] as CompactedProcessor<String, SessionPartitions>
             mock()
         }
     }
