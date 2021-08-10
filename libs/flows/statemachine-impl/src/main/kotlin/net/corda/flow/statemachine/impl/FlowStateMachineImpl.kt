@@ -165,7 +165,7 @@ class FlowStateMachineImpl<R>(
             }
             parkAndSerialize { _, _ ->
                 val fiberState = nonSerializableState.checkpointSerializationService.serialize(this)
-                nonSerializableState.suspended.complete(fiberState.bytes)
+                nonSerializableState.suspended.complete(fiberState)
             }
             setLoggingContext()
         }

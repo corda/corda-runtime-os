@@ -13,4 +13,6 @@ dependencies {
     implementation "net.corda:corda-base-internal:$cordaVersion"
     implementation "net.corda:corda-flow-dependency-injection-internal:$cordaVersion"
     implementation "net.corda:avro-schema:$cordaApiVersion"
+
+    implementation project(':libs:serialization:checkpoint-serialization-api')
 }

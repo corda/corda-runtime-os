@@ -1,10 +1,11 @@
 plugins {
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
 }
 
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "net.corda:avro-schema:$cordaApiVersion"
     implementation "net.corda:corda-base:$cordaVersion"
     implementation "net.corda:corda-application:$cordaVersion"
 
@@ -12,7 +13,6 @@ dependencies {
     implementation project(":libs:flows:flow-manager")
     implementation project(":libs:flows:flow-manager-impl")
     implementation project(":libs:sandbox:sandbox-cache")
-    implementation project(":data:avro-schema")
     implementation project(":libs:lifecycle")
 }
 

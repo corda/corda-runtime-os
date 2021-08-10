@@ -14,9 +14,9 @@ import net.corda.internal.di.DependencyInjectionService
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.cache.FlowMetadata
 import net.corda.sandbox.cache.SandboxCache
+import net.corda.serialization.CheckpointSerializationService
+import net.corda.serialization.factory.CheckpointSerializationServiceFactory
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.services.serialization.SerializationService
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -27,7 +27,7 @@ import java.nio.ByteBuffer
 
 class FlowManagerImplTest {
 
-    class TestFlow: Flow<Unit> {
+    class TestFlow : Flow<Unit> {
         override fun call() {
         }
     }
@@ -37,7 +37,8 @@ class FlowManagerImplTest {
 
         val sandboxGroup: SandboxGroup = mock()
         val sandboxCache: SandboxCache = mock()
-        val checkpointSerialisationService: SerializationService = mock()
+        val checkpointSerialisationService: CheckpointSerializationService = mock()
+        val checkpointSerializationServiceFactory: CheckpointSerializationServiceFactory = mock()
         val dependencyInjector: DependencyInjectionService = mock()
         val flowStateMachineFactory: FlowStateMachineFactory = mock()
         val stateMachine: FlowStateMachine<*> = mock()
@@ -62,17 +63,19 @@ class FlowManagerImplTest {
         val checkpoint = Checkpoint(flowKey, ByteBuffer.allocate(1), stateMachineState)
         val eventsOut = listOf(FlowEvent(flowKey, rpcFlowResult))
         val flowMetadata = FlowMetadata(flowName, flowKey)
-        val serialized = SerializedBytes<String>("Test".toByteArray())
+        val serialized = "Test".toByteArray()
 
         doReturn(sandboxGroup).`when`(sandboxCache).getSandboxGroupFor(any(), any())
         doReturn(TestFlow::class.java).`when`(sandboxGroup).loadClass(any(), eq(Flow::class.java))
         doReturn(stateMachine).`when`(flowStateMachineFactory).createStateMachine(any(), any(), any(), any())
         doReturn(Pair(checkpoint, eventsOut)).`when`(stateMachine).waitForCheckpoint()
+        doReturn(checkpointSerialisationService).`when`(checkpointSerializationServiceFactory)
+            .createCheckpointSerializationService(sandboxGroup)
         doReturn(serialized).`when`(checkpointSerialisationService).serialize(any())
 
         val flowManager = FlowManagerImpl(
             sandboxCache,
-            checkpointSerialisationService,
+            checkpointSerializationServiceFactory,
             dependencyInjector,
             flowStateMachineFactory
         )
@@ -87,6 +90,6 @@ class FlowManagerImplTest {
         assertThat(result.events.size).isEqualTo(1)
         assertThat(result.events.first().key).isEqualTo(flowName)
         assertThat(result.events.first().topic).isEqualTo("")
-        assertThat(result.events.first().value).isEqualTo(serialized.bytes)
+        assertThat(result.events.first().value).isEqualTo(serialized)
     }
 }

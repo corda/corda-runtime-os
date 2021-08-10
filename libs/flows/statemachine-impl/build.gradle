@@ -15,4 +15,5 @@ dependencies {
     implementation "net.corda:avro-schema:$cordaApiVersion"
 
     implementation project(':libs:flows:statemachine')
+    implementation project(':libs:serialization:checkpoint-serialization-api')
 }

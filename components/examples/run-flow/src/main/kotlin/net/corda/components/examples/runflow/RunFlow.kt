@@ -5,7 +5,7 @@ import net.corda.components.examples.runflow.processor.DemoRunFlowProcessor
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.manager.FlowManager
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -18,7 +18,7 @@ class RunFlow(
     private val flowManager: FlowManager,
     private val subscriptionFactory: SubscriptionFactory,
     private var config: Config
-) : LifeCycle {
+) : Lifecycle {
 
     companion object {
         val log: Logger = contextLogger()

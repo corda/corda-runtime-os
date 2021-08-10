@@ -1,6 +1,6 @@
 package net.corda.kryoserialization.impl
 
-import net.corda.kryoserialization.CheckpointSerializationContext
+import net.corda.serialization.CheckpointSerializationContext
 import net.corda.kryoserialization.NullEncodingWhitelist
 import net.corda.v5.serialization.CheckpointCustomSerializer
 import net.corda.v5.serialization.ClassWhitelist

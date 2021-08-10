@@ -2,8 +2,6 @@ package net.corda.flow.manager.impl
 
 import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
 import co.paralleluniverse.fibers.FiberExecutorScheduler
-import co.paralleluniverse.io.serialization.kryo.KryoUtil
-import net.corda.cipher.suite.internal.BasicHashingServiceImpl
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.RPCFlowResult
 import net.corda.data.flow.event.FlowEvent
@@ -17,14 +15,11 @@ import net.corda.flow.statemachine.HousekeepingState
 import net.corda.flow.statemachine.NonSerializableState
 import net.corda.flow.statemachine.factory.FlowStateMachineFactory
 import net.corda.internal.di.DependencyInjectionService
-import net.corda.kryoserialization.CheckpointSerializationService
-import net.corda.kryoserialization.DefaultWhitelist
-import net.corda.kryoserialization.KRYO_CHECKPOINT_CONTEXT
-import net.corda.kryoserialization.KryoCheckpointSerializerBuilder
-import net.corda.kryoserialization.factory.CheckpointSerializationServiceFactory
 import net.corda.messaging.api.records.Record
 import net.corda.sandbox.cache.FlowMetadata
 import net.corda.sandbox.cache.SandboxCache
+import net.corda.serialization.CheckpointSerializationService
+import net.corda.serialization.factory.CheckpointSerializationServiceFactory
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
@@ -63,12 +58,9 @@ class FlowManagerImpl @Activate constructor(
         args: List<Any?>
     ): FlowResult {
         log.info("start new flow clientId: $clientId flowName: ${newFlowMetadata.name} args $args")
-
-        val kryoCheckpointSerializerBuilder =
-            KryoCheckpointSerializerBuilder({ KryoUtil.newKryo() }, DefaultWhitelist, BasicHashingServiceImpl())
         checkpointSerialisationService = checkpointSerializationServiceFactory.createCheckpointSerializationService(
-            KRYO_CHECKPOINT_CONTEXT,
-            kryoCheckpointSerializerBuilder.build()
+            //need to figure out holding identity constructor
+            sandboxCache.getSandboxGroupFor(HoldingIdentity(), newFlowMetadata)
         )
 
         val flow = getOrCreate(newFlowMetadata.key.identity, newFlowMetadata, args)
@@ -142,7 +134,7 @@ class FlowManagerImpl @Activate constructor(
             Record(
                 outputTopic,
                 key,
-                checkpointSerialisationService?.serialize(event)?.bytes
+                checkpointSerialisationService?.serialize(event)
             )
         }
     }
