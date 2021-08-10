@@ -11,7 +11,7 @@ plugins {
 
 dependencies {
     api "org.apache.avro:avro:$avroVersion"
-    implementation platform(project(':corda-platform'))
+    implementation platform(project(':corda-api'))
     implementation project(":base")
 
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"

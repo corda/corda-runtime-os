@@ -19,7 +19,7 @@ dependencies {
 
 publishing {
     publications {
-        platformConfiguration(MavenPublication) {
+        apiConfiguration(MavenPublication) {
             from components.javaPlatform
 
             pom {
@@ -46,5 +46,5 @@ publishing {
 }
 
 artifactoryPublish {
-    publications('platformConfiguration')
+    publications('apiConfiguration')
 }

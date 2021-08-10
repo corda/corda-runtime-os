@@ -6,5 +6,5 @@ plugins {
 description 'Definition of Topics'
 
 dependencies {
-    implementation platform(project(':corda-platform'))
+    implementation platform(project(':corda-api'))
 }

@@ -7,7 +7,7 @@ plugins {
 description 'Corda Serialization'
 
 dependencies {
-    api platform(project(':corda-platform'))
+    api platform(project(':corda-api'))
     api project(":base")
 
     implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"

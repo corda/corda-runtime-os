@@ -7,7 +7,7 @@ plugins {
 description 'Corda Base'
 
 dependencies {
-    implementation platform(project(':corda-platform'))
+    implementation platform(project(':corda-api'))
     implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
     // Concluded this is the one acceptable dependency in addition to kotlin.

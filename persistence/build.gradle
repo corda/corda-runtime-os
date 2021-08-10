@@ -13,7 +13,7 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
     implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
 
-    implementation platform(project(':corda-platform'))
+    implementation platform(project(':corda-api'))
     implementation project(":base")
 }
 tasks.named('jar', Jar) {
