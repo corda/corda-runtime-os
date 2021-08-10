@@ -4,7 +4,7 @@ import aQute.bnd.gradle.TestOSGi
 
 plugins {
     id 'corda.common-library'
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'biz.aQute.bnd.builder'
 }
 
@@ -39,7 +39,7 @@ dependencies {
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(":data:avro-schema")
+    testImplementation "net.corda:avro-schema:$cordaApiVersion"
 
     testRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
 

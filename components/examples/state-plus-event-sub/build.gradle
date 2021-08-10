@@ -1,13 +1,13 @@
 plugins {
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
 }
 
 dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base:$cordaApiVersion"
+    implementation "net.corda:avro-schema:$cordaApiVersion"
     implementation project(":libs:messaging:messaging")
-    implementation project(":data:avro-schema")
     implementation project(":libs:lifecycle")
 }
 

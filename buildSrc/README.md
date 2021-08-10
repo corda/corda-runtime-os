@@ -1,7 +1,7 @@
 # Flow Worker Convention Plugins
 
 These plugins are provided as a way to assist and ease the development of libraries and applications using the
-flow-worker framework.
+runtime OS framework.
 
 
 ## Common App Plugin
