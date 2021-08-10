@@ -6,7 +6,8 @@ plugins {
 description "LifeCycle API"
 
 dependencies {
-    implementation "net.corda:corda-base:$cordaApiVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
