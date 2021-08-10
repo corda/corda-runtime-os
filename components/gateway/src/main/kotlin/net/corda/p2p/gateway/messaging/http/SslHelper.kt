@@ -2,7 +2,6 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.ssl.SslHandler
 import net.corda.p2p.gateway.messaging.RevocationConfig
-import net.corda.v5.base.util.toHex
 import org.bouncycastle.asn1.ASN1InputStream
 import org.bouncycastle.asn1.DERIA5String
 import org.bouncycastle.asn1.DEROctetString
@@ -161,6 +160,19 @@ fun X509Certificate.distributionPointsToString() : String {
             sorted().joinToString()
         }
     }
+}
+
+/**
+ * Converts this [ByteArray] into a [String] of hexadecimal digits.
+ */
+private val hexCode = "0123456789ABCDEF".toCharArray()
+fun ByteArray.toHex(): String {
+    val r = StringBuilder(this.size * 2)
+    for (b in this) {
+        r.append(hexCode[(b.toInt() shr 4) and 0xF])
+        r.append(hexCode[b.toInt() and 0xF])
+    }
+    return r.toString()
 }
 
 @Suppress("TooGenericExceptionCaught")
