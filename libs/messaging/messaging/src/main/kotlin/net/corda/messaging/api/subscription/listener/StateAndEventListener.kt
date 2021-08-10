@@ -19,6 +19,7 @@ interface StateAndEventListener<K, S> {
 
     /**
      * List of states and keys updated as part of a single transaction.
+     * State may be null. Null state indicates that the events associated with this key are completed, so the state is no longer stored.
      * Any exception thrown within this method and not caught will cause the subscription to throw a fatal error.
      */
     fun onPostCommit(updatedStates: Map<K, S?>)
