@@ -171,6 +171,9 @@ subprojects {
     apply plugin: DetektPlugin
     apply plugin: 'jacoco'
 
+    version rootProject.version
+    group 'net.corda'
+
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")
         config.setFrom(files("$rootDir/detekt-config.yml"))
