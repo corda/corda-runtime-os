@@ -4,7 +4,8 @@ import java.util.jar.JarFile
 description("OSGi Framework Bootstrap")
 
 dependencies {
-    implementation "net.corda:corda-base:$cordaApiVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
     implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     implementation project(":osgi-framework-api")
 

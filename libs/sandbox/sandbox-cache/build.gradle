@@ -6,10 +6,11 @@ plugins {
 description "Sandbox Cache Interface"
 
 dependencies {
-    implementation "net.corda:corda-application:$cordaApiVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-application"
+    implementation "net.corda:corda-base"
     implementation "net.corda:corda-install:$cordaVersion"
     implementation "net.corda:corda-packaging:$cordaVersion"
     implementation "net.corda:corda-sandbox:$cordaVersion"
-    implementation "net.corda:avro-schema:$cordaApiVersion"
+    implementation "net.corda:avro-schema"
 }

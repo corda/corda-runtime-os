@@ -4,8 +4,9 @@ plugins {
 }
 
 dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-base:$cordaApiVersion"
+    implementation "net.corda:corda-base"
     implementation project(":libs:lifecycle")
 }
 
