@@ -27,7 +27,7 @@ dependencies {
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
 
     implementation project(":libs:serialization:kryo-custom-serializers")
-    implementation project(":libs:serialization:serialization-api")
+    implementation project(":libs:serialization:checkpoint-serialization-api")
 
     testImplementation "org.osgi:osgi.core:$osgiVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"

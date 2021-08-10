@@ -10,6 +10,8 @@ import com.esotericsoftware.kryo.serializers.ClosureSerializer
 import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.CordaClosureSerializer
 import net.corda.serialization.CheckpointInternalCustomSerializer
+import net.corda.serialization.CheckpointSerializationContext
+import net.corda.serialization.CheckpointSerializer
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.uncheckedCast
@@ -17,7 +19,6 @@ import net.corda.v5.crypto.BasicHashingService
 import net.corda.v5.serialization.CheckpointCustomSerializer
 import net.corda.v5.serialization.ClassWhitelist
 import net.corda.v5.serialization.SerializationWhitelist
-import net.corda.v5.serialization.SerializedBytes
 import java.util.concurrent.ConcurrentHashMap
 
 val kryoMagic = CordaSerializationMagic("corda".toByteArray() + byteArrayOf(0, 0))
@@ -242,9 +243,9 @@ class KryoCheckpointSerializer(
         }
     }
 
-    override fun <T : Any> serialize(obj: T, context: CheckpointSerializationContext): SerializedBytes<T> {
+    override fun <T : Any> serialize(obj: T, context: CheckpointSerializationContext): ByteArray {
         return context.kryo {
-            SerializedBytes(kryoOutput {
+            kryoOutput {
                 kryoMagic.writeTo(this)
                 context.encoding?.let { encoding ->
                     SectionId.ENCODING.writeTo(this)
@@ -257,7 +258,7 @@ class KryoCheckpointSerializer(
                 } else {
                     withoutReferences { writeClassAndObject(this, obj) }
                 }
-            })
+            }
         }
     }
 }

@@ -4,13 +4,13 @@ import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.io.serialization.kryo.KryoSerializer
 import net.corda.cipher.suite.internal.BasicHashingServiceImpl
 import net.corda.kryoserialization.AlwaysAcceptEncodingWhitelist
-import net.corda.kryoserialization.CheckpointSerializationContext
-import net.corda.kryoserialization.CheckpointSerializationService
-import net.corda.kryoserialization.CheckpointSerializer
+import net.corda.serialization.CheckpointSerializationContext
+import net.corda.serialization.CheckpointSerializationService
+import net.corda.serialization.CheckpointSerializer
 import net.corda.kryoserialization.KryoCheckpointSerializerBuilder
 import net.corda.kryoserialization.QuasarWhitelist
 import net.corda.kryoserialization.SerializationDefaults
-import net.corda.kryoserialization.factory.CheckpointSerializationServiceFactory
+import net.corda.serialization.factory.CheckpointSerializationServiceFactory
 import net.corda.kryoserialization.impl.CheckpointSerializationContextImpl
 import net.corda.kryoserialization.impl.CheckpointSerializationServiceImpl
 import net.corda.sandbox.SandboxGroup
@@ -49,6 +49,8 @@ class CheckpointSerializationServiceFactoryImpl : CheckpointSerializationService
         return context
     }
 
+
+    //TODOs: we need to implement some sort of serializer discovery mechanism in the future
     private fun createCheckpointSerializer(): CheckpointSerializer {
         val kryoFromQuasar = { (Fiber.getFiberSerializer(false) as KryoSerializer).kryo }
         val hashingService = BasicHashingServiceImpl()
