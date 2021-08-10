@@ -112,8 +112,12 @@ internal class ConsumerGroup(
                     val oldPartitionList = consumers[consumer] ?: emptyList()
                     val assigned = newPartitionList - oldPartitionList
                     val unassigned = oldPartitionList - newPartitionList
-                    listener.onPartitionsAssigned(assigned.map { topicName to it.partitionId })
-                    listener.onPartitionsUnassigned(unassigned.map { topicName to it.partitionId })
+                    if (unassigned.isNotEmpty()) {
+                        listener.onPartitionsUnassigned(unassigned.map { topicName to it.partitionId })
+                    }
+                    if (assigned.isNotEmpty()) {
+                        listener.onPartitionsAssigned(assigned.map { topicName to it.partitionId })
+                    }
                 }
                 consumers[consumer] = newPartitionList
             }

@@ -15,9 +15,9 @@ class Topic(
     internal val topicConfiguration: TopicConfiguration,
 ) {
     private val partitions by lazy {
-        (0..topicConfiguration.partitionCount).map {
+        (1..topicConfiguration.partitionCount).map {
             Partition(
-                it + 1,
+                it,
                 topicConfiguration.maxSize,
                 topicConfiguration.pollSize,
                 topicName
@@ -48,7 +48,7 @@ class Topic(
      * If [record] max size is reached, delete the oldest record
      */
     fun addRecord(record: Record<*, *>) {
-        val partitionNumber = record.key.hashCode() % partitions.size
+        val partitionNumber = Math.abs(record.key.hashCode() % partitions.size)
         val partition = partitions[partitionNumber]
         partition.addRecord(record)
         consumers.values.forEach {

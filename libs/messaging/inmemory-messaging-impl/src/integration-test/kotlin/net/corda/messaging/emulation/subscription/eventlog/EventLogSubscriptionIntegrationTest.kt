@@ -99,21 +99,21 @@ class EventLogSubscriptionIntegrationTest {
                 topic = topic,
                 key = "key1",
                 value = Event("one", 1),
-                partition = 5,
+                partition = 9,
                 offset = 1,
             ),
             EventLogRecord(
                 topic = topic,
                 key = "key2",
                 value = Event("two", 2),
-                partition = 6,
+                partition = 10,
                 offset = 1
             ),
             EventLogRecord(
                 topic = topic,
                 key = "key3",
                 value = Event("three", 3),
-                partition = 7,
+                partition = 1,
                 offset = 1
             ),
         ).hasSize(3)
