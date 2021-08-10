@@ -54,7 +54,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = 'flow-worker'
+rootProject.name = 'corda-runtime-os'
 include 'applications:examples:demo-app'
 include 'applications:examples:demo-flow-runner'
 include 'applications:examples:demo-publisher'
@@ -72,8 +72,6 @@ include 'components:examples:publisher'
 include 'components:examples:pubsub-sub'
 include 'components:examples:run-flow'
 include 'components:examples:state-plus-event-sub'
-include 'data:avro-schema'
-include 'data:topic-schema'
 include 'libs:configuration:configuration-read'
 include 'libs:configuration:configuration-write'
 include 'libs:configuration:kafka-configuration-read-impl'
