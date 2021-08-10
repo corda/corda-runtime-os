@@ -4,7 +4,7 @@ import aQute.bnd.gradle.TestOSGi
 
 plugins {
     id 'corda.common-library'
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'biz.aQute.bnd.builder'
 }
 
