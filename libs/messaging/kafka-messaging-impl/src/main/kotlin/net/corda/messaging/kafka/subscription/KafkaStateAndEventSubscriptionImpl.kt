@@ -230,7 +230,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) })
 
         statePartitions.forEach {
-            currentStates.putIfAbsent(it.partition(), mapFactory.createMap())
+            currentStates.computeIfAbsent(it.partition()) { mapFactory.createMap() }
         }
     }
 
