@@ -261,10 +261,9 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             val partitionId = topicPartition.partition()
             statePartitionsToSync.remove(partitionId)
 
-            val currentPartitionStates = currentStates[partitionId]
-            if (currentPartitionStates != null) {
+            currentStates[partitionId]?.let {
                 stateAndEventListener?.onPartitionLost(getStatesForPartition(partitionId))
-                mapFactory.destroyMap(currentPartitionStates)
+                mapFactory.destroyMap(it)
             }
         }
     }
