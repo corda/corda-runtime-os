@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import static org.gradle.api.JavaVersion.VERSION_11
 import io.gitlab.arturbosch.detekt.DetektPlugin
 
@@ -19,7 +18,6 @@ plugins {
     id 'application'
     id 'com.r3.internal.gradle.plugins.r3Publish' apply false
     id 'maven-publish'
-    id 'corda.publish' apply false
     id 'jacoco'
 }
 
@@ -49,7 +47,7 @@ allprojects {
         options.compilerArgs += '-XDenableSunApiLintControl'
     }
 
-    tasks.withType(KotlinCompile) {
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
         kotlinOptions {
             allWarningsAsErrors = true
             languageVersion = '1.4'
@@ -147,16 +145,20 @@ if (JavaVersion.current() != javaVersion) {
 }
 logger.quiet("SDK version: {}", JavaVersion.current())
 logger.quiet("JAVA HOME {}", System.getProperty("java.home"))
-// TODO: release and publish things are different in this repo, which is a bit unfortunate as somebody will need to
-//   re-implement it
-//if (System.getenv("RELEASE_VERSION")?.trim()) {
-//    version = System.getenv("RELEASE_VERSION")
-//} else {
-//    def versionSuffix = System.getenv('VERSION_SUFFIX') ?: "0-SNAPSHOT"
-//    version = "$cordaVersion-$versionSuffix"
-//}
 
-logger.quiet("Flow worker: {}", version)
+def cordaVersion = "$cordaProductVersion.$cordaRuntimeRevision"
+if (System.getenv("RELEASE_VERSION")?.trim()) {
+    version = System.getenv("RELEASE_VERSION")
+} else {
+    def versionSuffix = '-SNAPSHOT'
+    if(project.hasProperty('overridePublishVersionSuffix')) {
+        versionSuffix = project.property('overridePublishVersionSuffix')
+    } else if (System.getenv('VERSION_SUFFIX')) {
+        versionSuffix = System.getenv('VERSION_SUFFIX')
+    }
+    version = "$cordaVersion$versionSuffix"
+}
+logger.quiet("Corda runtime OS release version: {}", version)
 logger.quiet("Corda API dependency version spec: {}", cordaApiVersion)
 logger.quiet("Old Corda dependencies version spec: {}", cordaVersion)
 //logger.quiet("Release Type: {}", releaseType)
@@ -168,6 +170,9 @@ subprojects {
     apply plugin: 'kotlin-noarg'
     apply plugin: DetektPlugin
     apply plugin: 'jacoco'
+
+    version rootProject.version
+    group 'net.corda'
 
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")

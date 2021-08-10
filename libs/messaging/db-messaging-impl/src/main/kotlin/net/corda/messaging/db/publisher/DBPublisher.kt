@@ -1,7 +1,7 @@
 package net.corda.messaging.db.publisher
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
@@ -29,7 +29,7 @@ class DBPublisher(private val publisherConfig: PublisherConfig,
                   private val dbAccessProvider: DBAccessProvider,
                   private val offsetTrackersManager: OffsetTrackersManager,
                   private val partitionAssignor: PartitionAssignor,
-                  private val threadPoolSize: Int = 5): Publisher, LifeCycle {
+                  private val threadPoolSize: Int = 5): Publisher, Lifecycle {
 
     companion object {
         private val log: Logger = contextLogger()
@@ -99,7 +99,7 @@ class DBPublisher(private val publisherConfig: PublisherConfig,
     private fun publishTransactionally(recordEntries: List<RecordDbEntry>): CompletableFuture<Unit> {
         return CompletableFuture.supplyAsync({
             try {
-                dbAccessProvider.writeRecords(recordEntries) { records ->
+                dbAccessProvider.writeRecords(recordEntries) { records, _ ->
                     records.forEach { offsetTrackersManager.offsetReleased(it.topic, it.partition, it.offset) }
                 }
             } catch (e: Exception) {

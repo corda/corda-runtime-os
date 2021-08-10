@@ -1,6 +1,6 @@
 package net.corda.messaging.db.partition
 
-import net.corda.lifecycle.LifeCycle
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.db.persistence.DBAccessProvider
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -8,7 +8,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.math.ceil
 
-class PartitionAllocator(private val dbAccessProvider: DBAccessProvider): LifeCycle {
+class PartitionAllocator(private val dbAccessProvider: DBAccessProvider): Lifecycle {
 
     @Volatile
     private var running = false
