@@ -98,6 +98,7 @@ class InboundMessageHandler(private val server: HttpServer,
                         logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
                         statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR
                     } else {
+                        // this is simplistic (stateless) load balancing amongst the partitions owned by the LM that "hosts" the session.
                         val selectedPartition = partitions.random()
                         val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
                         p2pInPublisher?.publishToPartition(listOf(selectedPartition to record))

@@ -7,10 +7,12 @@ import net.corda.p2p.SessionPartitions
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
+import java.lang.IllegalStateException
 
 class SessionPartitionMapperImplTest {
 
@@ -42,6 +44,24 @@ class SessionPartitionMapperImplTest {
         val newRecord = Record(SESSION_OUT_PARTITIONS, "3", SessionPartitions(listOf(5, 6)))
         processor?.onNext(newRecord, null, partitionsMapping + (newRecord.key to newRecord.value!!))
         assertThat(sessionPartitionMapper.getPartitions("3")).isEqualTo(listOf(5, 6))
+    }
+
+    @Test
+    fun `getPartitions cannot be invoked, when component is not running`() {
+        val sessionId = "test-session-id"
+        val sessionPartitionMapper = SessionPartitionMapperImpl(subscriptionFactory)
+
+        assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
+            .isInstanceOf(IllegalStateException::class.java)
+
+        sessionPartitionMapper.start()
+
+        assertThat(sessionPartitionMapper.getPartitions(sessionId)).isNull()
+
+        sessionPartitionMapper.stop()
+
+        assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
+            .isInstanceOf(IllegalStateException::class.java)
     }
 
 }

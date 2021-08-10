@@ -8,9 +8,11 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.SessionPartitions
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.util.contextLogger
+import java.lang.IllegalStateException
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 class SessionPartitionMapperImpl(subscriptionFactory: SubscriptionFactory): SessionPartitionMapper {
 
@@ -27,14 +29,14 @@ class SessionPartitionMapperImpl(subscriptionFactory: SubscriptionFactory): Sess
         ConfigFactory.empty()
     )
 
-    private val startStopLock = ReentrantLock()
+    private val startStopLock = ReentrantReadWriteLock()
     private var running: Boolean = false
 
     override val isRunning: Boolean
         get() = running
 
     override fun start() {
-        startStopLock.withLock {
+        startStopLock.write {
             if (!running) {
                 sessionPartitionSubscription.start()
                 running = true
@@ -44,7 +46,7 @@ class SessionPartitionMapperImpl(subscriptionFactory: SubscriptionFactory): Sess
     }
 
     override fun stop() {
-        startStopLock.withLock {
+        startStopLock.write {
             if (running) {
                 sessionPartitionSubscription.stop()
                 sessionPartitionsMapping.clear()
@@ -55,7 +57,13 @@ class SessionPartitionMapperImpl(subscriptionFactory: SubscriptionFactory): Sess
     }
 
     override fun getPartitions(sessionId: String): List<Int>? {
-        return sessionPartitionsMapping[sessionId]
+        startStopLock.read {
+            if (!running) {
+                throw IllegalStateException("getPartitions invoked, while session partition mapper is not running.")
+            } else {
+                return sessionPartitionsMapping[sessionId]
+            }
+        }
     }
 
     private class SessionPartitionProcessor(private val sessionPartitionMapping: ConcurrentHashMap<String, List<Int>>):
