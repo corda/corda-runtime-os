@@ -1,5 +1,4 @@
 plugins {
-    id 'java'
     id 'org.jetbrains.kotlin.jvm'
 }
 
@@ -9,8 +8,8 @@ repositories {
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }

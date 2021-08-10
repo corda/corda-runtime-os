@@ -8,8 +8,9 @@ dependencies {
     compileOnly "org.osgi:osgi.core:$osgiVersion"
     compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
 
-    implementation "net.corda:corda-application:$cordaApiVersion"
-    implementation "net.corda:corda-base:$cordaApiVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-application"
+    implementation "net.corda:corda-base"
     implementation "net.corda:corda-base-internal:$cordaVersion"
     implementation "net.corda:corda-crypto-api:$cordaVersion"
     implementation "net.corda:corda-crypto-impl:$cordaVersion"
