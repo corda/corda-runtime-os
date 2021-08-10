@@ -8,9 +8,11 @@ dependencies {
     constraints {
         api project(':application')
         api project(':base')
+        api project(':cipher-suite')
         api project(':crypto')
         api project(':data:avro-schema')
         api project(':data:topic-schema')
+        api project(':persistence')
         api project(':serialization')
     }
 }
