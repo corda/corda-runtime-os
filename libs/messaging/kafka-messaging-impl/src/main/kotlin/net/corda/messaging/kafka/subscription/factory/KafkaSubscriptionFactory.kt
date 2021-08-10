@@ -135,7 +135,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
         nodeConfig: Config,
-        stateAndEventListener: StateAndEventListener<K, S>
+        stateAndEventListener: StateAndEventListener<K, S>?
     ): StateAndEventSubscription<K, S, E> {
 
         val subscriptionConfiguration = subscriptionConfig.toConfig()
@@ -155,9 +155,9 @@ class KafkaSubscriptionFactory @Activate constructor(
             producerBuilder,
         )
 
-        val mapFactory = object : SubscriptionMapFactory<Int, MutableMap<K, Pair<Long, S>>> {
-            override fun createMap(): MutableMap<Int,  MutableMap<K, Pair<Long, S>>> = ConcurrentHashMap()
-            override fun destroyMap(map: MutableMap<Int, MutableMap<K, Pair<Long, S>>>) = map.clear()
+        val mapFactory = object : SubscriptionMapFactory<K, Pair<Long, S>> {
+            override fun createMap(): MutableMap<K, Pair<Long, S>> = ConcurrentHashMap()
+            override fun destroyMap(map: MutableMap<K, Pair<Long, S>>) = map.clear()
         }
 
         return KafkaStateAndEventSubscriptionImpl(

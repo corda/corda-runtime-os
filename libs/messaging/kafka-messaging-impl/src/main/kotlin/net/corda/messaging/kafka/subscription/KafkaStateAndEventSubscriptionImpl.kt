@@ -42,14 +42,14 @@ class Topic(val prefix: String, val suffix: String) {
         get() = prefix + suffix
 }
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val config: Config,
-    private val mapFactory: SubscriptionMapFactory<Int,  MutableMap<K, Pair<Long, S>>>,
+    private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
     private val builder: StateAndEventBuilder<K, S, E>,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
-    private val clock: Clock = Clock.systemUTC(),
+    private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventSubscription<K, S, E>, ConsumerRebalanceListener {
 
     companion object {
@@ -69,7 +69,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private lateinit var producer: CordaKafkaProducer
     private lateinit var eventConsumer: CordaKafkaConsumer<K, E>
     private lateinit var stateConsumer: CordaKafkaConsumer<K, S>
-    private val currentStates: MutableMap<Int, MutableMap<K, Pair<Long, S>>> = mapFactory.createMap()
+    private val currentStates: MutableMap<Int, MutableMap<K, Pair<Long, S>>> = mutableMapOf()
 
     @Volatile
     private var stopped = false
@@ -140,12 +140,9 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         return null
     }
 
-    /**
-     * TODO - im sure theres a better kotlin way to do this
-     */
     private fun getStatesForPartition(partitionId : Int) : Map<K, S> {
         val currentStatesForPartition = mutableMapOf<K, S>()
-        currentStates[partitionId]?.forEach { state ->
+        currentStates[partitionId]?.map { state ->
             currentStatesForPartition[state.key] = state.value.second
         }
 
@@ -233,7 +230,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) })
 
         statePartitions.forEach {
-            currentStates.putIfAbsent(it.partition(), mutableMapOf())
+            currentStates.putIfAbsent(it.partition(), mapFactory.createMap())
         }
     }
 
@@ -267,8 +264,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             val currentPartitionStates = currentStates[partitionId]
             if (currentPartitionStates != null) {
                 stateAndEventListener?.onPartitionLost(getStatesForPartition(partitionId))
+                mapFactory.destroyMap(currentPartitionStates)
             }
-            currentStates.remove(partitionId)
         }
     }
 
@@ -329,7 +326,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         outputRecords.addAll(thisEventUpdates.responseEvents)
         val updatedState = thisEventUpdates.updatedState
         outputRecords.add(Record(stateTopic.suffix, key, updatedState))
-        updatedStates.putIfAbsent(partitionId, mutableMapOf())!![key] = updatedState
+        updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
         log.trace { "Completed event: $event" }
     }
 
@@ -339,12 +336,13 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             for (entry in updatedStates) {
                 val key = entry.key
                 val value = entry.value
+                val currentStatesByPartition = currentStates.computeIfAbsent(partitionId){ mapFactory.createMap() }
                 if (value != null) {
                     updatedStatesByKey[key] = value
-                    currentStates[partitionId]!![key] = Pair(clock.instant().toEpochMilli(), value)
+                    currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)
                 } else {
                     updatedStatesByKey[key] = null
-                    currentStates[partitionId]!!.remove(key)
+                    currentStatesByPartition.remove(key)
                 }
             }
         }

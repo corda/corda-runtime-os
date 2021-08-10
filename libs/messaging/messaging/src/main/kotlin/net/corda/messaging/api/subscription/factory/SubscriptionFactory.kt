@@ -86,7 +86,7 @@ interface SubscriptionFactory {
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
         nodeConfig: Config = ConfigFactory.empty(),
-        stateAndEventListener: StateAndEventListener<K, S>
+        stateAndEventListener: StateAndEventListener<K, S>? = null
     ) : StateAndEventSubscription<K, S, E>
 
     /**
