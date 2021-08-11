@@ -20,6 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.TrustManagerFactory
 import kotlin.concurrent.withLock
+import net.corda.p2p.NetworkType
 
 /**
  * The [HttpClient] sends serialised application messages via POST requests to a given URI. It automatically initiates
@@ -41,6 +42,7 @@ import kotlin.concurrent.withLock
  */
 class HttpClient(private val destination: URI,
                  private val sni: String,
+                 private val networkType: NetworkType,
                  private val sslConfiguration: SslConfiguration,
                  private val writeGroup: EventLoopGroup,
                  private val nettyGroup: EventLoopGroup) : Lifecycle, HttpEventListener {
@@ -203,7 +205,7 @@ class HttpClient(private val destination: URI,
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createClientSslHandler(parent.sni, parent.destination, trustManagerFactory))
+            pipeline.addLast("sslHandler", createClientSslHandler(parent.sni, parent.destination, parent.networkType, trustManagerFactory))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, CLIENT_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpClientCodec())
             pipeline.addLast(HttpChannelHandler(parent, logger))

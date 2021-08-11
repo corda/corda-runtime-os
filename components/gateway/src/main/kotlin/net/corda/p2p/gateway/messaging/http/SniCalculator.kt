@@ -5,6 +5,8 @@ import java.security.MessageDigest
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.net.URI
 import net.corda.v5.base.util.toHex
+import org.bouncycastle.asn1.x500.AttributeTypeAndValue
+import org.bouncycastle.asn1.x500.X500Name
 
 object SniCalculator {
 
@@ -19,7 +21,13 @@ object SniCalculator {
     ): String {
         return when (networkType) {
             NetworkType.CORDA_4 -> {
-                sha256Hash(x500Name.toByteArray()).toHex().take(HASH_TRUNCATION_SIZE)
+                // The x500Name String can exist with RDNs in any order, therefore we need to ensure the calculation of the
+                // SNI always uses the same one. For example, both "O=PartyA, L=London, C=GB" and "L=London, O=PartyA, C=GB"
+                // will have the same calculated SNI value
+                val x500NameSorted = X500Name(x500Name).rdNs.flatMap { it.typesAndValues.asList() }.sortedBy { it.type.toString() }.groupBy(
+                    AttributeTypeAndValue::getType, AttributeTypeAndValue::getValue)
+                    .mapValues { it.value[0].toString() }.map { it }.joinToString(", ")
+                sha256Hash(x500NameSorted.toByteArray()).toHex().take(HASH_TRUNCATION_SIZE)
                     .toLowerCase() + CLASSIC_CORDA_SNI_SUFFIX
             }
             NetworkType.CORDA_5 -> {

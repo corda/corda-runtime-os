@@ -38,6 +38,7 @@ import javax.net.ssl.SSLEngine
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509ExtendedKeyManager
 import javax.net.ssl.X509ExtendedTrustManager
+import net.corda.p2p.NetworkType
 import net.corda.v5.base.util.toHex
 
 const val HANDSHAKE_TIMEOUT = 10000L
@@ -47,6 +48,7 @@ val CIPHER_SUITES = arrayOf("TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384")
 
 fun createClientSslHandler(targetServerName: String,
                            target: URI,
+                           networkType: NetworkType,
                            trustManagerFactory: TrustManagerFactory): SslHandler {
     val sslContext = SSLContext.getInstance("TLS")
     val trustManagers = trustManagerFactory.trustManagers.filterIsInstance(X509ExtendedTrustManager::class.java)
@@ -62,7 +64,10 @@ fun createClientSslHandler(targetServerName: String,
         sslParameters.serverNames = listOf(SNIHostName(targetServerName))
         // To enable the JSSE client side checking of server identity, we need to specify and endpoint identification algorithm
         // Supported names are documented here https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html
-        sslParameters.endpointIdentificationAlgorithm = "HTTPS"
+        if (networkType == NetworkType.CORDA_5) {
+            // Corda 4 style certs are incompatible with HTTPS
+            sslParameters.endpointIdentificationAlgorithm = "HTTPS"
+        }
         it.sslParameters = sslParameters
     }
     val sslHandler = SslHandler(sslEngine)

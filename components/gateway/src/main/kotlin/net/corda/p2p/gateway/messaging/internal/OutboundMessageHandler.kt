@@ -63,7 +63,7 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
                     peerMessage.header.destinationNetworkType,
                     peerMessage.header.address)
                 val message = LinkInMessage(peerMessage.payload).toByteBuffer().array()
-                connectionPool.acquire(destination, sni).write(message)
+                connectionPool.acquire(destination, sni, peerMessage.header.destinationNetworkType).write(message)
             }
         }
         return emptyList()

@@ -10,6 +10,7 @@ import java.net.URI
 import java.util.concurrent.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import net.corda.p2p.NetworkType
 
 /**
  * The [ConnectionManager] is responsible for creating an HTTP connection and caching it. If a connection to the requested
@@ -86,9 +87,9 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
      * @param target the [URI] to connect to
      * @param sni [String] value of the target's Server Name Indication
      */
-    fun acquire(target: URI, sni: String): HttpClient {
+    fun acquire(target: URI, sni: String, networkType: NetworkType): HttpClient {
         return clientPool.computeIfAbsent(target) {
-            val client = HttpClient(target, sni, sslConfiguration, writeGroup!!, nettyGroup!!)
+            val client = HttpClient(target, sni, networkType, sslConfiguration, writeGroup!!, nettyGroup!!)
             eventListeners.forEach { client.addListener(it) }
             client.start()
             client

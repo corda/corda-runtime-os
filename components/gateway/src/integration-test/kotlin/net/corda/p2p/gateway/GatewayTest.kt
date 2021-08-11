@@ -62,7 +62,7 @@ class GatewayTest : TestBase() {
                 PublisherFactoryStub(topicServiceAlice!!)
         ).use {
             it.start()
-            HttpClient(serverAddress, aliceSNI[0], bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client->
+            HttpClient(serverAddress, aliceSNI[0], NetworkType.CORDA_5, bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client->
                 val responseReceived = CountDownLatch(1)
                 val clientListener = object : HttpEventListener {
                     override fun onMessage(message: HttpMessage) {
@@ -103,7 +103,7 @@ class GatewayTest : TestBase() {
             it.start()
             val responseReceived = CountDownLatch(clientNumber)
             repeat(clientNumber) { index ->
-                val client = HttpClient(serverAddress, aliceSNI[1], bobSslConfig, threadPool, threadPool)
+                val client = HttpClient(serverAddress, aliceSNI[1], NetworkType.CORDA_5, bobSslConfig, threadPool, threadPool)
                 val clientListener = object : HttpEventListener {
                     override fun onMessage(message: HttpMessage) {
                         assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port), message.source)

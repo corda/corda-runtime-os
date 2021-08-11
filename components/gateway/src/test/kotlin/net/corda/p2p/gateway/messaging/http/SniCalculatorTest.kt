@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 class SniCalculatorTest {
 
     companion object {
-        val SOURCE = "PartyA"
+        val SOURCE = "O=PartyA, L=London, C=GB"
         const val MAX_SNI_SIZE = 255 //Under RCF-1035 the total sni can be at most 255 bytes
         const val MAX_SNI_LABEL_SIZE = 63 //Under RCF-1035 each label can be at most 63 bytes
         const val LABEL_DELIMITER = "."
