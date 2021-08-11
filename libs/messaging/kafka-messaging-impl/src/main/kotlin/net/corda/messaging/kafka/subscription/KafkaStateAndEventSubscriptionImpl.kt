@@ -67,7 +67,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private lateinit var producer: CordaKafkaProducer
     private lateinit var eventConsumer: CordaKafkaConsumer<K, E>
     private lateinit var stateConsumer: CordaKafkaConsumer<K, S>
-    private var currentStates: MutableMap<K, Pair<Long, S>> = mapFactory.createMap()
+    private var currentStates: MutableMap<K, Pair<Long, S>>? = null
 
     @Volatile
     private var stopped = false
