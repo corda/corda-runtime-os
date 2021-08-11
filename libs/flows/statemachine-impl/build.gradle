@@ -9,10 +9,11 @@ dependencies {
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation("com.esotericsoftware:kryo:$kryoVersion")
 
-    implementation "net.corda:corda-application:$cordaApiVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-application"
     implementation "net.corda:corda-flow-dependency-injection-internal:$cordaVersion"
     implementation "net.corda:corda-base-internal:$cordaVersion"
-    implementation "net.corda:avro-schema:$cordaApiVersion"
+    implementation "net.corda:avro-schema"
 
     implementation project(':libs:flows:statemachine')
 }
