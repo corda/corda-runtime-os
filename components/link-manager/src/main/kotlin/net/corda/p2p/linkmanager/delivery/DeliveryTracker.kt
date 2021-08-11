@@ -1,39 +1,59 @@
 package net.corda.p2p.linkmanager.delivery
 
 import net.corda.lifecycle.Lifecycle
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import net.corda.messaging.api.processor.StateAndEventProcessorWithReassignment
+import net.corda.messaging.api.processor.StateAndEventProcessorWithReassignment.Response
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.p2p.AuthenticatedMessageDeliveryState
 import net.corda.p2p.app.AppMessage
-import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.markers.FlowMessageMarker
+import net.corda.p2p.markers.LinkManagerReceivedMarker
+import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+
+//TODO: Delete this when StateAndEventSubscriptionAPI is updated
+interface StateAndEventSubscriptionWithReassignmentFactory {
+    fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: StateAndEventProcessorWithReassignment<K, S, E>,
+        nodeConfig: Config = ConfigFactory.empty()
+    ) : StateAndEventSubscription<K, S, E>
+}
 
 class DeliveryTracker(
     flowMessageReplayPeriod: Long,
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
-    messageForwarder: LinkManager.OutboundMessageProcessor
-    ): Lifecycle {
+    subscriptionFactoryWithReassignment: StateAndEventSubscriptionWithReassignmentFactory,
+    processFlowMessage: (event: EventLogRecord<ByteBuffer, AppMessage>) -> List<Record<String, *>>
+): Lifecycle {
 
     @Volatile
     private var running = false
     private val startStopLock = ReentrantLock()
 
-    private val messageReplayer = MessageReplayer(publisherFactory, subscriptionFactory, messageForwarder)
-    private val replayManager = ReplayManager(flowMessageReplayPeriod, messageReplayer::replayMessage)
-    private val highWaterMarkTracker = HighWaterMarkTracker(
-        replayManager::addForReplay,
-        replayManager::removeFromReplay
+    private val flowMessageReplayer = FlowMessageReplayer(publisherFactory, subscriptionFactory, processFlowMessage)
+    private val replayManager = ReplayScheduler(flowMessageReplayPeriod, flowMessageReplayer::replayMessage)
+
+    //TODO: Use the subscriptionFactory instead to create a message tracker
+    private val messageTracker = subscriptionFactoryWithReassignment.createStateAndEventSubscription(
+        SubscriptionConfig("message-tracker-group", Schema.P2P_OUT_MARKERS),
+        MessageTracker(replayManager)
     )
+
+    data class PositionInTopic(val partition: Partition, val offset: Offset)
 
     override val isRunning: Boolean
         get() = running
@@ -41,8 +61,9 @@ class DeliveryTracker(
     override fun start() {
         startStopLock.withLock {
             if (!isRunning) {
-                messageReplayer.start()
+                flowMessageReplayer.start()
                 replayManager.start()
+                messageTracker.start()
             }
         }
     }
@@ -50,90 +71,17 @@ class DeliveryTracker(
     override fun stop() {
         if (isRunning) {
             startStopLock.withLock {
-                messageReplayer.stop()
+                flowMessageReplayer.stop()
                 replayManager.stop()
+                messageTracker.stop()
             }
         }
     }
 
-    /**
-     * It is thread safe to call [HighWaterMarkTracker.removePartition] and [HighWaterMarkTracker.addPartition] in one thread and
-     * [HighWaterMarkTracker.processSentMarker] and [HighWaterMarkTracker.processReceivedMarker] in another. It is not thread safe
-     * to call [HighWaterMarkTracker.processSentMarker]/[HighWaterMarkTracker.processReceivedMarker] simultaneously in different
-     * threads for the same marker partition.
-     */
-    class HighWaterMarkTracker(
-        private val processSentMarker: (messageId: String, messagePosition: PositionInTopic) -> Unit,
-        private val processReceivedMarker: (messageId: String) -> Unit
-    ) {
-
-        private var logger = LoggerFactory.getLogger(this::class.java.name)
-
-        data class PositionInTopic(val partition: Partition, val offset: Offset)
-
-        /**
-         * [committedOffset] the current committed high water mark offset.
-         * [pendingOffsets] set of offsets corresponding to markers that have been processed, but are still above the high watermark.
-         */
-        data class TopicTrackingInfo(var committedOffset: Offset, val pendingOffsets: TreeSet<Offset>)
-
-        private val perTopicTracker = ConcurrentHashMap<Partition, TopicTrackingInfo>()
-
-        /**
-         * The position of the start marker offset for a specific messageId.
-         */
-        private val startMarkerOffsets = ConcurrentHashMap<String, Offset>()
-
-        fun addPartition(partition: Partition, committedOffset: Offset) {
-            perTopicTracker[partition] = TopicTrackingInfo(committedOffset, TreeSet<Offset>())
-        }
-
-        fun removePartition(partition: Partition) {
-            perTopicTracker.remove(partition)
-        }
-
-        fun processSentMarker(sentMarkerPosition: PositionInTopic, messageId: String, messagePosition: PositionInTopic) {
-            startMarkerOffsets[messageId] = sentMarkerPosition.offset
-            processSentMarker(messageId, messagePosition)
-        }
-
-        fun processReceivedMarker(receivedMarkerPosition: PositionInTopic, messageId: String): Offset? {
-            val tracker = perTopicTracker[receivedMarkerPosition.partition]
-            if (tracker == null) {
-                logger.error("Received offset for partition ${receivedMarkerPosition.partition} which we are not subscribed to." +
-                        " The offset was not be committed.")
-                return null
-            }
-
-            tracker.pendingOffsets.add(receivedMarkerPosition.offset)
-
-            val startMarkerOffset = startMarkerOffsets[messageId]
-            if (startMarkerOffset == null) {
-                logger.warn("Received a received marker for a message where there is no SentMarker.")
-            } else {
-                tracker.pendingOffsets.add(startMarkerOffset)
-            }
-
-            var newCommittedOffset = tracker.committedOffset
-            while (tracker.pendingOffsets.contains(newCommittedOffset + 1)) {
-                tracker.pendingOffsets.remove(newCommittedOffset)
-                newCommittedOffset++
-            }
-            val newOffset = if (newCommittedOffset > tracker.committedOffset) {
-                tracker.committedOffset = newCommittedOffset
-                newCommittedOffset
-            } else {
-                null
-            }
-            processReceivedMarker(messageId)
-            return newOffset
-        }
-    }
-
-    class MessageReplayer(
+    class FlowMessageReplayer(
         publisherFactory: PublisherFactory,
         subscriptionFactory: SubscriptionFactory,
-        private val messageForwarder: LinkManager.OutboundMessageProcessor
+        private val processFlowMessage: (event: EventLogRecord<ByteBuffer, AppMessage>) -> List<Record<String, *>>
     ): Lifecycle {
 
         companion object {
@@ -176,7 +124,7 @@ class DeliveryTracker(
             }
         }
 
-        fun replayMessage(messagePosition: HighWaterMarkTracker.PositionInTopic) {
+        fun replayMessage(messagePosition: PositionInTopic) {
             val message = subscription.getRecord(messagePosition.partition, messagePosition.offset)
             if (message == null) {
                 logger.error("Could not find a message for replay at partition ${messagePosition.partition} and offset " +
@@ -184,15 +132,62 @@ class DeliveryTracker(
                 return
             }
             val eventLogRecord = message.toEventLogRecord(messagePosition)
-            val records = messageForwarder.processEvent(eventLogRecord, false)
+            val records = processFlowMessage(eventLogRecord)
             publisher.publish(records)
         }
 
-        private fun <K: Any, V : Any> Record<K, V>.toEventLogRecord(
-            positionInTopic: HighWaterMarkTracker.PositionInTopic)
-        : EventLogRecord<K, V> {
+        private fun <K: Any, V : Any> Record<K, V>.toEventLogRecord(positionInTopic: PositionInTopic): EventLogRecord<K, V> {
             return EventLogRecord(topic, key, value, positionInTopic.partition, positionInTopic.offset)
         }
+    }
+
+    class MessageTracker(
+        private val replayScheduler: ReplayScheduler<PositionInTopic>
+    ) : StateAndEventProcessorWithReassignment<String, AuthenticatedMessageDeliveryState, FlowMessageMarker> {
+
+        override fun onNext(state: AuthenticatedMessageDeliveryState?, event: Record<String, FlowMessageMarker>): Response<AuthenticatedMessageDeliveryState> {
+            val marker = event.value?.marker ?: return respond(null)
+            return when (marker) {
+                is LinkManagerSentMarker -> Response(
+                    AuthenticatedMessageDeliveryState(
+                        marker.partition,
+                        marker.offset
+                    ), emptyList()
+                )
+                is LinkManagerReceivedMarker -> Response(null, emptyList())
+                else -> respond(state)
+            }
+        }
+
+        private fun respond(state: AuthenticatedMessageDeliveryState?): Response<AuthenticatedMessageDeliveryState> {
+            return Response(state, emptyList())
+        }
+
+        override fun onCommit(states: Map<String, AuthenticatedMessageDeliveryState?>) {
+            for ((key, value) in states) {
+                if (value != null) {
+                    replayScheduler.addForReplay(key, PositionInTopic(value.partition.toInt(), value.offset))
+                } else {
+                    replayScheduler.removeFromReplay(key)
+                }
+            }
+        }
+
+        override fun onPartitionsRevoked(states: Map<String, AuthenticatedMessageDeliveryState>) {
+            for ((key, _) in states) {
+                replayScheduler.removeFromReplay(key)
+            }
+        }
+
+        override fun onPartitionsAssigned(states: Map<String, AuthenticatedMessageDeliveryState>) {
+            for ((key, value) in states) {
+                replayScheduler.addForReplay(key, PositionInTopic(value.partition.toInt(), value.offset))
+            }
+        }
+
+        override val keyClass = String::class.java
+        override val stateValueClass =  AuthenticatedMessageDeliveryState::class.java
+        override val eventValueClass = FlowMessageMarker::class.java
     }
 }
 

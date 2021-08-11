@@ -5,12 +5,12 @@ import org.junit.jupiter.api.Test
 import java.util.*
 import java.util.concurrent.CountDownLatch
 
-class ReplayManagerTest {
+class ReplaySchedulerTest {
 
     /**
      * [getTimeStamp] returns an incrementing timestamp until [replaysStarted] is called.
      * After [replaysStarted] is called the timestamp will increment once more before always returning
-     * zero. The idea being this will cause the delivery tracker to replay some messages once in [ReplayManager.replayMessages].
+     * zero. The idea being this will cause the delivery tracker to replay some messages once in [ReplayScheduler.replayMessages].
      * [awaitSecondReplay] waits until getTimestamp as been called twice inside replayMessages (after which some messages have
      * replayed once).
      */
@@ -40,20 +40,20 @@ class ReplayManagerTest {
     }
 
     @Test
-    fun `The DeliveryTracker replays messages which haven't been acknowledged before timed out`() {
-        val replayedMessages = mutableListOf<DeliveryTracker.HighWaterMarkTracker.PositionInTopic>()
-        val replayMessage = fun(position: DeliveryTracker.HighWaterMarkTracker.PositionInTopic) {
+    fun `The ReplayScheduler replays added messages`() {
+        val replayedMessages = mutableListOf<DeliveryTracker.PositionInTopic>()
+        val replayMessage = fun(position: DeliveryTracker.PositionInTopic) {
             replayedMessages.add(position)
         }
         val replayPeriod = 5L
         val messages = 9
         val timeStamper = ReplayOnceTimeStamper()
 
-        val replayManager = ReplayManager(replayPeriod, replayMessage, timeStamper::getTimeStamp)
+        val replayManager = ReplayScheduler(replayPeriod, replayMessage, timeStamper::getTimeStamp)
         for (i in 0 until messages) {
             val messageId = UUID.randomUUID().toString()
             replayManager.addForReplay(messageId,
-                DeliveryTracker.HighWaterMarkTracker.PositionInTopic(1, i.toLong())
+                DeliveryTracker.PositionInTopic(1, i.toLong())
             )
         }
         timeStamper.replaysStarted()
@@ -63,7 +63,7 @@ class ReplayManagerTest {
         Assertions.assertEquals(messages - replayPeriod + 1, replayedMessages.size.toLong())
         for (i in 0 until messages - replayPeriod) {
             Assertions.assertEquals(
-                DeliveryTracker.HighWaterMarkTracker.PositionInTopic(1, i),
+                DeliveryTracker.PositionInTopic(1, i),
                 replayedMessages[i.toInt()]
             )
         }
@@ -71,9 +71,9 @@ class ReplayManagerTest {
     }
 
     @Test
-    fun `The DeliveryTracker doesn't replay acknowledged messages`() {
-        val replayedMessages = mutableListOf<DeliveryTracker.HighWaterMarkTracker.PositionInTopic>()
-        val replayMessage = fun(position: DeliveryTracker.HighWaterMarkTracker.PositionInTopic) {
+    fun `The ReplayScheduler doesn't replay removed messages`() {
+        val replayedMessages = mutableListOf<DeliveryTracker.PositionInTopic>()
+        val replayMessage = fun(position: DeliveryTracker.PositionInTopic) {
             replayedMessages.add(position)
         }
         val replayPeriod = 5L
@@ -81,13 +81,13 @@ class ReplayManagerTest {
 
         val timeStamper = ReplayOnceTimeStamper()
 
-        val replayManager = ReplayManager(replayPeriod, replayMessage, timeStamper::getTimeStamp)
+        val replayManager = ReplayScheduler(replayPeriod, replayMessage, timeStamper::getTimeStamp)
         val messageIds = mutableListOf<String>()
         for (i in 0 until messages) {
             val messageId = UUID.randomUUID().toString()
             messageIds.add(messageId)
             replayManager.addForReplay(messageId,
-                DeliveryTracker.HighWaterMarkTracker.PositionInTopic(1, i.toLong())
+                DeliveryTracker.PositionInTopic(1, i.toLong())
             )
         }
 
@@ -102,7 +102,7 @@ class ReplayManagerTest {
         Assertions.assertEquals((messages - replayPeriod + 1) / 2L, replayedMessages.size.toLong())
         for (i in 0 until (messages - replayPeriod) / 2L) {
             Assertions.assertEquals(
-                DeliveryTracker.HighWaterMarkTracker.PositionInTopic(1, 2 * i + 1),
+                DeliveryTracker.PositionInTopic(1, 2 * i + 1),
                 replayedMessages[i.toInt()]
             )
         }

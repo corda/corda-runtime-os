@@ -9,7 +9,11 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class ReplayManager<REPLAY_ARGUMENT>(
+/**
+ * This class keeps track of messages which may need to be replayed.
+ * [replayPeriod]
+ */
+class ReplayScheduler<REPLAY_ARGUMENT>(
     private val replayPeriod: Long,
     private val replayMessage: (argument: REPLAY_ARGUMENT) -> Unit,
     private val timestamp: () -> Long = { Instant.now().toEpochMilli()}
@@ -25,6 +29,7 @@ class ReplayManager<REPLAY_ARGUMENT>(
 
     private val keyFromMessageId = ConcurrentHashMap<String, SkipListKey>()
 
+    //We can't have duplicate keys in the ConcurrentSkipListMap but want to order messages by timestamp
     private data class SkipListKey(val timestamp: Long, val messageId: String): Comparable<SkipListKey> {
         @Override
         override fun compareTo(other: SkipListKey): Int {
@@ -66,10 +71,10 @@ class ReplayManager<REPLAY_ARGUMENT>(
         }
     }
 
-    fun addForReplay(uniqueId: String, messagePosition: REPLAY_ARGUMENT) {
+    fun addForReplay(uniqueId: String, replayArgument: REPLAY_ARGUMENT) {
         val timestamp = timestamp()
         val key = SkipListKey(timestamp, uniqueId)
-        pendingAckTimestamps[key] = messagePosition
+        pendingAckTimestamps[key] = replayArgument
         keyFromMessageId[uniqueId] = key
     }
 

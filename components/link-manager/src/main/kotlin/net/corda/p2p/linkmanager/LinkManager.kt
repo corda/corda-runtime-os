@@ -86,7 +86,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         messagesPendingSession,
         sessionReplayer
     )
-    private val messageReplayer: DeliveryTracker
+    //private val messageReplayer: DeliveryTracker
 
     init {
         val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, 1)
@@ -102,7 +102,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
             partitionAssignmentListener = inboundAssignmentListener
         )
-        messageReplayer = DeliveryTracker(config.flowMessageReplayPeriod, publisherFactory, subscriptionFactory, outboundMessageProcessor)
+        //messageReplayer = DeliveryTracker(config.flowMessageReplayPeriod, publisherFactory, subscriptionFactory, messageForwarder.processEvent(event, false))
     }
 
     override fun start() {
@@ -113,7 +113,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 /*We must wait for partitions to be assigned to the inbound subscription before we can start the outbound
                 *subscription otherwise the gateway won't know which partition to route message back to.*/
                 inboundAssignmentListener.awaitFirstAssignment()
-                messageReplayer.start()
+                //messageReplayer.start()
                 outboundMessageSubscription.start()
                 running = true
             }
@@ -123,6 +123,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     override fun stop() {
         startStopLock.withLock {
             if (running) {
+                sessionReplayer.stop()
                 inboundMessageSubscription.stop()
                 outboundMessageSubscription.stop()
                 running = false

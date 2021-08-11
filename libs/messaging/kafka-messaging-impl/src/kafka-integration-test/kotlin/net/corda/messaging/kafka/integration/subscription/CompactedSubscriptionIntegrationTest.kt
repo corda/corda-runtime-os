@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -34,6 +35,7 @@ class CompactedSubscriptionIntegrationTest {
     private lateinit var publisher: Publisher
     private lateinit var kafkaConfig: Config
     private val kafkaProperties = getKafkaProperties()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     private companion object {
         const val CLIENT_ID = "integrationTestCompactedPublisher"
@@ -58,6 +60,7 @@ class CompactedSubscriptionIntegrationTest {
 
     @Test
     fun `create compacted topic, publish records, start compacted sub, publish again`() {
+        logger.warn("Test is running!!!")
         topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC1_TEMPLATE)
 
         publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1)

@@ -30,7 +30,7 @@ class InMemorySessionReplayer(
     private val startStopLock = ReentrantLock()
     private val config = PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, null)
     private val publisher = publisherFactory.createPublisher(config)
-    private val replayManager = ReplayManager(sessionMessageReplayPeriod, ::replayMessage)
+    private val replayScheduler = ReplayScheduler(sessionMessageReplayPeriod, ::replayMessage)
 
     override val isRunning: Boolean
         get() = running
@@ -39,7 +39,7 @@ class InMemorySessionReplayer(
         startStopLock.withLock {
             if (!isRunning) {
                 publisher.start()
-                replayManager.start()
+                replayScheduler.start()
                 running = true
             }
         }
@@ -54,11 +54,11 @@ class InMemorySessionReplayer(
     }
 
     override fun addMessageForReplay(uniqueId: String, messageReplay: SessionReplayer.SessionMessageReplay) {
-        replayManager.addForReplay(uniqueId, messageReplay)
+        replayScheduler.addForReplay(uniqueId, messageReplay)
     }
 
     override fun removeMessageFromReplay(uniqueId: String) {
-        replayManager.removeFromReplay(uniqueId)
+        replayScheduler.removeFromReplay(uniqueId)
     }
 
     private fun replayMessage(messageReplay: SessionReplayer.SessionMessageReplay) {
