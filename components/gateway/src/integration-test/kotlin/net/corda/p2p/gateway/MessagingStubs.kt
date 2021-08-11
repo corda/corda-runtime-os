@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 /**
@@ -101,6 +102,80 @@ class EventLogSubscriptionStub<K: Any, V: Any>(
 
 }
 
+class CompactedSubscriptionStub<K: Any, V: Any>(
+    private val config: SubscriptionConfig,
+    private val processor: CompactedProcessor<K, V>,
+    private val topicService: TopicService,
+): CompactedSubscription<K, V> {
+
+    private val mapping = ConcurrentHashMap<K, V>()
+    private var eventLoopThread: Thread? = null
+
+    @Volatile
+    private var running = false
+    private val lock = ReentrantLock()
+
+    override val isRunning: Boolean
+        get() = running
+
+    override fun start() {
+        lock.withLock {
+            if (!running) {
+                calculateInitialSnapshot()
+                processor.onSnapshot(mapping)
+
+                eventLoopThread = thread {
+                    while (running) {
+                        val records = topicService.getRecords(config.eventTopic, config.groupName, -1).map {
+                            @Suppress("UNCHECKED_CAST")
+                            Record(it.record.topic, it.record.key as K, it.record.value as V) }
+                        records.forEach {
+                            val oldValue = mapping[it.key]
+                            if (it.value != null) {
+                                mapping[it.key] = it.value!!
+                            } else {
+                                mapping.remove(it.key)
+                            }
+                            processor.onNext(it, oldValue, mapping)
+                        }
+                    }
+                }
+                running = true
+            }
+        }
+    }
+
+    override fun stop() {
+        lock.withLock {
+            if (running) {
+                running = false
+                eventLoopThread?.join()
+                eventLoopThread = null
+            }
+        }
+    }
+
+    override fun getValue(key: K): V? {
+        return mapping[key]
+    }
+
+    private fun calculateInitialSnapshot() {
+        do {
+            val records = topicService.getRecords(config.eventTopic, config.groupName, -1).map {
+                @Suppress("UNCHECKED_CAST")
+                Record(it.record.topic, it.record.key as K, it.record.value as V) }
+            records.forEach {
+                if (it.value != null) {
+                    mapping[it.key] = it.value!!
+                } else {
+                    mapping.remove(it.key)
+                }
+            }
+        } while (running && records.isNotEmpty())
+    }
+
+}
+
 /**
  * Basic stubbed implementation for [SubscriptionFactory]. Currently used to inject an [EventLogSubscriptionStub] in the
  * Gateway.
@@ -129,7 +204,7 @@ class SubscriptionFactoryStub(private val topicService: TopicService) : Subscrip
         processor: CompactedProcessor<K, V>,
         nodeConfig: Config
     ): CompactedSubscription<K, V> {
-        TODO("Not yet implemented")
+        return CompactedSubscriptionStub(subscriptionConfig, processor, topicService)
     }
 
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
@@ -164,6 +239,7 @@ class SubscriptionFactoryStub(private val topicService: TopicService) : Subscrip
  */
 class PublisherStub(private val topicService: TopicService) : Publisher {
     override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
+        topicService.addRecords(records.map { it.second })
         return emptyList()
     }
 

@@ -6,8 +6,9 @@ plugins {
 description 'P2P gateway component'
 
 dependencies {
-    implementation "net.corda:avro-schema:$cordaApiVersion"
-    implementation "net.corda:topic-schema:$cordaApiVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:avro-schema"
+    implementation "net.corda:topic-schema"
     implementation project(":libs:p2p-crypto")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle")
@@ -21,12 +22,12 @@ dependencies {
     implementation "commons-validator:commons-validator:$commonsVersion"
 
     // Log4J: logging framework (with SLF4J bindings) - TEMPORARY UNTIL I FIGURE OUT LOGGING IN THIS PROJECT
-    compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
-    compile "org.slf4j:jul-to-slf4j:$slf4jVersion"
-    compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    implementation "org.slf4j:jul-to-slf4j:$slf4jVersion"
+    implementation "org.slf4j:jcl-over-slf4j:$slf4jVersion"
     // For async logging
-    compile "com.lmax:disruptor:$disruptorVersion"
+    implementation "com.lmax:disruptor:$disruptorVersion"
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
@@ -48,8 +49,4 @@ tasks.register('integrationTest', Test) {
 
     testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
     classpath = project.sourceSets["integrationTest"].runtimeClasspath
-}
-
-tasks.named("integrationTest", Test).configure {
-    useJUnitPlatform()
 }

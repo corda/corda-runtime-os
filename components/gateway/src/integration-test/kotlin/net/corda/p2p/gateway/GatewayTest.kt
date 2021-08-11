@@ -8,6 +8,7 @@ import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
+import net.corda.p2p.SessionPartitions
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
@@ -17,6 +18,7 @@ import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
+import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -36,6 +38,7 @@ class GatewayTest : TestBase() {
 
     private var topicServiceAlice: TopicService? = null
     private var topicServiceBob: TopicService? = null
+    private val sessionId = "session-1"
 
     @BeforeEach
     fun setup() {
@@ -51,6 +54,7 @@ class GatewayTest : TestBase() {
     @Test
     @Timeout(30)
     fun `http client to gateway`() {
+        topicServiceAlice!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
         val serverAddress = URI.create("http://localhost:10000")
         val linkInMessage = LinkInMessage(authenticatedP2PMessage(String()))
         Gateway(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),
@@ -92,6 +96,7 @@ class GatewayTest : TestBase() {
         val threadPool = NioEventLoopGroup(clientNumber)
         val serverAddress = URI.create("http://localhost:10000")
         val clients = mutableListOf<HttpClient>()
+        topicServiceAlice!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
         Gateway(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),
             SubscriptionFactoryStub(topicServiceAlice!!),
             PublisherFactoryStub(topicServiceAlice!!)).use {
@@ -186,6 +191,8 @@ class GatewayTest : TestBase() {
         val aliceGatewayAddress = URI.create("http://127.0.0.1:10003")
         val bobGatewayAddress = URI.create("http://127.0.0.1:10004")
         val messageCount = 10000
+        topicServiceAlice!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
+        topicServiceBob!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
         // Produce messages for each Gateway
         repeat(messageCount) {
             var msg = LinkOutMessage.newBuilder().apply {
@@ -240,7 +247,7 @@ class GatewayTest : TestBase() {
     }
 
     private fun authenticatedP2PMessage(content: String) = AuthenticatedDataMessage.newBuilder().apply {
-            header = CommonHeader(MessageType.DATA, 0, "session-1", 1L, Instant.now().toEpochMilli())
+            header = CommonHeader(MessageType.DATA, 0, sessionId, 1L, Instant.now().toEpochMilli())
             payload = ByteBuffer.wrap(content.toByteArray())
             authTag = ByteBuffer.wrap(ByteArray(0))
     }.build()

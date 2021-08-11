@@ -4,9 +4,10 @@ plugins {
 }
 
 dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-base:$cordaApiVersion"
-    implementation "net.corda:avro-schema:$cordaApiVersion"
+    implementation "net.corda:corda-base"
+    implementation "net.corda:avro-schema"
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle")
 }
