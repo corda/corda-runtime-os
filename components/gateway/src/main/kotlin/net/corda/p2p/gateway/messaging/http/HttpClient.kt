@@ -36,6 +36,7 @@ import net.corda.p2p.NetworkType
  *
  * @param destination the target URI
  * @param sni the target server name
+ * @param networkType the [NetworkType] value indicating if the TLS certificates are legacy or not
  * @param sslConfiguration the configuration to be used for the one-way TLS handshake
  * @param writeGroup event loop group (thread pool) for processing message writes and reconnects
  * @param nettyGroup event loop group (thread pool) for processing netty callbacks

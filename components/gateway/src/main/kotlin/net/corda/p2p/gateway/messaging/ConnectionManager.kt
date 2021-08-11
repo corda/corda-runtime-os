@@ -86,6 +86,7 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
      * Return an existing or new [HttpClient].
      * @param target the [URI] to connect to
      * @param sni [String] value of the target's Server Name Indication
+     * @param networkType the [NetworkType] value indicating if the TLS certificates are legacy or not
      */
     fun acquire(target: URI, sni: String, networkType: NetworkType): HttpClient {
         return clientPool.computeIfAbsent(target) {
