@@ -13,6 +13,7 @@ import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.PartitionAssignmentListenerImpl
+import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
@@ -48,7 +49,8 @@ class Gateway(config: GatewayConfiguration,
     private val httpServer = HttpServer(config.hostAddress, config.hostPort, config.sslConfig)
     private val connectionManager = ConnectionManager(config.sslConfig, config.connectionConfig)
     private var p2pMessageSubscription: Subscription<String, LinkOutMessage>
-    private val inboundMessageProcessor = InboundMessageHandler(httpServer, config.maxMessageSize, publisherFactory)
+    private val sessionPartitionMapper = SessionPartitionMapperImpl(subscriptionFactory)
+    private val inboundMessageProcessor = InboundMessageHandler(httpServer, config.maxMessageSize, publisherFactory, sessionPartitionMapper)
     private val outboundMessageProcessor = OutboundMessageHandler(connectionManager, publisherFactory)
 
     private val lock = ReentrantLock()
@@ -79,6 +81,8 @@ class Gateway(config: GatewayConfiguration,
             closeActions += { connectionManager.close() }
             httpServer.start()
             closeActions += { httpServer.close() }
+            sessionPartitionMapper.start()
+            closeActions += { sessionPartitionMapper.close() }
             inboundMessageProcessor.start()
             closeActions += { inboundMessageProcessor.close() }
             outboundMessageProcessor.start()
