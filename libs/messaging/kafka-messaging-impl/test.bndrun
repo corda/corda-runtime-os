@@ -57,7 +57,7 @@
 	net.corda.topic-admin;version='[5.0.0,5.0.1)',\
 	net.corda.topic-admin-impl;version='[5.0.0,5.0.1)',\
 	org.apache.commons.commons-compress;version='[1.20.0,1.20.1)',\
-	org.apache.felix.scr;version='[2.1.20,2.1.21)',\
+	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
 	org.apache.logging.log4j.api;version='[2.14.1,2.14.2)',\
 	org.apache.logging.log4j.slf4j-impl;version='[2.14.1,2.14.2)',\
 	org.apache.servicemix.bundles.kafka-clients;version='[2.7.0,2.7.1)',\

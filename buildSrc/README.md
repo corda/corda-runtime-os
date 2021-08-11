@@ -58,8 +58,8 @@ plugin are available to develop using the **Common App* plugin.
 ```groovy
 dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
 }
 ```
 
