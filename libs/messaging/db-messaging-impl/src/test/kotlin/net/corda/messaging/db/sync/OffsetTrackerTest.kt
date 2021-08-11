@@ -1,5 +1,6 @@
 package net.corda.messaging.db.sync
 
+import net.corda.messaging.db.util.eventually
 import net.corda.v5.base.util.millis
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -49,7 +50,9 @@ class OffsetTrackerTest {
         offsetTracker.offsetReleased(thirdOffset)
         offsetTracker.offsetReleased(firstOffset)
 
-        assertThat(offsetTracker.maxVisibleOffset()).isEqualTo(thirdOffset)
+        eventually(waitBetween = 10.millis, waitBefore = 0.millis) {
+            assertThat(offsetTracker.maxVisibleOffset()).isEqualTo(thirdOffset)
+        }
     }
 
     @Test
