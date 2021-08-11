@@ -4,6 +4,7 @@ import net.corda.p2p.NetworkType
 import java.security.MessageDigest
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.net.URI
+import net.corda.v5.base.util.toHex
 
 object SniCalculator {
 

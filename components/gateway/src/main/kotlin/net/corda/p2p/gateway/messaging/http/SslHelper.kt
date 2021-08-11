@@ -38,6 +38,7 @@ import javax.net.ssl.SSLEngine
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509ExtendedKeyManager
 import javax.net.ssl.X509ExtendedTrustManager
+import net.corda.v5.base.util.toHex
 
 const val HANDSHAKE_TIMEOUT = 10000L
 const val TLS_VERSION = "TLSv1.3"
@@ -160,19 +161,6 @@ fun X509Certificate.distributionPointsToString() : String {
             sorted().joinToString()
         }
     }
-}
-
-/**
- * Converts this [ByteArray] into a [String] of hexadecimal digits.
- */
-private val hexCode = "0123456789ABCDEF".toCharArray()
-fun ByteArray.toHex(): String {
-    val r = StringBuilder(this.size * 2)
-    for (b in this) {
-        r.append(hexCode[(b.toInt() shr 4) and 0xF])
-        r.append(hexCode[b.toInt() and 0xF])
-    }
-    return r.toString()
 }
 
 @Suppress("TooGenericExceptionCaught")

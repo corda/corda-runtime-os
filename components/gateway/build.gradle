@@ -7,6 +7,7 @@ description 'P2P gateway component'
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
     implementation "net.corda:avro-schema"
     implementation "net.corda:topic-schema"
     implementation project(":libs:p2p-crypto")
