@@ -42,7 +42,7 @@
 	net.corda.base;version='[5.0.0,5.0.1)',\
 	net.corda.helloworld;version='[5.0.0,5.0.1)',\
 	net.corda.helloworld-impl;version='[5.0.0,5.0.1)',\
-	org.apache.felix.scr;version='[2.1.20,2.1.21)',\
+	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
 	org.apache.logging.log4j.api;version='[2.14.1,2.14.2)',\
 	org.assertj.core;version='[3.12.2,3.12.3)',\
 	org.jetbrains.kotlin.osgi-bundle;version='[1.4.21,1.4.22)',\
