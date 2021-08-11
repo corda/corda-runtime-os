@@ -91,7 +91,6 @@ fun createServerSslHandler(keyStore: KeyStore,
         it.enabledCipherSuites = CIPHER_SUITES
         it.enableSessionCreation = true
         val sslParameters = it.sslParameters
-        sslParameters.applicationProtocols = arrayOf("http/1.1")
         sslParameters.sniMatchers = listOf(HostnameMatcher(keyStore))
         it.sslParameters = sslParameters
     }
@@ -104,7 +103,7 @@ fun getCertCheckingParameters(trustStore: KeyStore, revocationConfig: Revocation
     val pkixParams = PKIXBuilderParameters(trustStore, X509CertSelector())
     val revocationChecker = when (revocationConfig.mode) {
         RevocationConfig.Mode.OFF -> AllowAllRevocationChecker
-        else -> {
+        RevocationConfig.Mode.SOFT_FAIL, RevocationConfig.Mode.HARD_FAIL -> {
             val certPathBuilder = CertPathBuilder.getInstance("PKIX")
             val pkixRevocationChecker = certPathBuilder.revocationChecker as PKIXRevocationChecker
             // We only set SOFT_FAIL as a checker option if specified. Everything else is left as default, which means

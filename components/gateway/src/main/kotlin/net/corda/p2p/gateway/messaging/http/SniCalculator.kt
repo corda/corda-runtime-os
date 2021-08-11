@@ -9,7 +9,7 @@ import net.corda.v5.base.util.toHex
 object SniCalculator {
 
     private const val HASH_ALGO = "SHA-256"
-    private const val HASH_TRUNCATION_SIZE = 63 //Truncate to 63 characters (as RCF 1035)
+    private const val HASH_TRUNCATION_SIZE = 32
     private const val CLASSIC_CORDA_SNI_SUFFIX = ".p2p.corda.net" //This is intentionally different to Corda 4
 
     fun calculateSni(

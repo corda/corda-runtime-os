@@ -43,8 +43,6 @@ class HttpHelper {
                 URL(SCHEME, uri.host, uri.port, ENDPOINT).toString(), // At a later point we should just use the provided URI
                 content
             ).apply {
-                // Need to verify if upstream services send IPv6 hostnames in the format specified by RFC 2732
-                // Example URI http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:80/index.html
                 headers()
                     .set(HttpHeaderNames.HOST, uri.host)
                     .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
