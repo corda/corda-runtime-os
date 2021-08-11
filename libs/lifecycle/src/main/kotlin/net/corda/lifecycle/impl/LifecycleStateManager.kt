@@ -20,6 +20,10 @@ internal class LifecycleStateManager(
 
     private val timerMap = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
+    val dependentCoordinators = DependentCoordinatorMap()
+
+    val registrations = CoordinatorRegistrationManager()
+
     @Volatile
     var isRunning: Boolean = false
 

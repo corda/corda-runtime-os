@@ -137,14 +137,6 @@ class LifecycleCoordinatorImpl(
         return executor.schedule({ postEvent(timerEvent) }, delay, TimeUnit.MILLISECONDS)
     }
 
-    fun setStatusHook(coordinator: LifecycleCoordinator) {
-        // Add to watchlist.
-    }
-
-    fun cancelStatusHook(coordinator: LifecycleCoordinator) {
-        // Remove from watchlist.
-    }
-
     /**
      * Cancel the [TimerEvent] uniquely identified by [key].
      * If [key] doesn't identify any [TimerEvent] scheduled with [setTimer], this method doesn't anything.
@@ -156,7 +148,7 @@ class LifecycleCoordinatorImpl(
     }
 
     /**
-     * Post the [event] to be processed as soon is possible by [lifeCycleProcessor].
+     * Post an event to be processed by the provided user event handler.
      *
      * Events are processed in the order they are posted.
      *
@@ -176,6 +168,12 @@ class LifecycleCoordinatorImpl(
      */
     override fun setTimer(key: String, delay: Long, onTime: (String) -> TimerEvent) {
         postEvent(SetUpTimer(key, delay, onTime))
+    }
+
+    override fun follow(coordinators: List<LifecycleCoordinator>): AutoCloseable {
+        val registration = CoordinatorStateRegistration(coordinators, this)
+        postEvent(StartFollowing(registration))
+        return registration
     }
 
     /**

@@ -65,8 +65,24 @@ internal class LifecycleProcessor(
                 state.cancelTimer(event.key)
                 true
             }
+            is StartFollowing -> {
+                state.registrations.newRegistration(event.registration)
+                true
+            }
+            is StopFollowing -> {
+                state.registrations.cancelRegistration(event.registration)
+                true
+            }
+            is NewDependentCoordinator -> {
+                state.dependentCoordinators.addCoordinator(event.coordinator)
+                true
+            }
             is CoordinatorStateChange -> {
-                // Post update to dependent coordinators.
+                state.dependentCoordinators.updateStatus(coordinator, event.newState)
+                true
+            }
+            is ActiveChangeInternal -> {
+                state.registrations.updateRegistrations(event.component, event.newState)
                 true
             }
             is TimerEvent -> {

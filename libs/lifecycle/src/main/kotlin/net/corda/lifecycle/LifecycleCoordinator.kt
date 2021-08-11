@@ -63,5 +63,5 @@ interface LifecycleCoordinator : Lifecycle {
     var activeState: LifecycleState
 
     // Multiple calls give multiple lists being followed.
-    fun follow(coordinators: List<String>) : AutoCloseable
+    fun follow(coordinators: List<LifecycleCoordinator>) : AutoCloseable
 }

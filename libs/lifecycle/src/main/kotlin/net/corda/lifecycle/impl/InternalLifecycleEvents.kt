@@ -29,10 +29,20 @@ internal data class CancelTimer(
     val key: String
 ) : LifecycleEvent
 
-internal data class StartFollowing(val components: List<LifecycleCoordinator>) : LifecycleEvent
+internal data class StartFollowing(val registration: CoordinatorStateRegistration) : LifecycleEvent
 
-internal data class StopFollowing(val components: List<LifecycleCoordinator>) : LifecycleEvent
+internal data class StopFollowing(val registration: CoordinatorStateRegistration) : LifecycleEvent
 
-internal data class ActiveChangeInternal(val component: LifecycleCoordinator) : LifecycleEvent
+internal data class NewDependentCoordinator(val coordinator: LifecycleCoordinator) : LifecycleEvent
 
+internal data class ActiveChangeInternal(
+    val component: LifecycleCoordinator,
+    val newState: LifecycleState
+) : LifecycleEvent
+
+/**
+ * Indicates that the component has changed state, so this component can inform dependent components of the change.
+ *
+ * @param newState The new state this component has taken.
+ */
 internal data class CoordinatorStateChange(val newState: LifecycleState) : LifecycleEvent

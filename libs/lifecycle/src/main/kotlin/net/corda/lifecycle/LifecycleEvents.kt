@@ -55,7 +55,12 @@ interface TimerEvent : LifecycleEvent {
 
 }
 
+/**
+ * An event signalling that the overall state of a set of components has changed.
+ *
+ * The set of components
+ */
 class ActiveStateChangeEvent(
     val followingComponents: List<LifecycleCoordinator>,
-    val active: Boolean
+    val state: LifecycleState
 ) : LifecycleEvent
