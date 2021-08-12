@@ -56,6 +56,26 @@ class RegistrationTest {
         harness.verifyDeliveredEvents(2, 2)
     }
 
+    @Test
+    fun `sending duplicate up or down events does not cause an active status change to be delivered`() {
+        val harness = RegistrationTestHarness()
+        harness.setDependentStatuses(listOf(LifecycleStatus.UP, LifecycleStatus.UP, LifecycleStatus.UP))
+        harness.verifyDeliveredEvents(1, 0)
+        harness.setDependentStatuses(listOf(LifecycleStatus.UP, LifecycleStatus.UP, LifecycleStatus.UP))
+        harness.verifyDeliveredEvents(1, 0)
+        harness.setDependentStatuses(listOf(LifecycleStatus.DOWN, LifecycleStatus.DOWN, LifecycleStatus.DOWN))
+        harness.verifyDeliveredEvents(1, 1)
+        harness.setDependentStatuses(listOf(LifecycleStatus.DOWN, LifecycleStatus.DOWN, LifecycleStatus.DOWN))
+        harness.verifyDeliveredEvents(1, 1)
+    }
+
+    @Test
+    fun `closing a registration twice does not deliver a second cancel event`() {
+        val harness = RegistrationTestHarness()
+        harness.closeRegistration() // Asserts that the first close does deliver
+        harness.closeRegistration() // On the second close shouldn't have been any extra events, same assertion applies
+    }
+
     private inner class RegistrationTestHarness {
         private val childMocks = listOf<LifecycleCoordinator>(mock(), mock(), mock())
         private val listeningMock = mock<LifecycleCoordinator>()

@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ScheduledFuture
@@ -24,6 +25,9 @@ internal class LifecycleStateManager(
 
     @Volatile
     var isRunning: Boolean = false
+
+    @Volatile
+    var status: LifecycleStatus = LifecycleStatus.DOWN
 
     /**
      * Post a new event to the queue.

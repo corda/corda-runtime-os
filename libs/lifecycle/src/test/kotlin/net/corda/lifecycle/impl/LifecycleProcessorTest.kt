@@ -256,7 +256,7 @@ class LifecycleProcessorTest {
     }
 
     @Test
-    fun `adding a new registration correctly updates the state and posts the current status`() {
+    fun `adding a new registration updates the state and posts the current status`() {
         val state = LifecycleStateManager(5)
         state.isRunning = true
         var processedEvents = 0
@@ -265,7 +265,7 @@ class LifecycleProcessorTest {
         }
         val registration = mock<Registration>()
         val coordinator = mock<LifecycleCoordinator>()
-        coordinator.activeStatus = LifecycleStatus.DOWN
+        state.status = LifecycleStatus.DOWN
         state.postEvent(NewRegistration(registration))
         process(processor, coordinator = coordinator)
         verify(registration).updateCoordinatorState(coordinator, LifecycleStatus.DOWN)
@@ -283,7 +283,7 @@ class LifecycleProcessorTest {
         }
         val registration = mock<Registration>()
         val coordinator = mock<LifecycleCoordinator>()
-        coordinator.activeStatus = LifecycleStatus.DOWN
+        state.status = LifecycleStatus.DOWN
         state.registrations.add(registration)
         state.postEvent(CancelRegistration(registration))
         process(processor, coordinator = coordinator)
@@ -302,7 +302,7 @@ class LifecycleProcessorTest {
         val registration1 = mock<Registration>()
         val registration2 = mock<Registration>()
         val coordinator = mock<LifecycleCoordinator>()
-        coordinator.activeStatus = LifecycleStatus.DOWN
+        state.status = LifecycleStatus.DOWN
         state.registrations.add(registration1)
         state.registrations.add(registration2)
         state.postEvent(StatusChange(LifecycleStatus.UP))
@@ -310,6 +310,37 @@ class LifecycleProcessorTest {
         verify(registration1).updateCoordinatorState(coordinator, LifecycleStatus.UP)
         verify(registration2).updateCoordinatorState(coordinator, LifecycleStatus.UP)
         assertEquals(0, processedEvents)
+    }
+
+    @Test
+    fun `stop event causes the coordinator status to be set to down`() {
+        val state = LifecycleStateManager(5)
+        state.isRunning = true
+        var processedStopEvents = 0
+        var processedOtherEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
+            when (event) {
+                is StopEvent -> {
+                    processedStopEvents++
+                }
+                else -> {
+                    processedOtherEvents++
+                }
+            }
+        }
+        val registration1 = mock<Registration>()
+        val registration2 = mock<Registration>()
+        val coordinator = mock<LifecycleCoordinator>()
+        state.status = LifecycleStatus.UP
+        state.registrations.add(registration1)
+        state.registrations.add(registration2)
+        state.postEvent(StopEvent())
+        process(processor, coordinator = coordinator)
+        assertEquals(LifecycleStatus.DOWN, state.status)
+        verify(registration1).updateCoordinatorState(coordinator, LifecycleStatus.DOWN)
+        verify(registration2).updateCoordinatorState(coordinator, LifecycleStatus.DOWN)
+        assertEquals(1, processedStopEvents)
+        assertEquals(0, processedOtherEvents)
     }
 
     private object TestEvent1 : LifecycleEvent

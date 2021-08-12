@@ -87,16 +87,11 @@ class LifecycleCoordinatorImpl(
      * Updates to this property only trigger a state change event to be sent if the new value differs from the old one,
      * to prevent spurious updates. Defaults to DOWN.
      */
-    override var activeStatus = LifecycleStatus.DOWN
-        set(value) {
-            if (field != value) {
-                field = value
-                postEvent(StatusChange(value))
-            }
-        }
+    override val activeStatus: LifecycleStatus
+        get() = lifecycleState.status
 
     /**
-     * Process the events in [eventQueue].
+     * Process a batch of events in the event queue.
      *
      * The main processing functionality is delegated to the LifecycleProcessor class. On a processing error, the
      * coordinator is stopped.
@@ -169,6 +164,10 @@ class LifecycleCoordinatorImpl(
      */
     override fun setTimer(key: String, delay: Long, onTime: (String) -> TimerEvent) {
         postEvent(SetUpTimer(key, delay, onTime))
+    }
+
+    override fun updateStatus(newStatus: LifecycleStatus) {
+        postEvent(StatusChange(newStatus))
     }
 
     override fun followStatusChanges(coordinators: Set<LifecycleCoordinator>): RegistrationHandle {

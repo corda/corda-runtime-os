@@ -4,6 +4,7 @@ import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
@@ -80,7 +81,7 @@ internal class LifecycleProcessor(
             }
             is NewRegistration -> {
                 state.registrations.add(event.registration)
-                event.registration.updateCoordinatorState(coordinator, coordinator.activeStatus)
+                event.registration.updateCoordinatorState(coordinator, state.status)
                 true
             }
             is CancelRegistration -> {
@@ -88,7 +89,10 @@ internal class LifecycleProcessor(
                 true
             }
             is StatusChange -> {
-                state.registrations.forEach { it.updateCoordinatorState(coordinator, event.newState) }
+                if (state.isRunning) {
+                    state.status = event.newStatus
+                    state.registrations.forEach { it.updateCoordinatorState(coordinator, event.newStatus) }
+                }
                 true
             }
             else -> {
@@ -117,6 +121,8 @@ internal class LifecycleProcessor(
     private fun processStopEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
         if (state.isRunning) {
             state.isRunning = false
+            state.status = LifecycleStatus.DOWN
+            state.registrations.forEach { it.updateCoordinatorState(coordinator, LifecycleStatus.DOWN) }
             runUserEventHandler(event, coordinator)
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to stop an already terminated coordinator" }

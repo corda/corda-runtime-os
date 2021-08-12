@@ -60,7 +60,9 @@ interface LifecycleCoordinator : Lifecycle {
      * Components should use this to signal when they go up or down. This can be used by dependent components to trigger
      * them to go up or down in turn.
      */
-    var activeStatus: LifecycleStatus
+    val activeStatus: LifecycleStatus
+
+    fun updateStatus(newStatus: LifecycleStatus)
 
     /**
      * Register for status changes from a set of dependent coordinators.
