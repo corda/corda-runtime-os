@@ -5,6 +5,7 @@ import java.security.MessageDigest
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.net.URI
 import net.corda.v5.base.util.toHex
+import org.apache.commons.validator.routines.InetAddressValidator
 import org.bouncycastle.asn1.x500.AttributeTypeAndValue
 import org.bouncycastle.asn1.x500.X500Name
 
@@ -31,7 +32,11 @@ object SniCalculator {
                     .toLowerCase() + CLASSIC_CORDA_SNI_SUFFIX
             }
             NetworkType.CORDA_5 -> {
-                URI.create(address).host
+                val sni = URI.create(address).host
+                // SNI values can't be IP addresses
+                if (InetAddressValidator.getInstance().isValid(sni))
+                    throw IllegalArgumentException("Address can't be IP")
+                sni
             }
         }
     }

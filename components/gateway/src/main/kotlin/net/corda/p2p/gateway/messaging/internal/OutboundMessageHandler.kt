@@ -57,25 +57,31 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
         p2pInPublisher = null
     }
 
+    @Suppress("NestedBlockDepth")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
         events.forEach { evt ->
             evt.value?.let { peerMessage ->
-                val sni = SniCalculator.calculateSni(
-                    peerMessage.header.destinationX500Name,
-                    peerMessage.header.destinationNetworkType,
-                    peerMessage.header.address)
-                val message = LinkInMessage(peerMessage.payload).toByteBuffer().array()
-                val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
-                    X500Name(peerMessage.header.destinationX500Name)
-                } else {
-                    null
+                try {
+                    val sni = SniCalculator.calculateSni(
+                        peerMessage.header.destinationX500Name,
+                        peerMessage.header.destinationNetworkType,
+                        peerMessage.header.address
+                    )
+                    val message = LinkInMessage(peerMessage.payload).toByteBuffer().array()
+                    val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
+                        X500Name(peerMessage.header.destinationX500Name)
+                    } else {
+                        null
+                    }
+                    val destinationInfo = DestinationInfo(
+                        URI.create(peerMessage.header.address),
+                        sni,
+                        expectedX500Name
+                    )
+                    connectionPool.acquire(destinationInfo).write(message)
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Can't send message to destination ${peerMessage.header.address}. ${e.message}")
                 }
-                val destinationInfo = DestinationInfo(
-                    URI.create(peerMessage.header.address),
-                    sni,
-                    expectedX500Name
-                )
-                connectionPool.acquire(destinationInfo).write(message)
             }
         }
         return emptyList()

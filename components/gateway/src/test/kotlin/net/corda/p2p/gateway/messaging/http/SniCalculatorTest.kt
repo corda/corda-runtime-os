@@ -43,17 +43,17 @@ class SniCalculatorTest {
     }
 
     @Test
-    fun `sni is correctly calculated from an address for a corda5 identity`() {
+    fun `sni calculation throws if adress contains IP`() {
         val ip = "10.0.0.5"
         val address = "http://$ip/"
-        Assertions.assertEquals(
-            ip,
+        Assertions.assertThrows(IllegalArgumentException::class.java
+        ) {
             SniCalculator.calculateSni(
                 SOURCE,
                 NetworkType.CORDA_5,
                 address
             )
-        )
+        }
     }
 
     @Test

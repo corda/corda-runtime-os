@@ -1,3 +1,5 @@
+import java.nio.charset.Charset
+
 plugins {
     id 'corda.common-library'
     id 'com.r3.internal.gradle.plugins.r3Publish'
@@ -47,7 +49,8 @@ sourceSets {
 
 tasks.register('integrationTest', Test) {
     description = "Runs integration tests."
-
+    final String hostsFilePath = new File(project.sourceSets["integrationTest"].output.resourcesDir.absolutePath, "hosts").absolutePath
+    jvmArgs "-Djdk.net.hosts.file=$hostsFilePath"
     testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
     classpath = project.sourceSets["integrationTest"].runtimeClasspath
 }

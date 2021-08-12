@@ -56,7 +56,7 @@ class GatewayTest : TestBase() {
     @Timeout(30)
     fun `http client to gateway`() {
         topicServiceAlice!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
-        val serverAddress = URI.create("http://localhost:10000")
+        val serverAddress = URI.create("http://www.alice.net:10000")
         val linkInMessage = LinkInMessage(authenticatedP2PMessage(String()))
         Gateway(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),
                 SubscriptionFactoryStub(topicServiceAlice!!),
@@ -96,7 +96,7 @@ class GatewayTest : TestBase() {
     fun `multiple clients to gateway`() {
         val clientNumber = 4
         val threadPool = NioEventLoopGroup(clientNumber)
-        val serverAddress = URI.create("http://localhost:10000")
+        val serverAddress = URI.create("http://www.alice.net:10000")
         val clients = mutableListOf<HttpClient>()
         topicServiceAlice!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
         Gateway(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),
@@ -142,10 +142,10 @@ class GatewayTest : TestBase() {
     fun `gateway to multiple servers`() {
         val gatewayAddress = Pair("localhost", 10000)
         val serverAddresses = listOf(
-            "http://127.0.0.1:10001",
-            "http://127.0.0.1:10002",
-            "http://127.0.0.1:10003",
-            "http://127.0.0.1:10004")
+            "http://www.chip.net:10001",
+            "http://www.chip.net:10002",
+            "http://www.chip.net:10003",
+            "http://www.chip.net:10004")
         // We first produce some messages which will be consumed by the Gateway.
         val messageCount = 10000 // this number will be produced for each target
         val deliveryLatch = CountDownLatch(serverAddresses.size * messageCount)
@@ -153,7 +153,7 @@ class GatewayTest : TestBase() {
         repeat(serverAddresses.size) { id ->
             repeat(messageCount) {
                 val msg = LinkOutMessage.newBuilder().apply {
-                    header = LinkOutHeader("Chip", NetworkType.CORDA_5, serverAddresses[id])
+                    header = LinkOutHeader("", NetworkType.CORDA_5, serverAddresses[id])
                     payload = authenticatedP2PMessage("Target-${serverAddresses[id]}")
                 }.build()
                 topicServiceAlice!!.addRecords(listOf(Record(LINK_OUT_TOPIC, "key", msg)))
@@ -190,22 +190,23 @@ class GatewayTest : TestBase() {
     }
 
     @Test
+    @Timeout(60)
     fun `gateway to gateway - dual stream`() {
-        val aliceGatewayAddress = URI.create("http://127.0.0.1:10003")
-        val bobGatewayAddress = URI.create("http://127.0.0.1:10004")
+        val aliceGatewayAddress = URI.create("http://www.chip.net:10003")
+        val bobGatewayAddress = URI.create("http://www.dale.net:10004")
         val messageCount = 10000
         topicServiceAlice!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
         topicServiceBob!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
         // Produce messages for each Gateway
         repeat(messageCount) {
             var msg = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("Dale", NetworkType.CORDA_5, bobGatewayAddress.toString())
+                header = LinkOutHeader("", NetworkType.CORDA_5, bobGatewayAddress.toString())
                 payload = authenticatedP2PMessage("Target-$bobGatewayAddress")
             }.build()
             topicServiceAlice!!.addRecords(listOf(Record(LINK_OUT_TOPIC, "key", msg)))
 
             msg = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("Chip", NetworkType.CORDA_5, aliceGatewayAddress.toString())
+                header = LinkOutHeader("", NetworkType.CORDA_5, aliceGatewayAddress.toString())
                 payload = authenticatedP2PMessage("Target-$aliceGatewayAddress")
             }.build()
             topicServiceBob!!.addRecords(listOf(Record(LINK_OUT_TOPIC, "key", msg)))
