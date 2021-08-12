@@ -37,24 +37,43 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
      */
     override fun matches(serverName: SNIServerName): Boolean {
         val serverNameString = (serverName as SNIHostName).asciiName
-        if (serverName.type == StandardConstants.SNI_HOST_NAME) {
-            keyStore.aliases().toList().forEach { alias ->
-                val certificate = keyStore.getCertificate(alias).x509()
+        if (serverName.type != StandardConstants.SNI_HOST_NAME) {
+            logger.warn("Invalid server name type: ${serverName.type}. Supported types: SNIHostName(0)")
+        }
+
+        keyStore.aliases().toList().forEach { alias ->
+            val certificate = keyStore.getCertificate(alias).x509()
+            if (isC4SNI(serverNameString)) {
                 val x500Name = X500Name.getInstance(certificate.subjectX500Principal.encoded)
                 val c4SniValue = SniCalculator.calculateSni(x500Name.toString(), NetworkType.CORDA_4, "")
-                val c5Check = match(serverNameString, certificate)
-
-                if (serverNameString == c4SniValue || c5Check) {
-                    matchedAlias = alias
-                    matchedServerName = serverName.asciiName
-                    return true
+                if (serverNameString == c4SniValue) {
+                    return matched(alias, serverName.asciiName)
                 }
+            } else if (match(serverNameString, certificate)){
+                return matched(alias, serverName.asciiName)
             }
         }
 
         val requestedSNIValue = "hostname = $serverNameString"
         logger.warn("Could not find a certificate matching the requested SNI value [$requestedSNIValue]")
         return false
+    }
+
+    private fun isC4SNI(serverName: String): Boolean {
+        val correctSize = serverName.length == SniCalculator.HASH_TRUNCATION_SIZE + SniCalculator.CLASSIC_CORDA_SNI_SUFFIX.length
+        val correctSuffix = serverName.endsWith(SniCalculator.CLASSIC_CORDA_SNI_SUFFIX)
+        val validHashedLegalName = !serverName.substringBefore('.')
+            .toCharArray()
+            .map { Character.digit(it, 16) }
+            .contains(-1)
+
+        return correctSize && correctSuffix && validHashedLegalName
+    }
+
+    private fun matched(alias: String, serverName: String): Boolean {
+        matchedAlias = alias
+        matchedServerName = serverName
+        return true
     }
 
     private fun match(name: String, certificate: X509Certificate): Boolean {

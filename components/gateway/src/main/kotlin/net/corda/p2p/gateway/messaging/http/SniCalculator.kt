@@ -11,8 +11,8 @@ import org.bouncycastle.asn1.x500.X500Name
 object SniCalculator {
 
     private const val HASH_ALGO = "SHA-256"
-    private const val HASH_TRUNCATION_SIZE = 32
-    private const val CLASSIC_CORDA_SNI_SUFFIX = ".p2p.corda.net" //This is intentionally different to Corda 4
+    const val HASH_TRUNCATION_SIZE = 32
+    const val CLASSIC_CORDA_SNI_SUFFIX = ".p2p.corda.net" //This is intentionally different to Corda 4
 
     fun calculateSni(
         x500Name: String,

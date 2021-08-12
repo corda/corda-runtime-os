@@ -21,6 +21,13 @@ class HostnameMatcherTest {
         val matcher = HostnameMatcher(keyStore)
         assertTrue(matcher.matches(SNIHostName(calculatedSNI)))
         assertFalse(matcher.matches(SNIHostName("PartyA.net")))
+
+        // Invalid C4 style SNI - incorrect suffix
+        assertFalse(matcher.matches(SNIHostName("b597e8858a2fa87424f5e8c39dc4f93c.p2p.corda.com")))
+        // Invalid C4 style SNI - incorrect length
+        assertFalse(matcher.matches(SNIHostName("b597e8858a2fa87424f5e8c39d.p2p.corda.net")))
+        // Invalid C4 style SNI - invalid hash (not hex)
+        assertFalse(matcher.matches(SNIHostName("n597q8858z2fm87424f5e8c39dc4f93c.p2p.corda.net")))
     }
 
     @Test
