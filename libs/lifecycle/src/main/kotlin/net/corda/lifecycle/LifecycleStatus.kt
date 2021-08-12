@@ -7,7 +7,7 @@ package net.corda.lifecycle
  * when their dependents go up or down. This is used to implement domino logic, where a parent component moves to up
  * only if its children are all up.
  */
-enum class LifecycleState {
+enum class LifecycleStatus {
     /**
      * The component is running normally and all setup has been completed.
      */

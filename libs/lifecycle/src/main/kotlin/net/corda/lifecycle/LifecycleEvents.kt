@@ -22,7 +22,7 @@ interface LifecycleEvent
  * @param isHandled flag if the error event is handled by the processor.
  *  If [isHandled] is `false` on return from the processor, this will trigger the coordinator to stop.
  */
-class ErrorEvent internal constructor(val cause: Throwable, var isHandled: Boolean = false) : LifecycleEvent
+data class ErrorEvent internal constructor(val cause: Throwable, var isHandled: Boolean = false) : LifecycleEvent
 
 /**
  * The event delivered on the coordinator starting up.
@@ -56,11 +56,15 @@ interface TimerEvent : LifecycleEvent {
 }
 
 /**
- * An event signalling that the overall state of a set of components has changed.
+ * An event signalling that the status of a registration has changed.
  *
- * The set of components
+ * This event will only be delivered when all the underlying coordinators of the registration go up, or a single one
+ * goes down after all had previously been up.
+ *
+ * @param registration The registration this event is signaling for
+ * @param status The new status of the registration
  */
-class ActiveStateChangeEvent(
-    val followingComponents: List<LifecycleCoordinator>,
-    val state: LifecycleState
+data class RegistrationStatusChangeEvent internal constructor(
+    val registration: RegistrationHandle,
+    val status: LifecycleStatus
 ) : LifecycleEvent

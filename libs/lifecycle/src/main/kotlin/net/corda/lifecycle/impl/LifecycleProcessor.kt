@@ -65,26 +65,6 @@ internal class LifecycleProcessor(
                 state.cancelTimer(event.key)
                 true
             }
-            is StartFollowing -> {
-                state.registrations.newRegistration(event.registration)
-                true
-            }
-            is StopFollowing -> {
-                state.registrations.cancelRegistration(event.registration)
-                true
-            }
-            is NewDependentCoordinator -> {
-                state.dependentCoordinators.addCoordinator(event.coordinator)
-                true
-            }
-            is CoordinatorStateChange -> {
-                state.dependentCoordinators.updateStatus(coordinator, event.newState)
-                true
-            }
-            is ActiveChangeInternal -> {
-                state.registrations.updateRegistrations(event.component, event.newState)
-                true
-            }
             is TimerEvent -> {
                 if (state.isRunning && state.isTimerRunning(event.key)) {
                     val succeeded = runUserEventHandler(event, coordinator)
@@ -97,6 +77,19 @@ internal class LifecycleProcessor(
                     }
                     true
                 }
+            }
+            is NewRegistration -> {
+                state.registrations.add(event.registration)
+                event.registration.updateCoordinatorState(coordinator, coordinator.activeStatus)
+                true
+            }
+            is CancelRegistration -> {
+                state.registrations.remove(event.registration)
+                true
+            }
+            is StatusChange -> {
+                state.registrations.forEach { it.updateCoordinatorState(coordinator, event.newState) }
+                true
             }
             else -> {
                 if (state.isRunning) {

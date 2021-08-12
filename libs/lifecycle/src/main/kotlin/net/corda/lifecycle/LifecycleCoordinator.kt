@@ -55,13 +55,29 @@ interface LifecycleCoordinator : Lifecycle {
     fun cancelTimer(key: String)
 
     /**
-     * The current state of this lifecycle coordinator.
+     * The current status of this lifecycle coordinator.
      *
      * Components should use this to signal when they go up or down. This can be used by dependent components to trigger
      * them to go up or down in turn.
      */
-    var activeState: LifecycleState
+    var activeStatus: LifecycleStatus
 
-    // Multiple calls give multiple lists being followed.
-    fun follow(coordinators: List<LifecycleCoordinator>) : AutoCloseable
+    /**
+     * Register for status changes from a set of dependent coordinators.
+     *
+     * On calling this function, this coordinator is registered for status changes from the provided coordinators.
+     * This is done in aggregate, so this coordinator only receives an up event for the registration if all the
+     * underlying coordinators report themselves as being up. Similarly, if a single underlying coordinator goes down,
+     * an event is delivered signaling that the registration as a whole is down. Changes in the registration are
+     * delivered as [RegistrationStatusChangeEvent]s.
+     *
+     * The registration handle can be used to terminate the registration by calling [RegistrationHandle.close], which
+     * removes the registration from the underlying coordinators. Note that no event is delivered to the client event
+     * handler on unregistration.
+     *
+     * @param coordinators The set of coordinators to register for status changes on.
+     * @return RegistrationHandle The registration. The same handle is returned on status change events delivered to the
+     *                            client event handler.
+     */
+    fun followStatusChanges(coordinators: Set<LifecycleCoordinator>) : RegistrationHandle
 }

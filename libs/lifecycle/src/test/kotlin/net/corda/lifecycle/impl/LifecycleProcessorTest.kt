@@ -1,7 +1,9 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.ErrorEvent
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
@@ -10,6 +12,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import java.util.concurrent.Delayed
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -252,18 +255,79 @@ class LifecycleProcessorTest {
         assertTrue(processedExtraEvents)
     }
 
+    @Test
+    fun `adding a new registration correctly updates the state and posts the current status`() {
+        val state = LifecycleStateManager(5)
+        state.isRunning = true
+        var processedEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
+            processedEvents++
+        }
+        val registration = mock<Registration>()
+        val coordinator = mock<LifecycleCoordinator>()
+        coordinator.activeStatus = LifecycleStatus.DOWN
+        state.postEvent(NewRegistration(registration))
+        process(processor, coordinator = coordinator)
+        verify(registration).updateCoordinatorState(coordinator, LifecycleStatus.DOWN)
+        assertEquals(setOf(registration), state.registrations)
+        assertEquals(0, processedEvents)
+    }
+
+    @Test
+    fun `removing a registration updates the state`() {
+        val state = LifecycleStateManager(5)
+        state.isRunning = true
+        var processedEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
+            processedEvents++
+        }
+        val registration = mock<Registration>()
+        val coordinator = mock<LifecycleCoordinator>()
+        coordinator.activeStatus = LifecycleStatus.DOWN
+        state.registrations.add(registration)
+        state.postEvent(CancelRegistration(registration))
+        process(processor, coordinator = coordinator)
+        assertEquals(setOf<Registration>(), state.registrations)
+        assertEquals(0, processedEvents)
+    }
+
+    @Test
+    fun `an event for an updated status is delivered to all current registrations`() {
+        val state = LifecycleStateManager(5)
+        state.isRunning = true
+        var processedEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
+            processedEvents++
+        }
+        val registration1 = mock<Registration>()
+        val registration2 = mock<Registration>()
+        val coordinator = mock<LifecycleCoordinator>()
+        coordinator.activeStatus = LifecycleStatus.DOWN
+        state.registrations.add(registration1)
+        state.registrations.add(registration2)
+        state.postEvent(StatusChange(LifecycleStatus.UP))
+        process(processor, coordinator = coordinator)
+        verify(registration1).updateCoordinatorState(coordinator, LifecycleStatus.UP)
+        verify(registration2).updateCoordinatorState(coordinator, LifecycleStatus.UP)
+        assertEquals(0, processedEvents)
+    }
+
     private object TestEvent1 : LifecycleEvent
     private object TestEvent2 : LifecycleEvent
     private object TestEvent3 : LifecycleEvent
 
     private class TestTimerEvent(override val key: String) : TimerEvent
 
-    private fun process(processor: LifecycleProcessor, shouldSucceed: Boolean = true) {
-        val succeeded = processor.processEvents(mock(), ::timerGenerator)
+    private fun process(
+        processor: LifecycleProcessor,
+        shouldSucceed: Boolean = true,
+        coordinator: LifecycleCoordinator = mock()
+    ) {
+        val succeeded = processor.processEvents(coordinator, ::timerGenerator)
         assertEquals(shouldSucceed, succeeded)
     }
 
-    private fun timerGenerator(timerEvent: TimerEvent, delay: Long) : ScheduledFuture<*> {
+    private fun timerGenerator(timerEvent: TimerEvent, delay: Long): ScheduledFuture<*> {
         return object : ScheduledFuture<String> {
             private var isCancelled = false
             override fun compareTo(other: Delayed?): Int {

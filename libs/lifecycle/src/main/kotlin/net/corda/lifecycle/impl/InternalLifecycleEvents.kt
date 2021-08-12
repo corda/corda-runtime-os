@@ -1,8 +1,7 @@
 package net.corda.lifecycle.impl
 
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleState
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.TimerEvent
 
 /**
@@ -29,20 +28,13 @@ internal data class CancelTimer(
     val key: String
 ) : LifecycleEvent
 
-internal data class StartFollowing(val registration: CoordinatorStateRegistration) : LifecycleEvent
+internal data class NewRegistration(val registration: Registration) : LifecycleEvent
 
-internal data class StopFollowing(val registration: CoordinatorStateRegistration) : LifecycleEvent
-
-internal data class NewDependentCoordinator(val coordinator: LifecycleCoordinator) : LifecycleEvent
-
-internal data class ActiveChangeInternal(
-    val component: LifecycleCoordinator,
-    val newState: LifecycleState
-) : LifecycleEvent
+internal data class CancelRegistration(val registration: Registration) : LifecycleEvent
 
 /**
  * Indicates that the component has changed state, so this component can inform dependent components of the change.
  *
  * @param newState The new state this component has taken.
  */
-internal data class CoordinatorStateChange(val newState: LifecycleState) : LifecycleEvent
+internal data class StatusChange(val newState: LifecycleStatus) : LifecycleEvent

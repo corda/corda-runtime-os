@@ -3,7 +3,8 @@ package net.corda.lifecycle.impl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.LifecycleState
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
@@ -86,11 +87,11 @@ class LifecycleCoordinatorImpl(
      * Updates to this property only trigger a state change event to be sent if the new value differs from the old one,
      * to prevent spurious updates. Defaults to DOWN.
      */
-    override var activeState = LifecycleState.DOWN
+    override var activeStatus = LifecycleStatus.DOWN
         set(value) {
             if (field != value) {
                 field = value
-                postEvent(CoordinatorStateChange(value))
+                postEvent(StatusChange(value))
             }
         }
 
@@ -170,9 +171,9 @@ class LifecycleCoordinatorImpl(
         postEvent(SetUpTimer(key, delay, onTime))
     }
 
-    override fun follow(coordinators: List<LifecycleCoordinator>): AutoCloseable {
-        val registration = CoordinatorStateRegistration(coordinators, this)
-        postEvent(StartFollowing(registration))
+    override fun followStatusChanges(coordinators: Set<LifecycleCoordinator>): RegistrationHandle {
+        val registration = Registration(coordinators, this)
+        coordinators.forEach { it.postEvent(NewRegistration(registration)) }
         return registration
     }
 
