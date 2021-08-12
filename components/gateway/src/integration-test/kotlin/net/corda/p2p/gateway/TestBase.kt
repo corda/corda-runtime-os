@@ -7,6 +7,7 @@ import java.io.FileInputStream
 import java.security.KeyStore
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.messaging.http.SniCalculator
+import org.bouncycastle.asn1.x500.X500Name
 
 open class TestBase {
     protected val clientMessageContent = "PING"
@@ -19,6 +20,7 @@ open class TestBase {
     protected val bobSNI = listOf("bob.net", "www.bob.net")
     protected val chipSNI = listOf("chip.net", "www.chip.net", "127.0.0.1")
     protected val daleSNI = listOf("dale.net", "www.dale.net", "127.0.0.1")
+    protected val partyAx500Name = X500Name("O=PartyA, L=London, C=GB")
     protected val partyASNI = SniCalculator.calculateSni("O=PartyA, L=London, C=GB", NetworkType.CORDA_4, "")
     protected val aliceSslConfig = object : SslConfiguration {
         override val keyStore: KeyStore = KeyStore.getInstance("JKS").also {

@@ -20,7 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.TrustManagerFactory
 import kotlin.concurrent.withLock
-import net.corda.p2p.NetworkType
+import org.bouncycastle.asn1.x500.X500Name
 
 /**
  * The [HttpClient] sends serialised application messages via POST requests to a given URI. It automatically initiates
@@ -34,16 +34,12 @@ import net.corda.p2p.NetworkType
  *
  * [HttpClient] uses shared thread pool for Netty callbacks and another one for message queuing.
  *
- * @param destination the target URI
- * @param sni the target server name
- * @param networkType the [NetworkType] value indicating if the TLS certificates are legacy or not
+ * @param destinationInfo the [DestinationInfo] object containing the destination's URI, SNI, and legal name
  * @param sslConfiguration the configuration to be used for the one-way TLS handshake
  * @param writeGroup event loop group (thread pool) for processing message writes and reconnects
  * @param nettyGroup event loop group (thread pool) for processing netty callbacks
  */
-class HttpClient(private val destination: URI,
-                 private val sni: String,
-                 private val networkType: NetworkType,
+class HttpClient(private val destinationInfo: DestinationInfo,
                  private val sslConfiguration: SslConfiguration,
                  private val writeGroup: EventLoopGroup,
                  private val nettyGroup: EventLoopGroup) : Lifecycle, HttpEventListener {
@@ -82,17 +78,17 @@ class HttpClient(private val destination: URI,
 
     private val connectListener = ChannelFutureListener { future ->
         if (!future.isSuccess) {
-            logger.warn("Failed to connect to $destination: ${future.cause().message}")
+            logger.warn("Failed to connect to ${destinationInfo.uri}: ${future.cause().message}")
             onClose(HttpConnectionEvent(future.channel()))
         } else {
-            logger.info("Connected to $destination")
+            logger.info("Connected to ${destinationInfo.uri}")
         }
     }
 
     override fun start() {
         lock.withLock {
             if (isRunning) {
-                logger.info("HTTP client $destination already started")
+                logger.info("HTTP client to ${destinationInfo.uri} already started")
                 return
             }
             writeProcessor = writeGroup.next()
@@ -102,10 +98,10 @@ class HttpClient(private val destination: URI,
 
     override fun stop() {
         lock.withLock {
-            logger.info("Stopping HTTP client $destination")
+            logger.info("Stopping HTTP client to ${destinationInfo.uri}")
             clientChannel?.close()?.sync()
             writeProcessor = null
-            logger.info("Stopped HTTP client $destination")
+            logger.info("Stopped HTTP client ${destinationInfo.uri}")
         }
     }
 
@@ -137,7 +133,7 @@ class HttpClient(private val destination: URI,
                 connect()
             }
             if (channel != null) {
-                val request = HttpHelper.createRequest(message.payload, destination)
+                val request = HttpHelper.createRequest(message.payload, destinationInfo.uri)
                 channel.writeAndFlush(request)
                 logger.debug("Sent HTTP request $request")
             }
@@ -151,10 +147,10 @@ class HttpClient(private val destination: URI,
         if (!isRunning) {
             return
         }
-        logger.info("Connecting to $destination")
+        logger.info("Connecting to ${destinationInfo.uri}")
         val bootstrap = Bootstrap()
         bootstrap.group(nettyGroup).channel(NioSocketChannel::class.java).handler(ClientChannelInitializer(this))
-        val clientFuture = bootstrap.connect(destination.host, destination.port)
+        val clientFuture = bootstrap.connect(destinationInfo.uri.host, destinationInfo.uri.port)
         clientFuture.addListener(connectListener)
     }
 
@@ -177,7 +173,7 @@ class HttpClient(private val destination: URI,
 
             // Automatically reconnect if there are pending messages in queue.
             if (requestQueue.isNotEmpty()) {
-                logger.info("${requestQueue.size} pending message(s) in queue for $destination")
+                logger.info("${requestQueue.size} pending message(s) in queue for ${destinationInfo.uri}")
                 connect()
             }
         }
@@ -206,10 +202,22 @@ class HttpClient(private val destination: URI,
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createClientSslHandler(parent.sni, parent.destination, parent.networkType, trustManagerFactory))
+            pipeline.addLast("sslHandler", createClientSslHandler(
+                parent.destinationInfo.sni,
+                parent.destinationInfo.uri,
+                parent.destinationInfo.legalName,
+                trustManagerFactory))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, CLIENT_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpClientCodec())
             pipeline.addLast(HttpChannelHandler(parent, logger))
         }
     }
 }
+
+/**
+ * @param uri the destination URI
+ * @param sni the destination server name
+ * @param legalName the destination legal name expected to be on the TLS certificate. If the value is *null*, the [HttpClient]
+ * will use standard target identity check
+ */
+data class DestinationInfo(val uri: URI, val sni: String, val legalName: X500Name?)

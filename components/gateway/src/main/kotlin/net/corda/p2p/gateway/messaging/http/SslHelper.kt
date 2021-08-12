@@ -38,8 +38,8 @@ import javax.net.ssl.SSLEngine
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509ExtendedKeyManager
 import javax.net.ssl.X509ExtendedTrustManager
-import net.corda.p2p.NetworkType
 import net.corda.v5.base.util.toHex
+import org.bouncycastle.asn1.x500.X500Name
 
 const val HANDSHAKE_TIMEOUT = 10000L
 const val TLS_VERSION = "TLSv1.3"
@@ -48,11 +48,11 @@ val CIPHER_SUITES = arrayOf("TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384")
 
 fun createClientSslHandler(targetServerName: String,
                            target: URI,
-                           networkType: NetworkType,
+                           targetX500Name: X500Name?,
                            trustManagerFactory: TrustManagerFactory): SslHandler {
     val sslContext = SSLContext.getInstance("TLS")
     val trustManagers = trustManagerFactory.trustManagers.filterIsInstance(X509ExtendedTrustManager::class.java)
-        .map { LoggingTrustManager(it) }.toTypedArray()
+        .map { IdentityCheckingTrustManager(it, targetX500Name) }.toTypedArray()
     sslContext.init(null, trustManagers, SecureRandom()) //May need to use secure random from crypto-api module
 
     val sslEngine = sslContext.createSSLEngine(target.host, target.port).also {
@@ -64,8 +64,8 @@ fun createClientSslHandler(targetServerName: String,
         sslParameters.serverNames = listOf(SNIHostName(targetServerName))
         // To enable the JSSE client side checking of server identity, we need to specify and endpoint identification algorithm
         // Supported names are documented here https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html
-        if (networkType == NetworkType.CORDA_5) {
-            // Corda 4 style certs are incompatible with HTTPS
+        if (targetX500Name == null) {
+            // Enable identity check for web certificates if no target x500 name is expected
             sslParameters.endpointIdentificationAlgorithm = "HTTPS"
         }
         it.sslParameters = sslParameters
@@ -218,12 +218,14 @@ object AllowAllRevocationChecker : PKIXRevocationChecker() {
 }
 
 /**
- * Wrapper which adds useful logging about certificates being checked.
+ * Wrapper which adds useful logging about certificates being checked and does client side identity check of presented
+ * certificate
  */
-class LoggingTrustManager(private val wrapped: X509ExtendedTrustManager) : X509ExtendedTrustManager() {
+class IdentityCheckingTrustManager(private val wrapped: X509ExtendedTrustManager,
+                                   private val expectedX500Name: X500Name?) : X509ExtendedTrustManager() {
 
     companion object {
-        val logger: Logger = LoggerFactory.getLogger(LoggingTrustManager::class.java)
+        val logger: Logger = LoggerFactory.getLogger(IdentityCheckingTrustManager::class.java)
     }
 
     private fun certPathToStringFull(chain: Array<out X509Certificate>?): String {
@@ -237,7 +239,7 @@ class LoggingTrustManager(private val wrapped: X509ExtendedTrustManager) : X509E
         try {
             block()
         } catch (ex: CertificateException) {
-            logger.error("Bad certificate path ${ex.message}:\r\n${certPathToStringFull(chain)}")
+            logger.error("Bad certificate identity or path ${ex.message}: $expectedX500Name\r\n${certPathToStringFull(chain)}")
             throw ex
         }
     }
@@ -262,19 +264,46 @@ class LoggingTrustManager(private val wrapped: X509ExtendedTrustManager) : X509E
     }
 
     override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?, socket: Socket?) {
-        logger.info("Check Server Certpath:\r\n${certPathToString(chain)}")
-        logErrors(chain) { wrapped.checkServerTrusted(chain, authType, socket) }
+        logger.info("Check Server Identity and Certpath: $expectedX500Name\r\n${certPathToString(chain)}")
+        logErrors(chain) {
+            expectedX500Name?.let {
+                checkServerIdentity(chain)
+            }
+            wrapped.checkServerTrusted(chain, authType, socket)
+        }
     }
 
     override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?, engine: SSLEngine?) {
-        logger.info("Check Server Certpath:\r\n${certPathToString(chain)}")
-        logErrors(chain) { wrapped.checkServerTrusted(chain, authType, engine) }
+        logger.info("Check Server Identity and Certpath: $expectedX500Name\r\n${certPathToString(chain)}")
+        logErrors(chain) {
+            expectedX500Name?.let {
+                checkServerIdentity(chain)
+            }
+            wrapped.checkServerTrusted(chain, authType, engine)
+        }
     }
 
     override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
-        logger.info("Check Server Certpath:\r\n${certPathToString(chain)}")
-        logErrors(chain) { wrapped.checkServerTrusted(chain, authType) }
+        logger.info("Check Server Identity and Certpath: $expectedX500Name\r\n${certPathToString(chain)}")
+        logErrors(chain) {
+            expectedX500Name?.let {
+                checkServerIdentity(chain)
+            }
+            wrapped.checkServerTrusted(chain, authType)
+        }
     }
 
     override fun getAcceptedIssuers(): Array<X509Certificate> = wrapped.acceptedIssuers
+
+    @Throws(CertificateException::class)
+    private fun checkServerIdentity(chain: Array<out X509Certificate>?) {
+        if (chain.isNullOrEmpty()) {
+            throw (CertificateException("Null or empty certificate chain received from server"))
+        }
+
+        if (expectedX500Name != X500Name.getInstance(chain[0].subjectX500Principal.encoded)) {
+            throw (CertificateException("Certificate name doesn't match. Expected $expectedX500Name"))
+        }
+
+    }
 }

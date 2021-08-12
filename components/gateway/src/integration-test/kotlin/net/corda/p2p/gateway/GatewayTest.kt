@@ -18,6 +18,7 @@ import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
+import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
@@ -62,7 +63,8 @@ class GatewayTest : TestBase() {
                 PublisherFactoryStub(topicServiceAlice!!)
         ).use {
             it.start()
-            HttpClient(serverAddress, aliceSNI[0], NetworkType.CORDA_5, bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client->
+            val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null)
+            HttpClient(serverInfo, bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client->
                 val responseReceived = CountDownLatch(1)
                 val clientListener = object : HttpEventListener {
                     override fun onMessage(message: HttpMessage) {
@@ -103,7 +105,8 @@ class GatewayTest : TestBase() {
             it.start()
             val responseReceived = CountDownLatch(clientNumber)
             repeat(clientNumber) { index ->
-                val client = HttpClient(serverAddress, aliceSNI[1], NetworkType.CORDA_5, bobSslConfig, threadPool, threadPool)
+                val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null)
+                val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool)
                 val clientListener = object : HttpEventListener {
                     override fun onMessage(message: HttpMessage) {
                         assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port), message.source)

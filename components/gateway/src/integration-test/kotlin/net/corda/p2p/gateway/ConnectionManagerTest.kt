@@ -13,11 +13,12 @@ import org.junit.jupiter.api.Timeout
 import java.net.SocketAddress
 import java.net.URI
 import java.util.concurrent.CountDownLatch
-import net.corda.p2p.NetworkType
+import net.corda.p2p.gateway.messaging.http.DestinationInfo
 
 class ConnectionManagerTest : TestBase() {
 
     private val serverAddress = URI.create("http://localhost:10000")
+    private val destination = DestinationInfo(serverAddress, aliceSNI[0], null)
 
     @Test
     @Timeout(30)
@@ -33,7 +34,7 @@ class ConnectionManagerTest : TestBase() {
                 }
             })
             server.start()
-            manager.acquire(serverAddress, aliceSNI[0], NetworkType.CORDA_5).use { client ->
+            manager.acquire(destination).use { client ->
                 // Client is connected at this point
                 val responseReceived = CountDownLatch(1)
                 client.addListener(object : HttpEventListener {
@@ -64,12 +65,11 @@ class ConnectionManagerTest : TestBase() {
                 }
             })
             server.start()
-
-            manager.acquire(serverAddress, aliceSNI[0], NetworkType.CORDA_5).write(clientMessageContent.toByteArray())
-            manager.acquire(serverAddress, aliceSNI[0], NetworkType.CORDA_5).write(clientMessageContent.toByteArray())
+            manager.acquire(destination).write(clientMessageContent.toByteArray())
+            manager.acquire(destination).write(clientMessageContent.toByteArray())
             requestReceived.await()
             assertEquals(1, remotePeers.size)
-            manager.acquire(serverAddress, aliceSNI[0], NetworkType.CORDA_5).stop()
+            manager.acquire(destination).stop()
         }
     }
 }
