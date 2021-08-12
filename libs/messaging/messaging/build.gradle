@@ -1,11 +1,12 @@
 plugins {
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
 }
 
 dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-base:$cordaApiVersion"
+    implementation "net.corda:corda-base"
     implementation project(":libs:lifecycle")
 }
 

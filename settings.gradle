@@ -1,12 +1,6 @@
 pluginManagement {
     repositories {
         maven {
-            url "$artifactoryContextUrl/corda-dev"
-            content {
-                includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
-            }
-        }
-        maven {
             url "$artifactoryContextUrl/corda-releases"
             content {
                 includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
@@ -15,7 +9,11 @@ pluginManagement {
         maven {
             url "$artifactoryContextUrl/corda-os-maven"
             content {
-                includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
+                includeGroupByRegex 'net\\.corda\\.cordapp(\\..*)?'
+            }
+            credentials {
+                username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
             }
         }
         gradlePluginPortal()
@@ -37,11 +35,13 @@ pluginManagement {
         }
     }
     plugins {
+        id 'net.corda.cordapp.cordapp-configuration' version cordaApiVersion
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.noarg' version kotlinVersion
         id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
         id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
+        id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
         id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'corda.common-library' version internalPublishVersion
@@ -54,7 +54,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = 'flow-worker'
+rootProject.name = 'corda-runtime-os'
 include 'applications:examples:demo-app'
 include 'applications:examples:demo-publisher'
 include 'applications:examples:goodbyeworld'
@@ -63,14 +63,13 @@ include 'applications:tools:kafka-setup'
 include 'components:kafka-config-read'
 include 'components:kafka-config-write'
 include 'components:kafka-topic-admin'
+include 'components:gateway'
 include 'components:link-manager'
 include 'components:examples:config-reader'
 include 'components:examples:durable-sub'
 include 'components:examples:publisher'
 include 'components:examples:pubsub-sub'
 include 'components:examples:state-plus-event-sub'
-include 'data:avro-schema'
-include 'data:topic-schema'
 include 'libs:configuration:configuration-read'
 include 'libs:configuration:configuration-write'
 include 'libs:configuration:kafka-configuration-read-impl'

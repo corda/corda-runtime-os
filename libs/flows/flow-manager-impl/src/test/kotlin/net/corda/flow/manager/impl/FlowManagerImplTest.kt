@@ -53,6 +53,7 @@ class FlowManagerImplTest {
             FlowError()
         )
         val stateMachineState = StateMachineState(
+            "",
             1,
             false,
             ByteBuffer.allocate(1),

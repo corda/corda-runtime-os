@@ -1,13 +1,14 @@
 plugins {
     id 'corda.common-library'
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
 description 'Database Messaging API Implementation'
 
 dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-base:$cordaApiVersion"
+    implementation "net.corda:corda-base"
     implementation "com.zaxxer:HikariCP:$hikariCpVersion"
     implementation "com.google.guava:guava:$guavaVersion"
     implementation project(":libs:lifecycle")
@@ -48,8 +49,4 @@ tasks.register('integrationTest', Test) {
 
     testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
     classpath = project.sourceSets["integrationTest"].runtimeClasspath
-}
-
-tasks.named("integrationTest", Test).configure {
-    useJUnitPlatform()
 }

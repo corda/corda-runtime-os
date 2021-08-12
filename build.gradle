@@ -1,12 +1,16 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import static org.gradle.api.JavaVersion.VERSION_11
-import io.gitlab.arturbosch.detekt.DetektPlugin
 
 buildscript {
-    repositories {
-        maven {
-            url "$artifactoryContextUrl/corda-releases"
+    configurations.classpath {
+        resolutionStrategy {
+            // FORCE Gradle to use latest dynamic-version plugins.
+            cacheDynamicVersionsFor 0, 'seconds'
         }
+    }
+
+    ext {
+        // Create another Quasar property in this repository's chosen format.
+        quasarVersion = quasar_version
     }
 }
 
@@ -17,14 +21,14 @@ plugins {
     id 'io.gitlab.arturbosch.detekt' apply false
     id 'idea'
     id 'application'
-    id 'com.r3.internal.gradle.plugins.r3Publish' apply false
+    id 'net.corda.cordapp.cordapp-configuration'
+    id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish'
     id 'maven-publish'
-    id 'corda.publish' apply false
     id 'jacoco'
 }
 
 wrapper {
-    gradleVersion = '6.8.3'
+    gradleVersion = '7.1.1'
     distributionType = Wrapper.DistributionType.BIN
     distributionUrl="https://gradleproxy:gradleproxy@software.r3.com/artifactory/gradle-proxy/gradle-$gradleVersion-bin.zip"
 }
@@ -42,14 +46,14 @@ allprojects {
 
     apply plugin: 'org.jetbrains.kotlin.jvm'
 
-    tasks.withType(JavaCompile) {
+    tasks.withType(JavaCompile).configureEach {
         sourceCompatibility = javaVersion
         targetCompatibility = javaVersion
         options.encoding = 'UTF-8'
         options.compilerArgs += '-XDenableSunApiLintControl'
     }
 
-    tasks.withType(KotlinCompile) {
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
             allWarningsAsErrors = true
             languageVersion = '1.4'
@@ -63,6 +67,17 @@ allprojects {
                     "-Xjvm-default=all"
             ]
         }
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
+
+    tasks.register('compileAll') { task ->
+        description = "Compiles all the Kotlin and Java classes, including all of the test classes."
+        group = "verification"
+
+        task.dependsOn tasks.withType(AbstractCompile)
     }
 
     repositories {
@@ -135,10 +150,6 @@ allprojects {
         testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     }
-
-    tasks.named("test", Test).configure {
-        useJUnitPlatform()
-    }
 }
 
 logger.quiet("********************** CORDA FLOW WORKER BUILD **********************")
@@ -147,16 +158,20 @@ if (JavaVersion.current() != javaVersion) {
 }
 logger.quiet("SDK version: {}", JavaVersion.current())
 logger.quiet("JAVA HOME {}", System.getProperty("java.home"))
-// TODO: release and publish things are different in this repo, which is a bit unfortunate as somebody will need to
-//   re-implement it
-//if (System.getenv("RELEASE_VERSION")?.trim()) {
-//    version = System.getenv("RELEASE_VERSION")
-//} else {
-//    def versionSuffix = System.getenv('VERSION_SUFFIX') ?: "0-SNAPSHOT"
-//    version = "$cordaVersion-$versionSuffix"
-//}
 
-logger.quiet("Flow worker: {}", version)
+def cordaVersion = "$cordaProductVersion.$cordaRuntimeRevision"
+if (System.getenv("RELEASE_VERSION")?.trim()) {
+    version = System.getenv("RELEASE_VERSION")
+} else {
+    def versionSuffix = '-SNAPSHOT'
+    if(project.hasProperty('overridePublishVersionSuffix')) {
+        versionSuffix = project.property('overridePublishVersionSuffix')
+    } else if (System.getenv('VERSION_SUFFIX')) {
+        versionSuffix = System.getenv('VERSION_SUFFIX')
+    }
+    version = "$cordaVersion$versionSuffix"
+}
+logger.quiet("Corda runtime OS release version: {}", version)
 logger.quiet("Corda API dependency version spec: {}", cordaApiVersion)
 logger.quiet("Old Corda dependencies version spec: {}", cordaVersion)
 //logger.quiet("Release Type: {}", releaseType)
@@ -166,8 +181,11 @@ subprojects {
     apply plugin: 'idea'
     apply plugin: 'kotlin-allopen'
     apply plugin: 'kotlin-noarg'
-    apply plugin: DetektPlugin
+    apply plugin: 'io.gitlab.arturbosch.detekt'
     apply plugin: 'jacoco'
+
+    version rootProject.version
+    group 'net.corda'
 
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")

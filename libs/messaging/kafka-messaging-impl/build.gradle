@@ -4,7 +4,7 @@ import aQute.bnd.gradle.TestOSGi
 
 plugins {
     id 'corda.common-library'
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'biz.aQute.bnd.builder'
 }
 
@@ -32,14 +32,15 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:schema-registry:schema-registry")
 
-    implementation "net.corda:corda-base:$cordaApiVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation project(":libs:lifecycle")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(":data:avro-schema")
+    testImplementation "net.corda:avro-schema"
 
     testRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
 
@@ -60,7 +61,7 @@ tasks.register('kafkaIntegrationTest', TestOSGi) {
     group = "verification"
     dependsOn resolve
     bundles = files(sourceSets.kafkaIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
-    bndrun = 'test.bndrun'
+    bndrun = file('test.bndrun')
 }
 
 def kafkaTestingBundle = tasks.register('kafkaTestingBundle', Bundle) {
@@ -77,7 +78,7 @@ Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons
 def resolve = tasks.register('resolve', Resolve) {
     dependsOn jar, kafkaTestingBundle
     bundles = files(sourceSets.kafkaIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
-    bndrun = 'test.bndrun'
+    bndrun = file('test.bndrun')
     //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
     System.setProperty("bnd.home.dir", "$rootDir/bnd/")
 }

@@ -1,12 +1,13 @@
 plugins {
     id 'corda.common-library'
     id 'corda.osgi-test-conventions'
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
 description 'Hello World Implementation'
 
 dependencies {
-    implementation "net.corda:corda-base:$cordaApiVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
     implementation project(":libs:examples:helloworld")
 }

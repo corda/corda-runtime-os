@@ -1,5 +1,5 @@
 plugins {
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-app'
 }
 
@@ -7,12 +7,13 @@ description "Bootstrapping Tools"
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
 
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
-    implementation "net.corda:corda-base:$cordaApiVersion"
+    implementation "net.corda:corda-base"
 
     implementation project(':components:kafka-topic-admin')
     implementation project(':components:kafka-config-write')

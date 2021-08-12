@@ -1,18 +1,19 @@
 plugins {
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
 }
 
 description "Sandbox Cache Implementation"
 
 dependencies {
-    implementation "net.corda:corda-application:$cordaVersion"
-    implementation "net.corda:corda-base:$cordaVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-application"
+    implementation "net.corda:corda-base"
     implementation "net.corda:corda-install:$cordaVersion"
     implementation "net.corda:corda-packaging:$cordaVersion"
     implementation "net.corda:corda-sandbox:$cordaVersion"
+    implementation "net.corda:avro-schema"
 
-    implementation project(':data:avro-schema')
     implementation project(":libs:sandbox:sandbox-cache")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"

@@ -1,12 +1,13 @@
 plugins {
     id 'corda.common-library'
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
 dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
-    implementation "net.corda:corda-base:$cordaApiVersion"
+    implementation "net.corda:corda-base"
     implementation project(":libs:kafka-utils:topic-admin")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
