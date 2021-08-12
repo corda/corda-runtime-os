@@ -1,7 +1,5 @@
 package net.corda.messaging.emulation.publisher
 
-import org.mockito.kotlin.*
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -11,84 +9,128 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory.Com
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.function.Executable
+import org.mockito.Mockito.doThrow
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutionException
 
 class CordaPublisherTest {
-    private lateinit var cordaPublisher : CordaPublisher
-    private lateinit var topicService: TopicService
-    private lateinit var config: Config
+    private val topicService = mock<TopicService>()
+    private val config = ConfigFactory.empty()
+        .withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef("clientId123"))
     private val topicName = "topic123"
     private val record = Record(topicName, "key1", ByteBuffer.wrap("value1".toByteArray()))
+    private val cordaPublisher = CordaPublisher(config, topicService)
 
-    @Throws(IllegalStateException::class)
-    private fun <T : Any?> getCauseOrThrow(completableFuture: CompletableFuture<T>): Executable {
-        return Executable {
-            try {
-                val value = completableFuture.get()
-                throw IllegalStateException("Unexpected $value!")
-            } catch (e: ExecutionException) {
-                throw e.cause!!
+    @Nested
+    inner class `publish tests` {
+        @Test
+        fun `successful publish return valid futures`() {
+            val futures = cordaPublisher.publish(listOf(record, record, record))
+            assertThat(futures).hasSize(3).allSatisfy {
+                assertThat(it).isCompleted
+            }
+        }
+
+        @Test
+        fun `publish sends records to topic`() {
+            cordaPublisher.publish(listOf(record, record, record))
+
+            verify(topicService, times(1)).addRecords(listOf(record, record, record))
+        }
+        @Test
+        fun `successful publish with transaction will return one valid future`() {
+            val configWithInstanceId = config.withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef("publisher-clientId123-4"))
+            val publisher = CordaPublisher(configWithInstanceId, topicService)
+
+            val futures = publisher.publish(listOf(record, record, record))
+            assertThat(futures).hasSize(1).allSatisfy {
+                assertThat(it).isCompleted
+            }
+        }
+
+        @Test
+        fun `failed publish return exceptional futures with transaction`() {
+            val configWithInstanceId = config.withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef("publisher-clientId123-4"))
+            val publisher = CordaPublisher(configWithInstanceId, topicService)
+            doThrow(CordaRuntimeException("")).whenever(topicService).addRecords(any())
+            val futures = publisher.publish(listOf(record, record, record))
+            assertThat(futures).hasSize(1).allSatisfy {
+                assertThat(it)
+                    .hasFailedWithThrowableThat()
+                    .isInstanceOf(CordaMessageAPIFatalException::class.java)
+            }
+        }
+
+        @Test
+        fun `failed publish return exceptional futures`() {
+            doThrow(CordaRuntimeException("")).whenever(topicService).addRecords(any())
+            val futures = cordaPublisher.publish(listOf(record, record, record))
+            assertThat(futures).hasSize(3).allSatisfy {
+                assertThat(it)
+                    .hasFailedWithThrowableThat()
+                    .isInstanceOf(CordaMessageAPIFatalException::class.java)
             }
         }
     }
 
-    @BeforeEach
-    fun beforeEach() {
-        topicService = mock()
-        config = ConfigFactory.empty()
-            .withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef("clientId123"))
-        cordaPublisher = CordaPublisher(config, topicService)
-    }
-
-    @Test
-    fun testPublish() {
-        val futures = cordaPublisher.publish(listOf(record, record, record))
-        verify(topicService, times(1)).addRecords(any())
-        assertThat(futures.size).isEqualTo(3)
-        for (future in futures) {
-            future.get()
+    @Nested
+    inner class `publishToPartition tests` {
+        @Test
+        fun `successful publishToPartition return valid futures`() {
+            val futures = cordaPublisher.publishToPartition(listOf(1 to record, 2 to record, 1 to record))
+            assertThat(futures).hasSize(3).allSatisfy {
+                assertThat(it).isCompleted
+            }
         }
-    }
 
-    @Test
-    fun testPublishTransaction() {
-        config = config.withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef("publisher-clientId123-4"))
-        cordaPublisher = CordaPublisher(config, topicService)
-        val futures = cordaPublisher.publish(listOf(record, record, record))
-        verify(topicService, times(1)).addRecords(any())
-        assertThat(futures.size).isEqualTo(1)
-        for (future in futures) {
-            future.get()
+        @Test
+        fun `publishToPartition sends records to topic with partitions`() {
+            cordaPublisher.publishToPartition(listOf(1 to record, 2 to record, 1 to record))
+
+            verify(topicService, times(1))
+                .addRecordsToPartition(listOf(record, record), 1)
+            verify(topicService, times(1))
+                .addRecordsToPartition(listOf(record), 2)
         }
-    }
+        @Test
+        fun `successful publishToPartition with transaction will return one valid future`() {
+            val configWithInstanceId = config.withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef("publisher-clientId123-4"))
+            val publisher = CordaPublisher(configWithInstanceId, topicService)
 
-    @Test
-    fun testPublishFail() {
-        doThrow(CordaRuntimeException("")).whenever(topicService).addRecords(any())
-        val futures = cordaPublisher.publish(listOf(record, record, record))
-        verify(topicService, times(1)).addRecords(any())
-        assertThat(futures.size).isEqualTo(3)
-        for (future in futures) {
-            assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(future))
+            val futures = publisher.publishToPartition(listOf(1 to record, 2 to record, 1 to record))
+            assertThat(futures).hasSize(1).allSatisfy {
+                assertThat(it).isCompleted
+            }
         }
-    }
 
-    @Test
-    fun testPublishTransactionFail() {
-        config = config.withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef("publisher-clientId123-4"))
-        cordaPublisher = CordaPublisher(config, topicService)
-        doThrow(CordaRuntimeException("")).whenever(topicService).addRecords(any())
-        val futures = cordaPublisher.publish(listOf(record, record, record))
-        verify(topicService, times(1)).addRecords(any())
-        assertThat(futures.size).isEqualTo(1)
-        for (future in futures) {
-            assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(future))
+        @Test
+        fun `failed publishToPartition return exceptional futures with transaction`() {
+            val configWithInstanceId = config.withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef("publisher-clientId123-4"))
+            val publisher = CordaPublisher(configWithInstanceId, topicService)
+            doThrow(CordaRuntimeException("")).whenever(topicService).addRecordsToPartition(any(), any())
+            val futures = publisher.publishToPartition(listOf(1 to record, 2 to record, 1 to record))
+            assertThat(futures).hasSize(1).allSatisfy {
+                assertThat(it)
+                    .hasFailedWithThrowableThat()
+                    .isInstanceOf(CordaMessageAPIFatalException::class.java)
+            }
+        }
+
+        @Test
+        fun `failed publishToPartition return exceptional futures`() {
+            doThrow(CordaRuntimeException("")).whenever(topicService).addRecordsToPartition(any(), any())
+            val futures = cordaPublisher.publishToPartition(listOf(1 to record, 2 to record, 1 to record))
+            assertThat(futures).hasSize(3).allSatisfy {
+                assertThat(it)
+                    .hasFailedWithThrowableThat()
+                    .isInstanceOf(CordaMessageAPIFatalException::class.java)
+            }
         }
     }
 

@@ -15,6 +15,7 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.emulation.subscription.eventlog.EventLogSubscription
 import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
@@ -42,7 +43,7 @@ class InMemSubscriptionFactory @Activate constructor(
         executor: ExecutorService?,
         nodeConfig: Config
     ): Subscription<K, V> {
-        //TODO - replace with config service
+        // TODO - replace with config service
         val config = ConfigFactory.load("tmpInMemDefaults")
             .withValue(GROUP_NAME, ConfigValueFactory.fromAnyRef(subscriptionConfig.groupName))
             .withValue(EVENT_TOPIC, ConfigValueFactory.fromAnyRef(subscriptionConfig.eventTopic))
@@ -80,7 +81,12 @@ class InMemSubscriptionFactory @Activate constructor(
         nodeConfig: Config,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
-        TODO("Not yet implemented")
+        return EventLogSubscription(
+            subscriptionConfig,
+            processor,
+            partitionAssignmentListener,
+            topicService,
+        )
     }
 
     override fun <K : Any, V : Any> createRandomAccessSubscription(

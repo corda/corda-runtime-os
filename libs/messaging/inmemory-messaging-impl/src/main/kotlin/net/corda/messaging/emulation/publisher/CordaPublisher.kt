@@ -14,10 +14,10 @@ import java.util.concurrent.CompletableFuture
  * @property config config to store relevant information.
  * @property topicService service to interact with the in-memory storage of topics.
  */
-class CordaPublisher (
+class CordaPublisher(
     private val config: Config,
     private val topicService: TopicService
-    ) : Publisher {
+) : Publisher {
 
     private companion object {
         private val log: Logger = contextLogger()
@@ -28,44 +28,30 @@ class CordaPublisher (
     private val clientId = config.getString(PUBLISHER_CLIENT_ID)
     private val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getString(PUBLISHER_INSTANCE_ID) else null
 
-    @Suppress("TooGenericExceptionCaught")
     override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-        return try {
+        return runAndCreateFutures(records.size) {
             topicService.addRecords(records)
-            getFutures(records.size)
-        } catch (ex: Exception) {
-            getFutures(records.size, ex)
         }
     }
 
-    /**
-     * Generate result for publish to topics.
-     * In-memory publish is always done as a transaction.
-     * [Publisher] api expects each record to be sent separately if transaction is not enabled.
-     * Emulate multiple sends by copying transaction result to a list of futures [size] times.
-     */
-    private fun getFutures(size: Int, ex: Exception? = null) : List<CompletableFuture<Unit>> {
-        val futures = mutableListOf<CompletableFuture<Unit>>()
-        val future = CompletableFuture<Unit>()
-        futures.add(future)
-
-        if (ex != null) {
+    private fun runAndCreateFutures(size: Int, block: () -> Unit): List<CompletableFuture<Unit>> {
+        @Suppress("TooGenericExceptionCaught")
+        val future = try {
+            block()
+            CompletableFuture.completedFuture(Unit)
+        } catch (ex: Exception) {
             val message = "Corda publisher clientId $clientId, instanceId $instanceId, " +
-                    "failed to send record."
+                "failed to send record."
             log.error(message, ex)
-            future.completeExceptionally(CordaMessageAPIFatalException(message, ex))
+            CompletableFuture.failedFuture(CordaMessageAPIFatalException(message, ex))
+        }
+
+        // if not a transaction emulate multiple sends
+        return if (instanceId != null) {
+            listOf(future)
         } else {
-            future.complete(Unit)
+            List(size) { future }
         }
-
-        //if not a transaction emulate multiple sends
-        if (instanceId == null) {
-            repeat(size - 1) {
-                futures.add(future)
-            }
-        }
-
-        return futures
     }
 
     override fun close() {
@@ -73,6 +59,14 @@ class CordaPublisher (
     }
 
     override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-        TODO("Not yet implemented")
+        return runAndCreateFutures(records.size) {
+            records.groupBy({
+                it.first
+            }, {
+                it.second
+            }).forEach { (partitionId, recordList) ->
+            topicService.addRecordsToPartition(recordList, partitionId)
+        }
+        }
     }
 }

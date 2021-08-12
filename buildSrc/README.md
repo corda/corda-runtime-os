@@ -114,7 +114,7 @@ dependencies {
 }
 ```
 
-or, if the module uses `net.corda.lifecycle.LifeCycle`, this depends on `net.corda:corda-base` and includes **Log4j2**, 
+or, if the module uses `net.corda.lifecycle.Lifecycle`, this depends on `net.corda:corda-base` and includes **Log4j2**, 
 hence declare
 
 ```groovy
