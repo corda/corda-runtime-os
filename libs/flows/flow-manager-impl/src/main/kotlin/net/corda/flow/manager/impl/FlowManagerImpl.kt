@@ -23,20 +23,12 @@ import net.corda.serialization.factory.CheckpointSerializationServiceFactory
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import java.time.Clock
 
-@Component(service = [FlowManager::class])
-class FlowManagerImpl @Activate constructor(
-    @Reference(service = SandboxCache::class)
+class FlowManagerImpl (
     private val sandboxCache: SandboxCache,
-    @Reference(service = CheckpointSerializationServiceFactory::class)
     private val checkpointSerializationServiceFactory: CheckpointSerializationServiceFactory,
-    @Reference(service = DependencyInjectionService::class)
     private val dependencyInjector: DependencyInjectionService,
-    @Reference(service = FlowStateMachineFactory::class)
     private val flowStateMachineFactory: FlowStateMachineFactory
 ) : FlowManager {
 

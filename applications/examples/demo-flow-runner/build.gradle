@@ -23,8 +23,9 @@ dependencies {
     implementation project(":osgi-framework-api")
 
     implementation project(":libs:flows:flow-manager")
-    implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:sandbox:sandbox-cache")
 
     implementation project(":components:examples:run-flow")
 

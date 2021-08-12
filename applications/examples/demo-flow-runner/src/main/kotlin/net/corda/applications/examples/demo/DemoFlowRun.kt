@@ -4,12 +4,15 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.components.examples.runflow.RunFlow
-import net.corda.flow.manager.FlowManager
+import net.corda.components.examples.runflow.publisher.FlowPublisher
+import net.corda.components.examples.runflow.sandbox.SandboxLoader
+import net.corda.flow.manager.factory.FlowManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -33,10 +36,14 @@ enum class LifeCycleState {
 class DemoFlowRun @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = FlowManager::class)
-    private val flowManager: FlowManager,
+    @Reference(service = FlowManagerFactory::class)
+    private val flowManagerFactory: FlowManagerFactory,
+    @Reference(service = SandboxLoader::class)
+    private val sandboxLoader: SandboxLoader
 ) : Application {
 
     private companion object {
@@ -63,10 +70,13 @@ class DemoFlowRun @Activate constructor(
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
             var flowRunner: RunFlow? = null
+            var flowPublisher: FlowPublisher? = null
 
             val kafkaProperties = getKafkaPropertiesFromFile(parameters.kafkaProperties)
             val bootstrapConfig = getBootstrapConfig(kafkaProperties)
+            val instanceId = parameters.instanceId?.toInt()
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
+            val flowManager = flowManagerFactory.createFlowManager(sandboxLoader.loadCPBs(parameters.sandboxPaths))
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
                 LifecycleCoordinatorFactory.createCoordinator<DemoFlowRun>(
@@ -76,10 +86,12 @@ class DemoFlowRun @Activate constructor(
                     when (event) {
                         is StartEvent -> {
                             flowRunner = RunFlow(flowManager, subscriptionFactory, bootstrapConfig)
+                            flowPublisher!!.start()
                             state = LifeCycleState.STARTINGMESSAGING
                         }
                         is StopEvent -> {
                             flowRunner?.stop()
+                            flowPublisher!!.stop()
                             state = LifeCycleState.STOPPED
                         }
                         else -> {
@@ -87,6 +99,14 @@ class DemoFlowRun @Activate constructor(
                         }
                     }
                 }
+
+            flowPublisher = FlowPublisher(
+                lifeCycleCoordinator!!,
+                publisherFactory,
+                instanceId,
+                getBootstrapConfig(getKafkaPropertiesFromFile(parameters.kafkaProperties))
+            )
+
             log.info("Starting life cycle coordinator")
             lifeCycleCoordinator!!.start()
             consoleLogger.info("Demo flow runner started")
@@ -107,8 +127,14 @@ class DemoFlowRun @Activate constructor(
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
         return ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
-            .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
+            .withValue(
+                CONFIG_TOPIC_NAME,
+                ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME))
+            )
+            .withValue(
+                TOPIC_PREFIX,
+                ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))
+            )
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
@@ -140,6 +166,15 @@ class DemoFlowRun @Activate constructor(
 class CliParameters {
     @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties"])
     var kafkaProperties: File? = null
+
+    @CommandLine.Option(names = ["--sandbox"], description = ["File containing sandboxCPB paths"])
+    var sandboxPaths: File? = null
+
+    @CommandLine.Option(
+        names = ["--instanceId"],
+        description = ["InstanceId for a transactional publisher, leave blank to use async publisher"]
+    )
+    var instanceId: String? = null
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false
