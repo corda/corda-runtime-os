@@ -1,14 +1,13 @@
 package net.corda.utilities
 
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.slf4j.Logger
-import java.util.*
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 
 open class InternalUtilsTest {
 
@@ -22,7 +21,7 @@ open class InternalUtilsTest {
     @Test
 	fun `indexOfOrThrow throws if the given item is not found`() {
         val collection = listOf(1)
-        assertFailsWith<IllegalArgumentException> { collection.indexOfOrThrow(2) }
+        assertThrows<IllegalArgumentException> { collection.indexOfOrThrow(2) }
     }
 
     @Test
