@@ -66,4 +66,17 @@ class SniCalculatorTest {
             assertTrue(label.length <= MAX_SNI_LABEL_SIZE)
         }
     }
+
+    @Test
+    fun `c4 style sni calculation gives same result regardless of order of subject name RDNs`() {
+        val names = listOf("O=PartyA, L=London, C=GB, CN=Alice",
+            "CN=Alice, O=PartyA, C=GB, L=London",
+            "C=GB , O=PartyA  , CN =Alice, L = London")
+        names.forEachIndexed { index, _ ->
+            Assertions.assertEquals(
+                SniCalculator.calculateSni(names[index], NetworkType.CORDA_4, ""),
+                SniCalculator.calculateSni(names.getOrElse(index - 1) { names.last() }, NetworkType.CORDA_4, "")
+            )
+        }
+    }
 }

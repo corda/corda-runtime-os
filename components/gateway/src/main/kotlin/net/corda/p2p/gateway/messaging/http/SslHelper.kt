@@ -239,7 +239,7 @@ class IdentityCheckingTrustManager(private val wrapped: X509ExtendedTrustManager
         try {
             block()
         } catch (ex: CertificateException) {
-            logger.error("Bad certificate identity or path ${ex.message}: $expectedX500Name\r\n${certPathToStringFull(chain)}")
+            logger.error("Bad certificate identity or path. ${ex.message}\r\n${certPathToStringFull(chain)}")
             throw ex
         }
     }
@@ -301,8 +301,9 @@ class IdentityCheckingTrustManager(private val wrapped: X509ExtendedTrustManager
             throw (CertificateException("Null or empty certificate chain received from server"))
         }
 
-        if (expectedX500Name != X500Name.getInstance(chain[0].subjectX500Principal.encoded)) {
-            throw (CertificateException("Certificate name doesn't match. Expected $expectedX500Name"))
+        val receivedX500Name = X500Name.getInstance(chain[0].subjectX500Principal.encoded)
+        if (expectedX500Name != receivedX500Name) {
+            throw (CertificateException("Certificate name doesn't match. Expected $expectedX500Name but received $receivedX500Name"))
         }
 
     }
