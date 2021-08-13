@@ -12,12 +12,13 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:avro-schema"
     implementation "net.corda:topic-schema"
+//    implementation "net.corda:corda-crypto-api"
+    implementation "net.corda:corda-crypto-impl"
     implementation project(":libs:p2p-crypto")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "io.reactivex:rxjava:$rxjavaVersion"
     implementation "io.netty:netty-transport:$nettyVersion"
     implementation "io.netty:netty-codec-http:$nettyVersion"
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
@@ -32,6 +33,7 @@ dependencies {
     // For async logging
     implementation "com.lmax:disruptor:$disruptorVersion"
 
+    testImplementation "io.reactivex:rxjava:$rxjavaVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
