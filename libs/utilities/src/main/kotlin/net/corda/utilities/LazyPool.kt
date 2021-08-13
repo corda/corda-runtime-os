@@ -17,10 +17,10 @@ import kotlin.concurrent.withLock
  * @param newInstance The function to call to lazily newInstance a pooled resource.
  */
 class LazyPool<A>(
-        private val clear: ((A) -> Unit)? = null,
-        private val shouldReturnToPool: ((A) -> Boolean)? = null,
-        private val bound: Int? = null,
-        private val newInstance: () -> A
+    private val clear: ((A) -> Unit)? = null,
+    private val shouldReturnToPool: ((A) -> Boolean)? = null,
+    private val bound: Int? = null,
+    private val newInstance: () -> A
 ) {
     private val poolQueue = ConcurrentLinkedQueue<A>()
     private val poolSemaphore = Semaphore(bound ?: Int.MAX_VALUE)

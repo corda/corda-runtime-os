@@ -22,17 +22,18 @@ import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
 
 val Throwable.rootCause: Throwable get() = cause?.rootCause ?: this
-val Throwable.rootMessage: String? get() {
-    var message = this.message
-    var throwable = cause
-    while (throwable != null) {
-        if (throwable.message != null) {
-            message = throwable.message
+val Throwable.rootMessage: String?
+    get() {
+        var message = this.message
+        var throwable = cause
+        while (throwable != null) {
+            if (throwable.message != null) {
+                message = throwable.message
+            }
+            throwable = throwable.cause
         }
-        throwable = throwable.cause
+        return message
     }
-    return message
-}
 
 infix fun Temporal.until(endExclusive: Temporal): Duration = Duration.between(this, endExclusive)
 
@@ -42,7 +43,7 @@ operator fun Duration.times(multiplicand: Long): Duration = multipliedBy(multipl
 /** Returns the index of the given item or throws [IllegalArgumentException] if not found. */
 fun <T> List<T>.indexOfOrThrow(item: T): Int {
     val i = indexOf(item)
-    require(i != -1){"No such element"}
+    require(i != -1) { "No such element" }
     return i
 }
 
@@ -57,14 +58,12 @@ inline fun <T> logElapsedTime(label: String, logger: Logger, body: () -> T): T {
     var failed = false
     try {
         return body()
-    }
-    catch (th: Throwable) {
+    } catch (th: Throwable) {
         failed = true
         throw th
-    }
-    finally {
+    } finally {
         val elapsed = Duration.ofNanos(System.nanoTime() - now).toMillis()
-        val msg = (if(failed) "Failed " else "") + "$label took $elapsed msec"
+        val msg = (if (failed) "Failed " else "") + "$label took $elapsed msec"
         logger.info(msg)
     }
 }
@@ -81,21 +80,26 @@ fun <T : Any> KClass<T>.objectOrNewInstance(): T {
 }
 
 /** Similar to [KClass.objectInstance] but also works on private objects. */
-val <T : Any> Class<T>.kotlinObjectInstance: T? get() {
-    return try {
-        kotlin.objectInstance
-    } catch (_: Throwable) {
-        val field = try { getDeclaredField("INSTANCE") } catch (_: NoSuchFieldException) { null }
-        field?.let {
-            if (it.type == this && it.isPublic && it.isStatic && it.isFinal) {
-                it.isAccessible = true
-                return uncheckedCast(it.get(null))
-            } else {
+val <T : Any> Class<T>.kotlinObjectInstance: T?
+    get() {
+        return try {
+            kotlin.objectInstance
+        } catch (_: Throwable) {
+            val field = try {
+                getDeclaredField("INSTANCE")
+            } catch (_: NoSuchFieldException) {
                 null
+            }
+            field?.let {
+                if (it.type == this && it.isPublic && it.isStatic && it.isFinal) {
+                    it.isAccessible = true
+                    return uncheckedCast(it.get(null))
+                } else {
+                    null
+                }
             }
         }
     }
-}
 
 fun <K, V> Iterable<Pair<K, V>>.toMultiMap(): Map<K, List<V>> = this.groupBy({ it.first }) { it.second }
 
@@ -104,6 +108,7 @@ val Class<*>.location: URL get() = protectionDomain.codeSource.location
 
 /** Convenience method to get the package name of a class literal. */
 val KClass<*>.packageName: String get() = java.packageName_
+
 // re-defined to prevent clash with Java 9 Class.packageName: https://docs.oracle.com/javase/9/docs/api/java/lang/Class.html#getPackageName--
 val Class<*>.packageName_: String get() = requireNotNull(this.packageNameOrNull) { "$this not defined inside a package" }
 val Class<*>.packageNameOrNull: String? // This intentionally does not go via `package` as that code path is slow and contended and just ends up doing this.
@@ -144,6 +149,7 @@ fun <K, V> createSimpleCache(maxSize: Int, onEject: (MutableMap.MutableEntry<K, 
 
 /** @see Collections.synchronizedMap */
 fun <K, V> MutableMap<K, V>.toSynchronised(): MutableMap<K, V> = Collections.synchronizedMap(this)
+
 /** @see Collections.synchronizedSet */
 fun <E> MutableSet<E>.toSynchronised(): MutableSet<E> = Collections.synchronizedSet(this)
 

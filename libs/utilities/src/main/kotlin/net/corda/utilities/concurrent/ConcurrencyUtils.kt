@@ -17,23 +17,25 @@ import java.util.stream.Collectors
 fun <V> Collection<CompletableFuture<out V>>.transpose(): CompletableFuture<List<V>> {
     if (isEmpty()) return completedFuture(emptyList())
     return allOf(*toTypedArray())
-            .thenApply {
-                stream()
-                        .map { it.join() }
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList())
-            }
+        .thenApply {
+            stream()
+                .map { it.join() }
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList())
+        }
 }
 
 /** Run the given block (in the foreground) and set this future to its outcome. */
 @Suppress("TooGenericExceptionCaught")
 fun <V> CompletableFuture<V>.capture(block: () -> V): Boolean {
-    return complete(try {
-        block()
-    } catch (e: Exception) {
-        return completeExceptionally(e)
-    } catch (t: Throwable) {
-        completeExceptionally(t)
-        throw t
-    })
+    return complete(
+        try {
+            block()
+        } catch (e: Exception) {
+            return completeExceptionally(e)
+        } catch (t: Throwable) {
+            completeExceptionally(t)
+            throw t
+        }
+    )
 }

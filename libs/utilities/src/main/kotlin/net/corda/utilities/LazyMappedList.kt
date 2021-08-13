@@ -12,7 +12,7 @@ class LazyMappedList<T, U>(val originalList: List<T>, val transform: (T, Int) ->
     override val size get() = originalList.size
     override fun get(index: Int): U {
         return partialResolvedList[index]
-                ?: transform(originalList[index], index).also { computed -> partialResolvedList[index] = computed }
+            ?: transform(originalList[index], index).also { computed -> partialResolvedList[index] = computed }
     }
 
     fun eager(onError: (RuntimeException, Int) -> U?) {
