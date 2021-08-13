@@ -9,6 +9,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.Step2Message
+import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.lang.IllegalStateException
 import java.nio.ByteBuffer
+import java.util.UUID
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
@@ -91,6 +93,9 @@ class InboundMessageHandler(private val server: HttpServer,
                     val record = Record(LINK_IN_TOPIC, "key", LinkInMessage(step2Message))
                     p2pInPublisher?.publish(listOf(record))
                 }
+                is UnauthenticatedMessage -> {
+                    p2pInPublisher?.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
+                }
                 else -> {
                     val sessionId = getSessionId(p2pMessage)
                     val partitions = sessionPartitionMapper.getPartitions(sessionId)
@@ -123,7 +128,12 @@ class InboundMessageHandler(private val server: HttpServer,
             is ResponderHelloMessage -> (message.payload as ResponderHelloMessage).header.sessionId
             is ResponderHandshakeMessage -> (message.payload as ResponderHandshakeMessage).header.sessionId
             is Step2Message -> (message.payload as Step2Message).initiatorHello.header.sessionId
+            is UnauthenticatedMessage -> throw IllegalStateException("No session associated with ${UnauthenticatedMessage::class.java}")
             else -> throw IllegalStateException("Invalid payload of LinkInMessage: ${message.payload::class.java}")
         }
+    }
+
+    private fun generateKey(): String {
+        return UUID.randomUUID().toString()
     }
 }

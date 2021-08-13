@@ -70,7 +70,7 @@ open class SessionManagerImpl(
 
     override fun processOutboundFlowMessage(message: AuthenticatedMessageAndKey): SessionState {
         sessionNegotiationLock.withLock {
-            val key = getSessionKeyFromMessage(message.flowMessage)
+            val key = getSessionKeyFromMessage(message.message)
 
             val activeSession = activeOutboundSessions[key]
             if (activeSession != null) {

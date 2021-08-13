@@ -6,6 +6,7 @@ import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.MessageAck
 import net.corda.p2p.app.HoldingIdentity
+import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
@@ -86,11 +87,31 @@ class MessageConverter {
             }
             return createLinkOutMessageFromPayload(
                 serializedMessage,
-                message.flowMessage.header.source,
-                message.flowMessage.header.destination,
+                message.message.header.source,
+                message.message.header.destination,
                 session,
                 networkMap
             )
+        }
+
+        fun linkOutFromUnauthenticatedMessage(
+            message: UnauthenticatedMessage,
+            networkMap: LinkManagerNetworkMap
+        ): LinkOutMessage? {
+            val destination = message.header.destination
+            val destMemberInfo = networkMap.getMemberInfo(destination.toHoldingIdentity())
+            if (destMemberInfo == null) {
+                logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
+                return null
+            }
+
+            val networkType = networkMap.getNetworkType(destination.toHoldingIdentity())
+            if (networkType == null) {
+                logger.warn("Could not find the network type in the NetworkMap for ${destination}. The message was discarded.")
+                return null
+            }
+
+            return createLinkOutMessage(message, destMemberInfo, networkType)
         }
 
         private fun createLinkOutMessageFromPayload(

@@ -325,7 +325,7 @@ class SessionManagerTest {
         val responderMessage = extractPayload(responderSession, "", DataMessage.Authenticated(authenticatedDataMessage), AuthenticatedMessageAndKey::fromByteBuffer)
 
         assertNotNull(responderMessage)
-        assertEquals(wrappedMessage.flowMessage.payload, responderMessage!!.flowMessage.payload)
+        assertEquals(wrappedMessage.message.payload, responderMessage!!.message.payload)
     }
 
     @Test
@@ -344,7 +344,7 @@ class SessionManagerTest {
         val responderMessage = extractPayload(responderSession, "", DataMessage.AuthenticatedAndEncrypted(authenticatedDataMessage), AuthenticatedMessageAndKey::fromByteBuffer)
         assertNotNull(responderMessage)
 
-        assertEquals(wrappedMessage.flowMessage.payload, responderMessage!!.flowMessage.payload)
+        assertEquals(wrappedMessage.message.payload, responderMessage!!.message.payload)
     }
 
     @Test
@@ -371,7 +371,7 @@ class SessionManagerTest {
         )
         assertNotNull(responderMessage)
 
-        assertEquals(wrappedMessage.flowMessage.payload, responderMessage!!.flowMessage.payload)
+        assertEquals(wrappedMessage.message.payload, responderMessage!!.message.payload)
     }
 
     @Test
@@ -397,7 +397,7 @@ class SessionManagerTest {
             AuthenticatedMessageAndKey::fromByteBuffer
         )
 
-        assertEquals(wrappedMessage.flowMessage.payload, responderMessage!!.flowMessage.payload)
+        assertEquals(wrappedMessage.message.payload, responderMessage!!.message.payload)
     }
 
     @Test
