@@ -9,6 +9,9 @@ buildscript {
     }
 
     ext {
+        // Remember where our Java executable lives (until Bnd supports Gradle toolchains).
+        javaExecutable = file("${System.getProperty('java.home')}/bin/java")
+
         // Create another Quasar property in this repository's chosen format.
         quasarVersion = quasar_version
     }
@@ -50,7 +53,7 @@ allprojects {
         sourceCompatibility = javaVersion
         targetCompatibility = javaVersion
         options.encoding = 'UTF-8'
-        options.compilerArgs += '-XDenableSunApiLintControl'
+        options.compilerArgs += [ '-XDenableSunApiLintControl', '-parameters' ]
     }
 
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
@@ -66,6 +69,14 @@ allprojects {
                     "-java-parameters",
                     "-Xjvm-default=all"
             ]
+        }
+    }
+
+    configurations {
+        all {
+            [ compileClasspath, testCompileClasspath, runtimeClasspath, testRuntimeClasspath ].forEach { cfg ->
+                configureKotlinForOSGi(cfg)
+            }
         }
     }
 
@@ -124,8 +135,11 @@ allprojects {
 
     sourceSets {
         integrationTest {
+            java {
+                srcDirs += [ 'src/integration-test/java' ]
+            }
             kotlin {
-                srcDirs = [ 'src/integration-test/kotlin' ]
+                srcDirs += [ 'src/integration-test/kotlin' ]
             }
             resources {
                 srcDirs = [ 'src/integration-test/resources' ]
@@ -133,22 +147,49 @@ allprojects {
         }
     }
 
-    configurations {
-        integrationTestApi.extendsFrom testApi
-        integrationTestCompileOnly.extendsFrom testCompileOnly
-        integrationTestImplementation.extendsFrom testImplementation
+    kotlin {
+        target {
+            java
+            compilations.integrationTest {
+                associateWith compilations.main
+                associateWith compilations.test
+
+                configurations {
+                    integrationTestApi.extendsFrom testApi
+                    integrationTestImplementation.extendsFrom testImplementation
+                    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+
+                    [ integrationTestCompileClasspath, integrationTestRuntimeClasspath ].forEach { cfg ->
+                        configureKotlinForOSGi(cfg)
+                    }
+                }
+            }
+        }
     }
 
     dependencies {
         // Exported as OSGi 'system packages extra' at runtime by the `osgi-framework-bootstrap` module.
         implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
-        implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
         implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
 
         // Test utilities
         testImplementation "org.assertj:assertj-core:$assertjVersion"
         testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+    }
+}
+
+// Ensure that we both compile and run using Kotlin OSGi bundles.
+// We must ONLY invoke this for Kotlin's classpath configurations.
+void configureKotlinForOSGi(Configuration configuration) {
+    configuration.resolutionStrategy {
+        dependencySubstitution {
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') with module("net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') with module("net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-reflect') with module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+        }
     }
 }
 
@@ -177,6 +218,13 @@ logger.quiet("Old Corda dependencies version spec: {}", cordaVersion)
 //logger.quiet("Release Type: {}", releaseType)
 
 subprojects {
+    buildscript {
+        configurations.classpath {
+            // FORCE Gradle to use latest dynamic versions.
+            resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
+        }
+    }
+
     apply plugin: 'java-library'
     apply plugin: 'idea'
     apply plugin: 'kotlin-allopen'
