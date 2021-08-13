@@ -111,7 +111,8 @@ val KClass<*>.packageName: String get() = java.packageName_
 
 // re-defined to prevent clash with Java 9 Class.packageName: https://docs.oracle.com/javase/9/docs/api/java/lang/Class.html#getPackageName--
 val Class<*>.packageName_: String get() = requireNotNull(this.packageNameOrNull) { "$this not defined inside a package" }
-val Class<*>.packageNameOrNull: String? // This intentionally does not go via `package` as that code path is slow and contended and just ends up doing this.
+// This intentionally does not go via `package` as that code path is slow and contended and just ends up doing this.
+val Class<*>.packageNameOrNull: String?
     get() {
         val name = this.name
         val i = name.lastIndexOf('.')
@@ -154,8 +155,8 @@ fun <K, V> MutableMap<K, V>.toSynchronised(): MutableMap<K, V> = Collections.syn
 fun <E> MutableSet<E>.toSynchronised(): MutableSet<E> = Collections.synchronizedSet(this)
 
 /**
- * Returns a [List] implementation that applies the expensive [transform] function only when an element is accessed and then caches the calculated values.
- * Size is very cheap as it doesn't call [transform].
+ * Returns a [List] implementation that applies the expensive [transform] function only when an element is accessed and then caches the
+ * calculated values. Size is very cheap as it doesn't call [transform].
  */
 fun <T, U> List<T>.lazyMapped(transform: (T, Int) -> U): List<U> = LazyMappedList(this, transform)
 
