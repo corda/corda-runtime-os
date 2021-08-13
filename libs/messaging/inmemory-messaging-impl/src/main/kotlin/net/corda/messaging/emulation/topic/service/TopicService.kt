@@ -3,6 +3,7 @@ package net.corda.messaging.emulation.topic.service
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.topic.model.Consumer
+import net.corda.messaging.emulation.topic.model.RecordMetadata
 
 /**
  * Service to interact with the kafka topic emulator
@@ -28,4 +29,6 @@ interface TopicService {
      * To unsubscribe, close the returned lifecycle
      */
     fun subscribe(consumer: Consumer): Lifecycle
+
+    fun handleAllRecords(topicName: String, handler: (Sequence<RecordMetadata>) -> Unit)
 }

@@ -187,4 +187,15 @@ class TopicTest {
             verify(group.constructed().first()).wakeUp()
         }
     }
+
+    @Test
+    fun `handleAllRecords send the request to the partitions`() {
+        mockConstruction(Partition::class.java).use { partitions ->
+            val topic = Topic("topic", config)
+
+            topic.handleAllRecords(mock())
+
+            verify(partitions.constructed()[1]).handleAllRecords(any())
+        }
+    }
 }

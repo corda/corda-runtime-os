@@ -55,7 +55,6 @@ class CordaPublisher(
     }
 
     override fun close() {
-        log.info("Closing Corda publisher clientId $clientId, instanceId $instanceId")
     }
 
     override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {

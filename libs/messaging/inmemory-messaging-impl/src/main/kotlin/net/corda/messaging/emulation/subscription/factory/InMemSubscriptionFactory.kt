@@ -15,6 +15,7 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.emulation.subscription.compacted.InMemoryCompactedSubscription
 import net.corda.messaging.emulation.subscription.eventlog.EventLogSubscription
 import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -64,7 +65,11 @@ class InMemSubscriptionFactory @Activate constructor(
         processor: CompactedProcessor<K, V>,
         nodeConfig: Config
     ): CompactedSubscription<K, V> {
-        TODO("Not yet implemented")
+        return InMemoryCompactedSubscription(
+            subscriptionConfig,
+            processor,
+            topicService
+        )
     }
 
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(

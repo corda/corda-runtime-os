@@ -71,4 +71,10 @@ class Topic(
             it.wakeUp()
         }
     }
+
+    fun handleAllRecords(handler: (Sequence<RecordMetadata>) -> Unit) {
+        partitions.forEach {
+            it.handleAllRecords(handler)
+        }
+    }
 }

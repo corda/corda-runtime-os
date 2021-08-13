@@ -1,8 +1,10 @@
 package net.corda.messaging.emulation.subscription.factory
 
+import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.emulation.subscription.compacted.InMemoryCompactedSubscription
 import net.corda.messaging.emulation.subscription.eventlog.EventLogSubscription
 import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
 import org.assertj.core.api.Assertions.assertThat
@@ -35,5 +37,16 @@ class InMemSubscriptionFactoryTest {
                 mock()
             )
         ).isInstanceOf(EventLogSubscription::class.java)
+    }
+
+    @Test
+    fun `createCompactedSubscription creates InMemoryCompactedSubscription`() {
+        assertThat(
+            factory.createCompactedSubscription(
+                subscriptionConfig,
+                mock<CompactedProcessor<String, Long>>(),
+                mock(),
+            )
+        ).isInstanceOf(InMemoryCompactedSubscription::class.java)
     }
 }

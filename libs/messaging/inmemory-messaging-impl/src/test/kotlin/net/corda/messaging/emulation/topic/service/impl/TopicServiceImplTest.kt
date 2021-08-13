@@ -55,4 +55,11 @@ class TopicServiceImplTest {
         verify(topicTwo).addRecordToPartition(Record("topic.2", 3, 6), 12)
         verify(topicTwo).addRecordToPartition(Record("topic.2", 5, 8), 12)
     }
+
+    @Test
+    fun `handleAllRecords send the handler to the correct topic`() {
+        impl.handleAllRecords("topic.1", mock())
+
+        verify(topicOne).handleAllRecords(any())
+    }
 }

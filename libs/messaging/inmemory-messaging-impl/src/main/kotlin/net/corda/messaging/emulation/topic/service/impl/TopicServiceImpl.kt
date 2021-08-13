@@ -4,6 +4,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.properties.InMemoryConfiguration
 import net.corda.messaging.emulation.topic.model.Consumer
+import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.model.Topics
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Component
@@ -42,5 +43,9 @@ class TopicServiceImpl(
                 topic.addRecordToPartition(it, partition)
             }
         }
+    }
+
+    override fun handleAllRecords(topicName: String, handler: (Sequence<RecordMetadata>) -> Unit) {
+        topics.getTopic(topicName).handleAllRecords(handler)
     }
 }
