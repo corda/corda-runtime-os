@@ -9,10 +9,13 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
+import net.corda.p2p.MessageAck
 import net.corda.p2p.SessionPartitions
 import net.corda.p2p.Step2Message
+import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
@@ -28,13 +31,10 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.SessionKey
-import net.corda.p2p.payload.FlowMessage
 import net.corda.p2p.schema.Schema
 import net.corda.p2p.markers.FlowMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
-import net.corda.p2p.payload.FlowMessageAndKey
-import net.corda.p2p.payload.MessageAck
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -65,7 +65,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private var running = false
     private val startStopLock = ReentrantLock()
 
-    private val outboundMessageSubscription: Subscription<ByteBuffer, FlowMessage>
+    private val outboundMessageSubscription: Subscription<ByteBuffer, AuthenticatedMessage>
     private val inboundMessageSubscription: Subscription<String, LinkInMessage>
     private val inboundAssignmentListener = InboundAssignmentListener()
 
@@ -123,13 +123,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private val sessionManager: SessionManager,
         private val networkMap: LinkManagerNetworkMap,
         private val inboundAssignmentListener: InboundAssignmentListener
-    ) : EventLogProcessor<ByteBuffer, FlowMessage> {
+    ) : EventLogProcessor<ByteBuffer, AuthenticatedMessage> {
 
         override val keyClass = ByteBuffer::class.java
-        override val valueClass = FlowMessage::class.java
+        override val valueClass = AuthenticatedMessage::class.java
         private var logger = LoggerFactory.getLogger(this::class.java.name)
 
-        override fun onNext(events: List<EventLogRecord<ByteBuffer, FlowMessage>>): List<Record<*, *>> {
+        override fun onNext(events: List<EventLogRecord<ByteBuffer, AuthenticatedMessage>>): List<Record<*, *>> {
             val records = mutableListOf<Record<String, *>>()
             for (event in events) {
                 records += processEvent(event)
@@ -137,13 +137,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return records
         }
 
-        private fun processEvent(event: EventLogRecord<ByteBuffer, FlowMessage>): List<Record<String, *>> {
+        private fun processEvent(event: EventLogRecord<ByteBuffer, AuthenticatedMessage>): List<Record<String, *>> {
             val message = event.value
             if (message == null) {
                 logger.error("Received null message. The message was discarded.")
                 return emptyList()
             }
-            val flowMessageAndKey = FlowMessageAndKey(message, event.key)
+            val flowMessageAndKey = AuthenticatedMessageAndKey(message, event.key)
 
             return when (val state = sessionManager.processOutboundFlowMessage(flowMessageAndKey)) {
                 is SessionState.NewSessionNeeded -> recordsForNewSession(state)
@@ -162,7 +162,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun recordsForSessionEstablished(
             state: SessionState.SessionEstablished,
-            flowMessageAndKey: FlowMessageAndKey
+            flowMessageAndKey: AuthenticatedMessageAndKey
         ): List<Record<String, *>> {
             val records = mutableListOf<Record<String, *>>()
             val message = linkOutMessageFromFlowMessageAndKey(flowMessageAndKey, state.session, networkMap) ?: return emptyList()
@@ -170,7 +170,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return records
         }
 
-        private fun recordForMarker(event: EventLogRecord<ByteBuffer, FlowMessage>, messageId: String): Record<String, FlowMessageMarker> {
+        private fun recordForMarker(event: EventLogRecord<ByteBuffer, AuthenticatedMessage>, messageId: String): Record<String, FlowMessageMarker> {
             val marker = FlowMessageMarker(LinkManagerSentMarker(event.partition.toLong(), event.offset))
             return Record(Schema.P2P_OUT_MARKERS, messageId, marker)
         }
@@ -219,7 +219,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             val messages = mutableListOf<Record<*, *>>()
             when (val sessionDirection = sessionManager.getSessionById(sessionId)) {
                 is SessionDirection.Inbound -> {
-                    extractPayload(sessionDirection.session, sessionId, message, FlowMessageAndKey::fromByteBuffer)?.let {
+                    extractPayload(sessionDirection.session, sessionId, message, AuthenticatedMessageAndKey::fromByteBuffer)?.let {
                         messages.add(Record(Schema.P2P_IN_TOPIC, it.key, it.flowMessage))
                         makeAckMessageForFlowMessage(it.flowMessage, sessionDirection.session)?.let { ack -> messages.add(ack) }
                     }
@@ -237,7 +237,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return messages
         }
 
-        private fun makeAckMessageForFlowMessage(message: FlowMessage, session: Session): Record<String, LinkOutMessage>? {
+        private fun makeAckMessageForFlowMessage(message: AuthenticatedMessage, session: Session): Record<String, LinkOutMessage>? {
             //We route the ACK back to the original source
             val ackDest = message.header.source
             val ackSource = message.header.destination
@@ -258,12 +258,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     }
 
     interface PendingSessionMessageQueues {
-        fun queueMessage(message: FlowMessageAndKey, key: SessionKey): Boolean
+        fun queueMessage(message: AuthenticatedMessageAndKey, key: SessionKey): Boolean
         fun sessionNegotiatedCallback(key: SessionKey, session: Session, networkMap: LinkManagerNetworkMap)
     }
 
     class PendingSessionMessageQueuesImpl(publisherFactory: PublisherFactory): PendingSessionMessageQueues {
-        private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<FlowMessageAndKey>>()
+        private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
         private val config = PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, null)
         private val publisher = publisherFactory.createPublisher(config)
 
@@ -272,7 +272,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
          * negotiation with the destination) or adds the message to a new queue if we need to negotiate a new session.
          * Returns [true] if we need to start session negotiation and [false] if we don't (if the session is pending).
         */
-        override fun queueMessage(message: FlowMessageAndKey, key: SessionKey): Boolean {
+        override fun queueMessage(message: AuthenticatedMessageAndKey, key: SessionKey): Boolean {
             val oldQueue = queuedMessagesPendingSession.putIfAbsent(key, LinkedList())
             if (oldQueue != null) {
                 oldQueue.add(message)

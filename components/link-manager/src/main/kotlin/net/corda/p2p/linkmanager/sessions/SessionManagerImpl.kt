@@ -1,8 +1,10 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.Step2Message
+import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
@@ -25,8 +27,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourId
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
-import net.corda.p2p.payload.FlowMessage
-import net.corda.p2p.payload.FlowMessageAndKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
@@ -44,7 +44,7 @@ open class SessionManagerImpl(
     ): SessionManager {
 
     companion object {
-        fun getSessionKeyFromMessage(message: FlowMessage): SessionKey {
+        fun getSessionKeyFromMessage(message: AuthenticatedMessage): SessionKey {
            val peer = message.header.destination.toHoldingIdentity()
            val us = message.header.source.toHoldingIdentity()
            return SessionKey(us, peer)
@@ -68,7 +68,7 @@ open class SessionManagerImpl(
 
     private val sessionNegotiationLock = ReentrantLock()
 
-    override fun processOutboundFlowMessage(message: FlowMessageAndKey): SessionState {
+    override fun processOutboundFlowMessage(message: AuthenticatedMessageAndKey): SessionState {
         sessionNegotiationLock.withLock {
             val key = getSessionKeyFromMessage(message.flowMessage)
 

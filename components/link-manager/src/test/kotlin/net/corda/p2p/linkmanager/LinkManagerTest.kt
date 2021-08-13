@@ -5,11 +5,16 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
+import net.corda.p2p.MessageAck
 import net.corda.p2p.NetworkType
 import net.corda.p2p.SessionPartitions
+import net.corda.p2p.app.AuthenticatedMessage
+import net.corda.p2p.app.AuthenticatedMessageHeader
+import net.corda.p2p.app.HoldingIdentity
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
@@ -31,11 +36,6 @@ import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.p2p.markers.FlowMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
-import net.corda.p2p.payload.FlowMessage
-import net.corda.p2p.payload.FlowMessageAndKey
-import net.corda.p2p.payload.FlowMessageHeader
-import net.corda.p2p.payload.HoldingIdentity
-import net.corda.p2p.payload.MessageAck
 import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
@@ -143,9 +143,9 @@ class LinkManagerTest {
             dest: HoldingIdentity,
             data: ByteBuffer,
             messageId: String = ""
-        ): FlowMessageAndKey {
-            val header = FlowMessageHeader(dest, source, null, messageId, "")
-            return FlowMessageAndKey(FlowMessage(header, data), KEY_BYTES)
+        ): AuthenticatedMessageAndKey {
+            val header = AuthenticatedMessageHeader(dest, source, null, messageId, "", "system-1")
+            return AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), KEY_BYTES)
         }
     }
 
@@ -172,9 +172,9 @@ class LinkManagerTest {
         }
     }
 
-    private fun flowMessage(source: HoldingIdentity, dest: HoldingIdentity, data: String, messageId: String): FlowMessage {
-        val header = FlowMessageHeader(dest, source, null, messageId, "")
-        return FlowMessage(header, ByteBuffer.wrap(data.toByteArray()))
+    private fun flowMessage(source: HoldingIdentity, dest: HoldingIdentity, data: String, messageId: String): AuthenticatedMessage {
+        val header = AuthenticatedMessageHeader(dest, source, null, messageId, "", "system-1")
+        return AuthenticatedMessage(header, ByteBuffer.wrap(data.toByteArray()))
     }
 
     private fun initiatorHelloLinkInMessage() : LinkInMessage {
@@ -192,7 +192,7 @@ class LinkManagerTest {
 
     private fun extractPayload(session: Session, message: LinkOutMessage): ByteBuffer {
         val dataMessage = createDataMessage(message)
-        val payload = MessageConverter.extractPayload(session, "", dataMessage, FlowMessageAndKey::fromByteBuffer)
+        val payload = MessageConverter.extractPayload(session, "", dataMessage, AuthenticatedMessageAndKey::fromByteBuffer)
         assertNotNull(payload)
         assertNotNull(payload!!.flowMessage)
         return payload.flowMessage!!.payload
@@ -208,7 +208,7 @@ class LinkManagerTest {
 
     @Test
     fun `PendingSessionsMessageQueues queueMessage returns true if a new session is needed`() {
-        val message = FlowMessageAndKey(flowMessage(FIRST_SOURCE, FIRST_DEST, "0-0", MESSAGE_ID), KEY_BYTES)
+        val message = AuthenticatedMessageAndKey(flowMessage(FIRST_SOURCE, FIRST_DEST, "0-0", MESSAGE_ID), KEY_BYTES)
 
         val key1 = SessionKey(FIRST_SOURCE.toHoldingIdentity(), FIRST_DEST.toHoldingIdentity())
         val key2 = SessionKey(SECOND_SOURCE.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity())
@@ -283,7 +283,7 @@ class LinkManagerTest {
         val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
 
         val numberOfMessages = 3
-        val messages = mutableListOf<EventLogRecord<ByteBuffer, FlowMessage>>()
+        val messages = mutableListOf<EventLogRecord<ByteBuffer, AuthenticatedMessage>>()
         for (i in 0 until numberOfMessages) {
             messages.add(EventLogRecord(TOPIC, KEY_BYTES, flowMessage(FIRST_SOURCE, FIRST_DEST, "$i", "MessageId$i"), 0, 0 ))
         }
@@ -436,8 +436,8 @@ class LinkManagerTest {
 
     private fun testDataMessagesWithInboundMessageProcessor(session: SessionPair) {
 
-        val header = FlowMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "")
-        val flowMessageAndKey = FlowMessageAndKey(FlowMessage(header, PAYLOAD), KEY_BYTES)
+        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
+        val flowMessageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY_BYTES)
 
         val linkOutMessage = linkOutMessageFromFlowMessageAndKey(flowMessageAndKey, session.initiatorSession, netMap)
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
@@ -453,11 +453,11 @@ class LinkManagerTest {
         val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
 
         val records = processor.onNext(messages)
-        assertThat(records).filteredOn { it.value is FlowMessage }.hasSize(messages.size)
+        assertThat(records).filteredOn { it.value is AuthenticatedMessage }.hasSize(messages.size)
         assertThat(records).filteredOn { it.value is LinkOutMessage }.hasSize(messages.size)
         for (record in records) {
             when (val value = record.value) {
-                is FlowMessage -> {
+                is AuthenticatedMessage -> {
                     assertEquals(P2P_IN_TOPIC, record.topic)
                     assertArrayEquals(flowMessageAndKey.flowMessage.payload.array(), value.payload.array())
                     assertEquals(flowMessageAndKey.key, record.key)
@@ -474,7 +474,7 @@ class LinkManagerTest {
                     assertEquals(MESSAGE_ID, messageAck!!.messageId)
                 }
                 else -> {
-                    fail("Inbound message processor should only produce records with ${FlowMessage::class.java} and " +
+                    fail("Inbound message processor should only produce records with ${AuthenticatedMessage::class.java} and " +
                         "${LinkOutMessage::class.java}")
                 }
             }
@@ -517,8 +517,8 @@ class LinkManagerTest {
     fun `InboundMessageProcessor produces a FlowMessage only if the sender is removed from the network map before creating an ACK`() {
         val session = createSessionPair()
 
-        val header = FlowMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "")
-        val flowMessageWrapper = FlowMessageAndKey(FlowMessage(header, PAYLOAD), KEY_BYTES)
+        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
+        val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY_BYTES)
 
         val linkOutMessage = linkOutMessageFromFlowMessageAndKey(flowMessageWrapper, session.initiatorSession, netMap)
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
@@ -539,8 +539,8 @@ class LinkManagerTest {
         assertEquals(messages.size, records.size)
         for (record in records) {
             assertEquals(P2P_IN_TOPIC, record.topic)
-            assertTrue(record.value is FlowMessage)
-            assertArrayEquals(flowMessageWrapper.flowMessage.payload.array(), (record.value as FlowMessage).payload.array())
+            assertTrue(record.value is AuthenticatedMessage)
+            assertArrayEquals(flowMessageWrapper.flowMessage.payload.array(), (record.value as AuthenticatedMessage).payload.array())
             assertEquals(flowMessageWrapper.key, record.key)
         }
     }
@@ -549,8 +549,8 @@ class LinkManagerTest {
     fun `InboundMessageProcessor discards messages with unknown sessionId`() {
         val session = createSessionPair()
 
-        val header = FlowMessageHeader(FIRST_DEST, FIRST_SOURCE, null, "", "")
-        val flowMessageWrapper = FlowMessageAndKey(FlowMessage(header, PAYLOAD), KEY_BYTES)
+        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, "", "", "system-1")
+        val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY_BYTES)
 
         val linkOutMessage = linkOutMessageFromFlowMessageAndKey(flowMessageWrapper, session.initiatorSession, netMap)
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
@@ -573,8 +573,8 @@ class LinkManagerTest {
     fun `InboundMessageProcessor discards a FlowMessage on a OutboundSession`() {
         val session = createSessionPair()
 
-        val header = FlowMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "")
-        val flowMessageWrapper = FlowMessageAndKey(FlowMessage(header, PAYLOAD), KEY_BYTES)
+        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
+        val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY_BYTES)
 
         val linkOutMessage = linkOutMessageFromFlowMessageAndKey(flowMessageWrapper, session.initiatorSession, netMap)
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)

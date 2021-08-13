@@ -1,5 +1,7 @@
 package net.corda.p2p.linkmanager.messaging
 
+import net.corda.p2p.AuthenticatedMessageAndKey
+import net.corda.p2p.app.HoldingIdentity
 import org.mockito.kotlin.any
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
@@ -13,8 +15,6 @@ import net.corda.p2p.linkmanager.LinkManagerTest.Companion.createSessionPair
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.flowMessageAndKey
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.SessionAndMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.p2p.payload.FlowMessageAndKey
-import net.corda.p2p.payload.HoldingIdentity
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNull
@@ -56,7 +56,7 @@ class MessageConverterTest {
 
         assertNull(MessageConverter.extractPayloadFromAuthenticatedEncryptedMessage(
             SessionAndMessage.AuthenticatedEncrypted(session as AuthenticatedEncryptionSession, mockMessage),
-            FlowMessageAndKey::fromByteBuffer
+            AuthenticatedMessageAndKey::fromByteBuffer
             )
         )
         loggingInterceptor.assertSingleWarning("Decryption failed for message for session null. Reason: Decryption failed due to bad authentication tag. The message was discarded.")
@@ -72,7 +72,7 @@ class MessageConverterTest {
 
         assertNull(MessageConverter.extractPayloadFromAuthenticatedMessage(
             SessionAndMessage.Authenticated(session as AuthenticatedSession, mockMessage),
-            FlowMessageAndKey::fromByteBuffer
+            AuthenticatedMessageAndKey::fromByteBuffer
             )
         )
         loggingInterceptor.assertSingleWarning("MAC check failed for message for session null. The message was discarded.")
