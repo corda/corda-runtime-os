@@ -60,8 +60,19 @@ interface LifecycleCoordinator : Lifecycle {
      * Components should use this to signal when they go up or down. This can be used by dependent components to trigger
      * them to go up or down in turn.
      */
-    val activeStatus: LifecycleStatus
+    val status: LifecycleStatus
 
+    /**
+     * Update the status of this coordinator.
+     *
+     * The status of this coordinator is updated in the processing thread, and therefore may not be reflected by the
+     * status property straight away. Note that the status may also be changed internally if e.g. an unhandled error is
+     * encountered, or the coordinator is stopped.
+     *
+     * The status will not be updated if this is called while the coordinator is stopped.
+     *
+     * @param newStatus The new status of this lifecycle coordinator.
+     */
     fun updateStatus(newStatus: LifecycleStatus)
 
     /**

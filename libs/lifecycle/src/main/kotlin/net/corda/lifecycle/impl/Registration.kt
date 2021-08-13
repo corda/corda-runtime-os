@@ -31,10 +31,10 @@ internal class Registration(
     private val isClosed = AtomicBoolean(false)
 
     private val currentStatus: LifecycleStatus
-        get() = if (coordinatorStatusMap.values.any { it == LifecycleStatus.DOWN }) {
-            LifecycleStatus.DOWN
-        } else {
+        get() = if (coordinatorStatusMap.values.all { it == LifecycleStatus.UP }) {
             LifecycleStatus.UP
+        } else {
+            LifecycleStatus.DOWN
         }
 
 

@@ -9,12 +9,18 @@ package net.corda.lifecycle
  */
 enum class LifecycleStatus {
     /**
+     * The component is not yet setup or is temporarily non-functional (e.g. reconfiguring).
+     */
+    DOWN,
+
+    /**
+     * The component has encountered an error. This could be set by the user, but it will also be set if the coordinator
+     * encounters an unhandled error.
+     */
+    ERROR,
+
+    /**
      * The component is running normally and all setup has been completed.
      */
     UP,
-
-    /**
-     * The component is not yet setup, encountered an error, or is temporarily non-functional (e.g. reconfiguring).
-     */
-    DOWN
 }

@@ -10,12 +10,10 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
-import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.slf4j.Logger
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -35,15 +33,13 @@ internal class LifecycleCoordinatorImplTest {
 
         private const val COMPONENT_NAME = "Lifecycle-Coordinator-Test"
 
-        private const val BATCH_SIZE: Int = 128
+        private const val BATCH_SIZE = 128
 
-        private const val TIMEOUT: Long = 500L
+        private const val TIMEOUT = 500L
 
         private const val TIMER_DELAY = 100L
 
         private const val NUM_LOOPS = 5
-
-        val logger: Logger = contextLogger()
     }
 
     interface PostEvent : LifecycleEvent
@@ -60,7 +56,6 @@ internal class LifecycleCoordinatorImplTest {
         var eventsProcessed = 0
         var unexpectedEventCount = 0
         createCoordinator { event: LifecycleEvent, _: LifecycleCoordinator ->
-            logger.debug("processEvent $event")
             when (event) {
                 is StartEvent -> {
                     startLatch.countDown()
@@ -99,7 +94,6 @@ internal class LifecycleCoordinatorImplTest {
         val stopLatch = CountDownLatch(1)
         var unexpectedEventCount = 0
         createCoordinator { event: LifecycleEvent, _: LifecycleCoordinator ->
-            logger.debug("processEvent $event")
             when (event) {
                 is StartEvent -> {
                     startLatch.countDown()
@@ -145,7 +139,6 @@ internal class LifecycleCoordinatorImplTest {
         val timerLatch = CountDownLatch(1)
         var deliveredTimerEvents = 0
         createCoordinator { event: LifecycleEvent, _: LifecycleCoordinator ->
-            logger.debug("processEvent $event")
             when (event) {
                 is StartEvent -> startLatch.countDown()
                 is TimerEvent -> {
@@ -305,7 +298,6 @@ internal class LifecycleCoordinatorImplTest {
         val stopLatch = CountDownLatch(1)
         var deliveredKey = "the_wrong_key"
         createCoordinator { event: LifecycleEvent, _: LifecycleCoordinator ->
-            logger.debug("processEvent $event")
             when (event) {
                 is StartEvent -> startLatch.countDown()
                 is TimerEvent -> {
@@ -336,7 +328,6 @@ internal class LifecycleCoordinatorImplTest {
         var startedRunningLatch = CountDownLatch(1)
         var stoppedRunningLatch = CountDownLatch(1)
         createCoordinator { event: LifecycleEvent, _: LifecycleCoordinator ->
-            logger.debug("processEvent $event")
             when (event) {
                 is StartEvent -> {
                     startLatch.countDown()
@@ -640,19 +631,19 @@ internal class LifecycleCoordinatorImplTest {
         }.use {
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
-            assertEquals(LifecycleStatus.DOWN, it.activeStatus)
+            assertEquals(LifecycleStatus.DOWN, it.status)
 
             // Request a status update, then post an event to flush through the status update. Should be guaranteed to
             // have processed the status update by the time flushing event is seen in the processor.
             it.updateStatus(LifecycleStatus.UP)
             it.postEvent(flushingEvent)
             assertTrue(flushingLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
-            assertEquals(LifecycleStatus.UP, it.activeStatus)
+            assertEquals(LifecycleStatus.UP, it.status)
 
             // Stopping should set the coordinator to down
             it.stop()
             assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
-            assertEquals(LifecycleStatus.DOWN, it.activeStatus)
+            assertEquals(LifecycleStatus.DOWN, it.status)
         }
     }
 
@@ -673,7 +664,7 @@ internal class LifecycleCoordinatorImplTest {
             it.updateStatus(LifecycleStatus.UP)
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
-            assertEquals(LifecycleStatus.DOWN, it.activeStatus)
+            assertEquals(LifecycleStatus.DOWN, it.status)
             it.stop()
             assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         }

@@ -87,7 +87,7 @@ class LifecycleCoordinatorImpl(
      * Updates to this property only trigger a state change event to be sent if the new value differs from the old one,
      * to prevent spurious updates. Defaults to DOWN.
      */
-    override val activeStatus: LifecycleStatus
+    override val status: LifecycleStatus
         get() = lifecycleState.status
 
     /**

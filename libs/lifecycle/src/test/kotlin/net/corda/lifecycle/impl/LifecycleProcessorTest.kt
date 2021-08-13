@@ -150,6 +150,19 @@ class LifecycleProcessorTest {
     }
 
     @Test
+    fun `timers are not set up if the coordinator is not running`() {
+        val state = LifecycleStateManager(5)
+        var processedEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
+            processedEvents++
+        }
+        val key = "my_key"
+        state.postEvent(SetUpTimer(key, 100L) { TestTimerEvent(key) })
+        process(processor)
+        assertFalse(state.isTimerRunning(key))
+    }
+
+    @Test
     fun `batching delivers the right number of events to the processor`() {
         val state = LifecycleStateManager(2)
         state.isRunning = true
