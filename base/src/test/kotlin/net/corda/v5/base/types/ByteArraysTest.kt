@@ -1,15 +1,15 @@
 package net.corda.v5.base.types
 
 import org.assertj.core.api.Assertions.catchThrowable
-import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
 import java.nio.ReadOnlyBufferException
 import kotlin.test.assertEquals
 
 class ByteArraysTest {
-    @Test(timeout = 300_000)
+    @Test
     fun `slice works`() {
         byteArrayOf(9, 9, 0, 1, 2, 3, 4, 9, 9).let {
             sliceWorksImpl(it, OpaqueBytesSubSequence(it, 2, 5))
@@ -48,12 +48,12 @@ class ByteArraysTest {
         check(byteArrayOf(), seq.slice(2, 1))
     }
 
-    @Test(timeout = 300_000)
+    @Test
     fun `test hex parsing strictly uppercase`() {
-        val HEX_REGEX = "^[0-9A-F]+\$".toRegex()
+        val hexRegex = "^[0-9A-F]+\$".toRegex()
 
         val opaqueBytes = OpaqueBytes.of(1, 23, 63, 127, 34, 44, 55, 66, 22, 110)
         val hexString = opaqueBytes.bytes.toHexString()
-        assertTrue(hexString.matches(HEX_REGEX))
+        assertTrue(hexString.matches(hexRegex))
     }
 }

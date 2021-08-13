@@ -16,10 +16,6 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.apache.commons:commons-lang3:$commonsLangVersion"
-    testImplementation "com.google.guava:guava-testlib:$guavaVersion"
-
-    junit4TestImplementation "junit:junit:$legacyJunitVersion"
 }
 
 tasks.named('jar', Jar) {

@@ -1,6 +1,5 @@
 package net.corda.v5.cipher.suite
 
-import net.corda.v5.base.types.NonEmptySet
 import net.corda.v5.cipher.suite.schemes.DigestScheme
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -8,6 +7,7 @@ import java.security.KeyFactory
 import java.security.Provider
 import java.security.PublicKey
 import java.security.SecureRandom
+import java.util.*
 
 /**
  * Service which provides metadata about cipher suite, such as available signature schemes,
@@ -16,14 +16,14 @@ import java.security.SecureRandom
 interface CipherSchemeMetadata : KeyEncodingService {
     companion object {
         @JvmField
-        val BANNED_DIGESTS: Set<String> = NonEmptySet.of(
+        val BANNED_DIGESTS: Set<String> = Collections.unmodifiableSet(setOf(
             "MD5",
             "MD2",
             "SHA-1",
             "MD4",
             "HARAKA-256",
             "HARAKA-512"
-        )
+        ))
     }
 
     /**
