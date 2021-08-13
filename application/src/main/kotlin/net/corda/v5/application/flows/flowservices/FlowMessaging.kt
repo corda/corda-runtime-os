@@ -7,7 +7,6 @@ import net.corda.v5.application.identity.Party
 import net.corda.v5.application.flows.UntrustworthyData
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.types.NonEmptySet
 
 @DoNotImplement
 interface FlowMessaging : CordaFlowInjectable {
@@ -88,5 +87,5 @@ interface FlowMessaging : CordaFlowInjectable {
      * To prevent misuse of the API, if there is an attempt to close an uninitialised session the invocation will fail with an [IllegalStateException].
      */
     @Suspendable
-    fun close(sessions: NonEmptySet<FlowSession>)
+    fun close(sessions: Set<FlowSession>)
 }
