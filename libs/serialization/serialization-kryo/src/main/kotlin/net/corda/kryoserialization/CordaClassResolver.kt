@@ -13,7 +13,7 @@ import com.esotericsoftware.kryo.util.Util
 import net.corda.kryoserialization.osgi.SandboxClassResolver
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.serialization.CheckpointSerializationContext
-import net.corda.utilities.kotlinObjectInstance
+import net.corda.utilities.reflection.kotlinObjectInstance
 import net.corda.utilities.writer
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.util.contextLogger

@@ -5,6 +5,8 @@ import java.io.BufferedWriter
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.net.URI
+import java.net.URL
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.CopyOption
@@ -176,3 +178,7 @@ fun Path.safeSymbolicRead(): Path {
         return (this)
     }
 }
+
+fun URI.toPath(): Path = Paths.get(this)
+
+fun URL.toPath(): Path = toURI().toPath()
