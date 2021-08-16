@@ -1,0 +1,44 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-crypto"
+    implementation "net.corda:corda-cipher-suite"
+    implementation project(":libs:crypto:crypto-internal")
+    implementation project(":libs:utilities")
+
+    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
+    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
+
+    implementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
+        exclude group: 'org.osgi'
+    }
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+    runtime "com.sun.activation:javax.activation:$activationVersion"
+    runtime "javax.xml.bind:jaxb-api:$jaxbVersion"
+
+//    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "com.h2database:h2:$h2Version"
+
+    testImplementation project(":libs:crypto:crypto-testkit")
+}
+
+description 'Crypto Implementation'
+
