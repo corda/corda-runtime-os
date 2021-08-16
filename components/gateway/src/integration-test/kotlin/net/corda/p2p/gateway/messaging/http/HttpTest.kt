@@ -305,7 +305,7 @@ class HttpTest : TestBase() {
         }
 
         loggingInterceptor.assertMessageExists(
-            "Bad certificate identity or path PKIX path validation failed: " +
+            "Bad certificate identity or path. PKIX path validation failed: " +
                     "java.security.cert.CertPathValidatorException: Certificate has been revoked",
             Level.ERROR
         )
