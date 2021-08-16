@@ -11,9 +11,9 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
-    implementation "net.corda:corda-flow-dependency-injection-internal:$cordaVersion"
     implementation "net.corda:corda-base-internal:$cordaVersion"
     implementation "net.corda:avro-schema"
 
     implementation project(':libs:flows:statemachine')
+    implementation project(':libs:dependency-injection:dependency-injection')
 }
