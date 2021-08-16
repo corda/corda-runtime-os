@@ -3,9 +3,9 @@ package net.corda.p2p.linkmanager.sessions
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.Step2Message
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
+import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
@@ -18,6 +18,7 @@ import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap.NoPublicKeyForHashException
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
@@ -27,9 +28,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourId
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
@@ -102,8 +101,8 @@ open class SessionManagerImpl(
         return when(val payload = message.payload) {
             is ResponderHelloMessage -> processResponderHello(payload)
             is ResponderHandshakeMessage -> processResponderHandshake(payload)
+            is InitiatorHelloMessage -> processInitiatorHello(payload)
             is InitiatorHandshakeMessage -> processInitiatorHandshake(payload)
-            is Step2Message -> processStep2Message(payload)
             else -> {
                 logger.warn("Cannot process message of type: ${payload::class.java}. The message was discarded.")
                 null
@@ -113,33 +112,44 @@ open class SessionManagerImpl(
 
     private fun getSessionInitMessage(sessionKey: SessionKey): Pair<String, LinkOutMessage>? {
         val sessionId = UUID.randomUUID().toString()
-        val session = AuthenticationProtocolInitiator(sessionId, supportedModes, maxMessageSize)
-        pendingOutboundSessions[sessionId] = Pair(sessionKey, session)
-        val networkType = networkMap.getNetworkType(sessionKey.ourId)
+        val networkType = networkMap.getNetworkType(sessionKey.ourId.groupId)
         if (networkType == null) {
-            logger.warn("")
+            logger.warn("Attempted to start session negotiation with peer ${sessionKey.responderId} but our network type " +
+                "${sessionKey.ourId} is not in the network map. The sessionInit message was not sent.")
             return null
         }
+        val ourMemberInfo = networkMap.getMemberInfo(sessionKey.ourId)
+        if (ourMemberInfo == null) {
+            logger.warn("Attempted to start session negotiation with peer ${sessionKey.responderId} but our identity ${sessionKey.ourId}" +
+                " is not in the network map. The sessionInit message was not sent.")
+            return null
+        }
+
         val responderMemberInfo = networkMap.getMemberInfo(sessionKey.responderId)
         if (responderMemberInfo == null) {
             logger.warn("Attempted to start session negotiation with peer ${sessionKey.responderId} which is not in the network map. " +
                     "The sessionInit message was not sent.")
             return null
         }
-        val message = createLinkOutMessage(session.generateInitiatorHello(), responderMemberInfo, networkType)
+        val session = AuthenticationProtocolInitiator(
+            sessionId,
+            supportedModes,
+            maxMessageSize,
+            ourMemberInfo.publicKey,
+            ourMemberInfo.holdingIdentity.groupId
+        )
+        pendingOutboundSessions[sessionId] = Pair(sessionKey, session)
+        val message = createLinkOutMessage(
+            session.generateInitiatorHello(),
+            responderMemberInfo,
+            networkType
+        )
         return sessionId to message
     }
 
     private fun ByteArray.toBase64(): String {
         return Base64.getEncoder().encodeToString(this)
     }
-
-    private fun getPublicKeyFromHash(hash: ByteArray): PublicKey {
-        return networkMap.getMemberInfoFromPublicKeyHash(hash)?.publicKey ?: throw NoPublicKeyForHashException(hash.toBase64())
-    }
-
-    class NoPublicKeyForHashException(hash: String):
-        CordaRuntimeException("Could not find the public key in the network map by hash = $hash")
 
     private fun processResponderHello(message: ResponderHelloMessage): LinkOutMessage? {
         val (sessionInfo, session) = pendingOutboundSessions[message.header.sessionId] ?: run {
@@ -169,9 +179,7 @@ open class SessionManagerImpl(
         val signWithOurGroupId = { data: ByteArray -> cryptoService.signData(ourMemberInfo.publicKey, data) }
         val payload = try {
             session.generateOurHandshakeMessage(
-                ourMemberInfo.publicKey,
                 responderMemberInfo.publicKey,
-                sessionInfo.ourId.groupId,
                 signWithOurGroupId
             )
         } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
@@ -180,9 +188,9 @@ open class SessionManagerImpl(
             return null
         }
 
-        val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity)
+        val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
         if (networkType == null) {
-            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity)
+            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
             return null
         }
         return createLinkOutMessage(payload, responderMemberInfo, networkType)
@@ -218,17 +226,32 @@ open class SessionManagerImpl(
         return null
     }
 
-    private fun processStep2Message(message: Step2Message): LinkOutMessage? {
-        val session = AuthenticationProtocolResponder.fromStep2(message.initiatorHello.header.sessionId,
-            supportedModes,
-            maxMessageSize,
-            message.initiatorHello,
-            message.responderHello,
-            message.privateKey.array(),
-            message.responderHello.responderPublicKey.array())
-        session.generateHandshakeSecrets()
-        pendingInboundSessions[message.initiatorHello.header.sessionId] = session
-        return null
+    private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
+        if (pendingInboundSessions.containsKey(message.header.sessionId)) {
+            logger.warn("Already received a ${InitiatorHelloMessage::class.java.simpleName} for ${message.header.sessionId}. " +
+                    "The message was discarded.")
+            return null
+        }
+
+        val session = AuthenticationProtocolResponder(message.header.sessionId, supportedModes, maxMessageSize)
+        session.receiveInitiatorHello(message)
+        val responderHello = session.generateResponderHello()
+        val peer = networkMap.getMemberInfoFromPublicKeyHash(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
+        if (peer == null) {
+            logger.peerHashNotInNetworkMapWarning(
+                message::class.java.simpleName,
+                message.header.sessionId,
+                message.source.initiatorPublicKeyHash.array().toBase64()
+            )
+            return null
+        }
+        val networkType = networkMap.getNetworkType(peer.holdingIdentity.groupId)
+        if (networkType == null) {
+            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)
+            return null
+        }
+        pendingInboundSessions[message.header.sessionId] = session
+        return createLinkOutMessage(responderHello, peer, networkType)
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
@@ -238,8 +261,9 @@ open class SessionManagerImpl(
             return null
         }
 
+        session.generateHandshakeSecrets()
         val identityData = try {
-            session.validatePeerHandshakeMessage(message, ::getPublicKeyFromHash)
+            session.validatePeerHandshakeMessage(message, networkMap::getPublicKeyFromHash)
         } catch (exception: NoPublicKeyForHashException) {
             logger.warn("Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
                 " The message was discarded.")
@@ -250,7 +274,7 @@ open class SessionManagerImpl(
         }
 
         //Find the correct Holding Identity to use (using the public key hash).
-        val ourMemberInfo = networkMap.getMemberInfoFromPublicKeyHash(identityData.responderPublicKeyHash)
+        val ourMemberInfo = networkMap.getMemberInfoFromPublicKeyHash(identityData.responderPublicKeyHash, identityData.groupId)
         if (ourMemberInfo == null) {
             logger.ourHashNotInNetworkMapWarning(
                 message::class.java.simpleName,
@@ -271,7 +295,7 @@ open class SessionManagerImpl(
             return null
         }
 
-        val peer = networkMap.getMemberInfoFromPublicKeyHash(identityData.initiatorPublicKeyHash)
+        val peer = networkMap.getMemberInfoFromPublicKeyHash(identityData.initiatorPublicKeyHash, identityData.groupId)
         if (peer == null) {
             logger.peerHashNotInNetworkMapWarning(
                 message::class.java.simpleName,
@@ -281,9 +305,9 @@ open class SessionManagerImpl(
             return null
         }
 
-        val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity)
+        val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
         if (networkType == null) {
-            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity)
+            logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
             return null
         }
 

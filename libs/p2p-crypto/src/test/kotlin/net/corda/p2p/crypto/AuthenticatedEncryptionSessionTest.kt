@@ -39,7 +39,7 @@ class AuthenticatedEncryptionSessionTest {
     @Test
     fun `session can be established between two parties and used for transmission of authenticated and encrypted data successfully`() {
         // Step 1: initiator sending hello message to responder.
-        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello(partyAIdentityKey.public, groupId)
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
 
         // Step 2: responder sending hello message to initiator.
@@ -98,7 +98,7 @@ class AuthenticatedEncryptionSessionTest {
     @Test
     fun `session can be established between two parties and used for transmission of authenticated and encrypted data successfully with step 2 executed on separate component`() {
         // Step 1: initiator sending hello message to responder.
-        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello(partyAIdentityKey.public, groupId)
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
 
         // Step 2: responder sending hello message to initiator.
@@ -161,7 +161,7 @@ class AuthenticatedEncryptionSessionTest {
     @Test
     fun `when data message is altered during transmission, decryption fails with an error`() {
         // Step 1: initiator sending hello message to responder.
-        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello(partyAIdentityKey.public, groupId)
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
 
         // Step 2: responder sending hello message to initiator.
@@ -234,7 +234,7 @@ class AuthenticatedEncryptionSessionTest {
     @Test
     fun `when trying to encrypt message larger than the agreed max message size, an exception is thrown`() {
         // Step 1: initiator sending hello message to responder.
-        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello(partyAIdentityKey.public, groupId)
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
 
         // Step 2: responder sending hello message to initiator.
