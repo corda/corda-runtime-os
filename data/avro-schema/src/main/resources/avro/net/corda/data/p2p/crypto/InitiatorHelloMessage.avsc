@@ -17,6 +17,10 @@
         "type": "array",
         "items": "net.corda.p2p.crypto.ProtocolMode"
       }
+    },
+    {
+      "name": "source",
+      "type": "net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity"
     }
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "InitiatorHandshakeIdentity",
+  "namespace": "net.corda.p2p.crypto.internal",
+  "fields": [
+    {
+      "name": "initiatorPublicKeyHash",
+      "type": "bytes"
+    },
+    {
+      "name": "groupId",
+      "type": "string"
+    }
+  ]
+}
