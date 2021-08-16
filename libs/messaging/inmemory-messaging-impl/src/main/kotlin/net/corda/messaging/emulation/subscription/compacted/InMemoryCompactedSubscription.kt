@@ -8,7 +8,6 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
@@ -39,15 +38,15 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
         snapshotsLock.withLock {
             knownValues.clear()
             topicService.handleAllRecords(topicName) { records ->
-                val snapshots: Map<K, V> = uncheckedCast(
-                    records
-                        .map { it.record }
-                        .groupBy({ it.key }, { it.value })
-                        .mapValues { it.value.last() }
-                        .filterValues { processor.valueClass.isInstance(it) }
-                        .filterKeys { processor.keyClass.isInstance(it) }
-                )
-                knownValues += snapshots
+                records.mapNotNull {
+                    it.castToType(processor.keyClass, processor.valueClass)
+                }.groupBy({ it.key }, { it.value })
+                    .mapValues { it.value.last() }
+                    .onEach { (key, value) ->
+                        if (value != null) {
+                            knownValues[key] = value
+                        }
+                    }
             }
         }
     }

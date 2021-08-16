@@ -38,9 +38,11 @@ internal class ConsumerGroup(
     internal fun getPartitions(consumer: Consumer): Collection<Pair<Partition, Long>>? {
         return lock.readLock().withLock {
             consumers[consumer]?.map { partition ->
-                val offset = commitments[partition] ?: when (consumer.offsetStrategy) {
-                    OffsetStrategy.LATEST -> partition.latestOffset()
-                    OffsetStrategy.EARLIEST -> 0L
+                val offset = commitments.computeIfAbsent(partition) {
+                    when (consumer.offsetStrategy) {
+                        OffsetStrategy.LATEST -> partition.latestOffset()
+                        OffsetStrategy.EARLIEST -> 0L
+                    }
                 }
                 partition to offset
             }

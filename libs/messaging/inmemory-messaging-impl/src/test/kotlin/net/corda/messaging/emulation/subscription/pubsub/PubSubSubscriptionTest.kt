@@ -6,6 +6,7 @@ import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.EVENT_TOPIC
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.GROUP_NAME
+import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -25,7 +26,10 @@ class PubSubSubscriptionTest {
         on { getString(EVENT_TOPIC) } doReturn "topic"
         on { getString(GROUP_NAME) } doReturn "group"
     }
-    private val processor = mock<PubSubProcessor<String, Long>>()
+    private val processor = mock<PubSubProcessor<String, Number>> {
+        on { keyClass } doReturn String::class.java
+        on { valueClass } doReturn Number::class.java
+    }
     private val executor = mock<ExecutorService>()
     private val consumeLifeCycle = mock<Lifecycle>()
     private val topicService = mock<TopicService> {
@@ -98,26 +102,69 @@ class PubSubSubscriptionTest {
     }
 
     @Test
-    fun `processRecord submit to executor`() {
+    fun `processRecords submit to executor`() {
         val future = mock<Future<Any>>()
         val captor = argumentCaptor<Runnable>()
         doReturn(future).whenever(executor).submit(captor.capture())
-        val record = Record("topic", "key6", 3L)
+        val record = Record<String, Number>("topic", "key6", 4)
+        val records = listOf(
+            RecordMetadata(
+                offset = 1,
+                partition = 1,
+                record = record
+            )
+        )
 
-        pubSubSubscription.processRecord(record)
-        verify(processor, never()).onNext(record)
+        pubSubSubscription.processRecords(records)
+        verify(processor, never()).onNext(any())
 
         captor.firstValue.run()
         verify(processor).onNext(record)
     }
 
     @Test
-    fun `processRecord send to processor in no executor`() {
+    fun `processRecords send to processor in no executor`() {
         val subscription = PubSubSubscription(config, processor, null, topicService)
-        val record = Record("topic", "key6", 3L)
+        val record = Record<String, Number>("topic", "key6", 3)
+        val records = listOf(
+            RecordMetadata(
+                offset = 1,
+                partition = 1,
+                record = record
+            )
+        )
 
-        subscription.processRecord(record)
+        subscription.processRecords(records)
 
         verify(processor).onNext(record)
+    }
+
+    @Test
+    fun `processRecords ignore invalid keys and values`() {
+        val subscription = PubSubSubscription(config, processor, null, topicService)
+        val record1 = Record("topic", "key6", "3")
+        val record2 = Record<Int, Number>("topic", 4, 4)
+        val record3 = Record<String, Number>("topic", "key6", null)
+        val records = listOf(
+            RecordMetadata(
+                offset = 1,
+                partition = 1,
+                record = record1
+            ),
+            RecordMetadata(
+                offset = 2,
+                partition = 2,
+                record = record2
+            ),
+            RecordMetadata(
+                offset = 2,
+                partition = 2,
+                record = record3
+            ),
+        )
+
+        subscription.processRecords(records)
+
+        verify(processor).onNext(record3)
     }
 }

@@ -5,7 +5,6 @@ import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.emulation.topic.model.Consumer
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
-import net.corda.v5.base.util.uncheckedCast
 
 class EventLogConsumer<K : Any, V : Any>(
     private val subscription: EventLogSubscription<K, V>,
@@ -17,23 +16,22 @@ class EventLogConsumer<K : Any, V : Any>(
 
     override fun handleRecords(records: Collection<RecordMetadata>) {
         subscription.processor.onNext(
-            records.filter {
-                subscription.processor.keyClass.isInstance(it.record.key)
-            }.filter {
-                subscription.processor.valueClass.isInstance(it.record.value)
-            }.map {
-                it.toRecord()
-            }.toList()
+            records.mapNotNull { it.toRecord() }.toList()
         )
     }
 
-    private fun RecordMetadata.toRecord(): EventLogRecord<K, V> {
-        return EventLogRecord(
-            subscription.topicName,
-            uncheckedCast(this.record.key),
-            uncheckedCast(this.record.value),
-            this.partition,
-            this.offset
-        )
+    private fun RecordMetadata.toRecord(): EventLogRecord<K, V>? {
+        val record = castToType(subscription.processor.keyClass, subscription.processor.valueClass)
+        return if (record != null) {
+            EventLogRecord(
+                subscription.topicName,
+                record.key,
+                record.value,
+                this.partition,
+                this.offset
+            )
+        } else {
+            null
+        }
     }
 }

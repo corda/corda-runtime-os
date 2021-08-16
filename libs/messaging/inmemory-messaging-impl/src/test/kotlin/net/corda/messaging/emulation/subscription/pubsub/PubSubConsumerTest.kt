@@ -35,8 +35,20 @@ class PubSubConsumerTest {
 
         consumer.handleRecords(records)
 
-        verify(subscription).processRecord(Record("topic", "key4", SubscriptionConfig("c", "d")))
-        verify(subscription).processRecord(Record("topic", "key6", SubscriptionConfig("c", "d")))
+        verify(subscription).processRecords(
+            listOf(
+                RecordMetadata(
+                    offset = 21,
+                    partition = 1,
+                    record = Record("topic", "key4", SubscriptionConfig("c", "d")),
+                ),
+                RecordMetadata(
+                    offset = 100,
+                    partition = 3,
+                    record = Record("topic", "key6", SubscriptionConfig("c", "d")),
+                ),
+            )
+        )
     }
 
     @Test

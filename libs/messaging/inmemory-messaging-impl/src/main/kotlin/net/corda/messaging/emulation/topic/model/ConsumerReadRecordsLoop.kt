@@ -23,7 +23,11 @@ internal class ConsumerReadRecordsLoop(
         if ((records != null) && (records.isNotEmpty())) {
             @Suppress("TooGenericExceptionCaught")
             try {
-                consumer.handleRecords(records.values.flatten())
+                consumer.handleRecords(
+                    records
+                        .values
+                        .flatten()
+                )
                 records.forEach { (partition, records) ->
                     group.commitRecord(partition, records)
                 }

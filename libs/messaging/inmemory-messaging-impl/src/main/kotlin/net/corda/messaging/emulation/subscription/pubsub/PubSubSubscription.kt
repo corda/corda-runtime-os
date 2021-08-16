@@ -3,13 +3,14 @@ package net.corda.messaging.emulation.subscription.pubsub
 import com.typesafe.config.Config
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.PubSubProcessor
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.EVENT_TOPIC
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.GROUP_NAME
+import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicReference
@@ -78,14 +79,18 @@ class PubSubSubscription<K : Any, V : Any>(
     }
 
     /**
-     * Attempt to process a [record] with the given [processor].
+     * Attempt to process a collection of [records] with the given [processor].
      * [processor] executed using the [executor] if it is not null.
      */
-    internal fun processRecord(record: Record<K, V>) {
-        if (executor != null) {
-            executor.submit { processor.onNext(record) }.get()
-        } else {
-            processor.onNext(record)
+    internal fun processRecords(records: Collection<RecordMetadata>) {
+        records.mapNotNull {
+            it.castToType(processor.keyClass, processor.valueClass)
+        }.onEach { record ->
+            if (executor != null) {
+                executor.submit { processor.onNext(uncheckedCast(record)) }.get()
+            } else {
+                processor.onNext(uncheckedCast(record))
+            }
         }
     }
 }
