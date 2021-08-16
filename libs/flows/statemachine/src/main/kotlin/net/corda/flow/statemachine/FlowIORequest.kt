@@ -2,7 +2,6 @@ package net.corda.flow.statemachine
 
 import net.corda.v5.application.flows.FlowInfo
 import net.corda.v5.application.flows.FlowSession
-import net.corda.v5.base.types.NonEmptySet
 import net.corda.v5.serialization.SerializedBytes
 import java.time.Instant
 
@@ -28,7 +27,7 @@ sealed class FlowIORequest<out R> {
      * @return a map from session to received message.
      */
     data class Receive(
-            val sessions: NonEmptySet<FlowSession>
+            val sessions: Set<FlowSession>
     ) : FlowIORequest<Map<FlowSession, SerializedBytes<Any>>>()
 
     /**
@@ -50,7 +49,7 @@ sealed class FlowIORequest<out R> {
      *
      * @property sessions the sessions to be closed.
      */
-    data class CloseSessions(val sessions: NonEmptySet<FlowSession>): FlowIORequest<Unit>()
+    data class CloseSessions(val sessions: Set<FlowSession>): FlowIORequest<Unit>()
 
     /**
      * Get the FlowInfo of the specified sessions.
@@ -58,7 +57,7 @@ sealed class FlowIORequest<out R> {
      * @property sessions the sessions to get the FlowInfo of.
      * @return a map from session to FlowInfo.
      */
-    data class GetFlowInfo(val sessions: NonEmptySet<FlowSession>) : FlowIORequest<Map<FlowSession, FlowInfo>>()
+    data class GetFlowInfo(val sessions: Set<FlowSession>) : FlowIORequest<Map<FlowSession, FlowInfo>>()
 
     /**
      * Suspend the flow until the specified time.
