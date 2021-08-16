@@ -135,62 +135,6 @@ subprojects {
             )
         }
 
-        // This block should be remove when the junit 4 tests are removed
-        sourceSets {
-            junit4Test {
-                kotlin {
-                    srcDirs += file("$projectDir/src/junit4Test/kotlin")
-                }
-                java {
-                    srcDirs += file("$projectDir/src/junit4Test/java")
-                }
-                resources {
-                    srcDirs += file("$projectDir/src/junit4Test/resources")
-                }
-                compileClasspath += main.output + test.output
-                runtimeClasspath += main.output + test.output
-            }
-        }
-
-        dependencies {
-            // TODO: remove vintage engine when existing tests labelled "junit4Test" and we don't have a dependency on 4 anymore
-            junit4TestRuntimeOnly "org.junit.vintage:junit-vintage-engine:$junitVersion"
-        }
-
-        kotlin {
-            target {
-                java
-                compilations.junit4Test {
-                    associateWith compilations.main
-                    associateWith compilations.test
-
-                    configurations {
-                        junit4TestApi.extendsFrom testApi
-                        junit4TestImplementation.extendsFrom testImplementation
-                        junit4TestRuntimeOnly.extendsFrom testRuntimeOnly
-
-                        [ junit4TestCompileClasspath, junit4TestRuntimeClasspath ].forEach { cfg ->
-                            configureKotlinForOSGi(cfg)
-                        }
-                    }
-                }
-            }
-        }
-
-        tasks.register('junit4Test', Test) {
-            description = 'Runs junit4 tests'
-            group = 'verification'
-
-            testClassesDirs = project.sourceSets['junit4Test'].output.classesDirs
-            classpath = project.sourceSets['junit4Test'].runtimeClasspath
-            shouldRunAfter tasks.named('test')
-        }
-
-        tasks.named('test') {
-            dependsOn tasks.named('junit4Test')
-        }
-
-
         configurations {
             all {
                 resolutionStrategy {
