@@ -1,8 +1,8 @@
 package net.corda.serializers
 
-import net.corda.kryoserialization.CheckpointInput
-import net.corda.kryoserialization.CheckpointInternalCustomSerializer
-import net.corda.kryoserialization.CheckpointOutput
+import net.corda.serialization.CheckpointInput
+import net.corda.serialization.CheckpointInternalCustomSerializer
+import net.corda.serialization.CheckpointOutput
 import net.corda.v5.crypto.Crypto
 import java.security.PrivateKey
 

@@ -1,4 +1,4 @@
-package net.corda.kryoserialization
+package net.corda.serialization
 
 import net.corda.v5.base.types.ByteSequence
 
