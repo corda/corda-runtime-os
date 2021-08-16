@@ -1,11 +1,10 @@
 package net.corda.utilities
 
-import net.corda.utilities.createSimpleCache
-import net.corda.utilities.toSynchronised
 import org.slf4j.Logger
 import java.time.Duration
 import java.util.Collections
 
+@Suppress("TooGenericExceptionCaught")
 inline fun <T> logElapsedTime(label: String, logger: Logger, body: () -> T): T {
     // Use nanoTime as it's monotonic.
     val now = System.nanoTime()

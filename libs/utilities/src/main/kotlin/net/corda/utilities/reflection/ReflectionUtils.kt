@@ -1,6 +1,7 @@
 package net.corda.utilities.reflection
 
 import net.corda.v5.base.util.uncheckedCast
+import java.lang.reflect.Field
 import java.lang.reflect.Member
 import java.lang.reflect.Modifier
 import java.net.URL
@@ -53,7 +54,7 @@ val <T : Any> Class<T>.kotlinObjectInstance: T?
                 null
             }
             field?.let {
-                if (it.type == this && it.isPublic && it.isStatic && it.isFinal) {
+                if (it.type == this && it.isPublicStaticFinal) {
                     it.isAccessible = true
                     return uncheckedCast(it.get(null))
                 } else {
@@ -62,6 +63,8 @@ val <T : Any> Class<T>.kotlinObjectInstance: T?
             }
         }
     }
+
+private val Field.isPublicStaticFinal: Boolean get() = isPublic && isStatic && isFinal
 
 /** Returns the location of this class. */
 val Class<*>.location: URL get() = protectionDomain.codeSource.location
