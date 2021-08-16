@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "HoldingIdentity",
-  "namespace": "net.corda.p2p.payload",
+  "namespace": "net.corda.p2p.app",
   "fields": [
     {
       "name": "x500Name",

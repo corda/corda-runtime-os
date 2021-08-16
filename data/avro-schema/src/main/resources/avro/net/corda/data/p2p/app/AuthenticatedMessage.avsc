@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "AuthenticatedMessage",
+  "namespace": "net.corda.p2p.app",
+  "doc": "A message to be sent to the specified destination via an (authenticated) link session.",
+  "fields": [
+    {
+      "name": "header",
+      "type": "net.corda.p2p.app.AuthenticatedMessageHeader"
+    },
+    {
+      "name": "payload",
+      "type": "bytes"
+    }
+  ]
+}

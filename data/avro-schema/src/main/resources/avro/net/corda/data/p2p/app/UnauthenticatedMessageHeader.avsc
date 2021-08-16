@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "UnauthenticatedMessageHeader",
+  "namespace": "net.corda.p2p.app",
+  "fields": [
+    {
+      "name": "destination",
+      "type": "net.corda.p2p.app.HoldingIdentity"
+    },
+    {
+      "name": "source",
+      "type": "net.corda.p2p.app.HoldingIdentity"
+    }
+  ]
+}

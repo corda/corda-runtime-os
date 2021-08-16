@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "AuthenticatedMessageAndKey",
+  "namespace": "net.corda.p2p",
+  "fields": [
+    {
+      "name": "message",
+      "type": "net.corda.p2p.app.AuthenticatedMessage"
+    },
+    {
+      "name": "key",
+      "type": "bytes"
+    }
+  ]
+}
