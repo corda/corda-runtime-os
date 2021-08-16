@@ -2,7 +2,6 @@ package net.corda.impl.cipher.suite
 
 import net.corda.v5.crypto.CompositeKey
 import java.io.ByteArrayOutputStream
-import java.lang.UnsupportedOperationException
 import java.security.InvalidAlgorithmParameterException
 import java.security.InvalidKeyException
 import java.security.PrivateKey
@@ -18,8 +17,10 @@ import java.security.spec.AlgorithmParameterSpec
 class CompositeSignature : Signature(SIGNATURE_ALGORITHM) {
     companion object {
         const val SIGNATURE_ALGORITHM = "COMPOSITESIG"
+
         @JvmStatic
-        fun getService(provider: Provider) = Provider.Service(provider, "Signature", SIGNATURE_ALGORITHM, CompositeSignature::class.java.name, emptyList(), emptyMap())
+        fun getService(provider: Provider) =
+            Provider.Service(provider, "Signature", SIGNATURE_ALGORITHM, CompositeSignature::class.java.name, emptyList(), emptyMap())
     }
 
     private var signatureState: State? = null
@@ -42,7 +43,9 @@ class CompositeSignature : Signature(SIGNATURE_ALGORITHM) {
 
     @Throws(InvalidKeyException::class)
     override fun engineInitSign(privateKey: PrivateKey?) {
-        throw InvalidKeyException("Composite signatures must be assembled independently from signatures provided by the component private keys")
+        throw InvalidKeyException(
+            "Composite signatures must be assembled independently from signatures provided by the component private keys"
+        )
     }
 
     @Throws(InvalidKeyException::class)
@@ -67,7 +70,9 @@ class CompositeSignature : Signature(SIGNATURE_ALGORITHM) {
 
     @Throws(SignatureException::class)
     override fun engineSign(): ByteArray {
-        throw SignatureException("Composite signatures must be assembled independently from signatures provided by the component private keys")
+        throw SignatureException(
+            "Composite signatures must be assembled independently from signatures provided by the component private keys"
+        )
     }
 
     override fun engineUpdate(b: Byte) {

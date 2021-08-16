@@ -1,24 +1,20 @@
 package net.corda.impl.cipher.suite
 
 import net.corda.v5.base.concurrent.getOrThrow
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
-import net.corda.v5.crypto.exceptions.CryptoServiceException
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.WrappedKeyPair
 import net.corda.v5.cipher.suite.WrappedPrivateKey
+import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.exceptions.CryptoServiceException
+import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
 import java.security.PublicKey
 import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeoutException
 
-
-class CryptoServiceCircuitBreaker(
-        private val cryptoService: CryptoService,
-        private val timeout: Duration
-): CryptoService, AutoCloseable {
+class CryptoServiceCircuitBreaker(private val cryptoService: CryptoService, private val timeout: Duration) : CryptoService, AutoCloseable {
 
     private val executor = Executors.newCachedThreadPool()
 

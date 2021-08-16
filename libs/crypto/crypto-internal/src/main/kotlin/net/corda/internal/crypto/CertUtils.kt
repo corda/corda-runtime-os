@@ -25,20 +25,20 @@ import java.time.temporal.ChronoUnit
 import java.util.Date
 
 fun createDevCertificate(
-        issuer: X500Name,
-        signer: ContentSigner,
-        subject: X500Name,
-        subjectPublicKey: PublicKey
+    issuer: X500Name,
+    signer: ContentSigner,
+    subject: X500Name,
+    subjectPublicKey: PublicKey
 ): X509Certificate {
     val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(subjectPublicKey.encoded))
     val validityWindow = getValidityWindow(Duration.ZERO, Duration.ofDays(365))
     val v3CertGen = X509v3CertificateBuilder(
-            issuer,
-            BigInteger.valueOf(System.currentTimeMillis()),
-            Time(validityWindow.first),
-            Time(validityWindow.second),
-            subject,
-            subjectPublicKeyInfo
+        issuer,
+        BigInteger.valueOf(System.currentTimeMillis()),
+        Time(validityWindow.first),
+        Time(validityWindow.second),
+        subject,
+        subjectPublicKeyInfo
     )
     return v3CertGen.build(signer).toJca()
 }
@@ -46,10 +46,13 @@ fun createDevCertificate(
 fun SigningService.getSigner(schemeMetadata: CipherSchemeMetadata, alias: String): ContentSigner {
     return object : ContentSigner {
         private val publicKey: PublicKey = findPublicKey(alias)
-                ?: throw CryptoServiceException("No key found for alias $alias", isRecoverable = false)
+            ?: throw CryptoServiceException("No key found for alias $alias", isRecoverable = false)
         private val signatureScheme: SignatureScheme = schemeMetadata.findSignatureScheme(publicKey)
         private val sigAlgID: AlgorithmIdentifier = signatureScheme.signatureSpec.signatureOID
-                ?: throw CryptoServiceException("The signature algorithm is not specified in ${signatureScheme.codeName} for alias $alias", isRecoverable = false)
+            ?: throw CryptoServiceException(
+                "The signature algorithm is not specified in ${signatureScheme.codeName} for alias $alias",
+                isRecoverable = false
+            )
         private val baos = ByteArrayOutputStream()
         override fun getAlgorithmIdentifier(): AlgorithmIdentifier = sigAlgID
         override fun getOutputStream(): OutputStream = baos
@@ -61,7 +64,10 @@ fun FreshKeySigningService.getSigner(schemeMetadata: CipherSchemeMetadata, publi
     return object : ContentSigner {
         private val signatureScheme: SignatureScheme = schemeMetadata.findSignatureScheme(publicKey)
         private val sigAlgID: AlgorithmIdentifier = signatureScheme.signatureSpec.signatureOID
-                ?: throw CryptoServiceException("The signature algorithm is not specified in ${signatureScheme.codeName}", isRecoverable = false)
+            ?: throw CryptoServiceException(
+                "The signature algorithm is not specified in ${signatureScheme.codeName}",
+                isRecoverable = false
+            )
         private val baos = ByteArrayOutputStream()
         override fun getAlgorithmIdentifier(): AlgorithmIdentifier = sigAlgID
         override fun getOutputStream(): OutputStream = baos
@@ -77,7 +83,7 @@ private fun getValidityWindow(before: Duration, after: Duration): Pair<Date, Dat
 }
 
 private fun X509CertificateHolder.toJca(): X509Certificate =
-        requireNotNull(CertificateFactory.getInstance("X.509").generateCertificate(encoded.inputStream()) as? X509Certificate) {
-            "Not an X.509 certificate: $this"
-        }
+    requireNotNull(CertificateFactory.getInstance("X.509").generateCertificate(encoded.inputStream()) as? X509Certificate) {
+        "Not an X.509 certificate: $this"
+    }
 

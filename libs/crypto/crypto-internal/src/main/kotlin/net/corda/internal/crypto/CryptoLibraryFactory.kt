@@ -16,9 +16,9 @@ interface CryptoLibraryFactory {
      * @throws [CryptoServiceLibraryException] for general cryptographic exceptions.
      */
     fun getFreshKeySigningService(
-            passphrase: String,
-            defaultSchemeCodeName: String,
-            freshKeysDefaultSchemeCodeName: String
+        passphrase: String,
+        defaultSchemeCodeName: String,
+        freshKeysDefaultSchemeCodeName: String
     ): FreshKeySigningService
 
     /**
@@ -27,9 +27,9 @@ interface CryptoLibraryFactory {
      * @throws [CryptoServiceLibraryException] for general cryptographic exceptions.
      */
     fun getSigningService(
-            category: String,
-            passphrase: String,
-            defaultSchemeCodeName: String
+        category: String,
+        passphrase: String,
+        defaultSchemeCodeName: String
     ): SigningService
 
     /**

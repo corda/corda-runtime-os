@@ -8,7 +8,7 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 
 class MockCipherSuiteFactory(
-        val mocks: CryptoMocks
+    val mocks: CryptoMocks
 ) : CipherSuiteFactory {
     override fun getSchemeMap(): CipherSchemeMetadata = mocks.schemeMetadata()
 

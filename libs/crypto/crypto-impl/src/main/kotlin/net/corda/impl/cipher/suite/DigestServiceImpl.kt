@@ -2,15 +2,15 @@ package net.corda.impl.cipher.suite
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestAlgorithm
-import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.cipher.suite.DigestAlgorithmFactory
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.SecureHash
 import java.util.concurrent.ConcurrentHashMap
 
 class DigestServiceImpl(
-        private val schemeMetadata: CipherSchemeMetadata,
-        private val customDigestAlgorithmFactories: List<DigestAlgorithmFactory>
+    private val schemeMetadata: CipherSchemeMetadata,
+    private val customDigestAlgorithmFactories: List<DigestAlgorithmFactory>
 ) : DigestService {
     private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>().also { factories ->
         customDigestAlgorithmFactories.forEach { factory ->

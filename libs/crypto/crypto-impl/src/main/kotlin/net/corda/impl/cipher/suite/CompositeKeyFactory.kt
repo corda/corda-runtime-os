@@ -16,7 +16,7 @@ import java.security.spec.X509EncodedKeySpec
  * Factory for generating composite keys from ASN.1 format key specifications. This is used by [CordaSecurityProvider].
  */
 class CompositeKeyFactory(
-        private val keyEncoder: KeyEncodingService
+    private val keyEncoder: KeyEncodingService
 ) : KeyFactorySpi() {
 
     @Throws(InvalidKeySpecException::class)

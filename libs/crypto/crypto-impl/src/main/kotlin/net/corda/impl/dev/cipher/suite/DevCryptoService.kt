@@ -33,19 +33,19 @@ import java.security.PublicKey
  * The wrapped keys are not deterministic generated using th
  */
 class DevCryptoService(
-        private val keyCache: DefaultKeyCache,
-        private val signingCache: SigningKeyCache,
-        schemeMetadata: CipherSchemeMetadata,
-        hashingService: DigestService
+    private val keyCache: DefaultKeyCache,
+    private val signingCache: SigningKeyCache,
+    schemeMetadata: CipherSchemeMetadata,
+    hashingService: DigestService
 ) : CryptoService {
     companion object {
         private val logger = contextLogger()
 
         private fun String.toBigIntegerEntropy(): BigInteger {
             val bytes = MessageDigest
-                    .getInstance("SHA-256")
-                    .digest(this.toByteArray())
-                    .sliceArray(0 until 64)
+                .getInstance("SHA-256")
+                .digest(this.toByteArray())
+                .sliceArray(0 until 64)
             return BigInteger(bytes)
         }
     }
@@ -53,13 +53,13 @@ class DevCryptoService(
     private val supportedSchemes: Array<SignatureScheme>
 
     private val defaultCryptoService: CryptoService = DefaultCryptoService(
-            cache = keyCache,
-            schemeMetadata = schemeMetadata,
-            hashingService = hashingService
+        cache = keyCache,
+        schemeMetadata = schemeMetadata,
+        hashingService = hashingService
     )
 
     init {
-        if(!defaultCryptoService.supportedSchemes().any { it.codeName.equals(EDDSA_ED25519_CODE_NAME, true) }) {
+        if (!defaultCryptoService.supportedSchemes().any { it.codeName.equals(EDDSA_ED25519_CODE_NAME, true) }) {
             throw CryptoServiceException("The default crypto service doesn't support $EDDSA_ED25519_CODE_NAME scheme.")
         }
         val schemes = mutableListOf<SignatureScheme>()
@@ -100,7 +100,7 @@ class DevCryptoService(
     }
 
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean) =
-            defaultCryptoService.createWrappingKey(masterKeyAlias, failIfExists)
+        defaultCryptoService.createWrappingKey(masterKeyAlias, failIfExists)
 
     @Suppress("TooGenericExceptionCaught")
     override fun generateKeyPair(alias: String, signatureScheme: SignatureScheme): PublicKey {
@@ -129,7 +129,7 @@ class DevCryptoService(
     }
 
     override fun sign(alias: String, signatureScheme: SignatureScheme, data: ByteArray): ByteArray =
-            sign(alias, signatureScheme, signatureScheme.signatureSpec, data)
+        sign(alias, signatureScheme, signatureScheme.signatureSpec, data)
 
     @Suppress("TooGenericExceptionCaught")
     override fun sign(alias: String, signatureScheme: SignatureScheme, signatureSpec: SignatureSpec, data: ByteArray): ByteArray {
@@ -137,14 +137,19 @@ class DevCryptoService(
         if (!isSupported(signatureScheme)) {
             throw CryptoServiceBadRequestException("Unsupported signature scheme: ${signatureScheme.codeName}")
         }
-        if(findPublicKey(alias) == null) {
+        if (findPublicKey(alias) == null) {
             throw CryptoServiceBadRequestException("Unable to sign: There is no private key under the alias: $alias")
         }
         return defaultCryptoService.sign(alias, signatureScheme, signatureSpec, data)
     }
 
     override fun sign(wrappedKey: WrappedPrivateKey, signatureSpec: SignatureSpec, data: ByteArray): ByteArray {
-        logger.debug("sign(wrappedKey.masterKeyAlias={}, wrappedKey.signatureScheme={}, signatureSpec={})", wrappedKey.masterKeyAlias, wrappedKey.signatureScheme, signatureSpec)
+        logger.debug(
+            "sign(wrappedKey.masterKeyAlias={}, wrappedKey.signatureScheme={}, signatureSpec={})",
+            wrappedKey.masterKeyAlias,
+            wrappedKey.signatureScheme,
+            signatureSpec
+        )
         if (!isSupported(wrappedKey.signatureScheme)) {
             throw CryptoServiceBadRequestException("Unsupported signature scheme: ${wrappedKey.signatureScheme.codeName}")
         }

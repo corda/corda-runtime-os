@@ -8,11 +8,11 @@ import java.security.NoSuchAlgorithmException
 import java.security.Provider
 
 class SpiDigestAlgorithmFactory(
-        schemeMetadata: CipherSchemeMetadata,
-        override val algorithm: String,
+    schemeMetadata: CipherSchemeMetadata,
+    override val algorithm: String,
 ) : DigestAlgorithmFactory {
-    private val provider : Provider = schemeMetadata.providers.getValue(
-            schemeMetadata.digests.first { it.algorithmName == algorithm }.providerName
+    private val provider: Provider = schemeMetadata.providers.getValue(
+        schemeMetadata.digests.first { it.algorithmName == algorithm }.providerName
     )
 
     override fun getInstance(): DigestAlgorithm {

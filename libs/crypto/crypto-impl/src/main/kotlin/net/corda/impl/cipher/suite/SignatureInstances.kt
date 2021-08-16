@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap
  * and we want to be able to optimise them en masse.
  */
 class SignatureInstances(
-        private val providers: Map<String, Provider>
+    private val providers: Map<String, Provider>
 ) {
     private val signatureFactory: SignatureFactory = CachingSignatureFactory()
 
@@ -31,9 +31,9 @@ class SignatureInstances(
     // The provider itself is a very bad key class as hashCode() is expensive and contended.
     // So use name and version instead.
     private data class SignatureKey(
-            val algorithm: String,
-            val providerName: String?,
-            val providerVersion: String?
+        val algorithm: String,
+        val providerName: String?,
+        val providerVersion: String?
     ) {
         constructor(algorithm: String, provider: Provider?) : this(algorithm, provider?.name, provider?.versionStr)
     }
@@ -48,7 +48,7 @@ class SignatureInstances(
         }
 
         override fun release(sig: Signature): Unit =
-                signatureInstances[SignatureKey(sig.algorithm, sig.provider)]?.release(sig)!!
+            signatureInstances[SignatureKey(sig.algorithm, sig.provider)]?.release(sig)!!
     }
 
     interface SignatureFactory {

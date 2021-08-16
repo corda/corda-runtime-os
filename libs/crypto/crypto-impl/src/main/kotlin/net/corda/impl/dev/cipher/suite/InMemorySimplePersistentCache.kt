@@ -19,8 +19,8 @@ open class InMemorySimplePersistentCache<V, E> : SimplePersistentCache<V, E> {
 }
 
 class InMemorySigningServicePersistentCache :
-        InMemorySimplePersistentCache<SigningPersistentKey, SigningPersistentKey>(),
-        SigningServicePersistentCache {
+    InMemorySimplePersistentCache<SigningPersistentKey, SigningPersistentKey>(),
+    SigningServicePersistentCache {
     override fun put(key: Any, entity: SigningPersistentKey): SigningPersistentKey = put(key, entity) { it }
     override fun get(key: Any): SigningPersistentKey? = get(key) { it }
     override fun findByAlias(alias: Any): SigningPersistentKey? = data.values.singleOrNull { it.first.alias == alias }?.first

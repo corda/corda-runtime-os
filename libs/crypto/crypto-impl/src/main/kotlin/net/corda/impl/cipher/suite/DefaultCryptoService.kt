@@ -3,18 +3,18 @@ package net.corda.impl.cipher.suite
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
+import net.corda.v5.cipher.suite.WrappedKeyPair
+import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_CODE_NAME
-import net.corda.v5.cipher.suite.WrappedKeyPair
-import net.corda.v5.cipher.suite.WrappedPrivateKey
-import net.corda.v5.crypto.DigestService
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SM2_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import java.security.KeyPairGenerator
@@ -25,9 +25,9 @@ import javax.crypto.Cipher
 
 @Suppress("TooGenericExceptionCaught", "TooManyFunctions")
 open class DefaultCryptoService(
-        private val cache: DefaultKeyCache,
-        private val schemeMetadata: CipherSchemeMetadata,
-        private val hashingService: DigestService
+    private val cache: DefaultKeyCache,
+    private val schemeMetadata: CipherSchemeMetadata,
+    private val hashingService: DigestService
 ) : CryptoService {
     companion object {
         private val logger = contextLogger()
@@ -84,7 +84,10 @@ open class DefaultCryptoService(
                 when (failIfExists) {
                     true -> throw CryptoServiceBadRequestException("There is an existing key with the alias: $masterKeyAlias")
                     false -> {
-                        logger.info("Wrapping key for alias '$masterKeyAlias' already exists, continue as normal as failIfExists=$failIfExists")
+                        logger.info(
+                            "Wrapping key for alias '$masterKeyAlias' already exists, " +
+                                    "continue as normal as failIfExists=$failIfExists"
+                        )
                         return
                     }
                 }
@@ -127,7 +130,7 @@ open class DefaultCryptoService(
         }
         return try {
             val wrappingKey = cache.find(masterKeyAlias)?.wrappingKey
-                    ?: throw CryptoServiceBadRequestException("The $masterKeyAlias is not created yet.")
+                ?: throw CryptoServiceBadRequestException("The $masterKeyAlias is not created yet.")
             val keyPairGenerator = KeyPairGenerator.getInstance(wrappedSignatureScheme.algorithmName, provider(wrappedSignatureScheme))
             if (wrappedSignatureScheme.algSpec != null) {
                 keyPairGenerator.initialize(wrappedSignatureScheme.algSpec, schemeMetadata.secureRandom)
@@ -137,9 +140,9 @@ open class DefaultCryptoService(
             val keyPair = keyPairGenerator.generateKeyPair()
             val privateMaterial = wrappingKey.wrap(keyPair.private)
             WrappedKeyPair(
-                    publicKey = keyPair.public,
-                    keyMaterial = privateMaterial,
-                    encodingVersion = 1
+                publicKey = keyPair.public,
+                keyMaterial = privateMaterial,
+                encodingVersion = 1
             )
         } catch (e: CryptoServiceException) {
             throw e
@@ -149,13 +152,13 @@ open class DefaultCryptoService(
     }
 
     override fun sign(alias: String, signatureScheme: SignatureScheme, data: ByteArray): ByteArray =
-            sign(alias, signatureScheme, signatureScheme.signatureSpec, data)
+        sign(alias, signatureScheme, signatureScheme.signatureSpec, data)
 
     override fun sign(alias: String, signatureScheme: SignatureScheme, signatureSpec: SignatureSpec, data: ByteArray): ByteArray {
         logger.debug("sign(alias={}, signatureScheme={}, spec={})", alias, signatureScheme, signatureSpec)
         return try {
             val privateKey = cache.find(alias)?.privateKey
-                    ?: throw CryptoServiceBadRequestException("Unable to sign: There is no private key under the alias: $alias")
+                ?: throw CryptoServiceBadRequestException("Unable to sign: There is no private key under the alias: $alias")
             sign(signatureScheme, signatureSpec, privateKey, data)
         } catch (e: CryptoServiceException) {
             throw e
@@ -165,10 +168,15 @@ open class DefaultCryptoService(
     }
 
     override fun sign(wrappedKey: WrappedPrivateKey, signatureSpec: SignatureSpec, data: ByteArray): ByteArray {
-        logger.debug("sign(wrappedKey.masterKeyAlias={}, wrappedKey.signatureScheme={}, signatureSpec={})", wrappedKey.masterKeyAlias, wrappedKey.signatureScheme, signatureSpec)
+        logger.debug(
+            "sign(wrappedKey.masterKeyAlias={}, wrappedKey.signatureScheme={}, signatureSpec={})",
+            wrappedKey.masterKeyAlias,
+            wrappedKey.signatureScheme,
+            signatureSpec
+        )
         return try {
             val wrappingKey = cache.find(wrappedKey.masterKeyAlias)?.wrappingKey
-                    ?: throw CryptoServiceBadRequestException("The ${wrappedKey.masterKeyAlias} is not created yet.")
+                ?: throw CryptoServiceBadRequestException("The ${wrappedKey.masterKeyAlias} is not created yet.")
             val privateKey = wrappingKey.unwrap(wrappedKey.keyMaterial)
             sign(wrappedKey.signatureScheme, signatureSpec, privateKey, data)
         } catch (e: CryptoServiceException) {

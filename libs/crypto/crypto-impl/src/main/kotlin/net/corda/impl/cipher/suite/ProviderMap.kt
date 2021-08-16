@@ -1,17 +1,17 @@
 package net.corda.impl.cipher.suite
 
-import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.ID_CURVE_25519PH
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_NONE_TEMPLATE
-import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.ID_CURVE_25519PH
 import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SM2_SM3_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_SHA512_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.crypto.CompositeKey
 import net.i2p.crypto.eddsa.EdDSAEngine
 import net.i2p.crypto.eddsa.EdDSASecurityProvider
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
@@ -29,7 +29,7 @@ import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 
 class ProviderMap(
-        private val keyEncoderProvider: () -> KeyEncodingService
+    private val keyEncoderProvider: () -> KeyEncodingService
 ) {
     private val keyEncoder: KeyEncodingService by lazy(LazyThreadSafetyMode.PUBLICATION) { keyEncoderProvider() }
 
@@ -53,11 +53,11 @@ class ProviderMap(
     }
 
     val providers: Map<String, Provider> = listOf(
-            cordaBouncyCastleProvider,
-            cordaSecurityProvider,
-            bouncyCastlePQCProvider
+        cordaBouncyCastleProvider,
+        cordaSecurityProvider,
+        bouncyCastlePQCProvider
     )
-    .associateBy(Provider::getName)
+        .associateBy(Provider::getName)
 
     val secureRandom: SecureRandom = SecureRandom.getInstance(CordaSecureRandomService.algorithm, cordaSecurityProvider)
 
@@ -70,19 +70,19 @@ class ProviderMap(
      */
     @Suppress("VariableNaming")
     val RSA: SignatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
-            providerName = cordaBouncyCastleProvider.name
+        providerName = cordaBouncyCastleProvider.name
     )
 
     /** ECDSA signature scheme using the secp256k1 Koblitz curve. */
     @Suppress("VariableNaming")
     val ECDSA_SECP256K1: SignatureScheme = ECDSA_SECP256K1_SHA256_TEMPLATE.makeScheme(
-            providerName = cordaBouncyCastleProvider.name
+        providerName = cordaBouncyCastleProvider.name
     )
 
     /** ECDSA signature scheme using the secp256r1 (NIST P-256) curve. */
     @Suppress("VariableNaming")
     val ECDSA_SECP256R1: SignatureScheme = ECDSA_SECP256R1_SHA256_TEMPLATE.makeScheme(
-            providerName = cordaBouncyCastleProvider.name
+        providerName = cordaBouncyCastleProvider.name
     )
 
     /**
@@ -92,19 +92,19 @@ class ProviderMap(
      */
     @Suppress("VariableNaming")
     val EDDSA_ED25519: SignatureScheme = EDDSA_ED25519_NONE_TEMPLATE.makeScheme(
-            providerName = cordaBouncyCastleProvider.name
+        providerName = cordaBouncyCastleProvider.name
     )
 
     /** ECDSA signature scheme using the sm2p256v1 (Chinese SM2) curve. */
     @Suppress("VariableNaming")
     val SM2: SignatureScheme = SM2_SM3_TEMPLATE.makeScheme(
-            providerName = cordaBouncyCastleProvider.name
+        providerName = cordaBouncyCastleProvider.name
     )
 
     /** GOST3410. */
     @Suppress("VariableNaming")
     val GOST3410_GOST3411: SignatureScheme = GOST3410_GOST3411_TEMPLATE.makeScheme(
-            providerName = cordaBouncyCastleProvider.name
+        providerName = cordaBouncyCastleProvider.name
     )
 
     /**
@@ -113,13 +113,13 @@ class ProviderMap(
      */
     @Suppress("VariableNaming")
     val SPHINCS256: SignatureScheme = SPHINCS256_SHA512_TEMPLATE.makeScheme(
-            providerName = bouncyCastlePQCProvider.name
+        providerName = bouncyCastlePQCProvider.name
     )
 
     /** Corda [CompositeKey] signature type. */
     @Suppress("VariableNaming")
     val COMPOSITE_KEY: SignatureScheme = COMPOSITE_KEY_TEMPLATE.makeScheme(
-            providerName = cordaSecurityProvider.name
+        providerName = cordaSecurityProvider.name
     )
 
     /**
@@ -131,8 +131,10 @@ class ProviderMap(
             val keyFactory = keyFactories[signatureScheme]
             return keyEncoder.toSupportedPublicKey(keyFactory.generatePublic(X509EncodedKeySpec(encodedKey)))
         } catch (e: InvalidKeySpecException) {
-            throw InvalidKeySpecException("This public key cannot be decoded, please ensure it is X509 encoded and " +
-                    "that it corresponds to the input scheme's code name.", e)
+            throw InvalidKeySpecException(
+                "This public key cannot be decoded, please ensure it is X509 encoded and " +
+                        "that it corresponds to the input scheme's code name.", e
+            )
         }
     }
 
@@ -145,8 +147,10 @@ class ProviderMap(
             val keyFactory = keyFactories[scheme]
             return keyEncoder.toSupportedPrivateKey(keyFactory.generatePrivate(PKCS8EncodedKeySpec(encodedKey)))
         } catch (e: InvalidKeySpecException) {
-            throw InvalidKeySpecException("This private key cannot be decoded, please ensure it is PKCS8 encoded and that " +
-                    "it corresponds to the input scheme's code name.", e)
+            throw InvalidKeySpecException(
+                "This private key cannot be decoded, please ensure it is PKCS8 encoded and that " +
+                        "it corresponds to the input scheme's code name.", e
+            )
         }
     }
 

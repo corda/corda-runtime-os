@@ -1,15 +1,15 @@
 package net.corda.impl.cipher.suite
 
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.v5.crypto.OID_COMPOSITE_SIGNATURE_IDENTIFIER
-import net.corda.v5.crypto.CompositeKey
 import java.security.Provider
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 
 class CordaSecurityProvider(
-        keyEncoderProvider: () -> KeyEncodingService
+    keyEncoderProvider: () -> KeyEncodingService
 ) : Provider(PROVIDER_NAME, "0.1", "$PROVIDER_NAME security provider wrapper") {
     companion object {
         const val PROVIDER_NAME = "Corda"
@@ -17,8 +17,12 @@ class CordaSecurityProvider(
 
     init {
         putService(CompositeKeyFactoryService(this, keyEncoderProvider))
-        putService(createService("Signature", CompositeSignature.SIGNATURE_ALGORITHM, CompositeSignature::class.java.name,
-                listOf(OID_COMPOSITE_SIGNATURE_IDENTIFIER.toString(), "OID.$OID_COMPOSITE_SIGNATURE_IDENTIFIER")))
+        putService(
+            createService(
+                "Signature", CompositeSignature.SIGNATURE_ALGORITHM, CompositeSignature::class.java.name,
+                listOf(OID_COMPOSITE_SIGNATURE_IDENTIFIER.toString(), "OID.$OID_COMPOSITE_SIGNATURE_IDENTIFIER")
+            )
+        )
         putPlatformSecureRandomService()
     }
 
@@ -61,19 +65,20 @@ class CordaSecurityProvider(
         return Service(this, type, algorithm, className, aliases, null)
     }
 
-    private class  CompositeKeyFactoryService(
-            provider: Provider,
-            private val keyEncoderProvider: () -> KeyEncodingService
+    private class CompositeKeyFactoryService(
+        provider: Provider,
+        private val keyEncoderProvider: () -> KeyEncodingService
     ) : Service(
-            provider,
-            "KeyFactory",
-            CompositeKey.KEY_ALGORITHM,
-            CompositeKeyFactory::class.java.name,
-            listOf(
-                    OID_COMPOSITE_KEY_IDENTIFIER.toString(),
-                    "OID.$OID_COMPOSITE_KEY_IDENTIFIER"
-            ),
-            null) {
+        provider,
+        "KeyFactory",
+        CompositeKey.KEY_ALGORITHM,
+        CompositeKeyFactory::class.java.name,
+        listOf(
+            OID_COMPOSITE_KEY_IDENTIFIER.toString(),
+            "OID.$OID_COMPOSITE_KEY_IDENTIFIER"
+        ),
+        null
+    ) {
         override fun newInstance(constructorParameter: Any?): Any = CompositeKeyFactory(keyEncoderProvider())
     }
 }

@@ -3,11 +3,11 @@ package net.corda.impl.cipher.suite
 import net.corda.impl.caching.crypto.SimplePersistentCacheFactory
 import net.corda.impl.caching.crypto.SimplePersistentCacheImpl
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.cipher.suite.CryptoService
+import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
-import net.corda.v5.cipher.suite.CryptoServiceContext
+import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.hibernate.SessionFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,15 +30,15 @@ class DefaultCryptoServiceProvider @Activate constructor(
     override fun getInstance(context: CryptoServiceContext<DefaultCryptoServiceConfig>): CryptoService {
         val schemeMetadata = context.cipherSuiteFactory.getSchemeMap()
         return DefaultCryptoService(
-                cache = makeCache(context, schemeMetadata),
-                schemeMetadata = schemeMetadata,
-                hashingService = context.cipherSuiteFactory.getDigestService()
+            cache = makeCache(context, schemeMetadata),
+            schemeMetadata = schemeMetadata,
+            hashingService = context.cipherSuiteFactory.getDigestService()
         )
     }
 
     private fun makeCache(
-            context: CryptoServiceContext<DefaultCryptoServiceConfig>,
-            schemeMetadata: CipherSchemeMetadata
+        context: CryptoServiceContext<DefaultCryptoServiceConfig>,
+        schemeMetadata: CipherSchemeMetadata
     ): DefaultKeyCache {
         if (sessionFactory == null) {
             throw CryptoServiceException("The session factory is not initialized.")

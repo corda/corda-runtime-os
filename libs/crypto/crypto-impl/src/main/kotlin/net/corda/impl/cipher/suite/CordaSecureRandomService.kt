@@ -12,8 +12,8 @@ import java.security.SecureRandom
 import java.security.SecureRandomSpi
 import kotlin.system.exitProcess
 
-class CordaSecureRandomService(provider: Provider)
-    : Provider.Service(provider, "SecureRandom", algorithm, CordaSecureRandomSpi::javaClass.name, null, null) {
+class CordaSecureRandomService(provider: Provider) :
+    Provider.Service(provider, "SecureRandom", algorithm, CordaSecureRandomSpi::javaClass.name, null, null) {
 
     companion object {
         const val algorithm = "CordaPRNG"

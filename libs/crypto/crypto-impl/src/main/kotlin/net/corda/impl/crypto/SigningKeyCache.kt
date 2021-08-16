@@ -1,9 +1,9 @@
 package net.corda.impl.crypto
 
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.cipher.suite.WrappedKeyPair
+import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import java.security.PublicKey
-import java.util.*
+import java.util.UUID
 
 interface SigningKeyCache {
     fun save(publicKey: PublicKey, scheme: SignatureScheme, alias: String)

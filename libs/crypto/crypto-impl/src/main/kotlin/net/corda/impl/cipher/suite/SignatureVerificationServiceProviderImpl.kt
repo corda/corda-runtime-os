@@ -14,8 +14,8 @@ class SignatureVerificationServiceProviderImpl : SignatureVerificationServicePro
     override val name: String = SERVICE_NAME
 
     override fun getInstance(cipherSuiteFactory: CipherSuiteFactory): SignatureVerificationService =
-            SignatureVerificationServiceImpl(
-                    schemeMetadata = cipherSuiteFactory.getSchemeMap(),
-                    hashingService = cipherSuiteFactory.getDigestService()
-            )
+        SignatureVerificationServiceImpl(
+            schemeMetadata = cipherSuiteFactory.getSchemeMap(),
+            hashingService = cipherSuiteFactory.getDigestService()
+        )
 }

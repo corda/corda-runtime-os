@@ -1,9 +1,9 @@
 package net.corda.internal.crypto
 
-import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.DigitalSignature
 import java.security.PublicKey
 
 /**

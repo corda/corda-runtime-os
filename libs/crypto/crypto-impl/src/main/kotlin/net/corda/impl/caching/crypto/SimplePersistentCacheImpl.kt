@@ -14,15 +14,15 @@ import java.util.concurrent.TimeUnit
  * The implementation is race condition with different instance safe.
  */
 open class SimplePersistentCacheImpl<V, E>(
-        private val entityClazz: Class<E>,
-        protected val sessionFactory: SessionFactory,
-        expireInMinutes: Long = 60,
-        maxSize: Long = 1000
+    private val entityClazz: Class<E>,
+    protected val sessionFactory: SessionFactory,
+    expireInMinutes: Long = 60,
+    maxSize: Long = 1000
 ) : SimplePersistentCache<V, E>, AutoCloseable {
     protected val cache: Cache<Any, V> = Caffeine.newBuilder()
-            .expireAfterAccess(expireInMinutes, TimeUnit.MINUTES)
-            .maximumSize(maxSize)
-            .build()
+        .expireAfterAccess(expireInMinutes, TimeUnit.MINUTES)
+        .maximumSize(maxSize)
+        .build()
 
     @Suppress("NULLABLE_TYPE_PARAMETER_AGAINST_NOT_NULL_TYPE_PARAMETER")
     override fun put(key: Any, entity: E, mutator: (entity: E) -> V): V {
@@ -38,7 +38,7 @@ open class SimplePersistentCacheImpl<V, E>(
 
     @Suppress("UNCHECKED_CAST")
     override fun get(key: Any, mutator: (entity: E) -> V): V? {
-        if(key !is Serializable) {
+        if (key !is Serializable) {
             throw CryptoServiceException("The key must implement ${Serializable::class.java.name} interface.")
         }
         return cache.get(key) {

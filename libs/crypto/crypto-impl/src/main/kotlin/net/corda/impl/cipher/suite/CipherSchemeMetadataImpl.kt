@@ -1,9 +1,9 @@
 package net.corda.impl.cipher.suite
 
-import net.corda.v5.cipher.suite.schemes.DigestScheme
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.cipher.suite.schemes.DigestScheme
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.i2p.crypto.eddsa.EdDSAPrivateKey
 import net.i2p.crypto.eddsa.EdDSAPublicKey
@@ -30,31 +30,31 @@ import java.security.spec.X509EncodedKeySpec
 
 @Suppress("LongParameterList")
 open class CipherSchemeMetadataImpl(
-        final override val providers: Map<String, Provider>,
-        final override val schemes: Array<SignatureScheme>,
-        final override val digests: Array<DigestScheme>,
-        final override val secureRandom: SecureRandom,
-        private val keyFactories: KeyFactoryProvider,
-        private val algorithmMap: Map<AlgorithmIdentifier, SignatureScheme>
+    final override val providers: Map<String, Provider>,
+    final override val schemes: Array<SignatureScheme>,
+    final override val digests: Array<DigestScheme>,
+    final override val secureRandom: SecureRandom,
+    private val keyFactories: KeyFactoryProvider,
+    private val algorithmMap: Map<AlgorithmIdentifier, SignatureScheme>
 ) : CipherSchemeMetadata {
 
     companion object {
         fun convertIfBCEdDSAPublicKey(key: PublicKey): PublicKey =
-                when (key) {
-                    is BCEdDSAPublicKey -> EdDSAPublicKey(X509EncodedKeySpec(key.encoded))
-                    else -> key
-                }
+            when (key) {
+                is BCEdDSAPublicKey -> EdDSAPublicKey(X509EncodedKeySpec(key.encoded))
+                else -> key
+            }
 
         fun convertIfBCEdDSAPrivateKey(key: PrivateKey): PrivateKey =
-                when (key) {
-                    is BCEdDSAPrivateKey -> EdDSAPrivateKey(PKCS8EncodedKeySpec(key.encoded))
-                    else -> key
-                }
+            when (key) {
+                is BCEdDSAPrivateKey -> EdDSAPrivateKey(PKCS8EncodedKeySpec(key.encoded))
+                else -> key
+            }
     }
 
     override fun findSignatureScheme(algorithm: AlgorithmIdentifier): SignatureScheme =
-            algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
-                    ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}")
+        algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
+            ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}")
 
     override fun findSignatureScheme(key: PublicKey): SignatureScheme {
         val keyInfo = SubjectPublicKeyInfo.getInstance(key.encoded)
@@ -62,7 +62,7 @@ open class CipherSchemeMetadataImpl(
     }
 
     override fun findSignatureScheme(codeName: String): SignatureScheme = schemes.firstOrNull { it.codeName == codeName }
-                ?: throw IllegalArgumentException("Unrecognised scheme code name: $codeName")
+        ?: throw IllegalArgumentException("Unrecognised scheme code name: $codeName")
 
     override fun findKeyFactory(scheme: SignatureScheme): KeyFactory = keyFactories[scheme]
 
@@ -124,24 +124,24 @@ open class CipherSchemeMetadataImpl(
     }
 
     private fun objectToPem(obj: Any): String =
-            StringWriter().use { strWriter ->
-                JcaPEMWriter(strWriter).use { pemWriter ->
-                    pemWriter.writeObject(obj)
-                }
-                return strWriter.toString()
+        StringWriter().use { strWriter ->
+            JcaPEMWriter(strWriter).use { pemWriter ->
+                pemWriter.writeObject(obj)
             }
+            return strWriter.toString()
+        }
 
     private fun parsePemContent(pem: String): ByteArray =
-            StringReader(pem).use { strReader ->
-                return PemReader(strReader).use { pemReader ->
-                    pemReader.readPemObject().content
-                }
+        StringReader(pem).use { strReader ->
+            return PemReader(strReader).use { pemReader ->
+                pemReader.readPemObject().content
             }
+        }
 
     private fun normaliseAlgorithmIdentifier(id: AlgorithmIdentifier): AlgorithmIdentifier =
-            if (id.parameters is DERNull) {
-                AlgorithmIdentifier(id.algorithm, null)
-            } else {
-                id
-            }
+        if (id.parameters is DERNull) {
+            AlgorithmIdentifier(id.algorithm, null)
+        } else {
+            id
+        }
 }

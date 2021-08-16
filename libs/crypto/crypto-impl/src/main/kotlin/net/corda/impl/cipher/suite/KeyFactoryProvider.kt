@@ -9,7 +9,7 @@ class KeyFactoryProvider(private val providers: Map<String, Provider>) {
     private val keyFactoryCache = ConcurrentHashMap<SignatureScheme, KeyFactory>()
 
     operator fun get(scheme: SignatureScheme): KeyFactory =
-            keyFactoryCache.getOrPut(scheme) {
-                KeyFactory.getInstance(scheme.algorithmName, providers[scheme.providerName])
-            }
+        keyFactoryCache.getOrPut(scheme) {
+            KeyFactory.getInstance(scheme.algorithmName, providers[scheme.providerName])
+        }
 }

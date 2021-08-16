@@ -9,7 +9,7 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 
 class MockCryptoLibraryFactory(
-        val mocks: CryptoMocks,
+    val mocks: CryptoMocks,
 ) : CryptoLibraryFactory {
     override fun getFreshKeySigningService(
         passphrase: String,
@@ -27,10 +27,10 @@ class MockCryptoLibraryFactory(
         mocks.signatureVerificationService()
 
     override fun getKeyEncodingService(): KeyEncodingService =
-            mocks.schemeMetadata()
+        mocks.schemeMetadata()
 
     override fun getCipherSchemeMetadata(): CipherSchemeMetadata =
-            mocks.schemeMetadata()
+        mocks.schemeMetadata()
 
     override fun getDigestService(): DigestService =
         mocks.digestService()

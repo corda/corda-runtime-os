@@ -7,6 +7,7 @@ class DoubleSHA256Digest : DigestAlgorithm {
     companion object {
         const val ALGORITHM = "SHA-256D"
     }
+
     override val algorithm = ALGORITHM
     override val digestLength = 32
     override fun digest(bytes: ByteArray): ByteArray = bytes.sha256Bytes().sha256Bytes()

@@ -2,26 +2,26 @@ package net.corda.impl.crypto
 
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.cipher.suite.WrappedKeyPair
+import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.sha256Bytes
 import org.hibernate.SessionFactory
 import java.security.PublicKey
-import java.util.*
+import java.util.UUID
 
 open class SigningKeyCacheImpl(
-        private val sandboxId: String,
-        private val keyEncoder: KeyEncodingService,
-        private val cacheFactory: SigningServicePersistentCacheFactory
+    private val sandboxId: String,
+    private val keyEncoder: KeyEncodingService,
+    private val cacheFactory: SigningServicePersistentCacheFactory
 ) : SigningKeyCache {
     constructor(
-            sandboxId: String,
-            keyEncoder: KeyEncodingService,
-            sessionFactory: () -> SessionFactory
+        sandboxId: String,
+        keyEncoder: KeyEncodingService,
+        sessionFactory: () -> SessionFactory
     ) : this(
-            sandboxId,
-            keyEncoder,
-            SigningServicePersistentCacheFactoryImpl(sessionFactory)
+        sandboxId,
+        keyEncoder,
+        SigningServicePersistentCacheFactoryImpl(sessionFactory)
     )
 
     private val cache: SigningServicePersistentCache by lazy {
@@ -39,43 +39,43 @@ open class SigningKeyCacheImpl(
     override fun save(publicKey: PublicKey, scheme: SignatureScheme, alias: String) {
         val key = toEntityKey(publicKey)
         val entity = SigningPersistentKey(
-                sandboxId = sandboxId,
-                publicKeyHash = key,
-                externalId = null,
-                publicKey = keyEncoder.encodeAsByteArray(publicKey),
-                alias = effectiveAlias(alias),
-                masterKeyAlias = null,
-                privateKeyMaterial = null,
-                schemeCodeName = scheme.codeName,
-                version = 1
+            sandboxId = sandboxId,
+            publicKeyHash = key,
+            externalId = null,
+            publicKey = keyEncoder.encodeAsByteArray(publicKey),
+            alias = effectiveAlias(alias),
+            masterKeyAlias = null,
+            privateKeyMaterial = null,
+            schemeCodeName = scheme.codeName,
+            version = 1
         )
         cache.put(key, entity)
     }
 
     override fun save(
-            wrappedKeyPair: WrappedKeyPair,
-            masterKeyAlias: String,
-            scheme: SignatureScheme,
-            externalId: UUID?
+        wrappedKeyPair: WrappedKeyPair,
+        masterKeyAlias: String,
+        scheme: SignatureScheme,
+        externalId: UUID?
     ) {
         val publicKey = wrappedKeyPair.publicKey
         val keyHash = toEntityKey(publicKey)
         val entity = SigningPersistentKey(
-                sandboxId = sandboxId,
-                publicKeyHash = keyHash,
-                externalId = externalId,
-                publicKey = keyEncoder.encodeAsByteArray(publicKey),
-                alias = null,
-                masterKeyAlias = masterKeyAlias,
-                privateKeyMaterial = wrappedKeyPair.keyMaterial,
-                schemeCodeName = scheme.codeName,
-                version = 1
+            sandboxId = sandboxId,
+            publicKeyHash = keyHash,
+            externalId = externalId,
+            publicKey = keyEncoder.encodeAsByteArray(publicKey),
+            alias = null,
+            masterKeyAlias = masterKeyAlias,
+            privateKeyMaterial = wrappedKeyPair.keyMaterial,
+            schemeCodeName = scheme.codeName,
+            version = 1
         )
         cache.put(keyHash, entity)
     }
 
     private fun toEntityKey(publicKey: PublicKey): String =
-            publicKey.sha256Bytes().toHexString()
+        publicKey.sha256Bytes().toHexString()
 
     private fun effectiveAlias(alias: String) = "$sandboxId:$alias"
 

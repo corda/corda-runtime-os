@@ -15,8 +15,8 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 class WrappingKey(
-        val master: SecretKey,
-        private val schemeMetadata: CipherSchemeMetadata,
+    val master: SecretKey,
+    private val schemeMetadata: CipherSchemeMetadata,
 ) {
     companion object {
         const val IV_LENGTH = 16
@@ -47,8 +47,8 @@ class WrappingKey(
             val spec: KeySpec = PBEKeySpec(passphrase.toCharArray(), salt.toByteArray(), DERIVE_ITERATION_COUNT, AES_KEY_LENGTH)
             val tmp = factory.generateSecret(spec)
             return WrappingKey(
-                    schemeMetadata = schemeMetadata,
-                    master = SecretKeySpec(tmp.encoded, WRAPPING_KEY_ALGORITHM)
+                schemeMetadata = schemeMetadata,
+                master = SecretKeySpec(tmp.encoded, WRAPPING_KEY_ALGORITHM)
             )
         }
 
@@ -56,8 +56,8 @@ class WrappingKey(
             val keyGenerator = KeyGenerator.getInstance(WRAPPING_KEY_ALGORITHM)
             keyGenerator.init(AES_KEY_LENGTH)
             return WrappingKey(
-                    schemeMetadata = schemeMetadata,
-                    master = keyGenerator.generateKey()
+                schemeMetadata = schemeMetadata,
+                master = keyGenerator.generateKey()
             )
         }
     }
@@ -67,8 +67,8 @@ class WrappingKey(
     fun wrap(key: PrivateKey): ByteArray = encrypt(key.encoded)
 
     fun unwrapWrappingKey(key: ByteArray): WrappingKey = WrappingKey(
-            schemeMetadata = schemeMetadata,
-            master = decrypt(key).decodeSecretKey()
+        schemeMetadata = schemeMetadata,
+        master = decrypt(key).decodeSecretKey()
     )
 
     fun unwrap(key: ByteArray): PrivateKey = decrypt(key).decodePrivateKey()
@@ -98,5 +98,5 @@ class WrappingKey(
     }
 
     private fun ByteArray.decodeSecretKey(): SecretKey =
-            SecretKeySpec(this, 0, size, WRAPPING_KEY_ALGORITHM)
+        SecretKeySpec(this, 0, size, WRAPPING_KEY_ALGORITHM)
 }

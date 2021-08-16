@@ -39,7 +39,7 @@ fun decodeAliasPrivateKey(encodedKey: ByteArray): PrivateKey {
  * [KeyPair] objects without exposing the private key material. Then, whenever we need to sign with the actual private
  * key, we provide the [alias] from this [AliasPrivateKey] to the underlying HSM implementation.
  */
-data class AliasPrivateKey(val alias: String): PrivateKey {
+data class AliasPrivateKey(val alias: String) : PrivateKey {
 
     companion object {
         const val ALIAS_KEY_ALGORITHM = "AliasPrivateKey"
@@ -51,8 +51,8 @@ data class AliasPrivateKey(val alias: String): PrivateKey {
         val keyVector = ASN1EncodableVector()
         keyVector.add(DERUTF8String(alias))
         val privateKeyInfoBytes = PrivateKeyInfo(
-                AlgorithmIdentifier(OID_ALIAS_PRIVATE_KEY_IDENTIFIER),
-                DERSequence(keyVector)
+            AlgorithmIdentifier(OID_ALIAS_PRIVATE_KEY_IDENTIFIER),
+            DERSequence(keyVector)
         ).getEncoded(ASN1Encoding.DER)
         val keySpec = PKCS8EncodedKeySpec(privateKeyInfoBytes)
         return keySpec.encoded
