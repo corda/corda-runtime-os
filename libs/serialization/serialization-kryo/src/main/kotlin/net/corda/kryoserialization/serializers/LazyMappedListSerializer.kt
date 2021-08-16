@@ -11,7 +11,6 @@ import net.corda.internal.base.LazyMappedList
 */
 
 /** For serializing the utility [LazyMappedList]. It will serialize the fully resolved object.*/
-@Suppress("MatchingDeclarationName")
 @SuppressWarnings("ALL")
 object LazyMappedListSerializer : Serializer<List<*>>() {
     override fun write(kryo: Kryo, output: Output, obj: List<*>) = kryo.writeClassAndObject(output, obj.toList())
