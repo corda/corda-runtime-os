@@ -10,4 +10,5 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation project(":libs:examples:helloworld")
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
 }
