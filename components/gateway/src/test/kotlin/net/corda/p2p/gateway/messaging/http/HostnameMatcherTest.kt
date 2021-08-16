@@ -43,7 +43,6 @@ class HostnameMatcherTest {
         assertTrue(matcher.matches(SNIHostName("www.test.co.uk")))
         assertTrue(matcher.matches(SNIHostName("alice.test.net"))) // matches with *.test.net
         assertTrue(matcher.matches(SNIHostName("bob.test.net"))) // matches with *.test.net
-        assertTrue(matcher.matches(SNIHostName("10.11.12.13")))
         assertTrue(matcher.matches(SNIHostName("Test2"))) // matches the CN in the subject name
 
         // Certificate tool wouldn't allow using a DNS name with only part of a group wildcarded, even though the RFC allows it
