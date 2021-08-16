@@ -13,5 +13,5 @@ dependencies {
     implementation "net.corda:corda-application"
     implementation "net.corda:avro-schema"
 
-    implementation project(':libs:dependency-injection:dependency-injection')
+    implementation project(':libs:flows:dependency-injection')
 }

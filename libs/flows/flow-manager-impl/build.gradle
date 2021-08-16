@@ -15,7 +15,7 @@ dependencies {
     implementation "net.corda:corda-sandbox:$cordaVersion"
     implementation "net.corda:avro-schema"
 
-    implementation project(':libs:dependency-injection:dependency-injection')
+    implementation project(':libs:flows:dependency-injection')
     implementation project(':libs:flows:flow-manager')
     implementation project(':libs:flows:statemachine')
     implementation project(':libs:flows:statemachine-impl')

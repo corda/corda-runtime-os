@@ -14,5 +14,5 @@ dependencies {
     implementation "net.corda:avro-schema"
 
     implementation project(':libs:flows:statemachine')
-    implementation project(':libs:dependency-injection:dependency-injection')
+    implementation project(':libs:flows:dependency-injection')
 }

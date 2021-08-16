@@ -13,5 +13,5 @@ dependencies {
     implementation "com.google.guava:guava:$guavaVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-    implementation project(":libs:dependency-injection:dependency-injection")
+    implementation project(":libs:flows:dependency-injection")
 }
