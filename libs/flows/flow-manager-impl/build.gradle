@@ -10,7 +10,6 @@ dependencies {
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation "net.corda:corda-application"
-    implementation "net.corda:corda-base-internal:$cordaVersion"
     implementation "net.corda:corda-install:$cordaVersion"
     implementation "net.corda:corda-packaging:$cordaVersion"
     implementation "net.corda:corda-sandbox:$cordaVersion"

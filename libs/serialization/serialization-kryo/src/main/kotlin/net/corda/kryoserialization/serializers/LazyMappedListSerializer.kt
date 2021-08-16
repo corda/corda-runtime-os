@@ -4,7 +4,7 @@ import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
-import net.corda.internal.base.LazyMappedList
+import net.corda.utilities.LazyMappedList
 
 /* This file contains Serializers for types which are defined in the Base module.
  * We do this here as we don't want Base to depend on serialization-internal.
