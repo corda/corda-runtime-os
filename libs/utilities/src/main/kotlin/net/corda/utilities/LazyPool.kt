@@ -30,7 +30,7 @@ class LazyPool<A>(
         FINISHED
     }
 
-    private val lifecycle = Lifecycle(State.STARTED)
+    private val lifecycle = PoolState(State.STARTED)
 
     private fun clearIfNeeded(instance: A): A {
         clear?.invoke(instance)
@@ -77,7 +77,7 @@ class LazyPool<A>(
         }
     }
 
-    private class Lifecycle<S : Enum<S>>(initial: S) {
+    private class PoolState<S : Enum<S>>(initial: S) {
         private val lock = ReentrantReadWriteLock()
         private var state = initial
 
