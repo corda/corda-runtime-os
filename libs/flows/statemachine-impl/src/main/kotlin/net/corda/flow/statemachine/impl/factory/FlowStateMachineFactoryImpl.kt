@@ -8,7 +8,7 @@ import net.corda.flow.statemachine.impl.FlowStateMachineImpl
 import net.corda.v5.application.flows.Flow
 import org.osgi.service.component.annotations.Component
 
-@Component
+@Component(immediate = true, service = [FlowStateMachineFactory::class])
 class FlowStateMachineFactoryImpl : FlowStateMachineFactory {
 
     override fun createStateMachine(

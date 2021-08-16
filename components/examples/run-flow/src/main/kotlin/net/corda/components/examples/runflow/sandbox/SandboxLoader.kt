@@ -9,7 +9,7 @@ import java.nio.charset.Charset
 import java.nio.file.Paths
 import kotlin.streams.toList
 
-@Component
+@Component(immediate = true, service = [SandboxLoader::class])
 class SandboxLoader @Activate constructor(
     @Reference(service = SandboxCache::class)
     private val sandboxCache: SandboxCache,

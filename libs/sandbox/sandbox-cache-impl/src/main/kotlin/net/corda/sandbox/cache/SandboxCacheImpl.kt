@@ -13,7 +13,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 
-@Component
+@Component(immediate = true, service = [SandboxCache::class])
 class SandboxCacheImpl @Activate constructor(
     @Reference(service = InstallService::class)
     private val installService: InstallService,

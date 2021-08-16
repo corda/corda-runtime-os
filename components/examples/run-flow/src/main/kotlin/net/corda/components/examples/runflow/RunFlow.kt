@@ -13,7 +13,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 
-@Component
+@Component(immediate = true, service = [RunFlow::class])
 class RunFlow(
     private val flowManager: FlowManager,
     private val subscriptionFactory: SubscriptionFactory,
@@ -23,7 +23,7 @@ class RunFlow(
     companion object {
         val log: Logger = contextLogger()
         const val groupName = "flowRunGroup"
-        const val flowRunTopic = "FlowRunTopic"
+        const val flowRunTopic = "eventTopic"
     }
 
     private lateinit var subscription: StateAndEventSubscription<String, Checkpoint, FlowEvent>

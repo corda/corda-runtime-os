@@ -52,7 +52,7 @@ class DemoFlowRun @Activate constructor(
         const val BATCH_SIZE: Int = 128
         const val TIMEOUT: Long = 10000L
         const val TOPIC_PREFIX = "messaging.topic.prefix"
-        const val CONFIG_TOPIC_NAME = "config.topic.name"
+        const val TOPIC_NAME = "topic.name"
         const val BOOTSTRAP_SERVERS = "bootstrap.servers"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
@@ -128,8 +128,8 @@ class DemoFlowRun @Activate constructor(
         return ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
             .withValue(
-                CONFIG_TOPIC_NAME,
-                ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME))
+                TOPIC_NAME,
+                ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_NAME))
             )
             .withValue(
                 TOPIC_PREFIX,
