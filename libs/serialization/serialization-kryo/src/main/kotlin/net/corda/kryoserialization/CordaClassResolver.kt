@@ -14,6 +14,7 @@ import net.corda.internal.base.kotlinObjectInstance
 import net.corda.internal.base.writer
 import net.corda.kryoserialization.osgi.SandboxClassResolver
 import net.corda.kryoserialization.serializers.ThrowableSerializer
+import net.corda.serialization.CheckpointSerializationContext
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.BasicHashingService

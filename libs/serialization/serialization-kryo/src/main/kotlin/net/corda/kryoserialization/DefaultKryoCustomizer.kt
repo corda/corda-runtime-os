@@ -16,12 +16,10 @@ import net.corda.kryoserialization.serializers.LazyMappedListSerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapEntrySerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
 import net.corda.kryoserialization.serializers.LinkedListItrSerializer
-import net.corda.kryoserialization.serializers.NonEmptySetSerializer
 import net.corda.kryoserialization.serializers.SerializeAsTokenSerializer
 import net.corda.kryoserialization.serializers.SingletonSerializeAsTokenSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
 import net.corda.internal.base.LazyMappedList
-import net.corda.v5.base.types.NonEmptySet
 import net.corda.v5.serialization.SerializationWhitelist
 import net.corda.v5.serialization.SerializeAsToken
 import net.corda.v5.serialization.SerializedBytes
@@ -89,8 +87,6 @@ class DefaultKryoCustomizer(val defaultWhiteList: SerializationWhitelist) {
             register(jarUrlInputStreamClass, InputStreamSerializer)
             // Exceptions. We don't bother sending the stack traces as the client will fill in its own anyway.
             register(Array<StackTraceElement>::class, read = { _, _ -> emptyArray() }, write = { _, _, _ -> })
-            // This ensures a NonEmptySetSerializer is constructed with an initial value.
-            register(NonEmptySet::class.java, NonEmptySetSerializer)
             register(BitSet::class.java, BitSetSerializer())
             register(FileInputStream::class.java, InputStreamSerializer)
             register(CertPath::class.java, CertPathSerializer)
