@@ -6,5 +6,6 @@ plugins {
 description 'Definition of Topics'
 
 dependencies {
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
     implementation platform(project(':corda-api'))
 }
