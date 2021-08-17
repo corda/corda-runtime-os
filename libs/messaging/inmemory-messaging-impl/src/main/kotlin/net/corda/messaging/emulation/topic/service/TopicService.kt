@@ -11,15 +11,13 @@ import net.corda.messaging.emulation.topic.model.RecordMetadata
 interface TopicService {
     /**
      * Add a list of records to each of their topics.
-     * This operation is done atomically.
-     * Topics are locked while writing to them.
+     * This operation is done atomically per partition.
      */
     fun addRecords(records: List<Record<*, *>>)
 
     /**
      * Add a list of records to each of their topics with specific partition number.
-     * This operation is done atomically.
-     * Topics are locked while writing to them.
+     * This operation is done atomically per partition..
      */
     fun addRecordsToPartition(records: List<Record<*, *>>, partition: Int)
 

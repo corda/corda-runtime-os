@@ -79,10 +79,10 @@ class CompactedConsumerTest {
 
         consumer.handleRecords(records)
 
-        verify(subscription).gotRecord(
+        verify(subscription).onNewRecord(
             Record("topic", "key3", URI.create("https://www.r3.com/"))
         )
-        verify(subscription).gotRecord(
+        verify(subscription).onNewRecord(
             Record("topic", "key4", URI.create("https://www.corda.net/"))
         )
     }

@@ -8,11 +8,12 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import java.time.Duration
 
 class TopicsTest {
     private val config = mock<InMemoryConfiguration> {
         on { topicConfiguration(any()) } doReturn TopicConfiguration(1, 1)
-        on { subscriptionConfiguration(any()) } doReturn SubscriptionConfiguration(1, 2)
+        on { subscriptionConfiguration(any()) } doReturn SubscriptionConfiguration(1, Duration.ofMillis(2))
     }
     private val topics = Topics(config)
 

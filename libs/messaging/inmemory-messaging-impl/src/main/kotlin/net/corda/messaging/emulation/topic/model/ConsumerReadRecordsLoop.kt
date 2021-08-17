@@ -10,17 +10,17 @@ internal class ConsumerReadRecordsLoop(
     companion object {
         private val logger: Logger = contextLogger()
     }
-    private fun readRecords(): Map<Partition, Collection<RecordMetadata>>? {
+    private fun readRecords(): Map<Partition, Collection<RecordMetadata>> {
         return group.getPartitions(consumer)
-            ?.map { (partition, offset) ->
-                partition to partition.getRecordsFrom(offset, group.subscriptionConfig.pollSize)
-            }?.filter {
+            .map { (partition, offset) ->
+                partition to partition.getRecordsFrom(offset, group.subscriptionConfig.partitionPollSize)
+            }.filter {
                 it.second.isNotEmpty()
-            }?.toMap()
+            }.toMap()
     }
 
-    private fun processRecords(records: Map<Partition, Collection<RecordMetadata>>?) {
-        if ((records != null) && (records.isNotEmpty())) {
+    private fun processRecords(records: Map<Partition, Collection<RecordMetadata>>) {
+        if (records.isNotEmpty()) {
             @Suppress("TooGenericExceptionCaught")
             try {
                 consumer.handleRecords(
@@ -44,7 +44,7 @@ internal class ConsumerReadRecordsLoop(
                 )
             }
         } else {
-            group.waitForDate()
+            group.waitForData()
         }
     }
 

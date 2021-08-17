@@ -20,7 +20,7 @@ class Topic(
         (1..topicConfiguration.partitionCount).map {
             Partition(
                 it,
-                topicConfiguration.maxSize,
+                topicConfiguration.maxPartitionSize,
                 topicName
             )
         }

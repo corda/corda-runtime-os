@@ -13,7 +13,6 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -38,14 +37,14 @@ class PubSubSubscription<K : Any, V : Any>(
     internal val topic = config.getString(EVENT_TOPIC)
     internal val groupName = config.getString(GROUP_NAME)
 
-    private val currentConsumer = AtomicReference<Lifecycle>()
+    private var currentConsumer: Lifecycle? = null
     private val lock = ReentrantLock()
     /**
      * Is the subscription running.
      */
     override val isRunning: Boolean
         get() {
-            return currentConsumer.get()?.isRunning ?: false
+            return currentConsumer?.isRunning ?: false
         }
 
     /**
@@ -55,13 +54,9 @@ class PubSubSubscription<K : Any, V : Any>(
     override fun start() {
         log.debug { "Starting subscription with config: $config" }
         lock.withLock {
-            currentConsumer.updateAndGet {
-                if (it == null) {
-                    val consumer = PubSubConsumer(this)
-                    topicService.subscribe(consumer)
-                } else {
-                    it
-                }
+            if (currentConsumer == null) {
+                val consumer = PubSubConsumer(this)
+                currentConsumer = topicService.subscribe(consumer)
             }
         }
     }
@@ -74,7 +69,8 @@ class PubSubSubscription<K : Any, V : Any>(
      */
     override fun stop() {
         lock.withLock {
-            currentConsumer.getAndSet(null)?.stop()
+            currentConsumer?.stop()
+            currentConsumer = null
         }
     }
 

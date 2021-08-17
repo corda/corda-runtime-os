@@ -100,21 +100,21 @@ class EventLogSubscriptionIntegrationTest {
                 key = "key1",
                 value = Event("one", 1),
                 partition = 9,
-                offset = 1,
+                offset = 0,
             ),
             EventLogRecord(
                 topic = topic,
                 key = "key2",
                 value = Event("two", 2),
                 partition = 10,
-                offset = 1
+                offset = 0
             ),
             EventLogRecord(
                 topic = topic,
                 key = "key3",
                 value = Event("three", 3),
                 partition = 1,
-                offset = 1
+                offset = 0
             ),
         ).hasSize(3)
         assertThat(assigned).contains(9, 10, 1)

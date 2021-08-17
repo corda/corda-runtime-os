@@ -59,13 +59,10 @@ class CordaPublisher(
 
     override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
         return runAndCreateFutures(records.size) {
-            records.groupBy({
-                it.first
-            }, {
-                it.second
-            }).forEach { (partitionId, recordList) ->
-            topicService.addRecordsToPartition(recordList, partitionId)
-        }
+            records.groupBy({ it.first }, { it.second })
+                .forEach { (partitionId, recordList) ->
+                    topicService.addRecordsToPartition(recordList, partitionId)
+                }
         }
     }
 }

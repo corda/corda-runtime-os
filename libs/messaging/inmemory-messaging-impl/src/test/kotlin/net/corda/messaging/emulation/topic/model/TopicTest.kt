@@ -13,6 +13,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
 
 class TopicTest {
     private val config = TopicConfiguration(5, 10)
@@ -21,7 +22,7 @@ class TopicTest {
     fun `subscribe will subscribe to the correct group`() {
         val topic = Topic("topic", config)
         mockConstruction(ConsumerGroup::class.java).use { group ->
-            val subscriptionConfig = SubscriptionConfiguration(10, 100L)
+            val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
             val consumer = mock<Consumer> {
                 on { groupName } doReturn "group"
             }
@@ -38,7 +39,7 @@ class TopicTest {
         mockConstruction(ConsumerGroup::class.java) { _, context ->
             assertThat(context.arguments()[1] as Collection<Any?>).hasSize(5)
         }.use {
-            val subscriptionConfig = SubscriptionConfiguration(10, 100L)
+            val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
             val consumer = mock<Consumer> {
                 on { groupName } doReturn "group"
             }
@@ -51,7 +52,7 @@ class TopicTest {
     fun `unsubscribe will unsubscribe to the correct group`() {
         val topic = Topic("topic", config)
         mockConstruction(ConsumerGroup::class.java).use { group ->
-            val subscriptionConfig = SubscriptionConfiguration(10, 100L)
+            val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
             val consumer = mock<Consumer> {
                 on { groupName } doReturn "group"
             }
@@ -67,7 +68,7 @@ class TopicTest {
     fun `unsubscribe will not unsubscribe unknown consumer`() {
         val topic = Topic("topic", config)
         mockConstruction(ConsumerGroup::class.java).use { group ->
-            val subscriptionConfig = SubscriptionConfiguration(10, 100L)
+            val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
             val consumer1 = mock<Consumer> {
                 on { groupName } doReturn "group"
             }
@@ -110,7 +111,7 @@ class TopicTest {
     fun `addRecord will wake up any group`() {
         val topic = Topic("topic", config)
         mockConstruction(ConsumerGroup::class.java).use { group ->
-            val subscriptionConfig = SubscriptionConfiguration(10, 100L)
+            val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
             val consumer = mock<Consumer> {
                 on { groupName } doReturn "group"
             }
@@ -175,7 +176,7 @@ class TopicTest {
     fun `addRecordToPartition will wake up any group`() {
         val topic = Topic("topic", config)
         mockConstruction(ConsumerGroup::class.java).use { group ->
-            val subscriptionConfig = SubscriptionConfiguration(10, 100L)
+            val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
             val consumer = mock<Consumer> {
                 on { groupName } doReturn "group"
             }

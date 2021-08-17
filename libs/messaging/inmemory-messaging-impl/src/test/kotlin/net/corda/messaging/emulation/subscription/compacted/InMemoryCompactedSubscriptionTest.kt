@@ -136,7 +136,7 @@ class InMemoryCompactedSubscriptionTest {
     }
 
     @Test
-    fun `gotRecord will send the correct data to the processor`() {
+    fun `onNewRecord will send the correct data to the processor`() {
         recordsToSend.addAll(
             listOf(
                 RecordMetadata(
@@ -153,7 +153,7 @@ class InMemoryCompactedSubscriptionTest {
         )
         subscription.updateSnapshots()
 
-        subscription.gotRecord(Record("topic", "key1", URL("https://github.com/corda/")))
+        subscription.onNewRecord(Record("topic", "key1", URL("https://github.com/corda/")))
 
         verify(processor).onNext(
             Record(
@@ -170,7 +170,7 @@ class InMemoryCompactedSubscriptionTest {
     }
 
     @Test
-    fun `gotRecord will remove the data if value is null`() {
+    fun `onNewRecord will remove the data if value is null`() {
         recordsToSend.addAll(
             listOf(
                 RecordMetadata(
@@ -187,7 +187,7 @@ class InMemoryCompactedSubscriptionTest {
         )
         subscription.updateSnapshots()
 
-        subscription.gotRecord(Record("topic", "key1", null))
+        subscription.onNewRecord(Record("topic", "key1", null))
 
         verify(processor).onNext(
             Record(

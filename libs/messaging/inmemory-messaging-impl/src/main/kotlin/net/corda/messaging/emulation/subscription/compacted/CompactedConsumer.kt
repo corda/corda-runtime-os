@@ -28,7 +28,7 @@ internal class CompactedConsumer<K : Any, V : Any>(
                 inMemoryCompactedSubscription.processor.valueClass
             )
         }.forEach {
-            inMemoryCompactedSubscription.gotRecord(it)
+            inMemoryCompactedSubscription.onNewRecord(it)
         }
     }
 }

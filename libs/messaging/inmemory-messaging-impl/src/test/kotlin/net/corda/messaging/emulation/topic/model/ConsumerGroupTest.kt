@@ -6,25 +6,26 @@ import net.corda.messaging.emulation.properties.SubscriptionConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import java.time.Duration
 import java.util.concurrent.locks.Condition
-import java.util.concurrent.locks.Lock
-import java.util.concurrent.locks.ReadWriteLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 class ConsumerGroupTest {
     private val partitions = (1..5).map { createPartition(it + 4) }
-    private val subscriptionConfig = SubscriptionConfiguration(10, 100)
-    private val readLock = mock<Lock>()
+    private val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofMillis(100))
+    private val readLock = mock< ReentrantReadWriteLock.ReadLock>()
     private val sleeper = mock<Condition>()
-    private val writeLock = mock<Lock> {
+    private val writeLock = mock< ReentrantReadWriteLock.WriteLock> {
         on { newCondition() } doReturn sleeper
     }
-    private val lock = mock<ReadWriteLock> {
+    private val lock = mock<ReentrantReadWriteLock> {
         on { writeLock() } doReturn writeLock
         on { readLock() } doReturn readLock
     }
@@ -46,7 +47,7 @@ class ConsumerGroupTest {
 
         group.subscribe(consumer)
 
-        assertThat(group.getPartitions(consumer)?.map { it.first }).containsAll(partitions)
+        assertThat(group.getPartitions(consumer).map { it.first }).containsAll(partitions)
     }
 
     @Test
@@ -62,9 +63,9 @@ class ConsumerGroupTest {
         group.subscribe(consumerTwo)
 
         val firstPartitions =
-            group.getPartitions(consumerOne)?.map { it.first } ?: emptyList()
+            group.getPartitions(consumerOne).map { it.first }
         val secondPartitions =
-            group.getPartitions(consumerTwo)?.map { it.first } ?: emptyList()
+            group.getPartitions(consumerTwo).map { it.first }
         assertThat(firstPartitions + secondPartitions).containsAll(partitions)
     }
 
@@ -81,9 +82,9 @@ class ConsumerGroupTest {
         group.subscribe(consumerTwo)
 
         val firstPartitions =
-            group.getPartitions(consumerOne)?.map { it.first } ?: emptyList()
+            group.getPartitions(consumerOne).map { it.first }
         val secondPartitions =
-            group.getPartitions(consumerTwo)?.map { it.first } ?: emptyList()
+            group.getPartitions(consumerTwo).map { it.first }
         val common = firstPartitions.filter {
             secondPartitions.contains(it)
         }
@@ -104,9 +105,9 @@ class ConsumerGroupTest {
         group.subscribe(consumerTwo)
 
         val firstPartitions =
-            group.getPartitions(consumerOne)?.map { it.first } ?: emptyList()
+            group.getPartitions(consumerOne).map { it.first }
         val secondPartitions =
-            group.getPartitions(consumerTwo)?.map { it.first } ?: emptyList()
+            group.getPartitions(consumerTwo).map { it.first }
 
         assertSoftly {
             it.assertThat(firstPartitions).isNotEmpty
@@ -159,10 +160,10 @@ class ConsumerGroupTest {
         group.subscribe(consumerTwo)
 
         val secondPartition = group.getPartitions(consumerTwo)
-            ?.map {
+            .map {
                 it.first.partitionId
             }
-        verify(listener).onPartitionsUnassigned(secondPartition?.map { "topic" to it } ?: emptyList())
+        verify(listener).onPartitionsUnassigned(secondPartition.map { "topic" to it })
     }
 
     @Test
@@ -177,8 +178,20 @@ class ConsumerGroupTest {
     }
 
     @Test
-    fun `waitForDate will wait for a signal`() {
-        group.waitForDate()
+    fun `second subscribe will throw an exception`() {
+        val consumer = mock<Consumer> {
+            on { offsetStrategy } doReturn OffsetStrategy.LATEST
+        }
+        group.subscribe(consumer)
+
+        assertThrows<ConsumerGroup.DuplicateSubscriptionException> {
+            group.subscribe(consumer)
+        }
+    }
+
+    @Test
+    fun `waitForData will wait for a signal`() {
+        group.waitForData()
 
         verify(sleeper).await(any(), any())
     }
@@ -199,7 +212,7 @@ class ConsumerGroupTest {
         group.subscribe(consumer)
 
         val offsets =
-            group.getPartitions(consumer)?.associate { it.first to it.second } ?: emptyMap()
+            group.getPartitions(consumer).associate { it.first to it.second }
 
         assertThat(offsets).containsEntry(partitions[1], partitions[1].latestOffset())
     }
@@ -213,19 +226,19 @@ class ConsumerGroupTest {
         group.subscribe(consumer)
 
         val offsets =
-            group.getPartitions(consumer)?.associate { it.first to it.second } ?: emptyMap()
+            group.getPartitions(consumer).associate { it.first to it.second }
 
         assertThat(offsets).containsEntry(partitions[1], 0L)
     }
 
     @Test
-    fun `getPartitions return null for unknown partition`() {
+    fun `getPartitions return empty list for unknown partition`() {
         val consumer = mock<Consumer>()
 
         val offsets =
             group.getPartitions(consumer)
 
-        assertThat(offsets).isNull()
+        assertThat(offsets).isEmpty()
     }
 
     @Test
@@ -246,9 +259,9 @@ class ConsumerGroupTest {
         )
 
         val offsets =
-            group.getPartitions(consumer)?.associate { it.first to it.second } ?: emptyMap()
+            group.getPartitions(consumer).associate { it.first to it.second }
 
-        assertThat(offsets).containsEntry(partitions[2], 130L)
+        assertThat(offsets).containsEntry(partitions[2], 131L)
     }
 
     @Test
@@ -272,9 +285,9 @@ class ConsumerGroupTest {
         )
 
         val offsets =
-            group.getPartitions(consumer)?.associate { it.first to it.second } ?: emptyMap()
+            group.getPartitions(consumer).associate { it.first to it.second }
 
-        assertThat(offsets).containsEntry(partitions[2], 90L)
+        assertThat(offsets).containsEntry(partitions[2], 91L)
     }
 
     @Test

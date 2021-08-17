@@ -9,7 +9,6 @@ import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -36,27 +35,27 @@ class EventLogSubscription<K : Any, V : Any>(
 
     internal val groupName = subscriptionConfig.groupName
 
-    private val currentConsumer = AtomicReference<Lifecycle>()
+    private var currentConsumer: Lifecycle? = null
     private val lock = ReentrantLock()
 
     override fun stop() {
         logger.debug { "Stopping event log subscription with config: $subscriptionConfig" }
         lock.withLock {
-            currentConsumer.getAndSet(null)?.stop()
+            currentConsumer?.stop()
+            currentConsumer = null
         }
     }
 
     override fun start() {
         logger.debug { "Starting event log subscription with config: $subscriptionConfig" }
         lock.withLock {
-            if (currentConsumer.get() == null) {
+            if (currentConsumer == null) {
                 val consumer = EventLogConsumer(this)
-                val lifeCycle = topicService.subscribe(consumer)
-                currentConsumer.set(lifeCycle)
+                currentConsumer = topicService.subscribe(consumer)
             }
         }
     }
 
     override val isRunning: Boolean
-        get() = currentConsumer.get()?.isRunning ?: false
+        get() = currentConsumer?.isRunning ?: false
 }

@@ -13,9 +13,10 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
 
 class ConsumerReadRecordsLoopTest {
-    private val config = SubscriptionConfiguration(10, 1000L)
+    private val config = SubscriptionConfiguration(10, Duration.ofSeconds(1))
     private val records = mutableListOf<RecordMetadata>()
     private val consumer = mock<Consumer> {
         on { handleRecords(any()) } doAnswer {
@@ -77,7 +78,7 @@ class ConsumerReadRecordsLoopTest {
 
         loop.run()
 
-        verify(partition).getRecordsFrom(1004L, config.pollSize)
+        verify(partition).getRecordsFrom(1004L, config.partitionPollSize)
     }
 
     @Test

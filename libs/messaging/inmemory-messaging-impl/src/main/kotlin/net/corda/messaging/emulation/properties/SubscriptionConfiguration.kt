@@ -1,6 +1,8 @@
 package net.corda.messaging.emulation.properties
 
+import java.time.Duration
+
 data class SubscriptionConfiguration(
-    val pollSize: Int,
-    val threadStopTimeout: Long,
+    val partitionPollSize: Int,
+    val threadStopTimeout: Duration,
 )

@@ -13,7 +13,7 @@ class PartitionTest {
         partition.addRecord(record)
 
         assertThat(partition.getRecordsFrom(0L, 100))
-            .contains(RecordMetadata(1L, record, 4))
+            .contains(RecordMetadata(0L, record, 4))
     }
 
     @Test
@@ -25,7 +25,7 @@ class PartitionTest {
         }
 
         assertThat(partition.getRecordsFrom(0L, 100).map { it.offset })
-            .contains(1L, 2L, 3L, 4L)
+            .contains(0L, 1L, 2L, 3L)
     }
 
     @Test
@@ -37,7 +37,7 @@ class PartitionTest {
         }
 
         assertThat(partition.getRecordsFrom(0L, 100).map { it.offset.toInt() })
-            .containsAll((11..20))
+            .containsAll((10..19))
     }
 
     @Test
@@ -49,7 +49,7 @@ class PartitionTest {
         }
 
         assertThat(partition.getRecordsFrom(13L, 4).map { it.offset.toInt() })
-            .containsAll((14..17))
+            .containsAll((13..16))
     }
 
     @Test

@@ -30,7 +30,7 @@ internal class Partition(
                         " Deleting oldest record with offset ${deletedRecord.offset}."
                 }
             }
-            records.add(RecordMetadata(currentOffset.incrementAndGet(), record, partitionId))
+            records.add(RecordMetadata(currentOffset.getAndIncrement(), record, partitionId))
         }
     }
 
@@ -38,7 +38,7 @@ internal class Partition(
         return lock.readLock().withLock {
             records
                 .asSequence()
-                .dropWhile { it.offset <= fromOffset }
+                .dropWhile { it.offset < fromOffset }
                 .take(pollSize)
                 .toList()
         }

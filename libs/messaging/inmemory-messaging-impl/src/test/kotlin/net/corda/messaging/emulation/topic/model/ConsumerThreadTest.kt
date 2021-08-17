@@ -7,12 +7,13 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
 import java.util.concurrent.atomic.AtomicReference
 
 class ConsumerThreadTest {
     private val consumer = mock<Consumer>()
     private val topic = mock<Topic>()
-    private val config = SubscriptionConfiguration(10, 1000L)
+    private val config = SubscriptionConfiguration(10, Duration.ofSeconds(1))
     private val thread = mock<Thread>()
     private val runnable = AtomicReference<Runnable>()
 
@@ -54,7 +55,7 @@ class ConsumerThreadTest {
     fun `stop will join the thread`() {
         consumerThread.stop()
 
-        verify(thread).join(config.threadStopTimeout)
+        verify(thread).join(1000L)
     }
 
     @Test

@@ -23,7 +23,7 @@ class ConsumerThread(
 
     override fun stop() {
         topic.unsubscribe(consumer)
-        thread.join(subscriptionConfig.threadStopTimeout)
+        thread.join(subscriptionConfig.threadStopTimeout.toMillis())
     }
 
     override val isRunning

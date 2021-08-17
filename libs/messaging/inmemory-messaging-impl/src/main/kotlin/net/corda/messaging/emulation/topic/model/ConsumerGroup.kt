@@ -3,15 +3,15 @@ package net.corda.messaging.emulation.topic.model
 import net.corda.messaging.emulation.properties.SubscriptionConfiguration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.withLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 internal class ConsumerGroup(
     private val topicName: String,
     private val partitions: Collection<Partition>,
     internal val subscriptionConfig: SubscriptionConfiguration,
-    private val lock: ReadWriteLock = ReentrantReadWriteLock(),
+    private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock(),
     private val loopFactory: (Consumer, ConsumerGroup) -> Runnable = { consumer, group ->
         ConsumerReadRecordsLoop(consumer, group)
     }
@@ -19,24 +19,29 @@ internal class ConsumerGroup(
     private val consumers = ConcurrentHashMap<Consumer, Collection<Partition>>()
     private val commitments = ConcurrentHashMap<Partition, Long>()
 
-    private val sleeper = lock.writeLock().newCondition()
+    private val newData = lock.writeLock().newCondition()
+
+    class DuplicateSubscriptionException : Exception("Can not subscribe the same consumer twice")
 
     fun subscribe(consumer: Consumer) {
-        consumers.computeIfAbsent(consumer) {
+        consumers.compute(consumer) { _, currentPartitions ->
+            if (currentPartitions != null) {
+                throw DuplicateSubscriptionException()
+            }
             ConcurrentHashMap.newKeySet()
         }
         repartition()
         loopFactory(consumer, this).run()
     }
 
-    internal fun waitForDate() {
-        lock.writeLock().withLock {
-            sleeper.await(1, TimeUnit.HOURS)
+    internal fun waitForData() {
+        lock.write {
+            newData.await(1, TimeUnit.HOURS)
         }
     }
 
-    internal fun getPartitions(consumer: Consumer): Collection<Pair<Partition, Long>>? {
-        return lock.readLock().withLock {
+    internal fun getPartitions(consumer: Consumer): Collection<Pair<Partition, Long>> {
+        return lock.read {
             consumers[consumer]?.map { partition ->
                 val offset = commitments.computeIfAbsent(partition) {
                     when (consumer.offsetStrategy) {
@@ -45,7 +50,7 @@ internal class ConsumerGroup(
                     }
                 }
                 partition to offset
-            }
+            } ?: emptyList()
         }
     }
 
@@ -62,7 +67,7 @@ internal class ConsumerGroup(
     }
 
     fun commitRecord(partition: Partition, records: Collection<RecordMetadata>) {
-        commitments[partition] = records.maxOf { it.offset }
+        commitments[partition] = records.maxOf { it.offset } + 1
     }
 
     fun isSubscribed(consumer: Consumer): Boolean {
@@ -70,13 +75,13 @@ internal class ConsumerGroup(
     }
 
     internal fun wakeUp() {
-        lock.writeLock().withLock {
-            sleeper.signalAll()
+        lock.write {
+            newData.signalAll()
         }
     }
 
     private fun repartition() {
-        lock.writeLock().withLock {
+        lock.write {
             partitions.withIndex().groupBy({
                 it.index % consumers.size
             }, {
@@ -97,7 +102,7 @@ internal class ConsumerGroup(
                     }
                     consumers[consumer] = newPartitionList
                 }
-            sleeper.signalAll()
+            newData.signalAll()
         }
     }
 }
