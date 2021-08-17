@@ -223,9 +223,6 @@ class KryoCheckpointSerializer(
                     when (SectionId.reader.readFrom(this)) {
                         SectionId.ENCODING -> {
                             val encoding = CordaSerializationEncoding.reader.readFrom(this)
-                            context.encodingWhitelist.acceptEncoding(encoding) || throw KryoException(
-                                ENCODING_NOT_PERMITTED_FORMAT.format(encoding)
-                            )
                             substitute(encoding::decompress)
                         }
                         SectionId.DATA_AND_STOP, SectionId.ALT_DATA_AND_STOP -> {

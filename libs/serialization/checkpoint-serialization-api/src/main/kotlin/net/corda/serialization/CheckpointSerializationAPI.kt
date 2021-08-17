@@ -4,7 +4,6 @@ import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.serialization.CheckpointCustomSerializer
 import net.corda.v5.serialization.ClassWhitelist
-import net.corda.v5.serialization.EncodingWhitelist
 import net.corda.v5.serialization.SerializationEncoding
 import java.io.NotSerializableException
 
@@ -36,12 +35,6 @@ interface CheckpointSerializationContext {
      * A whitelist that contains (mostly for security purposes) which classes can be serialized and deserialized.
      */
     val whitelist: ClassWhitelist
-
-    /**
-     * A whitelist that determines (mostly for security purposes) whether a particular encoding may be used when
-     * deserializing.
-     */
-    val encodingWhitelist: EncodingWhitelist
 
     /**
      * A map of any addition properties specific to the particular use case.
@@ -105,11 +98,6 @@ interface CheckpointSerializationContext {
      * A shallow copy of this context but with the given (possibly null) encoding.
      */
     fun withEncoding(encoding: SerializationEncoding?): CheckpointSerializationContext
-
-    /**
-     * A shallow copy of this context but with the given encoding whitelist.
-     */
-    fun withEncodingWhitelist(encodingWhitelist: EncodingWhitelist): CheckpointSerializationContext
 
     /**
      * A shallow copy of this context but with the given custom serializers.
