@@ -60,7 +60,7 @@ class AuthenticationProtocolFailureTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
         val modifiedInitiatorHandshakeMessage = InitiatorHandshakeMessage(initiatorHandshakeMessage.header, ByteBuffer.wrap(initiatorHandshakeMessage.encryptedData.array() + "0".toByte()), initiatorHandshakeMessage.authTag)
         assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(modifiedInitiatorHandshakeMessage) { partyAIdentityKey.public } }
@@ -87,7 +87,7 @@ class AuthenticationProtocolFailureTest {
             signature.update(data + "0".toByteArray(Charsets.UTF_8))
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
         assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public } }
                 .isInstanceOf(InvalidHandshakeMessageException::class.java)
@@ -113,7 +113,7 @@ class AuthenticationProtocolFailureTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
         authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public }
 

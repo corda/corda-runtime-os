@@ -30,17 +30,18 @@ interface LinkManagerNetworkMap {
     }
 
     /**
-     * Returns the [MemberInfo] belonging a specific [holdingIdentity]
+     * Returns the [MemberInfo] belonging a specific [holdingIdentity].
      */
     fun getMemberInfo(holdingIdentity: HoldingIdentity): MemberInfo?
 
     /**
-     * Returns the [MemberInfo] which has a public key with SHA-256 hash [hash].
+     * Returns the [MemberInfo] which has a public key with SHA-256 hash [hash] and group identifier [groupId].
      */
     fun getMemberInfoFromPublicKeyHash(hash: ByteArray, groupId: String): MemberInfo?
 
     /**
      * Returns the [PublicKey] which has a SHA-256 hash [hash].
+     * Throws a [NoPublicKeyForHashException] if the key is not in the NetworkMap.
      */
     fun getPublicKeyFromHash(hash: ByteArray): PublicKey
 
@@ -48,7 +49,7 @@ interface LinkManagerNetworkMap {
         CordaRuntimeException("Could not find the public key in the network map by hash = $hash")
 
     /**
-     * Returns the [NetworkType] of our [holdingIdentity].
+     * Returns the [NetworkType] for group identifier [groupId].
      */
     fun getNetworkType(groupId: String): NetworkType?
 
