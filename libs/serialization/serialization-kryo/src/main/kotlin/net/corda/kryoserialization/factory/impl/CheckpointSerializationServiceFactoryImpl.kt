@@ -3,13 +3,12 @@ package net.corda.kryoserialization.factory.impl
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.io.serialization.kryo.KryoSerializer
 import net.corda.cipher.suite.internal.BasicHashingServiceImpl
-import net.corda.kryoserialization.AlwaysAcceptEncodingWhitelist
+import net.corda.kryoserialization.KryoCheckpointSerializer
 import net.corda.serialization.CheckpointSerializationContext
 import net.corda.serialization.CheckpointSerializationService
 import net.corda.serialization.CheckpointSerializer
 import net.corda.kryoserialization.KryoCheckpointSerializerBuilder
 import net.corda.kryoserialization.QuasarWhitelist
-import net.corda.kryoserialization.SerializationDefaults
 import net.corda.serialization.factory.CheckpointSerializationServiceFactory
 import net.corda.kryoserialization.impl.CheckpointSerializationContextImpl
 import net.corda.kryoserialization.impl.CheckpointSerializationServiceImpl
@@ -38,12 +37,11 @@ class CheckpointSerializationServiceFactoryImpl : CheckpointSerializationService
 
     private fun createCheckpointContext(sandboxGroup: SandboxGroup): CheckpointSerializationContext {
         val context = CheckpointSerializationContextImpl(
-            SerializationDefaults.javaClass.classLoader,
+            KryoCheckpointSerializer::class.java.classLoader,
             QuasarWhitelist,
             emptyMap(),
             true,
-            null,
-            AlwaysAcceptEncodingWhitelist
+            null
         )
         context.withSandboxGroup(sandboxGroup)
         return context

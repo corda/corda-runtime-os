@@ -1,4 +1,6 @@
 # Bndrun for Hello World sample
+# Ensure Bnd uses the same Java executable as Gradle.
+java: ${project.javaExecutable}
 
 -tester: biz.aQute.tester.junit-platform
 
@@ -23,6 +25,7 @@
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='junit-platform-launcher',\
+    bnd.identity;id='slf4j.simple',\
     bnd.identity;id='${project.archivesBaseName}-tests'
 
 # This will help us keep -runbundles sorted
@@ -47,7 +50,6 @@
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
 	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
-	org.apache.logging.log4j.api;version='[2.14.1,2.14.2)',\
 	org.assertj.core;version='[3.12.2,3.12.3)',\
 	org.jetbrains.kotlin.osgi-bundle;version='[1.4.21,1.4.22)',\
 	org.opentest4j;version='[1.2.0,1.2.1)',\

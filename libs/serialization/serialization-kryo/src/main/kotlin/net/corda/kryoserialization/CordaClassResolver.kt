@@ -10,11 +10,11 @@ import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryo.serializers.FieldSerializer
 import com.esotericsoftware.kryo.util.Util
-import net.corda.internal.base.kotlinObjectInstance
-import net.corda.internal.base.writer
 import net.corda.kryoserialization.osgi.SandboxClassResolver
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.serialization.CheckpointSerializationContext
+import net.corda.utilities.reflection.kotlinObjectInstance
+import net.corda.utilities.writer
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.BasicHashingService
@@ -26,8 +26,7 @@ import java.nio.file.Paths
 import java.nio.file.StandardOpenOption.APPEND
 import java.nio.file.StandardOpenOption.CREATE
 import java.nio.file.StandardOpenOption.WRITE
-import java.util.*
-import kotlin.collections.ArrayList
+import java.util.Collections
 
 /**
  * Corda specific class resolver which enables extra customisation for the purposes of serialization using Kryo
