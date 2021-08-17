@@ -114,8 +114,8 @@ open class SessionManagerImpl(
         val sessionId = UUID.randomUUID().toString()
         val networkType = networkMap.getNetworkType(sessionKey.ourId.groupId)
         if (networkType == null) {
-            logger.warn("Attempted to start session negotiation with peer ${sessionKey.responderId} but our network type " +
-                "${sessionKey.ourId} is not in the network map. The sessionInit message was not sent.")
+            logger.warn("Could not find the network type in the NetworkMap for groupId ${sessionKey.ourId.groupId}." +
+                " The sessionInit message was not sent.")
             return null
         }
         val ourMemberInfo = networkMap.getMemberInfo(sessionKey.ourId)

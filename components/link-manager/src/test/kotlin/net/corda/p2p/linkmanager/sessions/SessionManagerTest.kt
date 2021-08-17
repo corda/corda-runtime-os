@@ -3,7 +3,6 @@ package net.corda.p2p.linkmanager.sessions
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.Step2Message
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.app.HoldingIdentity
@@ -21,13 +20,13 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromFlowMessageAndKey
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -522,6 +521,62 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `Cannot generate a session init message if group id is not in the network map`() {
+        val groupId = "NEW_GROUP"
+        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        Mockito.`when`(netMap.getNetworkType(groupId)).thenReturn(null)
+
+        val outboundSessionManager = sessionManagerWithNetMap(netMap)
+
+        val message = AuthenticatedMessageAndKey(
+            AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    OUTBOUND_PARTY.toHoldingIdentity(),
+                    HoldingIdentity(OUTBOUND_PARTY.x500Name, groupId),
+                    null,
+                    "messageId",
+                    "",
+                    "system-1"
+                ),
+                payload
+            ),
+            KEY
+        )
+
+        val state = outboundSessionManager.processOutboundFlowMessage(message)
+
+        assertTrue(state is SessionManager.SessionState.CannotEstablishSession)
+        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId $groupId." +
+            " The sessionInit message was not sent.")
+    }
+
+    @Test
+    fun `Cannot generate a session init message from a party not in the network map`() {
+        val outboundSessionManager = sessionManager(OUTBOUND_PARTY)
+
+        val message = AuthenticatedMessageAndKey(
+            AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    OUTBOUND_PARTY.toHoldingIdentity(),
+                    PARTY_NOT_IN_NETMAP.toHoldingIdentity(),
+                    null,
+                    "messageId",
+                    "",
+                    "system-1"
+                ),
+                payload
+            ),
+            KEY
+        )
+
+        val state = outboundSessionManager.processOutboundFlowMessage(message)
+
+        assertTrue(state is SessionManager.SessionState.CannotEstablishSession)
+        loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $OUTBOUND_PARTY but our identity " +
+            "$PARTY_NOT_IN_NETMAP is not in the network map. The sessionInit message was not sent.")
+    }
+
+    @Test
     fun `Cannot generate a session init message for a party not in the network map`() {
         val outboundSessionManager = sessionManager(OUTBOUND_PARTY)
 
@@ -609,6 +664,52 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `Initiator hello message is dropped if peer is not in the network map`() {
+        val sessionId = "SessionId"
+
+        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
+
+        val protocolInitiator = AuthenticationProtocolInitiator(
+            sessionId,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            MAX_MESSAGE_SIZE,
+            netMapOutbound.getKeyPair().public,
+            GROUP_ID
+        )
+        val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
+        inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))?.payload
+
+        loggingInterceptor.assertSingleWarning("Received InitiatorHelloMessage with sessionId SessionId. The received public key hash" +
+            " (${initiatorHelloMessage.source.initiatorPublicKeyHash.array().toBase64()}) corresponding to one of the senders holding " +
+            "identities is not in the network map. The message was discarded.")
+    }
+
+    @Test
+    fun `Initiator hello message is dropped if our network type is not in the network map`() {
+        val sessionId = "SessionId"
+
+        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+            .thenReturn(netMapOutbound.getOurMemberInfo())
+
+        val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
+
+        val protocolInitiator = AuthenticationProtocolInitiator(
+            sessionId,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            MAX_MESSAGE_SIZE,
+            netMapOutbound.getKeyPair().public,
+            GROUP_ID
+        )
+        val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
+        inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))?.payload
+
+        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId $GROUP_ID. " +
+            "The InitiatorHelloMessage for sessionId SessionId was discarded.")
+    }
+
+    @Test
     fun `Initiator handshake message is dropped if the sender public key hash is not in the network map`() {
         val sessionId = "SessionId"
         val hash = "hash"
@@ -620,7 +721,8 @@ class SessionManagerTest {
         Mockito.`when`(netMap.getPublicKeyFromHash(hashKey(netMapOutbound.getKeyPair().public))).thenThrow(
             LinkManagerNetworkMap.NoPublicKeyForHashException(hash)
         )
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID)).thenReturn(netMapOutbound.getOurMemberInfo())
+        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+            .thenReturn(netMapOutbound.getOurMemberInfo())
 
         val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
         val message = negotiateToInitiatorHandshake(inboundManager, sessionId)

@@ -23,23 +23,28 @@ class AuthenticatedEncryptionSessionTest {
     private val signature = Signature.getInstance("ECDSA", provider)
 
     private val sessionId = UUID.randomUUID().toString()
+    private val groupId = "some-group-id"
 
     // party A
     private val partyAMaxMessageSize = 1_000_000
     private val partyAIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolA = AuthenticationProtocolInitiator(sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyAMaxMessageSize)
+    private val authenticationProtocolA = AuthenticationProtocolInitiator(
+        sessionId,
+        setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
+        partyAMaxMessageSize,
+        partyAIdentityKey.public,
+        groupId
+    )
 
     // party B
     private val partyBMaxMessageSize = 1_500_000
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
     private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize)
 
-    private val groupId = "some-group-id"
-
     @Test
     fun `session can be established between two parties and used for transmission of authenticated and encrypted data successfully`() {
         // Step 1: initiator sending hello message to responder.
-        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello(partyAIdentityKey.public, groupId)
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
 
         // Step 2: responder sending hello message to initiator.
@@ -56,7 +61,7 @@ class AuthenticatedEncryptionSessionTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
         authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public }
 
@@ -98,7 +103,7 @@ class AuthenticatedEncryptionSessionTest {
     @Test
     fun `session can be established between two parties and used for transmission of authenticated and encrypted data successfully with step 2 executed on separate component`() {
         // Step 1: initiator sending hello message to responder.
-        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello(partyAIdentityKey.public, groupId)
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
 
         // Step 2: responder sending hello message to initiator.
@@ -119,7 +124,7 @@ class AuthenticatedEncryptionSessionTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
         authenticationProtocolBDownstream.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public }
 
@@ -161,7 +166,7 @@ class AuthenticatedEncryptionSessionTest {
     @Test
     fun `when data message is altered during transmission, decryption fails with an error`() {
         // Step 1: initiator sending hello message to responder.
-        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello(partyAIdentityKey.public, groupId)
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
 
         // Step 2: responder sending hello message to initiator.
@@ -178,7 +183,7 @@ class AuthenticatedEncryptionSessionTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
         authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public }
 
@@ -234,7 +239,7 @@ class AuthenticatedEncryptionSessionTest {
     @Test
     fun `when trying to encrypt message larger than the agreed max message size, an exception is thrown`() {
         // Step 1: initiator sending hello message to responder.
-        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello(partyAIdentityKey.public, groupId)
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
 
         // Step 2: responder sending hello message to initiator.
@@ -251,7 +256,7 @@ class AuthenticatedEncryptionSessionTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, partyBIdentityKey.public, groupId, signingCallbackForA)
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyAIdentityKey.public, signingCallbackForA)
 
         authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public }
 
