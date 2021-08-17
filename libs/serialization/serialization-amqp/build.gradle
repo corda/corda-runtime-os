@@ -7,10 +7,10 @@ plugins {
 description 'Corda AMQP serialization library'
 
 dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
@@ -23,13 +23,12 @@ dependencies {
     implementation project(":libs:sandbox")
     implementation project(":libs:utilities")
     implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
-    implementation project(":libs:serialization:serialization-encoding")
+    implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
 
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "com.google.guava:guava:$guavaVersion"
-    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
     implementation "org.apache.qpid:proton-j:$protonjVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation 'org.slf4j:slf4j-api'
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
@@ -37,7 +36,7 @@ dependencies {
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.osgi:osgi.core:$osgiVersion"
+    testImplementation 'org.osgi:osgi.core'
 }
 
 tasks.named('jar', Jar) {

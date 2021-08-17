@@ -1,3 +1,5 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id 'corda.common-library'
     id 'corda.osgi-test-conventions'
@@ -10,20 +12,20 @@ description 'Corda Sandbox'
 configurations {
     cpks {
         canBeConsumed = false
+        transitive = false
     }
 }
 
 dependencies {
-    api "org.jetbrains.kotlin:kotlin-osgi-bundle"
+    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:crypto:crypto-impl")
     implementation "net.corda:corda-install:$cordaVersion"
-    implementation "net.corda:corda-packaging"
-    implementation "net.corda:corda-serialization"
-    implementation "org.slf4j:slf4j-api"
+    implementation 'net.corda:corda-packaging'
+    implementation 'net.corda:corda-serialization'
+    implementation 'org.slf4j:slf4j-api'
 
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    testImplementation "org.assertj:assertj-core"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
@@ -32,17 +34,15 @@ dependencies {
     cpks project(path: 'sandbox-cpk-three', configuration: 'cordaCPK')
 
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
-    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiScrAnnotationVersion"
+    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     integrationTestImplementation "net.corda:corda-application"
-    integrationTestImplementation "org.osgi:org.osgi.test.junit5"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
-    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.scr"
-    integrationTestRuntimeOnly "org.junit.jupiter:junit-jupiter-params"
-    integrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher"
-    integrationTestRuntimeOnly "org.osgi:org.osgi.util.function"
-    integrationTestRuntimeOnly "org.osgi:org.osgi.util.promise"
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
     from configurations.cpks
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
 }

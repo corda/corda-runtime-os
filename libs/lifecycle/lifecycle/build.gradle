@@ -6,11 +6,12 @@ plugins {
 description "Lifecycle API"
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-base"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-base'
+    implementation 'org.slf4j:slf4j-api'
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
