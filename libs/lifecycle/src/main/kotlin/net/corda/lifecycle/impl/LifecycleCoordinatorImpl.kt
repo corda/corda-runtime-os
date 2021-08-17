@@ -82,15 +82,6 @@ class LifecycleCoordinatorImpl(
     private val isScheduled = AtomicBoolean(false)
 
     /**
-     * The current state of this coordinator.
-     *
-     * Updates to this property only trigger a state change event to be sent if the new value differs from the old one,
-     * to prevent spurious updates. Defaults to DOWN.
-     */
-    override val status: LifecycleStatus
-        get() = lifecycleState.status
-
-    /**
      * Process a batch of events in the event queue.
      *
      * The main processing functionality is delegated to the LifecycleProcessor class. On a processing error, the
@@ -134,21 +125,7 @@ class LifecycleCoordinatorImpl(
     }
 
     /**
-     * Cancel the [TimerEvent] uniquely identified by [key].
-     * If [key] doesn't identify any [TimerEvent] scheduled with [setTimer], this method doesn't anything.
-     *
-     * @param key identifying the [TimerEvent] to cancel,
-     */
-    override fun cancelTimer(key: String) {
-        postEvent(CancelTimer(key))
-    }
-
-    /**
-     * Post an event to be processed by the provided user event handler.
-     *
-     * Events are processed in the order they are posted.
-     *
-     * @param event to be processed.
+     * See [LifecycleCoordinator].
      */
     override fun postEvent(event: LifecycleEvent) {
         lifecycleState.postEvent(event)
@@ -156,31 +133,47 @@ class LifecycleCoordinatorImpl(
     }
 
     /**
-     * Schedule a timer event to be posted to the event queue after some delay.
-     *
-     * @param key unique [TimerEvent] identifier.
-     * @param delay in milliseconds, when [onTime] is processed.
-     * @param onTime Function generating the timer event to post to the queue. The input parameter is the key.
+     * See [LifecycleCoordinator].
      */
     override fun setTimer(key: String, delay: Long, onTime: (String) -> TimerEvent) {
         postEvent(SetUpTimer(key, delay, onTime))
     }
 
+    /**
+     * See [LifecycleCoordinator].
+     */
+    override fun cancelTimer(key: String) {
+        postEvent(CancelTimer(key))
+    }
+
+    /**
+     * See [LifecycleCoordinator].
+     */
     override fun updateStatus(newStatus: LifecycleStatus) {
         postEvent(StatusChange(newStatus))
     }
 
+    /**
+     * See [LifecycleCoordinator].
+     */
     override fun followStatusChanges(coordinators: Set<LifecycleCoordinator>): RegistrationHandle {
         val registration = Registration(coordinators, this)
+        postEvent(TrackRegistration(registration))
         coordinators.forEach { it.postEvent(NewRegistration(registration)) }
         return registration
     }
 
     /**
-     * Return `true` in this coordinator is processing posted events.
+     * See [LifecycleCoordinator].
      */
     override val isRunning: Boolean
         get() = lifecycleState.isRunning
+
+    /**
+     * See [LifecycleCoordinator].
+     */
+    override val status: LifecycleStatus
+        get() = lifecycleState.status
 
     /**
      * Start this coordinator.

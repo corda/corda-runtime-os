@@ -76,6 +76,27 @@ class RegistrationTest {
         harness.closeRegistration() // On the second close shouldn't have been any extra events, same assertion applies
     }
 
+    @Test
+    fun `current status is notified to registering coordinator when the registration is up`() {
+        val harness = RegistrationTestHarness()
+        harness.requestNotify()
+        harness.verifyDeliveredEvents(0, 0)
+        harness.setDependentStatuses(listOf(LifecycleStatus.UP, LifecycleStatus.UP, LifecycleStatus.UP))
+        harness.verifyDeliveredEvents(1, 0)
+        harness.requestNotify()
+        harness.verifyDeliveredEvents(2, 0)
+    }
+
+    @Test
+    fun `current status is not notified if the registration is closed`() {
+        val harness = RegistrationTestHarness()
+        harness.setDependentStatuses(listOf(LifecycleStatus.UP, LifecycleStatus.UP, LifecycleStatus.UP))
+        harness.verifyDeliveredEvents(1, 0)
+        harness.closeRegistration()
+        harness.requestNotify()
+        harness.verifyDeliveredEvents(1, 0)
+    }
+
     private inner class RegistrationTestHarness {
         private val childMocks = listOf<LifecycleCoordinator>(mock(), mock(), mock())
         private val listeningMock = mock<LifecycleCoordinator>()
@@ -83,7 +104,7 @@ class RegistrationTest {
 
         fun setDependentStatuses(statuses: List<LifecycleStatus>) {
             childMocks.zip(statuses).forEach {
-                registration.updateCoordinatorState(it.first, it.second)
+                registration.updateCoordinatorStatus(it.first, it.second)
             }
         }
 
@@ -100,6 +121,10 @@ class RegistrationTest {
                     LifecycleStatus.DOWN
                 )
             )
+        }
+
+        fun requestNotify() {
+            registration.notifyCurrentStatus()
         }
 
         fun closeRegistration() {

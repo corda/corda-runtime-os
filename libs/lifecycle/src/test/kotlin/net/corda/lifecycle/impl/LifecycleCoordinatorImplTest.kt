@@ -837,6 +837,59 @@ internal class LifecycleCoordinatorImplTest {
         }
     }
 
+    @Test
+    fun `an up event is delivered when the coordinator starts if all dependent coordinators are up`() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        val dependentsUpLatch = CountDownLatch(2)
+        val flushingEvent = object : LifecycleEvent {}
+        val dependent1 = createCoordinator { event, _ ->
+            when (event) {
+                flushingEvent -> {
+                    dependentsUpLatch.countDown()
+                }
+            }
+        }
+        val dependent2 = createCoordinator { event, _ ->
+            when (event) {
+                flushingEvent -> {
+                    dependentsUpLatch.countDown()
+                }
+            }
+        }
+        var registration: RegistrationHandle? = null
+        var status = LifecycleStatus.DOWN
+        val regLatch = CountDownLatch(1)
+        createCoordinator { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
+                }
+                is RegistrationStatusChangeEvent -> {
+                    registration = event.registration
+                    status = event.status
+                    regLatch.countDown()
+                }
+            }
+        }.use {
+            dependent1.start()
+            dependent2.start()
+            val handle = it.followStatusChanges(setOf(dependent1, dependent2))
+            dependent1.updateStatus(LifecycleStatus.UP)
+            dependent2.updateStatus(LifecycleStatus.UP)
+            dependent1.postEvent(flushingEvent)
+            dependent2.postEvent(flushingEvent)
+            assertTrue(dependentsUpLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            it.start()
+            assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(handle, registration)
+            assertEquals(LifecycleStatus.UP, status)
+        }
+    }
+
     private fun createCoordinator(processor: LifecycleEventHandler) : LifecycleCoordinator {
         return LifecycleCoordinatorImpl(COMPONENT_NAME, BATCH_SIZE, processor)
     }
