@@ -11,7 +11,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
-    implementation "net.corda:corda-base-internal:$cordaVersion"
     implementation "net.corda:corda-crypto-api:$cordaVersion"
     implementation "net.corda:corda-crypto-impl:$cordaVersion"
     implementation "net.corda:corda-class-info:$cordaVersion"
@@ -19,6 +18,8 @@ dependencies {
     implementation "net.corda:corda-sandbox:$cordaVersion"
     implementation "net.corda:corda-serialization"
     implementation "net.corda:corda-serialization-encoding:$cordaVersion"
+
+    implementation project(":libs:utilities")
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"

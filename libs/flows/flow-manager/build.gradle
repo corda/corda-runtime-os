@@ -8,7 +8,6 @@ description "Flow Manager"
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
-    implementation "net.corda:corda-base-internal:$cordaVersion"
     implementation "net.corda:avro-schema"
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"

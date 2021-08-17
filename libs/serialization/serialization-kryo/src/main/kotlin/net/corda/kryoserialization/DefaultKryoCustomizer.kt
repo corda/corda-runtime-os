@@ -19,7 +19,7 @@ import net.corda.kryoserialization.serializers.LinkedListItrSerializer
 import net.corda.kryoserialization.serializers.SerializeAsTokenSerializer
 import net.corda.kryoserialization.serializers.SingletonSerializeAsTokenSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
-import net.corda.internal.base.LazyMappedList
+import net.corda.utilities.LazyMappedList
 import net.corda.v5.serialization.SerializationWhitelist
 import net.corda.v5.serialization.SerializeAsToken
 import net.corda.v5.serialization.SerializedBytes
