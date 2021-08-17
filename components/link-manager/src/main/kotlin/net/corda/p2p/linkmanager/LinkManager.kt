@@ -141,7 +141,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun processEvent(event: EventLogRecord<ByteBuffer, AppMessage>): List<Record<String, *>> {
-            val message = event.value!!.message
+            val message = event.value?.message
             if (message == null) {
                 logger.error("Received null message. The message was discarded.")
                 return emptyList()

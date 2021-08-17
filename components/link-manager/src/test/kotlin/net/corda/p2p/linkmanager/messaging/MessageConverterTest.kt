@@ -114,7 +114,7 @@ class MessageConverterTest {
     @Test
     fun `linkOutFromUnauthenticatedMessage returns null (with appropriate logging) if if the destination is not in the network map`() {
         val payload = "test"
-        val us =HoldingIdentity("Alice", "test-group-id")
+        val us = HoldingIdentity("Alice", "test-group-id")
         val peer = HoldingIdentity("Imposter", "")
         val unauthenticatedMsg = UnauthenticatedMessage(UnauthenticatedMessageHeader(peer, us), ByteBuffer.wrap(payload.toByteArray()))
 
@@ -128,7 +128,7 @@ class MessageConverterTest {
     @Test
     fun `linkOutFromUnauthenticatedMessage returns null (with appropriate logging) if if their network type is not in the network map`() {
         val payload = "test"
-        val us =HoldingIdentity("Alice", "test-group-id")
+        val us = HoldingIdentity("Alice", "test-group-id")
         val peer = HoldingIdentity("Imposter", "")
         val unauthenticatedMsg = UnauthenticatedMessage(UnauthenticatedMessageHeader(peer, us), ByteBuffer.wrap(payload.toByteArray()))
 
