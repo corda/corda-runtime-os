@@ -43,7 +43,8 @@ class HttpHelper {
                 URL(SCHEME, uri.host, uri.port, ENDPOINT).toString(), // At a later point we should just use the provided URI
                 content
             ).apply {
-                headers().set(HttpHeaderNames.HOST, uri.host)
+                headers()
+                    .set(HttpHeaderNames.HOST, uri.host)
                     .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE)
                     .set(HttpHeaderNames.ACCEPT_ENCODING, HttpHeaderValues.APPLICATION_JSON)
                     .set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)

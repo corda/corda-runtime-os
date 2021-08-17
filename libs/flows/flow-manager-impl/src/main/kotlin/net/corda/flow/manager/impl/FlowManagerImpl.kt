@@ -8,13 +8,13 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.FlowSessionMessage
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.identity.HoldingIdentity
+import net.corda.dependency.injection.DependencyInjectionService
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.flow.statemachine.HousekeepingState
 import net.corda.flow.statemachine.NonSerializableState
 import net.corda.flow.statemachine.factory.FlowStateMachineFactory
-import net.corda.internal.di.DependencyInjectionService
 import net.corda.messaging.api.records.Record
 import net.corda.sandbox.cache.FlowMetadata
 import net.corda.sandbox.cache.SandboxCache

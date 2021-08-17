@@ -7,9 +7,11 @@ import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import org.slf4j.LoggerFactory
 import java.net.URI
-import java.util.concurrent.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import net.corda.p2p.gateway.messaging.http.DestinationInfo
 
 /**
  * The [ConnectionManager] is responsible for creating an HTTP connection and caching it. If a connection to the requested
@@ -83,11 +85,11 @@ class ConnectionManager(private val sslConfiguration: SslConfiguration,
 
     /**
      * Return an existing or new [HttpClient].
-     * @param target the [URI] to connect to
+     * @param destinationInfo the [DestinationInfo] object containing the destination's URI, SNI, and legal name
      */
-    fun acquire(target: URI): HttpClient {
-        return clientPool.computeIfAbsent(target) {
-            val client = HttpClient(target, sslConfiguration, writeGroup!!, nettyGroup!!)
+    fun acquire(destinationInfo: DestinationInfo): HttpClient {
+        return clientPool.computeIfAbsent(destinationInfo.uri) {
+            val client = HttpClient(destinationInfo, sslConfiguration, writeGroup!!, nettyGroup!!)
             eventListeners.forEach { client.addListener(it) }
             client.start()
             client

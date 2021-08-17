@@ -28,4 +28,9 @@ interface SslConfiguration {
      * The trust store password
      */
     val trustStorePassword: String
+
+    /**
+     * Property determining how the revocation check will be made for the server certificate
+     */
+    val revocationCheck: RevocationConfig
 }
