@@ -33,7 +33,6 @@ dependencies {
     implementation project(":components:examples:run-flow")
 
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
-    runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 
     // from crypto-impl (via the Sandbox)

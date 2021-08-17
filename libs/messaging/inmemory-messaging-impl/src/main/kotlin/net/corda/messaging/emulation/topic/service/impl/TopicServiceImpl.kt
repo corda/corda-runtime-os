@@ -13,7 +13,7 @@ import org.osgi.service.component.annotations.Component
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.withLock
 
-@Component
+@Component(immediate = true, service = [TopicService::class])
 class TopicServiceImpl : TopicService {
     //TODO - replace with config service injection
     private val config: Config = ConfigFactory.load("tmpInMemDefaults")

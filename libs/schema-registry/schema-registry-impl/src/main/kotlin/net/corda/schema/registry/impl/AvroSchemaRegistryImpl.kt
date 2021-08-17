@@ -29,7 +29,7 @@ import java.util.zip.InflaterInputStream
  * Implementation of [AvroSchemaRegistry].
  */
 @SuppressWarnings("TooManyFunctions")
-@Component
+@Component(immediate = true, service = [AvroSchemaRegistry::class])
 class AvroSchemaRegistryImpl(
     private val options: Options = Options()
 ): AvroSchemaRegistry {

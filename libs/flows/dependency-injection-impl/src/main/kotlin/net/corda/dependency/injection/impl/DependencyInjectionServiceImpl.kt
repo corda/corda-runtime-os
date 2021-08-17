@@ -16,7 +16,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.serialization.SerializeAsToken
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.ServiceScope
 import java.lang.reflect.Field
 import java.util.Collections.synchronizedMap
 import kotlin.reflect.KClass

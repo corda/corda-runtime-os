@@ -16,7 +16,7 @@ import org.osgi.service.component.annotations.Reference
  * In-memory implementation for Publisher Factory.
  * @property topicService OSGi DS Injected topic service
  */
-@Component
+@Component(immediate = true, service = [PublisherFactory::class])
 class CordaPublisherFactory @Activate constructor(
     @Reference(service = TopicService::class)
     private val topicService: TopicService

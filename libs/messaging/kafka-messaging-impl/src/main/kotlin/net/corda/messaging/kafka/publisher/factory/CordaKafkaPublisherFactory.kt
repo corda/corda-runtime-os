@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * Kafka implementation for Publisher Factory.
  * @property avroSchemaRegistry OSGi DS Injected avro schema registry
  */
-@Component
+@Component(immediate = true, service = [PublisherFactory::class])
 class CordaKafkaPublisherFactory @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
     private val avroSchemaRegistry: AvroSchemaRegistry

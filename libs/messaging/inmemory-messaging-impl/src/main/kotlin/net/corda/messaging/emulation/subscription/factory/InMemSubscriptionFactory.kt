@@ -25,7 +25,7 @@ import java.util.concurrent.ExecutorService
 /**
  * In memory implementation of the Subscription Factory.
  */
-@Component
+@Component(immediate = true, service = [SubscriptionFactory::class])
 class InMemSubscriptionFactory @Activate constructor(
     @Reference(service = TopicService::class)
     private val topicService: TopicService

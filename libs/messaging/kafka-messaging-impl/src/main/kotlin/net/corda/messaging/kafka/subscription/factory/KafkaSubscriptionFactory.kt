@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * Kafka implementation of the Subscription Factory.
  * @property avroSchemaRegistry OSGi DS Injected avro schema registry
  */
-@Component
+@Component(immediate = true, service = [SubscriptionFactory::class])
 class KafkaSubscriptionFactory @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
     private val avroSchemaRegistry: AvroSchemaRegistry
