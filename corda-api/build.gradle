@@ -14,6 +14,13 @@ dependencies {
         api project(':data:topic-schema')
         api project(':persistence')
         api project(':serialization')
+
+        api "javax.persistence:javax.persistence-api:$javaxPersistenceApiVersion"
+        api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+        api "net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion"
+        api "org.osgi:osgi.annotation:$osgiVersion"
+        api "org.osgi:osgi.core:$osgiVersion"
+        api "org.slf4j:slf4j-api:$slf4jVersion"
     }
 }
 

@@ -7,11 +7,10 @@ plugins {
 description 'Corda Persistence'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly 'org.osgi:osgi.annotation'
 
-    api "javax.persistence:javax.persistence-api:$javaxPersistenceApiVersion"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
-    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    api 'javax.persistence:javax.persistence-api'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     implementation platform(project(':corda-api'))
     implementation project(":base")

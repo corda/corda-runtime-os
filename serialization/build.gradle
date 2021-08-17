@@ -10,10 +10,9 @@ dependencies {
     api platform(project(':corda-api'))
     api project(":base")
 
-    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly 'org.osgi:osgi.annotation'
 
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"

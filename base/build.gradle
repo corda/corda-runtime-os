@@ -8,12 +8,11 @@ description 'Corda Base'
 
 dependencies {
     implementation platform(project(':corda-api'))
-    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     // Concluded this is the one acceptable dependency in addition to kotlin.
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation 'org.slf4j:slf4j-api'
 
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly 'org.osgi:osgi.annotation'
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
 }
