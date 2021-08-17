@@ -13,7 +13,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 
-@Component(immediate = true, service = [RunFlow::class])
+@Component
 class RunFlow(
     private val flowManager: FlowManager,
     private val subscriptionFactory: SubscriptionFactory,

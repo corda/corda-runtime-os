@@ -18,7 +18,7 @@ import org.slf4j.Logger
 import java.nio.ByteBuffer
 
 
-@Component(immediate = true, service = [FlowPublisher::class])
+@Component
 @Suppress("LongParameterList")
 class FlowPublisher(
     private val lifeCycleCoordinator: LifecycleCoordinator,

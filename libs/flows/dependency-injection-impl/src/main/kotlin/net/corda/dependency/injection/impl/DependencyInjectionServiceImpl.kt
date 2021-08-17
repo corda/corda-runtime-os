@@ -22,7 +22,7 @@ import java.util.Collections.synchronizedMap
 import kotlin.reflect.KClass
 import kotlin.reflect.full.allSuperclasses
 
-@Component(immediate = true, service = [DependencyInjectionService::class], scope = ServiceScope.SINGLETON)
+@Component(immediate = true, service = [DependencyInjectionService::class])
 class DependencyInjectionServiceImpl : DependencyInjectionService {
     internal companion object {
         val log = contextLogger()
