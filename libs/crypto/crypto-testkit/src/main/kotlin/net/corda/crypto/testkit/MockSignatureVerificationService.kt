@@ -1,6 +1,6 @@
 package net.corda.crypto.testkit
 
-import net.corda.impl.cipher.suite.SignatureVerificationServiceImpl
+import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 
 class MockSignatureVerificationService internal constructor(
     val mocks: CryptoMocks

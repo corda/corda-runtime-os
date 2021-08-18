@@ -1,7 +1,7 @@
 package net.corda.crypto.testkit
 
-import net.corda.impl.cipher.suite.DefaultCryptoService
-import net.corda.impl.cipher.suite.DefaultKeyCache
+import net.corda.cipher.suite.impl.DefaultCryptoService
+import net.corda.cipher.suite.impl.DefaultKeyCache
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import java.security.KeyPair
 

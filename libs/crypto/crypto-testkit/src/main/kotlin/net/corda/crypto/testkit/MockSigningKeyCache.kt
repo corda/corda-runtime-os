@@ -1,8 +1,8 @@
 package net.corda.crypto.testkit
 
-import net.corda.impl.crypto.SigningKeyCacheImpl
-import net.corda.impl.crypto.SigningServicePersistentCacheFactory
-import net.corda.impl.dev.cipher.suite.InMemorySigningServicePersistentCache
+import net.corda.crypto.impl.SigningKeyCacheImpl
+import net.corda.crypto.impl.SigningServicePersistentCacheFactory
+import net.corda.cipher.suite.impl.dev.InMemorySigningServicePersistentCache
 
 class MockSigningKeyCache internal constructor(
     val mocks: CryptoMocks,

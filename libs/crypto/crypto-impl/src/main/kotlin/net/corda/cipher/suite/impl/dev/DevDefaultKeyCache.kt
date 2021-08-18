@@ -1,16 +1,17 @@
-package net.corda.crypto.testkit
+package net.corda.cipher.suite.impl.dev
 
 import net.corda.crypto.impl.caching.SimplePersistentCacheFactory
 import net.corda.cipher.suite.impl.DefaultCachedKey
 import net.corda.cipher.suite.impl.DefaultCryptoPersistentKey
 import net.corda.cipher.suite.impl.DefaultKeyCacheImpl
-import net.corda.cipher.suite.impl.dev.InMemorySimplePersistentCache
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 
-class MockDefaultKeyCache internal constructor(
-    val mocks: CryptoMocks,
+class DevDefaultKeyCache(
+    sandboxId: String,
+    schemeMetadata: CipherSchemeMetadata,
     val cache: InMemorySimplePersistentCache<DefaultCachedKey, DefaultCryptoPersistentKey>
 ) : DefaultKeyCacheImpl(
-    sandboxId = mocks.sandboxId,
+    sandboxId = sandboxId,
     partition = null,
     passphrase = null,
     salt = null,
@@ -18,5 +19,5 @@ class MockDefaultKeyCache internal constructor(
         override fun create() =
             cache
     },
-    schemeMetadata = mocks.schemeMetadata()
+    schemeMetadata = schemeMetadata
 )

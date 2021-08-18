@@ -1,6 +1,6 @@
 package net.corda.crypto.testkit
 
-import net.corda.impl.crypto.FreshKeySigningServiceImpl
+import net.corda.crypto.impl.FreshKeySigningServiceImpl
 
 @Suppress("LongParameterList")
 class MockFreshKeySigningService internal constructor(

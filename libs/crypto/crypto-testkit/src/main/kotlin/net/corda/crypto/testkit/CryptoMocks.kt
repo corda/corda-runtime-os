@@ -1,11 +1,11 @@
 package net.corda.crypto.testkit
 
-import net.corda.impl.cipher.suite.CipherSchemeMetadataProviderImpl
-import net.corda.impl.cipher.suite.DefaultCachedKey
-import net.corda.impl.cipher.suite.DefaultCryptoPersistentKey
-import net.corda.impl.cipher.suite.DigestServiceProviderImpl
-import net.corda.impl.dev.cipher.suite.InMemorySigningServicePersistentCache
-import net.corda.impl.dev.cipher.suite.InMemorySimplePersistentCache
+import net.corda.cipher.suite.impl.CipherSchemeMetadataProviderImpl
+import net.corda.cipher.suite.impl.DefaultCachedKey
+import net.corda.cipher.suite.impl.DefaultCryptoPersistentKey
+import net.corda.cipher.suite.impl.DigestServiceProviderImpl
+import net.corda.cipher.suite.impl.dev.InMemorySigningServicePersistentCache
+import net.corda.cipher.suite.impl.dev.InMemorySimplePersistentCache
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.DigestScheme
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME

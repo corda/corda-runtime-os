@@ -1,8 +1,8 @@
 package net.corda.crypto.testkit
 
-import net.corda.internal.crypto.CryptoLibraryFactory
-import net.corda.internal.crypto.FreshKeySigningService
-import net.corda.internal.crypto.SigningService
+import net.corda.crypto.CryptoLibraryFactory
+import net.corda.crypto.FreshKeySigningService
+import net.corda.crypto.SigningService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigestService
