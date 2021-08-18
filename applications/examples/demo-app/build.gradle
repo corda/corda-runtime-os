@@ -11,6 +11,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation "net.corda:corda-base"
     implementation project(":osgi-framework-api")
 
@@ -30,6 +31,7 @@ dependencies {
     runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 
+    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
