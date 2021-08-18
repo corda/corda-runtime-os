@@ -110,7 +110,7 @@ class AuthenticationProtocolFailureTest {
         authenticationProtocolA.generateHandshakeSecrets()
         authenticationProtocolB.generateHandshakeSecrets()
 
-        // Step 3: initiator creating different signature than the one expected.
+        // Step 3: the provided public key does not match the one given by the initiator at step 1.
         val signingCallbackForA = { data: ByteArray ->
             signature.initSign(partyAIdentityKey.private)
             signature.update(data + "0".toByteArray(Charsets.UTF_8))
