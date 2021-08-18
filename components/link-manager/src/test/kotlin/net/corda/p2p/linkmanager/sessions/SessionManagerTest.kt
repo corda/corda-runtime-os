@@ -29,6 +29,7 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMes
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
+import net.corda.v5.base.util.toBase64
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -177,9 +178,10 @@ class SessionManagerTest {
         assertTrue(initiatorHandshakeMessage!!.payload is InitiatorHandshakeMessage)
         protocolResponder.generateHandshakeSecrets()
 
-        protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage.payload as InitiatorHandshakeMessage) {
+        protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage.payload as InitiatorHandshakeMessage,
             netMapOutbound.getKeyPair().public
-        }
+        )
 
         val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
             signDataWithKey(netMapInbound.getKeyPair().private, it)
@@ -272,9 +274,10 @@ class SessionManagerTest {
         val responderHello = protocolResponder.generateResponderHello()
         protocolResponder.generateHandshakeSecrets()
         val initiatorHandshakeMessage = outboundManager.processSessionMessage(LinkInMessage(responderHello))
-        protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage?.payload as InitiatorHandshakeMessage) {
+        protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage?.payload as InitiatorHandshakeMessage,
             netMapOutbound.getKeyPair().public
-        }
+        )
         return protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
             signDataWithKey(netMapInbound.getKeyPair().private, it)
         }
@@ -436,9 +439,10 @@ class SessionManagerTest {
         assertTrue(initiatorHandshakeMessage!!.payload is InitiatorHandshakeMessage)
 
         protocolResponder.generateHandshakeSecrets()
-        protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage.payload as InitiatorHandshakeMessage) {
+        protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage.payload as InitiatorHandshakeMessage,
             netMapOutbound.getKeyPair().public
-        }
+        )
 
         val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
             signDataWithKey(netMapInbound.getKeyPair().private, it)
@@ -452,7 +456,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `Duplicated session negotiation messages (InitiatorHandshake) is dropped (with appropriate logging)`() {
+    fun `Duplicated session negotiation messages (InitiatorHelloMessage, InitiatorHandshake) is dropped (with appropriate logging)`() {
         val mode = ProtocolMode.AUTHENTICATION_ONLY
         val sessionId = "FakeSession"
         val inboundManager = sessionManager(INBOUND_PARTY)
@@ -690,7 +694,7 @@ class SessionManagerTest {
         val sessionId = "SessionId"
 
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapOutbound.getOurMemberInfo())
 
         val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
@@ -712,17 +716,15 @@ class SessionManagerTest {
     @Test
     fun `Initiator handshake message is dropped if the sender public key hash is not in the network map`() {
         val sessionId = "SessionId"
-        val hash = "hash"
 
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
         Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getPublicKeyFromHash(hashKey(netMapOutbound.getKeyPair().public))).thenThrow(
-            LinkManagerNetworkMap.NoPublicKeyForHashException(hash)
-        )
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
-            .thenReturn(netMapOutbound.getOurMemberInfo())
+
+        //Called first inside processInitiatorHello and then in processInitiatorHandshake
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+            .thenReturn(netMapOutbound.getOurMemberInfo()).thenReturn(null)
 
         val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
         val message = negotiateToInitiatorHandshake(inboundManager, sessionId)
@@ -730,8 +732,10 @@ class SessionManagerTest {
 
         assertNull(response)
 
+        val keyHash = hashKeyToBase64(netMapOutbound.getKeyPair().public)
         loggingInterceptor.assertSingleWarning("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
-                " Could not find the public key in the network map by hash = $hash. The message was discarded.")
+            " The received public key hash ($keyHash) corresponding to one of the senders holding identities is not in the network map." +
+            " The message was discarded.")
     }
 
     @Test
@@ -742,9 +746,8 @@ class SessionManagerTest {
         Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
         Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getPublicKeyFromHash(hashKey(netMapOutbound.getKeyPair().public))).thenReturn(netMapOutbound.getOurMemberInfo().publicKey)
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapInbound.getKeyPair().public), GROUP_ID)).thenReturn(null)
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID)).thenReturn(null)
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapOutbound.getOurMemberInfo())
 
         val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
@@ -754,8 +757,8 @@ class SessionManagerTest {
 
         val keyHash = hashKeyToBase64(netMapInbound.getKeyPair().public)
         loggingInterceptor.assertSingleWarning("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
-                " The received public key hash ($keyHash) corresponding to one of our holding identities is not in the network map." +
-                " The message was discarded.")
+            " The received public key hash ($keyHash) corresponding to one of our holding identities is not in the network map." +
+            " The message was discarded.")
     }
 
     @Test
@@ -766,10 +769,9 @@ class SessionManagerTest {
         Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
         Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getPublicKeyFromHash(hashKey(netMapOutbound.getKeyPair().public))).thenReturn(netMapOutbound.getOurMemberInfo().publicKey)
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapOutbound.getOurMemberInfo())
 
         val cryptoService = Mockito.mock(LinkManagerCryptoService::class.java)
@@ -788,30 +790,6 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `Initiator handshake message is dropped if the sender is removed from the network map`() {
-        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        val sessionId = "SessionId"
-
-        Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
-        Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getPublicKeyFromHash(hashKey(netMapOutbound.getKeyPair().public))).thenReturn(netMapOutbound.getOurMemberInfo().publicKey)
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
-            .thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
-            .thenReturn(netMapOutbound.getOurMemberInfo()).thenReturn(null)
-        val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
-
-        val message = negotiateToInitiatorHandshake(inboundManager, sessionId)
-        val response = inboundManager.processSessionMessage(LinkInMessage(message))
-        assertNull(response)
-
-        loggingInterceptor.assertSingleWarning("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
-            " The received public key hash (${hashKeyToBase64(netMapOutbound.getKeyPair().public)}) corresponding to one of the" +
-            " senders holding identities is not in the network map. The message was discarded.")
-    }
-
-    @Test
     fun `Initiator handshake message is dropped if our network type is not in the network map`() {
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         val sessionId = "SessionId"
@@ -819,10 +797,9 @@ class SessionManagerTest {
         Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5).thenReturn(null)
         Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
         Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getPublicKeyFromHash(hashKey(netMapOutbound.getKeyPair().public))).thenReturn(netMapOutbound.getOurMemberInfo().publicKey)
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapOutbound.getOurMemberInfo())
         val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
 
@@ -846,9 +823,9 @@ class SessionManagerTest {
             .thenReturn(netMapInbound.getOurMemberInfo())
             .thenReturn(netMapInbound.getOurMemberInfo())
             .thenReturn(null)
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapOutbound.getOurMemberInfo())
 
         val outboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapOutbound))

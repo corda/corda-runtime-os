@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.security.PublicKey
 
 /**
@@ -37,16 +36,7 @@ interface LinkManagerNetworkMap {
     /**
      * Returns the [MemberInfo] which has a public key with SHA-256 hash [hash] and group identifier [groupId].
      */
-    fun getMemberInfoFromPublicKeyHash(hash: ByteArray, groupId: String): MemberInfo?
-
-    /**
-     * Returns the [PublicKey] which has a SHA-256 hash [hash].
-     * Throws a [NoPublicKeyForHashException] if the key is not in the NetworkMap.
-     */
-    fun getPublicKeyFromHash(hash: ByteArray): PublicKey
-
-    class NoPublicKeyForHashException(hash: String):
-        CordaRuntimeException("Could not find the public key in the network map by hash = $hash")
+    fun getMemberInfo(hash: ByteArray, groupId: String): MemberInfo?
 
     /**
      * Returns the [NetworkType] for group identifier [groupId].

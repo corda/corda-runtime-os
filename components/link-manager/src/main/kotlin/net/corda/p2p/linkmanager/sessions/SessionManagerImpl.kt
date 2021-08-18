@@ -18,7 +18,6 @@ import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.NoPublicKeyForHashException
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
@@ -236,7 +235,8 @@ open class SessionManagerImpl(
         val session = AuthenticationProtocolResponder(message.header.sessionId, supportedModes, maxMessageSize)
         session.receiveInitiatorHello(message)
         val responderHello = session.generateResponderHello()
-        val peer = networkMap.getMemberInfoFromPublicKeyHash(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
+
+        val peer = networkMap.getMemberInfo(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
         if (peer == null) {
             logger.peerHashNotInNetworkMapWarning(
                 message::class.java.simpleName,
@@ -261,20 +261,33 @@ open class SessionManagerImpl(
             return null
         }
 
+        val initiatorIdentityData = session.getInitiatorIdentity()
+        if (initiatorIdentityData == null) {
+            logger.warn("Could not get identity information from session with sessionId ${message.header.sessionId}." +
+                " The ${InitiatorHandshakeMessage::class.java.simpleName} was discarded.")
+            return null
+        }
+
+        val peer = networkMap.getMemberInfo(initiatorIdentityData.initiatorPublicKeyHash.array(), initiatorIdentityData.groupId)
+        if (peer == null) {
+            logger.peerHashNotInNetworkMapWarning(
+                message::class.java.simpleName,
+                message.header.sessionId,
+                initiatorIdentityData.initiatorPublicKeyHash.array().toBase64()
+            )
+            return null
+        }
+
         session.generateHandshakeSecrets()
         val identityData = try {
-            session.validatePeerHandshakeMessage(message, networkMap::getPublicKeyFromHash)
-        } catch (exception: NoPublicKeyForHashException) {
-            logger.warn("Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
-                " The message was discarded.")
-            return null
+            session.validatePeerHandshakeMessage(message, peer.publicKey)
         } catch (exception: InvalidHandshakeMessageException) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
         }
 
         //Find the correct Holding Identity to use (using the public key hash).
-        val ourMemberInfo = networkMap.getMemberInfoFromPublicKeyHash(identityData.responderPublicKeyHash, identityData.groupId)
+        val ourMemberInfo = networkMap.getMemberInfo(identityData.responderPublicKeyHash, identityData.groupId)
         if (ourMemberInfo == null) {
             logger.ourHashNotInNetworkMapWarning(
                 message::class.java.simpleName,
@@ -292,16 +305,6 @@ open class SessionManagerImpl(
         } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
             logger.warn("Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
                     " The message was discarded.")
-            return null
-        }
-
-        val peer = networkMap.getMemberInfoFromPublicKeyHash(identityData.initiatorPublicKeyHash, identityData.groupId)
-        if (peer == null) {
-            logger.peerHashNotInNetworkMapWarning(
-                message::class.java.simpleName,
-                message.header.sessionId,
-                identityData.initiatorPublicKeyHash.toBase64()
-            )
             return null
         }
 

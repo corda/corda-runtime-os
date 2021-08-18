@@ -126,7 +126,7 @@ class LinkManagerTest {
                 signingCallbackForA
             )
 
-            responder.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public }
+            responder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public)
 
             val signingCallbackForB = { data: ByteArray ->
                 signature.initSign(partyBIdentityKey.private)

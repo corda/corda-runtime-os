@@ -7,6 +7,7 @@ import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
+import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
 import net.corda.p2p.crypto.internal.InitiatorHandshakePayload
 import net.corda.p2p.crypto.internal.ResponderEncryptedExtensions
 import net.corda.p2p.crypto.internal.ResponderHandshakePayload
@@ -104,6 +105,14 @@ class AuthenticationProtocolResponder(private val sessionId: String,
     }
 
     /**
+     * Get identity information (SHA-256 hash of the identity public key and group identity) about the Initiator.
+     * Returns null if used before [receiveInitiatorHello].
+     */
+    fun getInitiatorIdentity(): InitiatorHandshakeIdentity? {
+        return initiatorHelloMessage?.source
+    }
+
+    /**
      * @throws NoCommonModeError when there is no mode that is supported by both the initiator and the responder.
      */
     fun generateResponderHello(): ResponderHelloMessage {
@@ -148,19 +157,19 @@ class AuthenticationProtocolResponder(private val sessionId: String,
 
     /**
      * Validates the handshake message from the peer.
-     * Warning: the latency of this method is bounded by the latency of the provided [keyLookupFn]. So, if you want to use this method from
-     *          a performance-sensitive context, you should execute it asynchronously (i.e. in a separate thread)
-     *          to avoid blocking any other processing.
      *
-     * @param keyLookupFn a callback function used to perform a lookup of the initiator's public key given its SHA-256 hash.
+     * @param initiatorPublicKey the public key used to validate the handshake message.
      * @throws InvalidHandshakeMessageException if the handshake message was invalid (e.g. due to invalid signatures, MACs etc.)
      *
      * @return the SHA-256 of the public key we need to use in the handshake.
      *
      *
      */
-    fun validatePeerHandshakeMessage(initiatorHandshakeMessage: InitiatorHandshakeMessage,
-                                     keyLookupFn: (ByteArray) -> PublicKey): HandshakeIdentityData {
+    @Suppress("ThrowsCount")
+    fun validatePeerHandshakeMessage(
+        initiatorHandshakeMessage: InitiatorHandshakeMessage,
+        initiatorPublicKey: PublicKey
+    ): HandshakeIdentityData {
         transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.RECEIVED_HANDSHAKE_MESSAGE)
 
         val initiatorRecordHeaderBytes = initiatorHandshakeMessage.header.toByteBuffer().array()
@@ -183,7 +192,6 @@ class AuthenticationProtocolResponder(private val sessionId: String,
         )
 
         // validate signature
-        val initiatorPublicKey = keyLookupFn(initiatorHandshakePayloadIncomplete.initiatorPublicKeyHash.array())
         val initiatorHelloToInitiatorPublicKeyHash = initiatorHelloToResponderHelloBytes!! +
                                                               initiatorHandshakePayloadIncomplete.toByteBuffer().array()
         val signatureWasValid = signature.verify(initiatorPublicKey,

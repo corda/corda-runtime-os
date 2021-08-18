@@ -2,9 +2,7 @@ package net.corda.p2p.linkmanager.utilities
 
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.NoPublicKeyForHashException
 import net.corda.p2p.linkmanager.sessions.SessionManagerTest
-import net.corda.v5.base.util.toBase64
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions
 import java.security.KeyPair
@@ -20,7 +18,6 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
 
     val keys = HashMap<LinkManagerNetworkMap.HoldingIdentity, KeyPair>()
     private val holdingIdentityForGroupIdAndHash = HashMap<String, HashMap<Int, LinkManagerNetworkMap.HoldingIdentity>>()
-    private val publicKeyFromHash = HashMap<Int, PublicKey>()
 
     private fun MessageDigest.hash(data: ByteArray): ByteArray {
         this.reset()
@@ -36,7 +33,6 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
             val publicKeyHash = messageDigest.hash(keyPair.public.encoded).contentHashCode()
             val holdingIdentityForHash = holdingIdentityForGroupIdAndHash.computeIfAbsent(node.groupId) { HashMap() }
             holdingIdentityForHash[publicKeyHash] = node
-            publicKeyFromHash[publicKeyHash] = keyPair.public
         }
     }
 
@@ -66,14 +62,10 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
                 return LinkManagerNetworkMap.MemberInfo(holdingIdentity, publicKey, SessionManagerTest.FAKE_ENDPOINT)
             }
 
-            override fun getMemberInfoFromPublicKeyHash(hash: ByteArray, groupId: String): LinkManagerNetworkMap.MemberInfo? {
+            override fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerNetworkMap.MemberInfo? {
                 val holdingIdentityForHash = holdingIdentityForGroupIdAndHash[groupId] ?: return null
                 val holdingIdentity = holdingIdentityForHash[hash.contentHashCode()] ?: return null
                 return getMemberInfo(holdingIdentity)
-            }
-
-            override fun getPublicKeyFromHash(hash: ByteArray): PublicKey {
-                return publicKeyFromHash[hash.contentHashCode()] ?: throw NoPublicKeyForHashException(hash.toBase64())
             }
 
             override fun getNetworkType(groupId: String): LinkManagerNetworkMap.NetworkType? {
