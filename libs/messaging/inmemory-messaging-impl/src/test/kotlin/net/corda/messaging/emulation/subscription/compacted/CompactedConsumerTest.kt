@@ -8,6 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import java.net.URI
 
@@ -39,17 +40,24 @@ class CompactedConsumerTest {
     }
 
     @Test
-    fun `partition assign invoke snapshot updates`() {
+    fun `partition assign will not invoke snapshot updates if list is empty`() {
         consumer.partitionAssignmentListener.onPartitionsAssigned(emptyList())
+
+        verify(subscription, never()).updateSnapshots()
+    }
+
+    @Test
+    fun `partition assign will invoke snapshot updates if list is not empty`() {
+        consumer.partitionAssignmentListener.onPartitionsAssigned(listOf(mock()))
 
         verify(subscription).updateSnapshots()
     }
 
     @Test
-    fun `partition unassigned invoke snapshot updates`() {
+    fun `partition unassigned will not invoke snapshot updates`() {
         consumer.partitionAssignmentListener.onPartitionsUnassigned(emptyList())
 
-        verify(subscription).updateSnapshots()
+        verify(subscription, never()).updateSnapshots()
     }
 
     @Test

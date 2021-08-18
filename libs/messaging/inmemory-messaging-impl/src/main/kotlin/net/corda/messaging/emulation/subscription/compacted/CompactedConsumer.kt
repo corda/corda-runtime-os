@@ -3,6 +3,7 @@ package net.corda.messaging.emulation.subscription.compacted
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.emulation.topic.model.ConsumerDefinitions
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
+import net.corda.messaging.emulation.topic.model.PartitionStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 
 internal class CompactedConsumer<K : Any, V : Any>(
@@ -11,13 +12,15 @@ internal class CompactedConsumer<K : Any, V : Any>(
     override val groupName = inMemoryCompactedSubscription.groupName
     override val topicName = inMemoryCompactedSubscription.topicName
     override val offsetStrategy = OffsetStrategy.LATEST
+    override val partitionStrategy = PartitionStrategy.allInFirst
     override val partitionAssignmentListener = object : PartitionAssignmentListener {
         override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
-            inMemoryCompactedSubscription.updateSnapshots()
         }
 
         override fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>) {
-            inMemoryCompactedSubscription.updateSnapshots()
+            if (topicPartitions.isNotEmpty()) {
+                inMemoryCompactedSubscription.updateSnapshots()
+            }
         }
     }
 

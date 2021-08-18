@@ -37,6 +37,7 @@ class InMemoryCompactedSubscriptionIntegrationTest {
         val currentData: Map<String, Event>
     )
     private val processed = CopyOnWriteArrayList<NextDetails>()
+    private val waitForSnapshot = CountDownLatch(1)
     private val gotSnapshots = CopyOnWriteArrayList<Map<String, Event>>()
 
     private val waitForProcessed = AtomicReference<CountDownLatch>(null)
@@ -49,6 +50,7 @@ class InMemoryCompactedSubscriptionIntegrationTest {
             override val valueClass = Event::class.java
             override fun onSnapshot(currentData: Map<String, Event>) {
                 gotSnapshots.add(currentData)
+                waitForSnapshot.countDown()
             }
 
             override fun onNext(newRecord: Record<String, Event>, oldValue: Event?, currentData: Map<String, Event>) {
@@ -61,7 +63,7 @@ class InMemoryCompactedSubscriptionIntegrationTest {
         )
     }
 
-    private fun publish(vararg records: Record<Any, Any>) {
+    private fun publish(vararg records: Record<out Any, out Any>) {
         val publisherConfig = PublisherConfig(clientId)
         publisherFactory.createPublisher(publisherConfig).use {
             it.publish(records.toList())
@@ -84,8 +86,8 @@ class InMemoryCompactedSubscriptionIntegrationTest {
         assertThat(subscription.isRunning).isTrue
         assertThat(processed).isEmpty()
 
-        // Let the other thread start their loops
-        Thread.sleep(40)
+        waitForSnapshot.await()
+
         assertThat(gotSnapshots)
             .hasSize(1)
             .contains(
@@ -96,25 +98,21 @@ class InMemoryCompactedSubscriptionIntegrationTest {
             )
 
         // Publish a few events
-        waitForProcessed.set(CountDownLatch(5))
-        publish(
+        val records = listOf<Record<String, Event>>(
             Record(topic, "key1", Event("one", 1)),
-            Record("another.$topic", "key4", Event("four", 4)),
             Record(topic, "key2", Event("two", 2)),
             Record(topic, "key3", Event("three", 3)),
             Record(topic, "key2", Event("two", 4)),
             Record(topic, "key1", null),
         )
+        waitForProcessed.set(CountDownLatch(records.size))
+        publish(
+            *(records + Record("another.$topic", "key4", Event("four", 4))).toTypedArray()
+        )
 
         // Wait for the events
         waitForProcessed.get().await(1, TimeUnit.SECONDS)
-        assertThat(processed.map { it.newRecord }).contains(
-            Record(topic, "key1", Event("one", 1)),
-            Record(topic, "key2", Event("two", 2)),
-            Record(topic, "key3", Event("three", 3)),
-            Record(topic, "key2", Event("two", 4)),
-            Record(topic, "key1", null),
-        ).hasSize(5)
+        assertThat(processed.map { it.newRecord }).containsAll(records).hasSize(records.size)
 
         processed.clear()
         waitForProcessed.set(CountDownLatch(3))

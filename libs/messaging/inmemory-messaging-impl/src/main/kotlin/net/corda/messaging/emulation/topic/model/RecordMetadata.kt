@@ -8,7 +8,10 @@ import net.corda.messaging.api.records.Record
 data class RecordMetadata(val offset: Long, val record: Record<*, *>, val partition: Int) {
     fun <K : Any, V : Any> castToType(keyClass: Class<K>, valueClass: Class<V>): Record<K, V>? {
         @Suppress("UNCHECKED_CAST")
-        return if ((keyClass.isInstance(record.key)) && ((record.value == null) || (valueClass.isInstance(record.value)))) {
+        return if (
+            keyClass.isInstance(record.key) &&
+            (record.value == null || valueClass.isInstance(record.value))
+        ) {
             record as Record<K, V>
         } else {
             null

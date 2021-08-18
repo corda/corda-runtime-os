@@ -16,7 +16,7 @@ class Topic(
     private val topicName: String,
     private val topicConfiguration: TopicConfiguration,
 ) {
-    private val partitions by lazy {
+    private val partitions = let {
         (1..topicConfiguration.partitionCount).map {
             Partition(
                 it,

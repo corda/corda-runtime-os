@@ -82,12 +82,13 @@ internal class ConsumerGroup(
 
     private fun repartition() {
         lock.write {
-            partitions.withIndex().groupBy({
-                it.index % consumers.size
+            val mapper = consumers.keys.first().partitionStrategy.getPartitionMapper(consumers.size)
+            val reassignedConsumers = partitions.withIndex().groupBy({
+                mapper(it.index)
             }, {
                 it.value
             }).values
-                .zip(consumers.keys).forEach { (newPartitionList, consumer) ->
+                .zip(consumers.keys).onEach { (newPartitionList, consumer) ->
                     val listener = consumer.partitionAssignmentListener
                     if (listener != null) {
                         val oldPartitionList = consumers[consumer] ?: emptyList()
@@ -101,7 +102,17 @@ internal class ConsumerGroup(
                         }
                     }
                     consumers[consumer] = newPartitionList
+                }.map {
+                    it.second
                 }
+
+            val needToUnassigned = consumers.keys - reassignedConsumers
+            needToUnassigned.forEach { consumer ->
+                val unassigned = consumers.put(consumer, emptyList())
+                if (unassigned?.isNotEmpty() == true) {
+                    consumer.partitionAssignmentListener?.onPartitionsUnassigned(unassigned.map { topicName to it.partitionId })
+                }
+            }
             newData.signalAll()
         }
     }

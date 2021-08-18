@@ -12,7 +12,6 @@ class ConsumptionThread(
         threadFactory(this).also {
             it.name = "consumer thread ${consumerDefinitions.groupName}-${consumerDefinitions.topicName}:${consumerDefinitions.hashCode()}"
             it.isDaemon = true
-            it.contextClassLoader = null
         }
     }
 

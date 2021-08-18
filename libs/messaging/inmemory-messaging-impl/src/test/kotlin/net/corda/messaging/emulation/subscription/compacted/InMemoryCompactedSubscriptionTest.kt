@@ -203,7 +203,7 @@ class InMemoryCompactedSubscriptionTest {
     }
 
     @Test
-    fun `start will send the snapshots`() {
+    fun `updateSnapshots will send the snapshots`() {
         recordsToSend.addAll(
             listOf(
                 RecordMetadata(
@@ -219,7 +219,7 @@ class InMemoryCompactedSubscriptionTest {
             )
         )
 
-        subscription.start()
+        subscription.updateSnapshots()
 
         verify(processor).onSnapshot(
             mapOf(

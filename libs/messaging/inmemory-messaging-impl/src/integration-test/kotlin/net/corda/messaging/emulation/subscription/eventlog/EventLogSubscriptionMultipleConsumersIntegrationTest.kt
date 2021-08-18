@@ -23,7 +23,7 @@ import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
 @ExtendWith(ServiceExtension::class)
-class EventLogSubscriptionMultipleConsumers {
+class EventLogSubscriptionMultipleConsumersIntegrationTest {
 
     private val random = Random()
 

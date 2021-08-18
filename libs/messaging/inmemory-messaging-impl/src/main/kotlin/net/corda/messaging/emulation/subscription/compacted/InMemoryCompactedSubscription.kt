@@ -47,6 +47,7 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
                         }
                     }
             }
+            processor.onSnapshot(knownValues)
         }
     }
 
@@ -74,8 +75,6 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
         logger.debug { "Starting event log subscription with config: $subscriptionConfig" }
         startStopLock.withLock {
             if (currentConsumption == null) {
-                updateSnapshots()
-                processor.onSnapshot(knownValues)
                 val consumer = CompactedConsumer(this)
                 currentConsumption = topicService.subscribe(consumer)
             }
