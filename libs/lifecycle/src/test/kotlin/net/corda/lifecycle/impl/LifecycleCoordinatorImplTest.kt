@@ -277,7 +277,7 @@ internal class LifecycleCoordinatorImplTest {
                 }
             }
         }.use { coordinator ->
-            for(i in 0 .. NUM_LOOPS) {
+            for (i in 0..NUM_LOOPS) {
                 startLatch = CountDownLatch(1)
                 stopLatch = CountDownLatch(1)
                 coordinator.start()
@@ -414,7 +414,7 @@ internal class LifecycleCoordinatorImplTest {
         val event2 = object : LifecycleEvent {}
         val event3 = object : LifecycleEvent {}
         val stopLatch = CountDownLatch(1)
-        var previousEvent : LifecycleEvent? = null
+        var previousEvent: LifecycleEvent? = null
         createCoordinator { event, coordinator ->
             when (event) {
                 is StartEvent -> {
@@ -892,7 +892,7 @@ internal class LifecycleCoordinatorImplTest {
 
     @Test
     fun `when a coordinator stops with an error the status is set to error`() {
-        val startLatch = CountDownLatch(1)
+        var startLatch = CountDownLatch(1)
         val stopLatch = CountDownLatch(1)
         createCoordinator { event, _ ->
             when (event) {
@@ -912,10 +912,16 @@ internal class LifecycleCoordinatorImplTest {
             it.postEvent(object : ThrowException {})
             assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(LifecycleStatus.ERROR, it.status)
+
+            // Restart and prove that the status is set to DOWN.
+            startLatch = CountDownLatch(1)
+            it.start()
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(LifecycleStatus.DOWN, it.status)
         }
     }
 
-    private fun createCoordinator(processor: LifecycleEventHandler) : LifecycleCoordinator {
+    private fun createCoordinator(processor: LifecycleEventHandler): LifecycleCoordinator {
         return LifecycleCoordinatorImpl(COMPONENT_NAME, BATCH_SIZE, processor)
     }
 }

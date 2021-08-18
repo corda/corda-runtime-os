@@ -128,6 +128,9 @@ internal class LifecycleProcessor(
         return if (!state.isRunning) {
             state.isRunning = true
             state.trackedRegistrations.forEach { it.notifyCurrentStatus() }
+            // If there was previously an error, clear this now.
+            state.status = LifecycleStatus.DOWN
+            state.registrations.forEach { it.updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN) }
             runUserEventHandler(event, coordinator)
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to start an already running coordinator" }
