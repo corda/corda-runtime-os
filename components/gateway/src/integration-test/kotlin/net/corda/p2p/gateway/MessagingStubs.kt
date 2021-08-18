@@ -22,7 +22,6 @@ import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
-import net.corda.v5.base.internal.uncheckedCast
 import rx.Observable
 import rx.subjects.PublishSubject
 import java.util.concurrent.CompletableFuture
@@ -73,6 +72,7 @@ class TopicServiceStub : TopicService {
  * via a [TopicService]. Upon start, all messages currently in the topic are fed into the processor exactly once. Updates
  * are no longer published.
  */
+@Suppress("UNCHECKED_CAST")
 class EventLogSubscriptionStub<K: Any, V: Any>(
     private val config: SubscriptionConfig,
     private val processor: EventLogProcessor<K, V>,
@@ -90,8 +90,8 @@ class EventLogSubscriptionStub<K: Any, V: Any>(
         lock.withLock {
             running = true
             val records = topicService.getRecords(config.eventTopic, config.groupName, -1).map {
-                EventLogRecord<K, V>(it.record.topic,
-                    uncheckedCast(it.record.key), uncheckedCast(it.record.value), -1, -1L) }
+                EventLogRecord(it.record.topic,
+                    it.record.key as K, it.record.value as V, -1, -1L) }
             if (records.isNotEmpty())  {
                 processor.onNext(records)
             }

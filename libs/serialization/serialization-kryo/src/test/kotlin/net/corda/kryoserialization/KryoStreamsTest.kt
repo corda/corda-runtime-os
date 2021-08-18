@@ -1,6 +1,6 @@
 package net.corda.kryoserialization
 
-import net.corda.internal.base.declaredField
+import net.corda.utilities.reflection.declaredField
 import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -10,7 +10,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.BufferOverflowException
-import java.util.*
+import java.util.Random
 import java.util.zip.DeflaterOutputStream
 import java.util.zip.InflaterInputStream
 

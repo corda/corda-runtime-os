@@ -11,7 +11,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
-    implementation "net.corda:corda-base-internal:$cordaVersion"
     implementation "net.corda:corda-crypto-api:$cordaVersion"
     implementation "net.corda:corda-crypto-impl:$cordaVersion"
     implementation "net.corda:corda-class-info:$cordaVersion"
@@ -20,10 +19,17 @@ dependencies {
     implementation "net.corda:corda-serialization"
     implementation "net.corda:corda-serialization-encoding:$cordaVersion"
 
+    implementation project(":libs:utilities")
 
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation "de.javakaffee:kryo-serializers:$kryoSerializerVersion"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
+
+    implementation project(":libs:serialization:kryo-custom-serializers")
+    implementation project(":libs:serialization:checkpoint-serialization-api")
 
     testImplementation "org.osgi:osgi.core:$osgiVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"

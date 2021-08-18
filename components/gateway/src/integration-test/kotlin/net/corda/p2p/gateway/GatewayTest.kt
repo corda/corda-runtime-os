@@ -14,8 +14,11 @@ import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
-import net.corda.p2p.gateway.messaging.SslConfiguration
-import net.corda.p2p.gateway.messaging.http.*
+import net.corda.p2p.gateway.messaging.http.HttpClient
+import net.corda.p2p.gateway.messaging.http.HttpServer
+import net.corda.p2p.gateway.messaging.http.HttpEventListener
+import net.corda.p2p.gateway.messaging.http.HttpMessage
+import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
@@ -25,33 +28,18 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import java.io.FileInputStream
 import java.net.InetSocketAddress
 import java.net.URI
 import java.nio.ByteBuffer
-import java.security.KeyStore
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
-class GatewayTest {
-
-    private val keystorePass = "cordacadevpass"
-    private val truststorePass = "trustpass"
-    private val sslConfiguration = object : SslConfiguration {
-        override val keyStore: KeyStore = KeyStore.getInstance("JKS").also {
-            it.load(FileInputStream(javaClass.classLoader.getResource("sslkeystore.jks")!!.file), keystorePass.toCharArray())
-        }
-        override val keyStorePassword: String = keystorePass
-        override val trustStore: KeyStore = KeyStore.getInstance("JKS").also {
-            it.load(FileInputStream(javaClass.classLoader.getResource("truststore.jks")!!.file), truststorePass.toCharArray())
-        }
-        override val trustStorePassword: String = truststorePass
-    }
-    private val sessionId = "session-1"
+class GatewayTest : TestBase() {
 
     private var topicServiceAlice: TopicService? = null
     private var topicServiceBob: TopicService? = null
+    private val sessionId = "session-1"
 
     @BeforeEach
     fun setup() {
@@ -68,14 +56,15 @@ class GatewayTest {
     @Timeout(30)
     fun `http client to gateway`() {
         topicServiceAlice!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
-        val serverAddress = URI.create("http://localhost:10000")
+        val serverAddress = URI.create("http://www.alice.net:10000")
         val linkInMessage = LinkInMessage(authenticatedP2PMessage(String()))
-        Gateway(GatewayConfiguration(serverAddress.host, serverAddress.port, sslConfiguration),
+        Gateway(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),
                 SubscriptionFactoryStub(topicServiceAlice!!),
                 PublisherFactoryStub(topicServiceAlice!!)
         ).use {
             it.start()
-            HttpClient(serverAddress, sslConfiguration, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client->
+            val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null)
+            HttpClient(serverInfo, bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client->
                 val responseReceived = CountDownLatch(1)
                 val clientListener = object : HttpEventListener {
                     override fun onMessage(message: HttpMessage) {
@@ -107,16 +96,17 @@ class GatewayTest {
     fun `multiple clients to gateway`() {
         val clientNumber = 4
         val threadPool = NioEventLoopGroup(clientNumber)
-        val serverAddress = URI.create("http://localhost:10000")
+        val serverAddress = URI.create("http://www.alice.net:10000")
         val clients = mutableListOf<HttpClient>()
         topicServiceAlice!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
-        Gateway(GatewayConfiguration(serverAddress.host, serverAddress.port, sslConfiguration),
+        Gateway(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),
             SubscriptionFactoryStub(topicServiceAlice!!),
             PublisherFactoryStub(topicServiceAlice!!)).use {
             it.start()
             val responseReceived = CountDownLatch(clientNumber)
             repeat(clientNumber) { index ->
-                val client = HttpClient(serverAddress, sslConfiguration, threadPool, threadPool)
+                val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null)
+                val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool)
                 val clientListener = object : HttpEventListener {
                     override fun onMessage(message: HttpMessage) {
                         assertEquals(InetSocketAddress(serverAddress.host, serverAddress.port), message.source)
@@ -151,7 +141,11 @@ class GatewayTest {
     @Timeout(60)
     fun `gateway to multiple servers`() {
         val gatewayAddress = Pair("localhost", 10000)
-        val serverAddresses = listOf("http://localhost:10001", "http://localhost:10002", "http://localhost:10003", "http://localhost:10004")
+        val serverAddresses = listOf(
+            "http://www.chip.net:10001",
+            "http://www.chip.net:10002",
+            "http://www.chip.net:10003",
+            "http://www.chip.net:10004")
         // We first produce some messages which will be consumed by the Gateway.
         val messageCount = 10000 // this number will be produced for each target
         val deliveryLatch = CountDownLatch(serverAddresses.size * messageCount)
@@ -159,13 +153,13 @@ class GatewayTest {
         repeat(serverAddresses.size) { id ->
             repeat(messageCount) {
                 val msg = LinkOutMessage.newBuilder().apply {
-                    header = LinkOutHeader("PartyA", NetworkType.CORDA_4, serverAddresses[id])
+                    header = LinkOutHeader("", NetworkType.CORDA_5, serverAddresses[id])
                     payload = authenticatedP2PMessage("Target-${serverAddresses[id]}")
                 }.build()
                 topicServiceAlice!!.addRecords(listOf(Record(LINK_OUT_TOPIC, "key", msg)))
             }
             val serverURI = URI.create(serverAddresses[id])
-            servers.add(HttpServer(serverURI.host, serverURI.port, sslConfiguration).also {
+            servers.add(HttpServer(serverURI.host, serverURI.port, chipSslConfig).also {
                 it.addListener(object : HttpEventListener {
                     override fun onMessage(message: HttpMessage) {
                         val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
@@ -180,7 +174,7 @@ class GatewayTest {
 
         var startTime: Long
         var endTime: Long
-        Gateway(GatewayConfiguration(gatewayAddress.first, gatewayAddress.second, sslConfiguration),
+        Gateway(GatewayConfiguration(gatewayAddress.first, gatewayAddress.second, aliceSslConfig),
                 SubscriptionFactoryStub(topicServiceAlice!!),
                 PublisherFactoryStub(topicServiceAlice!!)
         ).use {
@@ -196,22 +190,23 @@ class GatewayTest {
     }
 
     @Test
+    @Timeout(60)
     fun `gateway to gateway - dual stream`() {
-        val aliceGatewayAddress = URI.create("http://localhost:10001")
-        val bobGatewayAddress = URI.create("http://localhost:10002")
+        val aliceGatewayAddress = URI.create("http://www.chip.net:10003")
+        val bobGatewayAddress = URI.create("http://www.dale.net:10004")
         val messageCount = 10000
         topicServiceAlice!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
         topicServiceBob!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
         // Produce messages for each Gateway
         repeat(messageCount) {
             var msg = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("PartyA", NetworkType.CORDA_4, bobGatewayAddress.toString())
+                header = LinkOutHeader("", NetworkType.CORDA_5, bobGatewayAddress.toString())
                 payload = authenticatedP2PMessage("Target-$bobGatewayAddress")
             }.build()
             topicServiceAlice!!.addRecords(listOf(Record(LINK_OUT_TOPIC, "key", msg)))
 
             msg = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("PartyA", NetworkType.CORDA_4, aliceGatewayAddress.toString())
+                header = LinkOutHeader("", NetworkType.CORDA_5, aliceGatewayAddress.toString())
                 payload = authenticatedP2PMessage("Target-$aliceGatewayAddress")
             }.build()
             topicServiceBob!!.addRecords(listOf(Record(LINK_OUT_TOPIC, "key", msg)))
@@ -231,7 +226,7 @@ class GatewayTest {
         val barrier = CountDownLatch(1)
         // Start the gateways
         val t1 = thread {
-            val alice = Gateway(GatewayConfiguration(aliceGatewayAddress.host, aliceGatewayAddress.port, sslConfiguration),
+            val alice = Gateway(GatewayConfiguration(aliceGatewayAddress.host, aliceGatewayAddress.port, chipSslConfig),
                 SubscriptionFactoryStub(topicServiceAlice!!),
                 PublisherFactoryStub(topicServiceAlice!!)
             ).also { it.start() }
@@ -239,7 +234,7 @@ class GatewayTest {
             alice.stop()
         }
         val t2 = thread {
-            val bob = Gateway(GatewayConfiguration(bobGatewayAddress.host, bobGatewayAddress.port, sslConfiguration),
+            val bob = Gateway(GatewayConfiguration(bobGatewayAddress.host, bobGatewayAddress.port, daleSslConfig),
                 SubscriptionFactoryStub(topicServiceBob!!),
                 PublisherFactoryStub(topicServiceBob!!)
             ).also { it.start() }
