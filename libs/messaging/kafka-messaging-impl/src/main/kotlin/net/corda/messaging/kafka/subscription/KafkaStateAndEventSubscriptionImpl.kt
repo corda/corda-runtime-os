@@ -354,20 +354,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val states = stateConsumer.poll()
         for (state in states) {
             log.trace { "Updating state: $state" }
-            currentStates[state.record.partition()]?.compute(state.record.key()) { _, currentState ->
-                if (currentState == null || currentState.first <= state.record.timestamp()) {
-                    if (state.record.value() == null) {
-                        // Removes this state from the map
-                        null
-                    } else {
-                        // Replaces/adds the new state
-                        Pair(state.record.timestamp(), state.record.value())
-                    }
-                } else {
-                    // Keeps the old state
-                    currentState
-                }
-            }
+            updateInMemoryState(state)
+
             // Check sync and resume
             if (statePartitionsToSync.isNotEmpty()) {
                 val currentPartition = state.record.partition()
@@ -386,6 +374,23 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
             for (partition in partitionsSynced) {
                 stateAndEventListener?.onPartitionSynced(getStatesForPartition(partition.partition()))
+            }
+        }
+    }
+
+    private fun updateInMemoryState(state: ConsumerRecordAndMeta<K, S>) {
+        currentStates[state.record.partition()]?.compute(state.record.key()) { _, currentState ->
+            if (currentState == null || currentState.first <= state.record.timestamp()) {
+                if (state.record.value() == null) {
+                    // Removes this state from the map
+                    null
+                } else {
+                    // Replaces/adds the new state
+                    Pair(state.record.timestamp(), state.record.value())
+                }
+            } else {
+                // Keeps the old state
+                currentState
             }
         }
     }
