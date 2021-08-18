@@ -18,7 +18,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.ConcurrentHashMap
 
-@Component
+@Component(service = [CryptoLibraryFactory::class])
 class CryptoLibraryFactoryImpl @Activate constructor(
     @Reference
     private val cipherSuiteFactory: CipherSuiteFactory
