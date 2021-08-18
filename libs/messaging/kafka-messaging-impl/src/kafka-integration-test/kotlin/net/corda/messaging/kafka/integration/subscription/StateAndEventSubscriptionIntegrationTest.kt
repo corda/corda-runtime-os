@@ -22,8 +22,12 @@ import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPI
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC4_TEMPLATE
 import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getRecords
+import net.corda.messaging.kafka.integration.getStringRecords
+import net.corda.messaging.kafka.integration.listener.TestStateAndEventListenerStrings
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
+import net.corda.messaging.kafka.integration.processors.TestDurableProcessorStrings
 import net.corda.messaging.kafka.integration.processors.TestStateEventProcessor
+import net.corda.messaging.kafka.integration.processors.TestStateEventProcessorStrings
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_MAX_POLL_INTERVAL
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MESSAGING_KAFKA
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -140,15 +144,16 @@ class StateAndEventSubscriptionIntegrationTest {
         val onNextLatch1 = CountDownLatch(3)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC3-group", EVENT_TOPIC3, 1),
-            TestStateEventProcessor(onNextLatch1, true, true, EVENTSTATE_OUTPUT3),
-            kafkaConfig
+            TestStateEventProcessorStrings(onNextLatch1, true, true, EVENTSTATE_OUTPUT3),
+            kafkaConfig,
+            TestStateAndEventListenerStrings()
         )
 
         stateEventSub1.start()
 
         publisherConfig = PublisherConfig(CLIENT_ID)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        publisher.publish(getRecords(EVENT_TOPIC3, 2, 1)).forEach { it.get() }
+        publisher.publish(getStringRecords(EVENT_TOPIC3, 2, 1)).forEach { it.get() }
 
         assertTrue(onNextLatch1.await(30, TimeUnit.SECONDS))
         stateEventSub1.stop()
@@ -156,7 +161,7 @@ class StateAndEventSubscriptionIntegrationTest {
         val durableLatch = CountDownLatch(2)
         val durableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$EVENTSTATE_OUTPUT3-group",  EVENTSTATE_OUTPUT3, 1),
-            TestDurableProcessor(durableLatch),
+            TestDurableProcessorStrings(durableLatch),
             kafkaConfig,
             null
         )

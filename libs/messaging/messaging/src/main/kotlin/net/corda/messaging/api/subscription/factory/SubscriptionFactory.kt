@@ -78,8 +78,9 @@ interface SubscriptionFactory {
      * Events will be processed exactly once. Consumer will marked records as consumed after they have been processed and
      * any new records have been committed back to the topic.
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
-     * @param properties Map of properties to override the default settings for the connection to the source of events
-     * //TODO - update this
+     * @param processor processor of states and events
+     * @param nodeConfig Override the default node config with these values
+     * @param stateAndEventListener listener to give client access to the in-memory map of states
      * @return A subscription to manage lifecycle.
      */
     fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
