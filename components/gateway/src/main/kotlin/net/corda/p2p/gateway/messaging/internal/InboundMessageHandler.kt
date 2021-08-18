@@ -25,7 +25,6 @@ import net.corda.p2p.gateway.messaging.session.SessionPartitionMapper
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.slf4j.LoggerFactory
 import java.io.IOException
-import java.lang.IllegalStateException
 import java.nio.ByteBuffer
 import java.util.UUID
 
@@ -76,38 +75,13 @@ class InboundMessageHandler(private val server: HttpServer,
             logger.debug("Received message of type ${p2pMessage.schema.name}")
             when (p2pMessage.payload) {
                 is InitiatorHelloMessage -> {
-                    // Generate a response containing the server hello and the DH secret
-                    val sessionRequest = p2pMessage.payload as InitiatorHelloMessage
-                    val session = AuthenticationProtocolResponder(sessionRequest.header.sessionId,
-                        sessionRequest.supportedModes.toSet(), maxMessageSize)
-                    session.receiveInitiatorHello(sessionRequest)
-                    val sessionInitResponse = session.generateResponderHello()
-                    val p2pOutMessage = LinkInMessage(sessionInitResponse)
-                    responseBytes = p2pOutMessage.toByteBuffer().array()
-                    val (pKey, _) = session.getDHKeyPair()
-                    val step2Message = Step2Message.newBuilder().apply {
-                        initiatorHello = sessionRequest
-                        responderHello = sessionInitResponse
-                        privateKey = ByteBuffer.wrap(pKey)
-                    }
-                    val record = Record(LINK_IN_TOPIC, "key", LinkInMessage(step2Message))
-                    p2pInPublisher?.publish(listOf(record))
+                    responseBytes = processInitiatorHelloMsg(p2pMessage.payload as InitiatorHelloMessage)
                 }
                 is UnauthenticatedMessage -> {
                     p2pInPublisher?.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
                 }
                 else -> {
-                    val sessionId = getSessionId(p2pMessage)
-                    val partitions = sessionPartitionMapper.getPartitions(sessionId)
-                    if (partitions == null) {
-                        logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
-                        statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR
-                    } else {
-                        // this is simplistic (stateless) load balancing amongst the partitions owned by the LM that "hosts" the session.
-                        val selectedPartition = partitions.random()
-                        val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
-                        p2pInPublisher?.publishToPartition(listOf(selectedPartition to record))
-                    }
+                    statusCode = processSessionMessage(statusCode, p2pMessage)
                 }
             }
         } catch (e: IOException) {
@@ -119,7 +93,45 @@ class InboundMessageHandler(private val server: HttpServer,
         }
     }
 
-    private fun getSessionId(message: LinkInMessage): String {
+    private fun processInitiatorHelloMsg(initiatorHelloMsg: InitiatorHelloMessage): ByteArray {
+        // Generate a response containing the server hello and the DH secret
+        val session = AuthenticationProtocolResponder(initiatorHelloMsg.header.sessionId,
+            initiatorHelloMsg.supportedModes.toSet(), maxMessageSize)
+        session.receiveInitiatorHello(initiatorHelloMsg)
+        val sessionInitResponse = session.generateResponderHello()
+        val p2pOutMessage = LinkInMessage(sessionInitResponse)
+        val responseBytes = p2pOutMessage.toByteBuffer().array()
+        val (pKey, _) = session.getDHKeyPair()
+        val step2Message = Step2Message.newBuilder().apply {
+            initiatorHello = initiatorHelloMsg
+            responderHello = sessionInitResponse
+            privateKey = ByteBuffer.wrap(pKey)
+        }
+        val record = Record(LINK_IN_TOPIC, "key", LinkInMessage(step2Message))
+        p2pInPublisher?.publish(listOf(record))
+
+        return responseBytes
+    }
+
+    private fun processSessionMessage(initialStatus: HttpResponseStatus, p2pMessage: LinkInMessage): HttpResponseStatus {
+        val sessionId = getSessionId(p2pMessage)
+        if (sessionId != null) {
+            val partitions = sessionPartitionMapper.getPartitions(sessionId)
+            if (partitions == null) {
+                logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
+                return HttpResponseStatus.INTERNAL_SERVER_ERROR
+            } else {
+                // this is simplistic (stateless) load balancing amongst the partitions owned by the LM that "hosts" the session.
+                val selectedPartition = partitions.random()
+                val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
+                p2pInPublisher?.publishToPartition(listOf(selectedPartition to record))
+            }
+        }
+
+        return initialStatus
+    }
+
+    private fun getSessionId(message: LinkInMessage): String? {
         return when (message.payload) {
             is AuthenticatedDataMessage -> (message.payload as AuthenticatedDataMessage).header.sessionId
             is AuthenticatedEncryptedDataMessage -> (message.payload as AuthenticatedEncryptedDataMessage).header.sessionId
@@ -128,8 +140,14 @@ class InboundMessageHandler(private val server: HttpServer,
             is ResponderHelloMessage -> (message.payload as ResponderHelloMessage).header.sessionId
             is ResponderHandshakeMessage -> (message.payload as ResponderHandshakeMessage).header.sessionId
             is Step2Message -> (message.payload as Step2Message).initiatorHello.header.sessionId
-            is UnauthenticatedMessage -> throw IllegalStateException("No session associated with ${UnauthenticatedMessage::class.java}")
-            else -> throw IllegalStateException("Invalid payload of LinkInMessage: ${message.payload::class.java}")
+            is UnauthenticatedMessage -> {
+                logger.warn("No session associated with ${UnauthenticatedMessage::class.java}")
+                return null
+            }
+            else -> {
+                logger.warn("Invalid payload of LinkInMessage: ${message.payload::class.java}")
+                return null
+            }
         }
     }
 
