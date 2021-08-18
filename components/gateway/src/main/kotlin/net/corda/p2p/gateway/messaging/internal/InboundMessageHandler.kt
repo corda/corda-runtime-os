@@ -16,7 +16,6 @@ import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
-import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
@@ -27,12 +26,14 @@ import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.UUID
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
  */
 class InboundMessageHandler(private val server: HttpServer,
-                            private val maxMessageSize: Int,
                             private val publisherFactory: PublisherFactory,
                             private val sessionPartitionMapper: SessionPartitionMapper) : Lifecycle, HttpEventListener {
 
@@ -41,25 +42,34 @@ class InboundMessageHandler(private val server: HttpServer,
     }
 
     private var p2pInPublisher: Publisher? = null
+    private val startStopLock = ReentrantReadWriteLock()
 
     private var started = false
     override val isRunning: Boolean
         get() = started
 
     override fun start() {
-        logger.info("Starting P2P message receiver")
-        val publisherConfig = PublisherConfig(PUBLISHER_ID)
-        p2pInPublisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty())
-        server.addListener(this)
-        started = true
-        logger.info("Started P2P message receiver")
+        startStopLock.write {
+            if (!started) {
+                logger.info("Starting P2P message receiver")
+                val publisherConfig = PublisherConfig(PUBLISHER_ID)
+                p2pInPublisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty())
+                server.addListener(this)
+                started = true
+                logger.info("Started P2P message receiver")
+            }
+        }
     }
 
     override fun stop() {
-        started = false
-        server.removeListener(this)
-        p2pInPublisher?.close()
-        p2pInPublisher = null
+        startStopLock.write {
+            if (started) {
+                started = false
+                server.removeListener(this)
+                p2pInPublisher!!.close()
+                p2pInPublisher = null
+            }
+        }
     }
 
     /**
@@ -67,68 +77,52 @@ class InboundMessageHandler(private val server: HttpServer,
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
     override fun onMessage(message: HttpMessage) {
-        var responseBytes = ByteArray(0)
-        var statusCode = message.statusCode
-        try {
+        startStopLock.read {
+            if (!started) {
+                logger.error("Received message from ${message.source}, while handler is stopped. Discarding it and returning error code.")
+                server.write(HttpResponseStatus.SERVICE_UNAVAILABLE, ByteArray(0), message.source)
+                return@read
+            }
+
+
             logger.debug("Processing request message from ${message.source}")
-            val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
+            val p2pMessage = try {
+                LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
+            } catch (e: IOException) {
+                logger.warn("Invalid message received. Cannot deserialize")
+                logger.debug(e.stackTraceToString())
+                server.write(HttpResponseStatus.INTERNAL_SERVER_ERROR, ByteArray(0), message.source)
+                return@read
+            }
+
             logger.debug("Received message of type ${p2pMessage.schema.name}")
             when (p2pMessage.payload) {
-                is InitiatorHelloMessage -> {
-                    responseBytes = processInitiatorHelloMsg(p2pMessage.payload as InitiatorHelloMessage)
-                }
                 is UnauthenticatedMessage -> {
-                    p2pInPublisher?.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
+                    p2pInPublisher!!.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
+                    server.write(HttpResponseStatus.OK, ByteArray(0), message.source)
                 }
                 else -> {
-                    statusCode = processSessionMessage(statusCode, p2pMessage)
+                    val statusCode = processSessionMessage(p2pMessage)
+                    server.write(statusCode, ByteArray(0), message.source)
                 }
             }
-        } catch (e: IOException) {
-            logger.warn("Invalid message received. Cannot deserialize")
-            logger.debug(e.stackTraceToString())
-            statusCode = HttpResponseStatus.INTERNAL_SERVER_ERROR
-        } finally {
-            server.write(statusCode, responseBytes, message.source)
         }
     }
 
-    private fun processInitiatorHelloMsg(initiatorHelloMsg: InitiatorHelloMessage): ByteArray {
-        // Generate a response containing the server hello and the DH secret
-        val session = AuthenticationProtocolResponder(initiatorHelloMsg.header.sessionId,
-            initiatorHelloMsg.supportedModes.toSet(), maxMessageSize)
-        session.receiveInitiatorHello(initiatorHelloMsg)
-        val sessionInitResponse = session.generateResponderHello()
-        val p2pOutMessage = LinkInMessage(sessionInitResponse)
-        val responseBytes = p2pOutMessage.toByteBuffer().array()
-        val (pKey, _) = session.getDHKeyPair()
-        val step2Message = Step2Message.newBuilder().apply {
-            initiatorHello = initiatorHelloMsg
-            responderHello = sessionInitResponse
-            privateKey = ByteBuffer.wrap(pKey)
+    private fun processSessionMessage(p2pMessage: LinkInMessage): HttpResponseStatus {
+        val sessionId = getSessionId(p2pMessage) ?: return HttpResponseStatus.INTERNAL_SERVER_ERROR
+
+        val partitions = sessionPartitionMapper.getPartitions(sessionId)
+        return if (partitions == null) {
+            logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
+            HttpResponseStatus.INTERNAL_SERVER_ERROR
+        } else {
+            // this is simplistic (stateless) load balancing amongst the partitions owned by the LM that "hosts" the session.
+            val selectedPartition = partitions.random()
+            val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
+            p2pInPublisher?.publishToPartition(listOf(selectedPartition to record))
+            HttpResponseStatus.OK
         }
-        val record = Record(LINK_IN_TOPIC, "key", LinkInMessage(step2Message))
-        p2pInPublisher?.publish(listOf(record))
-
-        return responseBytes
-    }
-
-    private fun processSessionMessage(initialStatus: HttpResponseStatus, p2pMessage: LinkInMessage): HttpResponseStatus {
-        val sessionId = getSessionId(p2pMessage)
-        if (sessionId != null) {
-            val partitions = sessionPartitionMapper.getPartitions(sessionId)
-            if (partitions == null) {
-                logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
-                return HttpResponseStatus.INTERNAL_SERVER_ERROR
-            } else {
-                // this is simplistic (stateless) load balancing amongst the partitions owned by the LM that "hosts" the session.
-                val selectedPartition = partitions.random()
-                val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
-                p2pInPublisher?.publishToPartition(listOf(selectedPartition to record))
-            }
-        }
-
-        return initialStatus
     }
 
     private fun getSessionId(message: LinkInMessage): String? {
