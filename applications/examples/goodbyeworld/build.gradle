@@ -9,8 +9,10 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation project(":libs:examples:helloworld")
     implementation project(":osgi-framework-api")
+    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"

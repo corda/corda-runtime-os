@@ -5,10 +5,10 @@ import com.esotericsoftware.kryo.KryoException
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
+import net.corda.kryoserialization.serializationContext
+import net.corda.utilities.reflection.castIfPossible
 import net.corda.v5.serialization.SerializationToken
 import net.corda.v5.serialization.SerializeAsToken
-import net.corda.kryoserialization.serializationContext
-import net.corda.internal.base.castIfPossible
 
 /**
  * A Kryo serializer for [SerializeAsToken] implementations.

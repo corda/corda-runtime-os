@@ -3,7 +3,11 @@ package net.corda.kryoserialization
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.serialization.SerializationWhitelist
 import java.security.cert.CRLReason
-import java.util.*
+import java.util.UUID
+import java.util.Currency
+import java.util.BitSet
+import kotlin.collections.ArrayList
+import kotlin.collections.LinkedHashSet
 
 /**
  * NOTE: We do not whitelist [HashMap] or [HashSet] since they are unstable under serialization.

@@ -8,7 +8,7 @@ import java.security.PublicKey
 interface LinkManagerNetworkMap {
 
     companion object {
-        internal fun net.corda.p2p.payload.HoldingIdentity.toHoldingIdentity(): HoldingIdentity {
+        internal fun net.corda.p2p.app.HoldingIdentity.toHoldingIdentity(): HoldingIdentity {
             return HoldingIdentity(x500Name, groupId)
         }
 
