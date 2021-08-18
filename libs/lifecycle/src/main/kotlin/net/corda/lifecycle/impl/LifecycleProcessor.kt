@@ -4,6 +4,7 @@ import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
@@ -46,6 +47,9 @@ internal class LifecycleProcessor(
         return state.nextBatch().map { processEvent(it, coordinator, timerGenerator) }.all { it }
     }
 
+    /**
+     * Process an individual event.
+     */
     private fun processEvent(
         event: LifecycleEvent,
         coordinator: LifecycleCoordinator,
@@ -78,11 +82,40 @@ internal class LifecycleProcessor(
                     true
                 }
             }
+            is NewRegistration -> {
+                state.registrations.add(event.registration)
+                event.registration.updateCoordinatorStatus(coordinator, state.status)
+                true
+            }
+            is CancelRegistration -> {
+                state.registrations.remove(event.registration)
+                true
+            }
+            is TrackRegistration -> {
+                state.trackedRegistrations.add(event.registration)
+                true
+            }
+            is StopTrackingRegistration -> {
+                state.trackedRegistrations.remove(event.registration)
+                true
+            }
+            is StatusChange -> {
+                if (state.isRunning) {
+                    state.status = event.newStatus
+                    state.registrations.forEach { it.updateCoordinatorStatus(coordinator, event.newStatus) }
+                } else {
+                    logger.debug {
+                        "$name Lifecycle: Did not update coordinator status to ${event.newStatus} as " +
+                                "the coordinator is not running"
+                    }
+                }
+                true
+            }
             else -> {
                 if (state.isRunning) {
                     runUserEventHandler(event, coordinator)
                 } else {
-                    logger.trace {
+                    logger.debug {
                         "$name Lifecycle: Did not process lifecycle event $event as coordinator is shutdown"
                     }
                     true
@@ -91,9 +124,13 @@ internal class LifecycleProcessor(
         }
     }
 
-    private fun processStartEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
+    private fun processStartEvent(event: StartEvent, coordinator: LifecycleCoordinator): Boolean {
         return if (!state.isRunning) {
             state.isRunning = true
+            state.trackedRegistrations.forEach { it.notifyCurrentStatus() }
+            // If there was previously an error, clear this now.
+            state.status = LifecycleStatus.DOWN
+            state.registrations.forEach { it.updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN) }
             runUserEventHandler(event, coordinator)
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to start an already running coordinator" }
@@ -101,9 +138,15 @@ internal class LifecycleProcessor(
         }
     }
 
-    private fun processStopEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
+    private fun processStopEvent(event: StopEvent, coordinator: LifecycleCoordinator): Boolean {
         if (state.isRunning) {
             state.isRunning = false
+            state.status = if (event.errored) {
+                LifecycleStatus.ERROR
+            } else {
+                LifecycleStatus.DOWN
+            }
+            state.registrations.forEach { it.updateCoordinatorStatus(coordinator, state.status) }
             runUserEventHandler(event, coordinator)
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to stop an already terminated coordinator" }

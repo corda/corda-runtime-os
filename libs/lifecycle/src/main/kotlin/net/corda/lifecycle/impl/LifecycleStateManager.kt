@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ScheduledFuture
@@ -20,8 +21,24 @@ internal class LifecycleStateManager(
 
     private val timerMap = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
+    /**
+     * The set of registrations to post status updates to when this coordinator's status changes.
+     */
+    val registrations = mutableSetOf<Registration>()
+
+    /**
+     * The set of registrations this coordinator has on other groups of registrations.
+     *
+     * This is used to ensure that an UP event is delivered to this coordinator if the registration is UP at coordinator
+     * start time.
+     */
+    val trackedRegistrations = mutableSetOf<Registration>()
+
     @Volatile
     var isRunning: Boolean = false
+
+    @Volatile
+    var status: LifecycleStatus = LifecycleStatus.DOWN
 
     /**
      * Post a new event to the queue.
