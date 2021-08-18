@@ -172,6 +172,12 @@ class AuthenticationProtocolResponder(private val sessionId: String,
     ): HandshakeIdentityData {
         transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.RECEIVED_HANDSHAKE_MESSAGE)
 
+        val initiatorPublicKeyHash = messageDigest.hash(initiatorPublicKey.encoded)
+        val expectedInitiatorPublicKeyHash = getInitiatorIdentity()?.initiatorPublicKeyHash?.array()
+        if (!initiatorPublicKeyHash.contentEquals(expectedInitiatorPublicKeyHash)) {
+            throw WrongPublicKeyHashException(expectedInitiatorPublicKeyHash, initiatorPublicKeyHash)
+        }
+
         val initiatorRecordHeaderBytes = initiatorHandshakeMessage.header.toByteBuffer().array()
         try {
             initiatorHandshakePayloadBytes = aesCipher.decrypt(initiatorRecordHeaderBytes,

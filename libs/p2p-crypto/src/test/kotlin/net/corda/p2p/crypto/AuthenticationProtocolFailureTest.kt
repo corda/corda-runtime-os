@@ -4,6 +4,7 @@ import net.corda.p2p.crypto.protocol.NoCommonModeError
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
+import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
@@ -91,6 +92,33 @@ class AuthenticationProtocolFailureTest {
 
         assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public) }
                 .isInstanceOf(InvalidHandshakeMessageException::class.java)
+    }
+
+    @Test
+    fun `session authentication fails if the initiator's uses the wrong public key in verify`() {
+        val wrongPublicKey = keyPairGenerator.generateKeyPair().public
+
+        // Step 1: initiator sending hello message to responder.
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
+
+        // Step 2: responder sending hello message to initiator.
+        val responderHelloMsg = authenticationProtocolB.generateResponderHello()
+        authenticationProtocolA.receiveResponderHello(responderHelloMsg)
+
+        // Both sides generate handshake secrets.
+        authenticationProtocolA.generateHandshakeSecrets()
+        authenticationProtocolB.generateHandshakeSecrets()
+
+        // Step 3: initiator creating different signature than the one expected.
+        val signingCallbackForA = { data: ByteArray ->
+            signature.initSign(partyAIdentityKey.private)
+            signature.update(data + "0".toByteArray(Charsets.UTF_8))
+            signature.sign()
+        }
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
+        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, wrongPublicKey) }
+            .isInstanceOf(WrongPublicKeyHashException::class.java)
     }
 
     @Test

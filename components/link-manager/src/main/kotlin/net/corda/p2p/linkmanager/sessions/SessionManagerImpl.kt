@@ -14,6 +14,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
@@ -281,6 +282,9 @@ open class SessionManagerImpl(
         session.generateHandshakeSecrets()
         val identityData = try {
             session.validatePeerHandshakeMessage(message, peer.publicKey)
+        } catch (exception: WrongPublicKeyHashException) {
+            logger.error(exception.message)
+            return null
         } catch (exception: InvalidHandshakeMessageException) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
