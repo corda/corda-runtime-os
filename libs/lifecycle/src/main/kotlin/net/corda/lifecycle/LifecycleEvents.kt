@@ -37,8 +37,11 @@ class StartEvent internal constructor() : LifecycleEvent
  * The user event handler is guaranteed to see this event last on shut down of the coordinator.
  *
  * Note that on delivery of this event, the coordinator will be marked as not running.
+ *
+ * @param errored Flag indicating if this stop event happened due to an error occurring. Used internally to set the
+ *                coordinator status correctly.
  */
-class StopEvent internal constructor() : LifecycleEvent
+data class StopEvent internal constructor(val errored: Boolean = false) : LifecycleEvent
 
 /**
  * An event delivered after a scheduled timer has fired.
@@ -52,7 +55,6 @@ interface TimerEvent : LifecycleEvent {
      * The key for the timer that fired this event.
      */
     val key: String
-
 }
 
 /**

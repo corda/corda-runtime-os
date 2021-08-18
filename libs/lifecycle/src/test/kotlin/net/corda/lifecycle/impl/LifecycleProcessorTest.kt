@@ -438,6 +438,27 @@ class LifecycleProcessorTest {
         assertEquals(setOf<Registration>(), state.trackedRegistrations)
     }
 
+    @Test
+    fun `stop due to an error results in the status being set to error`() {
+        val state = LifecycleStateManager(5)
+        var processedStopEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
+            when (event) {
+                is StopEvent -> {
+                    processedStopEvents++
+                }
+            }
+        }
+        state.isRunning = true
+        state.postEvent(StopEvent(errored = true))
+        val registration = mock<Registration>()
+        val coordinator = mock<LifecycleCoordinator>()
+        state.registrations.add(registration)
+        process(processor, coordinator = coordinator)
+        assertEquals(LifecycleStatus.ERROR, state.status)
+        verify(registration).updateCoordinatorStatus(coordinator, LifecycleStatus.ERROR)
+    }
+
     private object TestEvent1 : LifecycleEvent
     private object TestEvent2 : LifecycleEvent
     private object TestEvent3 : LifecycleEvent

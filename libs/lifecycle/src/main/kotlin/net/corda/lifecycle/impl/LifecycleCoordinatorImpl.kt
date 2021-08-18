@@ -96,8 +96,7 @@ class LifecycleCoordinatorImpl(
         val shutdown = !processor.processEvents(this, ::createTimer)
         isScheduled.set(false)
         if (shutdown) {
-            logger.warn("$name Lifecycle: An unhandled error was encountered. Stopping component.")
-            stop()
+            stopInternal(true)
         } else {
             scheduleIfRequired()
         }
@@ -122,6 +121,15 @@ class LifecycleCoordinatorImpl(
      */
     private fun createTimer(timerEvent: TimerEvent, delay: Long): ScheduledFuture<*> {
         return executor.schedule({ postEvent(timerEvent) }, delay, TimeUnit.MILLISECONDS)
+    }
+
+    /**
+     * Stop the coordinator. The posted event signals if this stop is due to an error.
+     *
+     * @param errored True if the coordinator was stopped due to an error.
+     */
+    private fun stopInternal(errored: Boolean) {
+        postEvent(StopEvent(errored))
     }
 
     /**
@@ -189,6 +197,6 @@ class LifecycleCoordinatorImpl(
      * are delivered to the user code.
      */
     override fun stop() {
-        postEvent(StopEvent())
+        stopInternal(false)
     }
 }

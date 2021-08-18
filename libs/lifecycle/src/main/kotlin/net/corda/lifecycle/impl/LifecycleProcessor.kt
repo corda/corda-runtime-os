@@ -124,7 +124,7 @@ internal class LifecycleProcessor(
         }
     }
 
-    private fun processStartEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
+    private fun processStartEvent(event: StartEvent, coordinator: LifecycleCoordinator): Boolean {
         return if (!state.isRunning) {
             state.isRunning = true
             state.trackedRegistrations.forEach { it.notifyCurrentStatus() }
@@ -135,11 +135,15 @@ internal class LifecycleProcessor(
         }
     }
 
-    private fun processStopEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
+    private fun processStopEvent(event: StopEvent, coordinator: LifecycleCoordinator): Boolean {
         if (state.isRunning) {
             state.isRunning = false
-            state.status = LifecycleStatus.DOWN
-            state.registrations.forEach { it.updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN) }
+            state.status = if (event.errored) {
+                LifecycleStatus.ERROR
+            } else {
+                LifecycleStatus.DOWN
+            }
+            state.registrations.forEach { it.updateCoordinatorStatus(coordinator, state.status) }
             runUserEventHandler(event, coordinator)
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to stop an already terminated coordinator" }
