@@ -247,7 +247,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      *  This rebalance is called for the event consumer, though most of the work is to ensure the state consumer
      *  keeps up
      */
-    override fun onPartitionsRevoked(removedEventPartitions: MutableCollection<TopicPartition>) {
+    override fun onPartitionsRevoked(removedEventPartitions: Collection<TopicPartition>) {
         log.debug { "Updating state partitions to match removed event partitions: $removedEventPartitions" }
         val removedStatePartitions = removedEventPartitions.toStateTopics()
         val statePartitions = stateConsumer.assignment() - removedStatePartitions

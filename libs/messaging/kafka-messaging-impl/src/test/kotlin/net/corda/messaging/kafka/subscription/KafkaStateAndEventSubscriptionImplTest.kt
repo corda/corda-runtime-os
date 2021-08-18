@@ -269,4 +269,59 @@ class KafkaStateAndEventSubscriptionImplTest {
         assertThat(processor.inputs.size).isEqualTo(30)
     }
 
+
+    @Test
+    fun `state and event subscription verify partition sync`() {
+        var latch = CountDownLatch(1)
+        val (builder, _, eventConsumer, stateConsumer, listener) = setupMocks(0, latch)
+        val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
+        records.add(ConsumerRecordAndMeta("", ConsumerRecord(TOPIC, 1, 1, "key1", "value1")))
+
+        doAnswer {
+            records
+        }.whenever(eventConsumer).poll()
+
+        val processor = StubStateAndEventProcessor(latch)
+        val subscription = KafkaStateAndEventSubscriptionImpl(
+            config,
+            subscriptionMapFactory,
+            builder,
+            processor,
+            listener
+        )
+
+        val partitions = listOf(TopicPartition(TOPIC, 0))
+        val beginningOffsets = mapOf(TopicPartition("$TOPIC.state", 0) to 0L)
+        val endOffsets = mapOf(TopicPartition("$TOPIC.state", 0) to 1L)
+        whenever(stateConsumer.beginningOffsets(any())).thenReturn(beginningOffsets)
+        whenever(stateConsumer.endOffsets(any())).thenReturn(endOffsets)
+        whenever(stateConsumer.position(any())).thenReturn(100)
+
+        subscription.start()
+        assertTrue(latch.await(TEST_TIMEOUT_SECONDS, SECONDS))
+
+        subscription.onPartitionsAssigned(partitions)
+
+        latch = CountDownLatch(1)
+        processor.latch = latch
+        assertTrue(latch.await(TEST_TIMEOUT_SECONDS, SECONDS))
+
+        subscription.onPartitionsRevoked(partitions)
+
+        subscription.stop()
+
+        verify(stateConsumer, times(3)).assign(any())
+        verify(stateConsumer, times(1)).seekToBeginning(any())
+        verify(stateConsumer, times(1)).beginningOffsets(any())
+        verify(stateConsumer, times(1)).endOffsets(any())
+        verify(eventConsumer, times(1)).pause(any())
+
+        verify(stateConsumer, times(1)).position(any())
+        verify(stateConsumer, times(1)).position(any())
+        verify(eventConsumer, times(1)).resume(any())
+        verify(listener, times(1)).onPartitionSynced(any())
+
+        verify(stateConsumer, times(1)).assignment()
+        verify(listener, times(1)).onPartitionLost(any())
+    }
 }

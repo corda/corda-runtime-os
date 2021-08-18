@@ -9,7 +9,7 @@ import java.util.concurrent.CountDownLatch
 class TestStateEventProcessorStrings(
     private val onNextLatch: CountDownLatch,
     private val updateState: Boolean,
-    private var throwException: Boolean = false,
+    private var throwExceptionOnFirst: Boolean = false,
     private val outputTopic: String? = null,
     private val delayProcessor: Long? = null,
 ) :
@@ -30,8 +30,8 @@ class TestStateEventProcessorStrings(
             Thread.sleep(delayProcessor)
         }
 
-        if (throwException) {
-            throwException = true
+        if (throwExceptionOnFirst) {
+            throwExceptionOnFirst = false
             throw CordaMessageAPIIntermittentException("Test exception")
         }
 
