@@ -12,26 +12,26 @@ internal class ConsumerGroup(
     private val partitions: Collection<Partition>,
     internal val subscriptionConfig: SubscriptionConfiguration,
     private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock(),
-    private val loopFactory: (Consumer, ConsumerGroup) -> Runnable = { consumer, group ->
-        ConsumerReadRecordsLoop(consumer, group)
+    private val loopFactory: (ConsumerDefinitions, ConsumerGroup) -> Runnable = { consumer, group ->
+        ConsumptionLoop(consumer, group)
     }
 ) {
-    private val consumers = ConcurrentHashMap<Consumer, Collection<Partition>>()
+    private val consumers = ConcurrentHashMap<ConsumerDefinitions, Collection<Partition>>()
     private val commitments = ConcurrentHashMap<Partition, Long>()
 
     private val newData = lock.writeLock().newCondition()
 
-    class DuplicateSubscriptionException : Exception("Can not subscribe the same consumer twice")
+    class DuplicateConsumerException : Exception("Can not consume the same consumer twice")
 
-    fun subscribe(consumer: Consumer) {
-        consumers.compute(consumer) { _, currentPartitions ->
+    fun consume(consumerDefinitions: ConsumerDefinitions) {
+        consumers.compute(consumerDefinitions) { _, currentPartitions ->
             if (currentPartitions != null) {
-                throw DuplicateSubscriptionException()
+                throw DuplicateConsumerException()
             }
             ConcurrentHashMap.newKeySet()
         }
         repartition()
-        loopFactory(consumer, this).run()
+        loopFactory(consumerDefinitions, this).run()
     }
 
     internal fun waitForData() {
@@ -40,11 +40,11 @@ internal class ConsumerGroup(
         }
     }
 
-    internal fun getPartitions(consumer: Consumer): Collection<Pair<Partition, Long>> {
+    internal fun getPartitions(consumerDefinitions: ConsumerDefinitions): Collection<Pair<Partition, Long>> {
         return lock.read {
-            consumers[consumer]?.map { partition ->
+            consumers[consumerDefinitions]?.map { partition ->
                 val offset = commitments.computeIfAbsent(partition) {
-                    when (consumer.offsetStrategy) {
+                    when (consumerDefinitions.offsetStrategy) {
                         OffsetStrategy.LATEST -> partition.latestOffset()
                         OffsetStrategy.EARLIEST -> 0L
                     }
@@ -54,10 +54,10 @@ internal class ConsumerGroup(
         }
     }
 
-    fun unsubscribe(consumer: Consumer) {
-        val partitions = consumers.remove(consumer)
+    fun stopConsuming(consumerDefinitions: ConsumerDefinitions) {
+        val partitions = consumers.remove(consumerDefinitions)
         if (partitions != null) {
-            consumer.partitionAssignmentListener?.onPartitionsUnassigned(partitions.map { topicName to it.partitionId })
+            consumerDefinitions.partitionAssignmentListener?.onPartitionsUnassigned(partitions.map { topicName to it.partitionId })
             if (consumers.isNotEmpty()) {
                 repartition()
             } else {
@@ -70,8 +70,8 @@ internal class ConsumerGroup(
         commitments[partition] = records.maxOf { it.offset } + 1
     }
 
-    fun isSubscribed(consumer: Consumer): Boolean {
-        return consumers.containsKey(consumer)
+    fun isConsuming(consumerDefinitions: ConsumerDefinitions): Boolean {
+        return consumers.containsKey(consumerDefinitions)
     }
 
     internal fun wakeUp() {

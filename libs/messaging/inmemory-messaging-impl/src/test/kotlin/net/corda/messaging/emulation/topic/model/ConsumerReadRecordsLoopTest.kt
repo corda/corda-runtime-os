@@ -18,7 +18,7 @@ import java.time.Duration
 class ConsumerReadRecordsLoopTest {
     private val config = SubscriptionConfiguration(10, Duration.ofSeconds(1))
     private val records = mutableListOf<RecordMetadata>()
-    private val consumer = mock<Consumer> {
+    private val consumerDefinitions = mock<ConsumerDefinitions> {
         on { handleRecords(any()) } doAnswer {
             records.addAll(it.getArgument(0) as Collection<RecordMetadata>)
             Unit
@@ -28,11 +28,11 @@ class ConsumerReadRecordsLoopTest {
         on { subscriptionConfig } doReturn config
     }
 
-    private val loop = ConsumerReadRecordsLoop(consumer, group)
+    private val loop = ConsumptionLoop(consumerDefinitions, group)
 
     @Test
     fun `run will not ask for records if consumer is not subscribe`() {
-        doReturn(false).whenever(group).isSubscribed(consumer)
+        doReturn(false).whenever(group).isConsuming(consumerDefinitions)
 
         loop.run()
 
@@ -41,7 +41,7 @@ class ConsumerReadRecordsLoopTest {
 
     @Test
     fun `run will not ask for records as long as the consumer is subscribe`() {
-        whenever(group.isSubscribed(consumer))
+        whenever(group.isConsuming(consumerDefinitions))
             .thenReturn(true)
             .thenReturn(true)
             .thenReturn(true)
@@ -54,15 +54,15 @@ class ConsumerReadRecordsLoopTest {
 
     @Test
     fun `readRecords will ignore the consumer if it has no partitions`() {
-        whenever(group.isSubscribed(consumer))
+        whenever(group.isConsuming(consumerDefinitions))
             .thenReturn(true)
             .thenReturn(false)
-        whenever(group.getPartitions(consumer))
+        whenever(group.getPartitions(consumerDefinitions))
             .thenReturn(emptyList())
 
         loop.run()
 
-        verify(consumer, never()).handleRecords(any())
+        verify(consumerDefinitions, never()).handleRecords(any())
     }
 
     @Test
@@ -70,10 +70,10 @@ class ConsumerReadRecordsLoopTest {
         val partition = mock<Partition> {
             on { getRecordsFrom(any(), any()) } doReturn emptyList()
         }
-        whenever(group.isSubscribed(consumer))
+        whenever(group.isConsuming(consumerDefinitions))
             .thenReturn(true)
             .thenReturn(false)
-        whenever(group.getPartitions(consumer))
+        whenever(group.getPartitions(consumerDefinitions))
             .thenReturn(listOf(partition to 1004L))
 
         loop.run()
@@ -89,10 +89,10 @@ class ConsumerReadRecordsLoopTest {
         val partition = mock<Partition> {
             on { getRecordsFrom(any(), any()) } doReturn recordsToSend
         }
-        whenever(group.isSubscribed(consumer))
+        whenever(group.isConsuming(consumerDefinitions))
             .thenReturn(true)
             .thenReturn(false)
-        whenever(group.getPartitions(consumer))
+        whenever(group.getPartitions(consumerDefinitions))
             .thenReturn(listOf(partition to 1004L))
 
         loop.run()
@@ -114,10 +114,10 @@ class ConsumerReadRecordsLoopTest {
         val partitionTwo = mock<Partition> {
             on { getRecordsFrom(any(), any()) } doReturn partitionTwoRecords
         }
-        whenever(group.isSubscribed(consumer))
+        whenever(group.isConsuming(consumerDefinitions))
             .thenReturn(true)
             .thenReturn(false)
-        whenever(group.getPartitions(consumer))
+        whenever(group.getPartitions(consumerDefinitions))
             .thenReturn(
                 listOf(
                     partitionOne to 1004L,
@@ -142,16 +142,16 @@ class ConsumerReadRecordsLoopTest {
                 RecordMetadata(it.toLong(), Record("topic", it, it), 2)
             }
         }
-        whenever(group.isSubscribed(consumer))
+        whenever(group.isConsuming(consumerDefinitions))
             .thenReturn(true)
             .thenReturn(false)
-        whenever(group.getPartitions(consumer))
+        whenever(group.getPartitions(consumerDefinitions))
             .thenReturn(
                 listOf(
                     partitionOne to 1004L,
                 )
             )
-        whenever(consumer.handleRecords(any())).doThrow(RuntimeException(""))
+        whenever(consumerDefinitions.handleRecords(any())).doThrow(RuntimeException(""))
 
         loop.run()
 

@@ -1,11 +1,11 @@
 package net.corda.messaging.emulation.subscription.pubsub
 
 import com.typesafe.config.Config
-import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.EVENT_TOPIC
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.GROUP_NAME
+import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.util.contextLogger
@@ -37,7 +37,7 @@ class PubSubSubscription<K : Any, V : Any>(
     internal val topic = config.getString(EVENT_TOPIC)
     internal val groupName = config.getString(GROUP_NAME)
 
-    private var currentConsumer: Lifecycle? = null
+    private var currentConsumer: Consumption? = null
     private val lock = ReentrantLock()
     /**
      * Is the subscription running.

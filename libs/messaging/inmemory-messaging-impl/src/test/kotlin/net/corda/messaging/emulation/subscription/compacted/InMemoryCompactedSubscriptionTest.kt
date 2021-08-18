@@ -1,9 +1,9 @@
 package net.corda.messaging.emulation.subscription.compacted
 
-import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions.assertThat
@@ -24,13 +24,13 @@ class InMemoryCompactedSubscriptionTest {
         on { valueClass } doReturn URL::class.java
     }
     private val recordsToSend = mutableListOf<RecordMetadata>()
-    private val lifecycle = mock<Lifecycle>()
+    private val consumption = mock<Consumption>()
     private val topic = mock<TopicService> {
         on { handleAllRecords(any(), any()) } doAnswer {
             val handler = it.getArgument<(Sequence<RecordMetadata>) -> Unit>(1)
             handler(recordsToSend.asSequence())
         }
-        on { subscribe(any()) } doReturn lifecycle
+        on { subscribe(any()) } doReturn consumption
     }
 
     private val subscription = InMemoryCompactedSubscription(
@@ -251,7 +251,7 @@ class InMemoryCompactedSubscriptionTest {
 
         subscription.stop()
 
-        verify(lifecycle).stop()
+        verify(consumption).stop()
     }
 
     @Test
@@ -262,7 +262,7 @@ class InMemoryCompactedSubscriptionTest {
         subscription.stop()
         subscription.stop()
 
-        verify(lifecycle, times(1)).stop()
+        verify(consumption, times(1)).stop()
     }
 
     @Test
@@ -276,7 +276,7 @@ class InMemoryCompactedSubscriptionTest {
     @Test
     fun `isRunning will return true if subscription is alive`() {
         subscription.start()
-        whenever(lifecycle.isRunning).doReturn(true)
+        whenever(consumption.isRunning).doReturn(true)
 
         assertThat(subscription.isRunning).isTrue
     }
@@ -284,7 +284,7 @@ class InMemoryCompactedSubscriptionTest {
     @Test
     fun `isRunning will return false if subscription is not alive`() {
         subscription.start()
-        whenever(lifecycle.isRunning).doReturn(false)
+        whenever(consumption.isRunning).doReturn(false)
 
         assertThat(subscription.isRunning).isFalse
     }

@@ -26,22 +26,22 @@ class Topic(
         }
     }
 
-    private val consumers = ConcurrentHashMap<String, ConsumerGroup>()
+    private val consumerGroups = ConcurrentHashMap<String, ConsumerGroup>()
 
     /**
-     * Subscribe the [consumer] to this [topicName]
+     * Subscribe the [consumerDefinitions] to this [topicName]
      */
-    fun subscribe(consumer: Consumer, subscriptionConfig: SubscriptionConfiguration) {
-        consumers.computeIfAbsent(consumer.groupName) {
-            ConsumerGroup(consumer.topicName, partitions, subscriptionConfig)
-        }.subscribe(consumer)
+    fun subscribe(consumerDefinitions: ConsumerDefinitions, subscriptionConfig: SubscriptionConfiguration) {
+        consumerGroups.computeIfAbsent(consumerDefinitions.groupName) {
+            ConsumerGroup(consumerDefinitions.topicName, partitions, subscriptionConfig)
+        }.consume(consumerDefinitions)
     }
 
     /**
-     * Unsubscribe the [consumer] to this [topicName]
+     * Unsubscribe the [consumerDefinitions] to this [topicName]
      */
-    fun unsubscribe(consumer: Consumer) {
-        consumers[consumer.groupName]?.unsubscribe(consumer)
+    fun unsubscribe(consumerDefinitions: ConsumerDefinitions) {
+        consumerGroups[consumerDefinitions.groupName]?.stopConsuming(consumerDefinitions)
     }
 
     /**
@@ -52,7 +52,7 @@ class Topic(
         val partitionNumber = abs(record.key.hashCode() % partitions.size)
         val partition = partitions[partitionNumber]
         partition.addRecord(record)
-        consumers.values.forEach {
+        consumerGroups.values.forEach {
             it.wakeUp()
         }
     }
@@ -67,7 +67,7 @@ class Topic(
         }
             ?: throw IllegalStateException("Could not find partition id $partitionId, only know of ${partitions.map { it.partitionId }}!")
         partition.addRecord(record)
-        consumers.values.forEach {
+        consumerGroups.values.forEach {
             it.wakeUp()
         }
     }

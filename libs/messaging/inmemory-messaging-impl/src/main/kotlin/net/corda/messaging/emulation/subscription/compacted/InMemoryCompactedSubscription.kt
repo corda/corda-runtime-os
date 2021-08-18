@@ -1,10 +1,10 @@
 package net.corda.messaging.emulation.subscription.compacted
 
-import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -30,7 +30,7 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
 
     internal val groupName = subscriptionConfig.groupName
 
-    private var currentConsumer: Lifecycle? = null
+    private var currentConsumption: Consumption? = null
     private val startStopLock = ReentrantLock()
 
     fun updateSnapshots() {
@@ -65,25 +65,25 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
     override fun stop() {
         logger.debug { "Stopping event log subscription with config: $subscriptionConfig" }
         startStopLock.withLock {
-            currentConsumer?.stop()
-            currentConsumer = null
+            currentConsumption?.stop()
+            currentConsumption = null
         }
     }
 
     override fun start() {
         logger.debug { "Starting event log subscription with config: $subscriptionConfig" }
         startStopLock.withLock {
-            if (currentConsumer == null) {
+            if (currentConsumption == null) {
                 updateSnapshots()
                 processor.onSnapshot(knownValues)
                 val consumer = CompactedConsumer(this)
-                currentConsumer = topicService.subscribe(consumer)
+                currentConsumption = topicService.subscribe(consumer)
             }
         }
     }
 
     override val isRunning
-        get() = currentConsumer?.isRunning ?: false
+        get() = currentConsumption?.isRunning ?: false
 
     override fun getValue(key: K): V? {
         return snapshotsLock.withLock {

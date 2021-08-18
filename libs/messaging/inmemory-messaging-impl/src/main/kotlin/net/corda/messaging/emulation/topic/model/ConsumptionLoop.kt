@@ -3,15 +3,15 @@ package net.corda.messaging.emulation.topic.model
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
 
-internal class ConsumerReadRecordsLoop(
-    private val consumer: Consumer,
+internal class ConsumptionLoop(
+    private val consumerDefinitions: ConsumerDefinitions,
     private val group: ConsumerGroup,
 ) : Runnable {
     companion object {
         private val logger: Logger = contextLogger()
     }
     private fun readRecords(): Map<Partition, Collection<RecordMetadata>> {
-        return group.getPartitions(consumer)
+        return group.getPartitions(consumerDefinitions)
             .map { (partition, offset) ->
                 partition to partition.getRecordsFrom(offset, group.subscriptionConfig.partitionPollSize)
             }.filter {
@@ -23,7 +23,7 @@ internal class ConsumerReadRecordsLoop(
         if (records.isNotEmpty()) {
             @Suppress("TooGenericExceptionCaught")
             try {
-                consumer.handleRecords(
+                consumerDefinitions.handleRecords(
                     records
                         .values
                         .flatten()
@@ -38,7 +38,7 @@ internal class ConsumerReadRecordsLoop(
                         "${it.partition}/${it.offset}"
                     }
                 logger.warn(
-                    "Error processing records for consumer ${consumer.groupName}, topic ${consumer.groupName}. " +
+                    "Error processing records for consumer ${consumerDefinitions.groupName}, topic ${consumerDefinitions.groupName}. " +
                         "Will try again records ($recordsAsString)",
                     e
                 )
@@ -49,7 +49,7 @@ internal class ConsumerReadRecordsLoop(
     }
 
     override fun run() {
-        while (group.isSubscribed(consumer)) {
+        while (group.isConsuming(consumerDefinitions)) {
             processRecords(readRecords())
         }
     }

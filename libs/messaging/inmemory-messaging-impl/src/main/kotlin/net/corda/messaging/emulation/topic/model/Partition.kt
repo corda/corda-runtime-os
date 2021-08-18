@@ -6,7 +6,8 @@ import net.corda.v5.base.util.debug
 import java.util.LinkedList
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.withLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 internal class Partition(
     val partitionId: Int,
@@ -22,7 +23,7 @@ internal class Partition(
     private val currentOffset = AtomicLong(0)
 
     fun addRecord(record: Record<*, *>) {
-        lock.writeLock().withLock {
+        lock.write {
             if (records.size >= maxSize) {
                 val deletedRecord = records.removeFirst()
                 logger.debug {
@@ -35,7 +36,7 @@ internal class Partition(
     }
 
     fun getRecordsFrom(fromOffset: Long, pollSize: Int): Collection<RecordMetadata> {
-        return lock.readLock().withLock {
+        return lock.read {
             records
                 .asSequence()
                 .dropWhile { it.offset < fromOffset }
@@ -49,7 +50,7 @@ internal class Partition(
     }
 
     fun handleAllRecords(handler: (Sequence<RecordMetadata>) -> Unit) {
-        lock.readLock().withLock {
+        lock.read {
             handler(records.asSequence())
         }
     }

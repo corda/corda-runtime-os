@@ -2,6 +2,7 @@ package net.corda.messaging.emulation.subscription.eventlog
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -13,9 +14,9 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class EventLogSubscriptionTest {
-    private val consumeLifeCycle = mock<Lifecycle>()
+    private val consumption = mock<Consumption>()
     private val topic = mock<TopicService> {
-        on { subscribe(any()) } doReturn consumeLifeCycle
+        on { subscribe(any()) } doReturn consumption
     }
     private val config = SubscriptionConfig(eventTopic = "topic", groupName = "group")
     private val subscription = EventLogSubscription<String, SubscriptionConfig>(
@@ -45,7 +46,7 @@ class EventLogSubscriptionTest {
         subscription.start()
         subscription.stop()
 
-        verify(consumeLifeCycle).stop()
+        verify(consumption).stop()
     }
 
     @Test
@@ -54,7 +55,7 @@ class EventLogSubscriptionTest {
         subscription.stop()
         subscription.stop()
 
-        verify(consumeLifeCycle, times(1)).stop()
+        verify(consumption, times(1)).stop()
     }
 
     @Test
@@ -66,7 +67,7 @@ class EventLogSubscriptionTest {
     @Test
     fun `isRunning will return false if had thread was killed`() {
         subscription.start()
-        whenever(consumeLifeCycle.isRunning).doReturn(false)
+        whenever(consumption.isRunning).doReturn(false)
 
         assertThat(subscription.isRunning).isFalse
     }
@@ -74,7 +75,7 @@ class EventLogSubscriptionTest {
     @Test
     fun `isRunning will return true if had thread is alive`() {
         subscription.start()
-        whenever(consumeLifeCycle.isRunning).doReturn(true)
+        whenever(consumption.isRunning).doReturn(true)
 
         assertThat(subscription.isRunning).isTrue
     }

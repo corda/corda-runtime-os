@@ -1,13 +1,13 @@
 package net.corda.messaging.emulation.subscription.compacted
 
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
-import net.corda.messaging.emulation.topic.model.Consumer
+import net.corda.messaging.emulation.topic.model.ConsumerDefinitions
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 
 internal class CompactedConsumer<K : Any, V : Any>(
     private val inMemoryCompactedSubscription: InMemoryCompactedSubscription<K, V>
-) : Consumer {
+) : ConsumerDefinitions {
     override val groupName = inMemoryCompactedSubscription.groupName
     override val topicName = inMemoryCompactedSubscription.topicName
     override val offsetStrategy = OffsetStrategy.LATEST

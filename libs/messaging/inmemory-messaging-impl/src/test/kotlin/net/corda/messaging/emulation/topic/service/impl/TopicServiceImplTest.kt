@@ -2,7 +2,7 @@ package net.corda.messaging.emulation.topic.service.impl
 
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.properties.InMemoryConfiguration
-import net.corda.messaging.emulation.topic.model.ConsumerThread
+import net.corda.messaging.emulation.topic.model.ConsumptionThread
 import net.corda.messaging.emulation.topic.model.Topic
 import net.corda.messaging.emulation.topic.model.Topics
 import org.junit.jupiter.api.Test
@@ -12,12 +12,12 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 
 class TopicServiceImplTest {
-    private val thread = mock<ConsumerThread>()
+    private val thread = mock<ConsumptionThread>()
     private val config = mock<InMemoryConfiguration>()
     private val topicOne = mock<Topic>()
     private val topicTwo = mock<Topic>()
     private val topics = mock<Topics> {
-        on { createConsumerThread(any()) } doReturn thread
+        on { createConsumption(any()) } doReturn thread
         on { getTopic("topic.1") } doReturn topicOne
         on { getTopic("topic.2") } doReturn topicTwo
     }

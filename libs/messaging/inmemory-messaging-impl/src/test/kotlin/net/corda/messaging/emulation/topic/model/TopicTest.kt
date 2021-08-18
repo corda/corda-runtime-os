@@ -23,13 +23,13 @@ class TopicTest {
         val topic = Topic("topic", config)
         mockConstruction(ConsumerGroup::class.java).use { group ->
             val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
-            val consumer = mock<Consumer> {
+            val consumerDefinitions = mock<ConsumerDefinitions> {
                 on { groupName } doReturn "group"
             }
 
-            topic.subscribe(consumer, subscriptionConfig)
+            topic.subscribe(consumerDefinitions, subscriptionConfig)
 
-            verify(group.constructed().first()).subscribe(consumer)
+            verify(group.constructed().first()).consume(consumerDefinitions)
         }
     }
 
@@ -40,11 +40,11 @@ class TopicTest {
             assertThat(context.arguments()[1] as Collection<Any?>).hasSize(5)
         }.use {
             val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
-            val consumer = mock<Consumer> {
+            val consumerDefinitions = mock<ConsumerDefinitions> {
                 on { groupName } doReturn "group"
             }
 
-            topic.subscribe(consumer, subscriptionConfig)
+            topic.subscribe(consumerDefinitions, subscriptionConfig)
         }
     }
 
@@ -53,14 +53,14 @@ class TopicTest {
         val topic = Topic("topic", config)
         mockConstruction(ConsumerGroup::class.java).use { group ->
             val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
-            val consumer = mock<Consumer> {
+            val consumerDefinitions = mock<ConsumerDefinitions> {
                 on { groupName } doReturn "group"
             }
-            topic.subscribe(consumer, subscriptionConfig)
+            topic.subscribe(consumerDefinitions, subscriptionConfig)
 
-            topic.unsubscribe(consumer)
+            topic.unsubscribe(consumerDefinitions)
 
-            verify(group.constructed().first()).unsubscribe(consumer)
+            verify(group.constructed().first()).stopConsuming(consumerDefinitions)
         }
     }
 
@@ -69,17 +69,17 @@ class TopicTest {
         val topic = Topic("topic", config)
         mockConstruction(ConsumerGroup::class.java).use { group ->
             val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
-            val consumer1 = mock<Consumer> {
+            val consumerDefinitions1 = mock<ConsumerDefinitions> {
                 on { groupName } doReturn "group"
             }
-            val consumer2 = mock<Consumer> {
+            val consumerDefinitions2 = mock<ConsumerDefinitions> {
                 on { groupName } doReturn "group2"
             }
-            topic.subscribe(consumer1, subscriptionConfig)
+            topic.subscribe(consumerDefinitions1, subscriptionConfig)
 
-            topic.unsubscribe(consumer2)
+            topic.unsubscribe(consumerDefinitions2)
 
-            verify(group.constructed().first(), never()).unsubscribe(any())
+            verify(group.constructed().first(), never()).stopConsuming(any())
         }
     }
 
@@ -112,10 +112,10 @@ class TopicTest {
         val topic = Topic("topic", config)
         mockConstruction(ConsumerGroup::class.java).use { group ->
             val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
-            val consumer = mock<Consumer> {
+            val consumerDefinitions = mock<ConsumerDefinitions> {
                 on { groupName } doReturn "group"
             }
-            topic.subscribe(consumer, subscriptionConfig)
+            topic.subscribe(consumerDefinitions, subscriptionConfig)
             val record = Record("topic", 1004, 3)
 
             topic.addRecord(record)
@@ -177,10 +177,10 @@ class TopicTest {
         val topic = Topic("topic", config)
         mockConstruction(ConsumerGroup::class.java).use { group ->
             val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
-            val consumer = mock<Consumer> {
+            val consumerDefinitions = mock<ConsumerDefinitions> {
                 on { groupName } doReturn "group"
             }
-            topic.subscribe(consumer, subscriptionConfig)
+            topic.subscribe(consumerDefinitions, subscriptionConfig)
             val record = Record("topic", 1004, 3)
 
             topic.addRecordToPartition(record, 1)

@@ -1,10 +1,10 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
-import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -35,7 +35,7 @@ class EventLogSubscription<K : Any, V : Any>(
 
     internal val groupName = subscriptionConfig.groupName
 
-    private var currentConsumer: Lifecycle? = null
+    private var currentConsumer: Consumption? = null
     private val lock = ReentrantLock()
 
     override fun stop() {

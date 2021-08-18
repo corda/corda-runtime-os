@@ -1,11 +1,11 @@
 package net.corda.messaging.emulation.subscription.pubsub
 
 import com.typesafe.config.Config
-import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.EVENT_TOPIC
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.GROUP_NAME
+import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions.assertThat
@@ -31,7 +31,7 @@ class PubSubSubscriptionTest {
         on { valueClass } doReturn Number::class.java
     }
     private val executor = mock<ExecutorService>()
-    private val consumeLifeCycle = mock<Lifecycle>()
+    private val consumeLifeCycle = mock<Consumption>()
     private val topicService = mock<TopicService> {
         on { subscribe(any()) } doReturn consumeLifeCycle
     }
