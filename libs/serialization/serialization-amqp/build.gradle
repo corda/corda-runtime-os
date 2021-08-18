@@ -1,0 +1,50 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'biz.aQute.bnd.builder'
+}
+
+description 'Corda AMQP serialization library'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-application"
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-crypto"
+    implementation "net.corda:corda-class-info:$cordaVersion"
+    implementation "net.corda:corda-packaging:$cordaVersion"
+    implementation "net.corda:corda-sandbox:$cordaVersion"
+    implementation "net.corda:corda-serialization"
+    implementation project(":libs:utilities")
+    implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
+    implementation project(":libs:serialization:serialization-encoding")
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation "com.google.guava:guava:$guavaVersion"
+    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    implementation "org.apache.qpid:proton-j:$protonjVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.osgi:osgi.core:$osgiVersion"
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = 'corda-serialization-amqp'
+    bnd """\
+Bundle-Name: Corda AMQP serialization library
+Bundle-SymbolicName: \${project.group}.serialization.amqp
+Import-Package:\
+   sun.net.www.protocol.jar;resolution:=optional,\
+   *
+"""
+}
