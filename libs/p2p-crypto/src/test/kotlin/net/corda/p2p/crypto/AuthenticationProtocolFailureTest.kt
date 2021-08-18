@@ -95,7 +95,7 @@ class AuthenticationProtocolFailureTest {
     }
 
     @Test
-    fun `session authentication fails if the initiator's uses the wrong public key in verify`() {
+    fun `session authentication fails if key provided at step 3 does not match the one given by initiator`() {
         val wrongPublicKey = keyPairGenerator.generateKeyPair().public
 
         // Step 1: initiator sending hello message to responder.
