@@ -4,7 +4,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.properties.InMemoryConfiguration
 import net.corda.messaging.emulation.topic.model.ConsumerDefinitions
 import net.corda.messaging.emulation.topic.model.Consumption
-import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.model.Topics
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Component
@@ -20,6 +19,10 @@ class TopicServiceImpl(
             .also {
                 it.start()
             }
+    }
+
+    override fun getLatestOffsets(topicName: String): Map<Int, Long> {
+        return topics.getLatestOffsets(topicName)
     }
 
     override fun addRecords(records: List<Record<*, *>>) {
@@ -48,9 +51,5 @@ class TopicServiceImpl(
                 }
             }
         }
-    }
-
-    override fun handleAllRecords(topicName: String, handler: (Sequence<RecordMetadata>) -> Unit) {
-        topics.getTopic(topicName).handleAllRecords(handler)
     }
 }

@@ -1,10 +1,10 @@
 package net.corda.messaging.emulation.subscription.compacted
 
 import net.corda.messaging.api.processor.CompactedProcessor
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.Consumption
+import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -20,7 +20,6 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
 ) : CompactedSubscription<K, V> {
 
     private val knownValues = ConcurrentHashMap<K, V>()
-    private val snapshotsLock = ReentrantLock()
 
     companion object {
         private val logger: Logger = contextLogger()
@@ -30,37 +29,48 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
 
     internal val groupName = subscriptionConfig.groupName
 
+    private val latestOffsets = topicService.getLatestOffsets(topicName)
+    private val waitingForPartitions = ConcurrentHashMap.newKeySet<Int>().also {
+        it.addAll(
+            latestOffsets
+                .filterValues {
+                    it >= 0
+                }
+                .keys
+        )
+    }
+
     private var currentConsumption: Consumption? = null
     private val startStopLock = ReentrantLock()
 
-    fun updateSnapshots() {
-        snapshotsLock.withLock {
-            knownValues.clear()
-            topicService.handleAllRecords(topicName) { records ->
-                records.mapNotNull {
-                    it.castToType(processor.keyClass, processor.valueClass)
-                }.groupBy({ it.key }, { it.value })
-                    .mapValues { it.value.last() }
-                    .onEach { (key, value) ->
-                        if (value != null) {
-                            knownValues[key] = value
-                        }
-                    }
-            }
-            processor.onSnapshot(knownValues)
+    fun onNewRecord(recordMetadata: RecordMetadata) {
+        val removed = if ((latestOffsets[recordMetadata.partition] ?: 0) <= recordMetadata.offset) {
+            waitingForPartitions.remove(recordMetadata.partition)
+        } else {
+            false
         }
-    }
 
-    fun onNewRecord(record: Record<K, V>) {
-        val oldValue = snapshotsLock.withLock {
+        val record = recordMetadata.castToType(processor.keyClass, processor.valueClass)
+        val oldValue = if (record != null) {
             val value = record.value
             if (value == null) {
                 knownValues.remove(record.key)
             } else {
                 knownValues.put(record.key, value)
             }
+        } else {
+            null
         }
-        processor.onNext(record, oldValue, knownValues)
+
+        if (waitingForPartitions.isEmpty()) {
+            if (removed) {
+                processor.onSnapshot(knownValues.toMap())
+            } else {
+                if (record != null) {
+                    processor.onNext(record, oldValue, knownValues)
+                }
+            }
+        }
     }
 
     override fun stop() {
@@ -76,6 +86,9 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
         startStopLock.withLock {
             if (currentConsumption == null) {
                 val consumer = CompactedConsumer(this)
+                if(waitingForPartitions.isEmpty()) {
+                    processor.onSnapshot(knownValues)
+                }
                 currentConsumption = topicService.subscribe(consumer)
             }
         }
@@ -85,8 +98,9 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
         get() = currentConsumption?.isRunning ?: false
 
     override fun getValue(key: K): V? {
-        return snapshotsLock.withLock {
-            knownValues[key]
+        if (waitingForPartitions.isNotEmpty()) {
+            throw IllegalStateException("Snapshot is not ready")
         }
+        return knownValues[key]
     }
 }

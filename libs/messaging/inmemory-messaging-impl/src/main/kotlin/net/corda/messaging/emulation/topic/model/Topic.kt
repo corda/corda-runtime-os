@@ -82,9 +82,9 @@ internal class Topic(
         }
     }
 
-    fun handleAllRecords(handler: (Sequence<RecordMetadata>) -> Unit) {
-        partitions.forEach {
-            it.handleAllRecords(handler)
+    fun getLatestOffsets(): Map<Int, Long> {
+        return partitions.associate {
+            it.partitionId to it.latestOffset() - 1
         }
     }
 }

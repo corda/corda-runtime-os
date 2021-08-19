@@ -8,10 +8,14 @@ import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -23,14 +27,14 @@ class InMemoryCompactedSubscriptionTest {
         on { keyClass } doReturn String::class.java
         on { valueClass } doReturn URL::class.java
     }
-    private val recordsToSend = mutableListOf<RecordMetadata>()
     private val consumption = mock<Consumption>()
     private val topic = mock<TopicService> {
-        on { handleAllRecords(any(), any()) } doAnswer {
-            val handler = it.getArgument<(Sequence<RecordMetadata>) -> Unit>(1)
-            handler(recordsToSend.asSequence())
-        }
         on { subscribe(any()) } doReturn consumption
+        on { getLatestOffsets(any()) } doReturn mapOf(
+            1 to 1,
+            2 to 2,
+            3 to -1
+        )
     }
 
     private val subscription = InMemoryCompactedSubscription(
@@ -38,6 +42,118 @@ class InMemoryCompactedSubscriptionTest {
         processor,
         topic
     )
+
+    @Test
+    fun `getValue throws exception if we are waiting for the snapshot`() {
+        assertThrows<IllegalStateException> {
+            subscription.getValue("hello")
+        }
+    }
+
+    @Test
+    fun `getValue returns value if snapshots are ready`() {
+        subscription.onNewRecord(RecordMetadata(1, Record("topic", "hello", URL("http://www.r3.com/")), 1))
+        subscription.onNewRecord(RecordMetadata(2, Record("topic", "helloTwo", URL("http://www.corda.net/")), 2))
+
+        val value = subscription.getValue("hello")
+
+        assertThat(value).isEqualTo(URL("http://www.r3.com/"))
+    }
+
+    @Test
+    fun `onNewRecord will remove the value from the snapshot if it's null`() {
+        subscription.onNewRecord(RecordMetadata(1, Record("topic", "hello", URL("http://www.r3.com/")), 1))
+        subscription.onNewRecord(RecordMetadata(2, Record("topic", "helloTwo", URL("http://www.corda.net/")), 2))
+        val snapshots = argumentCaptor<Map<String, URL>>()
+        doNothing().whenever(processor).onNext(any(), eq(URL("http://www.r3.com/")), snapshots.capture())
+
+        subscription.onNewRecord(RecordMetadata(2, Record("topic", "hello", null), 1))
+
+        assertThat(snapshots.firstValue).hasSize(1)
+    }
+
+    @Test
+    fun `onNewRecord will not invoke onSnapshot if the snapshot is not ready`() {
+        subscription.onNewRecord(RecordMetadata(1, Record("topic", "hello", URL("http://www.r3.com/")), 1))
+
+        verify(processor, never()).onSnapshot(any())
+    }
+
+    @Test
+    fun `onNewRecord will invoke onSnapshot if the snapshot is ready`() {
+        subscription.onNewRecord(RecordMetadata(1, Record("topic", "hello", URL("http://www.r3.com/")), 1))
+        subscription.onNewRecord(RecordMetadata(2, Record("topic", "helloTwo", URL("http://www.corda.net/")), 2))
+
+        verify(processor, times(1)).onSnapshot(
+            mapOf(
+                "hello" to URL("http://www.r3.com/"),
+                "helloTwo" to URL("http://www.corda.net/")
+            )
+        )
+    }
+
+    @Test
+    fun `onNewRecord will invoke onNext if the snapshot is ready`() {
+        subscription.onNewRecord(RecordMetadata(1, Record("topic", "hello", URL("http://www.r3.com/")), 1))
+        subscription.onNewRecord(RecordMetadata(2, Record("topic", "helloTwo", URL("http://www.corda.net/")), 2))
+
+        subscription.onNewRecord(RecordMetadata(4, Record("topic", "three", URL("http://corda.net/")), 3))
+
+        verify(processor, times(1)).onNext(
+            Record("topic", "three", URL("http://corda.net/")),
+            null,
+            mapOf(
+                "hello" to URL("http://www.r3.com/"),
+                "helloTwo" to URL("http://www.corda.net/"),
+                "three" to URL("http://corda.net/")
+            )
+        )
+    }
+
+    @Test
+    fun `onNewRecord will not invoke onNext if the type is wrong`() {
+        subscription.onNewRecord(RecordMetadata(1, Record("topic", "hello", URL("http://www.r3.com/")), 1))
+        subscription.onNewRecord(RecordMetadata(2, Record("topic", "helloTwo", URL("http://www.corda.net/")), 2))
+
+        subscription.onNewRecord(RecordMetadata(4, Record("topic", "three", 5), 3))
+
+        verify(processor, never()).onNext(any(), any(), any())
+    }
+
+    @Test
+    fun `onNewRecord will not invoke onSnapshot while waiting for the snapshot`() {
+        subscription.onNewRecord(RecordMetadata(0, Record("topic", "hello", URL("http://www.r3.com/")), 1))
+        subscription.onNewRecord(RecordMetadata(1, Record("topic", "hello", URL("http://www.r3.com/")), 1))
+        subscription.onNewRecord(RecordMetadata(0, Record("topic", "helloTwo", URL("http://www.corda.net/")), 2))
+
+        subscription.onNewRecord(RecordMetadata(1, Record("topic", "helloTwo", URL("http://www.corda.net/")), 2))
+
+        verify(processor, never()).onSnapshot(any())
+    }
+
+    @Test
+    fun `onNewRecord will invoke onSnapshot the record has the wrong type`() {
+        subscription.onNewRecord(RecordMetadata(1, Record("topic", "hello", URL("http://www.r3.com/")), 1))
+        subscription.onNewRecord(RecordMetadata(2, Record("topic", 12, URL("http://www.corda.net/")), 2))
+
+        verify(processor, times(1)).onSnapshot(
+            mapOf(
+                "hello" to URL("http://www.r3.com/"),
+            )
+        )
+    }
+
+    @Test
+    fun `onNewRecord will update the value from the snapshot if it is not null`() {
+        subscription.onNewRecord(RecordMetadata(1, Record("topic", "hello", URL("http://www.r3.com/")), 1))
+        subscription.onNewRecord(RecordMetadata(2, Record("topic", "helloTwo", URL("http://www.corda.net/")), 2))
+        val snapshots = argumentCaptor<Map<String, URL>>()
+        doNothing().whenever(processor).onNext(any(), eq(URL("http://www.r3.com/")), snapshots.capture())
+
+        subscription.onNewRecord(RecordMetadata(2, Record("topic", "hello", URL("http://r3.com/")), 1))
+
+        assertThat(snapshots.firstValue).hasSize(2).containsEntry("hello", URL("http://r3.com/"))
+    }
 
     @Test
     fun `topicName return the correct topicName`() {
@@ -50,195 +166,37 @@ class InMemoryCompactedSubscriptionTest {
     }
 
     @Test
-    fun `updateSnapshots will use the latest snapshot for each key`() {
-        recordsToSend.addAll(
-            listOf(
-                RecordMetadata(
-                    offset = 1,
-                    partition = 2,
-                    record = Record("topic", "key", URL("https://www.r3.com"))
-                ),
-                RecordMetadata(
-                    offset = 2,
-                    partition = 2,
-                    record = Record("topic", "key", URL("http://www.corda.net"))
-                ),
-                RecordMetadata(
-                    offset = 3,
-                    partition = 2,
-                    record = Record("topic", "key", URL("https://www.corda.net"))
-                ),
-            )
-        )
-
-        subscription.updateSnapshots()
-
-        assertThat(subscription.getValue("key").toString()).isEqualTo("https://www.corda.net")
-    }
-
-    @Test
-    fun `updateSnapshots will remove invalid values`() {
-        recordsToSend.add(
-            RecordMetadata(
-                offset = 3,
-                partition = 2,
-                record = Record("topic", "key", "string")
-            ),
-        )
-
-        subscription.updateSnapshots()
-
-        assertThat(subscription.getValue("key")).isNull()
-    }
-
-    @Test
-    fun `updateSnapshots will remove invalid keys`() {
-        recordsToSend.add(
-            RecordMetadata(
-                offset = 3,
-                partition = 2,
-                record = Record("topic", 12, URL("https://www.corda.net"))
-            ),
-        )
-
-        subscription.updateSnapshots()
-
-        assertThat(subscription.getValue("12")).isNull()
-    }
-
-    @Test
-    fun `updateSnapshots will clear the data the second time`() {
-        recordsToSend.addAll(
-            listOf(
-                RecordMetadata(
-                    offset = 1,
-                    partition = 2,
-                    record = Record("topic", "key", URL("https://www.r3.com"))
-                ),
-                RecordMetadata(
-                    offset = 2,
-                    partition = 2,
-                    record = Record("topic", "key", URL("http://www.corda.net"))
-                ),
-                RecordMetadata(
-                    offset = 3,
-                    partition = 2,
-                    record = Record("topic", "key", URL("https://www.corda.net"))
-                ),
-            )
-        )
-        subscription.updateSnapshots()
-        recordsToSend.clear()
-
-        subscription.updateSnapshots()
-
-        assertThat(subscription.getValue("key")).isNull()
-    }
-
-    @Test
-    fun `onNewRecord will send the correct data to the processor`() {
-        recordsToSend.addAll(
-            listOf(
-                RecordMetadata(
-                    offset = 3,
-                    partition = 2,
-                    record = Record("topic", "key1", URL("https://www.corda.net"))
-                ),
-                RecordMetadata(
-                    offset = 4,
-                    partition = 10,
-                    record = Record("topic", "key2", URL("https://www.r3.com"))
-                ),
-            )
-        )
-        subscription.updateSnapshots()
-
-        subscription.onNewRecord(Record("topic", "key1", URL("https://github.com/corda/")))
-
-        verify(processor).onNext(
-            Record(
-                "topic",
-                "key1",
-                URL("https://github.com/corda/")
-            ),
-            URL("https://www.corda.net"),
-            mapOf(
-                "key1" to URL("https://github.com/corda/"),
-                "key2" to URL("https://www.r3.com")
-            )
-        )
-    }
-
-    @Test
-    fun `onNewRecord will remove the data if value is null`() {
-        recordsToSend.addAll(
-            listOf(
-                RecordMetadata(
-                    offset = 3,
-                    partition = 2,
-                    record = Record("topic", "key1", URL("https://www.corda.net"))
-                ),
-                RecordMetadata(
-                    offset = 4,
-                    partition = 10,
-                    record = Record("topic", "key2", URL("https://www.r3.com"))
-                ),
-            )
-        )
-        subscription.updateSnapshots()
-
-        subscription.onNewRecord(Record("topic", "key1", null))
-
-        verify(processor).onNext(
-            Record(
-                "topic",
-                "key1",
-                null
-            ),
-            URL("https://www.corda.net"),
-            mapOf(
-                "key2" to URL("https://www.r3.com")
-            )
-        )
-    }
-
-    @Test
-    fun `updateSnapshots will send the snapshots`() {
-        recordsToSend.addAll(
-            listOf(
-                RecordMetadata(
-                    offset = 3,
-                    partition = 2,
-                    record = Record("topic", "key1", URL("https://www.corda.net"))
-                ),
-                RecordMetadata(
-                    offset = 4,
-                    partition = 10,
-                    record = Record("topic", "key2", URL("https://www.r3.com"))
-                ),
-                RecordMetadata(
-                    offset = 4,
-                    partition = 10,
-                    record = Record("topic", "key3", null)
-                ),
-            )
-        )
-
-        subscription.updateSnapshots()
-
-        verify(processor).onSnapshot(
-            mapOf(
-                "key1" to URL("https://www.corda.net"),
-                "key2" to URL("https://www.r3.com")
-            )
-        )
-    }
-
-    @Test
     fun `start will subscribe a consumer`() {
         subscription.start()
 
         verify(topic).subscribe(any<CompactedConsumer<String, URL>>())
+    }
+
+    @Test
+    fun `start will not send snapshot if we don't have all the data`() {
+        subscription.start()
+
+        verify(processor, never()).onSnapshot(any())
+    }
+
+    @Test
+    fun `start will send snapshot if we have all the data`() {
+        val topic = mock<TopicService> {
+            on { subscribe(any()) } doReturn consumption
+            on { getLatestOffsets(any()) } doReturn mapOf(
+                1 to -1,
+                2 to -1,
+                3 to -1
+            )
+        }
+        val subscription = InMemoryCompactedSubscription(
+            subscriptionConfig,
+            processor,
+            topic
+        )
+        subscription.start()
+
+        verify(processor, times(1)).onSnapshot(emptyMap())
     }
 
     @Test

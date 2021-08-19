@@ -48,10 +48,4 @@ internal class Partition(
     fun latestOffset(): Long {
         return currentOffset.get()
     }
-
-    fun handleAllRecords(handler: (Sequence<RecordMetadata>) -> Unit) {
-        lock.read {
-            handler(records.asSequence())
-        }
-    }
 }

@@ -3,7 +3,6 @@ package net.corda.messaging.emulation.topic.service
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.topic.model.ConsumerDefinitions
 import net.corda.messaging.emulation.topic.model.Consumption
-import net.corda.messaging.emulation.topic.model.RecordMetadata
 
 /**
  * Service to interact with the kafka topic emulator
@@ -28,5 +27,10 @@ interface TopicService {
      */
     fun subscribe(consumerDefinitions: ConsumerDefinitions): Consumption
 
-    fun handleAllRecords(topicName: String, handler: (Sequence<RecordMetadata>) -> Unit)
+    /**
+     * Get the latest added offsets of a specific [topicName].
+     *
+     * Return a map from a partition ID to the offset of that partition (-1 if no record was added).
+     */
+    fun getLatestOffsets(topicName: String): Map<Int, Long>
 }

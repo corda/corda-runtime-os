@@ -68,9 +68,8 @@ internal class ConsumerGroup(
 
     private fun repartition() {
         lock.write {
-            val mapper = consumers.keys.first().partitionStrategy.getPartitionMapper(consumers.size)
             val reassignedConsumers = partitions.withIndex().groupBy({
-                mapper(it.index)
+                it.index % consumers.size
             }, {
                 it.value
             }).values

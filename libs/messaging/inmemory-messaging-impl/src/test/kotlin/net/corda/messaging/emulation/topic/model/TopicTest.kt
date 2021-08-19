@@ -224,12 +224,17 @@ class TopicTest {
 
     @Test
     fun `handleAllRecords send the request to the partitions`() {
-        mockConstruction(Partition::class.java).use { partitions ->
+        mockConstruction(
+            Partition::class.java
+        ) { mock, _ ->
+            whenever(mock.partitionId).thenReturn(10)
+            whenever(mock.latestOffset()).thenReturn(43L)
+        }.use {
             val topic = Topic("topic", config)
 
-            topic.handleAllRecords(mock())
+            val offsets = topic.getLatestOffsets()
 
-            verify(partitions.constructed()[1]).handleAllRecords(any())
+            assertThat(offsets).isEqualTo(mapOf(10 to 42L))
         }
     }
 }

@@ -5,7 +5,6 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
-import net.corda.messaging.emulation.topic.model.PartitionStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -79,10 +78,5 @@ class EventLogConsumerTest {
     @Test
     fun `partitionAssignmentListener is correct`() {
         assertThat(consumer.partitionAssignmentListener).isEqualTo(subscription.partitionAssignmentListener)
-    }
-
-    @Test
-    fun `partitionStrategy is correct`() {
-        assertThat(consumer.partitionStrategy).isEqualTo(PartitionStrategy.modulo)
     }
 }

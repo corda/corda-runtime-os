@@ -37,4 +37,8 @@ class Topics(
                 config.subscriptionConfiguration(consumerDefinitions.groupName)
             )
     }
+
+    fun getLatestOffsets(topicName: String): Map<Int, Long> {
+        return getTopic(topicName).getLatestOffsets()
+    }
 }

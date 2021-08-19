@@ -2,14 +2,13 @@ package net.corda.messaging.emulation.subscription.compacted
 
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
-import net.corda.messaging.emulation.topic.model.PartitionStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import java.net.URI
 
@@ -27,7 +26,7 @@ class CompactedConsumerTest {
 
     @Test
     fun `groupName returns the group name`() {
-        assertThat(consumer.groupName).isEqualTo("group")
+        assertThat(consumer.groupName).startsWith("group")
     }
 
     @Test
@@ -36,29 +35,13 @@ class CompactedConsumerTest {
     }
 
     @Test
-    fun `offsetStrategy returns the latest`() {
-        assertThat(consumer.offsetStrategy).isEqualTo(OffsetStrategy.LATEST)
+    fun `offsetStrategy returns the earliest`() {
+        assertThat(consumer.offsetStrategy).isEqualTo(OffsetStrategy.EARLIEST)
     }
 
     @Test
-    fun `partition assign will not invoke snapshot updates if list is empty`() {
-        consumer.partitionAssignmentListener.onPartitionsAssigned(emptyList())
-
-        verify(subscription, never()).updateSnapshots()
-    }
-
-    @Test
-    fun `partition assign will invoke snapshot updates if list is not empty`() {
-        consumer.partitionAssignmentListener.onPartitionsAssigned(listOf(mock()))
-
-        verify(subscription).updateSnapshots()
-    }
-
-    @Test
-    fun `partition unassigned will not invoke snapshot updates`() {
-        consumer.partitionAssignmentListener.onPartitionsUnassigned(emptyList())
-
-        verify(subscription, never()).updateSnapshots()
+    fun `partition assigngnment listener will be empty`() {
+        assertThat(consumer.partitionAssignmentListener as PartitionAssignmentListener?).isNull()
     }
 
     @Test
@@ -88,16 +71,10 @@ class CompactedConsumerTest {
 
         consumer.handleRecords(records)
 
-        verify(subscription).onNewRecord(
-            Record("topic", "key3", URI.create("https://www.r3.com/"))
-        )
-        verify(subscription).onNewRecord(
-            Record("topic", "key4", URI.create("https://www.corda.net/"))
-        )
-    }
-
-    @Test
-    fun `partitionStrategy is correct`() {
-        assertThat(consumer.partitionStrategy).isEqualTo(PartitionStrategy.allInFirst)
+        records.forEach {
+            verify(subscription).onNewRecord(
+                it
+            )
+        }
     }
 }

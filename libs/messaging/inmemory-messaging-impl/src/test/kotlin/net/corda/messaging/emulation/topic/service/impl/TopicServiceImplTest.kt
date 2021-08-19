@@ -6,12 +6,14 @@ import net.corda.messaging.emulation.topic.model.ConsumptionThread
 import net.corda.messaging.emulation.topic.model.Topic
 import net.corda.messaging.emulation.topic.model.Topics
 import net.corda.messaging.emulation.topic.model.PartitionsWriteLock
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class TopicServiceImplTest {
     private val thread = mock<ConsumptionThread>()
@@ -87,9 +89,11 @@ class TopicServiceImplTest {
     }
 
     @Test
-    fun `handleAllRecords send the handler to the correct topic`() {
-        impl.handleAllRecords("topic.1", mock())
+    fun `getLatestOffsets send the handler to the correct topic`() {
+        whenever(topics.getLatestOffsets(any())).doReturn(mapOf(1 to 3))
 
-        verify(topicOne).handleAllRecords(any())
+        val offsets = impl.getLatestOffsets("topic.1")
+
+        assertThat(offsets).isEqualTo(mapOf(1 to 3L))
     }
 }

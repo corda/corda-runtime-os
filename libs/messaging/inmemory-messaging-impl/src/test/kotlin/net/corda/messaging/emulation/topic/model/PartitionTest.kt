@@ -85,22 +85,4 @@ class PartitionTest {
 
         assertThat(partition.latestOffset()).isEqualTo(31L)
     }
-
-    @Test
-    fun `handleAllRecords will send all the records`() {
-        partition.lock.write {
-            (1..4).map {
-                Record("topic", it, it + 1)
-            }.forEach {
-                partition.addRecord(it)
-            }
-        }
-        val records = mutableListOf<RecordMetadata>()
-
-        partition.handleAllRecords {
-            records.addAll(it.toList())
-        }
-
-        assertThat(records).hasSize(4)
-    }
 }
