@@ -9,7 +9,7 @@
     },
     {
       "name": "key",
-      "type": "bytes"
+      "type": "string"
     }
   ]
 }
