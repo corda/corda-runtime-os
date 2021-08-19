@@ -35,6 +35,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.bouncycastle.asn1.x500.X500Name
+import org.junit.jupiter.api.Timeout
 
 class HttpTest : TestBase() {
 
@@ -56,6 +57,7 @@ class HttpTest : TestBase() {
     private val serverAddress = URI.create("http://alice.net:10000")
 
     @Test
+    @Timeout(30)
     fun `simple client POST request`() {
         HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
             server.addListener(object : HttpEventListener {
@@ -78,13 +80,14 @@ class HttpTest : TestBase() {
                 client.addListener(clientListener)
                 client.start()
                 client.write(clientMessageContent.toByteArray(Charsets.UTF_8))
-                clientReceivedResponses.await(5, TimeUnit.SECONDS)
+                clientReceivedResponses.await()
                 assertTrue(responseReceived)
             }
         }
     }
 
     @Test
+    @Timeout(30)
     fun `multiple clients multiple requests`() {
         val requestNo = 1000
         val threadNo = 2
@@ -142,6 +145,7 @@ class HttpTest : TestBase() {
     }
 
     @Test
+    @Timeout(30)
     fun `large payload`() {
         val hugePayload = FileInputStream(javaClass.classLoader.getResource("10mb.txt")!!.file).readAllBytes()
 
@@ -186,7 +190,7 @@ class HttpTest : TestBase() {
 
                 client.start()
                 client.write(ByteArray(0))
-                assert(connectedLatch.await(1, TimeUnit.SECONDS))
+                assert(connectedLatch.await(30, TimeUnit.SECONDS))
             }
         }
     }
@@ -205,7 +209,7 @@ class HttpTest : TestBase() {
 
                 client.start()
                 client.write(ByteArray(0))
-                assert(connectedLatch.await(1, TimeUnit.SECONDS))
+                assert(connectedLatch.await(30, TimeUnit.SECONDS))
             }
         }
     }
