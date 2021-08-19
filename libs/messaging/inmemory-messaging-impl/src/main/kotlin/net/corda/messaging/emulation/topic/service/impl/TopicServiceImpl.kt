@@ -23,25 +23,29 @@ class TopicServiceImpl(
     }
 
     override fun addRecords(records: List<Record<*, *>>) {
-        records.groupBy { record ->
-            record.topic
-        }.mapKeys {
-            topics.getTopic(it.key)
-        }.forEach { (topic, records) ->
-            records.forEach {
-                topic.addRecord(it)
+        topics.getWriteLock(records).write {
+            records.groupBy { record ->
+                record.topic
+            }.mapKeys {
+                topics.getTopic(it.key)
+            }.forEach { (topic, records) ->
+                records.forEach {
+                    topic.addRecord(it)
+                }
             }
         }
     }
 
     override fun addRecordsToPartition(records: List<Record<*, *>>, partition: Int) {
-        records.groupBy { record ->
-            record.topic
-        }.mapKeys {
-            topics.getTopic(it.key)
-        }.forEach { (topic, records) ->
-            records.forEach {
-                topic.addRecordToPartition(it, partition)
+        topics.getWriteLock(records, partition).write {
+            records.groupBy { record ->
+                record.topic
+            }.mapKeys {
+                topics.getTopic(it.key)
+            }.forEach { (topic, records) ->
+                records.forEach {
+                    topic.addRecordToPartition(it, partition)
+                }
             }
         }
     }

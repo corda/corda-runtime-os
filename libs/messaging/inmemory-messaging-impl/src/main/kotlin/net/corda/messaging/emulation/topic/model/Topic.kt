@@ -12,7 +12,7 @@ import kotlin.math.abs
  * Topics have locks which must be obtained to read or write.
  * Consumers subscribing and producers writing to topics automatically create topics if they do not exist.
  */
-class Topic(
+internal class Topic(
     private val topicName: String,
     private val topicConfiguration: TopicConfiguration,
 ) {
@@ -40,6 +40,18 @@ class Topic(
         }.createConsumption(consumerDefinitions)
     }
 
+    fun getPartition(record: Record<*, *>): Partition {
+        val partitionNumber = abs(record.key.hashCode() % partitions.size)
+        return partitions[partitionNumber]
+    }
+
+    fun getPartition(partitionId: Int): Partition {
+        return partitions.firstOrNull {
+            it.partitionId == partitionId
+        }
+            ?: throw IllegalStateException("Could not find partition id $partitionId, only know of ${partitions.map { it.partitionId }}!")
+    }
+
     /**
      * Unsubscribe the [consumerDefinitions] to this [topicName]
      */
@@ -52,9 +64,7 @@ class Topic(
      * If [record] max size is reached, delete the oldest record
      */
     fun addRecord(record: Record<*, *>) {
-        val partitionNumber = abs(record.key.hashCode() % partitions.size)
-        val partition = partitions[partitionNumber]
-        partition.addRecord(record)
+        getPartition(record).addRecord(record)
         consumerGroups.values.forEach {
             it.wakeUp()
         }
@@ -65,11 +75,8 @@ class Topic(
      * If [record] max size is reached, delete the oldest record
      */
     fun addRecordToPartition(record: Record<*, *>, partitionId: Int) {
-        val partition = partitions.firstOrNull {
-            it.partitionId == partitionId
-        }
-            ?: throw IllegalStateException("Could not find partition id $partitionId, only know of ${partitions.map { it.partitionId }}!")
-        partition.addRecord(record)
+        getPartition(partitionId)
+            .addRecord(record)
         consumerGroups.values.forEach {
             it.wakeUp()
         }

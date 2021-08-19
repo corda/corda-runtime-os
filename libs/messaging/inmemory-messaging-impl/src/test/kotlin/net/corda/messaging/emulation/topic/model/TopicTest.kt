@@ -14,6 +14,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Duration
+import kotlin.concurrent.write
 
 class TopicTest {
     private val config = TopicConfiguration(5, 10)
@@ -118,7 +119,9 @@ class TopicTest {
             topic.createConsumption(consumerDefinitions, subscriptionConfig)
             val record = Record("topic", 1004, 3)
 
-            topic.addRecord(record)
+            topic.getPartition(record).lock.write {
+                topic.addRecord(record)
+            }
 
             verify(group.constructed().first()).wakeUp()
         }
@@ -183,9 +186,39 @@ class TopicTest {
             topic.createConsumption(consumerDefinitions, subscriptionConfig)
             val record = Record("topic", 1004, 3)
 
-            topic.addRecordToPartition(record, 1)
+            topic.getPartition(1).lock.write {
+                topic.addRecordToPartition(record, 1)
+            }
 
             verify(group.constructed().first()).wakeUp()
+        }
+    }
+
+    @Test
+    fun `getPartition will find the correct partition for record`() {
+        val topic = Topic("topic", config)
+        val record = Record("topic", 1005, 3)
+
+        val partition = topic.getPartition(record)
+
+        assertThat(partition.partitionId).isEqualTo(1)
+    }
+
+    @Test
+    fun `getPartition will find the correct partition for partition ID`() {
+        val topic = Topic("topic", config)
+
+        val partition = topic.getPartition(2)
+
+        assertThat(partition.partitionId).isEqualTo(2)
+    }
+
+    @Test
+    fun `getPartition will throw an exception for invalid ID`() {
+        val topic = Topic("topic", config)
+
+        assertThrows<IllegalStateException> {
+            topic.getPartition(20)
         }
     }
 

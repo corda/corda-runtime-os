@@ -1,10 +1,12 @@
 package net.corda.messaging.emulation.topic.model
 
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.properties.InMemoryConfiguration
 import net.corda.messaging.emulation.properties.SubscriptionConfiguration
 import net.corda.messaging.emulation.properties.TopicConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -41,7 +43,7 @@ class TopicsTest {
     }
 
     @Test
-    fun `createConsumerThread return valid thread`() {
+    fun `createConsumption return valid thread`() {
         val consumerDefinitions = mock<ConsumerDefinitions> {
             on { groupName } doReturn "group"
             on { topicName } doReturn "topic"
@@ -50,5 +52,41 @@ class TopicsTest {
         val thread = topics.createConsumption(consumerDefinitions)
 
         assertThat(thread).isNotNull
+    }
+
+    @Test
+    fun `getWriteLock create the correct lock`() {
+        val records = (1..4).flatMap { topicNumber ->
+            (1..3).map { key ->
+                Record("topic$topicNumber", key, "value")
+            }
+        }
+        Mockito.mockConstruction(PartitionsWriteLock::class.java) { _, context ->
+            val partitions = context.arguments()[0] as Collection<Any?>
+            assertThat(partitions.filterIsInstance<Partition>().map { it.topicName })
+                .hasSize(records.size)
+                .contains("topic1", "topic2", "topic3", "topic4")
+        }.use {
+
+            topics.getWriteLock(records)
+        }
+    }
+
+    @Test
+    fun `getWriteLock with partition IDcreate the correct lock `() {
+        val records = (1..4).flatMap { topicNumber ->
+            (1..3).map { key ->
+                Record("topic$topicNumber", key, "value")
+            }
+        }
+        Mockito.mockConstruction(PartitionsWriteLock::class.java) { _, context ->
+            val partitions = context.arguments()[0] as Collection<Any?>
+            assertThat(partitions.filterIsInstance<Partition>().map { it.topicName })
+                .hasSize(records.size)
+                .contains("topic1", "topic2", "topic3", "topic4")
+        }.use {
+
+            topics.getWriteLock(records, 1)
+        }
     }
 }

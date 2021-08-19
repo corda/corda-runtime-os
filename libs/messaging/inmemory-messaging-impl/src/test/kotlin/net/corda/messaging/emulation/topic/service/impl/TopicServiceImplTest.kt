@@ -5,8 +5,10 @@ import net.corda.messaging.emulation.properties.InMemoryConfiguration
 import net.corda.messaging.emulation.topic.model.ConsumptionThread
 import net.corda.messaging.emulation.topic.model.Topic
 import net.corda.messaging.emulation.topic.model.Topics
+import net.corda.messaging.emulation.topic.model.PartitionsWriteLock
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -16,10 +18,18 @@ class TopicServiceImplTest {
     private val config = mock<InMemoryConfiguration>()
     private val topicOne = mock<Topic>()
     private val topicTwo = mock<Topic>()
+    private val writeLock = mock<PartitionsWriteLock> {
+        on { write(any()) } doAnswer {
+            val function = it.getArgument(0) as () -> Unit
+            function()
+        }
+    }
     private val topics = mock<Topics> {
         on { createConsumption(any()) } doReturn thread
         on { getTopic("topic.1") } doReturn topicOne
         on { getTopic("topic.2") } doReturn topicTwo
+        on { getWriteLock(any()) } doReturn writeLock
+        on { getWriteLock(any(), any()) } doReturn writeLock
     }
     private val impl = TopicServiceImpl(config, topics)
 
@@ -41,6 +51,26 @@ class TopicServiceImplTest {
         verify(topicOne).addRecord(Record("topic.1", 4, 7))
         verify(topicTwo).addRecord(Record("topic.2", 3, 6))
         verify(topicTwo).addRecord(Record("topic.2", 5, 8))
+    }
+
+    @Test
+    fun `addRecords will lock the partitions`() {
+        val records = (1..10).map {
+            Record("topic.${it % 2 + 1}", it, it + 3)
+        }
+        impl.addRecords(records)
+
+        verify(writeLock).write(any())
+    }
+
+    @Test
+    fun `addRecordsToPartition will lock the partitions`() {
+        val records = (1..10).map {
+            Record("topic.${it % 2 + 1}", it, it + 3)
+        }
+        impl.addRecordsToPartition(records, 1)
+
+        verify(writeLock).write(any())
     }
 
     @Test

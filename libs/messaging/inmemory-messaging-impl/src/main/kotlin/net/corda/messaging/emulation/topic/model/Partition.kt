@@ -7,32 +7,32 @@ import java.util.LinkedList
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
-import kotlin.concurrent.write
 
 internal class Partition(
     val partitionId: Int,
     private val maxSize: Int,
-    private val topicName: String,
+    val topicName: String,
 ) {
     companion object {
         private val logger = contextLogger()
     }
 
-    private val lock = ReentrantReadWriteLock()
+    val lock = ReentrantReadWriteLock()
     private val records = LinkedList<RecordMetadata>()
     private val currentOffset = AtomicLong(0)
 
     fun addRecord(record: Record<*, *>) {
-        lock.write {
-            if (records.size >= maxSize) {
-                val deletedRecord = records.removeFirst()
-                logger.debug {
-                    "Max record count reached for topic $topicName/$partitionId." +
-                        " Deleting oldest record with offset ${deletedRecord.offset}."
-                }
-            }
-            records.add(RecordMetadata(currentOffset.getAndIncrement(), record, partitionId))
+        if (!lock.isWriteLocked) {
+            throw ConcurrentModificationException("The partition should be locked for write from outside")
         }
+        if (records.size >= maxSize) {
+            val deletedRecord = records.removeFirst()
+            logger.debug {
+                "Max record count reached for topic $topicName/$partitionId." +
+                    " Deleting oldest record with offset ${deletedRecord.offset}."
+            }
+        }
+        records.add(RecordMetadata(currentOffset.getAndIncrement(), record, partitionId))
     }
 
     fun getRecordsFrom(fromOffset: Long, pollSize: Int): Collection<RecordMetadata> {
