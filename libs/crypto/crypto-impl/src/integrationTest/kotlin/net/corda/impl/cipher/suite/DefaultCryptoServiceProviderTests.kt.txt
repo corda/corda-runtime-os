@@ -1,0 +1,96 @@
+package net.corda.cipher.suite.internal
+
+import net.corda.internal.crypto.CryptoCategories
+import net.corda.impl.test.MockDatabaseBuilder
+import net.corda.crypto.testkit.CryptoMocks
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.crypto.SignatureVerificationService
+import net.corda.v5.cipher.suite.CryptoService
+import net.corda.v5.cipher.suite.scheme.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.cipher.suite.WrappedPrivateKey
+import net.corda.v5.cipher.suite.config.CryptoServiceConfig
+import net.corda.v5.cipher.suite.config.CryptoServiceConfigInfo
+import net.corda.v5.cipher.suite.scheme.KeyScheme
+import org.hibernate.SessionFactory
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
+import java.util.*
+
+class DefaultCryptoServiceProviderTests {
+    companion object {
+        const val wrappingKeyAlias = "wrapping-key-alias"
+        lateinit var sessionFactory: SessionFactory
+        lateinit var cryptoService: CryptoService
+        lateinit var signatureVerifier: SignatureVerificationService
+        lateinit var defaultKeyScheme: KeyScheme
+        lateinit var schemeMetadata: CipherSchemeMetadata
+
+        @JvmStatic
+        @BeforeAll
+        fun setup() {
+            sessionFactory = MockDatabaseBuilder.resetDatabase()
+            CryptoLibraryFactoryImpl.setup { sessionFactory }
+            schemeMetadata = CipherSchemeMetadataProviderImpl().create()
+            defaultKeyScheme = schemeMetadata.findKeyScheme(EDDSA_ED25519_CODE_NAME)
+            val cryptoServiceFactory = CipherSuiteFactoryImpl(
+                    cryptoServiceProviders = listOf(DefaultCryptoServiceProvider()),
+                    schemeMetadataProviders = listOf(CipherSchemeMetadataProviderImpl()),
+                    verifierProviders = listOf(SignatureVerificationServiceProviderImpl()),
+                    basicHashingServiceProviders = listOf(BasicHashingServiceProviderImpl())
+            )
+            cryptoService = cryptoServiceFactory.createCryptoService(
+                    CryptoServiceConfigInfo(
+                            category = CryptoCategories.LEDGER.toString(),
+                            effectiveSandboxId = "sandbox1",
+                            config = CryptoServiceConfig(
+                                    serviceConfig = mapOf(
+                                            "partition" to "partition-111",
+                                            "passphrase" to "passphrase-111",
+                                            "salt" to "salt-111"
+                                    )
+                            )
+                    )
+            )
+            signatureVerifier = CryptoMocks().signatureVerificationService()
+            cryptoService.createWrappingKey(wrappingKeyAlias, true)
+        }
+
+        @JvmStatic
+        @AfterAll
+        fun cleanup() {
+            CryptoLibraryFactoryImpl.setup(null)
+            sessionFactory.close()
+        }
+    }
+
+    private val testData = "test data".toByteArray()
+
+    @Test
+    @Timeout(30)
+    fun `Test wrapped keys are not affected and usable`() {
+        val wrappedKeyPair = cryptoService.generateWrappedKeyPair(wrappingKeyAlias, defaultKeyScheme)
+        val signature1 = cryptoService.sign(
+                WrappedPrivateKey(
+                        keyMaterial = wrappedKeyPair.keyMaterial,
+                        masterKeyAlias = wrappingKeyAlias,
+                        keyScheme = defaultKeyScheme,
+                        encodingVersion = wrappedKeyPair.encodingVersion
+                ),
+                testData
+        )
+        signatureVerifier.verify(wrappedKeyPair.publicKey, signature1, testData)
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Test keys are not affected and usable`() {
+        val alias = newAlias()
+        val publicKey = cryptoService.generateKeyPair(alias, defaultKeyScheme)
+        val signature = cryptoService.sign(alias, testData, defaultKeyScheme)
+        signatureVerifier.verify(publicKey, signature, testData)
+    }
+
+    private fun newAlias(): String = UUID.randomUUID().toString()
+}

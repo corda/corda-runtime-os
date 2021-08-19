@@ -5,6 +5,7 @@ import com.esotericsoftware.kryo.Registration
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
+import net.corda.kryoserialization.impl.serializationContextKey
 import net.corda.v5.serialization.SerializedBytes
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

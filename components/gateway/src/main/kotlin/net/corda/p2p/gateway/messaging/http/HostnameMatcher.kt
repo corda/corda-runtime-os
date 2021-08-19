@@ -2,15 +2,12 @@ package net.corda.p2p.gateway.messaging.http
 
 import net.corda.p2p.NetworkType
 import org.apache.commons.validator.routines.DomainValidator
-import org.apache.commons.validator.routines.InetAddressValidator
 import org.slf4j.LoggerFactory
 import java.security.KeyStore
 import javax.net.ssl.SNIHostName
 import javax.net.ssl.SNIMatcher
 import javax.net.ssl.SNIServerName
 import javax.net.ssl.StandardConstants
-import java.net.InetAddress
-import java.net.UnknownHostException
 import java.security.cert.X509Certificate
 import org.bouncycastle.asn1.x500.AttributeTypeAndValue
 import org.bouncycastle.asn1.x500.X500Name
@@ -20,9 +17,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HostnameMatcher::class.java)
-
         private const val ALTNAME_DNS = 2
-        private const val ALTNAME_IP = 7
     }
 
     var matchedAlias: String? = null
@@ -49,7 +44,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
                 if (serverNameString == c4SniValue) {
                     return matched(alias, serverName.asciiName)
                 }
-            } else if (match(serverNameString, certificate)){
+            } else if (matchDNS(serverNameString, certificate)){
                 return matched(alias, serverName.asciiName)
             }
         }
@@ -74,50 +69,6 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
         matchedAlias = alias
         matchedServerName = serverName
         return true
-    }
-
-    private fun match(name: String, certificate: X509Certificate): Boolean {
-        return if (InetAddressValidator.getInstance().isValid(name)) {
-            matchIp(name, certificate)
-        } else {
-            matchDNS(name, certificate)
-        }
-    }
-
-    /**
-     * RFC2818: In some cases, the URI is specified as an IP address rather than a
-     * hostname. In this case, the iPAddress subjectAltName must be present
-     * in the certificate and must exactly match the IP in the URI.
-     */
-    @Suppress("NestedBlockDepth")
-    private fun matchIp(hostIP: String, certificate: X509Certificate): Boolean {
-        val names = certificate.subjectAlternativeNames
-        if (names.isEmpty()) {
-            logger.debug("No subject alternative names found in the certificate")
-            return false
-        }
-
-        names.forEach {
-            if (ALTNAME_IP == it[0]) {
-                val altNameAsIP = it[1] as String
-                if (hostIP == altNameAsIP) {
-                    return true
-                } else {
-                    // Perhaps it's IPv6, in which case we need to ensure equality in case of abbreviated or long form
-                    try {
-                        if (InetAddress.getByName(hostIP) == InetAddress.getByName(altNameAsIP)) {
-                            return true
-                        }
-                    } catch (e: UnknownHostException) {
-                        logger.debug(e.message)
-                    } catch (e: SecurityException) {
-                        logger.debug(e.message)
-                    }
-                }
-            }
-        }
-
-        return false
     }
 
     /**

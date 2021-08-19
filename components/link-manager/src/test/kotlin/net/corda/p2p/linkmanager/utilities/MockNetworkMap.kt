@@ -17,7 +17,7 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
     private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
 
     val keys = HashMap<LinkManagerNetworkMap.HoldingIdentity, KeyPair>()
-    private val holdingIdentityForHash = HashMap<Int, LinkManagerNetworkMap.HoldingIdentity>()
+    private val holdingIdentityForGroupIdAndHash = HashMap<String, HashMap<Int, LinkManagerNetworkMap.HoldingIdentity>>()
 
     private fun MessageDigest.hash(data: ByteArray): ByteArray {
         this.reset()
@@ -29,7 +29,10 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
         for (node in nodes) {
             val keyPair = keyPairGenerator.generateKeyPair()
             keys[node] = keyPair
-            holdingIdentityForHash[messageDigest.hash(keyPair.public.encoded).contentHashCode()] = node
+
+            val publicKeyHash = messageDigest.hash(keyPair.public.encoded).contentHashCode()
+            val holdingIdentityForHash = holdingIdentityForGroupIdAndHash.computeIfAbsent(node.groupId) { HashMap() }
+            holdingIdentityForHash[publicKeyHash] = node
         }
     }
 
@@ -59,12 +62,13 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
                 return LinkManagerNetworkMap.MemberInfo(holdingIdentity, publicKey, SessionManagerTest.FAKE_ENDPOINT)
             }
 
-            override fun getMemberInfoFromPublicKeyHash(hash: ByteArray): LinkManagerNetworkMap.MemberInfo? {
+            override fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerNetworkMap.MemberInfo? {
+                val holdingIdentityForHash = holdingIdentityForGroupIdAndHash[groupId] ?: return null
                 val holdingIdentity = holdingIdentityForHash[hash.contentHashCode()] ?: return null
                 return getMemberInfo(holdingIdentity)
             }
 
-            override fun getNetworkType(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.NetworkType? {
+            override fun getNetworkType(groupId: String): LinkManagerNetworkMap.NetworkType? {
                 return LinkManagerNetworkMap.NetworkType.CORDA_5
             }
         }

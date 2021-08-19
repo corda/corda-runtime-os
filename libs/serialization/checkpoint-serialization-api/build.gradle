@@ -1,0 +1,13 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+dependencies {
+    api "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+
+    implementation "net.corda:corda-base:$cordaApiVersion"
+    implementation "net.corda:corda-sandbox:$cordaVersion"
+    implementation "net.corda:corda-serialization:$cordaVersion"
+}
