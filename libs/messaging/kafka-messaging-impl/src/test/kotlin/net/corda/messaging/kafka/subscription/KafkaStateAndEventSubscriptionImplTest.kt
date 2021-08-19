@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -321,7 +322,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         verify(eventConsumer, times(1)).resume(any())
         verify(listener, times(1)).onPartitionSynced(any())
 
-        verify(stateConsumer, times(1)).assignment()
+        verify(stateConsumer, atLeast(1)).assignment()
         verify(listener, times(1)).onPartitionLost(any())
     }
 }

@@ -10,8 +10,7 @@ class TestStateEventProcessorStrings(
     private val onNextLatch: CountDownLatch,
     private val updateState: Boolean,
     private var throwExceptionOnFirst: Boolean = false,
-    private val outputTopic: String? = null,
-    private val delayProcessor: Long? = null,
+    private val outputTopic: String? = null
 ) :
     StateAndEventProcessor<String,
             String,
@@ -26,17 +25,13 @@ class TestStateEventProcessorStrings(
     override fun onNext(state: String?, event: Record<String, String>): Response<String> {
         onNextLatch.countDown()
 
-        if (delayProcessor != null) {
-            Thread.sleep(delayProcessor)
-        }
-
         if (throwExceptionOnFirst) {
             throwExceptionOnFirst = false
             throw CordaMessageAPIIntermittentException("Test exception")
         }
 
         val newState = if (updateState) {
-            event.value ?: "1"
+            event.value
         } else {
             null
         }

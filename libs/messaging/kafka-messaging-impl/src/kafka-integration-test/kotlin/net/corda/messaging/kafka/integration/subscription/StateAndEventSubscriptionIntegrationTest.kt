@@ -138,7 +138,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
 
     @Test
-    fun `create topics, start 1 statevent sub, fail processor on first attempt of first record, publish 2 records and verify`() {
+    fun `create topics, start statevent sub, fail processor on first attempt, publish 2 records, verify listener and outputs`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC3_TEMPLATE)
 
         val onNextLatch1 = CountDownLatch(3)
@@ -151,7 +151,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         stateEventSub1.start()
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getStringRecords(EVENT_TOPIC3, 2, 1)).forEach { it.get() }
 
@@ -168,6 +168,28 @@ class StateAndEventSubscriptionIntegrationTest {
         durableSub.start()
         assertTrue(durableLatch.await(30, TimeUnit.SECONDS))
         durableSub.stop()
+
+        val expectedSyncState = mapOf("key1" to "2")
+        val expectedCommitStates = listOf(mapOf("key1" to "1"), mapOf("key1" to "2"))
+        val syncPartitionLatch = CountDownLatch(1)
+        val losePartitionLatch = CountDownLatch(1)
+        val commitStatesLatch = CountDownLatch(2)
+        val onNextLatch2 = CountDownLatch(2)
+        val stateEventSub2 = subscriptionFactory.createStateAndEventSubscription(
+            SubscriptionConfig("$EVENT_TOPIC3-group-2", EVENT_TOPIC3, 1),
+            TestStateEventProcessorStrings(onNextLatch2, true, false, EVENTSTATE_OUTPUT3),
+            kafkaConfig,
+            TestStateAndEventListenerStrings(expectedCommitStates, commitStatesLatch, expectedSyncState, syncPartitionLatch,
+                expectedSyncState,
+                losePartitionLatch)
+        )
+
+        stateEventSub2.start()
+        assertTrue(onNextLatch2.await(20, TimeUnit.SECONDS))
+        assertTrue(syncPartitionLatch.await(20, TimeUnit.SECONDS))
+        assertTrue(commitStatesLatch.await(20, TimeUnit.SECONDS))
+        stateEventSub2.stop()
+        assertTrue(losePartitionLatch.await(20, TimeUnit.SECONDS))
     }
 
     @Test
