@@ -42,7 +42,7 @@ class InboundMessageHandler(private val server: HttpServer,
     }
 
     private var p2pInPublisher: Publisher? = null
-    private val startStopLock = ReentrantReadWriteLock()
+    private val startStopLock = ReentrantReadWriteLock(true)
 
     private var started = false
     override val isRunning: Boolean
