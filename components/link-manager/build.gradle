@@ -5,14 +5,6 @@ plugins {
 
 description 'LinkManager for p2p communication'
 
-sourceSets {
-    kafkaIntegrationTest {
-        kotlin {
-            srcDirs = [ 'src/kafka-integration-test/kotlin' ]
-        }
-    }
-}
-
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -35,7 +27,6 @@ dependencies {
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
     testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
     testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
