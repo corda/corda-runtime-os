@@ -216,6 +216,11 @@ class InMemoryCompactedSubscriptionTest {
                     partition = 10,
                     record = Record("topic", "key2", URL("https://www.r3.com"))
                 ),
+                RecordMetadata(
+                    offset = 4,
+                    partition = 10,
+                    record = Record("topic", "key3", null)
+                ),
             )
         )
 

@@ -45,6 +45,7 @@ class TopicsTest {
         val consumerDefinitions = mock<ConsumerDefinitions> {
             on { groupName } doReturn "group"
             on { topicName } doReturn "topic"
+            on { partitionStrategy } doReturn PartitionStrategy.modulo
         }
         val thread = topics.createConsumption(consumerDefinitions)
 

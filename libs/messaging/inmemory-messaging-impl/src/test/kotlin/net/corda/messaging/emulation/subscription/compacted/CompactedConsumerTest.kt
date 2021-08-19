@@ -3,6 +3,7 @@ package net.corda.messaging.emulation.subscription.compacted
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
+import net.corda.messaging.emulation.topic.model.PartitionStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -93,5 +94,10 @@ class CompactedConsumerTest {
         verify(subscription).onNewRecord(
             Record("topic", "key4", URI.create("https://www.corda.net/"))
         )
+    }
+
+    @Test
+    fun `partitionStrategy is correct`() {
+        assertThat(consumer.partitionStrategy).isEqualTo(PartitionStrategy.allInFirst)
     }
 }

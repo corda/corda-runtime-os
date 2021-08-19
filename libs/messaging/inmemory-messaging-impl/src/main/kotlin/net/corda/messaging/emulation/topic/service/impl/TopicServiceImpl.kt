@@ -16,9 +16,10 @@ class TopicServiceImpl(
 ) : TopicService {
 
     override fun subscribe(consumerDefinitions: ConsumerDefinitions): Consumption {
-        return topics.createConsumption(consumerDefinitions).also {
-            it.start()
-        }
+        return topics.createConsumption(consumerDefinitions)
+            .also {
+                it.start()
+            }
     }
 
     override fun addRecords(records: List<Record<*, *>>) {

@@ -15,8 +15,10 @@ class Topics(
     }
 
     fun createConsumption(consumerDefinitions: ConsumerDefinitions): Consumption {
-        val topic = getTopic(consumerDefinitions.topicName)
-        val configuration = config.subscriptionConfiguration(consumerDefinitions.groupName)
-        return ConsumptionThread(consumerDefinitions, topic, configuration)
+        return getTopic(consumerDefinitions.topicName)
+            .createConsumption(
+                consumerDefinitions,
+                config.subscriptionConfiguration(consumerDefinitions.groupName)
+            )
     }
 }

@@ -1,24 +1,29 @@
 package net.corda.messaging.emulation.topic.model
 
-import net.corda.messaging.emulation.properties.SubscriptionConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.time.Duration
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 class ConsumerThreadTest {
-    private val consumerDefinitions = mock<ConsumerDefinitions>()
-    private val topic = mock<Topic>()
-    private val config = SubscriptionConfiguration(10, Duration.ofSeconds(1))
     private val thread = mock<Thread>()
     private val runnable = AtomicReference<Runnable>()
+    private val killed = AtomicBoolean(false)
+    private val loop = mock<Runnable>()
 
-    private val consumerThread = ConsumptionThread(consumerDefinitions, topic, config) {
-        runnable.set(it)
-        thread
-    }
+    private val consumerThread = ConsumptionThread(
+        "name",
+        Duration.ofSeconds(1),
+        { killed.set(true) },
+        loop,
+        {
+            runnable.set(it)
+            thread
+        }
+    )
 
     @Test
     fun `start will set the thread to daemon`() {
@@ -28,11 +33,10 @@ class ConsumerThreadTest {
     }
 
     @Test
-    fun `start will subscribe in the thread`() {
+    fun `start will set the thread to run the loop`() {
         consumerThread.start()
-        runnable.get().run()
 
-        verify(topic).subscribe(consumerDefinitions, config)
+        assertThat(runnable).hasValue(loop)
     }
 
     @Test
@@ -43,10 +47,10 @@ class ConsumerThreadTest {
     }
 
     @Test
-    fun `stop will unsubscribe`() {
+    fun `stop will kill the process`() {
         consumerThread.stop()
 
-        verify(topic).unsubscribe(consumerDefinitions)
+        assertThat(killed).isTrue
     }
 
     @Test

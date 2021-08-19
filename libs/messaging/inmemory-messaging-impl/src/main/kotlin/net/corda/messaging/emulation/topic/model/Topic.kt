@@ -31,10 +31,13 @@ class Topic(
     /**
      * Subscribe the [consumerDefinitions] to this [topicName]
      */
-    fun subscribe(consumerDefinitions: ConsumerDefinitions, subscriptionConfig: SubscriptionConfiguration) {
-        consumerGroups.computeIfAbsent(consumerDefinitions.groupName) {
-            ConsumerGroup(consumerDefinitions.topicName, partitions, subscriptionConfig)
-        }.consume(consumerDefinitions)
+    fun createConsumption(
+        consumerDefinitions: ConsumerDefinitions,
+        subscriptionConfiguration: SubscriptionConfiguration
+    ): Consumption {
+        return consumerGroups.computeIfAbsent(consumerDefinitions.groupName) {
+            ConsumerGroup(consumerDefinitions.topicName, partitions, subscriptionConfiguration)
+        }.createConsumption(consumerDefinitions)
     }
 
     /**

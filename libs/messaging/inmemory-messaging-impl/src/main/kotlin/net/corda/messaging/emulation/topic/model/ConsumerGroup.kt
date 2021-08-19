@@ -12,9 +12,6 @@ internal class ConsumerGroup(
     private val partitions: Collection<Partition>,
     internal val subscriptionConfig: SubscriptionConfiguration,
     private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock(),
-    private val loopFactory: (ConsumerDefinitions, ConsumerGroup) -> Runnable = { consumer, group ->
-        ConsumptionLoop(consumer, group)
-    }
 ) {
     private val consumers = ConcurrentHashMap<ConsumerDefinitions, Collection<Partition>>()
     private val commitments = ConcurrentHashMap<Partition, Long>()
@@ -22,17 +19,6 @@ internal class ConsumerGroup(
     private val newData = lock.writeLock().newCondition()
 
     class DuplicateConsumerException : Exception("Can not consume the same consumer twice")
-
-    fun consume(consumerDefinitions: ConsumerDefinitions) {
-        consumers.compute(consumerDefinitions) { _, currentPartitions ->
-            if (currentPartitions != null) {
-                throw DuplicateConsumerException()
-            }
-            ConcurrentHashMap.newKeySet()
-        }
-        repartition()
-        loopFactory(consumerDefinitions, this).run()
-    }
 
     internal fun waitForData() {
         lock.write {
@@ -115,5 +101,26 @@ internal class ConsumerGroup(
             }
             newData.signalAll()
         }
+    }
+
+    fun createConsumption(
+        consumerDefinitions: ConsumerDefinitions,
+    ): Consumption {
+        consumers.compute(consumerDefinitions) { _, currentPartitions ->
+            if (currentPartitions != null) {
+                throw DuplicateConsumerException()
+            }
+            ConcurrentHashMap.newKeySet()
+        }
+        repartition()
+        return ConsumptionThread(
+            threadName =
+            "consumer thread ${consumerDefinitions.groupName}-${consumerDefinitions.topicName}:${consumerDefinitions.hashCode()}",
+            timeout = subscriptionConfig.threadStopTimeout,
+            killMe = {
+                this.stopConsuming(consumerDefinitions)
+            },
+            loop = ConsumptionLoop(consumerDefinitions, this)
+        )
     }
 }

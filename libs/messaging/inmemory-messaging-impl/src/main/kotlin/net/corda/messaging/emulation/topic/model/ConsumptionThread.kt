@@ -1,16 +1,17 @@
 package net.corda.messaging.emulation.topic.model
 
-import net.corda.messaging.emulation.properties.SubscriptionConfiguration
+import java.time.Duration
 
 class ConsumptionThread(
-    private val consumerDefinitions: ConsumerDefinitions,
-    private val topic: Topic,
-    private val subscriptionConfig: SubscriptionConfiguration,
+    private val threadName: String,
+    private val timeout: Duration,
+    private val killMe: () -> Unit,
+    private val loop: Runnable,
     private val threadFactory: (Runnable) -> Thread = { Thread(it) }
-) : Consumption, Runnable {
+) : Consumption {
     private val thread by lazy {
-        threadFactory(this).also {
-            it.name = "consumer thread ${consumerDefinitions.groupName}-${consumerDefinitions.topicName}:${consumerDefinitions.hashCode()}"
+        threadFactory(loop).also {
+            it.name = threadName
             it.isDaemon = true
         }
     }
@@ -20,14 +21,10 @@ class ConsumptionThread(
     }
 
     override fun stop() {
-        topic.unsubscribe(consumerDefinitions)
-        thread.join(subscriptionConfig.threadStopTimeout.toMillis())
+        killMe()
+        thread.join(timeout.toMillis())
     }
 
     override val isRunning
         get() = thread.isAlive
-
-    override fun run() {
-        topic.subscribe(consumerDefinitions, subscriptionConfig)
-    }
 }
