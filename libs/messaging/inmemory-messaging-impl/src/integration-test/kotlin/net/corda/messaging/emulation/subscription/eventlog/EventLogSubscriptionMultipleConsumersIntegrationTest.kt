@@ -10,13 +10,10 @@ import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.RepeatedTest
-import org.junit.jupiter.api.RepetitionInfo
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.util.Random
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
@@ -24,8 +21,14 @@ import kotlin.concurrent.thread
 
 @ExtendWith(ServiceExtension::class)
 class EventLogSubscriptionMultipleConsumersIntegrationTest {
-
-    private val random = Random()
+    companion object {
+        private const val numberOfPublisher = 10
+        private const val numberOfBatchesRecordsToPublish = 3
+        private const val sizeOfBatch = 6
+        private const val numberOfTopics = 5
+        private const val numberOfConsumerGroups = 6
+        private const val numberOfConsumerInGroups = 4
+    }
 
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
@@ -48,17 +51,17 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
         (1..numberOfPublisher).forEach { publisherId ->
             thread {
                 val publisherConfig = PublisherConfig("publisher.$publisherId")
-                repeat(10) {
-                    val size = random.nextInt(10) + 5
-                    val records = (0..size).map {
-                        Record(
-                            "topic.${random.nextInt(numberOfTopics) + 1}",
-                            "key.${random.nextInt(100)}",
-                            UUID.randomUUID().toString()
+                repeat(numberOfBatchesRecordsToPublish) { batchNumber ->
+                    val records = (1..sizeOfBatch).map { recordNumber ->
+                        val record = Record(
+                            "topic.${(batchNumber + recordNumber + publisherId) % numberOfTopics + 1}",
+                            "key.${batchNumber + recordNumber * 2 + publisherId * 3}",
+                            "value.${batchNumber * 4 + recordNumber * 3 + publisherId}"
                         )
+                        record
                     }
                     publisherFactory.createPublisher(publisherConfig).use {
-                        it.publish(records)
+                        it.publish(records).forEach { it.get() }
                     }
                     published.addAll(records)
                     Thread.sleep(1)
@@ -93,8 +96,7 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
                     override val valueClass = String::class.java
                 }
                 val config = SubscriptionConfig(groupName = groupName, eventTopic = topicName)
-                val consumerCount = random.nextInt(4) + 1
-                (0..consumerCount).forEach { consumerNumber ->
+                (1..numberOfConsumerInGroups).forEach { consumerNumber ->
                     val listener = object : PartitionAssignmentListener {
                         private val myAssignments = ConcurrentHashMap.newKeySet<Int>()
                         override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
@@ -134,9 +136,8 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
         subscriptions.forEach { it.start() }
     }
 
-    @RepeatedTest(10)
-    fun `test events log subscription`(repetitionInfo: RepetitionInfo) {
-        println("Testing ${repetitionInfo.currentRepetition}/${repetitionInfo.totalRepetitions}")
+    @Test
+    fun `test events log subscription`() {
         consume()
         publish()
 
@@ -171,12 +172,5 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
             it.printStackTrace()
         }
         assertThat(issues).isEmpty()
-        println("Done ${repetitionInfo.currentRepetition}/${repetitionInfo.totalRepetitions}")
-    }
-
-    companion object {
-        private const val numberOfPublisher = 10
-        private const val numberOfTopics = 5
-        private const val numberOfConsumerGroups = 6
     }
 }
