@@ -36,18 +36,6 @@ internal class SerializationServiceImpl(
 }
 
 /**
- * RPC Server implementation of [SerializationService] and [RpcServerSerializationService].
- */
-internal class RpcServerSerializationServiceImpl(delegate: SerializationService) : SerializationService by delegate,
-    RpcServerSerializationService
-
-/**
- * RPC Client implementation of [SerializationService] and [RpcClientSerializationService].
- */
-internal class RpcClientSerializationServiceImpl(delegate: SerializationService) : SerializationService by delegate,
-    RpcClientSerializationService
-
-/**
  * P2P implementation of [SerializationService] and [P2pSerializationService].
  *
  * Extends [SingletonSerializeAsToken] so that it can be used within flows.

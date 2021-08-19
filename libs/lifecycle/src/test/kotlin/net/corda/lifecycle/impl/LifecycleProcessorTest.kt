@@ -1,7 +1,9 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.ErrorEvent
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
@@ -9,7 +11,12 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import java.util.concurrent.Delayed
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -126,10 +133,11 @@ class LifecycleProcessorTest {
         assertFalse(state.isTimerRunning(key))
     }
 
-    @Test
-    fun `a timer event for a cancelled timer is not delivered to user code`() {
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `a timer event for a cancelled timer is not delivered to user code`(running: Boolean) {
         val state = LifecycleStateManager(5)
-        state.isRunning = true
+        state.isRunning = running
         var processedEvents = 0
         val processor = LifecycleProcessor(NAME, state) { _, _ ->
             processedEvents++
@@ -143,6 +151,19 @@ class LifecycleProcessorTest {
         state.postEvent(event)
         process(processor)
         assertEquals(0, processedEvents)
+        assertFalse(state.isTimerRunning(key))
+    }
+
+    @Test
+    fun `timers are not set up if the coordinator is not running`() {
+        val state = LifecycleStateManager(5)
+        var processedEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
+            processedEvents++
+        }
+        val key = "my_key"
+        state.postEvent(SetUpTimer(key, 100L) { TestTimerEvent(key) })
+        process(processor)
         assertFalse(state.isTimerRunning(key))
     }
 
@@ -252,18 +273,229 @@ class LifecycleProcessorTest {
         assertTrue(processedExtraEvents)
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `adding a new registration updates the state and posts the current status`(running: Boolean) {
+        val state = LifecycleStateManager(5)
+        state.isRunning = running
+        var processedEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
+            processedEvents++
+        }
+        val registration = mock<Registration>()
+        val coordinator = mock<LifecycleCoordinator>()
+        state.status = LifecycleStatus.DOWN
+        state.postEvent(NewRegistration(registration))
+        process(processor, coordinator = coordinator)
+        verify(registration).updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN)
+        assertEquals(setOf(registration), state.registrations)
+        assertEquals(0, processedEvents)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `removing a registration updates the state`(running: Boolean) {
+        val state = LifecycleStateManager(5)
+        state.isRunning = running
+        var processedEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
+            processedEvents++
+        }
+        val registration = mock<Registration>()
+        val coordinator = mock<LifecycleCoordinator>()
+        state.status = LifecycleStatus.DOWN
+        state.registrations.add(registration)
+        state.postEvent(CancelRegistration(registration))
+        process(processor, coordinator = coordinator)
+        assertEquals(setOf<Registration>(), state.registrations)
+        assertEquals(0, processedEvents)
+    }
+
+    @Test
+    fun `an event for an updated status is delivered to all current registrations`() {
+        val state = LifecycleStateManager(5)
+        state.isRunning = true
+        var processedEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
+            processedEvents++
+        }
+        val registration1 = mock<Registration>()
+        val registration2 = mock<Registration>()
+        val coordinator = mock<LifecycleCoordinator>()
+        state.status = LifecycleStatus.DOWN
+        state.registrations.add(registration1)
+        state.registrations.add(registration2)
+        state.postEvent(StatusChange(LifecycleStatus.UP))
+        process(processor, coordinator = coordinator)
+        verify(registration1).updateCoordinatorStatus(coordinator, LifecycleStatus.UP)
+        verify(registration2).updateCoordinatorStatus(coordinator, LifecycleStatus.UP)
+        assertEquals(0, processedEvents)
+    }
+
+    @Test
+    fun `status update events are not delivered to the registration if the coordinator is stopped`() {
+        val state = LifecycleStateManager(5)
+        var processedEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
+            processedEvents++
+        }
+        val registration1 = mock<Registration>()
+        val registration2 = mock<Registration>()
+        state.registrations.addAll(listOf(registration1, registration2))
+        state.postEvent(StatusChange(LifecycleStatus.UP))
+        process(processor)
+        verify(registration1, never()).updateCoordinatorStatus(any(), any())
+        verify(registration2, never()).updateCoordinatorStatus(any(), any())
+        assertEquals(0, processedEvents)
+    }
+
+    @Test
+    fun `stop event causes the coordinator status to be set to down`() {
+        val state = LifecycleStateManager(5)
+        state.isRunning = true
+        var processedStopEvents = 0
+        var processedOtherEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
+            when (event) {
+                is StopEvent -> {
+                    processedStopEvents++
+                }
+                else -> {
+                    processedOtherEvents++
+                }
+            }
+        }
+        val registration1 = mock<Registration>()
+        val registration2 = mock<Registration>()
+        val coordinator = mock<LifecycleCoordinator>()
+        state.status = LifecycleStatus.UP
+        state.registrations.add(registration1)
+        state.registrations.add(registration2)
+        state.postEvent(StopEvent())
+        process(processor, coordinator = coordinator)
+        assertEquals(LifecycleStatus.DOWN, state.status)
+        verify(registration1).updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN)
+        verify(registration2).updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN)
+        assertEquals(1, processedStopEvents)
+        assertEquals(0, processedOtherEvents)
+    }
+
+    @Test
+    fun `start event causes a request to notify about all current tracked registrations`() {
+        val state = LifecycleStateManager(5)
+        var processedStartEvents = 0
+        var processedOtherEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    processedStartEvents++
+                }
+                else -> {
+                    processedOtherEvents++
+                }
+            }
+        }
+        val registration1 = mock<Registration>()
+        val registration2 = mock<Registration>()
+        state.trackedRegistrations.addAll(listOf(registration1, registration2))
+        state.postEvent(StartEvent())
+        process(processor)
+        verify(registration1).notifyCurrentStatus()
+        verify(registration2).notifyCurrentStatus()
+        assertEquals(1, processedStartEvents)
+        assertEquals(0, processedOtherEvents)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `adding a tracked registration updates the state`(running: Boolean) {
+        val state = LifecycleStateManager(5)
+        var processedEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
+            processedEvents++
+        }
+        val registration = mock<Registration>()
+        state.isRunning = running
+        state.postEvent(TrackRegistration(registration))
+        process(processor)
+        assertEquals(setOf(registration), state.trackedRegistrations)
+        assertEquals(0, processedEvents)
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `removing a tracked registration updates the state`(running: Boolean) {
+        val state = LifecycleStateManager(5)
+        var processedEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { _, _ ->
+            processedEvents++
+        }
+        val registration = mock<Registration>()
+        state.isRunning = running
+        state.trackedRegistrations.add(registration)
+        state.postEvent(StopTrackingRegistration(registration))
+        process(processor)
+        assertEquals(setOf<Registration>(), state.trackedRegistrations)
+    }
+
+    @Test
+    fun `stop due to an error results in the status being set to error`() {
+        val state = LifecycleStateManager(5)
+        var processedStopEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
+            when (event) {
+                is StopEvent -> {
+                    processedStopEvents++
+                }
+            }
+        }
+        state.isRunning = true
+        state.postEvent(StopEvent(errored = true))
+        val registration = mock<Registration>()
+        val coordinator = mock<LifecycleCoordinator>()
+        state.registrations.add(registration)
+        process(processor, coordinator = coordinator)
+        assertEquals(LifecycleStatus.ERROR, state.status)
+        verify(registration).updateCoordinatorStatus(coordinator, LifecycleStatus.ERROR)
+    }
+
+    @Test
+    fun `starting from an errored state causes the status to be set back to down`() {
+        val state = LifecycleStateManager(5)
+        var processedStartEvents = 0
+        val processor = LifecycleProcessor(NAME, state) { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    processedStartEvents++
+                }
+            }
+        }
+        state.status = LifecycleStatus.ERROR
+        val registration = mock<Registration>()
+        val coordinator = mock<LifecycleCoordinator>()
+        state.registrations.add(registration)
+        state.postEvent(StartEvent())
+        process(processor, coordinator = coordinator)
+        assertEquals(LifecycleStatus.DOWN, state.status)
+        verify(registration).updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN)
+    }
+
     private object TestEvent1 : LifecycleEvent
     private object TestEvent2 : LifecycleEvent
     private object TestEvent3 : LifecycleEvent
 
     private class TestTimerEvent(override val key: String) : TimerEvent
 
-    private fun process(processor: LifecycleProcessor, shouldSucceed: Boolean = true) {
-        val succeeded = processor.processEvents(mock(), ::timerGenerator)
+    private fun process(
+        processor: LifecycleProcessor,
+        shouldSucceed: Boolean = true,
+        coordinator: LifecycleCoordinator = mock()
+    ) {
+        val succeeded = processor.processEvents(coordinator, ::timerGenerator)
         assertEquals(shouldSucceed, succeeded)
     }
 
-    private fun timerGenerator(timerEvent: TimerEvent, delay: Long) : ScheduledFuture<*> {
+    private fun timerGenerator(timerEvent: TimerEvent, delay: Long): ScheduledFuture<*> {
         return object : ScheduledFuture<String> {
             private var isCancelled = false
             override fun compareTo(other: Delayed?): Int {
