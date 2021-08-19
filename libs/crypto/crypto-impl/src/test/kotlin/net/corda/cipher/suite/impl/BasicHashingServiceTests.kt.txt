@@ -1,0 +1,78 @@
+package net.corda.cipher.suite.internal
+
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.DigestAlgorithmName
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assumptions.assumeTrue
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.assertThrows
+import kotlin.test.assertEquals
+
+class BasicHashingServiceTests {
+
+    companion object {
+        val hashingService = BasicHashingServiceImpl()
+
+        val SHA2_256 = DigestAlgorithmName.SHA2_256
+        val SHA3_256 = DigestAlgorithmName("SHA3-256")
+        val SHA_1 = DigestAlgorithmName("SHA-1")
+    }
+
+    @Test
+    @Timeout(30)
+    fun `sha256 does not retain state between same-thread invocations`() {
+        assertEquals(hashingService.hash("abc".toByteArray(), SHA2_256),
+            hashingService.hash("abc".toByteArray(), SHA2_256))
+    }
+
+    @Test
+    @Timeout(30)
+    fun `test sha256 secure hash`() {
+        val hash = hashingService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a),SHA2_256)
+        assertEquals(hashingService.create("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F"), hash)
+        assertEquals("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F", hash.toString())
+    }
+
+    @Test
+    @Timeout(30)
+    fun `test sha3-256 secure hash`() {
+        assumeTrue(JavaVersion.isVersionAtLeast(JavaVersion.Java_11))
+        val hash = hashingService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA3_256)
+        assertEquals(hashingService.create("SHA3-256:A243D53F7273F4C92ED901A14F11B372FDF6FF69583149AFD4AFA24BF17A8880"), hash)
+        assertEquals("SHA3-256:A243D53F7273F4C92ED901A14F11B372FDF6FF69583149AFD4AFA24BF17A8880", hash.toString())
+    }
+
+    @Test
+    @Timeout(30)
+    fun `test sha2-256 equivalence`() {
+        val data = byteArrayOf(0x64, -0x13, 0x42, 0x3a)
+        val static256Hash = SecureHash(DigestAlgorithmName.SHA2_256.name, hashingService.hash(data, DigestAlgorithmName.SHA2_256).bytes)
+        val service256Hash = hashingService.hash(data, SHA2_256)
+        assertEquals(static256Hash.hashCode(), service256Hash.hashCode())
+        assertEquals(static256Hash, service256Hash)
+    }
+
+    @Test
+    @Timeout(30)
+    fun `test unsafe sha-1 secure hash is banned`() {
+        val ex = assertThrows<IllegalArgumentException> {
+            hashingService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA_1)
+        }
+        assertTrue(ex.message == "SHA-1 is forbidden!")
+    }
+
+    @Test
+    @Timeout(30)
+    fun `test lowercase letters are prohibited in the algorithm name`() {
+        assertThrows<IllegalArgumentException> {
+            hashingService.hash("abc".toByteArray(), DigestAlgorithmName("sha-256"))
+        }
+        assertThrows<IllegalArgumentException> {
+            hashingService.hash("abc".toByteArray(), DigestAlgorithmName("Sha-256"))
+        }
+        assertThrows<IllegalArgumentException> {
+            hashingService.hash("abc".toByteArray(), DigestAlgorithmName("sha3-256"))
+        }
+    }
+}

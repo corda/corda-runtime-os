@@ -6,6 +6,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
@@ -41,12 +42,13 @@ class Topic(val prefix: String, val suffix: String) {
         get() = prefix + suffix
 }
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val config: Config,
     private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
     private val builder: StateAndEventBuilder<K, S, E>,
     private val processor: StateAndEventProcessor<K, S, E>,
+    private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventSubscription<K, S, E>, ConsumerRebalanceListener {
 
@@ -67,7 +69,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private lateinit var producer: CordaKafkaProducer
     private lateinit var eventConsumer: CordaKafkaConsumer<K, E>
     private lateinit var stateConsumer: CordaKafkaConsumer<K, S>
-    private var currentStates: MutableMap<K, Pair<Long, S>>? = null
+    private val currentStates: MutableMap<Int, MutableMap<K, Pair<Long, S>>> = mutableMapOf()
 
     @Volatile
     private var stopped = false
@@ -128,16 +130,18 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      * This is not guaranteed to be thread-safe!
      */
     override fun getValue(key: K): S? {
-        return getCurrentStates()[key]?.second
+        currentStates.forEach {
+            val state = it.value[key]
+            if (state != null) {
+                return state.second
+            }
+        }
+
+        return null
     }
 
-    private fun getCurrentStates(): MutableMap<K, Pair<Long, S>> {
-        var current = currentStates
-        if (current == null) {
-            current = mapFactory.createMap()
-            currentStates = current
-        }
-        return current
+    private fun getStatesForPartition(partitionId : Int) : Map<K, S> {
+        return currentStates[partitionId]?.map { state -> Pair(state.key, state.value.second) }?.toMap() ?: mapOf()
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -206,7 +210,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      *  This rebalance is called for the event consumer, though most of the work is to ensure the state consumer
      *  keeps up
      */
-    override fun onPartitionsAssigned(newEventPartitions: MutableCollection<TopicPartition>) {
+    override fun onPartitionsAssigned(newEventPartitions: Collection<TopicPartition>) {
         log.debug { "Updating state partitions to match new event partitions: $newEventPartitions" }
         val newStatePartitions = newEventPartitions.toStateTopics()
         val statePartitions = stateConsumer.assignment() + newStatePartitions
@@ -219,6 +223,10 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         log.debug { "Syncing the following new state partitions: $syncablePartitions" }
         statePartitionsToSync.putAll(syncablePartitions)
         eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) })
+
+        statePartitions.forEach {
+            currentStates.computeIfAbsent(it.partition()) { mapFactory.createMap() }
+        }
     }
 
     private fun filterSyncablePartitions(newStatePartitions: List<TopicPartition>): List<Pair<Int, Long>> {
@@ -239,13 +247,19 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      *  This rebalance is called for the event consumer, though most of the work is to ensure the state consumer
      *  keeps up
      */
-    override fun onPartitionsRevoked(removedEventPartitions: MutableCollection<TopicPartition>) {
+    override fun onPartitionsRevoked(removedEventPartitions: Collection<TopicPartition>) {
         log.debug { "Updating state partitions to match removed event partitions: $removedEventPartitions" }
         val removedStatePartitions = removedEventPartitions.toStateTopics()
         val statePartitions = stateConsumer.assignment() - removedStatePartitions
         stateConsumer.assign(statePartitions)
         for (topicPartition in removedStatePartitions) {
-            statePartitionsToSync.remove(topicPartition.partition())
+            val partitionId = topicPartition.partition()
+            statePartitionsToSync.remove(partitionId)
+
+            currentStates[partitionId]?.let {
+                stateAndEventListener?.onPartitionLost(getStatesForPartition(partitionId))
+                mapFactory.destroyMap(it)
+            }
         }
     }
 
@@ -278,7 +292,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private fun tryProcessBatchOfEvents(events: List<ConsumerRecordAndMeta<K, E>>) {
         val outputRecords = mutableListOf<Record<*, *>>()
-        val updatedStates: MutableMap<K, S?> = mutableMapOf()
+        val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
         log.trace { "Processing events(size: ${events.size})" }
         for (event in events) {
@@ -297,28 +311,37 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun processEvent(
         event: ConsumerRecordAndMeta<K, E>,
         outputRecords: MutableList<Record<*, *>>,
-        updatedStates: MutableMap<K, S?>
+        updatedStates: MutableMap<Int, MutableMap<K, S?>>
     ) {
         log.trace { "Processing event: $event" }
         val key = event.record.key()
-        val thisEventUpdates = processor.onNext(getCurrentStates()[key]?.second, event.asRecord())
+        val partitionId = event.record.partition()
+        val thisEventUpdates = processor.onNext(getValue(key), event.asRecord())
         outputRecords.addAll(thisEventUpdates.responseEvents)
         val updatedState = thisEventUpdates.updatedState
         outputRecords.add(Record(stateTopic.suffix, key, updatedState))
-        updatedStates[key] = updatedState
+        updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
         log.trace { "Completed event: $event" }
     }
 
-    private fun onProcessorStateUpdated(updatedStates: MutableMap<K, S?>) {
-        for (entry in updatedStates) {
-            val key = entry.key
-            val value = entry.value
-            if (value != null) {
-                getCurrentStates()[key] = Pair(clock.instant().toEpochMilli(), value)
-            } else {
-                getCurrentStates().remove(key)
+    private fun onProcessorStateUpdated(updatedStates: MutableMap<Int, MutableMap<K, S?>>) {
+        val updatedStatesByKey = mutableMapOf<K, S?>()
+        updatedStates.forEach { (partitionId, states) ->
+            for (entry in states) {
+                val key = entry.key
+                val value = entry.value
+                val currentStatesByPartition = currentStates.computeIfAbsent(partitionId){ mapFactory.createMap() }
+                if (value != null) {
+                    updatedStatesByKey[key] = value
+                    currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)
+                } else {
+                    updatedStatesByKey[key] = null
+                    currentStatesByPartition.remove(key)
+                }
             }
         }
+
+        stateAndEventListener?.onPostCommit(updatedStatesByKey)
     }
 
     private fun updateStates() {
@@ -326,33 +349,48 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             log.trace { "State consumer has to partitions assigned." }
             return
         }
+
+        val partitionsSynced = mutableSetOf<TopicPartition>()
         val states = stateConsumer.poll()
         for (state in states) {
             log.trace { "Updating state: $state" }
-            getCurrentStates().compute(state.record.key()) { _, currentState ->
-                if (currentState == null || currentState.first <= state.record.timestamp()) {
-                    if (state.record.value() == null) {
-                        // Removes this state from the map
-                        null
-                    } else {
-                        // Replaces/adds the new state
-                        Pair(state.record.timestamp(), state.record.value())
-                    }
-                } else {
-                    // Keeps the old state
-                    currentState
-                }
-            }
+            updateInMemoryState(state)
+
             // Check sync and resume
             if (statePartitionsToSync.isNotEmpty()) {
                 val currentPartition = state.record.partition()
+                val stateConsumerPollPosition = stateConsumer.position(TopicPartition(stateTopic.topic, currentPartition))
                 val endOffset = statePartitionsToSync[currentPartition]
-                if (endOffset != null && endOffset >= state.record.offset()) {
+                if (endOffset != null && endOffset <= stateConsumerPollPosition) {
                     statePartitionsToSync.remove(currentPartition)
-                    val resumablePartition = TopicPartition(eventTopic.topic, currentPartition)
-                    log.debug { "State consumer is up to date for $resumablePartition.  Resuming event feed." }
-                    eventConsumer.resume(setOf(resumablePartition))
+                    partitionsSynced.add(TopicPartition(eventTopic.topic, currentPartition))
                 }
+            }
+        }
+
+        if (partitionsSynced.isNotEmpty()) {
+            log.debug { "State consumer is up to date for $partitionsSynced.  Resuming event feed." }
+            eventConsumer.resume(partitionsSynced)
+
+            for (partition in partitionsSynced) {
+                stateAndEventListener?.onPartitionSynced(getStatesForPartition(partition.partition()))
+            }
+        }
+    }
+
+    private fun updateInMemoryState(state: ConsumerRecordAndMeta<K, S>) {
+        currentStates[state.record.partition()]?.compute(state.record.key()) { _, currentState ->
+            if (currentState == null || currentState.first <= state.record.timestamp()) {
+                if (state.record.value() == null) {
+                    // Removes this state from the map
+                    null
+                } else {
+                    // Replaces/adds the new state
+                    Pair(state.record.timestamp(), state.record.value())
+                }
+            } else {
+                // Keeps the old state
+                currentState
             }
         }
     }

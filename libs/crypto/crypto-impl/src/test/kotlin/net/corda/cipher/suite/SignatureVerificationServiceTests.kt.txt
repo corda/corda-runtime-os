@@ -1,0 +1,97 @@
+package net.corda.cipher.suite.internal
+
+import net.corda.crypto.SigningService
+import net.corda.v5.crypto.SignatureVerificationService
+import net.corda.crypto.testkit.CryptoMocks
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.cipher.suite.scheme.KeyScheme
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
+import java.security.SignatureException
+import java.util.*
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+
+class SignatureVerificationServiceTests {
+    companion object {
+        private val testData = "test data".toByteArray()
+        private val badVerifyData = "bad verify data".toByteArray()
+        private lateinit var mockSigningService: SigningService
+        private lateinit var verificationService: SignatureVerificationService
+        private lateinit var schemeMetadata: CipherSchemeMetadata
+
+        @JvmStatic
+        fun basicCryptoServiceSupportedSchemes(): Array<KeyScheme> {
+            return schemeMetadata.keySchemes
+        }
+
+        @JvmStatic
+        @BeforeAll
+        fun setup() {
+            val cryptoMocks = CryptoMocks()
+            schemeMetadata = cryptoMocks.schemeMetadata()
+            verificationService = SignatureVerificationServiceImpl(schemeMetadata)
+            mockSigningService = cryptoMocks.signingService()
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("basicCryptoServiceSupportedSchemes")
+    @Timeout(30)
+    fun `Should verify for all basic signature schemes via scheme lookup`(scheme: KeyScheme) {
+        val signature = getSignature(scheme)
+        verificationService.verify(signature.by, signature.bytes, testData)
+    }
+
+    @ParameterizedTest
+    @MethodSource("basicCryptoServiceSupportedSchemes")
+    @Timeout(30)
+    fun `Should fail verify incorrect data for all basic signature schemes via scheme lookup`(scheme: KeyScheme) {
+        val signature = getSignature(scheme)
+        assertFailsWith<SignatureException> {
+            verificationService.verify(signature.by, signature.bytes, badVerifyData)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("basicCryptoServiceSupportedSchemes")
+    @Timeout(30)
+    fun `Should fail verify empty signature for all basic signature schemes via scheme lookup`(scheme: KeyScheme) {
+        val signature = getSignature(scheme)
+        assertFailsWith<IllegalArgumentException> {
+            verificationService.verify(signature.by, ByteArray(0), testData)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("basicCryptoServiceSupportedSchemes")
+    @Timeout(30)
+    fun `Should fail verify for empty clear data for all basic signature schemes via scheme lookup`(scheme: KeyScheme) {
+        val signature = getSignature(scheme)
+        assertFailsWith<IllegalArgumentException> {
+            verificationService.verify(signature.by, signature.bytes, ByteArray(0))
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("basicCryptoServiceSupportedSchemes")
+    @Timeout(30)
+    fun `Should validate for all basic signature schemes via scheme lookup`(scheme: KeyScheme) {
+        val signature = getSignature(scheme)
+        assertTrue(verificationService.isValid(signature.by, signature.bytes, testData))
+    }
+
+    private fun getSignature(scheme: KeyScheme): DigitalSignature.WithKey {
+        val alias = newAlias()
+        val publicKey = mockSigningService.generateKeyPair(alias, scheme)
+        return DigitalSignature.WithKey(
+                publicKey,
+                mockSigningService.sign(alias, testData)
+        )
+    }
+
+    private fun newAlias(): String = UUID.randomUUID().toString()
+}

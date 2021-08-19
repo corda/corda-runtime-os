@@ -1,0 +1,40 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'biz.aQute.bnd.builder'
+}
+description 'Corda Serialization encoding'
+
+configurations {
+    bundle {
+        canBeResolved = false
+    }
+    bundle.extendsFrom runtimeClasspath
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
+    compileOnly "org.iq80.snappy:snappy:$snappyVersion"
+
+    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+}
+
+def jar = tasks.named('jar', Jar) {
+    archiveBaseName = 'corda-serialization-encoding'
+    bnd """\
+Bundle-Name: Corda serialization encoding library
+Bundle-SymbolicName: \${project.group}.serialization.encoding
+Import-Package:\
+    !org.apache.hadoop.io.compress,\
+    sun.misc;resolution:=optional,\
+    *
+-includeresource: @snappy-${snappyVersion}.jar
+"""
+}
+
+artifacts {
+    bundle jar
+}
