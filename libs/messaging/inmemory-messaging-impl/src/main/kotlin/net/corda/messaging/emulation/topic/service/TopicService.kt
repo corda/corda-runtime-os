@@ -1,7 +1,7 @@
 package net.corda.messaging.emulation.topic.service
 
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.emulation.topic.model.ConsumerDefinitions
+import net.corda.messaging.emulation.topic.model.Consumer
 import net.corda.messaging.emulation.topic.model.Consumption
 
 /**
@@ -21,11 +21,11 @@ interface TopicService {
     fun addRecordsToPartition(records: List<Record<*, *>>, partition: Int)
 
     /**
-     * Subscribe to with the given [consumerDefinitions].
+     * Subscribe to with the given [consumer].
      * If the topic does not exist it is created.
      * To unsubscribe, close the returned lifecycle
      */
-    fun subscribe(consumerDefinitions: ConsumerDefinitions): Consumption
+    fun subscribe(consumer: Consumer): Consumption
 
     /**
      * Get the latest added offsets of a specific [topicName].

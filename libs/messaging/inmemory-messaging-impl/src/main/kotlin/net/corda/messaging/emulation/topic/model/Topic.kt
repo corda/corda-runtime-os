@@ -29,15 +29,15 @@ internal class Topic(
     private val consumerGroups = ConcurrentHashMap<String, ConsumerGroup>()
 
     /**
-     * Subscribe the [consumerDefinitions] to this [topicName]
+     * Subscribe the [consumer] to this [topicName]
      */
     fun createConsumption(
-        consumerDefinitions: ConsumerDefinitions,
+        consumer: Consumer,
         subscriptionConfiguration: SubscriptionConfiguration
     ): Consumption {
-        return consumerGroups.computeIfAbsent(consumerDefinitions.groupName) {
-            ConsumerGroup(consumerDefinitions.topicName, partitions, subscriptionConfiguration)
-        }.createConsumption(consumerDefinitions)
+        return consumerGroups.computeIfAbsent(consumer.groupName) {
+            ConsumerGroup(consumer.topicName, partitions, subscriptionConfiguration)
+        }.createConsumption(consumer)
     }
 
     fun getPartition(record: Record<*, *>): Partition {
@@ -53,10 +53,10 @@ internal class Topic(
     }
 
     /**
-     * Unsubscribe the [consumerDefinitions] to this [topicName]
+     * Unsubscribe the [consumer] to this [topicName]
      */
-    fun unsubscribe(consumerDefinitions: ConsumerDefinitions) {
-        consumerGroups[consumerDefinitions.groupName]?.stopConsuming(consumerDefinitions)
+    fun unsubscribe(consumer: Consumer) {
+        consumerGroups[consumer.groupName]?.stopConsuming(consumer)
     }
 
     /**

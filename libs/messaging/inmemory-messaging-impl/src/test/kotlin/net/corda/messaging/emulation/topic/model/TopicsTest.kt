@@ -44,11 +44,11 @@ class TopicsTest {
 
     @Test
     fun `createConsumption return valid thread`() {
-        val consumerDefinitions = mock<ConsumerDefinitions> {
+        val consumer = mock<Consumer> {
             on { groupName } doReturn "group"
             on { topicName } doReturn "topic"
         }
-        val thread = topics.createConsumption(consumerDefinitions)
+        val thread = topics.createConsumption(consumer)
 
         assertThat(thread).isNotNull
     }

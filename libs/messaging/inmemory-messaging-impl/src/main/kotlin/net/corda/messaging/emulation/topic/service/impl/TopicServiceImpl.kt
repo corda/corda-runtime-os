@@ -2,7 +2,7 @@ package net.corda.messaging.emulation.topic.service.impl
 
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.properties.InMemoryConfiguration
-import net.corda.messaging.emulation.topic.model.ConsumerDefinitions
+import net.corda.messaging.emulation.topic.model.Consumer
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.Topics
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -14,8 +14,8 @@ class TopicServiceImpl(
     private val topics: Topics = Topics(config)
 ) : TopicService {
 
-    override fun subscribe(consumerDefinitions: ConsumerDefinitions): Consumption {
-        return topics.createConsumption(consumerDefinitions)
+    override fun subscribe(consumer: Consumer): Consumption {
+        return topics.createConsumption(consumer)
             .also {
                 it.start()
             }

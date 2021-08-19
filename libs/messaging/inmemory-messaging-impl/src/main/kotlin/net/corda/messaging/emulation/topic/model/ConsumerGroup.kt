@@ -13,7 +13,7 @@ internal class ConsumerGroup(
     internal val subscriptionConfig: SubscriptionConfiguration,
     private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock(),
 ) {
-    private val consumers = ConcurrentHashMap<ConsumerDefinitions, Collection<Partition>>()
+    private val consumers = ConcurrentHashMap<Consumer, Collection<Partition>>()
     private val commitments = ConcurrentHashMap<Partition, Long>()
 
     private val newData = lock.writeLock().newCondition()
@@ -26,11 +26,11 @@ internal class ConsumerGroup(
         }
     }
 
-    internal fun getPartitions(consumerDefinitions: ConsumerDefinitions): Collection<Pair<Partition, Long>> {
+    internal fun getPartitions(consumer: Consumer): Collection<Pair<Partition, Long>> {
         return lock.read {
-            consumers[consumerDefinitions]?.map { partition ->
+            consumers[consumer]?.map { partition ->
                 val offset = commitments.computeIfAbsent(partition) {
-                    when (consumerDefinitions.offsetStrategy) {
+                    when (consumer.offsetStrategy) {
                         OffsetStrategy.LATEST -> partition.latestOffset()
                         OffsetStrategy.EARLIEST -> 0L
                     }
@@ -40,10 +40,10 @@ internal class ConsumerGroup(
         }
     }
 
-    fun stopConsuming(consumerDefinitions: ConsumerDefinitions) {
-        val partitions = consumers.remove(consumerDefinitions)
+    fun stopConsuming(consumer: Consumer) {
+        val partitions = consumers.remove(consumer)
         if (partitions != null) {
-            consumerDefinitions.partitionAssignmentListener?.onPartitionsUnassigned(partitions.map { topicName to it.partitionId })
+            consumer.partitionAssignmentListener?.onPartitionsUnassigned(partitions.map { topicName to it.partitionId })
             if (consumers.isNotEmpty()) {
                 repartition()
             } else {
@@ -56,8 +56,8 @@ internal class ConsumerGroup(
         commitments[partition] = records.maxOf { it.offset } + 1
     }
 
-    fun isConsuming(consumerDefinitions: ConsumerDefinitions): Boolean {
-        return consumers.containsKey(consumerDefinitions)
+    fun isConsuming(consumer: Consumer): Boolean {
+        return consumers.containsKey(consumer)
     }
 
     internal fun wakeUp() {
@@ -68,7 +68,7 @@ internal class ConsumerGroup(
 
     private fun repartition() {
         lock.write {
-            val reassignedConsumers = partitions.withIndex().groupBy({
+            val consumersWithAssignedPartitions = partitions.withIndex().groupBy({
                 it.index % consumers.size
             }, {
                 it.value
@@ -91,8 +91,8 @@ internal class ConsumerGroup(
                     it.second
                 }
 
-            val needToUnassigned = consumers.keys - reassignedConsumers
-            needToUnassigned.forEach { consumer ->
+            val consumersWithoutAssignedPartitions = consumers.keys - consumersWithAssignedPartitions
+            consumersWithoutAssignedPartitions.forEach { consumer ->
                 val unassigned = consumers.put(consumer, emptyList())
                 if (unassigned?.isNotEmpty() == true) {
                     consumer.partitionAssignmentListener?.onPartitionsUnassigned(unassigned.map { topicName to it.partitionId })
@@ -103,9 +103,9 @@ internal class ConsumerGroup(
     }
 
     fun createConsumption(
-        consumerDefinitions: ConsumerDefinitions,
+        consumer: Consumer,
     ): Consumption {
-        consumers.compute(consumerDefinitions) { _, currentPartitions ->
+        consumers.compute(consumer) { _, currentPartitions ->
             if (currentPartitions != null) {
                 throw DuplicateConsumerException()
             }
@@ -114,12 +114,12 @@ internal class ConsumerGroup(
         repartition()
         return ConsumptionThread(
             threadName =
-            "consumer thread ${consumerDefinitions.groupName}-${consumerDefinitions.topicName}:${consumerDefinitions.hashCode()}",
+            "consumer thread ${consumer.groupName}-${consumer.topicName}:${consumer.hashCode()}",
             timeout = subscriptionConfig.threadStopTimeout,
             killMe = {
-                this.stopConsuming(consumerDefinitions)
+                this.stopConsuming(consumer)
             },
-            loop = ConsumptionLoop(consumerDefinitions, this)
+            loop = ConsumptionLoop(consumer, this)
         )
     }
 }

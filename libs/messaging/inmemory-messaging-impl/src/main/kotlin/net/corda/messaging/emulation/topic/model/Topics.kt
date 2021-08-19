@@ -30,11 +30,11 @@ class Topics(
         }
     }
 
-    fun createConsumption(consumerDefinitions: ConsumerDefinitions): Consumption {
-        return getTopic(consumerDefinitions.topicName)
+    fun createConsumption(consumer: Consumer): Consumption {
+        return getTopic(consumer.topicName)
             .createConsumption(
-                consumerDefinitions,
-                config.subscriptionConfiguration(consumerDefinitions.groupName)
+                consumer,
+                config.subscriptionConfiguration(consumer.groupName)
             )
     }
 

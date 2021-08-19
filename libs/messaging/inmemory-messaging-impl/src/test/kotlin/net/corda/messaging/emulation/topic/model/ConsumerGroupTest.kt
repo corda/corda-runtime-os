@@ -41,50 +41,50 @@ class ConsumerGroupTest {
 
     @Test
     fun `createConsumption first consumer will add all partitions to the consumer`() {
-        val consumerDefinitions = mock<ConsumerDefinitions> {
+        val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
         }
 
-        group.createConsumption(consumerDefinitions)
+        group.createConsumption(consumer)
 
-        assertThat(group.getPartitions(consumerDefinitions).map { it.first }).containsAll(partitions)
+        assertThat(group.getPartitions(consumer).map { it.first }).containsAll(partitions)
     }
 
     @Test
     fun `createConsumption second consumer will split all partitions`() {
-        val consumerDefinitionsOne = mock<ConsumerDefinitions> {
+        val consumerOne = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
         }
-        val consumerDefinitionsTwo = mock<ConsumerDefinitions> {
+        val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
         }
 
-        group.createConsumption(consumerDefinitionsOne)
-        group.createConsumption(consumerDefinitionsTwo)
+        group.createConsumption(consumerOne)
+        group.createConsumption(consumerTwo)
 
         val firstPartitions =
-            group.getPartitions(consumerDefinitionsOne).map { it.first }
+            group.getPartitions(consumerOne).map { it.first }
         val secondPartitions =
-            group.getPartitions(consumerDefinitionsTwo).map { it.first }
+            group.getPartitions(consumerTwo).map { it.first }
         assertThat(firstPartitions + secondPartitions).containsAll(partitions)
     }
 
     @Test
     fun `createConsumption second consumer will not duplicate subscription`() {
-        val consumerDefinitionsOne = mock<ConsumerDefinitions> {
+        val consumerOne = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
         }
-        val consumerDefinitionsTwo = mock<ConsumerDefinitions> {
+        val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
         }
 
-        group.createConsumption(consumerDefinitionsOne)
-        group.createConsumption(consumerDefinitionsTwo)
+        group.createConsumption(consumerOne)
+        group.createConsumption(consumerTwo)
 
         val firstPartitions =
-            group.getPartitions(consumerDefinitionsOne).map { it.first }
+            group.getPartitions(consumerOne).map { it.first }
         val secondPartitions =
-            group.getPartitions(consumerDefinitionsTwo).map { it.first }
+            group.getPartitions(consumerTwo).map { it.first }
         val common = firstPartitions.filter {
             secondPartitions.contains(it)
         }
@@ -94,20 +94,20 @@ class ConsumerGroupTest {
 
     @Test
     fun `createConsumption second consumer will not leave any consumer without partitions`() {
-        val consumerDefinitionsOne = mock<ConsumerDefinitions> {
+        val consumerOne = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
         }
-        val consumerDefinitionsTwo = mock<ConsumerDefinitions> {
+        val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
         }
 
-        group.createConsumption(consumerDefinitionsOne)
-        group.createConsumption(consumerDefinitionsTwo)
+        group.createConsumption(consumerOne)
+        group.createConsumption(consumerTwo)
 
         val firstPartitions =
-            group.getPartitions(consumerDefinitionsOne).map { it.first }
+            group.getPartitions(consumerOne).map { it.first }
         val secondPartitions =
-            group.getPartitions(consumerDefinitionsTwo).map { it.first }
+            group.getPartitions(consumerTwo).map { it.first }
 
         assertSoftly {
             it.assertThat(firstPartitions).isNotEmpty
@@ -117,7 +117,7 @@ class ConsumerGroupTest {
 
     @Test
     fun `createConsumption will remove old subscriptions`() {
-        class Definitions(private val index: Int) : ConsumerDefinitions {
+        class Definitions(private val index: Int) : Consumer {
             override val groupName = "group"
             override val topicName = "topic"
             override val offsetStrategy = OffsetStrategy.EARLIEST
@@ -143,7 +143,7 @@ class ConsumerGroupTest {
     @Test
     fun `createConsumption more consumer than partitions will not assign any partition to the last consumer`() {
         val consumerDefinitions = (1..20).map {
-            mock<ConsumerDefinitions> {
+            mock<Consumer> {
                 on { offsetStrategy } doReturn OffsetStrategy.LATEST
             }
         }.onEach {
@@ -161,30 +161,30 @@ class ConsumerGroupTest {
 
     @Test
     fun `createConsumption will send assign notification`() {
-        val consumerDefinitions = mock<ConsumerDefinitions> {
+        val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionAssignmentListener } doReturn listener
         }
 
-        group.createConsumption(consumerDefinitions)
+        group.createConsumption(consumer)
 
         verify(listener).onPartitionsAssigned(partitions.map { "topic" to it.partitionId })
     }
 
     @Test
     fun `second subscribe will send unassigned notification`() {
-        val consumerDefinitionsOne = mock<ConsumerDefinitions> {
+        val consumerOne = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionAssignmentListener } doReturn listener
         }
-        val consumerDefinitionsTwo = mock<ConsumerDefinitions> {
+        val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
         }
 
-        group.createConsumption(consumerDefinitionsOne)
-        group.createConsumption(consumerDefinitionsTwo)
+        group.createConsumption(consumerOne)
+        group.createConsumption(consumerTwo)
 
-        val secondPartition = group.getPartitions(consumerDefinitionsTwo)
+        val secondPartition = group.getPartitions(consumerTwo)
             .map {
                 it.first.partitionId
             }
@@ -193,24 +193,24 @@ class ConsumerGroupTest {
 
     @Test
     fun `createConsumption will return a loop`() {
-        val consumerDefinitions = mock<ConsumerDefinitions> {
+        val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
         }
 
-        val consumption = group.createConsumption(consumerDefinitions)
+        val consumption = group.createConsumption(consumer)
 
         assertThat(consumption).isInstanceOf(ConsumptionThread::class.java)
     }
 
     @Test
     fun `second createConsumption will throw an exception`() {
-        val consumerDefinitions = mock<ConsumerDefinitions> {
+        val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
         }
-        group.createConsumption(consumerDefinitions)
+        group.createConsumption(consumer)
 
         assertThrows<ConsumerGroup.DuplicateConsumerException> {
-            group.createConsumption(consumerDefinitions)
+            group.createConsumption(consumer)
         }
     }
 
@@ -230,49 +230,49 @@ class ConsumerGroupTest {
 
     @Test
     fun `getPartitions return the correct default latest partitions`() {
-        val consumerDefinitions = mock<ConsumerDefinitions> {
+        val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
         }
 
-        group.createConsumption(consumerDefinitions)
+        group.createConsumption(consumer)
 
         val offsets =
-            group.getPartitions(consumerDefinitions).associate { it.first to it.second }
+            group.getPartitions(consumer).associate { it.first to it.second }
 
         assertThat(offsets).containsEntry(partitions[1], partitions[1].latestOffset())
     }
 
     @Test
     fun `getPartitions return the correct default earliest partitions`() {
-        val consumerDefinitions = mock<ConsumerDefinitions> {
+        val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
         }
 
-        group.createConsumption(consumerDefinitions)
+        group.createConsumption(consumer)
 
         val offsets =
-            group.getPartitions(consumerDefinitions).associate { it.first to it.second }
+            group.getPartitions(consumer).associate { it.first to it.second }
 
         assertThat(offsets).containsEntry(partitions[1], 0L)
     }
 
     @Test
     fun `getPartitions return empty list for unknown partition`() {
-        val consumerDefinitions = mock<ConsumerDefinitions>()
+        val consumer = mock<Consumer>()
 
         val offsets =
-            group.getPartitions(consumerDefinitions)
+            group.getPartitions(consumer)
 
         assertThat(offsets).isEmpty()
     }
 
     @Test
     fun `getPartitions return the latest committed offset`() {
-        val consumerDefinitions = mock<ConsumerDefinitions> {
+        val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
         }
 
-        group.createConsumption(consumerDefinitions)
+        group.createConsumption(consumer)
         group.commitRecord(
             partitions[2],
             listOf(
@@ -284,18 +284,18 @@ class ConsumerGroupTest {
         )
 
         val offsets =
-            group.getPartitions(consumerDefinitions).associate { it.first to it.second }
+            group.getPartitions(consumer).associate { it.first to it.second }
 
         assertThat(offsets).containsEntry(partitions[2], 131L)
     }
 
     @Test
     fun `commitRecord overwrite the last commit`() {
-        val consumerDefinitions = mock<ConsumerDefinitions> {
+        val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
         }
 
-        group.createConsumption(consumerDefinitions)
+        group.createConsumption(consumer)
         group.commitRecord(
             partitions[2],
             listOf(
@@ -310,7 +310,7 @@ class ConsumerGroupTest {
         )
 
         val offsets =
-            group.getPartitions(consumerDefinitions).associate { it.first to it.second }
+            group.getPartitions(consumer).associate { it.first to it.second }
 
         assertThat(offsets).containsEntry(partitions[2], 91L)
     }
@@ -318,87 +318,87 @@ class ConsumerGroupTest {
     @Test
     fun `unsubscribe will send notification`() {
 
-        val consumerDefinitions = mock<ConsumerDefinitions> {
+        val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
             on { partitionAssignmentListener } doReturn listener
         }
 
-        group.createConsumption(consumerDefinitions)
-        group.stopConsuming(consumerDefinitions)
+        group.createConsumption(consumer)
+        group.stopConsuming(consumer)
 
         verify(listener).onPartitionsUnassigned(partitions.map { it.partitionId }.map { "topic" to it })
     }
 
     @Test
     fun `unsubscribe will not send notification if consumer was not subscribe`() {
-        val consumerDefinitions = mock<ConsumerDefinitions> {
+        val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
             on { partitionAssignmentListener } doReturn listener
         }
 
-        group.stopConsuming(consumerDefinitions)
+        group.stopConsuming(consumer)
 
         verify(listener, never()).onPartitionsUnassigned(partitions.map { it.partitionId }.map { "topic" to it })
     }
 
     @Test
     fun `unsubscribe will wake up in the last consumer`() {
-        val consumerDefinitions = mock<ConsumerDefinitions> {
+        val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
         }
 
-        group.createConsumption(consumerDefinitions)
-        group.stopConsuming(consumerDefinitions)
+        group.createConsumption(consumer)
+        group.stopConsuming(consumer)
 
         verify(sleeper, times(2)).signalAll()
     }
 
     @Test
     fun `unsubscribe will repartition if not the last`() {
-        val consumerDefinitionsOne = mock<ConsumerDefinitions> {
+        val consumerOne = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
         }
-        val consumerDefinitionsTwo = mock<ConsumerDefinitions> {
+        val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
         }
 
-        group.createConsumption(consumerDefinitionsOne)
-        group.createConsumption(consumerDefinitionsTwo)
-        group.stopConsuming(consumerDefinitionsOne)
+        group.createConsumption(consumerOne)
+        group.createConsumption(consumerTwo)
+        group.stopConsuming(consumerOne)
 
-        assertThat(group.getPartitions(consumerDefinitionsTwo)).hasSize(partitions.size)
+        assertThat(group.getPartitions(consumerTwo)).hasSize(partitions.size)
     }
 
     @Test
     fun `isSubscribed will return false after unsubscribe`() {
-        val consumerDefinitionsOne = mock<ConsumerDefinitions> {
+        val consumerOne = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
         }
-        val consumerDefinitionsTwo = mock<ConsumerDefinitions> {
+        val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
         }
 
-        group.createConsumption(consumerDefinitionsOne)
-        group.createConsumption(consumerDefinitionsTwo)
-        group.stopConsuming(consumerDefinitionsOne)
+        group.createConsumption(consumerOne)
+        group.createConsumption(consumerTwo)
+        group.stopConsuming(consumerOne)
 
-        assertThat(group.isConsuming(consumerDefinitionsOne)).isFalse
+        assertThat(group.isConsuming(consumerOne)).isFalse
     }
 
     @Test
     fun `isSubscribed will return true if still subscribe`() {
-        val consumerDefinitionsOne = mock<ConsumerDefinitions> {
+        val consumerOne = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
         }
-        val consumerDefinitionsTwo = mock<ConsumerDefinitions> {
+        val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
         }
 
-        group.createConsumption(consumerDefinitionsOne)
-        group.createConsumption(consumerDefinitionsTwo)
-        group.stopConsuming(consumerDefinitionsOne)
+        group.createConsumption(consumerOne)
+        group.createConsumption(consumerTwo)
+        group.stopConsuming(consumerOne)
 
-        assertThat(group.isConsuming(consumerDefinitionsTwo)).isTrue
+        assertThat(group.isConsuming(consumerTwo)).isTrue
     }
 
     private fun createPartition(id: Int): Partition {

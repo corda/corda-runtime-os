@@ -2,13 +2,13 @@ package net.corda.messaging.emulation.subscription.eventlog
 
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
-import net.corda.messaging.emulation.topic.model.ConsumerDefinitions
+import net.corda.messaging.emulation.topic.model.Consumer
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 
 class EventLogConsumer<K : Any, V : Any>(
     private val subscription: EventLogSubscription<K, V>,
-) : ConsumerDefinitions {
+) : Consumer {
     override val offsetStrategy = OffsetStrategy.EARLIEST
     override val groupName: String = subscription.groupName
     override val topicName: String = subscription.topicName

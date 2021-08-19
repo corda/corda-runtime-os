@@ -4,14 +4,14 @@ import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
 
 internal class ConsumptionLoop(
-    private val consumerDefinitions: ConsumerDefinitions,
+    private val consumer: Consumer,
     private val group: ConsumerGroup,
 ) : Runnable {
     companion object {
         private val logger: Logger = contextLogger()
     }
     private fun readRecords(): Map<Partition, Collection<RecordMetadata>> {
-        return group.getPartitions(consumerDefinitions)
+        return group.getPartitions(consumer)
             .map { (partition, offset) ->
                 partition to partition.getRecordsFrom(offset, group.subscriptionConfig.partitionPollSize)
             }.filter {
@@ -23,7 +23,7 @@ internal class ConsumptionLoop(
         if (records.isNotEmpty()) {
             @Suppress("TooGenericExceptionCaught")
             try {
-                consumerDefinitions.handleRecords(
+                consumer.handleRecords(
                     records
                         .values
                         .flatten()
@@ -38,7 +38,7 @@ internal class ConsumptionLoop(
                         "${it.partition}/${it.offset}"
                     }
                 logger.warn(
-                    "Error processing records for consumer ${consumerDefinitions.groupName}, topic ${consumerDefinitions.groupName}. " +
+                    "Error processing records for consumer ${consumer.groupName}, topic ${consumer.groupName}. " +
                         "Will try again records ($recordsAsString)",
                     e
                 )
@@ -49,7 +49,7 @@ internal class ConsumptionLoop(
     }
 
     override fun run() {
-        while (group.isConsuming(consumerDefinitions)) {
+        while (group.isConsuming(consumer)) {
             processRecords(readRecords())
         }
     }
