@@ -81,7 +81,13 @@ class InboundMessageHandler(private val server: HttpServer,
             if (!started) {
                 logger.error("Received message from ${message.source}, while handler is stopped. Discarding it and returning error code.")
                 server.write(HttpResponseStatus.SERVICE_UNAVAILABLE, ByteArray(0), message.source)
-                return@read
+                return
+            }
+
+            if (message.statusCode != HttpResponseStatus.OK) {
+                logger.warn("Received invalid request from ${message.source}. Status code ${message.statusCode}")
+                server.write(message.statusCode, ByteArray(0), message.source)
+                return
             }
 
 
@@ -92,7 +98,7 @@ class InboundMessageHandler(private val server: HttpServer,
                 logger.warn("Invalid message received. Cannot deserialize")
                 logger.debug(e.stackTraceToString())
                 server.write(HttpResponseStatus.INTERNAL_SERVER_ERROR, ByteArray(0), message.source)
-                return@read
+                return
             }
 
             logger.debug("Received message of type ${p2pMessage.schema.name}")
