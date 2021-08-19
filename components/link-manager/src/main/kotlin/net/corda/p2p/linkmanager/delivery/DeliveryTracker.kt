@@ -64,6 +64,7 @@ class DeliveryTracker(
                 flowMessageReplayer.start()
                 replayManager.start()
                 messageTracker.start()
+                running = true
             }
         }
     }
@@ -74,6 +75,7 @@ class DeliveryTracker(
                 flowMessageReplayer.stop()
                 replayManager.stop()
                 messageTracker.stop()
+                running = false
             }
         }
     }

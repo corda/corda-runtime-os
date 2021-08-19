@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.PublicKey
 import java.util.*
@@ -37,6 +38,8 @@ class InMemorySessionReplayerTest {
         private val COUNTER_PARTY = LinkManagerNetworkMap.HoldingIdentity("CounterParty", GROUP_ID)
         private val MAX_MESSAGE_SIZE = 100000
         lateinit var loggingInterceptor: LoggingInterceptor
+
+        private val KEY_PAIR = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).genKeyPair()
 
         @BeforeAll
         @JvmStatic
@@ -92,7 +95,9 @@ class InMemorySessionReplayerTest {
         val helloMessage = AuthenticationProtocolInitiator(
             id,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            MAX_MESSAGE_SIZE
+            MAX_MESSAGE_SIZE,
+            KEY_PAIR.public,
+            GROUP_ID
         ).generateInitiatorHello()
 
         replayer.addMessageForReplay(
@@ -164,7 +169,9 @@ class InMemorySessionReplayerTest {
         val helloMessage = AuthenticationProtocolInitiator(
             firstId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            MAX_MESSAGE_SIZE
+            MAX_MESSAGE_SIZE,
+            KEY_PAIR.public,
+            GROUP_ID
         ).generateInitiatorHello()
 
         replayer.addMessageForReplay(
@@ -176,7 +183,9 @@ class InMemorySessionReplayerTest {
         val secondHelloMessage = AuthenticationProtocolInitiator(
             secondId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            MAX_MESSAGE_SIZE
+            MAX_MESSAGE_SIZE,
+            KEY_PAIR.public,
+            GROUP_ID
         ).generateInitiatorHello()
 
         replayer.addMessageForReplay(
@@ -231,7 +240,9 @@ class InMemorySessionReplayerTest {
         val helloMessage = AuthenticationProtocolInitiator(
             id,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            MAX_MESSAGE_SIZE
+            MAX_MESSAGE_SIZE,
+            KEY_PAIR.public,
+            GROUP_ID
         ).generateInitiatorHello()
 
         replayer.addMessageForReplay(
@@ -269,7 +280,14 @@ class InMemorySessionReplayerTest {
 
         val replayer = InMemorySessionReplayer(1L, publisherFactory, mockNetworkMap)
         val id = UUID.randomUUID().toString()
-        val helloMessage = AuthenticationProtocolInitiator(id, setOf(ProtocolMode.AUTHENTICATION_ONLY), MAX_MESSAGE_SIZE).generateInitiatorHello()
+        val helloMessage = AuthenticationProtocolInitiator(
+            id,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            MAX_MESSAGE_SIZE,
+            KEY_PAIR.public,
+            GROUP_ID
+            ).generateInitiatorHello()
+
         replayer.addMessageForReplay(
             id,
             SessionReplayer.SessionMessageReplay(helloMessage, US, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
@@ -310,7 +328,7 @@ class InMemorySessionReplayerTest {
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(
-            mockNetworkMap.getMemberInfoFromPublicKeyHash(any())
+            mockNetworkMap.getMemberInfo(any(), any())
         ).thenReturn(null).thenReturn(netMap.getMemberInfo(COUNTER_PARTY))
 
         val replayer = InMemorySessionReplayer(1L, publisherFactory, mockNetworkMap)
@@ -318,13 +336,15 @@ class InMemorySessionReplayerTest {
         val helloMessage = AuthenticationProtocolInitiator(
             id,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            MAX_MESSAGE_SIZE
+            MAX_MESSAGE_SIZE,
+            KEY_PAIR.public,
+            GROUP_ID
         ).generateInitiatorHello()
 
         val keyHash = hashKey(netMap.getMemberInfo(COUNTER_PARTY)!!.publicKey)
         replayer.addMessageForReplay(
             id,
-            SessionReplayer.SessionMessageReplay(helloMessage, US, SessionReplayer.IdentityLookup.PublicKeyHash(keyHash))
+            SessionReplayer.SessionMessageReplay(helloMessage, US, SessionReplayer.IdentityLookup.PublicKeyHash(keyHash, GROUP_ID))
         )
 
         replayer.start()
@@ -339,7 +359,7 @@ class InMemorySessionReplayerTest {
         replayer.stop()
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
-            "${InitiatorHelloMessage::class.java.simpleName}) with public key hash ${SessionReplayer.IdentityLookup.PublicKeyHash(keyHash)}" +
+            "${InitiatorHelloMessage::class.java.simpleName}) with public key hash ${SessionReplayer.IdentityLookup.PublicKeyHash(keyHash, GROUP_ID)}" +
             " which is not in the network map. The message was not replayed.")
     }
 }

@@ -10,12 +10,12 @@ import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.p2p.delivery.FlowMessageDeliveryState
+import net.corda.p2p.AuthenticatedMessageDeliveryState
+import net.corda.p2p.app.AppMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.markers.FlowMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
-import net.corda.p2p.payload.FlowMessage
 import net.corda.p2p.schema.Schema
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -54,16 +54,16 @@ class DeliveryTrackerTest {
         loggingInterceptor.reset()
     }
 
-    private fun processEvent(event: EventLogRecord<ByteBuffer, FlowMessage>): List<Record<String, *>> {
+    private fun processEvent(event: EventLogRecord<ByteBuffer, AppMessage>): List<Record<String, *>> {
         return listOf(Record("TOPIC", "Key", event.value))
     }
 
     private class MapBasedRandomAccessSubscription(
         val latch: CountDownLatch? = null,
         val waitLatch: CountDownLatch? = null
-    ): RandomAccessSubscription<ByteBuffer, FlowMessage> {
+    ): RandomAccessSubscription<ByteBuffer, AppMessage> {
 
-        val records = ConcurrentHashMap<DeliveryTracker.PositionInTopic, Record<ByteBuffer, FlowMessage>>()
+        val records = ConcurrentHashMap<DeliveryTracker.PositionInTopic, Record<ByteBuffer, AppMessage>>()
 
         @Volatile
         override var isRunning = false
@@ -78,7 +78,7 @@ class DeliveryTrackerTest {
             return
         }
 
-        override fun getRecord(partition: Int, offset: Long): Record<ByteBuffer, FlowMessage>? {
+        override fun getRecord(partition: Int, offset: Long): Record<ByteBuffer, AppMessage>? {
             latch?.countDown()
             if (latch?.count == 0L) waitLatch?.await()
             return records[DeliveryTracker.PositionInTopic(partition, offset)]
@@ -141,13 +141,13 @@ class DeliveryTrackerTest {
         randomAccessSubscription: MapBasedRandomAccessSubscription
     ): Pair<
         DeliveryTracker,
-        StateAndEventProcessorWithReassignment<String, FlowMessageDeliveryState, FlowMessageMarker>
+        StateAndEventProcessorWithReassignment<String, AuthenticatedMessageDeliveryState, FlowMessageMarker>
     > {
         val publisherFactory = Mockito.mock(PublisherFactory::class.java)
         Mockito.`when`(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
 
         val subscriptionFactory = Mockito.mock(SubscriptionFactory::class.java)
-        Mockito.`when`(subscriptionFactory.createRandomAccessSubscription<ByteBuffer, FlowMessage>(any(), any()))
+        Mockito.`when`(subscriptionFactory.createRandomAccessSubscription<ByteBuffer, AppMessage>(any(), any(), any(), any()))
             .thenReturn(randomAccessSubscription)
 
         val mockStateAndEventSubscriptionFactory = MockStateAndEventSubscriptionFactory()
@@ -160,7 +160,7 @@ class DeliveryTrackerTest {
         )
         @Suppress("UNCHECKED_CAST")
         val processor = mockStateAndEventSubscriptionFactory.interceptedProcessor
-                as StateAndEventProcessorWithReassignment<String, FlowMessageDeliveryState, FlowMessageMarker>
+                as StateAndEventProcessorWithReassignment<String, AuthenticatedMessageDeliveryState, FlowMessageMarker>
         return tracker to processor
     }
 
@@ -207,14 +207,14 @@ class DeliveryTrackerTest {
         val publisher = TestListBasedPublisher()
         val (tracker, processor) = createTracker(publisher, randomAccessSubscription)
 
-        val flowMessage = Mockito.mock(FlowMessage::class.java)
+        val flowMessage = Mockito.mock(AppMessage::class.java)
         randomAccessSubscription.records[DeliveryTracker.PositionInTopic(partition.toInt(), offset)] =
             Record(Schema.P2P_OUT_TOPIC, ByteBuffer.wrap("".toByteArray()), flowMessage)
 
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = FlowMessageDeliveryState(partition, offset)
+        val state = AuthenticatedMessageDeliveryState(partition, offset)
         processor.onCommit(mapOf(messageId to state))
         latch.await()
 
@@ -237,14 +237,14 @@ class DeliveryTrackerTest {
         val randomAccessSubscription = MapBasedRandomAccessSubscription(latch, waitLatch)
         val (tracker, processor) = createTracker(publisher, randomAccessSubscription)
 
-        val flowMessage = Mockito.mock(FlowMessage::class.java)
+        val flowMessage = Mockito.mock(AppMessage::class.java)
         randomAccessSubscription.records[DeliveryTracker.PositionInTopic(partition.toInt(), offset)] =
             Record(Schema.P2P_OUT_TOPIC, ByteBuffer.wrap("".toByteArray()), flowMessage)
 
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = FlowMessageDeliveryState(partition, offset)
+        val state = AuthenticatedMessageDeliveryState(partition, offset)
         processor.onPartitionsAssigned(mapOf(messageId to state))
         latch.await()
 
@@ -265,7 +265,7 @@ class DeliveryTrackerTest {
         val publisher = TestListBasedPublisher()
 
         val randomAccessSubscription = MapBasedRandomAccessSubscription(latch, waitLatch)
-        val flowMessage = Mockito.mock(FlowMessage::class.java)
+        val flowMessage = Mockito.mock(AppMessage::class.java)
         randomAccessSubscription.records[DeliveryTracker.PositionInTopic(partition.toInt(), offset)] =
             Record(Schema.P2P_OUT_TOPIC, ByteBuffer.wrap("".toByteArray()), flowMessage)
 
@@ -273,7 +273,7 @@ class DeliveryTrackerTest {
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = FlowMessageDeliveryState(partition, offset)
+        val state = AuthenticatedMessageDeliveryState(partition, offset)
         processor.onPartitionsAssigned(mapOf(messageId to state))
         latch.await()
 
@@ -299,7 +299,7 @@ class DeliveryTrackerTest {
         val waitLatch = CountDownLatch(1)
         val publisher = TestListBasedPublisher()
 
-        val flowMessage = Mockito.mock(FlowMessage::class.java)
+        val flowMessage = Mockito.mock(AppMessage::class.java)
         val randomAccessSubscription = MapBasedRandomAccessSubscription(latch, waitLatch)
         randomAccessSubscription.records[DeliveryTracker.PositionInTopic(partition.toInt(), offset)] =
             Record(Schema.P2P_OUT_TOPIC, ByteBuffer.wrap("".toByteArray()), flowMessage)
@@ -308,7 +308,7 @@ class DeliveryTrackerTest {
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = FlowMessageDeliveryState(partition, offset)
+        val state = AuthenticatedMessageDeliveryState(partition, offset)
         processor.onPartitionsAssigned(mapOf(messageId to state))
         latch.await()
 
@@ -339,7 +339,7 @@ class DeliveryTrackerTest {
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = FlowMessageDeliveryState(partition, offset)
+        val state = AuthenticatedMessageDeliveryState(partition, offset)
         processor.onCommit(mapOf(messageId to state))
         latch.await()
         loggingInterceptor.assertSingleError("Could not find a message for replay at partition $partition and offset $offset in topic " +
