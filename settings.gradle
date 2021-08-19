@@ -33,7 +33,6 @@ pluginManagement {
                 }
             }
         }
-        mavenLocal()
     }
     plugins {
         id 'net.corda.cordapp.cordapp-configuration' version cordaApiVersion
