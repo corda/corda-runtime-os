@@ -1,0 +1,246 @@
+package net.corda.crypto.internal
+
+import net.corda.cipher.suite.internal.DefaultCryptoService
+import net.corda.cipher.suite.internal.CryptoServiceCircuitBreaker
+import net.corda.crypto.BasicCryptoPersistentKey
+import net.corda.crypto.SigningPersistentKey
+import net.corda.crypto.SigningService
+import net.corda.crypto.sha256Bytes
+import net.corda.crypto.testkit.CryptoMocks
+import net.corda.impl.test.MockDatabaseBuilder
+import net.corda.v5.base.types.toHexString
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.scheme.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.cipher.suite.scheme.KeyScheme
+import net.corda.v5.crypto.SignatureVerificationService
+import org.hamcrest.CoreMatchers
+import org.hamcrest.MatcherAssert
+import org.hamcrest.collection.IsCollectionWithSize
+import org.hamcrest.collection.IsEmptyCollection
+import org.hamcrest.core.IsNull
+import org.hibernate.SessionFactory
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
+import java.security.PublicKey
+import java.time.Duration
+import java.util.*
+import kotlin.test.assertEquals
+
+class FreshKeySigningServiceTests {
+    companion object {
+        private const val sandboxId = "sandboxId"
+        const val wrappingKeyAlias = "test-wrapping-key-alias"
+        const val wrappingKey2Alias = "test-wrapping-key-alias-2"
+        lateinit var sessionFactory: SessionFactory
+        lateinit var cache: SimplePersistentCacheImpl<BasicCachedKey, BasicCryptoPersistentKey>
+        lateinit var signingKeyCache: SigningKeyCacheImpl
+        lateinit var signingService: SigningServiceInternal
+        lateinit var keyManagementBackend1: FreshKeySigningServiceImpl
+        lateinit var keyManagementBackend2: FreshKeySigningServiceImpl
+        lateinit var mockSigningService: SigningService
+        lateinit var signatureVerifier: SignatureVerificationService
+        lateinit var defaultSchemeCodeName: String
+        lateinit var defaultScheme: KeyScheme
+        lateinit var schemeMetadata: CipherSchemeMetadata
+
+        @BeforeAll
+        @JvmStatic
+        fun setup() {
+            val cryptoMocks = CryptoMocks()
+            mockSigningService = cryptoMocks.signingService()
+            signatureVerifier = cryptoMocks.signatureVerificationService()
+            sessionFactory = MockDatabaseBuilder.resetDatabase()
+            cache = SimplePersistentCacheImpl(
+                    BasicCryptoPersistentKey::class.java,
+                    sessionFactory
+            )
+            schemeMetadata = cryptoMocks.schemeMetadata()
+            defaultSchemeCodeName = EDDSA_ED25519_CODE_NAME
+            defaultScheme = schemeMetadata.findKeyScheme(defaultSchemeCodeName)
+            val cryptoService = CryptoServiceCircuitBreaker(
+                    DefaultCryptoService(
+                            BasicKeyCacheImpl(
+                                    sandboxId = "KeyManagementBackendTests-s111",
+                                    partition = "KeyManagementBackendTests-p111",
+                                    passphrase = "passphrase-111",
+                                    salt = "11",
+                                    cacheFactory = object : SimplePersistentCacheFactory<BasicCachedKey, BasicCryptoPersistentKey> {
+                                        override fun create() = cache
+                                    },
+                                    schemeMetadata = schemeMetadata
+                            ),
+                            schemeMetadata = schemeMetadata
+                    ),
+                    Duration.ofSeconds(10)
+            )
+            cryptoService.createWrappingKey(wrappingKeyAlias, true)
+            cryptoService.createWrappingKey(wrappingKey2Alias, true)
+            signingKeyCache = SigningKeyCacheImpl(
+                    sandboxId = sandboxId,
+                    keyEncoder = schemeMetadata
+            ) { sessionFactory }
+            signingService = SigningServiceImpl(
+                    cache = signingKeyCache,
+                    cryptoService = cryptoService,
+                    defaultSignatureSchemeCodeName = defaultSchemeCodeName,
+                    schemeMetadata = schemeMetadata
+            )
+            keyManagementBackend1 = FreshKeySigningServiceImpl(
+                    signingService = signingService,
+                    freshKeysCryptoService = cryptoService,
+                    defaultFreshKeySignatureSchemeCodeName = defaultSchemeCodeName,
+                    masterWrappingKeyAlias = wrappingKeyAlias,
+                    schemeMetadata = schemeMetadata
+            )
+            keyManagementBackend2 = FreshKeySigningServiceImpl(
+                    signingService = signingService,
+                    freshKeysCryptoService = cryptoService,
+                    defaultFreshKeySignatureSchemeCodeName = defaultSchemeCodeName,
+                    masterWrappingKeyAlias = wrappingKey2Alias,
+                    schemeMetadata = schemeMetadata
+            )
+            keyManagementBackend1.ensureWrappingKey()
+            keyManagementBackend2.ensureWrappingKey()
+        }
+
+        @AfterAll
+        @JvmStatic
+        fun cleanup() {
+            sessionFactory.close()
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Fresh key is created without providing external id and can be used to sign`() {
+        val freshKey = keyManagementBackend1.freshKey()
+        MatcherAssert.assertThat(contains(freshKey), CoreMatchers.`is`(true))
+        val freshKeyData = get(freshKey)
+        verifyFreshKeyData(freshKeyData, freshKey, null)
+        val data = "Hello World!".toByteArray()
+        val signature = keyManagementBackend1.sign(data, freshKey)
+        assertEquals(freshKey, signature.by)
+        signatureVerifier.verify(freshKey, signature.bytes, data)
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Fresh keys are created using different wrapping keys without providing external id and both can be used to sign`() {
+        val data = "Hello World!".toByteArray()
+        val freshKey1 = keyManagementBackend1.freshKey()
+        MatcherAssert.assertThat(contains(freshKey1), CoreMatchers.`is`(true))
+        verifyFreshKeyData(get(freshKey1), freshKey1, null)
+        val freshKey2 = keyManagementBackend2.freshKey()
+        MatcherAssert.assertThat(contains(freshKey2), CoreMatchers.`is`(true))
+        verifyFreshKeyData(get(freshKey2), freshKey2, null)
+        // it's has to be keyManagementBackend2 in both cases to emulate wrapping key rotation
+        val signature1 = keyManagementBackend2.sign(data, freshKey1)
+        assertEquals(freshKey1, signature1.by)
+        signatureVerifier.verify(freshKey1, signature1.bytes, data)
+        val signature2 = keyManagementBackend2.sign(data, freshKey2)
+        assertEquals(freshKey2, signature2.by)
+        signatureVerifier.verify(freshKey2, signature2.bytes, data)
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Fresh key with external id is created and can be used to sign`() {
+        val uuid = UUID.randomUUID()
+        val freshKey = keyManagementBackend1.freshKey(uuid)
+        MatcherAssert.assertThat(contains(freshKey), CoreMatchers.`is`(true))
+        val freshKeyData = get(freshKey)
+        verifyFreshKeyData(freshKeyData, freshKey, uuid)
+        val data = "Hello World!".toByteArray()
+        val signature = keyManagementBackend1.sign(data, freshKey)
+        assertEquals(freshKey, signature.by)
+        signatureVerifier.verify(freshKey, signature.bytes, data)
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Fresh keys are created using different wrapping keys with external id and both can be used to sign`() {
+        val uuid1 = UUID.randomUUID()
+        val uuid2 = UUID.randomUUID()
+        val data = "Hello World!".toByteArray()
+        val freshKey1 = keyManagementBackend1.freshKey(uuid1)
+        MatcherAssert.assertThat(contains(freshKey1), CoreMatchers.`is`(true))
+        verifyFreshKeyData(get(freshKey1), freshKey1, uuid1)
+        val freshKey2 = keyManagementBackend2.freshKey(uuid2)
+        MatcherAssert.assertThat(contains(freshKey2), CoreMatchers.`is`(true))
+        verifyFreshKeyData(get(freshKey2), freshKey2, uuid2)
+        // it's has to be keyManagementBackend2 in both cases to emulate wrapping key rotation
+        val signature1 = keyManagementBackend2.sign(data, freshKey1)
+        assertEquals(freshKey1, signature1.by)
+        signatureVerifier.verify(freshKey1, signature1.bytes, data)
+        val signature2 = keyManagementBackend2.sign(data, freshKey2)
+        assertEquals(freshKey2, signature2.by)
+        signatureVerifier.verify(freshKey2, signature2.bytes, data)
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Keys are correctly filtered - all keys belong to us`() {
+        val freshKey1 = keyManagementBackend1.freshKey()
+        val freshKey2 = keyManagementBackend1.freshKey(UUID.randomUUID())
+        val ourKeys = keyManagementBackend1.filterMyKeys(mutableListOf(freshKey1, freshKey2)).toList()
+        MatcherAssert.assertThat(ourKeys, IsCollectionWithSize.hasSize(2))
+        MatcherAssert.assertThat(ourKeys, CoreMatchers.hasItem(freshKey1))
+        MatcherAssert.assertThat(ourKeys, CoreMatchers.hasItem(freshKey2))
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Keys are correctly filtered - none keys belong to us`() {
+        val freshKey1 = mockSigningService.generateKeyPair(UUID.randomUUID().toString(), defaultScheme)
+        val freshKey2 = keyManagementBackend1.freshKey()
+        val ourKeys = keyManagementBackend1.filterMyKeys(mutableListOf(freshKey1, freshKey2)).toList()
+        MatcherAssert.assertThat(ourKeys, IsCollectionWithSize.hasSize(1))
+        MatcherAssert.assertThat(ourKeys, CoreMatchers.hasItem(freshKey2))
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Keys are correctly filtered - some of the keys belong to us`() {
+        val freshKey1 = mockSigningService.generateKeyPair(UUID.randomUUID().toString(), defaultScheme)
+        val freshKey2 = mockSigningService.generateKeyPair(UUID.randomUUID().toString(), defaultScheme)
+
+        val ourKeys = keyManagementBackend1.filterMyKeys(mutableListOf(freshKey1, freshKey2)).toList()
+        MatcherAssert.assertThat(ourKeys, CoreMatchers.`is`(IsEmptyCollection.empty()))
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Bytes are correctly signed`() {
+        val publicKey = keyManagementBackend1.freshKey()
+        val dataToSign = "test data to sign".toByteArray()
+        val digitalSignature = keyManagementBackend1.sign(dataToSign, publicKey)
+        verifySignature(digitalSignature, publicKey, dataToSign)
+    }
+
+    private fun get(publicKey: PublicKey) = signingKeyCache.find(publicKey)
+
+    private fun contains(publicKey: PublicKey): Boolean = get(publicKey) != null
+
+    private fun verifySignature(digitalSignature: DigitalSignature, publicKey: PublicKey, dataToSign: ByteArray) {
+        signatureVerifier.verify(publicKey, digitalSignature.bytes, dataToSign)
+    }
+
+    private fun verifyFreshKeyData(freshKeyData: SigningPersistentKey?, freshKey: PublicKey, uuid: UUID?) {
+        Assertions.assertNotNull(freshKeyData)
+        MatcherAssert.assertThat(freshKeyData!!.sandboxId, CoreMatchers.`is`(sandboxId))
+        MatcherAssert.assertThat(freshKeyData.publicKeyHash, CoreMatchers.`is`(freshKey.sha256Bytes().toHexString()))
+        if (uuid != null)
+            MatcherAssert.assertThat(freshKeyData.externalId, CoreMatchers.`is`(uuid))
+        else
+            MatcherAssert.assertThat(freshKeyData.externalId, IsNull())
+        MatcherAssert.assertThat(freshKeyData.publicKey, CoreMatchers.`is`(freshKey.encoded))
+        MatcherAssert.assertThat(freshKeyData.alias, IsNull())
+        MatcherAssert.assertThat(freshKeyData.privateKeyMaterial, CoreMatchers.`is`(CoreMatchers.notNullValue()))
+        MatcherAssert.assertThat(freshKeyData.schemeCodeName, CoreMatchers.`is`(defaultSchemeCodeName))
+        MatcherAssert.assertThat(freshKeyData.version, CoreMatchers.`is`(1))
+    }
+}

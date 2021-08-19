@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.TimerEvent
 
 /**
@@ -23,6 +24,43 @@ internal data class SetUpTimer(
 /**
  * Cancel a timer.
  */
-internal data class CancelTimer(
-    val key: String
-) : LifecycleEvent
+internal data class CancelTimer(val key: String) : LifecycleEvent
+
+/**
+ * Add a new registration for this coordinator to update with status changes.
+ *
+ * @param registration The new registration to keep updated
+ */
+internal data class NewRegistration(val registration: Registration) : LifecycleEvent
+
+/**
+ * Remove a registration for this coordinator from the set to update with status changes.
+ *
+ * @param registration The registration to remove from the set to keep updated.
+ */
+internal data class CancelRegistration(val registration: Registration) : LifecycleEvent
+
+/**
+ * Keep track of a registration this coordinator now has on some dependents.
+ *
+ * This is primarily used to update the coordinator of the current registration status on startup.
+ *
+ * @param registration The registration to track.
+ */
+internal data class TrackRegistration(val registration: Registration) : LifecycleEvent
+
+/**
+ * Stop tracking a registration this coordinator had on some dependents.
+ *
+ * This is used to clean up registration tracking state when a registration is cancelled.
+ *
+ * @param registration The registration to stop tracking.
+ */
+internal data class StopTrackingRegistration(val registration: Registration) : LifecycleEvent
+
+/**
+ * Indicates that the component has changed status, so this component can inform dependent components of the change.
+ *
+ * @param newStatus The new state this component has taken.
+ */
+internal data class StatusChange(val newStatus: LifecycleStatus) : LifecycleEvent

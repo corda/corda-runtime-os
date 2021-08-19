@@ -29,19 +29,19 @@ interface LinkManagerNetworkMap {
     }
 
     /**
-     * Returns the [MemberInfo] belonging a specific [holdingIdentity]
+     * Returns the [MemberInfo] belonging a specific [holdingIdentity].
      */
     fun getMemberInfo(holdingIdentity: HoldingIdentity): MemberInfo?
 
     /**
-     * Returns the [MemberInfo] which has a public key with SHA-256 hash [hash].
+     * Returns the [MemberInfo] which has a public key with SHA-256 hash [hash] and group identifier [groupId].
      */
-    fun getMemberInfoFromPublicKeyHash(hash: ByteArray): MemberInfo?
+    fun getMemberInfo(hash: ByteArray, groupId: String): MemberInfo?
 
     /**
-     * Returns the [NetworkType] our [holdingIdentity].
+     * Returns the [NetworkType] for group identifier [groupId].
      */
-    fun getNetworkType(holdingIdentity: HoldingIdentity): NetworkType?
+    fun getNetworkType(groupId: String): NetworkType?
 
     data class MemberInfo(val holdingIdentity: HoldingIdentity, val publicKey: PublicKey, val endPoint: EndPoint)
 

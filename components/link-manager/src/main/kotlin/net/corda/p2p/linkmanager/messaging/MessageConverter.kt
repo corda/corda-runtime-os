@@ -105,7 +105,7 @@ class MessageConverter {
                 return null
             }
 
-            val networkType = networkMap.getNetworkType(destination.toHoldingIdentity())
+            val networkType = networkMap.getNetworkType(destination.toHoldingIdentity().groupId)
             if (networkType == null) {
                 logger.warn("Could not find the network type in the NetworkMap for ${destination}. The message was discarded.")
                 return null
@@ -147,7 +147,7 @@ class MessageConverter {
                 logger.warn("Attempted to send message to peer $destination which is not in the network map. The message was discarded.")
                 return null
             }
-            val networkType = networkMap.getNetworkType(source.toHoldingIdentity())
+            val networkType = networkMap.getNetworkType(source.groupId)
             if (networkType == null) {
                 logger.warn("Could not find the network type in the NetworkMap for our identity = ${source}. The message was discarded.")
                 return null
