@@ -8,9 +8,14 @@ import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
-import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
@@ -50,16 +55,16 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
         "${config.getString(CONSUMER_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
     )
 
-    private val consumerThreadStopTimeout = config.getLong(KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT)
-    private val consumerPollAndProcessRetries = config.getLong(KafkaProperties.CONSUMER_POLL_AND_PROCESS_RETRIES)
+    private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
+    private val consumerPollAndProcessRetries = config.getLong(CONSUMER_POLL_AND_PROCESS_RETRIES)
 
     @Volatile
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private val topic = config.getString(KafkaProperties.TOPIC_NAME)
-    private val groupName = config.getString(KafkaProperties.CONSUMER_GROUP_ID)
-    private val producerClientId: String = config.getString(KafkaProperties.PRODUCER_CLIENT_ID)
+    private val topic = config.getString(TOPIC_NAME)
+    private val groupName = config.getString(CONSUMER_GROUP_ID)
+    private val producerClientId: String = config.getString(PRODUCER_CLIENT_ID)
 
     /**
      * Is the subscription running.
@@ -124,15 +129,15 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
             try {
                 log.debug { "Attempt: $attempts" }
                 consumer = if (partitionAssignmentListener != null) {
-                    val consumerGroup = config.getString(KafkaProperties.CONSUMER_GROUP_ID)
+                    val consumerGroup = config.getString(CONSUMER_GROUP_ID)
                     val rebalanceListener = ForwardingRebalanceListener(topic, consumerGroup, partitionAssignmentListener)
-                    consumerBuilder.createDurableConsumer(config.getConfig(KafkaProperties.KAFKA_CONSUMER), processor.keyClass,
+                    consumerBuilder.createDurableConsumer(config.getConfig(KAFKA_CONSUMER), processor.keyClass,
                         processor.valueClass, consumerRebalanceListener = rebalanceListener)
                 } else {
-                    consumerBuilder.createDurableConsumer(config.getConfig(KafkaProperties.KAFKA_CONSUMER),
+                    consumerBuilder.createDurableConsumer(config.getConfig(KAFKA_CONSUMER),
                         processor.keyClass, processor.valueClass)
                 }
-                producer = producerBuilder.createProducer(config.getConfig(KafkaProperties.KAFKA_PRODUCER))
+                producer = producerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribeToTopic()
                     producer.use { cordaProducer ->
