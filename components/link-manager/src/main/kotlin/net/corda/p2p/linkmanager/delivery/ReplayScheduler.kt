@@ -16,7 +16,7 @@ import kotlin.concurrent.withLock
 class ReplayScheduler<REPLAY_ARGUMENT>(
     private val replayPeriod: Long,
     private val replayMessage: (argument: REPLAY_ARGUMENT) -> Unit,
-    private val timestamp: () -> Long = { Instant.now().toEpochMilli()}
+    private val timestamp: () -> Long = { Instant.now().toEpochMilli() }
 ) : Lifecycle {
 
     @Volatile
