@@ -186,10 +186,12 @@ class DBMessagingIntegrationTest {
 
         val record = randomAccessSubscription.getRecord(1, 5)
 
-        assertThat(record).isNotNull
-        assertThat(record!!.topic).isEqualTo(topic1)
-        assertThat(record.key).contains("key-5")
-        assertThat(record.value).contains("value-5")
+        eventually(5.seconds, 5.millis) {
+            assertThat(record).isNotNull
+            assertThat(record!!.topic).isEqualTo(topic1)
+            assertThat(record.key).contains("key-5")
+            assertThat(record.value).contains("value-5")
+        }
     }
 
     @Test

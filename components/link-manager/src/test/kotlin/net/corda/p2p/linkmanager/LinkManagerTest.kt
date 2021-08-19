@@ -105,7 +105,7 @@ class LinkManagerTest {
             val partyBIdentityKey = keyPairGenerator.generateKeyPair()
             val signature = Signature.getInstance("ECDSA", provider)
 
-            val initiator = AuthenticationProtocolInitiator(SESSION_ID, setOf(mode), MAX_MESSAGE_SIZE)
+            val initiator = AuthenticationProtocolInitiator(SESSION_ID, setOf(mode), MAX_MESSAGE_SIZE, partyAIdentityKey.public, GROUP_ID)
             val responder = AuthenticationProtocolResponder(SESSION_ID, setOf(mode), MAX_MESSAGE_SIZE)
 
             val initiatorHelloMsg = initiator.generateInitiatorHello()
@@ -122,13 +122,11 @@ class LinkManagerTest {
                 signature.update(data)
                 signature.sign()
             }
-            val initiatorHandshakeMessage = initiator.generateOurHandshakeMessage(partyAIdentityKey.public,
-                partyBIdentityKey.public,
-                GROUP_ID,
+            val initiatorHandshakeMessage = initiator.generateOurHandshakeMessage(partyBIdentityKey.public,
                 signingCallbackForA
             )
 
-            responder.validatePeerHandshakeMessage(initiatorHandshakeMessage) { partyAIdentityKey.public }
+            responder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public)
 
             val signingCallbackForB = { data: ByteArray ->
                 signature.initSign(partyBIdentityKey.private)
@@ -181,7 +179,13 @@ class LinkManagerTest {
     }
 
     private fun initiatorHelloLinkInMessage() : LinkInMessage {
-        val session =  AuthenticationProtocolInitiator(SESSION_ID, setOf(ProtocolMode.AUTHENTICATION_ONLY), MAX_MESSAGE_SIZE)
+        val session =  AuthenticationProtocolInitiator(
+            SESSION_ID,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            MAX_MESSAGE_SIZE,
+            FIRST_DEST_MEMBER_INFO.publicKey,
+            FIRST_DEST_MEMBER_INFO.holdingIdentity.groupId
+        )
         return LinkInMessage(session.generateInitiatorHello())
     }
 

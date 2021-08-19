@@ -3,6 +3,8 @@ package net.corda.lifecycle.impl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
@@ -80,7 +82,7 @@ class LifecycleCoordinatorImpl(
     private val isScheduled = AtomicBoolean(false)
 
     /**
-     * Process the events in [eventQueue].
+     * Process a batch of events in the event queue.
      *
      * The main processing functionality is delegated to the LifecycleProcessor class. On a processing error, the
      * coordinator is stopped.
@@ -94,8 +96,7 @@ class LifecycleCoordinatorImpl(
         val shutdown = !processor.processEvents(this, ::createTimer)
         isScheduled.set(false)
         if (shutdown) {
-            logger.warn("$name Lifecycle: An unhandled error was encountered. Stopping component.")
-            stop()
+            stopInternal(true)
         } else {
             scheduleIfRequired()
         }
@@ -123,21 +124,16 @@ class LifecycleCoordinatorImpl(
     }
 
     /**
-     * Cancel the [TimerEvent] uniquely identified by [key].
-     * If [key] doesn't identify any [TimerEvent] scheduled with [setTimer], this method doesn't anything.
+     * Stop the coordinator. The posted event signals if this stop is due to an error.
      *
-     * @param key identifying the [TimerEvent] to cancel,
+     * @param errored True if the coordinator was stopped due to an error.
      */
-    override fun cancelTimer(key: String) {
-        postEvent(CancelTimer(key))
+    private fun stopInternal(errored: Boolean) {
+        postEvent(StopEvent(errored))
     }
 
     /**
-     * Post the [event] to be processed as soon is possible by [lifeCycleProcessor].
-     *
-     * Events are processed in the order they are posted.
-     *
-     * @param event to be processed.
+     * See [LifecycleCoordinator].
      */
     override fun postEvent(event: LifecycleEvent) {
         lifecycleState.postEvent(event)
@@ -145,21 +141,47 @@ class LifecycleCoordinatorImpl(
     }
 
     /**
-     * Schedule a timer event to be posted to the event queue after some delay.
-     *
-     * @param key unique [TimerEvent] identifier.
-     * @param delay in milliseconds, when [onTime] is processed.
-     * @param onTime Function generating the timer event to post to the queue. The input parameter is the key.
+     * See [LifecycleCoordinator].
      */
     override fun setTimer(key: String, delay: Long, onTime: (String) -> TimerEvent) {
         postEvent(SetUpTimer(key, delay, onTime))
     }
 
     /**
-     * Return `true` in this coordinator is processing posted events.
+     * See [LifecycleCoordinator].
+     */
+    override fun cancelTimer(key: String) {
+        postEvent(CancelTimer(key))
+    }
+
+    /**
+     * See [LifecycleCoordinator].
+     */
+    override fun updateStatus(newStatus: LifecycleStatus) {
+        postEvent(StatusChange(newStatus))
+    }
+
+    /**
+     * See [LifecycleCoordinator].
+     */
+    override fun followStatusChanges(coordinators: Set<LifecycleCoordinator>): RegistrationHandle {
+        val registration = Registration(coordinators, this)
+        postEvent(TrackRegistration(registration))
+        coordinators.forEach { it.postEvent(NewRegistration(registration)) }
+        return registration
+    }
+
+    /**
+     * See [LifecycleCoordinator].
      */
     override val isRunning: Boolean
         get() = lifecycleState.isRunning
+
+    /**
+     * See [LifecycleCoordinator].
+     */
+    override val status: LifecycleStatus
+        get() = lifecycleState.status
 
     /**
      * Start this coordinator.
@@ -175,6 +197,6 @@ class LifecycleCoordinatorImpl(
      * are delivered to the user code.
      */
     override fun stop() {
-        postEvent(StopEvent())
+        stopInternal(false)
     }
 }
