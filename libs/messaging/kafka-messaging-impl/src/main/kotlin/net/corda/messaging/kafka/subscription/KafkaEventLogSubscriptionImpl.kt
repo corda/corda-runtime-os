@@ -9,15 +9,17 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asEventLogRecord
 import net.corda.messaging.kafka.utils.render
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
+import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -44,9 +46,9 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     private val partitionAssignmentListener: PartitionAssignmentListener?
 ): Subscription<K, V> {
 
-    companion object {
-        private val log = contextLogger()
-    }
+    private val log = LoggerFactory.getLogger(
+        "${config.getString(CONSUMER_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
+    )
 
     private val consumerThreadStopTimeout = config.getLong(KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT)
     private val consumerPollAndProcessRetries = config.getLong(KafkaProperties.CONSUMER_POLL_AND_PROCESS_RETRIES)
