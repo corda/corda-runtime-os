@@ -24,6 +24,7 @@ import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
@@ -86,7 +87,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         messagesPendingSession,
         sessionReplayer
     )
-    //private val messageReplayer: DeliveryTracker
+    private val messageReplayer: DeliveryTracker
 
     init {
         val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, 1)
@@ -102,7 +103,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
             partitionAssignmentListener = inboundAssignmentListener
         )
-        //messageReplayer = DeliveryTracker(config.flowMessageReplayPeriod, publisherFactory, subscriptionFactory, messageForwarder.processEvent(event, false))
+        messageReplayer = DeliveryTracker(
+            config.flowMessageReplayPeriod,
+            publisherFactory,
+            subscriptionFactory,
+            outboundMessageProcessor::processEvent
+        )
     }
 
     override fun start() {
@@ -229,7 +235,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun recordForLMReceivedMarker(messageId: String): Record<String, AppMessageMarker> {
-            val marker = AppMessageMarker(LinkManagerReceivedMarker())
+            val marker = AppMessageMarker(LinkManagerReceivedMarker(), Instant.now().toEpochMilli())
             return Record(Schema.P2P_OUT_MARKERS, messageId, marker)
         }
     }

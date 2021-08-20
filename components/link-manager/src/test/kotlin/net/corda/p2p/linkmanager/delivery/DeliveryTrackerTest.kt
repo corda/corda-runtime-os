@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager.delivery
 
 import com.typesafe.config.Config
-import net.corda.messaging.api.processor.StateAndEventProcessorWithReassignment
+import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
@@ -10,6 +10,7 @@ import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageDeliveryState
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
@@ -27,6 +28,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.*
@@ -56,7 +59,7 @@ class DeliveryTrackerTest {
         loggingInterceptor.reset()
     }
 
-    private fun processEvent(event: EventLogRecord<ByteBuffer, AppMessage>): List<Record<String, *>> {
+    private fun processEvent(event: EventLogRecord<String, AppMessage>): List<Record<String, *>> {
         return listOf(Record("TOPIC", "Key", event.value))
     }
 
@@ -105,20 +108,6 @@ class DeliveryTrackerTest {
         }
     }
 
-    private class MockStateAndEventSubscriptionFactory: StateAndEventSubscriptionWithReassignmentFactory {
-
-        var interceptedProcessor: StateAndEventProcessorWithReassignment<*, *, *>? = null
-
-        override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
-            subscriptionConfig: SubscriptionConfig,
-            processor: StateAndEventProcessorWithReassignment<K, S, E>,
-            nodeConfig: Config
-        ): StateAndEventSubscription<K, S, E> {
-            interceptedProcessor = processor
-            return MockStateAndEventSubscription()
-        }
-    }
-
     class MockStateAndEventSubscription<K : Any, S: Any, E: Any>(): StateAndEventSubscription<K, S, E> {
         @Volatile
         override var isRunning = false
@@ -141,9 +130,10 @@ class DeliveryTrackerTest {
     private fun createTracker(
         publisher: TestListBasedPublisher,
         randomAccessSubscription: MapBasedRandomAccessSubscription
-    ): Pair<
+    ): Triple<
         DeliveryTracker,
-        StateAndEventProcessorWithReassignment<String, AuthenticatedMessageDeliveryState, AppMessageMarker>
+        StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker>,
+        StateAndEventListener<String, AuthenticatedMessageDeliveryState>
     > {
         val publisherFactory = Mockito.mock(PublisherFactory::class.java)
         Mockito.`when`(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
@@ -151,19 +141,24 @@ class DeliveryTrackerTest {
         val subscriptionFactory = Mockito.mock(SubscriptionFactory::class.java)
         Mockito.`when`(subscriptionFactory.createRandomAccessSubscription<ByteBuffer, AppMessage>(any(), any(), any(), any()))
             .thenReturn(randomAccessSubscription)
+        val mockSubscription = MockStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>()
+        Mockito.`when`(subscriptionFactory
+            .createStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>(any(), any(), any(), any()))
+            .thenReturn(mockSubscription)
 
-        val mockStateAndEventSubscriptionFactory = MockStateAndEventSubscriptionFactory()
         val tracker = DeliveryTracker(
             replayPeriod,
             publisherFactory,
             subscriptionFactory,
-            mockStateAndEventSubscriptionFactory,
             ::processEvent
         )
-        @Suppress("UNCHECKED_CAST")
-        val processor = mockStateAndEventSubscriptionFactory.interceptedProcessor
-                as StateAndEventProcessorWithReassignment<String, AuthenticatedMessageDeliveryState, AppMessageMarker>
-        return tracker to processor
+
+        val processorCaptor = argumentCaptor<StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker>>()
+        val listenerCaptor = argumentCaptor<StateAndEventListener<String, AuthenticatedMessageDeliveryState>>()
+
+        Mockito.verify(subscriptionFactory)
+            .createStateAndEventSubscription(anyOrNull(), processorCaptor.capture(), anyOrNull(), listenerCaptor.capture())
+        return Triple(tracker, processorCaptor.firstValue , listenerCaptor.firstValue)
     }
 
     @Test
@@ -207,7 +202,7 @@ class DeliveryTrackerTest {
 
         val randomAccessSubscription = MapBasedRandomAccessSubscription(latch, waitLatch)
         val publisher = TestListBasedPublisher()
-        val (tracker, processor) = createTracker(publisher, randomAccessSubscription)
+        val (tracker, _, listener) = createTracker(publisher, randomAccessSubscription)
 
         val flowMessage = Mockito.mock(AppMessage::class.java)
         randomAccessSubscription.records[DeliveryTracker.PositionInTopic(partition.toInt(), offset)] =
@@ -217,7 +212,7 @@ class DeliveryTrackerTest {
 
         val messageId = UUID.randomUUID().toString()
         val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
-        processor.onCommit(mapOf(messageId to state))
+        listener.onPostCommit(mapOf(messageId to state))
         latch.await()
 
         assertEquals(replays, publisher.list.size)
@@ -237,7 +232,7 @@ class DeliveryTrackerTest {
         val publisher = TestListBasedPublisher()
 
         val randomAccessSubscription = MapBasedRandomAccessSubscription(latch, waitLatch)
-        val (tracker, processor) = createTracker(publisher, randomAccessSubscription)
+        val (tracker, _, listener) = createTracker(publisher, randomAccessSubscription)
 
         val flowMessage = Mockito.mock(AppMessage::class.java)
         randomAccessSubscription.records[DeliveryTracker.PositionInTopic(partition.toInt(), offset)] =
@@ -247,7 +242,7 @@ class DeliveryTrackerTest {
 
         val messageId = UUID.randomUUID().toString()
         val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
-        processor.onPartitionsAssigned(mapOf(messageId to state))
+        listener.onPartitionSynced(mapOf(messageId to state))
         latch.await()
 
         assertEquals(replays, publisher.list.size)
@@ -271,18 +266,18 @@ class DeliveryTrackerTest {
         randomAccessSubscription.records[DeliveryTracker.PositionInTopic(partition.toInt(), offset)] =
             Record(Schema.P2P_OUT_TOPIC, ByteBuffer.wrap("".toByteArray()), flowMessage)
 
-        val (tracker, processor) = createTracker(publisher, randomAccessSubscription)
+        val (tracker, _, listener) = createTracker(publisher, randomAccessSubscription)
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
         val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
-        processor.onPartitionsAssigned(mapOf(messageId to state))
+        listener.onPartitionSynced(mapOf(messageId to state))
         latch.await()
 
         assertEquals(replays, publisher.list.size)
         assertEquals(publisher.list[0], publisher.list[1])
         assertSame(flowMessage, publisher.list[0].value)
-        processor.onCommit(mapOf(messageId to null))
+        listener.onPostCommit(mapOf(messageId to null))
 
         waitLatch.countDown()
         Thread.sleep(5 * replayPeriod)
@@ -306,18 +301,18 @@ class DeliveryTrackerTest {
         randomAccessSubscription.records[DeliveryTracker.PositionInTopic(partition.toInt(), offset)] =
             Record(Schema.P2P_OUT_TOPIC, ByteBuffer.wrap("".toByteArray()), flowMessage)
 
-        val (tracker, processor) = createTracker(publisher, randomAccessSubscription)
+        val (tracker, _, listener) = createTracker(publisher, randomAccessSubscription)
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
         val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
-        processor.onPartitionsAssigned(mapOf(messageId to state))
+        listener.onPartitionSynced(mapOf(messageId to state))
         latch.await()
 
         assertEquals(replays, publisher.list.size)
         assertEquals(publisher.list[0], publisher.list[1])
         assertSame(flowMessage, publisher.list[0].value)
-        processor.onPartitionsRevoked(mapOf(messageId to state))
+        listener.onPartitionLost(mapOf(messageId to state))
 
         waitLatch.countDown()
         Thread.sleep(5 * replayPeriod)
@@ -337,12 +332,12 @@ class DeliveryTrackerTest {
         val latch = CountDownLatch(replays + 1)
         val waitLatch = CountDownLatch(1)
 
-        val (tracker, processor) = createTracker(publisher, MapBasedRandomAccessSubscription(latch, waitLatch))
+        val (tracker, _, listener) = createTracker(publisher, MapBasedRandomAccessSubscription(latch, waitLatch))
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
         val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
-        processor.onCommit(mapOf(messageId to state))
+        listener.onPostCommit(mapOf(messageId to state))
         latch.await()
         loggingInterceptor.assertSingleError("Could not find a message for replay at partition $partition and offset $offset in topic " +
                 "p2p.out. The message was not replayed.")
