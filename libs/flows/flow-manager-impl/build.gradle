@@ -7,7 +7,6 @@ description "Flow Manager Implemenation"
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
     compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

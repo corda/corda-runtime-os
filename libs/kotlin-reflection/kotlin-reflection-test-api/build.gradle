@@ -4,6 +4,6 @@ plugins {
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
     api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
 }

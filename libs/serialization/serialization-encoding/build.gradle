@@ -16,7 +16,6 @@ dependencies {
     compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
     compileOnly "org.iq80.snappy:snappy:$snappyVersion"
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
     compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
 
     implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
