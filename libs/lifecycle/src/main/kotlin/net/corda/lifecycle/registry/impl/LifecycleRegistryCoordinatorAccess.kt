@@ -16,6 +16,7 @@ interface LifecycleRegistryCoordinatorAccess {
      *
      * @param name The name of the coordinator to track.
      * @param coordinator The new coordinator.
+     * @throws LifecycleRegistryException if there is already a coordinator registered under this name
      */
     fun registerCoordinator(name: String, coordinator: LifecycleCoordinator)
 
@@ -32,6 +33,8 @@ interface LifecycleRegistryCoordinatorAccess {
 
     /**
      * Retrieve a coordinator for a given name.
+     *
+     * @throws LifecycleRegistryException if there is no coordinator registered under this name
      */
     fun getCoordinator(name: String) : LifecycleCoordinator
 }

@@ -96,4 +96,13 @@ internal class LifecycleStateManager(
         }
         return batch
     }
+
+    /**
+     * Get whether events are queued.
+     *
+     * True if there are events to process, false otherwise.
+     */
+    fun eventsQueued() : Boolean {
+        return !eventQueue.isEmpty()
+    }
 }

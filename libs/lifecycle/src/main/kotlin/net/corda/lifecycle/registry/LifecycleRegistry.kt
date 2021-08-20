@@ -22,15 +22,4 @@ interface LifecycleRegistry {
      * @return A map of coordinator names to their current statuses.
      */
     fun componentStatus(): Map<String, CoordinatorStatus>
-
-    /**
-     * Register for any status changes to the coordinators.
-     *
-     * See [StatusChangeEventHandler] for details on how the callback is used.
-     *
-     * @param eventHandler The handler to post status change updates to.
-     * @return A handle to this registration. On calling close, the provided event handler is removed from the registry
-     *         and will no longer be invoked on status changes.
-     */
-    fun registerForStatusChanges(eventHandler: StatusChangeEventHandler) : AutoCloseable
 }

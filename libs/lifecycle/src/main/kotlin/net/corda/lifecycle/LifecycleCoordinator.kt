@@ -93,4 +93,6 @@ interface LifecycleCoordinator : Lifecycle {
      *                            client event handler.
      */
     fun followStatusChanges(coordinators: Set<LifecycleCoordinator>) : RegistrationHandle
+
+    //override fun close()
 }

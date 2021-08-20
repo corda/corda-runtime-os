@@ -109,7 +109,8 @@ class LifecycleCoordinatorImpl(
      * conditions is processing events.
      */
     private fun scheduleIfRequired() {
-        if (!isScheduled.getAndSet(true)) {
+        // Must be this way around as isScheduled should not be set if no task is scheduled.
+        if (lifecycleState.eventsQueued() && !isScheduled.getAndSet(true)) {
             executor.submit(::processEvents)
         }
     }
