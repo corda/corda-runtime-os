@@ -3,19 +3,31 @@ package net.corda.messaging.api.processor
 import net.corda.messaging.api.records.Record
 
 /**
- * A processor of events from a durable subscription. Consumer processors of events
- * from durable subscriptions should implement this interface.
+ * This interface defines a processor of events from a [DurableSubscription] on a feed with keys of type [K],
+ * values of type [V].
+ *
+ * If you want to receive updates from a from [DurableSubscription] you should implement this interface.
+ *
+ * NOTE: Any exception thrown by the processor which isn't [CordaIntermittentException] will result in a
+ * [CordaFatalException] and will cause the subscription to close
  */
 interface DurableProcessor<K : Any, V : Any> {
 
     /**
-     * Process a list of records and return a list of new records to be produced.
-     * @return Records that can be of different key and value types intended to be put on different topics.
+     * Implement this method to receive a list of updates from the subscription feed.
+     *
+     * @param events the list of incoming events to process.
+     * @return any events which are raised in response to the incoming ones.
+     *
+     * Output events can be of different key and value types intended to be put on different topics.
+     * NOTE: All events will be published as a single transaction.
      */
     fun onNext(events: List<Record<K, V>>) : List<Record<*, *>>
 
     /**
      * [keyClass] and [valueClass] to easily get the class types the processor operates on.
+     *
+     * Override these values with the classes for [K] and [V] for your specific subscription.
      */
     val keyClass: Class<K>
     val valueClass: Class<V>
