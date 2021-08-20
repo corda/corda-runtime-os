@@ -53,8 +53,9 @@ interface SubscriptionFactory {
      * Create a [Subscription] for processing events with keys (of type [K]) and values (of type [V]) from a
      * durable queue.
      *
-     * Events will be processed exactly once and no events are expected to be missed. The subscription will mark
-     * records as consumed after they have been processed and any new records have been committed back to the topic.
+     * Records will be marked as processed atomically at the same time as publication of the new records returned
+     * by the processor. Assuming the processing logic does not have any external side-effects, this will provide
+     * exactly-once semantics.
      *
      * More details about the feed updates can be found in the [DurableProcessor].
      *
@@ -100,8 +101,8 @@ interface SubscriptionFactory {
      *
      * More details about the feed updates can be found in the [StateAndEventProcessor].
      *
-     * The subscription will mark records as consumed after they have been processed and any new records have been
-     * committed back to the topic.
+     * NOTE: The returned events will be published and the processed events will be consumed atomically as a
+     * single transaction.
      *
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param processor This provides the callback mechanism for feed updates (see [StateAndEventProcessor])

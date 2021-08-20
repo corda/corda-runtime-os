@@ -9,7 +9,7 @@ import net.corda.messaging.api.records.Record
  * If you want to receive updates from a [StateAndEventSubscription] you should implement this interface.
  *
  * NOTE: Any exception thrown by the processor which isn't [CordaIntermittentException] will result in a
- * [CordaFatalException] and will cause the subscription to close
+ * [CordaFatalException] and will cause the subscription to close.
  */
 interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
 
@@ -41,6 +41,9 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
      * be published.
      *
      * Output events can be of different key and value types intended to be put on different topics.
+     *
+     * NOTE: The returned events will be published and the processed events will be consumed atomically as a
+     * single transaction.
      */
     fun onNext(state: S?, event: Record<K, E>): Response<S>
 

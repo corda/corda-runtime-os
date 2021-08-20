@@ -28,7 +28,9 @@ interface CompactedProcessor<K : Any, V : Any> {
     val valueClass: Class<V>
 
     /**
-     * Used to receive the initial state of the topic when a subscription starts or reconnects. Upon initial connection or reconnection, there will be an initial invocation of this method followed by invocations of `onNext`.
+     * Used to receive the initial state of the topic when a subscription starts or reconnects. Upon initial
+     * connection or reconnection, there will be an initial invocation of this method followed by invocations of
+     * `onNext`.
      *
      * @param currentData the up-to-date state of events for the topic
      */
