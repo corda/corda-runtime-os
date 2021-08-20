@@ -41,7 +41,7 @@ interface Subscription<K, V> : Lifecycle {
  *
  * See [SubscriptionFactory] for the creation of this subscription.
  *
- * Feed updates will be return via a [StateAndEventProcessor].
+ * Feed updates will be returned via a [StateAndEventProcessor].
  *
  * Consumption of records, processing and production of new records on a given key [K] is done atomically
  * (that is, within a single _transaction_).  However, records for different keys may be batched up to
