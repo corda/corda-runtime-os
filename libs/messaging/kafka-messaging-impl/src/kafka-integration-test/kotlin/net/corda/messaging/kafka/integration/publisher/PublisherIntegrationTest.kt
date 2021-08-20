@@ -9,7 +9,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.integration.IntegrationTestProperties
-import net.corda.messaging.kafka.integration.getRecords
+import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
 import net.corda.v5.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions
@@ -52,7 +52,7 @@ class PublisherIntegrationTest {
         publisherConfig = PublisherConfig(CLIENT_ID)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
 
-        val recordsWithPartitions = getRecords(DURABLE_TOPIC1, 5, 2).map { 1 to it }
+        val recordsWithPartitions = getDemoRecords(DURABLE_TOPIC1, 5, 2).map { 1 to it }
         val futures = publisher.publishToPartition(recordsWithPartitions)
         futures.map { it.getOrThrow() }
         publisher.close()
@@ -75,7 +75,7 @@ class PublisherIntegrationTest {
         publisherConfig = PublisherConfig(CLIENT_ID, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
 
-        val recordsWithPartitions = getRecords(DURABLE_TOPIC1, 5, 2).map { 1 to it }
+        val recordsWithPartitions = getDemoRecords(DURABLE_TOPIC1, 5, 2).map { 1 to it }
         val futures = publisher.publishToPartition(recordsWithPartitions)
         futures.map { it.getOrThrow() }
         publisher.close()

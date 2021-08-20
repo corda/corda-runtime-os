@@ -14,8 +14,8 @@ import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DURABLE_TOPIC1
+import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.getKafkaProperties
-import net.corda.messaging.kafka.integration.getRecords
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MESSAGING_KAFKA
@@ -66,7 +66,7 @@ class DurableSubscriptionIntegrationTest {
 
         publisherConfig = PublisherConfig(CLIENT_ID)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        val futures = publisher.publish(getRecords(DURABLE_TOPIC1, 5, 3))
+        val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC1, 5, 3))
         assertThat(futures.size).isEqualTo(15)
         publisher.close()
 
@@ -99,7 +99,7 @@ class DurableSubscriptionIntegrationTest {
     fun `asynch publish records and then start durable subscription`() {
         publisherConfig = PublisherConfig(CLIENT_ID)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        val futures = publisher.publish(getRecords(DURABLE_TOPIC2, 5, 2))
+        val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC2, 5, 2))
         assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
         publisher.close()
@@ -121,7 +121,7 @@ class DurableSubscriptionIntegrationTest {
     fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
         publisherConfig = PublisherConfig(CLIENT_ID, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        val futures = publisher.publish(getRecords(DURABLE_TOPIC3, 5, 2))
+        val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC3, 5, 2))
         assertThat(futures.size).isEqualTo(1)
         futures[0].get()
 
@@ -145,7 +145,7 @@ class DurableSubscriptionIntegrationTest {
         durableSub1.stop()
         durableSub2.stop()
 
-        publisher.publish(getRecords(DURABLE_TOPIC3, 10, 2)).forEach { it.get() }
+        publisher.publish(getDemoRecords(DURABLE_TOPIC3, 10, 2)).forEach { it.get() }
 
         durableSub1.start()
         durableSub2.start()

@@ -90,5 +90,27 @@ class TopicTemplates {
                 "        }\n" +
                 "    }\n" +
                 "]"
+
+        const val EVENT_TOPIC5  = "EventTopic5"
+        const val EVENT_TOPIC5_TEMPLATE = "topics = [" +
+                "    {\n" +
+                "        topicName = \"$EVENT_TOPIC5\"\n" +
+                "        numPartitions = 2\n" +
+                "        replicationFactor = 3\n" +
+                "    },\n" +
+                "    {\n" +
+                "        topicName = \"$EVENT_TOPIC5.DLQ\"\n" +
+                "        numPartitions = 2\n" +
+                "        replicationFactor = 3\n" +
+                "    },\n" +
+                "    {\n" +
+                "        topicName = \"$EVENT_TOPIC5.state\"\n" +
+                "        numPartitions = 2\n" +
+                "        replicationFactor = 3\n" +
+                "        config {\n" +
+                "            cleanup.policy=compact\n" +
+                "        }\n" +
+                "    }\n" +
+                "]"
     }
 }

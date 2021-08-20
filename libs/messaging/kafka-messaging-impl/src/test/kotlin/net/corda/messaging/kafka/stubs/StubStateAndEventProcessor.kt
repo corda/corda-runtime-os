@@ -7,7 +7,8 @@ import java.util.concurrent.CountDownLatch
 
 class StubStateAndEventProcessor(
     var latch: CountDownLatch? = null,
-    private val exceptionOnFirstCall: Exception? = null
+    private val exceptionOnFirstCall: Exception? = null,
+    private val delay: Long? = null,
 ) : StateAndEventProcessor<String, String, ByteBuffer> {
 
     var exceptionThrown = false
@@ -21,6 +22,10 @@ class StubStateAndEventProcessor(
             throw exceptionOnFirstCall
         }
         latch?.countDown()
+
+        if (delay != null) {
+            Thread.sleep(delay)
+        }
 
         val outState = "state${latch?.count}"
         inputs.add(Pair(outState, event))

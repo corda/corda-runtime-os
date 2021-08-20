@@ -9,7 +9,10 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_MAX_POLL_INTERVAL
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_PROCESSOR_TIMEOUT
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.DEAD_LETTER_QUEUE_SUFFIX
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
@@ -30,9 +33,15 @@ import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.lang.System.currentTimeMillis
 import java.time.Clock
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -60,6 +69,16 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         private val CONSUMER_THREAD_STOP_TIMEOUT = KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT.replace("consumer", "eventConsumer")
         private val CONSUMER_CLOSE_TIMEOUT = KafkaProperties.CONSUMER_CLOSE_TIMEOUT.replace("consumer", "eventConsumer")
         private val EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES = CONSUMER_POLL_AND_PROCESS_RETRIES.replace("consumer", "eventConsumer")
+        //short timeout for poll of paused partitions when waiting for processor to finish
+        private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
+
+        //Thread pool for processor shared amongst pattern instances.
+        private const val MIN_THREADS = 1
+        private val executor = Executors.newScheduledThreadPool(MIN_THREADS) { runnable ->
+            val thread = Thread(runnable)
+            thread.isDaemon = true
+            thread
+        }
     }
 
     private val log: Logger = LoggerFactory.getLogger(
@@ -85,6 +104,11 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val producerCloseTimeout = Duration.ofMillis(config.getLong(KafkaProperties.PRODUCER_CLOSE_TIMEOUT))
     private val consumerCloseTimeout = Duration.ofMillis(config.getLong(CONSUMER_CLOSE_TIMEOUT))
     private val consumerPollAndProcessMaxRetries = config.getLong(EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES)
+    private val pollTimeout = config.getLong(CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"))
+    //initial timeout for processor sufficiently below max poll interval
+    private val firstProcessorTimeout = pollTimeout/5
+    private val processorTimeout = config.getLong(CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"))
+    private val deadLetterQueueSuffix = config.getString(DEAD_LETTER_QUEUE_SUFFIX)
 
     // When syncing up new partitions gives us the (partition, endOffset) for a given new partition
     private val statePartitionsToSync: MutableMap<Int, Long> = ConcurrentHashMap<Int, Long>()
@@ -160,7 +184,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 eventConsumer.subscribeToTopic()
 
                 while (!stopped) {
-                    updateStates()
+                    updateStates(true)
                     processEvents()
                 }
             } catch (ex: Exception) {
@@ -267,10 +291,11 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun processEvents() {
         var attempts = 0
         var pollAndProcessSuccessful = false
-        while (!pollAndProcessSuccessful) {
+        while (!pollAndProcessSuccessful && !stopped) {
             try {
+                val maxWaitTime = currentTimeMillis() + processorTimeout
                 for (batch in getEventsByBatch(eventConsumer.poll())) {
-                    tryProcessBatchOfEvents(batch)
+                    tryProcessBatchOfEvents(batch, maxWaitTime)
                 }
                 pollAndProcessSuccessful = true
             } catch (ex: Exception) {
@@ -290,13 +315,13 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun tryProcessBatchOfEvents(events: List<ConsumerRecordAndMeta<K, E>>) {
+    private fun tryProcessBatchOfEvents(events: List<ConsumerRecordAndMeta<K, E>>, maxWaitTime: Long) {
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
         log.trace { "Processing events(size: ${events.size})" }
         for (event in events) {
-            processEvent(event, outputRecords, updatedStates)
+            processEvent(event, outputRecords, updatedStates, maxWaitTime)
         }
 
         producer.beginTransaction()
@@ -311,17 +336,62 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun processEvent(
         event: ConsumerRecordAndMeta<K, E>,
         outputRecords: MutableList<Record<*, *>>,
-        updatedStates: MutableMap<Int, MutableMap<K, S?>>
+        updatedStates: MutableMap<Int, MutableMap<K, S?>>,
+        maxWaitTime: Long
     ) {
         log.trace { "Processing event: $event" }
         val key = event.record.key()
+        val state = getValue(key)
         val partitionId = event.record.partition()
-        val thisEventUpdates = processor.onNext(getValue(key), event.asRecord())
-        outputRecords.addAll(thisEventUpdates.responseEvents)
-        val updatedState = thisEventUpdates.updatedState
-        outputRecords.add(Record(stateTopic.suffix, key, updatedState))
-        updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
-        log.trace { "Completed event: $event" }
+
+        val thisEventUpdates = getUpdatesForEvent(state, event, maxWaitTime)
+
+        if (thisEventUpdates == null) {
+            log.warn("Sending event: $event and $state to dead letter queue" )
+            outputRecords.addAll(generateDeadLetterRecords(listOf(event.asRecord(), Record(stateTopic.suffix, key, state))))
+            outputRecords.add(Record(stateTopic.suffix, key, null))
+            updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
+        } else {
+            outputRecords.addAll(thisEventUpdates.responseEvents)
+            val updatedState = thisEventUpdates.updatedState
+            outputRecords.add(Record(stateTopic.suffix, key, updatedState))
+            updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
+            log.trace { "Completed event: $event" }
+        }
+    }
+
+    private fun getUpdatesForEvent(state: S?, event: ConsumerRecordAndMeta<K, E>, maxWaitTime: Long): StateAndEventProcessor.Response<S>? {
+        val processorFuture: CompletableFuture<StateAndEventProcessor.Response<S>> =
+            CompletableFuture.supplyAsync({ processor.onNext(state, event.asRecord()) }, executor)
+
+        var thisEventUpdates = tryGetProcessorResult(processorFuture, firstProcessorTimeout)
+
+        if (thisEventUpdates == null) {
+            log.trace { "Initial processor timeout on event: $event. Pausing partitions and waiting. " }
+            val assignment = eventConsumer.assignment()
+            eventConsumer.pause(assignment)
+            waitForProcessorToFinish(processorFuture, maxWaitTime)
+            eventConsumer.resume(assignment)
+            log.trace { "Finished waiting to process event: $event. Processor completed: ${processorFuture.isDone}" }
+            thisEventUpdates = tryGetProcessorResult(processorFuture)
+        }
+        return thisEventUpdates
+    }
+
+    private fun waitForProcessorToFinish(processorFuture: CompletableFuture<StateAndEventProcessor.Response<S>>, maxWaitTime: Long) {
+        var done = processorFuture.isDone
+        while (!done && maxWaitTime > currentTimeMillis()) {
+            println(maxWaitTime - currentTimeMillis())
+            eventConsumer.poll(PAUSED_POLL_TIMEOUT)
+            updateStates(false)
+            done = processorFuture.isDone
+        }
+    }
+
+    private fun generateDeadLetterRecords(records: List<Record<*, *>>): List<Record<*, *>> {
+        return records.map {
+            Record(it.topic + deadLetterQueueSuffix, it.key, it.value)
+        }
     }
 
     private fun onProcessorStateUpdated(updatedStates: MutableMap<Int, MutableMap<K, S?>>) {
@@ -344,9 +414,9 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         stateAndEventListener?.onPostCommit(updatedStatesByKey)
     }
 
-    private fun updateStates() {
+    private fun updateStates(syncPartitions: Boolean) {
         if (stateConsumer.assignment().isEmpty()) {
-            log.trace { "State consumer has to partitions assigned." }
+            log.trace { "State consumer has no partitions assigned." }
             return
         }
 
@@ -356,12 +426,15 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             log.trace { "Updating state: $state" }
             updateInMemoryState(state)
 
-            // Check sync and resume
-            if (statePartitionsToSync.isNotEmpty()) {
+            // Check sync status
+            if (syncPartitions && statePartitionsToSync.isNotEmpty()) {
                 val currentPartition = state.record.partition()
-                val stateConsumerPollPosition = stateConsumer.position(TopicPartition(stateTopic.topic, currentPartition))
+                val topicPartition = TopicPartition(stateTopic.topic, currentPartition)
+                val stateConsumerPollPosition = stateConsumer.position(topicPartition)
                 val endOffset = statePartitionsToSync[currentPartition]
                 if (endOffset != null && endOffset <= stateConsumerPollPosition) {
+                    log.trace { "State partition $topicPartition is now up to date. Poll position $stateConsumerPollPosition, recorded " +
+                            "end offset $endOffset" }
                     statePartitionsToSync.remove(currentPartition)
                     partitionsSynced.add(TopicPartition(eventTopic.topic, currentPartition))
                 }
@@ -418,6 +491,33 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     "Attempts: $attempts. Max reties exceeded."
             log.warn(message, ex)
             throw CordaMessageAPIIntermittentException(message, ex)
+        }
+    }
+
+    private fun tryGetProcessorResult(future: CompletableFuture<StateAndEventProcessor.Response<S>>) :
+            StateAndEventProcessor.Response<S>? {
+        return when {
+            future.isDone -> {
+                try {
+                    future.get() as StateAndEventProcessor.Response<S>
+                } catch (ex: ExecutionException) {
+                    throw ex.cause ?: throw ex
+                }
+            }
+            else -> {
+                null
+            }
+        }
+    }
+
+    private fun tryGetProcessorResult(future: CompletableFuture<StateAndEventProcessor.Response<S>>, timeoutInMillis: Long) :
+            StateAndEventProcessor.Response<S>? {
+        return try {
+            future.get(timeoutInMillis, TimeUnit.MILLISECONDS)
+        } catch (ex: TimeoutException) {
+            return null
+        } catch (ex: ExecutionException) {
+            throw ex.cause ?: throw ex
         }
     }
 

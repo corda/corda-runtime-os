@@ -1,9 +1,11 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
+import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_STATEANDEVENT
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
@@ -324,5 +326,51 @@ class KafkaStateAndEventSubscriptionImplTest {
 
         verify(stateConsumer, atLeast(1)).assignment()
         verify(listener, times(1)).onPartitionLost(any())
+    }
+
+    @Test
+    fun `state and event subscription verify dead letter`() {
+        val latch = CountDownLatch(1)
+        val (builder, producer, eventConsumer, _, listener) = setupMocks(0, latch)
+        val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
+        records.add(ConsumerRecordAndMeta("", ConsumerRecord(TOPIC, 1, 1, "key1", "value1")))
+
+        var eventsPaused = false
+        doAnswer {
+            if (eventsPaused) {
+                emptyList()
+            } else {
+                eventsPaused = true
+                records
+            }
+        }.whenever(eventConsumer).poll()
+
+        val shortWaitProcessorConfig = config
+            .withValue(KafkaProperties.CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"),
+                ConfigValueFactory.fromAnyRef(5000))
+            .withValue(KafkaProperties.CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"),
+                ConfigValueFactory.fromAnyRef(100))
+
+        val processor = StubStateAndEventProcessor(latch, null, 10000)
+        val subscription = KafkaStateAndEventSubscriptionImpl(
+            shortWaitProcessorConfig,
+            subscriptionMapFactory,
+            builder,
+            processor,
+            listener
+        )
+
+        subscription.start()
+        assertTrue(latch.await(TEST_TIMEOUT_SECONDS, SECONDS))
+        subscription.stop()
+
+        verify(builder, times(1)).createEventConsumer(any(), any(), any(), any())
+        verify(builder, times(1)).createStateConsumer(any(), any(), any())
+        verify(builder, times(1)).createProducer(any())
+        verify(producer, times(1)).beginTransaction()
+        verify(producer, times(1)).sendRecords(any())
+        verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
+        verify(producer, times(1)).tryCommitTransaction()
+        verify(listener, times(1)).onPostCommit(any())
     }
 }

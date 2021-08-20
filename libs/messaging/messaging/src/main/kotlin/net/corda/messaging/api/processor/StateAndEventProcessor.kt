@@ -3,8 +3,13 @@ package net.corda.messaging.api.processor
 import net.corda.messaging.api.records.Record
 
 /**
- * A processor of events which also have a state from a durable subscription. Consumer processors
+ * A processor of events from a durable queue which also have a state. Consumer processors
  * of state and event subscriptions should implement this interface.
+ * If the processor is slow and exceeds the timeout defined for the processor in the config, the event and state will be placed on dead
+ * letter queues.
+ * The state in the state topic will be set to null for the given key.
+ * The first state for any event will always be null for a processor. If the state is null for any subsequent event records
+ * this key has been added to dead letter queues and should be handled by the processor as appropriate.
  */
 interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
 
