@@ -35,7 +35,7 @@ interface Subscription<K, V> : Lifecycle {
  * pair of topics.
  *
  * [StateAndEventSubscription]s actually process two feeds, one for states and one for events.  The state feed is
- * treated as, and probably is, a compacted topic.  The subscription will retain to most recent state from the feed.
+ * treated as, and probably is, a compacted topic.  The subscription will retain the most recent state from the feed.
  * The events are treated as a durable feed as to avoid missing any.  Each event may then trigger an update the
  * corresponding state or, indeed, trigger more events.
  *
