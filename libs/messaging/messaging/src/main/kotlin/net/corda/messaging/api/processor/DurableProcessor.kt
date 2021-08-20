@@ -20,7 +20,7 @@ interface DurableProcessor<K : Any, V : Any> {
      * @return any events which are raised in response to the incoming ones.
      *
      * Output events can be of different key and value types intended to be put on different topics.
-     * NOTE: All events will be published as a single transaction.
+     * NOTE: The returned events will be published and the processed events will be consumed atomically as a single transaction.
      */
     fun onNext(events: List<Record<K, V>>) : List<Record<*, *>>
 
