@@ -4,9 +4,6 @@ plugins {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-
     implementation "net.corda:corda-crypto-api:$cordaVersion"
 
     implementation project(":libs:serialization:checkpoint-serialization-api")

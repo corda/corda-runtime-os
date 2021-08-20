@@ -4,8 +4,6 @@ plugins {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
     compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

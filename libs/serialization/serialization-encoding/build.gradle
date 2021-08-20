@@ -1,6 +1,7 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'biz.aQute.bnd.builder'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
 }
 description 'Corda Serialization encoding'
 
@@ -12,8 +13,6 @@ configurations {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
     compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
     compileOnly "org.iq80.snappy:snappy:$snappyVersion"
 
