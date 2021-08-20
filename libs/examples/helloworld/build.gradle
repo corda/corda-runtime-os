@@ -4,3 +4,8 @@ plugins {
 }
 
 description 'Hello World Library'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+}

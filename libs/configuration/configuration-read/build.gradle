@@ -6,6 +6,9 @@ plugins {
 description 'Configuration Read API'
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation project(":libs:lifecycle")

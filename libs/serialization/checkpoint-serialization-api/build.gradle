@@ -4,6 +4,9 @@ plugins {
 }
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
     api "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
     api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
 
