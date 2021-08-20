@@ -3,7 +3,9 @@ package net.corda.messaging.emulation.subscription.compacted
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
+import net.corda.messaging.emulation.topic.model.CommitStrategy
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
+import net.corda.messaging.emulation.topic.model.PartitionStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -76,5 +78,15 @@ class CompactedConsumerTest {
                 it
             )
         }
+    }
+
+    @Test
+    fun `commitStrategy is correct`() {
+        assertThat(consumer.commitStrategy).isEqualTo(CommitStrategy.NO_COMMIT)
+    }
+
+    @Test
+    fun `partitionStrategy is correct`() {
+        assertThat(consumer.partitionStrategy).isEqualTo(PartitionStrategy.SHARE_PARTITIONS)
     }
 }

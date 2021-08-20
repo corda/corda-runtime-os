@@ -47,6 +47,8 @@ class TopicsTest {
         val consumer = mock<Consumer> {
             on { groupName } doReturn "group"
             on { topicName } doReturn "topic"
+            on { partitionStrategy } doReturn PartitionStrategy.SHARE_PARTITIONS
+            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
         }
         val thread = topics.createConsumption(consumer)
 

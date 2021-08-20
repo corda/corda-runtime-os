@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doReturnConsecutively
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -15,10 +16,11 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Duration
 
-class ConsumerReadRecordsLoopTest {
+class ConsumptionLoopTest {
     private val config = SubscriptionConfiguration(10, Duration.ofSeconds(1))
     private val records = mutableListOf<RecordMetadata>()
     private val consumer = mock<Consumer> {
+        on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
         on { handleRecords(any()) } doAnswer {
             records.addAll(it.getArgument(0) as Collection<RecordMetadata>)
             Unit
@@ -128,11 +130,11 @@ class ConsumerReadRecordsLoopTest {
 
         loop.run()
 
-        verify(group).commitRecord(
-            partitionTwo, partitionTwoRecords
-        )
-        verify(group).commitRecord(
-            partitionOne, partitionOneRecords
+        verify(group).commit(
+            mapOf(
+                partitionTwo to 16L,
+                partitionOne to 16L
+            )
         )
     }
 
@@ -156,8 +158,95 @@ class ConsumerReadRecordsLoopTest {
 
         loop.run()
 
-        verify(group, never()).commitRecord(
-            any(), any()
+        verify(group, never()).commit(
+            any()
         )
+    }
+
+    @Test
+    fun `processRecords will not commit when state is not auto commit`() {
+        val consumer = mock<Consumer> {
+            on { commitStrategy } doReturn CommitStrategy.NO_COMMIT
+            on { handleRecords(any()) } doAnswer {
+                records.addAll(it.getArgument(0) as Collection<RecordMetadata>)
+                Unit
+            }
+        }
+
+        val loop = ConsumptionLoop(consumer, group)
+
+        val partitionTwoRecords = (10..15).map {
+            RecordMetadata(it.toLong(), Record("topic", it, it), 2)
+        }
+        val partitionOneRecords = (10..15).map {
+            RecordMetadata(it.toLong(), Record("topic", it, it), 2)
+        }
+        val partitionOne = mock<Partition> {
+            on { getRecordsFrom(any(), any()) } doReturn partitionOneRecords
+        }
+        val partitionTwo = mock<Partition> {
+            on { getRecordsFrom(any(), any()) } doReturn partitionTwoRecords
+        }
+        whenever(group.isConsuming(consumer))
+            .thenReturn(true)
+            .thenReturn(false)
+        whenever(group.getPartitions(consumer))
+            .thenReturn(
+                listOf(
+                    partitionOne to 1004L,
+                    partitionTwo to 1001L
+                )
+            )
+
+        loop.run()
+
+        verify(group, never()).commit(any())
+    }
+
+    @Test
+    fun `processRecords will keep it's own records when state is not auto commit`() {
+        whenever(group.pollSizePerPartition).doReturn(10)
+        val consumer = mock<Consumer> {
+            on { commitStrategy } doReturn CommitStrategy.NO_COMMIT
+            on { handleRecords(any()) } doAnswer {
+                records.addAll(it.getArgument(0) as Collection<RecordMetadata>)
+                Unit
+            }
+        }
+
+        val loop = ConsumptionLoop(consumer, group)
+
+        val partitionTwoRecords = (10..15).map {
+            RecordMetadata(it.toLong(), Record("topic", it, it), 2)
+        }
+        val partitionOneRecords = (10..15).map {
+            RecordMetadata(it.toLong(), Record("topic", it, it), 2)
+        }
+        val partitionOneSecondRecords = (16..20).map {
+            RecordMetadata(it.toLong(), Record("topic", it, it), 2)
+        }
+        val partitionOne = mock<Partition> {
+            on { getRecordsFrom(0, 10) } doReturn partitionOneRecords
+            on { getRecordsFrom(16, 10) } doReturn partitionOneSecondRecords
+        }
+        val partitionTwo = mock<Partition> {
+            on { getRecordsFrom(0, 10) } doReturn partitionTwoRecords
+            on { getRecordsFrom(16, 10) } doReturn emptyList()
+        }
+        whenever(group.isConsuming(consumer))
+            .thenReturn(true)
+            .thenReturn(true)
+            .thenReturn(false)
+        whenever(group.getPartitions(consumer))
+            .thenReturn(
+                listOf(
+                    partitionOne to 0L,
+                    partitionTwo to 0L
+                )
+            )
+
+        loop.run()
+
+        verify(partitionOne, times(1)).getRecordsFrom(16, 10)
     }
 }

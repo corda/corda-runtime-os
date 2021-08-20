@@ -3,7 +3,9 @@ package net.corda.messaging.emulation.subscription.pubsub
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.emulation.topic.model.CommitStrategy
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
+import net.corda.messaging.emulation.topic.model.PartitionStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -64,6 +66,16 @@ class PubSubConsumerTest {
     @Test
     fun `offsetStrategy is correct`() {
         assertThat(consumer.offsetStrategy).isEqualTo(OffsetStrategy.LATEST)
+    }
+
+    @Test
+    fun `commitStrategy is correct`() {
+        assertThat(consumer.commitStrategy).isEqualTo(CommitStrategy.AUTO_COMMIT)
+    }
+
+    @Test
+    fun `partitionStrategy is correct`() {
+        assertThat(consumer.partitionStrategy).isEqualTo(PartitionStrategy.DIVIDE_PARTITIONS)
     }
 
     @Test

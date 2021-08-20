@@ -11,10 +11,14 @@ internal class ConsumerGroup(
     private val topicName: String,
     private val partitions: Collection<Partition>,
     internal val subscriptionConfig: SubscriptionConfiguration,
+    firstConsumer: Consumer,
     private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock(),
 ) {
     private val consumers = ConcurrentHashMap<Consumer, Collection<Partition>>()
     private val commitments = ConcurrentHashMap<Partition, Long>()
+
+    private val commitStrategy = firstConsumer.commitStrategy
+    private val partitionStrategy = firstConsumer.partitionStrategy
 
     private val newData = lock.writeLock().newCondition()
 
@@ -54,10 +58,6 @@ internal class ConsumerGroup(
         }
     }
 
-    fun commitRecord(partition: Partition, records: Collection<RecordMetadata>) {
-        commitments[partition] = records.maxOf { it.offset } + 1
-    }
-
     fun isConsuming(consumer: Consumer): Boolean {
         return consumers.containsKey(consumer)
     }
@@ -69,6 +69,29 @@ internal class ConsumerGroup(
     }
 
     private fun repartition() {
+        when (partitionStrategy) {
+            PartitionStrategy.DIVIDE_PARTITIONS -> repartitionDivision()
+            PartitionStrategy.SHARE_PARTITIONS -> repartitionShare()
+        }
+    }
+
+    private fun repartitionShare() {
+        lock.write {
+            val consumersWithoutPartitions = consumers.filterValues {
+                it.isEmpty()
+            }.keys
+            consumersWithoutPartitions.forEach { consumer ->
+                consumers[consumer] = partitions
+                consumer.partitionAssignmentListener?.onPartitionsAssigned(
+                    partitions.map { topicName to it.partitionId }
+                )
+            }
+
+            newData.signalAll()
+        }
+    }
+
+    private fun repartitionDivision() {
         lock.write {
             val consumersWithAssignedPartitions = partitions.withIndex().groupBy({
                 it.index % consumers.size
@@ -107,6 +130,9 @@ internal class ConsumerGroup(
     fun createConsumption(
         consumer: Consumer,
     ): Consumption {
+        if ((consumer.partitionStrategy != partitionStrategy) || (consumer.commitStrategy != commitStrategy)) {
+            throw IllegalStateException("Can not subscribe two different consumer types to the same group")
+        }
         consumers.compute(consumer) { _, currentPartitions ->
             if (currentPartitions != null) {
                 throw DuplicateConsumerException()
@@ -123,5 +149,9 @@ internal class ConsumerGroup(
             },
             loop = ConsumptionLoop(consumer, this)
         )
+    }
+
+    fun commit(commits: Map<Partition, Long>) {
+        commitments += commits
     }
 }
