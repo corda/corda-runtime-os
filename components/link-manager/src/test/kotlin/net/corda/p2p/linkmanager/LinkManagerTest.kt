@@ -84,7 +84,6 @@ class LinkManagerTest {
         private const val MAX_MESSAGE_SIZE = 1000000
         private const val GROUP_ID = "myGroup"
         private const val KEY = "Key"
-        private val KEY_BYTES: ByteBuffer = ByteBuffer.wrap(KEY.toByteArray())
         private const val TOPIC = "Topic"
         private const val MESSAGE_ID = "MessageId"
         private val PAYLOAD = ByteBuffer.wrap("PAYLOAD".toByteArray())
@@ -146,7 +145,7 @@ class LinkManagerTest {
             messageId: String = ""
         ): AuthenticatedMessageAndKey {
             val header = AuthenticatedMessageHeader(dest, source, null, messageId, "", "system-1")
-            return AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), KEY_BYTES)
+            return AuthenticatedMessageAndKey(AuthenticatedMessage(header, data), KEY)
         }
     }
 
@@ -215,7 +214,7 @@ class LinkManagerTest {
 
     @Test
     fun `PendingSessionsMessageQueues queueMessage returns true if a new session is needed`() {
-        val message = AuthenticatedMessageAndKey(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0-0", MESSAGE_ID), KEY_BYTES)
+        val message = AuthenticatedMessageAndKey(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0-0", MESSAGE_ID), KEY)
 
         val key1 = SessionKey(FIRST_SOURCE.toHoldingIdentity(), FIRST_DEST.toHoldingIdentity())
         val key2 = SessionKey(SECOND_SOURCE.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity())
@@ -289,7 +288,7 @@ class LinkManagerTest {
         val unauthenticatedMsg = UnauthenticatedMessage(UnauthenticatedMessageHeader(FIRST_SOURCE, FIRST_DEST), ByteBuffer.wrap(payload.toByteArray()))
         val appMessage = AppMessage(unauthenticatedMsg)
 
-        val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY_BYTES, appMessage, 1, 0)))
+        val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, appMessage, 1, 0)))
 
         assertThat(records).hasSize(1)
         val newMessage = records.first()
@@ -306,9 +305,9 @@ class LinkManagerTest {
         val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
 
         val numberOfMessages = 3
-        val messages = mutableListOf<EventLogRecord<ByteBuffer, AppMessage>>()
+        val messages = mutableListOf<EventLogRecord<String, AppMessage>>()
         for (i in 0 until numberOfMessages) {
-            messages.add(EventLogRecord(TOPIC, KEY_BYTES, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "$i", "MessageId$i")), 0, 0 ))
+            messages.add(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "$i", "MessageId$i")), 0, 0 ))
         }
 
         val records = processor.onNext(messages)
@@ -337,7 +336,7 @@ class LinkManagerTest {
         val inboundSubscribedTopics = listOf(1, 5, 9)
 
         val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, netMap, assignedListener(inboundSubscribedTopics))
-        val messages = listOf(EventLogRecord(TOPIC, KEY_BYTES, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
+        val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
         val records = processor.onNext(messages)
 
         assertThat(records).hasSize(3 * messages.size)
@@ -368,15 +367,15 @@ class LinkManagerTest {
         val messageIds = listOf("Id1", "Id2", "Id3")
 
         val messages = listOf(
-            EventLogRecord(TOPIC, KEY_BYTES,
+            EventLogRecord(TOPIC, KEY,
                 AppMessage(authenticatedMessageAndKey(FIRST_SOURCE, FIRST_DEST, ByteBuffer.wrap("0".toByteArray()), messageIds[0]).message),
             0, 0
             ),
-            EventLogRecord(TOPIC, KEY_BYTES,
+            EventLogRecord(TOPIC, KEY,
                 AppMessage(authenticatedMessageAndKey(FIRST_SOURCE, FIRST_DEST, ByteBuffer.wrap("1".toByteArray()), messageIds[1]).message),
                 0, 0
             ),
-            EventLogRecord(TOPIC, KEY_BYTES,
+            EventLogRecord(TOPIC, KEY,
                 AppMessage(authenticatedMessageAndKey(FIRST_SOURCE, FIRST_DEST, ByteBuffer.wrap("2".toByteArray()), messageIds[2]).message)
                 , 0, 0
             )
@@ -404,7 +403,7 @@ class LinkManagerTest {
         Mockito.`when`(mockSessionManager.processOutboundFlowMessage(any())).thenReturn(SessionManager.SessionState.CannotEstablishSession)
 
         val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
-        val messages = listOf(EventLogRecord(TOPIC, KEY_BYTES, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
+        val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
         val records = processor.onNext(messages)
 
         assertThat(records).hasSize(messages.size)
@@ -426,7 +425,7 @@ class LinkManagerTest {
         Mockito.`when`(mockNetworkMap.getMemberInfo(FIRST_DEST.toHoldingIdentity())).thenReturn(null)
 
         val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, mockNetworkMap, assignedListener(listOf(1)))
-        val messages = listOf(EventLogRecord(TOPIC, KEY_BYTES, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
+        val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
         val records = processor.onNext(messages)
 
         assertThat(records).hasSize(messages.size)
@@ -460,7 +459,7 @@ class LinkManagerTest {
     private fun testDataMessagesWithInboundMessageProcessor(session: SessionPair) {
 
         val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
-        val flowMessageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY_BYTES)
+        val flowMessageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
         val linkOutMessage = linkOutMessageFromFlowMessageAndKey(flowMessageAndKey, session.initiatorSession, netMap)
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
@@ -541,7 +540,7 @@ class LinkManagerTest {
         val session = createSessionPair()
 
         val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
-        val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY_BYTES)
+        val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
         val linkOutMessage = linkOutMessageFromFlowMessageAndKey(flowMessageWrapper, session.initiatorSession, netMap)
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
@@ -573,7 +572,7 @@ class LinkManagerTest {
         val session = createSessionPair()
 
         val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, "", "", "system-1")
-        val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY_BYTES)
+        val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
         val linkOutMessage = linkOutMessageFromFlowMessageAndKey(flowMessageWrapper, session.initiatorSession, netMap)
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
@@ -597,7 +596,7 @@ class LinkManagerTest {
         val session = createSessionPair()
 
         val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
-        val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY_BYTES)
+        val flowMessageWrapper = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
         val linkOutMessage = linkOutMessageFromFlowMessageAndKey(flowMessageWrapper, session.initiatorSession, netMap)
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
