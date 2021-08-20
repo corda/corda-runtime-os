@@ -106,7 +106,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val consumerPollAndProcessMaxRetries = config.getLong(EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES)
     private val pollTimeout = config.getLong(CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"))
     //initial timeout for processor sufficiently below max poll interval
-    private val firstProcessorTimeout = pollTimeout/5
+    private val firstProcessorTimeout = pollTimeout / 5
     private val processorTimeout = config.getLong(CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"))
     private val deadLetterQueueSuffix = config.getString(DEAD_LETTER_QUEUE_SUFFIX)
 
@@ -164,7 +164,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         return null
     }
 
-    private fun getStatesForPartition(partitionId : Int) : Map<K, S> {
+    private fun getStatesForPartition(partitionId: Int): Map<K, S> {
         return currentStates[partitionId]?.map { state -> Pair(state.key, state.value.second) }?.toMap() ?: mapOf()
     }
 
@@ -347,7 +347,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val thisEventUpdates = getUpdatesForEvent(state, event, maxWaitTime)
 
         if (thisEventUpdates == null) {
-            log.warn("Sending event: $event and $state to dead letter queue" )
+            log.warn("Sending event: $event and $state to dead letter queue")
             outputRecords.addAll(generateDeadLetterRecords(listOf(event.asRecord(), Record(stateTopic.suffix, key, state))))
             outputRecords.add(Record(stateTopic.suffix, key, null))
             updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
@@ -400,7 +400,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             for (entry in states) {
                 val key = entry.key
                 val value = entry.value
-                val currentStatesByPartition = currentStates.computeIfAbsent(partitionId){ mapFactory.createMap() }
+                val currentStatesByPartition = currentStates.computeIfAbsent(partitionId) { mapFactory.createMap() }
                 if (value != null) {
                     updatedStatesByKey[key] = value
                     currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)
@@ -433,8 +433,10 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 val stateConsumerPollPosition = stateConsumer.position(topicPartition)
                 val endOffset = statePartitionsToSync[currentPartition]
                 if (endOffset != null && endOffset <= stateConsumerPollPosition) {
-                    log.trace { "State partition $topicPartition is now up to date. Poll position $stateConsumerPollPosition, recorded " +
-                            "end offset $endOffset" }
+                    log.trace {
+                        "State partition $topicPartition is now up to date. Poll position $stateConsumerPollPosition, recorded " +
+                                "end offset $endOffset"
+                    }
                     statePartitionsToSync.remove(currentPartition)
                     partitionsSynced.add(TopicPartition(eventTopic.topic, currentPartition))
                 }
@@ -494,14 +496,15 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun tryGetProcessorResult(future: CompletableFuture<StateAndEventProcessor.Response<S>>) :
+    @Suppress("TooGenericExceptionCaught")
+    private fun tryGetProcessorResult(future: CompletableFuture<StateAndEventProcessor.Response<S>>):
             StateAndEventProcessor.Response<S>? {
         return when {
             future.isDone -> {
                 try {
-                    future.get() as StateAndEventProcessor.Response<S>
-                } catch (ex: ExecutionException) {
-                    throw ex.cause ?: throw ex
+                    future.get()
+                } catch (ex: Exception) {
+                    return handleFutureException(ex)
                 }
             }
             else -> {
@@ -510,14 +513,29 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun tryGetProcessorResult(future: CompletableFuture<StateAndEventProcessor.Response<S>>, timeoutInMillis: Long) :
+    @Suppress("TooGenericExceptionCaught")
+    private fun tryGetProcessorResult(future: CompletableFuture<StateAndEventProcessor.Response<S>>, timeoutInMillis: Long):
             StateAndEventProcessor.Response<S>? {
         return try {
             future.get(timeoutInMillis, TimeUnit.MILLISECONDS)
-        } catch (ex: TimeoutException) {
-            return null
-        } catch (ex: ExecutionException) {
-            throw ex.cause ?: throw ex
+        } catch (ex: Exception) {
+            return handleFutureException(ex)
+        }
+    }
+
+    @Suppress("ThrowsCount")
+    private fun handleFutureException(ex: Exception) : StateAndEventProcessor.Response<S>? {
+        when (ex) {
+            is TimeoutException -> {
+                return null
+            }
+            is ExecutionException -> {
+                //get the exception thrown by the processor if available
+                throw ex.cause ?: throw CordaMessageAPIIntermittentException("Future failed to execute", ex)
+            }
+            else -> {
+                throw CordaMessageAPIIntermittentException("Future failed to execute", ex)
+            }
         }
     }
 
@@ -527,6 +545,5 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     @Suppress("unused")
     private fun Collection<TopicPartition>.toEventTopics(): List<TopicPartition> = map { it.toEventTopic() }
-
 
 }
