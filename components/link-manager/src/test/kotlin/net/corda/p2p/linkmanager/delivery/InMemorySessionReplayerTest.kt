@@ -102,7 +102,7 @@ class InMemorySessionReplayerTest {
 
         replayer.addMessageForReplay(
             id,
-            SessionReplayer.SessionMessageReplay(helloMessage, US, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
+            SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
         )
         replayer.start()
 
@@ -176,7 +176,7 @@ class InMemorySessionReplayerTest {
 
         replayer.addMessageForReplay(
             firstId,
-            SessionReplayer.SessionMessageReplay(helloMessage, US, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
+            SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
         )
 
         val secondId = UUID.randomUUID().toString()
@@ -190,7 +190,7 @@ class InMemorySessionReplayerTest {
 
         replayer.addMessageForReplay(
             secondId,
-            SessionReplayer.SessionMessageReplay(secondHelloMessage, US, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
+            SessionReplayer.SessionMessageReplay(secondHelloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
         )
 
         replayer.start()
@@ -247,7 +247,7 @@ class InMemorySessionReplayerTest {
 
         replayer.addMessageForReplay(
             id,
-            SessionReplayer.SessionMessageReplay(helloMessage, US, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
+            SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
         )
         replayer.start()
         publisher.testWaitLatch.await()
@@ -260,8 +260,8 @@ class InMemorySessionReplayerTest {
         replayer.stop()
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
-            "${InitiatorHelloMessage::class.java.simpleName}) but could not find the network type in the NetworkMap for our identity" +
-            " HoldingIdentity(x500Name=Us, groupId=myGroup). The message was not replayed.")
+            "${InitiatorHelloMessage::class.java.simpleName}) but could not find the network type in the NetworkMap for group" +
+            " $GROUP_ID. The message was not replayed.")
     }
 
     @Test
@@ -290,7 +290,7 @@ class InMemorySessionReplayerTest {
 
         replayer.addMessageForReplay(
             id,
-            SessionReplayer.SessionMessageReplay(helloMessage, US, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
+            SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
         )
         replayer.start()
         publisher.testWaitLatch.await()
@@ -344,7 +344,7 @@ class InMemorySessionReplayerTest {
         val keyHash = hashKey(netMap.getMemberInfo(COUNTER_PARTY)!!.publicKey)
         replayer.addMessageForReplay(
             id,
-            SessionReplayer.SessionMessageReplay(helloMessage, US, SessionReplayer.IdentityLookup.PublicKeyHash(keyHash, GROUP_ID))
+            SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.PublicKeyHash(keyHash, GROUP_ID))
         )
 
         replayer.start()

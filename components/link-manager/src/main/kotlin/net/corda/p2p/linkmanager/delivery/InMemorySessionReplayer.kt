@@ -10,6 +10,7 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.delivery.SessionReplayer.IdentityLookup
 import net.corda.p2p.schema.Schema
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -54,7 +55,7 @@ class InMemorySessionReplayer(
     }
 
     override fun addMessageForReplay(uniqueId: String, messageReplay: SessionReplayer.SessionMessageReplay) {
-        replayScheduler.addForReplay(uniqueId, messageReplay)
+        replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay)
     }
 
     override fun removeMessageFromReplay(uniqueId: String) {
@@ -62,13 +63,6 @@ class InMemorySessionReplayer(
     }
 
     private fun replayMessage(messageReplay: SessionReplayer.SessionMessageReplay) {
-        val networkType = networkMap.getNetworkType(messageReplay.source.groupId)
-        if (networkType == null) {
-            logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
-                " could not find the network type in the NetworkMap for our identity ${messageReplay.source}. The message was not" +
-                " replayed.")
-            return
-        }
 
         val responderMemberInfo = when (val dest = messageReplay.dest) {
             is IdentityLookup.HoldingIdentity -> {
@@ -89,6 +83,14 @@ class InMemorySessionReplayer(
                 }
                 memberInfo
             }
+        }
+
+        val networkType = networkMap.getNetworkType(responderMemberInfo.holdingIdentity.groupId)
+        if (networkType == null) {
+            logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
+                    " could not find the network type in the NetworkMap for group ${responderMemberInfo.holdingIdentity.groupId}." +
+                    " The message was not replayed.")
+            return
         }
 
         val message = MessageConverter.createLinkOutMessage(messageReplay.message, responderMemberInfo, networkType)

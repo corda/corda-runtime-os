@@ -6,7 +6,6 @@ interface SessionReplayer {
 
     data class SessionMessageReplay(
         val message: Any,
-        val source: LinkManagerNetworkMap.HoldingIdentity,
         val dest: IdentityLookup
     )
 

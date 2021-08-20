@@ -13,7 +13,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.AuthenticatedMessageDeliveryState
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.p2p.markers.FlowMessageMarker
+import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema
@@ -28,6 +28,7 @@ import org.junit.jupiter.api.fail
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -39,6 +40,7 @@ class DeliveryTrackerTest {
         const val partition = 10L
         const val offset = 50L
         const val replayPeriod = 10L
+        const val timeStamp = 2635L
 
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -141,7 +143,7 @@ class DeliveryTrackerTest {
         randomAccessSubscription: MapBasedRandomAccessSubscription
     ): Pair<
         DeliveryTracker,
-        StateAndEventProcessorWithReassignment<String, AuthenticatedMessageDeliveryState, FlowMessageMarker>
+        StateAndEventProcessorWithReassignment<String, AuthenticatedMessageDeliveryState, AppMessageMarker>
     > {
         val publisherFactory = Mockito.mock(PublisherFactory::class.java)
         Mockito.`when`(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
@@ -160,7 +162,7 @@ class DeliveryTrackerTest {
         )
         @Suppress("UNCHECKED_CAST")
         val processor = mockStateAndEventSubscriptionFactory.interceptedProcessor
-                as StateAndEventProcessorWithReassignment<String, AuthenticatedMessageDeliveryState, FlowMessageMarker>
+                as StateAndEventProcessorWithReassignment<String, AuthenticatedMessageDeliveryState, AppMessageMarker>
         return tracker to processor
     }
 
@@ -169,9 +171,8 @@ class DeliveryTrackerTest {
 
         val (tracker, processor) = createTracker(TestListBasedPublisher(), MapBasedRandomAccessSubscription())
         tracker.start()
-
         val messageId = UUID.randomUUID().toString()
-        val event = Record("topic", messageId, FlowMessageMarker(LinkManagerSentMarker(partition, offset)))
+        val event = Record("topic", messageId, AppMessageMarker(LinkManagerSentMarker(partition, offset), timeStamp))
         val response = processor.onNext(null, event)
         tracker.stop()
 
@@ -179,6 +180,7 @@ class DeliveryTrackerTest {
         assertNotNull(response.updatedState)
         assertEquals(partition, response.updatedState!!.partition)
         assertEquals(offset, response.updatedState!!.offset)
+        assertEquals(timeStamp, response.updatedState!!.timestamp)
     }
 
     @Test
@@ -187,7 +189,7 @@ class DeliveryTrackerTest {
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val event = Record("topic", messageId, FlowMessageMarker(LinkManagerReceivedMarker()))
+        val event = Record("topic", messageId, AppMessageMarker(LinkManagerReceivedMarker(), timeStamp))
         val response = processor.onNext(null, event)
         tracker.stop()
 
@@ -214,7 +216,7 @@ class DeliveryTrackerTest {
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = AuthenticatedMessageDeliveryState(partition, offset)
+        val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
         processor.onCommit(mapOf(messageId to state))
         latch.await()
 
@@ -244,7 +246,7 @@ class DeliveryTrackerTest {
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = AuthenticatedMessageDeliveryState(partition, offset)
+        val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
         processor.onPartitionsAssigned(mapOf(messageId to state))
         latch.await()
 
@@ -273,7 +275,7 @@ class DeliveryTrackerTest {
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = AuthenticatedMessageDeliveryState(partition, offset)
+        val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
         processor.onPartitionsAssigned(mapOf(messageId to state))
         latch.await()
 
@@ -308,7 +310,7 @@ class DeliveryTrackerTest {
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = AuthenticatedMessageDeliveryState(partition, offset)
+        val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
         processor.onPartitionsAssigned(mapOf(messageId to state))
         latch.await()
 
@@ -339,7 +341,7 @@ class DeliveryTrackerTest {
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = AuthenticatedMessageDeliveryState(partition, offset)
+        val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
         processor.onCommit(mapOf(messageId to state))
         latch.await()
         loggingInterceptor.assertSingleError("Could not find a message for replay at partition $partition and offset $offset in topic " +

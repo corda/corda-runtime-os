@@ -145,13 +145,6 @@ open class SessionManagerImpl(
             return null
         }
 
-        val responderMemberInfo = networkMap.getMemberInfo(sessionKey.responderId)
-        if (responderMemberInfo == null) {
-            logger.warn("Attempted to start session negotiation with peer ${sessionKey.responderId} which is not in the network map. " +
-                    "The sessionInit message was not sent.")
-            return null
-        }
-
         val session = AuthenticationProtocolInitiator(
             sessionId,
             sessionNegotiationParameters.supportedModes,
@@ -165,8 +158,15 @@ open class SessionManagerImpl(
         val sessionInitPayload = session.generateInitiatorHello()
         sessionReplayer.addMessageForReplay(
             sessionId,
-            SessionMessageReplay(sessionInitPayload, sessionKey.ourId, HoldingIdentity(sessionKey.responderId))
+            SessionMessageReplay(sessionInitPayload, HoldingIdentity(sessionKey.responderId))
         )
+
+        val responderMemberInfo = networkMap.getMemberInfo(sessionKey.responderId)
+        if (responderMemberInfo == null) {
+            logger.warn("Attempted to start session negotiation with peer ${sessionKey.responderId} which is not in the network map. " +
+                    "The sessionInit message was not sent.")
+            return null
+        }
 
         val message = createLinkOutMessage(sessionInitPayload, responderMemberInfo, networkType)
         return sessionId to message
@@ -181,13 +181,19 @@ open class SessionManagerImpl(
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
-        if (session.step != AuthenticationProtocolInitiator.Step.SENT_MY_DH_KEY) {
+        /*The Step at this point must be either SENT_MY_DH_KEY (first time we Received a ResponderHelloMessage) or
+          GENERATED_HANDSHAKE_SECRETS we have received a ResponderHelloMessage already and this is a replay. In the
+          second case it is likely we couldn't respond with an InitiatorHandshake message because the needed information
+          was not in the networkMap.
+        */
+        if (session.step == AuthenticationProtocolInitiator.Step.SENT_MY_DH_KEY) {
+            session.receiveResponderHello(message)
+            session.generateHandshakeSecrets()
+        } else if (session.step != AuthenticationProtocolInitiator.Step.GENERATED_HANDSHAKE_SECRETS) {
             logger.warn("Already received a ${ResponderHelloMessage::class.java.simpleName} for ${message.header.sessionId}. " +
-                    "The message was discarded.")
+                "The message was discarded.")
             return null
         }
-        session.receiveResponderHello(message)
-        session.generateHandshakeSecrets()
 
         val ourMemberInfo = networkMap.getMemberInfo(sessionInfo.ourId)
         if (ourMemberInfo == null) {
@@ -215,7 +221,7 @@ open class SessionManagerImpl(
         sessionReplayer.removeMessageFromReplay(message.header.sessionId)
         sessionReplayer.addMessageForReplay(
             message.header.sessionId,
-            SessionMessageReplay(payload, sessionInfo.ourId, HoldingIdentity(sessionInfo.responderId))
+            SessionMessageReplay(payload, HoldingIdentity(sessionInfo.responderId))
         )
 
         val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
@@ -272,6 +278,13 @@ open class SessionManagerImpl(
         )
         session.receiveInitiatorHello(message)
         val responderHello = session.generateResponderHello()
+        sessionReplayer.addMessageForReplay(
+            message.header.sessionId,
+            SessionMessageReplay(
+                responderHello,
+                PublicKeyHash(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
+            )
+        )
 
         val peer = networkMap.getMemberInfo(message.source.initiatorPublicKeyHash.array(), message.source.groupId)
         if (peer == null) {
@@ -315,15 +328,31 @@ open class SessionManagerImpl(
             return null
         }
 
-        session.generateHandshakeSecrets()
-        val identityData = try {
-            session.validatePeerHandshakeMessage(message, peer.publicKey, peer.publicKeyAlgorithm)
-        } catch (exception: WrongPublicKeyHashException) {
-            logger.error(exception.message)
-            return null
-        } catch (exception: InvalidHandshakeMessageException) {
-            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            return null
+        val identityData = when (session.step) {
+            AuthenticationProtocolResponder.Step.SENT_MY_DH_KEY -> {
+                session.generateHandshakeSecrets()
+                try {
+                    session.validatePeerHandshakeMessage(message, peer.publicKey, peer.publicKeyAlgorithm)
+                } catch (exception: WrongPublicKeyHashException) {
+                    logger.error(exception.message)
+                    return null
+                } catch (exception: InvalidHandshakeMessageException) {
+                    logger.validationFailedWarning(
+                        message::class.java.simpleName,
+                        message.header.sessionId,
+                        exception.message
+                    )
+                    return null
+                }
+            }
+            AuthenticationProtocolResponder.Step.RECEIVED_HANDSHAKE_MESSAGE -> {
+                session.getHandshakeIdentityData()
+            }
+            else -> {
+                logger.warn("Already received a ${InitiatorHandshakeMessage::class.java.simpleName} for ${message.header.sessionId}. " +
+                        "The message was discarded.")
+                return null
+            }
         }
 
         //Find the correct Holding Identity to use (using the public key hash).
@@ -347,6 +376,14 @@ open class SessionManagerImpl(
                     " The message was discarded.")
             return null
         }
+        sessionReplayer.removeMessageFromReplay(message.header.sessionId)
+        sessionReplayer.addMessageForReplay(
+            message.header.sessionId,
+            SessionMessageReplay(
+                response,
+                HoldingIdentity(peer.holdingIdentity)
+            )
+        )
 
         val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
         if (networkType == null) {
@@ -357,14 +394,6 @@ open class SessionManagerImpl(
         activeInboundSessions[message.header.sessionId] = session.getSession()
         pendingInboundSessions.remove(message.header.sessionId)
 
-        sessionReplayer.addMessageForReplay(
-            message.header.sessionId,
-            SessionMessageReplay(
-                response,
-                ourMemberInfo.holdingIdentity,
-                PublicKeyHash(identityData.initiatorPublicKeyHash, identityData.groupId)
-            )
-        )
         return createLinkOutMessage(response, peer, networkType)
     }
 }

@@ -14,7 +14,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.AuthenticatedMessageDeliveryState
 import net.corda.p2p.app.AppMessage
-import net.corda.p2p.markers.FlowMessageMarker
+import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema
@@ -145,15 +145,21 @@ class DeliveryTracker(
 
     class MessageTracker(
         private val replayScheduler: ReplayScheduler<PositionInTopic>
-    ) : StateAndEventProcessorWithReassignment<String, AuthenticatedMessageDeliveryState, FlowMessageMarker> {
+    ) : StateAndEventProcessorWithReassignment<String, AuthenticatedMessageDeliveryState, AppMessageMarker> {
 
-        override fun onNext(state: AuthenticatedMessageDeliveryState?, event: Record<String, FlowMessageMarker>): Response<AuthenticatedMessageDeliveryState> {
-            val marker = event.value?.marker ?: return respond(null)
-            return when (marker) {
+        override fun onNext(
+            state: AuthenticatedMessageDeliveryState?,
+            event: Record<String, AppMessageMarker>
+        ): Response<AuthenticatedMessageDeliveryState> {
+            val marker = event.value ?: return respond(null)
+            val markerType = marker.marker
+            val timestamp = marker.timestamp
+            return when (markerType) {
                 is LinkManagerSentMarker -> Response(
                     AuthenticatedMessageDeliveryState(
-                        marker.partition,
-                        marker.offset
+                        markerType.partition,
+                        markerType.offset,
+                        timestamp
                     ), emptyList()
                 )
                 is LinkManagerReceivedMarker -> Response(null, emptyList())
@@ -166,9 +172,9 @@ class DeliveryTracker(
         }
 
         override fun onCommit(states: Map<String, AuthenticatedMessageDeliveryState?>) {
-            for ((key, value) in states) {
-                if (value != null) {
-                    replayScheduler.addForReplay(key, PositionInTopic(value.partition.toInt(), value.offset))
+            for ((key, state) in states) {
+                if (state != null) {
+                    replayScheduler.addForReplay(state.timestamp, key, PositionInTopic(state.partition.toInt(), state.offset))
                 } else {
                     replayScheduler.removeFromReplay(key)
                 }
@@ -182,14 +188,14 @@ class DeliveryTracker(
         }
 
         override fun onPartitionsAssigned(states: Map<String, AuthenticatedMessageDeliveryState>) {
-            for ((key, value) in states) {
-                replayScheduler.addForReplay(key, PositionInTopic(value.partition.toInt(), value.offset))
+            for ((key, state) in states) {
+                replayScheduler.addForReplay(state.timestamp, key, PositionInTopic(state.partition.toInt(), state.offset))
             }
         }
 
         override val keyClass = String::class.java
         override val stateValueClass =  AuthenticatedMessageDeliveryState::class.java
-        override val eventValueClass = FlowMessageMarker::class.java
+        override val eventValueClass = AppMessageMarker::class.java
     }
 }
 

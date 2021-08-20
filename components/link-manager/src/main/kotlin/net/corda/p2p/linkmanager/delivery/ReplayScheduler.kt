@@ -66,13 +66,14 @@ class ReplayScheduler<REPLAY_ARGUMENT>(
         val startTimestamp = timestamp()
         val replayWindowMax = startTimestamp - replayPeriod
         for ((key, position) in pendingAckTimestamps) {
-            if (key.timestamp > replayWindowMax) break
+            if (key.timestamp > replayWindowMax) {
+                break
+            }
             replayMessage(position)
         }
     }
 
-    fun addForReplay(uniqueId: String, replayArgument: REPLAY_ARGUMENT) {
-        val timestamp = timestamp()
+    fun addForReplay(timestamp: Long, uniqueId: String, replayArgument: REPLAY_ARGUMENT) {
         val key = SkipListKey(timestamp, uniqueId)
         pendingAckTimestamps[key] = replayArgument
         keyFromMessageId[uniqueId] = key

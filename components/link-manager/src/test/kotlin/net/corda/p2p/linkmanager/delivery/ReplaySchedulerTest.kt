@@ -8,30 +8,24 @@ import java.util.concurrent.CountDownLatch
 class ReplaySchedulerTest {
 
     /**
-     * [getTimeStamp] returns an incrementing timestamp until [replaysStarted] is called.
-     * After [replaysStarted] is called the timestamp will increment once more before always returning
-     * zero. The idea being this will cause the delivery tracker to replay some messages once in [ReplayScheduler.replayMessages].
+     * The class produces timestamps which cause some messages to replay once. Subsequent calls to [getTimeStamp] return 0
+     * which causes no messages to replay.
+     * The idea being this will cause the delivery tracker to replay some messages once in [ReplayScheduler.replayMessages].
      * [awaitSecondReplay] waits until getTimestamp as been called twice inside replayMessages (after which some messages have
      * replayed once).
      */
-    class ReplayOnceTimeStamper {
-        private var replaysStarted = false
+    class ReplayOnceTimeStamper(private val timeStamp: Long) {
         private val secondReplayLatch = CountDownLatch(1)
-        private var timeStamp = 0L
+        private var getTimeStampCalls = 0
 
         fun getTimeStamp(): Long {
-            return if (!replaysStarted) {
-                timeStamp++
+            if (getTimeStampCalls == 1) secondReplayLatch.countDown()
+            getTimeStampCalls++
+            return if (getTimeStampCalls == 1) {
+                timeStamp
             } else {
-                if (timeStamp == 0L) secondReplayLatch.countDown()
-                val currentTimeStamp = timeStamp
-                timeStamp = 0
-                currentTimeStamp
+                0
             }
-        }
-
-        fun replaysStarted() {
-            replaysStarted = true
         }
 
         fun awaitSecondReplay() {
@@ -47,16 +41,17 @@ class ReplaySchedulerTest {
         }
         val replayPeriod = 5L
         val messages = 9
-        val timeStamper = ReplayOnceTimeStamper()
+        val timeStamper = ReplayOnceTimeStamper(messages.toLong())
 
         val replayManager = ReplayScheduler(replayPeriod, replayMessage, timeStamper::getTimeStamp)
         for (i in 0 until messages) {
             val messageId = UUID.randomUUID().toString()
-            replayManager.addForReplay(messageId,
+            replayManager.addForReplay(
+                i.toLong(),
+                messageId,
                 DeliveryTracker.PositionInTopic(1, i.toLong())
             )
         }
-        timeStamper.replaysStarted()
         replayManager.start()
         timeStamper.awaitSecondReplay()
 
@@ -79,14 +74,16 @@ class ReplaySchedulerTest {
         val replayPeriod = 5L
         val messages = 9
 
-        val timeStamper = ReplayOnceTimeStamper()
+        val timeStamper = ReplayOnceTimeStamper(messages.toLong())
 
         val replayManager = ReplayScheduler(replayPeriod, replayMessage, timeStamper::getTimeStamp)
         val messageIds = mutableListOf<String>()
         for (i in 0 until messages) {
             val messageId = UUID.randomUUID().toString()
             messageIds.add(messageId)
-            replayManager.addForReplay(messageId,
+            replayManager.addForReplay(
+                i.toLong(),
+                messageId,
                 DeliveryTracker.PositionInTopic(1, i.toLong())
             )
         }
@@ -95,7 +92,6 @@ class ReplaySchedulerTest {
         for (i in 0 until messages) {
             if (i % 2 == 0) replayManager.removeFromReplay(messageIds[i])
         }
-        timeStamper.replaysStarted()
         replayManager.start()
         timeStamper.awaitSecondReplay()
 

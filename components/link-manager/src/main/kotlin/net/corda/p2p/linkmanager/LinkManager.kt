@@ -24,7 +24,6 @@ import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
@@ -45,6 +44,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
+import java.time.Instant
 import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
@@ -224,7 +224,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun recordForLMSentMarker(partition: Int, offset: Long, messageId: String): Record<String, AppMessageMarker> {
-            val marker = AppMessageMarker(LinkManagerSentMarker(partition.toLong(), offset))
+            val marker = AppMessageMarker(LinkManagerSentMarker(partition.toLong(), offset), Instant.now().toEpochMilli())
             return Record(Schema.P2P_OUT_MARKERS, messageId, marker)
         }
 
@@ -312,7 +312,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun makeMarkerForAckMessage(message: MessageAck): Record<String, AppMessageMarker> {
-            return Record(Schema.P2P_OUT_MARKERS, message.messageId, AppMessageMarker(LinkManagerReceivedMarker()))
+            return Record(
+                Schema.P2P_OUT_MARKERS,
+                message.messageId,
+                AppMessageMarker(LinkManagerReceivedMarker(), Instant.now().toEpochMilli())
+            )
         }
 
         override val keyClass = String::class.java

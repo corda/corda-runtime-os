@@ -57,6 +57,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
     }
 
     var step = Step.INIT
+    private lateinit var handshakeIdentityData: HandshakeIdentityData
 
     enum class Step {
         INIT,
@@ -183,9 +184,15 @@ class AuthenticationProtocolResponder(private val sessionId: String,
             agreedMaxMessageSize = min(ourMaxMessageSize, this)
         }
 
-        return HandshakeIdentityData(initiatorHandshakePayload.initiatorPublicKeyHash.array(),
+         handshakeIdentityData =  HandshakeIdentityData(initiatorHandshakePayload.initiatorPublicKeyHash.array(),
                                      initiatorHandshakePayload.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
                                      initiatorHandshakePayload.initiatorEncryptedExtensions.groupId)
+        return handshakeIdentityData
+    }
+
+    fun getHandshakeIdentityData(): HandshakeIdentityData {
+        checkState(Step.RECEIVED_HANDSHAKE_MESSAGE)
+        return handshakeIdentityData
     }
 
     /**
