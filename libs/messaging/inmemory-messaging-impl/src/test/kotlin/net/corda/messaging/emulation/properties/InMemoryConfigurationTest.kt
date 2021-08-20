@@ -43,14 +43,14 @@ class InMemoryConfigurationTest {
         fun `will return default poll size if no value to overwrite`() {
             val conf = configuration.subscriptionConfiguration("group3")
 
-            assertThat(conf.partitionPollSize).isEqualTo(5)
+            assertThat(conf.maxPollSize).isEqualTo(50)
         }
 
         @Test
         fun `will override number of poll size`() {
             val conf = configuration.subscriptionConfiguration("group2")
 
-            assertThat(conf.partitionPollSize).isEqualTo(15)
+            assertThat(conf.maxPollSize).isEqualTo(15)
         }
 
         @Test

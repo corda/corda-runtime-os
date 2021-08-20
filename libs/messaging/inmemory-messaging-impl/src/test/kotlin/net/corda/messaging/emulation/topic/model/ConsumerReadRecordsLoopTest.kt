@@ -26,6 +26,7 @@ class ConsumerReadRecordsLoopTest {
     }
     private val group = mock<ConsumerGroup> {
         on { subscriptionConfig } doReturn config
+        on { pollSizePerPartition } doReturn 5
     }
 
     private val loop = ConsumptionLoop(consumer, group)
@@ -78,7 +79,7 @@ class ConsumerReadRecordsLoopTest {
 
         loop.run()
 
-        verify(partition).getRecordsFrom(1004L, config.partitionPollSize)
+        verify(partition).getRecordsFrom(1004L, 5)
     }
 
     @Test

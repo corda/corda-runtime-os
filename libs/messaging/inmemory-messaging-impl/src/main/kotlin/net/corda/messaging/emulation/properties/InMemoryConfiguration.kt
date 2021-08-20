@@ -11,7 +11,7 @@ class InMemoryConfiguration {
         const val NAMED_SUBSCRIPTION_PREFIX = "subscriptions.named"
         const val DEFAULT_SUBSCRIPTION_PREFIX = "subscriptions.default"
         const val TOPICS_PARTITIONS_MAX_SIZE = "partitions.max.size"
-        const val TOPICS_PARTITION_POLL_SIZE = "partitions.poll.size"
+        const val TOPICS_MAX_POLL_SIZE = "max.poll.size"
         const val PARTITIONS_COUNT = "partitions.count"
         const val CONSUMER_THREAD_STOP_TIMEOUT = "consumer.thread.stop.timeout"
     }
@@ -25,7 +25,7 @@ class InMemoryConfiguration {
     }
     private val defaultTopicPartitionsMaxSize = config.getInt("$DEFAULT_TOPIC_PREFIX.$TOPICS_PARTITIONS_MAX_SIZE")
     private val defaultNumberOfPartitions = config.getInt("$DEFAULT_TOPIC_PREFIX.$PARTITIONS_COUNT")
-    private val defaultPartitionsPollSize = config.getInt("$DEFAULT_SUBSCRIPTION_PREFIX.$TOPICS_PARTITION_POLL_SIZE")
+    private val defaultMaxPollSize = config.getInt("$DEFAULT_SUBSCRIPTION_PREFIX.$TOPICS_MAX_POLL_SIZE")
     private val defaultConsumerThreadStopTimeout = config.getDuration("$DEFAULT_SUBSCRIPTION_PREFIX.$CONSUMER_THREAD_STOP_TIMEOUT")
 
     fun topicConfiguration(topicName: String): TopicConfiguration {
@@ -48,10 +48,10 @@ class InMemoryConfiguration {
 
     fun subscriptionConfiguration(groupName: String): SubscriptionConfiguration {
         val subscriptionPath = "$NAMED_SUBSCRIPTION_PREFIX.$groupName"
-        val pollSize = if (config.hasPath("$subscriptionPath.$TOPICS_PARTITION_POLL_SIZE")) {
-            config.getInt("$subscriptionPath.$TOPICS_PARTITION_POLL_SIZE")
+        val pollSize = if (config.hasPath("$subscriptionPath.$TOPICS_MAX_POLL_SIZE")) {
+            config.getInt("$subscriptionPath.$TOPICS_MAX_POLL_SIZE")
         } else {
-            defaultPartitionsPollSize
+            defaultMaxPollSize
         }
         val threadStopTimeout = if (config.hasPath("$subscriptionPath.$CONSUMER_THREAD_STOP_TIMEOUT")) {
             config.getDuration("$subscriptionPath.$CONSUMER_THREAD_STOP_TIMEOUT")
@@ -59,7 +59,7 @@ class InMemoryConfiguration {
             defaultConsumerThreadStopTimeout
         }
         return SubscriptionConfiguration(
-            partitionPollSize = pollSize,
+            maxPollSize = pollSize,
             threadStopTimeout = threadStopTimeout,
         )
     }

@@ -18,6 +18,8 @@ internal class ConsumerGroup(
 
     private val newData = lock.writeLock().newCondition()
 
+    internal val pollSizePerPartition = (subscriptionConfig.maxPollSize / partitions.size).coerceAtLeast(1)
+
     class DuplicateConsumerException : Exception("Can not consume the same consumer twice")
 
     internal fun waitForData() {

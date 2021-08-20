@@ -13,7 +13,7 @@ internal class ConsumptionLoop(
     private fun readRecords(): Map<Partition, Collection<RecordMetadata>> {
         return group.getPartitions(consumer)
             .map { (partition, offset) ->
-                partition to partition.getRecordsFrom(offset, group.subscriptionConfig.partitionPollSize)
+                partition to partition.getRecordsFrom(offset, group.pollSizePerPartition)
             }.filter {
                 it.second.isNotEmpty()
             }.toMap()

@@ -401,6 +401,24 @@ class ConsumerGroupTest {
         assertThat(group.isConsuming(consumerTwo)).isTrue
     }
 
+    @Test
+    fun `pollSizePerPartition return the correct value`() {
+        assertThat(group.pollSizePerPartition).isEqualTo(2)
+    }
+
+    @Test
+    fun `pollSizePerPartition return no less than one`() {
+        val partitions = (1..30).map { createPartition(it + 4) }
+        val group = ConsumerGroup(
+            "topic",
+            partitions,
+            SubscriptionConfiguration(0, Duration.ofMillis(12)),
+            lock,
+        )
+
+        assertThat(group.pollSizePerPartition).isEqualTo(1)
+    }
+
     private fun createPartition(id: Int): Partition {
         return mock {
             on { partitionId } doReturn id
