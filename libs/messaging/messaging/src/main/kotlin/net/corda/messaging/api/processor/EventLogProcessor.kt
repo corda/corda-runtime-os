@@ -8,7 +8,7 @@ import net.corda.messaging.api.records.Record
  * values of type [V].
  * Represents a processor of records from a (partitioned) event log.
  *
- * If you want to receive updates from a from [EventLogSubscription] you should implement this interface.
+ * If you want to receive updates from an [EventLogSubscription] you should implement this interface.
  *
  * NOTE: Any exception thrown by the processor which isn't [CordaIntermittentException] will result in a
  * [CordaFatalException] and will cause the subscription to close
