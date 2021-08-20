@@ -22,9 +22,7 @@ interface EventLogProcessor<K : Any, V : Any> {
      * @return a list of new [Record]s to be published, when needed.
      *
      * Output events can be of different key and value types intended to be put on different topics.
-     * NOTE: All events will be published as a single transaction.
-     * The publication of the returned records is guaranteed to be atomic with regards to the consumption of the
-     * processed records.
+     * NOTE: The returned events will be published and the processed events will be consumed atomically as a single transaction.
      */
     fun onNext(events: List<EventLogRecord<K, V>>) : List<Record<*, *>>
 
