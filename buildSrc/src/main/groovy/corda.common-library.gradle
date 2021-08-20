@@ -6,7 +6,9 @@ plugins {
 }
 
 configurations {
-    testArtifacts
+    testArtifacts {
+        canBeResolved = false
+    }
     testCompileOnly.extendsFrom compileOnly
 
     integrationTestApi.extendsFrom testApi
