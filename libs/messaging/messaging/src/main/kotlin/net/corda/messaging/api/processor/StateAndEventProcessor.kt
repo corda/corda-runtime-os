@@ -8,8 +8,8 @@ import net.corda.messaging.api.records.Record
  * If the processor is slow and exceeds the timeout defined for the processor in the config, the event and state will be placed on dead
  * letter queues.
  * The state in the state topic will be set to null for the given key.
- * The first state for any event will always be null for a processor. If the state is null for any subsequent event records
- * this key has been added to dead letter queues and should be handled by the processor as appropriate.
+ * The first state for any event will always be null for a key. If the state is null for any subsequent event records with the same key,
+ * then this key has been added to the state and event dead letter queues and should be handled by the processor as appropriate.
  */
 interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
 
