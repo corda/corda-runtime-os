@@ -16,8 +16,8 @@ import net.corda.flow.statemachine.HousekeepingState
 import net.corda.flow.statemachine.NonSerializableState
 import net.corda.flow.statemachine.factory.FlowStateMachineFactory
 import net.corda.messaging.api.records.Record
-import net.corda.sandbox.cache.FlowMetadata
-import net.corda.sandbox.cache.SandboxCache
+import net.corda.virtual.node.cache.FlowMetadata
+import net.corda.virtual.node.cache.VirtualNodeCache
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.base.util.contextLogger
@@ -29,8 +29,8 @@ import java.time.Clock
 
 @Component(service = [FlowManager::class])
 class FlowManagerImpl @Activate constructor(
-    @Reference(service = SandboxCache::class)
-    private val sandboxCache: SandboxCache,
+    @Reference(service = VirtualNodeCache::class)
+    private val virtualNodeCache: VirtualNodeCache,
     @Reference(service = SerializationService::class)
     private val checkpointSerialisationService: SerializationService,
     @Reference(service = DependencyInjectionService::class)
@@ -100,7 +100,7 @@ class FlowManagerImpl @Activate constructor(
     @Suppress("SpreadOperator")
     private fun getOrCreate(identity: HoldingIdentity, flow: FlowMetadata, args: List<Any?>): Flow<*> {
         val flowClazz: Class<Flow<*>> =
-            uncheckedCast(sandboxCache.getSandboxGroupFor(identity, flow).loadClass(flow.name, Flow::class.java))
+            uncheckedCast(virtualNodeCache.getSandboxGroupFor(identity, flow).loadClass(flow.name, Flow::class.java))
         val constructor = flowClazz.getDeclaredConstructor(*args.map { it!!::class.java }.toTypedArray())
         return constructor.newInstance(*args.toTypedArray())
     }

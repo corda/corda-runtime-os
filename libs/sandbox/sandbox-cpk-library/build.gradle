@@ -1,0 +1,22 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+group 'com.example.sandbox'
+
+dependencies {
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = 'sandbox-cpk-library'
+    bnd '''\
+Bundle-Name: Corda Sandbox testing library
+Bundle-SymbolicName: \${project.group}.library
+'''
+}

@@ -1,0 +1,31 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpk'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+group 'com.example.sandbox'
+version ''
+
+cordapp {
+    targetPlatformVersion 999 as Integer
+    workflow {
+        name 'Sandbox CPK-1'
+        versionId 1
+        vendor 'R3'
+    }
+}
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation project(':libs:sandbox:sandbox-cpk-library')
+    cordaProvided "org.osgi:osgi.core:$osgiVersion"
+    cordaProvided "net.corda:corda-application:$cordaVersion"
+}
+
+tasks.named('jar', Jar) {
+    bnd '''\
+Bundle-Name: Corda Sandbox CPK1
+Bundle-SymbolicName: \${project.group}.one
+'''
+}
