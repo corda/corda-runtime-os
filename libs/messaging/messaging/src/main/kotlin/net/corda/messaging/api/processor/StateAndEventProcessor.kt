@@ -6,7 +6,7 @@ import net.corda.messaging.api.records.Record
  * This interface defines a processor of events from a [StateAndEventSubscription] on a feed with keys of type [K],
  * states of type [S], and Events of type [E].
  *
- * If you want to receive updates from a from [StateAndEventSubscription] you should implement this interface.
+ * If you want to receive updates from a [StateAndEventSubscription] you should implement this interface.
  *
  * NOTE: Any exception thrown by the processor which isn't [CordaIntermittentException] will result in a
  * [CordaFatalException] and will cause the subscription to close
