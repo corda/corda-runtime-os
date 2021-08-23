@@ -42,7 +42,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
-import java.nio.ByteBuffer
 import kotlin.concurrent.withLock
 
 class LinkManager(@Reference(service = SubscriptionFactory::class)
@@ -68,7 +67,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private var running = false
     private val startStopLock = ReentrantLock()
 
-    private val outboundMessageSubscription: Subscription<ByteBuffer, AppMessage>
+    private val outboundMessageSubscription: Subscription<String, AppMessage>
     private val inboundMessageSubscription: Subscription<String, LinkInMessage>
     private val inboundAssignmentListener = InboundAssignmentListener()
 
@@ -126,13 +125,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private val sessionManager: SessionManager,
         private val networkMap: LinkManagerNetworkMap,
         private val inboundAssignmentListener: InboundAssignmentListener
-    ) : EventLogProcessor<ByteBuffer, AppMessage> {
+    ) : EventLogProcessor<String, AppMessage> {
 
-        override val keyClass = ByteBuffer::class.java
+        override val keyClass = String::class.java
         override val valueClass = AppMessage::class.java
         private var logger = LoggerFactory.getLogger(this::class.java.name)
 
-        override fun onNext(events: List<EventLogRecord<ByteBuffer, AppMessage>>): List<Record<*, *>> {
+        override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
             val records = mutableListOf<Record<String, *>>()
             for (event in events) {
                 records += processEvent(event)
@@ -140,7 +139,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return records
         }
 
-        private fun processEvent(event: EventLogRecord<ByteBuffer, AppMessage>): List<Record<String, *>> {
+        private fun processEvent(event: EventLogRecord<String, AppMessage>): List<Record<String, *>> {
             val message = event.value?.message
             if (message == null) {
                 logger.error("Received null message. The message was discarded.")
