@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.keystore
 
+import net.corda.crypto.SigningService
 import net.corda.v5.base.util.contextLogger
 
 /**
