@@ -38,6 +38,7 @@ class KafkaStateAndEventSubscriptionImplTest {
     companion object {
         private const val TEST_TIMEOUT_SECONDS = 20L
         private const val TOPIC = "topic"
+        private const val DLQ = ".DLQ"
     }
 
     private val config: Config = createStandardTestConfig().getConfig(PATTERN_STATEANDEVENT)
@@ -74,6 +75,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         doAnswer { producer }.whenever(builder).createProducer(any())
         doAnswer { setOf(topicPartition) }.whenever(stateConsumer).assignment()
         doAnswer { listOf(state) }.whenever(stateConsumer).poll()
+        doAnswer { mapOf("$TOPIC$DLQ" to emptyList<TopicPartition>()) }.whenever(eventConsumer).listTopics()
 
         val mockConsumerRecords = generateMockConsumerRecordAndMetaList(iterations, TOPIC, 0)
         var eventsPaused = false
@@ -347,11 +349,11 @@ class KafkaStateAndEventSubscriptionImplTest {
 
         val shortWaitProcessorConfig = config
             .withValue(KafkaProperties.CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"),
-                ConfigValueFactory.fromAnyRef(5000))
+                ConfigValueFactory.fromAnyRef(10000))
             .withValue(KafkaProperties.CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"),
                 ConfigValueFactory.fromAnyRef(100))
 
-        val processor = StubStateAndEventProcessor(latch, null, 10000)
+        val processor = StubStateAndEventProcessor(latch, null, 3000)
         val subscription = KafkaStateAndEventSubscriptionImpl(
             shortWaitProcessorConfig,
             subscriptionMapFactory,
