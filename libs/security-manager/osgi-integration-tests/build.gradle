@@ -1,9 +1,5 @@
-import aQute.bnd.gradle.Bundle
-import aQute.bnd.gradle.Resolve
-import aQute.bnd.gradle.TestOSGi
-
 plugins {
-    id "biz.aQute.bnd.builder"
+    id "corda.osgi-test-conventions"
 }
 
 dependencies {
@@ -25,39 +21,4 @@ dependencies {
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
     integrationTestRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     integrationTestRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-}
-
-def testingBundle = tasks.register('testingBundle', Bundle) {
-    archiveBaseName = "security-manager-osgi-tests"
-    from sourceSets.integrationTest.output
-    sourceSet = sourceSets.integrationTest
-    bnd '''
-Bundle-Name: security-manager-osgi-tests
-Bundle-SymbolicName: security-manager-osgi-tests
-Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
-'''
-}
-
-def resolve = tasks.register('resolve', Resolve) {
-    dependsOn jar, testingBundle
-    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files, testingBundle)
-    bndrun = file('tests.bndrun')
-    //  bnd attempts to use ~/ for caching. If this is unavailable, the build will fail.
-    System.setProperty("bnd.home.dir", "$rootDir/bnd")
-}
-
-tasks.register('integrationTest', Test) {
-    dependsOn testOSGi
-    enabled = false
-}
-
-def testOSGi = tasks.register('testOSGi', TestOSGi) {
-    dependsOn resolve
-    resultsDirectory = file("$testResultsDir/integrationTest")
-    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files, testingBundle)
-    bndrun = file('tests.bndrun')
-}
-
-tasks.named('check') {
-    dependsOn testOSGi
 }
