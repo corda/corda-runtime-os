@@ -16,11 +16,15 @@ import org.slf4j.LoggerFactory
 import java.lang.IllegalStateException
 import java.net.BindException
 import java.net.SocketAddress
+import java.security.Security
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.KeyManagerFactory
 import kotlin.concurrent.withLock
+import net.corda.p2p.gateway.keystore.DelegatedKeystoreProvider
+import net.corda.p2p.gateway.keystore.DelegatedSigningServiceImpl
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 
 /**
  * The [HttpServer] is responsible for opening a socket listener on the configured port in order to receive and handle
@@ -161,7 +165,14 @@ class HttpServer(private val host: String,
 
         init {
             parent.sslConfig.run {
-                keyManagerFactory.init(this.keyStore, this.keyStorePassword.toCharArray())
+                Security.addProvider(BouncyCastleProvider()) //The signing is delegated to BouncyCastle
+                Security.addProvider(DelegatedKeystoreProvider())
+                val delegatedSigningService = DelegatedSigningServiceImpl(this.keyStore, this.keyStorePassword.toCharArray())
+                val delegatedKeystore = DelegatedKeystoreProvider.createKeyStore(
+                    "DelegatedKeyStore",
+                    delegatedSigningService,
+                    this.keyStore)
+                keyManagerFactory.init(delegatedKeystore, this.keyStorePassword.toCharArray())
             }
         }
 

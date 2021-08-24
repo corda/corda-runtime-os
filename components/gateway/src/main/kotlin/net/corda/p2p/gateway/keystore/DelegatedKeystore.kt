@@ -11,15 +11,19 @@ import java.security.cert.Certificate
 import java.util.*
 
 /**
- * The read-only key store implementation of [java.security.KeyStoreSpi], which is backed by another [KeyStore] and [DelegatedSigningService].
+ * The read-only key store implementation of [java.security.KeyStoreSpi], which is backed by another [KeyStore]
+ * and [DelegatedSigningService].
  * Returns private keys as [DelegatedPrivateKey]
- * and registers [DelegatedSignatureProvider] as the first signature provider with Java security (if its not registered already).
- * The class doesn't hold any entries on its own, it delegates key signing to [signingService] and certificate storage to [certStore].
+ * and registers [DelegatedSignatureProvider] as the first signature provider with Java security (if its not registered
+ * already).
+ * The class doesn't hold any entries on its own, it delegates key signing to [signingService] and certificate storage
+ * to [certStore].
  * @param signingService source of private keys, if not provided then the instance doesn't support returning a key
  * @param certStore source of certificates
  */
 @Suppress("TooManyFunctions")
-class DelegatedKeystore(private val signingService: DelegatedSigningService?, private val certStore: KeyStore) : KeyStoreSpi() {
+class DelegatedKeystore(private val signingService: DelegatedSigningService?,
+                        private val certStore: KeyStore) : KeyStoreSpi() {
     companion object {
         private val logger = contextLogger()
     }

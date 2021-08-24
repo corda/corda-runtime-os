@@ -20,11 +20,6 @@ import org.slf4j.LoggerFactory
 import java.lang.Exception
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
-import net.corda.crypto.CryptoCategories
-import net.corda.crypto.CryptoLibraryFactory
-import net.corda.crypto.SigningService
-import net.corda.p2p.gateway.keystore.KeystoreHandler
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
 
 /**
  * The Gateway is a light component which facilitates the sending and receiving of P2P messages.
@@ -38,8 +33,6 @@ import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
  *
  */
 class Gateway(config: GatewayConfiguration,
-              @Reference(service = CryptoLibraryFactory::class)
-              cryptoLibraryFactory: CryptoLibraryFactory,
               @Reference(service = SubscriptionFactory::class)
               subscriptionFactory: SubscriptionFactory,
               @Reference(service = PublisherFactory::class)
@@ -59,8 +52,6 @@ class Gateway(config: GatewayConfiguration,
     private val sessionPartitionMapper = SessionPartitionMapperImpl(subscriptionFactory)
     private val inboundMessageProcessor = InboundMessageHandler(httpServer, config.maxMessageSize, publisherFactory, sessionPartitionMapper)
     private val outboundMessageProcessor = OutboundMessageHandler(connectionManager, publisherFactory)
-    private var tlsSigningService: SigningService
-    private var keystoreHandler: KeystoreHandler
 
     private val lock = ReentrantLock()
 
@@ -76,16 +67,16 @@ class Gateway(config: GatewayConfiguration,
             outboundMessageProcessor,
             ConfigFactory.empty(),
             PartitionAssignmentListenerImpl())
-        tlsSigningService = cryptoLibraryFactory.getSigningService(
-            category = CryptoCategories.TLS,
-            passphrase = config.sslConfig.keyStorePassword,
-            defaultSchemeCodeName = ECDSA_SECP256K1_CODE_NAME
-        )
-        keystoreHandler = KeystoreHandler(tlsSigningService).also {
-        it.loadKeyStoreFromFile()
-        it.loadTruststoreFromFile()
-            it.init()
-        }
+//        At the moment, there's some uncertainty about what components are available at runtime. Ideally, the Gateway
+//        has access to a CryptoLibraryFactory which can be used to get the instance of a SigningService.
+//        The SigningService can then be used to create a DelegatedKeystore. Below is an example of how this would be done.
+//        tlsSigningService = cryptoLibraryFactory.getSigningService(
+//            category = CryptoCategories.TLS,
+//            passphrase = config.sslConfig.keyStorePassword,
+//            defaultSchemeCodeName = ECDSA_SECP256K1_CODE_NAME
+//        )
+//        val delegatedKeystore = DelegatedKeystoreProvider.createKeyStore("", delegatedSigningService, this.keyStore)
+//        The delegatedKeystore can then be injected into the HttpServer
     }
 
     override fun start() {

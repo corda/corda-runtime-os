@@ -6,6 +6,7 @@ import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
 import java.security.SignatureSpi
+import java.security.spec.AlgorithmParameterSpec
 
 /**
  * Registers [DelegatedSignature] which is used in conjunction with [DelegatedPrivateKey].
@@ -21,6 +22,8 @@ class DelegatedSignatureProvider : Provider("DelegatedSignature", "1.0", "JCA/JC
                 this.putService(DelegatedSignatureService(this, "${hashingAlgorithm}with$signatureAlgorithm"))
             }
         }
+
+        this.putService(DelegatedSignatureService(this, "RSASSA-PSS"))
         this["AlgorithmParameters.EC"] = "sun.security.util.ECParameters"
     }
 
@@ -44,6 +47,10 @@ class DelegatedSignature(private val sigAlgo: String) : SignatureSpi() {
         require(privateKey is DelegatedPrivateKey)
         data.reset()
         signingKey = privateKey
+    }
+
+    override fun engineSetParameter(params: AlgorithmParameterSpec) {
+        // Not implementing this causes the signer retrieval to throw
     }
 
     override fun engineUpdate(b: Byte) {
