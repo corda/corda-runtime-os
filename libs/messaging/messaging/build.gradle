@@ -4,6 +4,8 @@ plugins {
 }
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"

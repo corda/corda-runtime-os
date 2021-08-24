@@ -29,6 +29,10 @@ configurations {
 }
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:schema-registry:schema-registry")
 
