@@ -1,6 +1,6 @@
 plugins {
+    id 'corda.common-library'
     id 'com.r3.internal.gradle.plugins.r3Publish'
-    id 'biz.aQute.bnd.builder'
 }
 description 'Corda Security Manager'
 
@@ -12,12 +12,4 @@ dependencies {
     compileOnly "org.osgi:osgi.core:$osgiVersion"
     compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
-}
-
-tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-security-manager'
-    bnd """\
-Bundle-Name: Corda OSGi Security Manager library
-Bundle-SymbolicName: \${project.group}.security-manager
-"""
 }
