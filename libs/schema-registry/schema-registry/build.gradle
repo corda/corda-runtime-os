@@ -4,6 +4,8 @@ plugins {
 }
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
     api "org.apache.avro:avro:$avroVersion"
 }
 

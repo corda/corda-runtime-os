@@ -22,8 +22,12 @@ import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPI
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC4_TEMPLATE
 import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getRecords
+import net.corda.messaging.kafka.integration.getStringRecords
+import net.corda.messaging.kafka.integration.listener.TestStateAndEventListenerStrings
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
+import net.corda.messaging.kafka.integration.processors.TestDurableProcessorStrings
 import net.corda.messaging.kafka.integration.processors.TestStateEventProcessor
+import net.corda.messaging.kafka.integration.processors.TestStateEventProcessorStrings
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_MAX_POLL_INTERVAL
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MESSAGING_KAFKA
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -134,21 +138,22 @@ class StateAndEventSubscriptionIntegrationTest {
 
 
     @Test
-    fun `create topics, start 1 statevent sub, fail processor on first attempt of first record, publish 2 records and verify`() {
+    fun `create topics, start statevent sub, fail processor on first attempt, publish 2 records, verify listener and outputs`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC3_TEMPLATE)
 
         val onNextLatch1 = CountDownLatch(3)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC3-group", EVENT_TOPIC3, 1),
-            TestStateEventProcessor(onNextLatch1, true, true, EVENTSTATE_OUTPUT3),
-            kafkaConfig
+            TestStateEventProcessorStrings(onNextLatch1, true, true, EVENTSTATE_OUTPUT3),
+            kafkaConfig,
+            TestStateAndEventListenerStrings()
         )
 
         stateEventSub1.start()
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        publisher.publish(getRecords(EVENT_TOPIC3, 2, 1)).forEach { it.get() }
+        publisher.publish(getStringRecords(EVENT_TOPIC3, 2, 1)).forEach { it.get() }
 
         assertTrue(onNextLatch1.await(30, TimeUnit.SECONDS))
         stateEventSub1.stop()
@@ -156,13 +161,35 @@ class StateAndEventSubscriptionIntegrationTest {
         val durableLatch = CountDownLatch(2)
         val durableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$EVENTSTATE_OUTPUT3-group",  EVENTSTATE_OUTPUT3, 1),
-            TestDurableProcessor(durableLatch),
+            TestDurableProcessorStrings(durableLatch),
             kafkaConfig,
             null
         )
         durableSub.start()
         assertTrue(durableLatch.await(30, TimeUnit.SECONDS))
         durableSub.stop()
+
+        val expectedSyncState = mapOf("key1" to "2")
+        val expectedCommitStates = listOf(mapOf("key1" to "1"), mapOf("key1" to "2"))
+        val syncPartitionLatch = CountDownLatch(1)
+        val losePartitionLatch = CountDownLatch(1)
+        val commitStatesLatch = CountDownLatch(2)
+        val onNextLatch2 = CountDownLatch(2)
+        val stateEventSub2 = subscriptionFactory.createStateAndEventSubscription(
+            SubscriptionConfig("$EVENT_TOPIC3-group-2", EVENT_TOPIC3, 1),
+            TestStateEventProcessorStrings(onNextLatch2, true, false, EVENTSTATE_OUTPUT3),
+            kafkaConfig,
+            TestStateAndEventListenerStrings(expectedCommitStates, commitStatesLatch, expectedSyncState, syncPartitionLatch,
+                expectedSyncState,
+                losePartitionLatch)
+        )
+
+        stateEventSub2.start()
+        assertTrue(onNextLatch2.await(20, TimeUnit.SECONDS))
+        assertTrue(syncPartitionLatch.await(20, TimeUnit.SECONDS))
+        assertTrue(commitStatesLatch.await(20, TimeUnit.SECONDS))
+        stateEventSub2.stop()
+        assertTrue(losePartitionLatch.await(20, TimeUnit.SECONDS))
     }
 
     @Test

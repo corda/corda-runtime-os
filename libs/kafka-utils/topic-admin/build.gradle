@@ -6,5 +6,7 @@ plugins {
 description 'Kafka Topic admin'
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 }

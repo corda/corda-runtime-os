@@ -18,10 +18,6 @@ data class GatewayConfiguration(
      */
     val connectionConfig: ConnectionConfiguration = ConnectionConfiguration(),
     /**
-     * Value represents the maximum size of the messages this Gateway will accept or send
-     */
-    val maxMessageSize: Int = 1024 * 1024,
-    /**
      * Determines whether HTTP pipeline logging is enabled or not. Should only be turned on when debugging
      */
     val traceLogging: Boolean = false
