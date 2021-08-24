@@ -6,7 +6,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 
 class StubStateAndEventProcessor(
-    private val latch: CountDownLatch? = null,
+    var latch: CountDownLatch? = null,
     private val exceptionOnFirstCall: Exception? = null
 ) : StateAndEventProcessor<String, String, ByteBuffer> {
 

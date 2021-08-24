@@ -1,15 +1,16 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'biz.aQute.bnd.builder'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
 }
 
 description 'Corda AMQP serialization library'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
     compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
