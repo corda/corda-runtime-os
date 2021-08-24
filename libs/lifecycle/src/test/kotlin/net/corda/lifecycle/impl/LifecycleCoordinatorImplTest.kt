@@ -4,15 +4,16 @@ import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
-import net.corda.v5.base.util.contextLogger
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.slf4j.Logger
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -32,15 +33,13 @@ internal class LifecycleCoordinatorImplTest {
 
         private const val COMPONENT_NAME = "Lifecycle-Coordinator-Test"
 
-        private const val BATCH_SIZE: Int = 128
+        private const val BATCH_SIZE = 128
 
-        private const val TIMEOUT: Long = 500L
+        private const val TIMEOUT = 500L
 
         private const val TIMER_DELAY = 100L
 
         private const val NUM_LOOPS = 5
-
-        val logger: Logger = contextLogger()
     }
 
     interface PostEvent : LifecycleEvent
@@ -57,7 +56,6 @@ internal class LifecycleCoordinatorImplTest {
         var eventsProcessed = 0
         var unexpectedEventCount = 0
         createCoordinator { event: LifecycleEvent, _: LifecycleCoordinator ->
-            logger.debug("processEvent $event")
             when (event) {
                 is StartEvent -> {
                     startLatch.countDown()
@@ -96,7 +94,6 @@ internal class LifecycleCoordinatorImplTest {
         val stopLatch = CountDownLatch(1)
         var unexpectedEventCount = 0
         createCoordinator { event: LifecycleEvent, _: LifecycleCoordinator ->
-            logger.debug("processEvent $event")
             when (event) {
                 is StartEvent -> {
                     startLatch.countDown()
@@ -142,7 +139,6 @@ internal class LifecycleCoordinatorImplTest {
         val timerLatch = CountDownLatch(1)
         var deliveredTimerEvents = 0
         createCoordinator { event: LifecycleEvent, _: LifecycleCoordinator ->
-            logger.debug("processEvent $event")
             when (event) {
                 is StartEvent -> startLatch.countDown()
                 is TimerEvent -> {
@@ -281,7 +277,7 @@ internal class LifecycleCoordinatorImplTest {
                 }
             }
         }.use { coordinator ->
-            for(i in 0 .. NUM_LOOPS) {
+            for (i in 0..NUM_LOOPS) {
                 startLatch = CountDownLatch(1)
                 stopLatch = CountDownLatch(1)
                 coordinator.start()
@@ -302,7 +298,6 @@ internal class LifecycleCoordinatorImplTest {
         val stopLatch = CountDownLatch(1)
         var deliveredKey = "the_wrong_key"
         createCoordinator { event: LifecycleEvent, _: LifecycleCoordinator ->
-            logger.debug("processEvent $event")
             when (event) {
                 is StartEvent -> startLatch.countDown()
                 is TimerEvent -> {
@@ -333,7 +328,6 @@ internal class LifecycleCoordinatorImplTest {
         var startedRunningLatch = CountDownLatch(1)
         var stoppedRunningLatch = CountDownLatch(1)
         createCoordinator { event: LifecycleEvent, _: LifecycleCoordinator ->
-            logger.debug("processEvent $event")
             when (event) {
                 is StartEvent -> {
                     startLatch.countDown()
@@ -420,7 +414,7 @@ internal class LifecycleCoordinatorImplTest {
         val event2 = object : LifecycleEvent {}
         val event3 = object : LifecycleEvent {}
         val stopLatch = CountDownLatch(1)
-        var previousEvent : LifecycleEvent? = null
+        var previousEvent: LifecycleEvent? = null
         createCoordinator { event, coordinator ->
             when (event) {
                 is StartEvent -> {
@@ -616,7 +610,318 @@ internal class LifecycleCoordinatorImplTest {
         assertEquals(0, unexpectedExceptionCount)
     }
 
-    private fun createCoordinator(processor: LifecycleEventHandler) : LifecycleCoordinator {
+    @Test
+    fun `status of a coordinator can be updated`() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        val flushingLatch = CountDownLatch(1)
+        val flushingEvent = object : LifecycleEvent {}
+        createCoordinator { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
+                }
+                flushingEvent -> {
+                    flushingLatch.countDown()
+                }
+            }
+        }.use {
+            it.start()
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(LifecycleStatus.DOWN, it.status)
+
+            // Request a status update, then post an event to flush through the status update. Should be guaranteed to
+            // have processed the status update by the time flushing event is seen in the processor.
+            it.updateStatus(LifecycleStatus.UP)
+            it.postEvent(flushingEvent)
+            assertTrue(flushingLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(LifecycleStatus.UP, it.status)
+
+            // Stopping should set the coordinator to down
+            it.stop()
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(LifecycleStatus.DOWN, it.status)
+        }
+    }
+
+    @Test
+    fun `coordinator status should not be updated before the coordinator has been started`() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        createCoordinator { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
+                }
+            }
+        }.use {
+            it.updateStatus(LifecycleStatus.UP)
+            it.start()
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(LifecycleStatus.DOWN, it.status)
+            it.stop()
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+        }
+    }
+
+    @Test
+    fun `an active status change event is delivered when dependent coordinator statuses change`() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        val dependent1 = createCoordinator { _, _ -> }
+        val dependent2 = createCoordinator { _, _ -> }
+        var registration: RegistrationHandle? = null
+        var status = LifecycleStatus.DOWN
+        var regLatch = CountDownLatch(1)
+        createCoordinator { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
+                }
+                is RegistrationStatusChangeEvent -> {
+                    registration = event.registration
+                    status = event.status
+                    regLatch.countDown()
+                }
+            }
+        }.use {
+            it.start()
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            val handle = it.followStatusChanges(setOf(dependent1, dependent2))
+
+            // Set both dependents up
+            dependent1.start()
+            dependent2.start()
+            dependent1.updateStatus(LifecycleStatus.UP)
+            dependent2.updateStatus(LifecycleStatus.UP)
+            assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(handle, registration)
+            assertEquals(LifecycleStatus.UP, status)
+
+            // Take one down and verify that down is delivered
+            regLatch = CountDownLatch(1)
+            dependent1.updateStatus(LifecycleStatus.DOWN)
+            assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(handle, registration)
+            assertEquals(LifecycleStatus.DOWN, status)
+
+            // Put the dependent back up again
+            regLatch = CountDownLatch(1)
+            dependent1.updateStatus(LifecycleStatus.UP)
+            assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(handle, registration)
+            assertEquals(LifecycleStatus.UP, status)
+
+            // Stop a dependent
+            regLatch = CountDownLatch(1)
+            dependent1.stop()
+            assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(handle, registration)
+            assertEquals(LifecycleStatus.DOWN, status)
+
+            it.stop()
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+        }
+    }
+
+    @Test
+    fun `closing a registration prevents active status updates from being delivered`() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        val dependentLatch = CountDownLatch(1)
+        val dependent1 = createCoordinator { event, _ ->
+            if (event is StopEvent) {
+                dependentLatch.countDown()
+            }
+        }
+        val dependent2 = createCoordinator { _, _ -> }
+        var registration: RegistrationHandle? = null
+        var status = LifecycleStatus.DOWN
+        val regLatch = CountDownLatch(1)
+        var totalStatusChanges = 0
+        createCoordinator { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
+                }
+                is RegistrationStatusChangeEvent -> {
+                    registration = event.registration
+                    status = event.status
+                    totalStatusChanges++
+                    regLatch.countDown()
+                }
+            }
+        }.use {
+            it.start()
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            val handle = it.followStatusChanges(setOf(dependent1, dependent2))
+
+            dependent1.start()
+            dependent2.start()
+            dependent1.updateStatus(LifecycleStatus.UP)
+            dependent2.updateStatus(LifecycleStatus.UP)
+            assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(handle, registration)
+            assertEquals(LifecycleStatus.UP, status)
+
+            // Close the registration and bring down a dependent coordinator
+            handle.close()
+            dependent1.updateStatus(LifecycleStatus.DOWN)
+            // Bring down the dependent and wait - this ensures that the status update has definitely been delivered.
+            dependent1.stop()
+            assertTrue(dependentLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(1, totalStatusChanges) // Just the up change
+            assertEquals(LifecycleStatus.UP, status) // Down wasn't delivered.
+        }
+    }
+
+    @Test
+    fun `status updates are delivered across overlapping follow sets of coordinators`() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        var regLatch = CountDownLatch(2)
+        val dependent1 = createCoordinator { _, _ -> }
+        val dependent2 = createCoordinator { _, _ -> }
+        val dependent3 = createCoordinator { _, _ -> }
+        var totalStatusChanges = 0
+        val handleSet = mutableSetOf<RegistrationHandle>()
+        createCoordinator { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
+                }
+                is RegistrationStatusChangeEvent -> {
+                    handleSet.add(event.registration)
+                    totalStatusChanges++
+                    regLatch.countDown()
+                }
+            }
+        }.use {
+            it.start()
+            dependent1.start()
+            dependent2.start()
+            dependent3.start()
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+
+            // Create overlapping registrations and show that both get delivered.
+            val handle1 = it.followStatusChanges(setOf(dependent1, dependent2))
+            val handle2 = it.followStatusChanges(setOf(dependent2, dependent3))
+            dependent1.updateStatus(LifecycleStatus.UP)
+            dependent2.updateStatus(LifecycleStatus.UP)
+            dependent3.updateStatus(LifecycleStatus.UP)
+            assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(2, totalStatusChanges)
+            assertEquals(setOf(handle1, handle2), handleSet)
+
+            handleSet.clear()
+            regLatch = CountDownLatch(2)
+            dependent2.updateStatus(LifecycleStatus.DOWN)
+            assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(4, totalStatusChanges)
+            assertEquals(setOf(handle1, handle2), handleSet)
+        }
+    }
+
+    @Test
+    fun `an up event is delivered when the coordinator starts if all dependent coordinators are up`() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        val dependentsUpLatch = CountDownLatch(2)
+        val flushingEvent = object : LifecycleEvent {}
+        val dependent1 = createCoordinator { event, _ ->
+            when (event) {
+                flushingEvent -> {
+                    dependentsUpLatch.countDown()
+                }
+            }
+        }
+        val dependent2 = createCoordinator { event, _ ->
+            when (event) {
+                flushingEvent -> {
+                    dependentsUpLatch.countDown()
+                }
+            }
+        }
+        var registration: RegistrationHandle? = null
+        var status = LifecycleStatus.DOWN
+        val regLatch = CountDownLatch(1)
+        createCoordinator { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
+                }
+                is RegistrationStatusChangeEvent -> {
+                    registration = event.registration
+                    status = event.status
+                    regLatch.countDown()
+                }
+            }
+        }.use {
+            dependent1.start()
+            dependent2.start()
+            val handle = it.followStatusChanges(setOf(dependent1, dependent2))
+            dependent1.updateStatus(LifecycleStatus.UP)
+            dependent2.updateStatus(LifecycleStatus.UP)
+            dependent1.postEvent(flushingEvent)
+            dependent2.postEvent(flushingEvent)
+            assertTrue(dependentsUpLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            it.start()
+            assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(handle, registration)
+            assertEquals(LifecycleStatus.UP, status)
+        }
+    }
+
+    @Test
+    fun `when a coordinator stops with an error the status is set to error`() {
+        var startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        createCoordinator { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+                is ThrowException -> {
+                    throw Exception("Something went wrong")
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
+                }
+            }
+        }.use {
+            it.start()
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            it.postEvent(object : ThrowException {})
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(LifecycleStatus.ERROR, it.status)
+
+            // Restart and prove that the status is set to DOWN.
+            startLatch = CountDownLatch(1)
+            it.start()
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(LifecycleStatus.DOWN, it.status)
+        }
+    }
+
+    private fun createCoordinator(processor: LifecycleEventHandler): LifecycleCoordinator {
         return LifecycleCoordinatorImpl(COMPONENT_NAME, BATCH_SIZE, processor)
     }
 }

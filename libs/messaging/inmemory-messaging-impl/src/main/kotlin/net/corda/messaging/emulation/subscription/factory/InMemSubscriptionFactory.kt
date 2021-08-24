@@ -15,6 +15,7 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
@@ -69,7 +70,8 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        nodeConfig: Config
+        nodeConfig: Config,
+        stateAndEventListener: StateAndEventListener<K, S>?
     ): StateAndEventSubscription<K, S, E> {
         TODO("Not yet implemented")
     }

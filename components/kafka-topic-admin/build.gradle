@@ -6,6 +6,9 @@ plugins {
 description "Kafka Topic Admin Component"
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation project(':libs:kafka-utils:topic-admin')
 }

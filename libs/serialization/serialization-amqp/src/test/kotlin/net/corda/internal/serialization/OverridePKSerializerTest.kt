@@ -35,14 +35,8 @@ class OverridePKSerializerTest {
     }
 
     class AMQPTestSerializationScheme : AbstractAMQPSerializationScheme() {
-        override fun rpcServerSerializerFactory(context: SerializationContext): SerializerFactory {
-            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-        }
 
         override fun canDeserializeVersion(magic: CordaSerializationMagic, target: SerializationContext.UseCase) = true
-        override fun rpcClientSerializerFactory(context: SerializationContext): SerializerFactory {
-            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-        }
 
         override val publicKeySerializer = TestPublicKeySerializer()
     }

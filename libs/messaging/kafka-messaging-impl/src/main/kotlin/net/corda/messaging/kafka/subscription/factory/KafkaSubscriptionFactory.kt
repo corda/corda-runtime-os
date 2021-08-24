@@ -14,6 +14,7 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_COMPACTED
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_DURABLE
@@ -133,7 +134,8 @@ class KafkaSubscriptionFactory @Activate constructor(
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        nodeConfig: Config
+        nodeConfig: Config,
+        stateAndEventListener: StateAndEventListener<K, S>?
     ): StateAndEventSubscription<K, S, E> {
 
         val subscriptionConfiguration = subscriptionConfig.toConfig()
@@ -154,7 +156,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         )
 
         val mapFactory = object : SubscriptionMapFactory<K, Pair<Long, S>> {
-            override fun createMap(): MutableMap<K, Pair<Long, S>> = ConcurrentHashMap<K, Pair<Long, S>>()
+            override fun createMap(): MutableMap<K, Pair<Long, S>> = ConcurrentHashMap()
             override fun destroyMap(map: MutableMap<K, Pair<Long, S>>) = map.clear()
         }
 
@@ -162,7 +164,8 @@ class KafkaSubscriptionFactory @Activate constructor(
             config,
             mapFactory,
             stateAndEventBuilder,
-            processor
+            processor,
+            stateAndEventListener
         )
     }
 
