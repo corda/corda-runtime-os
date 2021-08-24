@@ -92,7 +92,7 @@ class GatewayTest : TestBase() {
 
 
     @Test
-    @Timeout(60)
+    @Timeout(30)
     fun `multiple clients to gateway`() {
         val clientNumber = 4
         val threadPool = NioEventLoopGroup(clientNumber)
@@ -138,7 +138,7 @@ class GatewayTest : TestBase() {
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(30)
     fun `gateway to multiple servers`() {
         val gatewayAddress = Pair("localhost", 10000)
         val serverAddresses = listOf(
@@ -147,7 +147,7 @@ class GatewayTest : TestBase() {
             "http://www.chip.net:10003",
             "http://www.chip.net:10004")
         // We first produce some messages which will be consumed by the Gateway.
-        val messageCount = 10000 // this number will be produced for each target
+        val messageCount = 10 // this number will be produced for each target
         val deliveryLatch = CountDownLatch(serverAddresses.size * messageCount)
         val servers = mutableListOf<HttpServer>()
         repeat(serverAddresses.size) { id ->
@@ -190,11 +190,11 @@ class GatewayTest : TestBase() {
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(30)
     fun `gateway to gateway - dual stream`() {
         val aliceGatewayAddress = URI.create("http://www.chip.net:10003")
         val bobGatewayAddress = URI.create("http://www.dale.net:10004")
-        val messageCount = 10000
+        val messageCount = 10
         topicServiceAlice!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
         topicServiceBob!!.addRecords(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))))
         // Produce messages for each Gateway
