@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -18,6 +19,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.LISTENER_T
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -25,17 +27,20 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.utils.getEventsByBatch
 import net.corda.messaging.kafka.utils.render
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.System.currentTimeMillis
+import java.nio.ByteBuffer
 import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
@@ -60,6 +65,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
     private val builder: StateAndEventBuilder<K, S, E>,
     private val processor: StateAndEventProcessor<K, S, E>,
+    private val avroSchemaRegistry: AvroSchemaRegistry,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventSubscription<K, S, E>, ConsumerRebalanceListener {
@@ -98,6 +104,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
+
+    private val cordaAvroSerializer = CordaAvroSerializer<Any>(avroSchemaRegistry)
 
     private val topicPrefix = config.getString(KafkaProperties.TOPIC_PREFIX)
     private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
@@ -362,12 +370,11 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val key = event.record.key()
         val state = getValue(key)
         val partitionId = event.record.partition()
-
         val thisEventUpdates = getUpdatesForEvent(state, event, maxWaitTime)
 
         if (thisEventUpdates == null) {
             log.error("Sending event: $event, and state: $state to dead letter queue. Processor failed to complete.")
-            outputRecords.addAll(generateDeadLetterRecords(listOf(event.asRecord(), Record(stateTopic.suffix, key, state))))
+            outputRecords.add(generateDeadLetterRecord(event.record, state))
             outputRecords.add(Record(stateTopic.suffix, key, null))
             updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
         } else {
@@ -427,10 +434,11 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         eventConsumer.resume(assignment)
     }
 
-    private fun generateDeadLetterRecords(records: List<Record<*, *>>): List<Record<*, *>> {
-        return records.map {
-            Record(it.topic + deadLetterQueueSuffix, it.key, it.value)
-        }
+    private fun generateDeadLetterRecord(event: ConsumerRecord<K, E>, state: S?): Record<*, *> {
+        val stateBytes = if (state != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(stateTopic.topic, state)) else null
+        val eventBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(eventTopic.topic, event.value()))
+        return Record(eventTopic.topic + deadLetterQueueSuffix, event.key(),
+            StateAndEventDeadLetterRecord(stateBytes, eventBytes))
     }
 
     private fun onProcessorStateUpdated(updatedStates: MutableMap<Int, MutableMap<K, S?>>) {

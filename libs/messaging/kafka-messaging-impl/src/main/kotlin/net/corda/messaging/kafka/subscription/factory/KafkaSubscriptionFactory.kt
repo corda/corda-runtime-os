@@ -59,7 +59,6 @@ class KafkaSubscriptionFactory @Activate constructor(
         executor: ExecutorService?,
         nodeConfig: Config
     ): Subscription<K, V> {
-
         val config = resolveSubscriptionConfiguration(
             subscriptionConfig.toConfig(),
             nodeConfig,
@@ -165,6 +164,7 @@ class KafkaSubscriptionFactory @Activate constructor(
             mapFactory,
             stateAndEventBuilder,
             processor,
+            avroSchemaRegistry,
             stateAndEventListener
         )
     }

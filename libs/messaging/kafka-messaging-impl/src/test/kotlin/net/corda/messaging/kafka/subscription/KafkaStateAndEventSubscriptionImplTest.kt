@@ -14,6 +14,7 @@ import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.stubs.StubStateAndEventProcessor
+import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
@@ -54,6 +55,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         val producer: CordaKafkaProducer,
         val eventConsumer: CordaKafkaConsumer<String, ByteBuffer>,
         val stateConsumer: CordaKafkaConsumer<String, String>,
+        val avroSchemaRegistry: AvroSchemaRegistry,
         val listener: StateAndEventListener<String, String>,
     )
 
@@ -62,6 +64,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         val stateConsumer: CordaKafkaConsumer<String, String> = mock()
         val listener: StateAndEventListener<String, String> = mock()
         val producer: CordaKafkaProducer = mock()
+        val avroSchemaRegistry: AvroSchemaRegistry = mock()
         val builder: StateAndEventBuilder<String, String, ByteBuffer> = mock()
 
         val topicPartition = TopicPartition(TOPIC, 0)
@@ -91,7 +94,7 @@ class KafkaStateAndEventSubscriptionImplTest {
             }
         }.whenever(eventConsumer).poll()
 
-        return Mocks(builder, producer, eventConsumer, stateConsumer, listener)
+        return Mocks(builder, producer, eventConsumer, stateConsumer, avroSchemaRegistry, listener)
     }
 
     @Test
@@ -99,13 +102,14 @@ class KafkaStateAndEventSubscriptionImplTest {
     fun `state and event subscription retries`() {
         val iterations = 5
         val latch = CountDownLatch(iterations)
-        val (builder, producer, eventConsumer, stateConsumer, listener) = setupMocks(iterations.toLong(), latch)
+        val (builder, producer, eventConsumer, stateConsumer, avroSchemaRegistry, listener) = setupMocks(iterations.toLong(), latch)
         val processor = StubStateAndEventProcessor(latch, CordaMessageAPIIntermittentException("Test exception"))
         val subscription = KafkaStateAndEventSubscriptionImpl(
             config,
             subscriptionMapFactory,
             builder,
             processor,
+            avroSchemaRegistry,
             listener
         )
 
@@ -140,13 +144,14 @@ class KafkaStateAndEventSubscriptionImplTest {
     fun `state and event subscription processes correct state after event`() {
         val iterations = 5
         val latch = CountDownLatch(iterations)
-        val (builder, producer, eventConsumer, stateConsumer, listener) = setupMocks(iterations.toLong(), latch)
+        val (builder, producer, eventConsumer, stateConsumer, avroSchemaRegistry, listener) = setupMocks(iterations.toLong(), latch)
         val processor = StubStateAndEventProcessor(latch)
         val subscription = KafkaStateAndEventSubscriptionImpl(
             config,
             subscriptionMapFactory,
             builder,
             processor,
+            avroSchemaRegistry,
             listener
         )
 
@@ -180,7 +185,7 @@ class KafkaStateAndEventSubscriptionImplTest {
     @Test
     fun `state and event subscription processes multiples events by key, small batches`() {
         val latch = CountDownLatch(30)
-        val (builder, producer, eventConsumer, _, listener) = setupMocks(0, latch)
+        val (builder, producer, eventConsumer, _, avroSchemaRegistry, listener) = setupMocks(0, latch)
         val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
         var offset = 0
         for (i in 0 until 3) {
@@ -206,6 +211,7 @@ class KafkaStateAndEventSubscriptionImplTest {
             subscriptionMapFactory,
             builder,
             processor,
+            avroSchemaRegistry,
             listener
         )
 
@@ -229,7 +235,7 @@ class KafkaStateAndEventSubscriptionImplTest {
     @Test
     fun `state and event subscription processes multiples events by key, large batches`() {
         val latch = CountDownLatch(30)
-        val (builder, producer, eventConsumer, _, listener) = setupMocks(0, latch)
+        val (builder, producer, eventConsumer, _, avroSchemaRegistry, listener) = setupMocks(0, latch)
         val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
         var offset = 0
         for (j in 0 until 3) {
@@ -255,6 +261,7 @@ class KafkaStateAndEventSubscriptionImplTest {
             subscriptionMapFactory,
             builder,
             processor,
+            avroSchemaRegistry,
             listener
         )
 
@@ -278,7 +285,7 @@ class KafkaStateAndEventSubscriptionImplTest {
     @Test
     fun `state and event subscription verify partition sync`() {
         var latch = CountDownLatch(1)
-        val (builder, _, eventConsumer, stateConsumer, listener) = setupMocks(0, latch)
+        val (builder, _, eventConsumer, stateConsumer, avroSchemaRegistry, listener) = setupMocks(0, latch)
         val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
         records.add(ConsumerRecordAndMeta("", ConsumerRecord(TOPIC, 1, 1, "key1", "value1")))
 
@@ -292,6 +299,7 @@ class KafkaStateAndEventSubscriptionImplTest {
             subscriptionMapFactory,
             builder,
             processor,
+            avroSchemaRegistry,
             listener
         )
 
@@ -333,7 +341,7 @@ class KafkaStateAndEventSubscriptionImplTest {
     @Test
     fun `state and event subscription verify dead letter`() {
         val latch = CountDownLatch(1)
-        val (builder, producer, eventConsumer, _, listener) = setupMocks(0, latch)
+        val (builder, producer, eventConsumer, _, avroSchemaRegistry, listener) = setupMocks(0, latch)
         val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
         records.add(ConsumerRecordAndMeta("", ConsumerRecord(TOPIC, 1, 1, "key1", "value1")))
 
@@ -359,6 +367,7 @@ class KafkaStateAndEventSubscriptionImplTest {
             subscriptionMapFactory,
             builder,
             processor,
+            avroSchemaRegistry,
             listener
         )
 

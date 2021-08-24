@@ -12,6 +12,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DLQ_SUFFIX
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC1
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC1_TEMPLATE
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC2
@@ -54,11 +55,11 @@ class StateAndEventSubscriptionIntegrationTest {
 
     private companion object {
         const val CLIENT_ID = "integrationTestEventPublisher"
-        const val DLQ = ".DLQ"
         const val EVENTSTATE_OUTPUT2 = "EventStateOutputTopic2"
         const val EVENTSTATE_OUTPUT3 = "EventStateOutputTopic3"
         const val EVENTSTATE_OUTPUT4 = "EventStateOutputTopic4"
         const val EVENTSTATE_OUTPUT5 = "EventStateOutputTopic5"
+        const val EVENTSTATE_OUTPUT6 = "EventStateOutputTopic6"
     }
 
     @InjectService(timeout = 4000)
@@ -277,7 +278,7 @@ class StateAndEventSubscriptionIntegrationTest {
         //verify dead letter populated
         val deadLetterLatch = CountDownLatch(1)
         val deadLetterSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$EVENTSTATE_OUTPUT5-group-DLQ",  EVENT_TOPIC5 + DLQ, 1),
+            SubscriptionConfig("$EVENTSTATE_OUTPUT5-group-DLQ",  EVENT_TOPIC5 + DLQ_SUFFIX, 1),
             TestDurableProcessorStrings(deadLetterLatch),
             kafkaConfig,
             null
@@ -310,7 +311,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC6-group", EVENT_TOPIC6, 1),
-            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT5, 8000),
+            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT6, 8000),
             shortIntervalTimeoutConfig, TestStateAndEventListenerStrings(expectedCommitStates, onCommitLatch, 6000)
         )
         stateEventSub1.start()
@@ -318,7 +319,7 @@ class StateAndEventSubscriptionIntegrationTest {
         //verify output records from state and event
         val durableLatch = CountDownLatch(3)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$EVENTSTATE_OUTPUT5-group",  EVENTSTATE_OUTPUT5, 1),
+            SubscriptionConfig("$EVENTSTATE_OUTPUT6-group",  EVENTSTATE_OUTPUT6, 1),
             TestDurableProcessorStrings(durableLatch),
             kafkaConfig,
             null
