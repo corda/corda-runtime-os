@@ -50,7 +50,7 @@ class Gateway(config: GatewayConfiguration,
     private val connectionManager = ConnectionManager(config.sslConfig, config.connectionConfig)
     private var p2pMessageSubscription: Subscription<String, LinkOutMessage>
     private val sessionPartitionMapper = SessionPartitionMapperImpl(subscriptionFactory)
-    private val inboundMessageProcessor = InboundMessageHandler(httpServer, config.maxMessageSize, publisherFactory, sessionPartitionMapper)
+    private val inboundMessageProcessor = InboundMessageHandler(httpServer, publisherFactory, sessionPartitionMapper)
     private val outboundMessageProcessor = OutboundMessageHandler(connectionManager, publisherFactory)
 
     private val lock = ReentrantLock()

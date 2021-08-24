@@ -61,12 +61,12 @@ class TopicTemplates {
         const val EVENT_TOPIC3_TEMPLATE = "topics = [" +
                 "    {\n" +
                 "        topicName = \"$EVENT_TOPIC3\"\n" +
-                "        numPartitions = 2\n" +
+                "        numPartitions = 1\n" +
                 "        replicationFactor = 3\n" +
                 "    },\n" +
                 "    {\n" +
                 "        topicName = \"$EVENT_TOPIC3.state\"\n" +
-                "        numPartitions = 2\n" +
+                "        numPartitions = 1\n" +
                 "        replicationFactor = 3\n" +
                 "        config {\n" +
                 "            cleanup.policy=compact\n" +

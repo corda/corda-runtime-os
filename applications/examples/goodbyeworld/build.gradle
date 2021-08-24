@@ -7,6 +7,7 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
     compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
