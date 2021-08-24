@@ -35,6 +35,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.bouncycastle.asn1.x500.X500Name
+import org.junit.jupiter.api.Timeout
 
 class HttpTest : TestBase() {
 
@@ -56,6 +57,7 @@ class HttpTest : TestBase() {
     private val serverAddress = URI.create("http://alice.net:10000")
 
     @Test
+    @Timeout(30)
     fun `simple client POST request`() {
         HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
             server.addListener(object : HttpEventListener {
@@ -78,15 +80,16 @@ class HttpTest : TestBase() {
                 client.addListener(clientListener)
                 client.start()
                 client.write(clientMessageContent.toByteArray(Charsets.UTF_8))
-                clientReceivedResponses.await(5, TimeUnit.SECONDS)
+                clientReceivedResponses.await()
                 assertTrue(responseReceived)
             }
         }
     }
 
     @Test
+    @Timeout(30)
     fun `multiple clients multiple requests`() {
-        val requestNo = 1000
+        val requestNo = 10
         val threadNo = 2
         val threads = mutableListOf<Thread>()
         val times = mutableListOf<Long>()
@@ -142,13 +145,14 @@ class HttpTest : TestBase() {
     }
 
     @Test
+    @Timeout(30)
     fun `large payload`() {
         val hugePayload = FileInputStream(javaClass.classLoader.getResource("10mb.txt")!!.file).readAllBytes()
 
         HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
             server.addListener(object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
-                    assert(Arrays.equals(hugePayload, message.payload))
+                    assertTrue(Arrays.equals(hugePayload, message.payload))
                     server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
                 }
             })
@@ -173,44 +177,53 @@ class HttpTest : TestBase() {
     }
 
     @Test
+    @Timeout(30)
     fun `tls handshake succeeds - revocation checking disabled C5`() {
         HttpServer(serverAddress.host, serverAddress.port, bobSslConfig).use { server ->
             server.start()
             HttpClient(DestinationInfo(serverAddress, bobSNI[0], null), aliceSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
+                var connected = false
                 val connectedLatch = CountDownLatch(1)
                 client.addListener(object : HttpEventListener {
                     override fun onOpen(event: HttpConnectionEvent) {
+                        connected = true
                         connectedLatch.countDown()
                     }
                 })
 
                 client.start()
                 client.write(ByteArray(0))
-                assert(connectedLatch.await(1, TimeUnit.SECONDS))
+                connectedLatch.await()
+                assertTrue(connected)
             }
         }
     }
 
     @Test
+    @Timeout(30)
     fun `tls handshake succeeds - revocation checking disabled C4`() {
         HttpServer(serverAddress.host, serverAddress.port, c4sslConfig).use { server ->
             server.start()
             HttpClient(DestinationInfo(serverAddress, partyASNI, partyAx500Name), c4sslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
+                var connected = false
                 val connectedLatch = CountDownLatch(1)
                 client.addListener(object : HttpEventListener {
                     override fun onOpen(event: HttpConnectionEvent) {
+                        connected = true
                         connectedLatch.countDown()
                     }
                 })
 
                 client.start()
                 client.write(ByteArray(0))
-                assert(connectedLatch.await(1, TimeUnit.SECONDS))
+                connectedLatch.await()
+                assertTrue(connected)
             }
         }
     }
 
     @Test
+    @Timeout(30)
     fun `tls handshake fails - server identity check fails C4`() {
         MitmServer(serverAddress.host, serverAddress.port, c4sslConfig).use { server ->
             server.start()
@@ -238,6 +251,7 @@ class HttpTest : TestBase() {
     }
 
     @Test
+    @Timeout(30)
     fun `tls handshake fails - server identity check fails C5`() {
         MitmServer(serverAddress.host, serverAddress.port, chipSslConfig).use { server ->
             server.start()
@@ -263,6 +277,7 @@ class HttpTest : TestBase() {
     }
 
     @Test
+    @Timeout(30)
     fun `tls handshake fails - requested SNI is not recognized`() {
         HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
             server.start()
@@ -287,6 +302,7 @@ class HttpTest : TestBase() {
     }
 
     @Test
+    @Timeout(30)
     fun `tls handshake fails - server presents revoked certificate`() {
         HttpServer(serverAddress.host, serverAddress.port, bobSslConfig).use { server ->
             server.start()

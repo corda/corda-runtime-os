@@ -11,15 +11,19 @@ import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_MAX_POLL_INTERVAL
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_PROCESSOR_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.DEAD_LETTER_QUEUE_SUFFIX
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.LISTENER_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -33,11 +37,11 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.clients.CommonClientConfigs
+import org.apache.kafka.clients.CommonClientConfigs.GROUP_ID_CONFIG
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.TopicPartition
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.System.currentTimeMillis
 import java.nio.ByteBuffer
@@ -74,9 +78,9 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         private const val STATE_CONSUMER = "stateConsumer"
         private const val EVENT_CONSUMER = "eventConsumer"
         private const val STATE_TOPIC_NAME = "$STATE_CONSUMER.$TOPIC_NAME"
-        private const val EVENT_GROUP_ID = "$EVENT_CONSUMER.${CommonClientConfigs.GROUP_ID_CONFIG}"
-        private val CONSUMER_THREAD_STOP_TIMEOUT = KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT.replace("consumer", "eventConsumer")
-        private val CONSUMER_CLOSE_TIMEOUT = KafkaProperties.CONSUMER_CLOSE_TIMEOUT.replace("consumer", "eventConsumer")
+        private const val EVENT_GROUP_ID = "$EVENT_CONSUMER.$GROUP_ID_CONFIG"
+        private val EVENT_CONSUMER_THREAD_STOP_TIMEOUT = CONSUMER_THREAD_STOP_TIMEOUT.replace("consumer", "eventConsumer")
+        private val EVENT_CONSUMER_CLOSE_TIMEOUT = CONSUMER_CLOSE_TIMEOUT.replace("consumer", "eventConsumer")
         private val EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES = CONSUMER_POLL_AND_PROCESS_RETRIES.replace("consumer", "eventConsumer")
 
         //short timeout for poll of paused partitions when waiting for processor to finish
@@ -91,7 +95,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private val log: Logger = LoggerFactory.getLogger(
+    private val log = LoggerFactory.getLogger(
         "${config.getString(EVENT_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
     )
 
@@ -107,14 +111,14 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private val cordaAvroSerializer = CordaAvroSerializer<Any>(avroSchemaRegistry)
 
-    private val topicPrefix = config.getString(KafkaProperties.TOPIC_PREFIX)
+    private val topicPrefix = config.getString(TOPIC_PREFIX)
     private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
     private val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
     private val groupName = config.getString(EVENT_GROUP_ID)
     private val producerClientId: String = config.getString(PRODUCER_CLIENT_ID)
-    private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val producerCloseTimeout = Duration.ofMillis(config.getLong(KafkaProperties.PRODUCER_CLOSE_TIMEOUT))
-    private val consumerCloseTimeout = Duration.ofMillis(config.getLong(CONSUMER_CLOSE_TIMEOUT))
+    private val consumerThreadStopTimeout = config.getLong(EVENT_CONSUMER_THREAD_STOP_TIMEOUT)
+    private val producerCloseTimeout = Duration.ofMillis(config.getLong(PRODUCER_CLOSE_TIMEOUT))
+    private val consumerCloseTimeout = Duration.ofMillis(config.getLong(EVENT_CONSUMER_CLOSE_TIMEOUT))
     private val consumerPollAndProcessMaxRetries = config.getLong(EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES)
     private val pollTimeout = config.getLong(CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"))
 
