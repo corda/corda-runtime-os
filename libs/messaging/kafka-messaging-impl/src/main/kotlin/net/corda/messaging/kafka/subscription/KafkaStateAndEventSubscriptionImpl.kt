@@ -84,13 +84,13 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         //short timeout for poll of paused partitions when waiting for processor to finish
         private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
 
-        //Thread pool for processor shared amongst pattern instances.
         private const val MIN_THREADS = 1
-        private val executor = Executors.newScheduledThreadPool(MIN_THREADS) { runnable ->
-            val thread = Thread(runnable)
-            thread.isDaemon = true
-            thread
-        }
+    }
+
+    private val executor = Executors.newScheduledThreadPool(MIN_THREADS) { runnable ->
+        val thread = Thread(runnable)
+        thread.isDaemon = true
+        thread
     }
 
     private val log = LoggerFactory.getLogger(
