@@ -11,6 +11,6 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:avro-schema"
     implementation project(':libs:configuration:configuration-read')
-    implementation project(":libs:lifecycle")
+    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
 }

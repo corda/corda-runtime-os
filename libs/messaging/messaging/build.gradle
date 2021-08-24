@@ -7,7 +7,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
-    implementation project(":libs:lifecycle")
+    implementation project(":libs:lifecycle:lifecycle")
 }
 
 description 'Messaging API'

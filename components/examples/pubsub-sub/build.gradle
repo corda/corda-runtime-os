@@ -10,7 +10,7 @@ dependencies {
     implementation "net.corda:avro-schema"
 
     implementation project(":libs:messaging:messaging")
-    implementation project(":libs:lifecycle")
+    implementation project(":libs:lifecycle:lifecycle")
 }
 
 description 'Demo PubSub Subscription'

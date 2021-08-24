@@ -11,7 +11,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "com.zaxxer:HikariCP:$hikariCpVersion"
     implementation "com.google.guava:guava:$guavaVersion"
-    implementation project(":libs:lifecycle")
+    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:schema-registry:schema-registry")
 

@@ -15,7 +15,7 @@ dependencies {
     implementation "net.corda:avro-schema"
     implementation project(':libs:configuration:configuration-read')
     implementation project(":libs:messaging:messaging")
-    implementation project(":libs:lifecycle")
+    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":osgi-framework-api")
 }
 
