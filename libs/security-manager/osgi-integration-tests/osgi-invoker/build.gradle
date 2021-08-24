@@ -1,17 +1,10 @@
 plugins {
+    id 'corda.common-library'
     id 'org.jetbrains.kotlin.jvm'
-    id 'biz.aQute.bnd.builder'
 }
 
 dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
 
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-}
-
-tasks.named('jar', Jar) {
-    bnd '''\
-Bundle-Name: Corda OSGi Invoker
-Bundle-SymbolicName: \${project.group}.osgi-invoker
-'''
 }
