@@ -6,6 +6,8 @@ description 'Utilities'
 
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
 
@@ -13,8 +15,6 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
     // Concluded this is the one acceptable dependency in addition to kotlin.
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
-
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
