@@ -18,7 +18,7 @@ interface LifecycleCoordinator : Lifecycle {
      * Primarily useful for diagnostic purposes. This is the same name as that provided to the factory at coordinator
      * construction, so it should mirror the component name.
      */
-    val name: String
+    val name: LifecycleCoordinatorName
 
     /**
      * Submit an event to be processed.

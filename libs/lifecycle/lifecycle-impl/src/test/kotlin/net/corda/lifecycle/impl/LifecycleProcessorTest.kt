@@ -2,6 +2,7 @@ package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
@@ -29,7 +30,7 @@ import java.util.concurrent.TimeUnit
 class LifecycleProcessorTest {
 
     companion object {
-        private const val NAME = "Lifecycle-Processor-Test"
+        private val NAME = LifecycleCoordinatorName.forComponent<LifecycleProcessorTest>()
 
         private const val REASON = "Test status update"
     }

@@ -38,7 +38,6 @@ class DemoPublisher @Activate constructor(
     private companion object {
         val log: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-        const val BATCH_SIZE: Int = 128
         const val TOPIC_PREFIX = "messaging.topic.prefix"
         const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
@@ -61,7 +60,6 @@ class DemoPublisher @Activate constructor(
             var publisher: RunPublisher? = null
 
             lifeCycleCoordinator = coordinatorFactory.createCoordinator<DemoPublisher>(
-                BATCH_SIZE
             ) { event: LifecycleEvent, _: LifecycleCoordinator ->
                 log.info("LifecycleEvent received: $event")
                 when (event) {

@@ -1,5 +1,7 @@
 package net.corda.lifecycle.registry
 
+import net.corda.lifecycle.LifecycleCoordinatorName
+
 /**
  * Obtain information about the current running status of coordinators in the system.
  *
@@ -21,5 +23,5 @@ interface LifecycleRegistry {
      *
      * @return A map of coordinator names to their current statuses.
      */
-    fun componentStatus(): Map<String, CoordinatorStatus>
+    fun componentStatus(): Map<LifecycleCoordinatorName, CoordinatorStatus>
 }

@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
@@ -34,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @param lifeCycleProcessor The user event handler for lifecycle events.
  */
 class LifecycleCoordinatorImpl(
-    override val name: String,
+    override val name: LifecycleCoordinatorName,
     batchSize: Int,
     registry: LifecycleRegistryCoordinatorAccess,
     lifeCycleProcessor: LifecycleEventHandler,

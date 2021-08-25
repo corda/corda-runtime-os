@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl.registry
 
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.CoordinatorStatus
 import net.corda.lifecycle.registry.LifecycleRegistryException
@@ -11,10 +12,16 @@ import org.mockito.kotlin.mock
 
 class LifecycleRegistryImplTest {
 
+    companion object {
+        private val aliceName = LifecycleCoordinatorName("Alice")
+        private val bobName = LifecycleCoordinatorName("Bob")
+        private val charlieName = LifecycleCoordinatorName("Charlie")
+    }
+
     private val initialStatusMap = mapOf(
-        "Alice" to CoordinatorStatus("Alice", LifecycleStatus.DOWN, "Just created"),
-        "Bob" to CoordinatorStatus("Bob", LifecycleStatus.DOWN, "Just created"),
-        "Charlie" to CoordinatorStatus("Charlie", LifecycleStatus.DOWN, "Just created")
+        aliceName to CoordinatorStatus(aliceName, LifecycleStatus.DOWN, "Just created"),
+        bobName to CoordinatorStatus(bobName, LifecycleStatus.DOWN, "Just created"),
+        charlieName to CoordinatorStatus(charlieName, LifecycleStatus.DOWN, "Just created")
     )
 
     private fun initialRegistrySetup(registry: LifecycleRegistryImpl) {
@@ -35,9 +42,9 @@ class LifecycleRegistryImplTest {
     fun `existing statuses can be updated`() {
         val registry = LifecycleRegistryImpl()
         initialRegistrySetup(registry)
-        registry.updateStatus("Alice", LifecycleStatus.UP, "Alice is up")
+        registry.updateStatus(aliceName, LifecycleStatus.UP, "Alice is up")
         val statuses = registry.componentStatus()
-        assertEquals(CoordinatorStatus("Alice", LifecycleStatus.UP, "Alice is up"), statuses["Alice"])
+        assertEquals(CoordinatorStatus(aliceName, LifecycleStatus.UP, "Alice is up"), statuses[aliceName])
     }
 
     @Test
@@ -45,7 +52,7 @@ class LifecycleRegistryImplTest {
         val registry = LifecycleRegistryImpl()
         initialRegistrySetup(registry)
         val statuses = registry.componentStatus()
-        registry.updateStatus("Alice", LifecycleStatus.UP, "Alice is up")
+        registry.updateStatus(aliceName, LifecycleStatus.UP, "Alice is up")
         assertEquals(initialStatusMap, statuses)
     }
 
@@ -61,10 +68,10 @@ class LifecycleRegistryImplTest {
         val registry = LifecycleRegistryImpl()
         val aliceCoordinator = mock<LifecycleCoordinator>()
         val bobCoordinator = mock<LifecycleCoordinator>()
-        registry.registerCoordinator("Alice", aliceCoordinator)
-        registry.registerCoordinator("Bob", bobCoordinator)
-        assertEquals(aliceCoordinator, registry.getCoordinator("Alice"))
-        assertEquals(bobCoordinator, registry.getCoordinator("Bob"))
+        registry.registerCoordinator(aliceName, aliceCoordinator)
+        registry.registerCoordinator(bobName, bobCoordinator)
+        assertEquals(aliceCoordinator, registry.getCoordinator(aliceName))
+        assertEquals(bobCoordinator, registry.getCoordinator(bobName))
     }
 
     @Test
@@ -72,10 +79,10 @@ class LifecycleRegistryImplTest {
         val registry = LifecycleRegistryImpl()
         val aliceCoordinator = mock<LifecycleCoordinator>()
         val bobCoordinator = mock<LifecycleCoordinator>()
-        registry.registerCoordinator("Alice", aliceCoordinator)
-        registry.registerCoordinator("Bob", bobCoordinator)
+        registry.registerCoordinator(aliceName, aliceCoordinator)
+        registry.registerCoordinator(bobName, bobCoordinator)
         assertThrows<LifecycleRegistryException> {
-            registry.getCoordinator("Charlie")
+            registry.getCoordinator(charlieName)
         }
     }
 
@@ -84,10 +91,10 @@ class LifecycleRegistryImplTest {
         val registry = LifecycleRegistryImpl()
         val aliceCoordinator = mock<LifecycleCoordinator>()
         val bobCoordinator = mock<LifecycleCoordinator>()
-        registry.registerCoordinator("Alice", aliceCoordinator)
-        registry.registerCoordinator("Bob", bobCoordinator)
+        registry.registerCoordinator(aliceName, aliceCoordinator)
+        registry.registerCoordinator(bobName, bobCoordinator)
         assertThrows<LifecycleRegistryException> {
-            registry.registerCoordinator("Alice", bobCoordinator)
+            registry.registerCoordinator(aliceName, bobCoordinator)
         }
     }
 }

@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl.registry
 
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 
 /**
@@ -18,7 +19,7 @@ interface LifecycleRegistryCoordinatorAccess {
      * @param coordinator The new coordinator.
      * @throws LifecycleRegistryException if there is already a coordinator registered under this name
      */
-    fun registerCoordinator(name: String, coordinator: LifecycleCoordinator)
+    fun registerCoordinator(name: LifecycleCoordinatorName, coordinator: LifecycleCoordinator)
 
     /**
      * Update the registry of current lifecycle status of a named coordinator.
@@ -29,12 +30,14 @@ interface LifecycleRegistryCoordinatorAccess {
      * @param status The new coordinator status.
      * @param reason The reason this coordinator status changed.
      */
-    fun updateStatus(name: String, status: LifecycleStatus, reason: String)
+    fun updateStatus(name: LifecycleCoordinatorName, status: LifecycleStatus, reason: String)
 
     /**
      * Retrieve a coordinator for a given name.
      *
+     * @param name The name of the coordinator to retrieve
+     * @return The coordinator for the given name
      * @throws LifecycleRegistryException if there is no coordinator registered under this name
      */
-    fun getCoordinator(name: String) : LifecycleCoordinator
+    fun getCoordinator(name: LifecycleCoordinatorName) : LifecycleCoordinator
 }

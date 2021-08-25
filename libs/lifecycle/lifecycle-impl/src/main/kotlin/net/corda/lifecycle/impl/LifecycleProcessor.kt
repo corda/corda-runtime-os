@@ -2,6 +2,7 @@ package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
@@ -26,7 +27,7 @@ import java.util.concurrent.ScheduledFuture
  * @param userEventHandler The event handler the user has registered for use with this coordinator
  */
 internal class LifecycleProcessor(
-    private val name: String,
+    private val name: LifecycleCoordinatorName,
     private val state: LifecycleStateManager,
     private val registry: LifecycleRegistryCoordinatorAccess,
     private val userEventHandler: LifecycleEventHandler

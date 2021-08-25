@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl.registry
 
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.CoordinatorStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
@@ -25,14 +26,14 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
         private val logger = contextLogger()
     }
 
-    private val coordinators: MutableMap<String, LifecycleCoordinator> = ConcurrentHashMap()
+    private val coordinators: MutableMap<LifecycleCoordinatorName, LifecycleCoordinator> = ConcurrentHashMap()
 
-    private val statuses: MutableMap<String, CoordinatorStatus> = ConcurrentHashMap()
+    private val statuses: MutableMap<LifecycleCoordinatorName, CoordinatorStatus> = ConcurrentHashMap()
 
     /**
      * See [LifecycleRegistryCoordinatorAccess].
      */
-    override fun updateStatus(name: String, status: LifecycleStatus, reason: String) {
+    override fun updateStatus(name: LifecycleCoordinatorName, status: LifecycleStatus, reason: String) {
         val coordinatorStatus = CoordinatorStatus(name, status, reason)
         statuses[name] = coordinatorStatus
         logger.trace { "Coordinator status update: $name is now $status ($reason)" }
@@ -41,7 +42,7 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
     /**
      * See [LifecycleRegistryCoordinatorAccess].
      */
-    override fun registerCoordinator(name: String, coordinator: LifecycleCoordinator) {
+    override fun registerCoordinator(name: LifecycleCoordinatorName, coordinator: LifecycleCoordinator) {
         val coordinatorStatus = CoordinatorStatus(name, LifecycleStatus.DOWN, NEW_COORDINATOR_REASON)
         val oldValue = coordinators.putIfAbsent(name, coordinator)
         if (oldValue != null) {
@@ -54,7 +55,7 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
     /**
      * See [LifecycleRegistryCoordinatorAccess].
      */
-    override fun getCoordinator(name: String): LifecycleCoordinator {
+    override fun getCoordinator(name: LifecycleCoordinatorName): LifecycleCoordinator {
         return coordinators[name]
             ?: throw LifecycleRegistryException("No coordinator with name $name has been registered")
     }
@@ -62,7 +63,7 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
     /**
      * See [LifecycleRegistry].
      */
-    override fun componentStatus(): Map<String, CoordinatorStatus> {
+    override fun componentStatus(): Map<LifecycleCoordinatorName, CoordinatorStatus> {
         return statuses.toMap()
     }
 }

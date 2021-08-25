@@ -2,6 +2,7 @@ package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
@@ -31,8 +32,6 @@ import kotlin.random.Random
 internal class LifecycleCoordinatorImplTest {
 
     companion object {
-
-        private const val COMPONENT_NAME = "Lifecycle-Coordinator-Test"
 
         private const val BATCH_SIZE = 128
 
@@ -925,6 +924,11 @@ internal class LifecycleCoordinatorImplTest {
     }
 
     private fun createCoordinator(processor: LifecycleEventHandler): LifecycleCoordinator {
-        return LifecycleCoordinatorImpl(COMPONENT_NAME, BATCH_SIZE, mock(), processor)
+        return LifecycleCoordinatorImpl(
+            LifecycleCoordinatorName.forComponent<LifecycleCoordinatorImplTest>(),
+            BATCH_SIZE,
+            mock(),
+            processor
+        )
     }
 }
