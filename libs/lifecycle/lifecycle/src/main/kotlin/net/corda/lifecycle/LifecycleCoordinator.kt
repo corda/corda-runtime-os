@@ -10,7 +10,15 @@ package net.corda.lifecycle
  * The coordinator guarantees that posted events are processed in the order they are processed, and that events will not
  * be processed concurrently.
  */
-interface LifecycleCoordinator : net.corda.lifecycle.Lifecycle {
+interface LifecycleCoordinator : Lifecycle {
+
+    /**
+     * The name of this coordinator.
+     *
+     * Primarily useful for diagnostic purposes. This is the same name as that provided to the factory at coordinator
+     * construction, so it should mirror the component name.
+     */
+    val name: String
 
     /**
      * Submit an event to be processed.
@@ -72,8 +80,10 @@ interface LifecycleCoordinator : net.corda.lifecycle.Lifecycle {
      * The status will not be updated if this is called while the coordinator is stopped.
      *
      * @param newStatus The new status of this lifecycle coordinator.
+     * @param reason A diagnostic string describing why this status has been entered. This will be handed over to the
+     *               registry for monitoring purposes.
      */
-    fun updateStatus(newStatus: LifecycleStatus)
+    fun updateStatus(newStatus: LifecycleStatus, reason: String)
 
     /**
      * Register for status changes from a set of dependent coordinators.

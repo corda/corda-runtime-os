@@ -8,6 +8,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
+import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
 import java.util.concurrent.Executors
@@ -29,11 +30,13 @@ import java.util.concurrent.atomic.AtomicBoolean
  *
  * @param name The name of the component for this lifecycle coordinator.
  * @param batchSize max number of events processed in a single [processEvents] call.
+ * @param registry The registry this coordinator has been registered with. Used to update status for monitoring purposes
  * @param lifeCycleProcessor The user event handler for lifecycle events.
  */
 class LifecycleCoordinatorImpl(
-    private val name: String,
+    override val name: String,
     batchSize: Int,
+    registry: LifecycleRegistryCoordinatorAccess,
     lifeCycleProcessor: LifecycleEventHandler,
 ) : LifecycleCoordinator {
 
@@ -73,7 +76,7 @@ class LifecycleCoordinatorImpl(
     /**
      * The processor for this coordinator.
      */
-    private val processor = LifecycleProcessor(name, lifecycleState, lifeCycleProcessor)
+    private val processor = LifecycleProcessor(name, lifecycleState, registry, lifeCycleProcessor)
 
     /**
      * `true` if [processEvents] is executing. This is used to ensure only one attempt at processing the event queue is
@@ -158,8 +161,8 @@ class LifecycleCoordinatorImpl(
     /**
      * See [LifecycleCoordinator].
      */
-    override fun updateStatus(newStatus: LifecycleStatus) {
-        postEvent(StatusChange(newStatus))
+    override fun updateStatus(newStatus: LifecycleStatus, reason: String) {
+        postEvent(StatusChange(newStatus, reason))
     }
 
     /**

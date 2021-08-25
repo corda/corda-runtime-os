@@ -8,6 +8,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
+import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -27,11 +28,16 @@ import java.util.concurrent.ScheduledFuture
 internal class LifecycleProcessor(
     private val name: String,
     private val state: LifecycleStateManager,
+    private val registry: LifecycleRegistryCoordinatorAccess,
     private val userEventHandler: LifecycleEventHandler
 ) {
 
     companion object {
         private val logger = contextLogger()
+
+        internal const val STARTED_REASON = "Component has been started"
+        internal const val STOPPED_REASON = "Component has been stopped"
+        internal const val ERRORED_REASON = "An unhandled error was encountered by the component"
     }
 
     /**
@@ -101,8 +107,7 @@ internal class LifecycleProcessor(
             }
             is StatusChange -> {
                 if (state.isRunning) {
-                    state.status = event.newStatus
-                    state.registrations.forEach { it.updateCoordinatorStatus(coordinator, event.newStatus) }
+                    updateStatus(coordinator, event.newStatus, event.reason)
                 } else {
                     logger.debug {
                         "$name Lifecycle: Did not update coordinator status to ${event.newStatus} as " +
@@ -129,8 +134,7 @@ internal class LifecycleProcessor(
             state.isRunning = true
             state.trackedRegistrations.forEach { it.notifyCurrentStatus() }
             // If there was previously an error, clear this now.
-            state.status = LifecycleStatus.DOWN
-            state.registrations.forEach { it.updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN) }
+            updateStatus(coordinator, LifecycleStatus.DOWN, STARTED_REASON)
             runUserEventHandler(event, coordinator)
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to start an already running coordinator" }
@@ -141,12 +145,12 @@ internal class LifecycleProcessor(
     private fun processStopEvent(event: StopEvent, coordinator: LifecycleCoordinator): Boolean {
         if (state.isRunning) {
             state.isRunning = false
-            state.status = if (event.errored) {
-                LifecycleStatus.ERROR
+            val (newStatus, reason) = if (event.errored) {
+                Pair(LifecycleStatus.ERROR, ERRORED_REASON)
             } else {
-                LifecycleStatus.DOWN
+                Pair(LifecycleStatus.DOWN, STOPPED_REASON)
             }
-            state.registrations.forEach { it.updateCoordinatorStatus(coordinator, state.status) }
+            updateStatus(coordinator, newStatus, reason)
             runUserEventHandler(event, coordinator)
         } else {
             logger.debug { "$name Lifecycle: An attempt was made to stop an already terminated coordinator" }
@@ -167,6 +171,16 @@ internal class LifecycleProcessor(
             logger.debug { "$name Lifecycle: Not setting timer with key ${event.key} as coordinator is not running" }
         }
         return true
+    }
+
+    /**
+     * Perform any logic for updating the status of the coordinator. This includes informing other registered
+     * coordinators of the status change and informing the registry.
+     */
+    private fun updateStatus(coordinator: LifecycleCoordinator, newStatus: LifecycleStatus, reason: String) {
+        state.status = newStatus
+        state.registrations.forEach { it.updateCoordinatorStatus(coordinator, newStatus) }
+        registry.updateStatus(coordinator.name, newStatus, reason)
     }
 
     @Suppress("TooGenericExceptionCaught")

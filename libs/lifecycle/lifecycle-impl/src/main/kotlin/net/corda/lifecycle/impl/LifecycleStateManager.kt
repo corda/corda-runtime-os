@@ -80,6 +80,7 @@ internal class LifecycleStateManager(
      * Checks to see if a timer is currently running.
      *
      * @param key The timer key to check
+     * @return True if the timer is running
      */
     fun isTimerRunning(key: String): Boolean {
         return key in timerMap.keys
@@ -87,6 +88,8 @@ internal class LifecycleStateManager(
 
     /**
      * Creates the next batch of events for processing and removes those events from the queue.
+     *
+     * @return The next batch of events
      */
     fun nextBatch(): List<LifecycleEvent> {
         val batch = mutableListOf<LifecycleEvent>()
@@ -100,7 +103,7 @@ internal class LifecycleStateManager(
     /**
      * Get whether events are queued.
      *
-     * True if there are events to process, false otherwise.
+     * @return True if there are events to process, false otherwise.
      */
     fun eventsQueued() : Boolean {
         return !eventQueue.isEmpty()

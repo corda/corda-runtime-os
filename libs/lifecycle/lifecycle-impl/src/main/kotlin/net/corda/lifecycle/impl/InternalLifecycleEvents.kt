@@ -61,6 +61,7 @@ internal data class StopTrackingRegistration(val registration: Registration) : L
 /**
  * Indicates that the component has changed status, so this component can inform dependent components of the change.
  *
- * @param newStatus The new state this component has taken.
+ * @param newStatus The new status this component has taken.
+ * @param reason The reason this status was entered, for diagnostic purposes
  */
-internal data class StatusChange(val newStatus: LifecycleStatus) : LifecycleEvent
+internal data class StatusChange(val newStatus: LifecycleStatus, val reason: String) : LifecycleEvent

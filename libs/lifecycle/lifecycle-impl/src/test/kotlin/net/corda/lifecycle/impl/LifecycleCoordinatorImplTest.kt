@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -40,6 +41,8 @@ internal class LifecycleCoordinatorImplTest {
         private const val TIMER_DELAY = 100L
 
         private const val NUM_LOOPS = 5
+
+        private const val REASON = "Test status change"
     }
 
     interface PostEvent : LifecycleEvent
@@ -635,7 +638,7 @@ internal class LifecycleCoordinatorImplTest {
 
             // Request a status update, then post an event to flush through the status update. Should be guaranteed to
             // have processed the status update by the time flushing event is seen in the processor.
-            it.updateStatus(LifecycleStatus.UP)
+            it.updateStatus(LifecycleStatus.UP, REASON)
             it.postEvent(flushingEvent)
             assertTrue(flushingLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(LifecycleStatus.UP, it.status)
@@ -661,7 +664,7 @@ internal class LifecycleCoordinatorImplTest {
                 }
             }
         }.use {
-            it.updateStatus(LifecycleStatus.UP)
+            it.updateStatus(LifecycleStatus.UP, REASON)
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(LifecycleStatus.DOWN, it.status)
@@ -701,22 +704,22 @@ internal class LifecycleCoordinatorImplTest {
             // Set both dependents up
             dependent1.start()
             dependent2.start()
-            dependent1.updateStatus(LifecycleStatus.UP)
-            dependent2.updateStatus(LifecycleStatus.UP)
+            dependent1.updateStatus(LifecycleStatus.UP, REASON)
+            dependent2.updateStatus(LifecycleStatus.UP, REASON)
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(handle, registration)
             assertEquals(LifecycleStatus.UP, status)
 
             // Take one down and verify that down is delivered
             regLatch = CountDownLatch(1)
-            dependent1.updateStatus(LifecycleStatus.DOWN)
+            dependent1.updateStatus(LifecycleStatus.DOWN, REASON)
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(handle, registration)
             assertEquals(LifecycleStatus.DOWN, status)
 
             // Put the dependent back up again
             regLatch = CountDownLatch(1)
-            dependent1.updateStatus(LifecycleStatus.UP)
+            dependent1.updateStatus(LifecycleStatus.UP, REASON)
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(handle, registration)
             assertEquals(LifecycleStatus.UP, status)
@@ -770,15 +773,15 @@ internal class LifecycleCoordinatorImplTest {
 
             dependent1.start()
             dependent2.start()
-            dependent1.updateStatus(LifecycleStatus.UP)
-            dependent2.updateStatus(LifecycleStatus.UP)
+            dependent1.updateStatus(LifecycleStatus.UP, REASON)
+            dependent2.updateStatus(LifecycleStatus.UP, REASON)
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(handle, registration)
             assertEquals(LifecycleStatus.UP, status)
 
             // Close the registration and bring down a dependent coordinator
             handle.close()
-            dependent1.updateStatus(LifecycleStatus.DOWN)
+            dependent1.updateStatus(LifecycleStatus.DOWN, REASON)
             // Bring down the dependent and wait - this ensures that the status update has definitely been delivered.
             dependent1.stop()
             assertTrue(dependentLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
@@ -821,16 +824,16 @@ internal class LifecycleCoordinatorImplTest {
             // Create overlapping registrations and show that both get delivered.
             val handle1 = it.followStatusChanges(setOf(dependent1, dependent2))
             val handle2 = it.followStatusChanges(setOf(dependent2, dependent3))
-            dependent1.updateStatus(LifecycleStatus.UP)
-            dependent2.updateStatus(LifecycleStatus.UP)
-            dependent3.updateStatus(LifecycleStatus.UP)
+            dependent1.updateStatus(LifecycleStatus.UP, REASON)
+            dependent2.updateStatus(LifecycleStatus.UP, REASON)
+            dependent3.updateStatus(LifecycleStatus.UP, REASON)
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(2, totalStatusChanges)
             assertEquals(setOf(handle1, handle2), handleSet)
 
             handleSet.clear()
             regLatch = CountDownLatch(2)
-            dependent2.updateStatus(LifecycleStatus.DOWN)
+            dependent2.updateStatus(LifecycleStatus.DOWN, REASON)
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(4, totalStatusChanges)
             assertEquals(setOf(handle1, handle2), handleSet)
@@ -878,8 +881,8 @@ internal class LifecycleCoordinatorImplTest {
             dependent1.start()
             dependent2.start()
             val handle = it.followStatusChanges(setOf(dependent1, dependent2))
-            dependent1.updateStatus(LifecycleStatus.UP)
-            dependent2.updateStatus(LifecycleStatus.UP)
+            dependent1.updateStatus(LifecycleStatus.UP, REASON)
+            dependent2.updateStatus(LifecycleStatus.UP, REASON)
             dependent1.postEvent(flushingEvent)
             dependent2.postEvent(flushingEvent)
             assertTrue(dependentsUpLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
@@ -922,6 +925,6 @@ internal class LifecycleCoordinatorImplTest {
     }
 
     private fun createCoordinator(processor: LifecycleEventHandler): LifecycleCoordinator {
-        return LifecycleCoordinatorImpl(COMPONENT_NAME, BATCH_SIZE, processor)
+        return LifecycleCoordinatorImpl(COMPONENT_NAME, BATCH_SIZE, mock(), processor)
     }
 }

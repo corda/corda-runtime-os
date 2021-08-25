@@ -13,7 +13,7 @@ class LifecycleCoordinatorFactoryImpl : LifecycleCoordinatorFactory {
     private val registry = LifecycleRegistryImpl()
 
     override fun createCoordinator(name: String, batchSize: Int, handler: LifecycleEventHandler): LifecycleCoordinator {
-        val coordinator = LifecycleCoordinatorImpl(name, batchSize, handler)
+        val coordinator = LifecycleCoordinatorImpl(name, batchSize, registry, handler)
         registry.registerCoordinator(name, coordinator)
         return coordinator
     }
