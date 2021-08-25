@@ -91,10 +91,26 @@ class LifecycleRegistryImplTest {
         val registry = LifecycleRegistryImpl()
         val aliceCoordinator = mock<LifecycleCoordinator>()
         val bobCoordinator = mock<LifecycleCoordinator>()
+        val alice2Coordinator = mock<LifecycleCoordinator>()
         registry.registerCoordinator(aliceName, aliceCoordinator)
         registry.registerCoordinator(bobName, bobCoordinator)
+        registry.registerCoordinator(aliceName.copy(instanceId = "second"), alice2Coordinator)
         assertThrows<LifecycleRegistryException> {
             registry.registerCoordinator(aliceName, bobCoordinator)
         }
+        assertThrows<LifecycleRegistryException> {
+            registry.registerCoordinator(aliceName.copy(instanceId = "second"), bobCoordinator)
+        }
+    }
+
+    @Test
+    fun `can register a coordinator with the same name but different instance id`() {
+        val registry = LifecycleRegistryImpl()
+        val aliceCoordinator = mock<LifecycleCoordinator>()
+        val alice2Coordinator = mock<LifecycleCoordinator>()
+        registry.registerCoordinator(aliceName, aliceCoordinator)
+        registry.registerCoordinator(aliceName.copy(instanceId = "second"), alice2Coordinator)
+        assertEquals(alice2Coordinator, registry.getCoordinator(aliceName.copy(instanceId = "second")))
+        assertEquals(aliceCoordinator, registry.getCoordinator(aliceName))
     }
 }
