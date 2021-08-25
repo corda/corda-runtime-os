@@ -80,10 +80,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         private val EVENT_CONSUMER_THREAD_STOP_TIMEOUT = CONSUMER_THREAD_STOP_TIMEOUT.replace("consumer", "eventConsumer")
         private val EVENT_CONSUMER_CLOSE_TIMEOUT = CONSUMER_CLOSE_TIMEOUT.replace("consumer", "eventConsumer")
         private val EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES = CONSUMER_POLL_AND_PROCESS_RETRIES.replace("consumer", "eventConsumer")
-
         //short timeout for poll of paused partitions when waiting for processor to finish
         private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
-
         private const val MIN_THREADS = 1
     }
 
@@ -106,6 +104,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
+    private var nextPollIntervalCutoff: Long = 0
 
     private val cordaAvroSerializer = CordaAvroSerializer<Any>(avroSchemaRegistry)
 
@@ -118,11 +117,10 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val producerCloseTimeout = Duration.ofMillis(config.getLong(PRODUCER_CLOSE_TIMEOUT))
     private val consumerCloseTimeout = Duration.ofMillis(config.getLong(EVENT_CONSUMER_CLOSE_TIMEOUT))
     private val consumerPollAndProcessMaxRetries = config.getLong(EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES)
-    private val pollTimeout = config.getLong(CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"))
+    private val maxPollInterval = config.getLong(CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"))
 
-    //initial timeout for futures sufficiently below max poll interval to avoid consumers getting kicked.
-    private val initialFutureTimeout = pollTimeout / 5
     private val processorTimeout = config.getLong(CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"))
+    private val initialProcessorTimeout = maxPollInterval / 4
     private val listenerTimeout = config.getLong(LISTENER_TIMEOUT)
     private val deadLetterQueueSuffix = config.getString(DEAD_LETTER_QUEUE_SUFFIX)
 
@@ -307,7 +305,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 stateAndEventListener?.let { listener ->
                     waitForFunctionToFinish(
                         { listener.onPartitionLost(getStatesForPartition(partitionId)) },
-                        currentTimeMillis() + listenerTimeout,
+                        listenerTimeout,
                         "StateAndEventListener timed out for onPartitionLost operation on partition $topicPartition"
                     )
                 }
@@ -323,8 +321,10 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         var pollAndProcessSuccessful = false
         while (!pollAndProcessSuccessful && !stopped) {
             try {
-                for (batch in getEventsByBatch(eventConsumer.poll())) {
-                    tryProcessBatchOfEvents(batch, currentTimeMillis() + processorTimeout)
+                val polledEvents = eventConsumer.poll()
+                nextPollIntervalCutoff = getNextPollIntervalCutoff()
+                for (batch in getEventsByBatch(polledEvents)) {
+                    tryProcessBatchOfEvents(batch)
                 }
                 pollAndProcessSuccessful = true
             } catch (ex: Exception) {
@@ -344,13 +344,14 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun tryProcessBatchOfEvents(events: List<ConsumerRecordAndMeta<K, E>>, maxWaitTime: Long) {
+    private fun tryProcessBatchOfEvents(events: List<ConsumerRecordAndMeta<K, E>>) {
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
         log.trace { "Processing events(size: ${events.size})" }
         for (event in events) {
-            processEvent(event, outputRecords, updatedStates, maxWaitTime)
+            resetPollInterval()
+            processEvent(event, outputRecords, updatedStates)
         }
 
         producer.beginTransaction()
@@ -365,14 +366,13 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun processEvent(
         event: ConsumerRecordAndMeta<K, E>,
         outputRecords: MutableList<Record<*, *>>,
-        updatedStates: MutableMap<Int, MutableMap<K, S?>>,
-        maxWaitTime: Long
+        updatedStates: MutableMap<Int, MutableMap<K, S?>>
     ) {
         log.trace { "Processing event: $event" }
         val key = event.record.key()
         val state = getValue(key)
         val partitionId = event.record.partition()
-        val thisEventUpdates = getUpdatesForEvent(state, event, maxWaitTime)
+        val thisEventUpdates = getUpdatesForEvent(state, event)
 
         if (thisEventUpdates == null) {
             log.error("Sending event: $event, and state: $state to dead letter queue. Processor failed to complete.")
@@ -388,17 +388,18 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun getUpdatesForEvent(state: S?, event: ConsumerRecordAndMeta<K, E>, maxWaitTime: Long): StateAndEventProcessor.Response<S>? {
+    private fun getUpdatesForEvent(state: S?, event: ConsumerRecordAndMeta<K, E>): StateAndEventProcessor.Response<S>? {
         val processorFuture: CompletableFuture<StateAndEventProcessor.Response<S>> =
             CompletableFuture.supplyAsync({ processor.onNext(state, event.asRecord()) }, executor)
 
-        var thisEventUpdates: StateAndEventProcessor.Response<S>? = uncheckedCast(tryGetFutureResult(processorFuture))
+        var thisEventUpdates: StateAndEventProcessor.Response<S>? =
+            uncheckedCast(tryGetFutureResult(processorFuture, initialProcessorTimeout))
 
         if (thisEventUpdates == null) {
             log.trace { "Initial processor timeout on event: $event. Pausing partitions and waiting. " }
-            pauseEventConsumerAndWaitForFutureToFinish(processorFuture, maxWaitTime)
+            pauseEventConsumerAndWaitForFutureToFinish(processorFuture, processorTimeout)
             if (processorFuture.isDone) {
-                thisEventUpdates = uncheckedCast(tryGetFutureResult(processorFuture, true))
+                thisEventUpdates = uncheckedCast(tryGetFutureResult(processorFuture))
                 log.trace { "Finished waiting to process event: $event" }
             } else {
                 log.error("Cancelling processor. Failed to finish within the time limit for state: $state and event: $event")
@@ -408,12 +409,12 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         return thisEventUpdates
     }
 
-    private fun waitForFunctionToFinish(function: () -> Unit, maxWaitTime: Long, timeoutErrorMessage: String) {
+    private fun waitForFunctionToFinish(function: () -> Unit, timeout: Long, timeoutErrorMessage: String) {
         val future: CompletableFuture<*> = CompletableFuture.supplyAsync({ function() }, executor)
         tryGetFutureResult(future)
 
         if (!future.isDone) {
-            pauseEventConsumerAndWaitForFutureToFinish(future, maxWaitTime)
+            pauseEventConsumerAndWaitForFutureToFinish(future, timeout)
         }
 
         if (!future.isDone) {
@@ -422,18 +423,36 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun pauseEventConsumerAndWaitForFutureToFinish(future: CompletableFuture<*>, maxWaitTime: Long) {
+    private fun pauseEventConsumerAndWaitForFutureToFinish(future: CompletableFuture<*>, timeout: Long) {
         val assignment = eventConsumer.assignment() - eventConsumer.paused()
         eventConsumer.pause(assignment)
 
+        val maxWaitTime = currentTimeMillis() + timeout
         var done = future.isDone
-        while (!done && maxWaitTime > currentTimeMillis()) {
+        while (!done && (currentTimeMillis() > maxWaitTime)) {
             eventConsumer.poll(PAUSED_POLL_TIMEOUT)
             updateStates(false)
             done = future.isDone
         }
 
+        nextPollIntervalCutoff = getNextPollIntervalCutoff()
+
         eventConsumer.resume(assignment)
+    }
+
+    private fun getNextPollIntervalCutoff() : Long {
+        return currentTimeMillis() + (maxPollInterval/2)
+    }
+
+    private fun resetPollInterval() {
+        if (currentTimeMillis() > nextPollIntervalCutoff) {
+            val assignment = eventConsumer.assignment() - eventConsumer.paused()
+            eventConsumer.pause(assignment)
+            eventConsumer.poll(PAUSED_POLL_TIMEOUT)
+            stateConsumer.poll(PAUSED_POLL_TIMEOUT)
+            nextPollIntervalCutoff = getNextPollIntervalCutoff()
+            eventConsumer.resume(assignment)
+        }
     }
 
     private fun generateDeadLetterRecord(event: ConsumerRecord<K, E>, state: S?): Record<*, *> {
@@ -463,7 +482,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         stateAndEventListener?.let { listener ->
             waitForFunctionToFinish(
                 { listener.onPostCommit(updatedStatesByKey) },
-                currentTimeMillis() + listenerTimeout,
+                listenerTimeout,
                 "StateAndEventListener timed out on onPostCommit operation for updated states $updatedStatesByKey"
             )
         }
@@ -512,7 +531,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             for (partition in partitionsSynced) {
                 waitForFunctionToFinish(
                     { listener.onPartitionSynced(getStatesForPartition(partition.partition())) },
-                    currentTimeMillis() + listenerTimeout,
+                    listenerTimeout,
                     "StateAndEventListener timed out for onPartitionSynced operation on partition $partition"
                 )
             }
@@ -563,11 +582,20 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun tryGetFutureResult(future: CompletableFuture<*>, cancelOnTimeout: Boolean = false): Any? {
+    private fun tryGetFutureResult(future: CompletableFuture<*>, timeout: Long, cancelOnTimeout: Boolean = false): Any? {
         return try {
-            future.get(initialFutureTimeout, TimeUnit.MILLISECONDS)
+            future.get(timeout, TimeUnit.MILLISECONDS)
         } catch (ex: Exception) {
             return handleFutureException(ex, future, cancelOnTimeout)
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun tryGetFutureResult(future: CompletableFuture<*>): Any? {
+        return try {
+            future.get()
+        } catch (ex: Exception) {
+            return handleFutureException(ex, future)
         }
     }
 

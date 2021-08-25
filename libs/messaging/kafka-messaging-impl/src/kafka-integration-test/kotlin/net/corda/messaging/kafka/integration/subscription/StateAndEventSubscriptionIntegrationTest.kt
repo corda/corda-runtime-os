@@ -302,6 +302,10 @@ class StateAndEventSubscriptionIntegrationTest {
     fun `create topics, start one statevent sub, publish records, slow processor and listener, all records successful`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC6_TEMPLATE)
 
+        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisher.publish(getStringRecords(EVENT_TOPIC6, 1, 3)).forEach { it.get() }
+
         val shortIntervalTimeoutConfig = kafkaConfig
             .withValue("$MESSAGING_KAFKA.$CONSUMER_MAX_POLL_INTERVAL", ConfigValueFactory.fromAnyRef(20000))
 
@@ -311,8 +315,8 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC6-group", EVENT_TOPIC6, 1),
-            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT6, 8000),
-            shortIntervalTimeoutConfig, TestStateAndEventListenerStrings(expectedCommitStates, onCommitLatch, 6000)
+            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT6, 6000),
+            shortIntervalTimeoutConfig, TestStateAndEventListenerStrings(expectedCommitStates, onCommitLatch, 5500)
         )
         stateEventSub1.start()
 
@@ -325,10 +329,6 @@ class StateAndEventSubscriptionIntegrationTest {
             null
         )
         durableSub.start()
-
-        publisherConfig = PublisherConfig(CLIENT_ID)
-        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        publisher.publish(getStringRecords(EVENT_TOPIC6, 1, 3)).forEach { it.get() }
 
         assertTrue(stateAndEventLatch.await(40, TimeUnit.SECONDS))
         assertTrue(durableLatch.await(30, TimeUnit.SECONDS))
