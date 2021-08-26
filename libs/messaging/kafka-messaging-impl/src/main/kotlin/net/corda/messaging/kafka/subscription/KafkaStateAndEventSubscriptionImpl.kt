@@ -30,6 +30,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.utils.getEventsByBatch
 import net.corda.messaging.kafka.utils.render
+import net.corda.messaging.kafka.utils.tryGetFutureResult
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
@@ -47,14 +48,10 @@ import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
-import kotlin.coroutines.cancellation.CancellationException
 
 class Topic(val prefix: String, val suffix: String) {
     val topic
@@ -194,7 +191,6 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     builder.createEventConsumer(config.getConfig(EVENT_CONSUMER), processor.keyClass, processor.eventValueClass, this)
                 validateConsumers()
 
-                stateConsumer.assign(emptyList())
                 eventConsumer.subscribeToTopic()
 
                 while (!stopped) {
@@ -393,7 +389,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             CompletableFuture.supplyAsync({ processor.onNext(state, event.asRecord()) }, executor)
 
         var thisEventUpdates: StateAndEventProcessor.Response<S>? =
-            uncheckedCast(tryGetFutureResult(processorFuture, initialProcessorTimeout))
+            uncheckedCast(tryGetFutureResult(processorFuture, getInitialProcessorTimeout(initialProcessorTimeout)))
 
         if (thisEventUpdates == null) {
             log.trace { "Initial processor timeout on event: $event. Pausing partitions and waiting. " }
@@ -406,7 +402,19 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 processorFuture.cancel(true)
             }
         }
+
         return thisEventUpdates
+    }
+
+    /**
+     * Don't allow initial processor timeout to go past the poll interval cutoff point
+     */
+    private fun getInitialProcessorTimeout(initialProcessorTimeout: Long): Long {
+        return if ((currentTimeMillis() + initialProcessorTimeout) > nextPollIntervalCutoff) {
+            nextPollIntervalCutoff - currentTimeMillis()
+        } else {
+            initialProcessorTimeout
+        }
     }
 
     private fun waitForFunctionToFinish(function: () -> Unit, timeout: Long, timeoutErrorMessage: String) {
@@ -426,16 +434,15 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun pauseEventConsumerAndWaitForFutureToFinish(future: CompletableFuture<*>, timeout: Long) {
         val assignment = eventConsumer.assignment() - eventConsumer.paused()
         eventConsumer.pause(assignment)
-
         val maxWaitTime = currentTimeMillis() + timeout
         var done = future.isDone
-        while (!done && (currentTimeMillis() > maxWaitTime)) {
+
+        while (!done && (maxWaitTime > currentTimeMillis())) {
             eventConsumer.poll(PAUSED_POLL_TIMEOUT)
+            nextPollIntervalCutoff = getNextPollIntervalCutoff()
             updateStates(false)
             done = future.isDone
         }
-
-        nextPollIntervalCutoff = getNextPollIntervalCutoff()
 
         eventConsumer.resume(assignment)
     }
@@ -459,7 +466,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val stateBytes = if (state != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(stateTopic.topic, state)) else null
         val eventBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(eventTopic.topic, event.value()))
         return Record(eventTopic.topic + deadLetterQueueSuffix, event.key(),
-            StateAndEventDeadLetterRecord(stateBytes, eventBytes))
+            StateAndEventDeadLetterRecord(stateBytes, eventBytes)
+        )
     }
 
     private fun onProcessorStateUpdated(updatedStates: MutableMap<Int, MutableMap<K, S?>>) {
@@ -501,20 +509,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             log.trace { "Updating state: $state" }
             updateInMemoryState(state)
 
-            // Check sync status
-            if (syncPartitions && statePartitionsToSync.isNotEmpty()) {
-                val currentPartition = state.record.partition()
-                val topicPartition = TopicPartition(stateTopic.topic, currentPartition)
-                val stateConsumerPollPosition = stateConsumer.position(topicPartition)
-                val endOffset = statePartitionsToSync[currentPartition]
-                if (endOffset != null && stateConsumerPollPosition >= endOffset) {
-                    log.trace {
-                        "State partition $topicPartition is now up to date. Poll position $stateConsumerPollPosition, recorded " +
-                                "end offset $endOffset"
-                    }
-                    statePartitionsToSync.remove(currentPartition)
-                    partitionsSynced.add(TopicPartition(eventTopic.topic, currentPartition))
-                }
+            if (syncPartitions) {
+                partitionsSynced.addAll(getSyncedEventPartitions())
             }
         }
 
@@ -523,7 +519,27 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun resumeConsumerAndExecuteListener(partitionsSynced: MutableSet<TopicPartition>) {
+    private fun getSyncedEventPartitions() : Set<TopicPartition> {
+        val partitionsSynced = mutableSetOf<TopicPartition>()
+        for (partition in statePartitionsToSync) {
+            val partitionId = partition.key
+            val stateTopicPartition = TopicPartition(stateTopic.topic, partitionId)
+            val stateConsumerPollPosition = stateConsumer.position(stateTopicPartition)
+            val endOffset = partition.value
+            if (stateConsumerPollPosition >= endOffset) {
+                log.trace {
+                    "State partition $stateTopicPartition is now up to date. Poll position $stateConsumerPollPosition, recorded " +
+                            "end offset $endOffset"
+                }
+                statePartitionsToSync.remove(partitionId)
+                partitionsSynced.add(TopicPartition(eventTopic.topic, partitionId))
+            }
+        }
+
+        return partitionsSynced
+    }
+
+    private fun resumeConsumerAndExecuteListener(partitionsSynced: Set<TopicPartition>) {
         log.debug { "State consumer is up to date for $partitionsSynced.  Resuming event feed." }
         eventConsumer.resume(partitionsSynced)
 
@@ -581,51 +597,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
-    private fun tryGetFutureResult(future: CompletableFuture<*>, timeout: Long, cancelOnTimeout: Boolean = false): Any? {
-        return try {
-            future.get(timeout, TimeUnit.MILLISECONDS)
-        } catch (ex: Exception) {
-            return handleFutureException(ex, future, cancelOnTimeout)
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    private fun tryGetFutureResult(future: CompletableFuture<*>): Any? {
-        return try {
-            future.get()
-        } catch (ex: Exception) {
-            return handleFutureException(ex, future)
-        }
-    }
-
-    @Suppress("ThrowsCount")
-    private fun handleFutureException(ex: Exception, future: CompletableFuture<*>, cancelOnTimeout: Boolean = false): Any? {
-        when (ex) {
-            is TimeoutException -> {
-                if (cancelOnTimeout) {
-                    future.cancel(true)
-                }
-                return null
-            }
-            is CancellationException -> {
-                return null
-            }
-            is ExecutionException -> {
-                //get the exception thrown by the processor if available
-                throw ex.cause ?: throw CordaMessageAPIIntermittentException("Future failed to execute", ex)
-            }
-            else -> {
-                throw CordaMessageAPIIntermittentException("Future failed to execute", ex)
-            }
-        }
-    }
-
     private fun TopicPartition.toStateTopic() = TopicPartition(stateTopic.topic, partition())
-    private fun TopicPartition.toEventTopic() = TopicPartition(eventTopic.topic, partition())
     private fun Collection<TopicPartition>.toStateTopics(): List<TopicPartition> = map { it.toStateTopic() }
-
-    @Suppress("unused")
-    private fun Collection<TopicPartition>.toEventTopics(): List<TopicPartition> = map { it.toEventTopic() }
 
 }

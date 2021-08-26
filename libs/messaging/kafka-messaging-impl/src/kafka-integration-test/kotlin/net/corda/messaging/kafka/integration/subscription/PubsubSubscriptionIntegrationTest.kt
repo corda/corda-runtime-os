@@ -59,7 +59,7 @@ class PubsubSubscriptionIntegrationTest {
         )
         pubsubSub.start()
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + PUBSUB_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
 
         while (latch.count > 0) {

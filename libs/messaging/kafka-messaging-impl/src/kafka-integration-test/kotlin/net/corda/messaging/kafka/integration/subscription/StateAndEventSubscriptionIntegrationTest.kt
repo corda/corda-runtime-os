@@ -100,7 +100,7 @@ class StateAndEventSubscriptionIntegrationTest {
         stateEventSub1.start()
         stateEventSub2.start()
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getDemoRecords(EVENT_TOPIC1, 5, 2)).forEach { it.get() }
 
@@ -125,7 +125,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         stateEventSub1.start()
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC2)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getDemoRecords(EVENT_TOPIC2, 5, 2)).forEach { it.get() }
 
@@ -149,6 +149,10 @@ class StateAndEventSubscriptionIntegrationTest {
     fun `create topics, start statevent sub, fail processor on first attempt, publish 2 records, verify listener and outputs`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC3_TEMPLATE)
 
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC3, 1)
+        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisher.publish(getStringRecords(EVENT_TOPIC3, 2, 1)).forEach { it.get() }
+
         val onNextLatch1 = CountDownLatch(3)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC3-group", EVENT_TOPIC3, 1),
@@ -158,10 +162,6 @@ class StateAndEventSubscriptionIntegrationTest {
         )
 
         stateEventSub1.start()
-
-        publisherConfig = PublisherConfig(CLIENT_ID, 1)
-        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        publisher.publish(getStringRecords(EVENT_TOPIC3, 2, 1)).forEach { it.get() }
 
         assertTrue(onNextLatch1.await(30, TimeUnit.SECONDS))
         stateEventSub1.stop()
@@ -192,11 +192,11 @@ class StateAndEventSubscriptionIntegrationTest {
         )
 
         stateEventSub2.start()
-        assertTrue(onNextLatch2.await(20, TimeUnit.SECONDS))
-        assertTrue(syncPartitionLatch.await(20, TimeUnit.SECONDS))
-        assertTrue(commitStatesLatch.await(20, TimeUnit.SECONDS))
+        assertTrue(onNextLatch2.await(30, TimeUnit.SECONDS))
+        assertTrue(syncPartitionLatch.await(30, TimeUnit.SECONDS))
+        assertTrue(commitStatesLatch.await(30, TimeUnit.SECONDS))
         stateEventSub2.stop()
-        assertTrue(losePartitionLatch.await(20, TimeUnit.SECONDS))
+        assertTrue(losePartitionLatch.await(30, TimeUnit.SECONDS))
     }
 
     @Test
@@ -221,7 +221,7 @@ class StateAndEventSubscriptionIntegrationTest {
             longWaitProcessorConfig
         )
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC4)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getDemoRecords(EVENT_TOPIC4, 5, 3)).forEach { it.get() }
 
@@ -260,7 +260,7 @@ class StateAndEventSubscriptionIntegrationTest {
         val stateAndEventLatch = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC5-group", EVENT_TOPIC5, 1),
-            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT5, 20000),
+            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT5, 30000),
             shortIntervalTimeoutConfig, TestStateAndEventListenerStrings()
         )
         stateEventSub1.start()
@@ -285,7 +285,7 @@ class StateAndEventSubscriptionIntegrationTest {
         )
         deadLetterSub.start()
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC5)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getStringRecords(EVENT_TOPIC5, 5, 2)).forEach { it.get() }
 
@@ -302,7 +302,7 @@ class StateAndEventSubscriptionIntegrationTest {
     fun `create topics, start one statevent sub, publish records, slow processor and listener, all records successful`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC6_TEMPLATE)
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC6)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getStringRecords(EVENT_TOPIC6, 1, 3)).forEach { it.get() }
 

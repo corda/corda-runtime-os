@@ -323,7 +323,7 @@ class KafkaStateAndEventSubscriptionImplTest {
 
         subscription.stop()
 
-        verify(stateConsumer, times(3)).assign(any())
+        verify(stateConsumer, times(2)).assign(any())
         verify(stateConsumer, times(1)).seekToBeginning(any())
         verify(stateConsumer, times(1)).beginningOffsets(any())
         verify(stateConsumer, times(1)).endOffsets(any())
