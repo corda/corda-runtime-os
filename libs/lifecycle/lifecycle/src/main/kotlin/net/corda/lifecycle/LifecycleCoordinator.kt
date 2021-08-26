@@ -83,7 +83,7 @@ interface LifecycleCoordinator : Lifecycle {
      * @param reason A diagnostic string describing why this status has been entered. This will be handed over to the
      *               registry for monitoring purposes.
      */
-    fun updateStatus(newStatus: LifecycleStatus, reason: String)
+    fun updateStatus(newStatus: LifecycleStatus, reason: String = "Status has changed to $newStatus")
 
     /**
      * Register for status changes from a set of dependent coordinators.

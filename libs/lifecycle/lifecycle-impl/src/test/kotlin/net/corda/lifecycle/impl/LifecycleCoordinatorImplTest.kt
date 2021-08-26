@@ -12,6 +12,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
+import net.corda.lifecycle.impl.LifecycleProcessor.Companion.STOPPED_REASON
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -623,7 +625,8 @@ internal class LifecycleCoordinatorImplTest {
         val stopLatch = CountDownLatch(1)
         val flushingLatch = CountDownLatch(1)
         val flushingEvent = object : LifecycleEvent {}
-        createCoordinator { event, _ ->
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        createCoordinator(registry) { event, _ ->
             when (event) {
                 is StartEvent -> {
                     startLatch.countDown()
@@ -646,11 +649,21 @@ internal class LifecycleCoordinatorImplTest {
             it.postEvent(flushingEvent)
             assertTrue(flushingLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(LifecycleStatus.UP, it.status)
+            verify(registry).updateStatus(
+                LifecycleCoordinatorName.forComponent<LifecycleCoordinatorImplTest>(),
+                LifecycleStatus.UP,
+                REASON
+            )
 
             // Stopping should set the coordinator to down
             it.stop()
             assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(LifecycleStatus.DOWN, it.status)
+            verify(registry).updateStatus(
+                LifecycleCoordinatorName.forComponent<LifecycleCoordinatorImplTest>(),
+                LifecycleStatus.DOWN,
+                STOPPED_REASON
+            )
         }
     }
 
@@ -668,7 +681,7 @@ internal class LifecycleCoordinatorImplTest {
                 }
             }
         }.use {
-            it.updateStatus(LifecycleStatus.UP, REASON)
+            it.updateStatus(LifecycleStatus.UP)
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(LifecycleStatus.DOWN, it.status)
@@ -708,22 +721,22 @@ internal class LifecycleCoordinatorImplTest {
             // Set both dependents up
             dependent1.start()
             dependent2.start()
-            dependent1.updateStatus(LifecycleStatus.UP, REASON)
-            dependent2.updateStatus(LifecycleStatus.UP, REASON)
+            dependent1.updateStatus(LifecycleStatus.UP)
+            dependent2.updateStatus(LifecycleStatus.UP)
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(handle, registration)
             assertEquals(LifecycleStatus.UP, status)
 
             // Take one down and verify that down is delivered
             regLatch = CountDownLatch(1)
-            dependent1.updateStatus(LifecycleStatus.DOWN, REASON)
+            dependent1.updateStatus(LifecycleStatus.DOWN)
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(handle, registration)
             assertEquals(LifecycleStatus.DOWN, status)
 
             // Put the dependent back up again
             regLatch = CountDownLatch(1)
-            dependent1.updateStatus(LifecycleStatus.UP, REASON)
+            dependent1.updateStatus(LifecycleStatus.UP)
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(handle, registration)
             assertEquals(LifecycleStatus.UP, status)
@@ -777,15 +790,15 @@ internal class LifecycleCoordinatorImplTest {
 
             dependent1.start()
             dependent2.start()
-            dependent1.updateStatus(LifecycleStatus.UP, REASON)
-            dependent2.updateStatus(LifecycleStatus.UP, REASON)
+            dependent1.updateStatus(LifecycleStatus.UP)
+            dependent2.updateStatus(LifecycleStatus.UP)
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(handle, registration)
             assertEquals(LifecycleStatus.UP, status)
 
             // Close the registration and bring down a dependent coordinator
             handle.close()
-            dependent1.updateStatus(LifecycleStatus.DOWN, REASON)
+            dependent1.updateStatus(LifecycleStatus.DOWN)
             // Bring down the dependent and wait - this ensures that the status update has definitely been delivered.
             dependent1.stop()
             assertTrue(dependentLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
@@ -828,16 +841,16 @@ internal class LifecycleCoordinatorImplTest {
             // Create overlapping registrations and show that both get delivered.
             val handle1 = it.followStatusChanges(setOf(dependent1, dependent2))
             val handle2 = it.followStatusChanges(setOf(dependent2, dependent3))
-            dependent1.updateStatus(LifecycleStatus.UP, REASON)
-            dependent2.updateStatus(LifecycleStatus.UP, REASON)
-            dependent3.updateStatus(LifecycleStatus.UP, REASON)
+            dependent1.updateStatus(LifecycleStatus.UP)
+            dependent2.updateStatus(LifecycleStatus.UP)
+            dependent3.updateStatus(LifecycleStatus.UP)
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(2, totalStatusChanges)
             assertEquals(setOf(handle1, handle2), handleSet)
 
             handleSet.clear()
             regLatch = CountDownLatch(2)
-            dependent2.updateStatus(LifecycleStatus.DOWN, REASON)
+            dependent2.updateStatus(LifecycleStatus.DOWN)
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(4, totalStatusChanges)
             assertEquals(setOf(handle1, handle2), handleSet)
@@ -885,8 +898,8 @@ internal class LifecycleCoordinatorImplTest {
             dependent1.start()
             dependent2.start()
             val handle = it.followStatusChanges(setOf(dependent1, dependent2))
-            dependent1.updateStatus(LifecycleStatus.UP, REASON)
-            dependent2.updateStatus(LifecycleStatus.UP, REASON)
+            dependent1.updateStatus(LifecycleStatus.UP)
+            dependent2.updateStatus(LifecycleStatus.UP)
             dependent1.postEvent(flushingEvent)
             dependent2.postEvent(flushingEvent)
             assertTrue(dependentsUpLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
@@ -959,8 +972,8 @@ internal class LifecycleCoordinatorImplTest {
             // Set both dependent coordinators to UP and verify the event goes through correctly.
             coordinatorA.start()
             coordinatorB.start()
-            coordinatorA.updateStatus(LifecycleStatus.UP, REASON)
-            coordinatorB.updateStatus(LifecycleStatus.UP, REASON)
+            coordinatorA.updateStatus(LifecycleStatus.UP)
+            coordinatorB.updateStatus(LifecycleStatus.UP)
             assertTrue(registrationLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(handle, registration)
             assertEquals(LifecycleStatus.UP, status)
