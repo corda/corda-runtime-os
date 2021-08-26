@@ -64,7 +64,7 @@ class DependencyInjectionServiceTests {
 
     @Test
     fun `Cannot inject interface without annotation into a flow`() {
-        val flow = InvalidDependencySetupFlow()
+        val flow = MissingAnnotationFlow()
         val stateMachine = createMockStateMachine(flow)
         dependencyInjectionService.injectDependencies(flow, stateMachine)
         assertFalse(flow.isInitialized())
@@ -72,7 +72,7 @@ class DependencyInjectionServiceTests {
 
     @Test
     fun `Cannot inject interface without annotation into a Corda service`() {
-        val service = InvalidDependencySetupService()
+        val service = MissingAnnotationService()
         dependencyInjectionService.injectDependencies(service)
         assertFalse(service.isInitialized())
     }

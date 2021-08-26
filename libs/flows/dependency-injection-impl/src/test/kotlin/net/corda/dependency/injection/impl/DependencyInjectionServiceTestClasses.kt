@@ -49,7 +49,7 @@ class InheritingFlow : InjectDependenciesFlow()
 class InheritingCordaService : InjectDependenciesService()
 
 /** A flow that is not annotated correctly for injection. */
-class InvalidDependencySetupFlow : Flow<Unit> {
+class MissingAnnotationFlow : Flow<Unit> {
     // `@CordaInject` annotation is missing.
     private lateinit var cordaFlowInjectable: CordaFlowInjectableInterface
 
@@ -59,7 +59,7 @@ class InvalidDependencySetupFlow : Flow<Unit> {
 }
 
 /** A Corda service that is not annotated correctly for injection. */
-class InvalidDependencySetupService : CordaService {
+class MissingAnnotationService : CordaService {
     // `@CordaInject` annotation is missing.
     private lateinit var cordaServiceAndFlowInjectable: CordaServiceAndFlowInjectableInterface
 
