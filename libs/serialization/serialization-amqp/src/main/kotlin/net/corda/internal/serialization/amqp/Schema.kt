@@ -16,7 +16,7 @@ import java.io.NotSerializableException
 import java.lang.reflect.Type
 
 const val DESCRIPTOR_DOMAIN: String = "net.corda"
-val amqpMagic = CordaSerializationMagic("corda".toByteArray() + byteArrayOf(1, 0))
+val amqpMagic = CordaSerializationMagic("corda".toByteArray() + byteArrayOf(3, 0))
 
 fun typeDescriptorFor(typeId: TypeIdentifier): Symbol = Symbol.valueOf("$DESCRIPTOR_DOMAIN:${AMQPTypeIdentifiers.nameForType(typeId)}")
 fun typeDescriptorFor(type: Type): Symbol = typeDescriptorFor(forGenericType(type))
