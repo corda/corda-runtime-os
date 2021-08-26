@@ -29,6 +29,7 @@ interface LifecycleRegistryCoordinatorAccess {
      * @param name The name of the coordinator which has had a status change.
      * @param status The new coordinator status.
      * @param reason The reason this coordinator status changed.
+     * @throws LifecycleRegistryException If there is no coordinator registered under the provided name
      */
     fun updateStatus(name: LifecycleCoordinatorName, status: LifecycleStatus, reason: String)
 

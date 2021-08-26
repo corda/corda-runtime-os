@@ -26,6 +26,7 @@ class LifecycleRegistryImplTest {
 
     private fun initialRegistrySetup(registry: LifecycleRegistryImpl) {
         initialStatusMap.values.forEach {
+            registry.registerCoordinator(it.name, mock())
             registry.updateStatus(it.name, it.status, it.reason)
         }
     }
@@ -45,6 +46,19 @@ class LifecycleRegistryImplTest {
         registry.updateStatus(aliceName, LifecycleStatus.UP, "Alice is up")
         val statuses = registry.componentStatus()
         assertEquals(CoordinatorStatus(aliceName, LifecycleStatus.UP, "Alice is up"), statuses[aliceName])
+    }
+
+    @Test
+    fun `exception is thrown when an update is attempted to a coordinator that is not registered`() {
+        val registry = LifecycleRegistryImpl()
+        initialRegistrySetup(registry)
+        assertThrows<LifecycleRegistryException> {
+            registry.updateStatus(
+                LifecycleCoordinatorName("Denise"),
+                LifecycleStatus.UP,
+                "Denise is up"
+            )
+        }
     }
 
     @Test
