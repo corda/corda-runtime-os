@@ -4,12 +4,14 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
+import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
 import java.util.concurrent.Executors
@@ -37,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class LifecycleCoordinatorImpl(
     override val name: LifecycleCoordinatorName,
     batchSize: Int,
-    registry: LifecycleRegistryCoordinatorAccess,
+    private val registry: LifecycleRegistryCoordinatorAccess,
     lifeCycleProcessor: LifecycleEventHandler,
 ) : LifecycleCoordinator {
 
@@ -174,6 +176,19 @@ class LifecycleCoordinatorImpl(
         postEvent(TrackRegistration(registration))
         coordinators.forEach { it.postEvent(NewRegistration(registration)) }
         return registration
+    }
+
+    /**
+     * See [LifecycleCoordinator].
+     */
+    override fun followStatusChangesByName(coordinatorNames: Set<LifecycleCoordinatorName>): RegistrationHandle {
+        val coordinators = try {
+            coordinatorNames.map { registry.getCoordinator(it) }.toSet()
+        } catch (e: LifecycleRegistryException) {
+            logger.error("Failed to register on coordinator as an invalid name was provided. ${e.message}", e)
+            throw LifecycleException("Failed to register on a coordinator as an invalid name was provided", e)
+        }
+        return followStatusChanges(coordinators)
     }
 
     /**

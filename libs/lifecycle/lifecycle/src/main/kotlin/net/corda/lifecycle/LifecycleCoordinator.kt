@@ -99,10 +99,28 @@ interface LifecycleCoordinator : Lifecycle {
      * handler on unregistration.
      *
      * @param coordinators The set of coordinators to register for status changes on.
-     * @return RegistrationHandle The registration. The same handle is returned on status change events delivered to the
-     *                            client event handler.
+     * @return The registration. The same handle is returned on status change events delivered to the client event
+     *         handler.
      */
     fun followStatusChanges(coordinators: Set<LifecycleCoordinator>) : RegistrationHandle
+
+    /**
+     * Register for status changes from a set of dependent coordinators.
+     *
+     * This version uses the coordinator names registered with the global registry to find the right coordinator to
+     * register on. This is useful in cases where a component does not want to declare a compile time dependency on
+     * another component purely to obtain the coordinator instance of that component, or where the coordinator instance
+     * is not exposed.
+     *
+     * In cases where a component has access to some coordinators they wish to register on but not others, this API can
+     * be used in combination with the `name` field on the coordinator to register on the full set.
+     *
+     * @param names The names of the coordinators to register on.
+     * @return The registration. The same handle is returned on status change events delivered to the client event
+     *         handler.
+     * @throws LifecycleException if an invalid name was provided in the set of lifecycle coordinators.
+     */
+    fun followStatusChangesByName(coordinatorNames: Set<LifecycleCoordinatorName>) : RegistrationHandle
 
     //override fun close()
 }

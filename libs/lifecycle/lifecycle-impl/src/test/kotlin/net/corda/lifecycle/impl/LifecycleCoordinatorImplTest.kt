@@ -5,16 +5,21 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
+import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -923,11 +928,82 @@ internal class LifecycleCoordinatorImplTest {
         }
     }
 
-    private fun createCoordinator(processor: LifecycleEventHandler): LifecycleCoordinator {
+    @Test
+    fun `can register on coordinators using the regsitry`() {
+        val startLatch = CountDownLatch(1)
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val coordinatorA = createCoordinator { _, _ -> }
+        val coordinatorB = createCoordinator { _, _ -> }
+        val nameA = LifecycleCoordinatorName("Alice")
+        val nameB = LifecycleCoordinatorName("Bob")
+        doReturn(coordinatorA).`when`(registry).getCoordinator(nameA)
+        doReturn(coordinatorB).`when`(registry).getCoordinator(nameB)
+        val registrationLatch = CountDownLatch(1)
+        var registration: RegistrationHandle? = null
+        var status = LifecycleStatus.DOWN
+        createCoordinator(registry) { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+                is RegistrationStatusChangeEvent -> {
+                    registration = event.registration
+                    status = event.status
+                    registrationLatch.countDown()
+                }
+            }
+        }.use {
+            it.start()
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            val handle = it.followStatusChangesByName(setOf(nameA, nameB))
+            // Set both dependent coordinators to UP and verify the event goes through correctly.
+            coordinatorA.start()
+            coordinatorB.start()
+            coordinatorA.updateStatus(LifecycleStatus.UP, REASON)
+            coordinatorB.updateStatus(LifecycleStatus.UP, REASON)
+            assertTrue(registrationLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(handle, registration)
+            assertEquals(LifecycleStatus.UP, status)
+        }
+    }
+
+    @Test
+    fun `exception is thrown if an attempt is made to register on a coordinator that does not exist`() {
+        val startLatch = CountDownLatch(1)
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val coordinatorA = createCoordinator { _, _ -> }
+        val coordinatorB = createCoordinator { _, _ -> }
+        val nameA = LifecycleCoordinatorName("Alice")
+        val nameB = LifecycleCoordinatorName("Bob")
+        val nameC = LifecycleCoordinatorName("Charlie")
+        doReturn(coordinatorA).`when`(registry).getCoordinator(nameA)
+        doReturn(coordinatorB).`when`(registry).getCoordinator(nameB)
+        // Note we need to use doAnswer here as doThrows requires the function to declare it throws the exception type
+        doAnswer { throw LifecycleException("Charlie doesn't exist") }.`when`(registry).getCoordinator(nameC)
+        createCoordinator(registry) { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+            }
+        }.use {
+            it.start()
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertThrows<LifecycleException> {
+                it.followStatusChangesByName(setOf(nameA, nameB, nameC))
+            }
+        }
+    }
+
+
+    private fun createCoordinator(
+        registry: LifecycleRegistryCoordinatorAccess = mock(),
+        processor: LifecycleEventHandler
+    ): LifecycleCoordinator {
         return LifecycleCoordinatorImpl(
             LifecycleCoordinatorName.forComponent<LifecycleCoordinatorImplTest>(),
             BATCH_SIZE,
-            mock(),
+            registry,
             processor
         )
     }
