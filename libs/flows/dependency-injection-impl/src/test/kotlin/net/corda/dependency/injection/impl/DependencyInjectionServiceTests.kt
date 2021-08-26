@@ -17,9 +17,9 @@ class DependencyInjectionServiceTests {
         private val dependencyInjectionService = DependencyInjectionServiceImpl()
 
         init {
-            dependencyInjectionService.registerSingletonService(CordaFlowInjectableImpl::class.java, mock())
-            dependencyInjectionService.registerSingletonService(CordaServiceInjectableImpl::class.java, mock())
-            dependencyInjectionService.registerSingletonService(CordaServiceAndFlowInjectableImpl::class.java, mock())
+            dependencyInjectionService.registerSingletonService(CordaFlowInjectableInterface::class.java, CordaFlowInjectableImpl())
+            dependencyInjectionService.registerSingletonService(CordaServiceInjectableInterface::class.java, CordaServiceInjectableImpl())
+            dependencyInjectionService.registerSingletonService(CordaServiceAndFlowInjectableInterface::class.java, CordaServiceAndFlowInjectableImpl())
         }
     }
 

@@ -9,19 +9,17 @@ import net.corda.v5.application.services.CordaService
 /** A flow that requires the injection of services. */
 open class InjectDependenciesFlow : Flow<Unit> {
     @CordaInject
-    private lateinit var cordaFlowInjectable: CordaFlowInjectableImpl
+    private lateinit var cordaFlowInjectable: CordaFlowInjectableInterface
 
     @CordaInject
-    private lateinit var cordaServiceAndFlowInjectable: CordaServiceAndFlowInjectableImpl
+    private lateinit var cordaServiceAndFlowInjectable: CordaServiceAndFlowInjectableInterface
 
     override fun call() = Unit
 
     fun isInitialized() = ::cordaFlowInjectable.isInitialized && ::cordaServiceAndFlowInjectable.isInitialized
 
     fun isCallable() = try {
-        cordaFlowInjectable.call()
-        cordaServiceAndFlowInjectable.call()
-        true
+        cordaFlowInjectable.call() && cordaServiceAndFlowInjectable.call()
     } catch (e: UninitializedPropertyAccessException) {
         false
     }
@@ -30,17 +28,15 @@ open class InjectDependenciesFlow : Flow<Unit> {
 /** A Corda service that requires the injection of services. */
 open class InjectDependenciesService : CordaService {
     @CordaInject
-    private lateinit var cordaServiceInjectable: CordaServiceInjectableImpl
+    private lateinit var cordaServiceInjectable: CordaServiceInjectableInterface
 
     @CordaInject
-    private lateinit var cordaServiceAndFlowInjectable: CordaServiceAndFlowInjectableImpl
+    private lateinit var cordaServiceAndFlowInjectable: CordaServiceAndFlowInjectableInterface
 
     fun isInitialized() = ::cordaServiceInjectable.isInitialized && ::cordaServiceAndFlowInjectable.isInitialized
 
     fun isCallable() = try {
-        cordaServiceInjectable.call()
-        cordaServiceAndFlowInjectable.call()
-        true
+        cordaServiceInjectable.call() && cordaServiceAndFlowInjectable.call()
     } catch (e: UninitializedPropertyAccessException) {
         false
     }
@@ -55,7 +51,7 @@ class InheritingCordaService : InjectDependenciesService()
 /** A flow that is not annotated correctly for injection. */
 class InvalidDependencySetupFlow : Flow<Unit> {
     // `@CordaInject` annotation is missing.
-    private lateinit var cordaFlowInjectable: CordaFlowInjectableImpl
+    private lateinit var cordaFlowInjectable: CordaFlowInjectableInterface
 
     override fun call() = Unit
 
@@ -65,7 +61,7 @@ class InvalidDependencySetupFlow : Flow<Unit> {
 /** A Corda service that is not annotated correctly for injection. */
 class InvalidDependencySetupService : CordaService {
     // `@CordaInject` annotation is missing.
-    private lateinit var cordaServiceAndFlowInjectable: CordaServiceAndFlowInjectableImpl
+    private lateinit var cordaServiceAndFlowInjectable: CordaServiceAndFlowInjectableInterface
 
     fun isInitialized() = ::cordaServiceAndFlowInjectable.isInitialized
 }
@@ -93,7 +89,7 @@ class InvalidDependencyService: CordaService {
 /** A flow that tries to inject a Corda service injectable. */
 class FlowUsingCordaServiceInjectable : Flow<Unit> {
     @CordaInject
-    private lateinit var cordaServiceInjectable: CordaServiceInjectableImpl
+    private lateinit var cordaServiceInjectable: CordaServiceInjectableInterface
 
     override fun call() = Unit
 
@@ -103,22 +99,25 @@ class FlowUsingCordaServiceInjectable : Flow<Unit> {
 /** A Corda service that tries to inject a flow injectable. */
 class CordaServiceUsingFlowInjectable : CordaService {
     @CordaInject
-    private lateinit var cordaFlowInjectable: CordaFlowInjectableImpl
+    private lateinit var cordaFlowInjectable: CordaFlowInjectableInterface
 
     fun isInitialized() = ::cordaFlowInjectable.isInitialized
 }
 
 /** A dummy flow injectable. */
-class CordaFlowInjectableImpl: CordaFlowInjectable {
-    fun call() = Unit
+interface CordaFlowInjectableInterface: CordaFlowInjectable {
+    fun call() = true
 }
+class CordaFlowInjectableImpl: CordaFlowInjectableInterface
 
 /** A dummy service injectable. */
-class CordaServiceInjectableImpl: CordaServiceInjectable {
-    fun call() = Unit
+interface CordaServiceInjectableInterface: CordaServiceInjectable {
+    fun call() = true
 }
+class CordaServiceInjectableImpl: CordaServiceInjectableInterface
 
 /** A dummy service and flow injectable. */
-class CordaServiceAndFlowInjectableImpl: CordaServiceInjectable, CordaFlowInjectable {
-    fun call() = Unit
+interface CordaServiceAndFlowInjectableInterface: CordaServiceInjectable, CordaFlowInjectable {
+    fun call() = true
 }
+class CordaServiceAndFlowInjectableImpl: CordaServiceAndFlowInjectableInterface
