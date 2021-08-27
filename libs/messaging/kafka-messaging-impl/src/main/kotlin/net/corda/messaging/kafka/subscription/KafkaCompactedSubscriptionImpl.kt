@@ -47,14 +47,13 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
 
-    private var latestValues: MutableMap<K, V>? = null
+    private var latestValues: MutableMap<K, V> = mutableMapOf()
 
     override fun stop() {
         if (!stopped) {
             val thread = lock.withLock {
                 stopped = true
-                latestValues?.apply { mapFactory.destroyMap(this) }
-                latestValues = null
+                mapFactory.destroyMap(latestValues)
                 val threadTmp = consumeLoopThread
                 consumeLoopThread = null
                 threadTmp
@@ -83,7 +82,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     override val isRunning: Boolean
         get() = !stopped
 
-    override fun getValue(key: K): V? = latestValues?.get(key)
+    override fun getValue(key: K): V? = latestValues[key]
 
     @Suppress("TooGenericExceptionCaught")
     private fun runConsumeLoop() {
@@ -116,39 +115,40 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
         }
     }
 
-    private fun getLatestValues(): MutableMap<K, V> {
-        var latest = latestValues
-        if (latest == null) {
-            latest = mapFactory.createMap()
-            latestValues = latest
-        }
-        return latest
+    private fun resetLatestValuesMap() {
+        mapFactory.destroyMap(latestValues)
+        latestValues = mapFactory.createMap()
     }
 
     private fun pollAndProcessSnapshot(consumer: CordaKafkaConsumer<K, V>) {
+        resetLatestValuesMap()
         val partitions = consumer.assignment()
         val snapshotEnds = consumer.endOffsets(partitions)
-        val currentOffsets = consumer.beginningOffsets(partitions)
         consumer.seekToBeginning(partitions)
 
-        val currentData = getLatestValues()
-        currentData.clear()
+        val partitionsSynced = partitions.associate { it.partition() to false }.toMutableMap()
 
-        while (currentOffsets.any { it.value < (snapshotEnds[it.key] ?: 0) }) {
+        while (partitionsSynced.any { !it.value }) {
             val consumerRecords = consumer.poll()
-            if (consumerRecords.isEmpty()) {
-                break
-            }
+
             consumerRecords.forEach {
                 if (it.record.value() != null) {
-                    currentData[it.record.key()] = it.record.value()
+                    latestValues[it.record.key()] = it.record.value()
                 } else {
-                    currentData.remove(it.record.key())
+                    latestValues.remove(it.record.key())
                 }
-                currentOffsets[TopicPartition(it.record.topic(), it.record.partition())] = it.record.offset()
+            }
+
+            for (partition in partitions) {
+                val partitionId = partition.partition()
+                val topicPartition = TopicPartition(topic, partitionId)
+                if (consumer.position(topicPartition) >= snapshotEnds[topicPartition]!!) {
+                    partitionsSynced[partitionId] = true
+                }
             }
         }
-        processor.onSnapshot(currentData)
+
+        processor.onSnapshot(latestValues)
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -176,18 +176,17 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     private fun processCompactedRecords(
         consumerRecords: List<ConsumerRecordAndMeta<K, V>>
     ) {
-        val currentData = getLatestValues()
         consumerRecords.forEach {
-            val oldValue = currentData[it.record.key()]
+            val oldValue = latestValues[it.record.key()]
             val newValue = it.record.value()
 
             if (newValue == null) {
-                currentData.remove(it.record.key())
+                latestValues.remove(it.record.key())
             } else {
-                currentData[it.record.key()] = newValue
+                latestValues[it.record.key()] = newValue
             }
 
-            processor.onNext(it.asRecord(), oldValue, currentData)
+            processor.onNext(it.asRecord(), oldValue, latestValues)
         }
     }
 }
