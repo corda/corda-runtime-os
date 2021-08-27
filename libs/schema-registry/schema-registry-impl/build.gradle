@@ -1,13 +1,17 @@
 plugins {
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
 }
 
 dependencies {
-    implementation "net.corda:corda-base:$cordaApiVersion"
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
     implementation "org.apache.avro:avro:$avroVersion"
+    implementation "net.corda:avro-schema"
     implementation project(":libs:schema-registry:schema-registry")
-    implementation project(":data:avro-schema")
 
     testRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
 }

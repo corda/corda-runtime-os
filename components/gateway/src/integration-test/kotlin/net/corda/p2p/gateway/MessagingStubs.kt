@@ -18,16 +18,17 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
-import net.corda.v5.base.internal.uncheckedCast
 import rx.Observable
 import rx.subjects.PublishSubject
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 /**
@@ -71,6 +72,7 @@ class TopicServiceStub : TopicService {
  * via a [TopicService]. Upon start, all messages currently in the topic are fed into the processor exactly once. Updates
  * are no longer published.
  */
+@Suppress("UNCHECKED_CAST")
 class EventLogSubscriptionStub<K: Any, V: Any>(
     private val config: SubscriptionConfig,
     private val processor: EventLogProcessor<K, V>,
@@ -88,8 +90,8 @@ class EventLogSubscriptionStub<K: Any, V: Any>(
         lock.withLock {
             running = true
             val records = topicService.getRecords(config.eventTopic, config.groupName, -1).map {
-                EventLogRecord<K, V>(it.record.topic,
-                    uncheckedCast(it.record.key), uncheckedCast(it.record.value), -1, -1L) }
+                EventLogRecord(it.record.topic,
+                    it.record.key as K, it.record.value as V, -1, -1L) }
             if (records.isNotEmpty())  {
                 processor.onNext(records)
             }
@@ -98,6 +100,80 @@ class EventLogSubscriptionStub<K: Any, V: Any>(
 
     override val isRunning: Boolean
         get() = running
+
+}
+
+class CompactedSubscriptionStub<K: Any, V: Any>(
+    private val config: SubscriptionConfig,
+    private val processor: CompactedProcessor<K, V>,
+    private val topicService: TopicService,
+): CompactedSubscription<K, V> {
+
+    private val mapping = ConcurrentHashMap<K, V>()
+    private var eventLoopThread: Thread? = null
+
+    @Volatile
+    private var running = false
+    private val lock = ReentrantLock()
+
+    override val isRunning: Boolean
+        get() = running
+
+    override fun start() {
+        lock.withLock {
+            if (!running) {
+                calculateInitialSnapshot()
+                processor.onSnapshot(mapping)
+
+                eventLoopThread = thread {
+                    while (running) {
+                        val records = topicService.getRecords(config.eventTopic, config.groupName, -1).map {
+                            @Suppress("UNCHECKED_CAST")
+                            Record(it.record.topic, it.record.key as K, it.record.value as V) }
+                        records.forEach {
+                            val oldValue = mapping[it.key]
+                            if (it.value != null) {
+                                mapping[it.key] = it.value!!
+                            } else {
+                                mapping.remove(it.key)
+                            }
+                            processor.onNext(it, oldValue, mapping)
+                        }
+                    }
+                }
+                running = true
+            }
+        }
+    }
+
+    override fun stop() {
+        lock.withLock {
+            if (running) {
+                running = false
+                eventLoopThread?.join()
+                eventLoopThread = null
+            }
+        }
+    }
+
+    override fun getValue(key: K): V? {
+        return mapping[key]
+    }
+
+    private fun calculateInitialSnapshot() {
+        do {
+            val records = topicService.getRecords(config.eventTopic, config.groupName, -1).map {
+                @Suppress("UNCHECKED_CAST")
+                Record(it.record.topic, it.record.key as K, it.record.value as V) }
+            records.forEach {
+                if (it.value != null) {
+                    mapping[it.key] = it.value!!
+                } else {
+                    mapping.remove(it.key)
+                }
+            }
+        } while (running && records.isNotEmpty())
+    }
 
 }
 
@@ -129,13 +205,14 @@ class SubscriptionFactoryStub(private val topicService: TopicService) : Subscrip
         processor: CompactedProcessor<K, V>,
         nodeConfig: Config
     ): CompactedSubscription<K, V> {
-        TODO("Not yet implemented")
+        return CompactedSubscriptionStub(subscriptionConfig, processor, topicService)
     }
 
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        nodeConfig: Config
+        nodeConfig: Config,
+        stateAndEventListener: StateAndEventListener<K, S>?
     ): StateAndEventSubscription<K, S, E> {
         TODO("Not yet implemented")
     }
@@ -164,6 +241,7 @@ class SubscriptionFactoryStub(private val topicService: TopicService) : Subscrip
  */
 class PublisherStub(private val topicService: TopicService) : Publisher {
     override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
+        topicService.addRecords(records.map { it.second })
         return emptyList()
     }
 

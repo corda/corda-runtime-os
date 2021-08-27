@@ -1,12 +1,17 @@
 plugins {
     id 'corda.common-library'
     id 'corda.osgi-test-conventions'
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
 description 'Hello World Implementation'
 
 dependencies {
-    implementation "net.corda:corda-base:$cordaApiVersion"
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
     implementation project(":libs:examples:helloworld")
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
 }

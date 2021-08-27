@@ -1,11 +1,13 @@
 plugins {
     id 'corda.common-library'
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
 description 'Configuration Read API'
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation project(":libs:lifecycle")

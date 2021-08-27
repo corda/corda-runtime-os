@@ -1,8 +1,11 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
-import net.corda.p2p.Step2Message
+import net.corda.p2p.app.AuthenticatedMessage
+import net.corda.p2p.app.AuthenticatedMessageHeader
+import net.corda.p2p.app.HoldingIdentity
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.CommonHeader
@@ -17,19 +20,16 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromFlowMessageAndKey
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
-import net.corda.p2p.payload.FlowMessage
-import net.corda.p2p.payload.FlowMessageAndKey
-import net.corda.p2p.payload.FlowMessageHeader
-import net.corda.p2p.payload.HoldingIdentity
+import net.corda.v5.base.util.toBase64
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -50,7 +50,7 @@ import java.util.*
 class SessionManagerTest {
 
     companion object {
-        private val KEY = ByteBuffer.wrap("KEY".toByteArray())
+        private val KEY = "KEY"
         private const val GROUP_ID = "myGroup"
         val OUTBOUND_PARTY = LinkManagerNetworkMap.HoldingIdentity("Out", GROUP_ID)
         val INBOUND_PARTY = LinkManagerNetworkMap.HoldingIdentity("In", GROUP_ID)
@@ -105,11 +105,11 @@ class SessionManagerTest {
     }
 
     class MockSessionMessageQueues : LinkManager.PendingSessionMessageQueues {
-        private val messageQueue = mutableListOf<FlowMessageAndKey>()
+        private val messageQueue = mutableListOf<AuthenticatedMessageAndKey>()
         private var negotiationStarted = false
         val processedMessageQueue = mutableListOf<LinkOutMessage>()
 
-        override fun queueMessage(message: FlowMessageAndKey, key: SessionManagerImpl.SessionKey): Boolean {
+        override fun queueMessage(message: AuthenticatedMessageAndKey, key: SessionManagerImpl.SessionKey): Boolean {
             messageQueue.add(message)
             return if (!negotiationStarted) {
                 negotiationStarted = true
@@ -136,12 +136,12 @@ class SessionManagerTest {
 
     private val payload = ByteBuffer.wrap("Hi inbound it's outbound here".toByteArray())
 
-    private val wrappedMessage = FlowMessageAndKey(FlowMessage(FlowMessageHeader(
+    private val wrappedMessage = AuthenticatedMessageAndKey(AuthenticatedMessage(AuthenticatedMessageHeader(
         INBOUND_PARTY.toHoldingIdentity(),
         OUTBOUND_PARTY.toHoldingIdentity(),
         null,
         "messageId",
-        ""), payload), KEY)
+        "", "system-1"), payload), KEY)
 
     private fun sessionManager(
         party: LinkManagerNetworkMap.HoldingIdentity,
@@ -159,46 +159,29 @@ class SessionManagerTest {
             queues)
     }
 
-    private fun mockGatewayResponse(message: InitiatorHelloMessage, mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY): Step2Message {
-        val authenticationProtocol = AuthenticationProtocolResponder(
-            message.header.sessionId,
-            setOf(mode),
-            MAX_MESSAGE_SIZE
-        )
-        authenticationProtocol.receiveInitiatorHello(message)
-        val responderHello = authenticationProtocol.generateResponderHello()
-        val (privateKey, _) = authenticationProtocol.getDHKeyPair()
-        return Step2Message(message, responderHello, ByteBuffer.wrap(privateKey))
-    }
-
     private fun negotiateOutboundSession(
-        FlowMessageAndKey: FlowMessageAndKey,
+        FlowMessageAndKey: AuthenticatedMessageAndKey,
         outboundManager: SessionManager,
         supportedMode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY
     ): Session {
         val state = outboundManager.processOutboundFlowMessage(FlowMessageAndKey)
         assertTrue(state is NewSessionNeeded)
-        val initiatorHelloMessage = (state as NewSessionNeeded).sessionInitMessage
+        assertTrue((state as NewSessionNeeded).sessionInitMessage.payload is InitiatorHelloMessage)
 
-        //Strip the Header from the message (as the Gateway does before sending it).
-        val step2Message = mockGatewayResponse(initiatorHelloMessage.payload as InitiatorHelloMessage, supportedMode)
+        val initiatorHelloMessage = state.sessionInitMessage.payload as InitiatorHelloMessage
 
-        val protocolResponder = AuthenticationProtocolResponder.fromStep2(
-            step2Message.initiatorHello.header.sessionId,
-            setOf(supportedMode),
-            MAX_MESSAGE_SIZE,
-            step2Message.initiatorHello,
-            step2Message.responderHello,
-            step2Message.privateKey.array(),
-            step2Message.responderHello.responderPublicKey.array())
-        protocolResponder.generateHandshakeSecrets()
-        val initiatorHandshakeMessage = outboundManager.processSessionMessage(LinkInMessage(step2Message.responderHello))
+        val protocolResponder = AuthenticationProtocolResponder(initiatorHelloMessage.header.sessionId, setOf(supportedMode), MAX_MESSAGE_SIZE)
+        protocolResponder.receiveInitiatorHello(initiatorHelloMessage)
+
+        val initiatorHandshakeMessage = outboundManager.processSessionMessage(LinkInMessage(protocolResponder.generateResponderHello()))
 
         assertTrue(initiatorHandshakeMessage!!.payload is InitiatorHandshakeMessage)
+        protocolResponder.generateHandshakeSecrets()
 
-        protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage.payload as InitiatorHandshakeMessage) {
+        protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage.payload as InitiatorHandshakeMessage,
             netMapOutbound.getKeyPair().public
-        }
+        )
 
         val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
             signDataWithKey(netMapInbound.getKeyPair().private, it)
@@ -213,16 +196,14 @@ class SessionManagerTest {
         inboundManager: SessionManager,
         supportedMode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY
     ): Session {
-        val protocolInitiator = AuthenticationProtocolInitiator(sessionId, setOf(supportedMode), MAX_MESSAGE_SIZE)
+        val protocolInitiator = AuthenticationProtocolInitiator(sessionId, setOf(supportedMode), MAX_MESSAGE_SIZE, netMapOutbound.getKeyPair().public, GROUP_ID)
         val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
-        val step2Message = mockGatewayResponse(initiatorHelloMessage, supportedMode)
-        assertNull(inboundManager.processSessionMessage(LinkInMessage(step2Message)))
-        protocolInitiator.receiveResponderHello(step2Message.responderHello)
+        val responderHelloMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))?.payload
+        assertTrue(responderHelloMessage is ResponderHelloMessage)
+        protocolInitiator.receiveResponderHello(responderHelloMessage as ResponderHelloMessage)
         protocolInitiator.generateHandshakeSecrets()
         val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(
-            netMapOutbound.getKeyPair().public,
             netMapInbound.getKeyPair().public,
-            GROUP_ID
         ) { signDataWithKey(netMapOutbound.getKeyPair().private, it) }
         val responderHandshakeMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
         assertTrue(responderHandshakeMessage?.payload is ResponderHandshakeMessage)
@@ -240,58 +221,63 @@ class SessionManagerTest {
         sessionId: String,
         mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY,
     ): InitiatorHandshakeMessage {
-        val protocolInitiator = AuthenticationProtocolInitiator(sessionId, setOf(mode), MAX_MESSAGE_SIZE)
+        val protocolInitiator = AuthenticationProtocolInitiator(sessionId, setOf(mode), MAX_MESSAGE_SIZE, netMapOutbound.getKeyPair().public, GROUP_ID)
         val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
-        val gatewayResponse = mockGatewayResponse(initiatorHelloMessage, mode)
-        inboundManager.processSessionMessage(LinkInMessage(gatewayResponse))
-        protocolInitiator.receiveResponderHello(gatewayResponse.responderHello)
+
+        val responderHello = inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))?.payload
+        assertTrue(responderHello is ResponderHelloMessage)
+
+        protocolInitiator.receiveResponderHello(responderHello as ResponderHelloMessage)
         protocolInitiator.generateHandshakeSecrets()
         return protocolInitiator.generateOurHandshakeMessage(
-            netMapOutbound.getKeyPair().public,
             netMapInbound.getKeyPair().public,
-            GROUP_ID
         ) {
             signDataWithKey(netMapOutbound.getKeyPair().private, it)
         }
     }
 
-    private fun negotiateToStep2Message(
+    private fun negotiateToResponderHello(
         outboundManager: SessionManager,
-        messageWrapper: FlowMessageAndKey,
+        messageWrapper: AuthenticatedMessageAndKey,
         mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY
-    ): Step2Message {
-        val sessionState = outboundManager.processOutboundFlowMessage(messageWrapper)
-        val helloMessage = ((sessionState as NewSessionNeeded).sessionInitMessage.payload as InitiatorHelloMessage)
-        return mockGatewayResponse(helloMessage, mode)
+    ): ResponderHelloMessage {
+        val message = (outboundManager.processOutboundFlowMessage(messageWrapper) as NewSessionNeeded)
+            .sessionInitMessage.payload as InitiatorHelloMessage
+        val protocolResponder = AuthenticationProtocolResponder(
+            message.header.sessionId,
+            setOf(mode),
+            MAX_MESSAGE_SIZE)
+        protocolResponder.receiveInitiatorHello(message)
+        return protocolResponder.generateResponderHello()
     }
 
     private fun negotiateToResponderHandshake(
         outboundManager: SessionManager,
-        messageWrapper: FlowMessageAndKey,
+        messageWrapper: AuthenticatedMessageAndKey,
         mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY,
     ): ResponderHandshakeMessage {
-        val step2Message = negotiateToStep2Message(outboundManager, messageWrapper, mode)
-        return negotiateToResponderHandshake(step2Message, outboundManager, mode)
+        val message = (outboundManager.processOutboundFlowMessage(messageWrapper) as NewSessionNeeded)
+            .sessionInitMessage.payload as InitiatorHelloMessage
+        return negotiateToResponderHandshake(message, outboundManager, mode)
     }
 
     private fun negotiateToResponderHandshake(
-        step2Message: Step2Message,
+        initiatorHelloMessage: InitiatorHelloMessage,
         outboundManager: SessionManager,
         mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY
     ): ResponderHandshakeMessage {
-        val protocolResponder = AuthenticationProtocolResponder.fromStep2(
-            step2Message.initiatorHello.header.sessionId,
+        val protocolResponder = AuthenticationProtocolResponder(
+            initiatorHelloMessage.header.sessionId,
             setOf(mode),
-            MAX_MESSAGE_SIZE,
-            step2Message.initiatorHello,
-            step2Message.responderHello,
-            step2Message.privateKey.array(),
-            step2Message.responderHello.responderPublicKey.array())
+            MAX_MESSAGE_SIZE)
+        protocolResponder.receiveInitiatorHello(initiatorHelloMessage)
+        val responderHello = protocolResponder.generateResponderHello()
         protocolResponder.generateHandshakeSecrets()
-        val initiatorHandshakeMessage = outboundManager.processSessionMessage(LinkInMessage(step2Message.responderHello))
-        protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage?.payload as InitiatorHandshakeMessage) {
+        val initiatorHandshakeMessage = outboundManager.processSessionMessage(LinkInMessage(responderHello))
+        protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage?.payload as InitiatorHandshakeMessage,
             netMapOutbound.getKeyPair().public
-        }
+        )
         return protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
             signDataWithKey(netMapInbound.getKeyPair().private, it)
         }
@@ -322,10 +308,10 @@ class SessionManagerTest {
         assertTrue(messageFromQueue.payload is AuthenticatedDataMessage)
         val authenticatedDataMessage = (messageFromQueue.payload as AuthenticatedDataMessage)
 
-        val responderMessage = extractPayload(responderSession, "", DataMessage.Authenticated(authenticatedDataMessage), FlowMessageAndKey::fromByteBuffer)
+        val responderMessage = extractPayload(responderSession, "", DataMessage.Authenticated(authenticatedDataMessage), AuthenticatedMessageAndKey::fromByteBuffer)
 
         assertNotNull(responderMessage)
-        assertEquals(wrappedMessage.flowMessage.payload, responderMessage!!.flowMessage.payload)
+        assertEquals(wrappedMessage.message.payload, responderMessage!!.message.payload)
     }
 
     @Test
@@ -341,10 +327,10 @@ class SessionManagerTest {
         assertTrue(messageFromQueue.payload is AuthenticatedEncryptedDataMessage)
         val authenticatedDataMessage = (messageFromQueue.payload as AuthenticatedEncryptedDataMessage)
 
-        val responderMessage = extractPayload(responderSession, "", DataMessage.AuthenticatedAndEncrypted(authenticatedDataMessage), FlowMessageAndKey::fromByteBuffer)
+        val responderMessage = extractPayload(responderSession, "", DataMessage.AuthenticatedAndEncrypted(authenticatedDataMessage), AuthenticatedMessageAndKey::fromByteBuffer)
         assertNotNull(responderMessage)
 
-        assertEquals(wrappedMessage.flowMessage.payload, responderMessage!!.flowMessage.payload)
+        assertEquals(wrappedMessage.message.payload, responderMessage!!.message.payload)
     }
 
     @Test
@@ -367,11 +353,11 @@ class SessionManagerTest {
             inboundSession,
             "",
             DataMessage.Authenticated(authenticatedMessage.payload as AuthenticatedDataMessage),
-            FlowMessageAndKey::fromByteBuffer
+            AuthenticatedMessageAndKey::fromByteBuffer
         )
         assertNotNull(responderMessage)
 
-        assertEquals(wrappedMessage.flowMessage.payload, responderMessage!!.flowMessage.payload)
+        assertEquals(wrappedMessage.message.payload, responderMessage!!.message.payload)
     }
 
     @Test
@@ -394,10 +380,10 @@ class SessionManagerTest {
             inboundSession,
             "",
             DataMessage.AuthenticatedAndEncrypted(authenticatedEncryptedMessage.payload as AuthenticatedEncryptedDataMessage),
-            FlowMessageAndKey::fromByteBuffer
+            AuthenticatedMessageAndKey::fromByteBuffer
         )
 
-        assertEquals(wrappedMessage.flowMessage.payload, responderMessage!!.flowMessage.payload)
+        assertEquals(wrappedMessage.message.payload, responderMessage!!.message.payload)
     }
 
     @Test
@@ -435,33 +421,28 @@ class SessionManagerTest {
         val state = outboundManager.processOutboundFlowMessage(wrappedMessage)
 
         assertTrue(state is NewSessionNeeded)
-        val initiatorHelloMessage = (state as NewSessionNeeded).sessionInitMessage
+        val initiatorHelloMessage = (state as NewSessionNeeded).sessionInitMessage.payload as InitiatorHelloMessage
+        val sessionId = initiatorHelloMessage.header.sessionId
 
-        val step2Message = mockGatewayResponse(initiatorHelloMessage.payload as InitiatorHelloMessage, mode)
-        val sessionId = step2Message.initiatorHello.header.sessionId
+        val protocolResponder = AuthenticationProtocolResponder(sessionId, setOf(mode), MAX_MESSAGE_SIZE)
+        protocolResponder.receiveInitiatorHello(initiatorHelloMessage)
 
-        val protocolResponder = AuthenticationProtocolResponder.fromStep2(
-            step2Message.initiatorHello.header.sessionId,
-            setOf(mode),
-            MAX_MESSAGE_SIZE,
-            step2Message.initiatorHello,
-            step2Message.responderHello,
-            step2Message.privateKey.array(),
-            step2Message.responderHello.responderPublicKey.array())
-        protocolResponder.generateHandshakeSecrets()
-        val initiatorHandshakeMessage = outboundManager.processSessionMessage(LinkInMessage(step2Message.responderHello))
+        val responderHelloMessage = LinkInMessage(protocolResponder.generateResponderHello())
+        val initiatorHandshakeMessage = outboundManager.processSessionMessage(responderHelloMessage)
 
         //Duplicate Responder Hello message (second time the SessionManager should return null).
-        assertNull(outboundManager.processSessionMessage(LinkInMessage(step2Message.responderHello)))
+        assertNull(outboundManager.processSessionMessage(responderHelloMessage))
         loggingInterceptor.assertSingleWarning("Already received a ${ResponderHelloMessage::class.java.simpleName} for " +
             "$sessionId. The message was discarded.")
         loggingInterceptor.reset()
 
         assertTrue(initiatorHandshakeMessage!!.payload is InitiatorHandshakeMessage)
 
-        protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage.payload as InitiatorHandshakeMessage) {
+        protocolResponder.generateHandshakeSecrets()
+        protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage.payload as InitiatorHandshakeMessage,
             netMapOutbound.getKeyPair().public
-        }
+        )
 
         val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
             signDataWithKey(netMapInbound.getKeyPair().private, it)
@@ -475,22 +456,24 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `Duplicated session negotiation message (InitiatorHandshake) is dropped (with appropriate logging)`() {
+    fun `Duplicated session negotiation messages (InitiatorHelloMessage, InitiatorHandshake) is dropped (with appropriate logging)`() {
         val mode = ProtocolMode.AUTHENTICATION_ONLY
         val sessionId = "FakeSession"
         val inboundManager = sessionManager(INBOUND_PARTY)
 
-        val protocolInitiator = AuthenticationProtocolInitiator(sessionId, setOf(mode), MAX_MESSAGE_SIZE)
+        val protocolInitiator = AuthenticationProtocolInitiator(sessionId, setOf(mode), MAX_MESSAGE_SIZE, netMapOutbound.getKeyPair().public, GROUP_ID)
         val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
-        val step2Message = mockGatewayResponse(initiatorHelloMessage, mode)
-        assertNull(inboundManager.processSessionMessage(LinkInMessage(step2Message)))
+        val responderHelloMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
+        assertTrue(responderHelloMessage!!.payload is ResponderHelloMessage)
+        assertNull(inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage)))
 
-        protocolInitiator.receiveResponderHello(step2Message.responderHello)
+        loggingInterceptor.assertSingleWarning("Already received a InitiatorHelloMessage for $sessionId. The message was discarded.")
+        loggingInterceptor.reset()
+
+        protocolInitiator.receiveResponderHello(responderHelloMessage.payload as ResponderHelloMessage)
         protocolInitiator.generateHandshakeSecrets()
         val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(
-            netMapOutbound.getKeyPair().public,
             netMapInbound.getKeyPair().public,
-            GROUP_ID
         ) { signDataWithKey(netMapOutbound.getKeyPair().private, it) }
 
         val responderHandshakeMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
@@ -542,15 +525,72 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `Cannot generate a session init message if group id is not in the network map`() {
+        val groupId = "NEW_GROUP"
+        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        Mockito.`when`(netMap.getNetworkType(groupId)).thenReturn(null)
+
+        val outboundSessionManager = sessionManagerWithNetMap(netMap)
+
+        val message = AuthenticatedMessageAndKey(
+            AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    OUTBOUND_PARTY.toHoldingIdentity(),
+                    HoldingIdentity(OUTBOUND_PARTY.x500Name, groupId),
+                    null,
+                    "messageId",
+                    "",
+                    "system-1"
+                ),
+                payload
+            ),
+            KEY
+        )
+
+        val state = outboundSessionManager.processOutboundFlowMessage(message)
+
+        assertTrue(state is SessionManager.SessionState.CannotEstablishSession)
+        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId $groupId." +
+            " The sessionInit message was not sent.")
+    }
+
+    @Test
+    fun `Cannot generate a session init message from a party not in the network map`() {
+        val outboundSessionManager = sessionManager(OUTBOUND_PARTY)
+
+        val message = AuthenticatedMessageAndKey(
+            AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    OUTBOUND_PARTY.toHoldingIdentity(),
+                    PARTY_NOT_IN_NETMAP.toHoldingIdentity(),
+                    null,
+                    "messageId",
+                    "",
+                    "system-1"
+                ),
+                payload
+            ),
+            KEY
+        )
+
+        val state = outboundSessionManager.processOutboundFlowMessage(message)
+
+        assertTrue(state is SessionManager.SessionState.CannotEstablishSession)
+        loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $OUTBOUND_PARTY but our identity " +
+            "$PARTY_NOT_IN_NETMAP is not in the network map. The sessionInit message was not sent.")
+    }
+
+    @Test
     fun `Cannot generate a session init message for a party not in the network map`() {
         val outboundSessionManager = sessionManager(OUTBOUND_PARTY)
 
-        val message = FlowMessageAndKey(FlowMessage(FlowMessageHeader(
+        val message = AuthenticatedMessageAndKey(
+            AuthenticatedMessage(AuthenticatedMessageHeader(
             PARTY_NOT_IN_NETMAP.toHoldingIdentity(),
             OUTBOUND_PARTY.toHoldingIdentity(),
             null,
             "messageId",
-            ""), payload), KEY)
+            "", "system-1"), payload), KEY)
 
         val state = outboundSessionManager.processOutboundFlowMessage(message)
 
@@ -565,15 +605,15 @@ class SessionManagerTest {
         Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         val outboundInfo = netMapOutbound.getOurMemberInfo()
         Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(null)
+        Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo()).thenReturn(null)
 
         val outboundManager = sessionManagerWithNetMap(netMap)
-        val step2Message = negotiateToStep2Message(outboundManager, wrappedMessage)
-        assertNull(outboundManager.processSessionMessage(LinkInMessage(step2Message.responderHello)))
+        val responderHello = negotiateToResponderHello(outboundManager, wrappedMessage)
+        assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHello)))
 
-        val sessionId = step2Message.initiatorHello.header.sessionId
-        loggingInterceptor.assertSingleWarning("Received ${ResponderHelloMessage::class.java.simpleName} with sessionId $sessionId" +
-            " but cannot find public key for our identity ${outboundInfo.holdingIdentity}. The message was discarded.")
+        loggingInterceptor.assertSingleWarning("Received ${ResponderHelloMessage::class.java.simpleName} with sessionId" +
+            " ${responderHello.header.sessionId} but cannot find public key for our identity ${outboundInfo.holdingIdentity}." +
+            " The message was discarded.")
     }
 
     @Test
@@ -584,14 +624,11 @@ class SessionManagerTest {
         Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo()).thenReturn(null)
 
         val outboundManager = sessionManagerWithNetMap(netMap)
-        val step2Message = negotiateToStep2Message(outboundManager, wrappedMessage)
-        assertNull(outboundManager.processSessionMessage(LinkInMessage(step2Message.responderHello)))
+        val responderHello = negotiateToResponderHello(outboundManager, wrappedMessage)
+        assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHello)))
 
-        val sessionId = step2Message.initiatorHello.header.sessionId
-        loggingInterceptor.assertSingleWarning(
-            "Received ResponderHelloMessage with sessionId $sessionId from peer $INBOUND_PARTY which is not" +
-                    " in the network map. The message was discarded."
-        )
+        loggingInterceptor.assertSingleWarning("Received ResponderHelloMessage with sessionId ${responderHello.header.sessionId}" +
+            " from peer $INBOUND_PARTY which is not in the network map. The message was discarded.")
     }
 
     @Test
@@ -608,12 +645,11 @@ class SessionManagerTest {
         )
 
         val outboundManager = sessionManagerWithNetMap(netMap, cryptoService)
-        val step2Message = negotiateToStep2Message(outboundManager, wrappedMessage)
-        assertNull(outboundManager.processSessionMessage(LinkInMessage(step2Message.responderHello)))
+        val responderHello = negotiateToResponderHello(outboundManager, wrappedMessage)
+        assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHello)))
 
-        val sessionId = step2Message.initiatorHello.header.sessionId
         loggingInterceptor.assertSingleWarning("Could not find the private key corresponding to public key" +
-            " $key. The ResponderHelloMessage with sessionId $sessionId was discarded.")
+            " $key. The ResponderHelloMessage with sessionId ${responderHello.header.sessionId} was discarded.")
     }
 
     @Test
@@ -623,13 +659,58 @@ class SessionManagerTest {
         Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
         Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
 
-
         val outboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapOutbound))
-        val step2Message = negotiateToStep2Message(outboundManager, wrappedMessage)
-        assertNull(outboundManager.processSessionMessage(LinkInMessage(step2Message.responderHello)))
+        val responderHello = negotiateToResponderHello(outboundManager, wrappedMessage)
+        assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHello)))
 
-        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for our identity" +
-            " $OUTBOUND_PARTY. The ResponderHelloMessage for sessionId ${step2Message.responderHello.header.sessionId} was discarded.")
+        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId $GROUP_ID. The " +
+            "ResponderHelloMessage for sessionId ${responderHello.header.sessionId} was discarded.")
+    }
+
+    @Test
+    fun `Initiator hello message is dropped if peer is not in the network map`() {
+        val sessionId = "SessionId"
+
+        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
+
+        val protocolInitiator = AuthenticationProtocolInitiator(
+            sessionId,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            MAX_MESSAGE_SIZE,
+            netMapOutbound.getKeyPair().public,
+            GROUP_ID
+        )
+        val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
+        inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))?.payload
+
+        loggingInterceptor.assertSingleWarning("Received InitiatorHelloMessage with sessionId SessionId. The received public key hash" +
+            " (${initiatorHelloMessage.source.initiatorPublicKeyHash.array().toBase64()}) corresponding to one of the senders holding " +
+            "identities is not in the network map. The message was discarded.")
+    }
+
+    @Test
+    fun `Initiator hello message is dropped if our network type is not in the network map`() {
+        val sessionId = "SessionId"
+
+        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+            .thenReturn(netMapOutbound.getOurMemberInfo())
+
+        val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
+
+        val protocolInitiator = AuthenticationProtocolInitiator(
+            sessionId,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            MAX_MESSAGE_SIZE,
+            netMapOutbound.getKeyPair().public,
+            GROUP_ID
+        )
+        val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
+        inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))?.payload
+
+        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId $GROUP_ID. " +
+            "The InitiatorHelloMessage for sessionId SessionId was discarded.")
     }
 
     @Test
@@ -641,7 +722,9 @@ class SessionManagerTest {
         Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
         Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
 
-        val keyHash = hashKeyToBase64(netMapOutbound.getKeyPair().public)
+        //Called first inside processInitiatorHello and then in processInitiatorHandshake
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+            .thenReturn(netMapOutbound.getOurMemberInfo()).thenReturn(null)
 
         val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
         val message = negotiateToInitiatorHandshake(inboundManager, sessionId)
@@ -649,19 +732,22 @@ class SessionManagerTest {
 
         assertNull(response)
 
+        val keyHash = hashKeyToBase64(netMapOutbound.getKeyPair().public)
         loggingInterceptor.assertSingleWarning("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
-                " Could not find the public key in the network map by hash = $keyHash. The message was discarded.")
+            " The received public key hash ($keyHash) corresponding to one of the senders holding identities is not in the network map." +
+            " The message was discarded.")
     }
 
     @Test
     fun `Initiator handshake message is dropped if the receiver public key hash is not in the network map`() {
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         val sessionId = "SessionId"
+
         Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
         Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapInbound.getKeyPair().public))).thenReturn(null)
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public)))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID)).thenReturn(null)
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapOutbound.getOurMemberInfo())
 
         val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
@@ -671,8 +757,8 @@ class SessionManagerTest {
 
         val keyHash = hashKeyToBase64(netMapInbound.getKeyPair().public)
         loggingInterceptor.assertSingleWarning("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
-                " The received public key hash ($keyHash) corresponding to one of our holding identities is not in the network map." +
-                " The message was discarded.")
+            " The received public key hash ($keyHash) corresponding to one of our holding identities is not in the network map." +
+            " The message was discarded.")
     }
 
     @Test
@@ -683,9 +769,9 @@ class SessionManagerTest {
         Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
         Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapInbound.getKeyPair().public)))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public)))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapOutbound.getOurMemberInfo())
 
         val cryptoService = Mockito.mock(LinkManagerCryptoService::class.java)
@@ -704,39 +790,16 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `Initiator handshake message is dropped if the sender is removed from the network map`() {
-        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        val sessionId = "SessionId"
-
-        Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
-        Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapInbound.getKeyPair().public)))
-            .thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public)))
-            .thenReturn(netMapOutbound.getOurMemberInfo()).thenReturn(null)
-        val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
-
-        val message = negotiateToInitiatorHandshake(inboundManager, sessionId)
-        val response = inboundManager.processSessionMessage(LinkInMessage(message))
-        assertNull(response)
-
-        loggingInterceptor.assertSingleWarning("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
-            " The received public key hash (${hashKeyToBase64(netMapOutbound.getKeyPair().public)}) corresponding to one of the" +
-            " senders holding identities is not in the network map. The message was discarded.")
-    }
-
-    @Test
     fun `Initiator handshake message is dropped if our network type is not in the network map`() {
         val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         val sessionId = "SessionId"
 
-        Mockito.`when`(netMap.getNetworkType(any())).thenReturn(null)
+        Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5).thenReturn(null)
         Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
         Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapInbound.getKeyPair().public)))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public)))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapOutbound.getOurMemberInfo())
         val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
 
@@ -744,8 +807,8 @@ class SessionManagerTest {
         val response = inboundManager.processSessionMessage(LinkInMessage(message))
         assertNull(response)
 
-        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for our identity" +
-            " $INBOUND_PARTY. The InitiatorHandshakeMessage for sessionId $sessionId was discarded.")
+        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId" +
+            " $GROUP_ID. The InitiatorHandshakeMessage for sessionId $sessionId was discarded.")
     }
 
     @Test
@@ -760,9 +823,9 @@ class SessionManagerTest {
             .thenReturn(netMapInbound.getOurMemberInfo())
             .thenReturn(netMapInbound.getOurMemberInfo())
             .thenReturn(null)
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapInbound.getKeyPair().public)))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfoFromPublicKeyHash(hashKey(netMapOutbound.getKeyPair().public)))
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapOutbound.getOurMemberInfo())
 
         val outboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapOutbound))

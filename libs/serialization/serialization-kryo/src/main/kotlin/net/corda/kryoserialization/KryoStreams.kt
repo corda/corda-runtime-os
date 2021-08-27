@@ -4,7 +4,7 @@ package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
-import net.corda.internal.base.LazyPool
+import net.corda.utilities.LazyPool
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.SequenceInputStream

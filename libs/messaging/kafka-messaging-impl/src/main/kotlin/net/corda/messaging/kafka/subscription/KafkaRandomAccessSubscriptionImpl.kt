@@ -5,14 +5,16 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RandomAccessSubscription
-import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.TopicPartition
+import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
@@ -24,15 +26,15 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     private val valueClass: Class<V>
 ): RandomAccessSubscription<K, V> {
 
-    companion object {
-        private val log = contextLogger()
-    }
+    private val log = LoggerFactory.getLogger(
+        config.getString(CONSUMER_GROUP_ID)
+    )
 
     @Volatile
     private var running = false
     private val startStopLock = ReentrantReadWriteLock()
 
-    private val topic = config.getString(KafkaProperties.TOPIC_NAME)
+    private val topic = config.getString(TOPIC_NAME)
     private var consumer: CordaKafkaConsumer<K, V>? = null
     private var assignedPartitions = emptySet<Int>()
 
@@ -42,7 +44,7 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     override fun start() {
         startStopLock.write {
             if (!running) {
-                val configWithOverrides = config.getConfig(KafkaProperties.KAFKA_CONSUMER)
+                val configWithOverrides = config.getConfig(KAFKA_CONSUMER)
                     .withValue(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, ConfigValueFactory.fromAnyRef(1))
                 consumer = consumerBuilder.createDurableConsumer(configWithOverrides, keyClass, valueClass)
                 val allPartitions = consumer!!.getPartitions(topic, 5.seconds).map { it.partition() }.toSet()

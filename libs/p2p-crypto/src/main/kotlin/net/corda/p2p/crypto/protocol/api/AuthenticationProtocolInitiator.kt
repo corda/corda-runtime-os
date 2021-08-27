@@ -8,6 +8,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorEncryptedExtensions
+import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
 import net.corda.p2p.crypto.internal.InitiatorHandshakePayload
 import net.corda.p2p.crypto.internal.ResponderHandshakePayload
 import net.corda.p2p.crypto.protocol.AuthenticationProtocol
@@ -46,7 +47,9 @@ import javax.crypto.AEADBadTagException
  */
 class AuthenticationProtocolInitiator(private val sessionId: String,
                                       private val supportedModes: Set<ProtocolMode>,
-                                      private val ourMaxMessageSize: Int): AuthenticationProtocol() {
+                                      private val ourMaxMessageSize: Int,
+                                      private val ourPublicKey: PublicKey,
+                                      private val groupId: String): AuthenticationProtocol() {
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
@@ -73,7 +76,8 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         myPublicDHKey = keyPair.public.encoded
 
         val commonHeader = CommonHeader(MessageType.INITIATOR_HELLO, PROTOCOL_VERSION, sessionId, 0, Instant.now().toEpochMilli())
-        initiatorHelloMessage = InitiatorHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!) , supportedModes.toList())
+        val identity = InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)), groupId)
+        initiatorHelloMessage = InitiatorHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), supportedModes.toList(), identity)
         return initiatorHelloMessage!!
     }
 
@@ -106,9 +110,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
      *
      * @param signingFn a callback function that will be invoked for performing signing (with the stable identity key).
      */
-    fun generateOurHandshakeMessage(ourPublicKey: PublicKey,
-                                    theirPublicKey: PublicKey,
-                                    groupId: String,
+    fun generateOurHandshakeMessage(theirPublicKey: PublicKey,
                                     signingFn: (ByteArray) -> ByteArray): InitiatorHandshakeMessage {
         transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.SENT_HANDSHAKE_MESSAGE)
 

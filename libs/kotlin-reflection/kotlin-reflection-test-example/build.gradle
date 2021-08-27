@@ -1,0 +1,10 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
+    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    api project(':libs:kotlin-reflection:kotlin-reflection-test-api')
+}

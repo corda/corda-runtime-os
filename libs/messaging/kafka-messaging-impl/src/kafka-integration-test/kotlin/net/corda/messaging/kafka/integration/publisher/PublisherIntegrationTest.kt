@@ -66,7 +66,7 @@ class PublisherIntegrationTest {
         )
         durableSub.start()
 
-        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS))
+        Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS))
         durableSub.stop()
     }
 
@@ -89,7 +89,7 @@ class PublisherIntegrationTest {
         )
         durableSub.start()
 
-        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS))
+        Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS))
         durableSub.stop()
     }
 
