@@ -72,8 +72,7 @@ internal class LifecycleStateManager(
      * @param key The key of the timer to cancel.
      */
     fun cancelTimer(key: String) {
-        timerMap[key]?.cancel(false)
-        timerMap.remove(key)
+        timerMap.remove(key)?.cancel(false)
     }
 
     /**

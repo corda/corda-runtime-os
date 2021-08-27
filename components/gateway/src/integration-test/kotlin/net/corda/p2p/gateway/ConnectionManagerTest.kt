@@ -50,6 +50,7 @@ class ConnectionManagerTest : TestBase() {
     }
 
     @Test
+    @Timeout(30)
     fun `reuse connection`() {
         val manager = ConnectionManager(aliceSslConfig,  ConnectionConfiguration())
         manager.start()

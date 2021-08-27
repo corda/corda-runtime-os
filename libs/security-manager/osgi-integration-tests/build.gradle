@@ -1,0 +1,17 @@
+plugins {
+    id "corda.osgi-test-conventions"
+}
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+
+    integrationTestImplementation project(":libs:security-manager")
+    integrationTestImplementation project(":libs:security-manager:osgi-integration-tests:osgi-invoker-impl")
+    integrationTestImplementation project(":libs:security-manager:osgi-integration-tests:local-permissions-impl")
+    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
+}

@@ -6,6 +6,8 @@ plugins {
 description "State Machine"
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation("com.esotericsoftware:kryo:$kryoVersion")
 

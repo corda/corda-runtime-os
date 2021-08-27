@@ -1,0 +1,10 @@
+plugins {
+    id 'corda.common-library'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+dependencies {
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+}

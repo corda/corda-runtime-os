@@ -1,0 +1,23 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'biz.aQute.bnd.builder'
+}
+
+dependencies {
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+
+    api project(":libs:security-manager:osgi-integration-tests:local-permissions")
+}
+
+tasks.named('jar', Jar) {
+    bnd '''\
+Bundle-Name: Corda Local Permissions Bundle Implementation
+Bundle-SymbolicName: \${project.group}.local-permissions-impl
+-includeresource: {OSGI-INF/permissions.perm=src/main/permissions/permissions.perm}
+'''
+}

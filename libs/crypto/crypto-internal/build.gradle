@@ -1,0 +1,25 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-crypto"
+    implementation "net.corda:corda-cipher-suite"
+    implementation project(":libs:utilities")
+
+    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    implementation "org.bouncycastle:bcprov-jdk15on:${bouncyCastleVersion}"
+    implementation "org.bouncycastle:bcpkix-jdk15on:${bouncyCastleVersion}"
+    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
+}
+
+description 'Crypto Internal API'
+

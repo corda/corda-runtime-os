@@ -1,0 +1,258 @@
+package net.corda.crypto.internal
+
+import net.corda.cipher.suite.internal.DefaultCryptoService
+import net.corda.cipher.suite.internal.CryptoServiceCircuitBreaker
+import net.corda.crypto.BasicCryptoPersistentKey
+import net.corda.crypto.SigningPersistentKey
+import net.corda.internal.crypto.getSigner
+import net.corda.crypto.sha256
+import net.corda.crypto.testkit.CryptoMocks
+import net.corda.impl.test.MockDatabaseBuilder
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.crypto.SignatureVerificationService
+import net.corda.v5.cipher.suite.CryptoService
+import net.corda.v5.cipher.suite.scheme.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.cipher.suite.scheme.KeyScheme
+import org.hamcrest.CoreMatchers
+import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.core.IsNull
+import org.hibernate.SessionFactory
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
+import java.security.PublicKey
+import java.time.Duration
+import java.util.*
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+
+class SigningServiceImplTests {
+    companion object {
+        private const val sandboxId =  "sandboxId-1"
+        private val testData = "test data".toByteArray()
+        const val wrappingKeyAlias = "test-wrapping-key-alias-42"
+        lateinit var sessionFactory: SessionFactory
+        lateinit var cache: SimplePersistentCacheImpl<BasicCachedKey, BasicCryptoPersistentKey>
+        lateinit var signingKeyCache: SigningKeyCacheImpl
+        lateinit var cryptoService: CryptoService
+        lateinit var signingService: SigningServiceImpl
+        lateinit var keyManagementBackend: FreshKeySigningServiceImpl
+        lateinit var signatureVerifier: SignatureVerificationService
+        lateinit var defaultSchemeCodeName: String
+        lateinit var defaultScheme: KeyScheme
+        lateinit var schemeMetadata: CipherSchemeMetadata
+
+        @JvmStatic
+        @BeforeAll
+        fun setup() {
+            val cryptoMocks = CryptoMocks()
+            sessionFactory = MockDatabaseBuilder.resetDatabase()
+            cache = SimplePersistentCacheImpl(
+                    BasicCryptoPersistentKey::class.java,
+                    sessionFactory
+            )
+            schemeMetadata = cryptoMocks.schemeMetadata()
+            defaultSchemeCodeName = EDDSA_ED25519_CODE_NAME
+            defaultScheme = schemeMetadata.findKeyScheme(defaultSchemeCodeName)
+            cryptoService = CryptoServiceCircuitBreaker(
+                    DefaultCryptoService(
+                            BasicKeyCacheImpl(
+                                    sandboxId = "SigningServiceImplTests-s111",
+                                    partition = "SigningServiceImplTests-p111",
+                                    passphrase = "passphrase-111",
+                                    salt = "11",
+                                    cacheFactory = object : SimplePersistentCacheFactory<BasicCachedKey, BasicCryptoPersistentKey> {
+                                        override fun create() = cache
+                                    },
+                                    schemeMetadata = schemeMetadata
+                            ),
+                            schemeMetadata = schemeMetadata
+                    ),
+                    Duration.ofSeconds(10)
+            )
+            cryptoService.createWrappingKey(wrappingKeyAlias, true)
+            signingKeyCache = SigningKeyCacheImpl(
+                    sandboxId = sandboxId,
+                    keyEncoder = schemeMetadata
+            ) { sessionFactory }
+            signingService = SigningServiceImpl(
+                    cache = signingKeyCache,
+                    cryptoService = cryptoService,
+                    defaultSignatureSchemeCodeName = defaultSchemeCodeName,
+                    schemeMetadata = schemeMetadata
+            )
+            keyManagementBackend = FreshKeySigningServiceImpl(
+                    signingService = signingService,
+                    freshKeysCryptoService = cryptoService,
+                    defaultFreshKeySignatureSchemeCodeName = defaultSchemeCodeName,
+                    masterWrappingKeyAlias = wrappingKeyAlias,
+                    schemeMetadata = schemeMetadata
+            )
+            signatureVerifier = cryptoMocks.signatureVerificationService()
+        }
+
+        @AfterAll
+        @JvmStatic
+        fun cleanup() {
+            sessionFactory.close()
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    fun `can generate multiple keys and use the public key for signing`() {
+        for( i in 0..5) {
+            val alias1 = UUID.randomUUID().toString()
+            val publicKey1 = signingService.generateKeyPair(alias1)
+            val data = "Hello World!".toByteArray()
+            val signature = signingService.sign(publicKey1, data)
+            assertEquals(publicKey1, signature.by)
+            signatureVerifier.verify(publicKey1, signature.bytes, data)
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    fun `can generate multiple keys and use the alias for signing`() {
+        for( i in 0..5) {
+            val alias = UUID.randomUUID().toString()
+            val publicKey = signingService.generateKeyPair(alias)
+            val data = "Hello World!".toByteArray()
+            val signature = signingService.sign(alias, data)
+            signatureVerifier.verify(publicKey, signature, data)
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    fun `can generate multiple keys and use the public keys and alias for signing`() {
+        for( i in 0..5) {
+            val alias = UUID.randomUUID().toString()
+            val publicKey = signingService.generateKeyPair(alias)
+            val data = "Hello World!".toByteArray()
+            val signatureByAlias = signingService.sign(alias, data)
+            signatureVerifier.verify(publicKey, signatureByAlias, data)
+            val signatureByKey = signingService.sign(publicKey, data)
+            signatureVerifier.verify(publicKey, signatureByKey.bytes, data)
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Signing Service cannot use wrapped key for signing`() {
+        val publicKey = keyManagementBackend.freshKey()
+        val data = "Hello World!".toByteArray()
+        assertFailsWith<IllegalArgumentException> {
+            signingService.sign(publicKey, data)
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Key management backend can use aliased key generated by signing service`() {
+        val alias = UUID.randomUUID().toString()
+        val publicKey = signingService.generateKeyPair(alias)
+        val data = "Hello World!".toByteArray()
+        val signature = keyManagementBackend.sign(data, publicKey)
+        assertEquals(publicKey, signature.by)
+        signatureVerifier.verify(publicKey, signature.bytes, data)
+    }
+
+    @Test
+    @Timeout(30)
+    fun `findPublicKey works correctly when only one key is generated`() {
+        val alias1 = UUID.randomUUID().toString()
+        val generatedPublicKey1 = signingService.generateKeyPair(alias1)
+        val returnedPublicKey1 = signingService.findPublicKey(alias1)
+        assertThat(returnedPublicKey1, CoreMatchers.`is`(generatedPublicKey1))
+    }
+
+    @Test
+    @Timeout(30)
+    fun `findPublicKey works correctly when many keys are generated`() {
+        val alias1 = UUID.randomUUID().toString()
+        val alias2 = UUID.randomUUID().toString()
+        val generatedPublicKey1 = signingService.generateKeyPair(alias1)
+        val generatedPublicKey2 = signingService.generateKeyPair(alias2)
+        val returnedPublicKey1 = signingService.findPublicKey(alias1)
+        val returnedPublicKey2 = signingService.findPublicKey(alias2)
+        assertThat(returnedPublicKey1, CoreMatchers.`is`(generatedPublicKey1))
+        assertThat(returnedPublicKey2, CoreMatchers.`is`(generatedPublicKey2))
+    }
+
+    @Test
+    @Timeout(30)
+    fun `findPublicKey returns null when any key pair hasn't been generated yet`() {
+        val alias1 = UUID.randomUUID().toString()
+        val publicKey = signingService.findPublicKey(alias1)
+        assertThat(publicKey, IsNull())
+    }
+
+    @Test
+    @Timeout(30)
+    fun `findPublicKey returns null when given alias doesn't exist`() {
+        val alias1 = UUID.randomUUID().toString()
+        val alias2 = UUID.randomUUID().toString()
+        signingService.generateKeyPair(alias1)
+        val publicKey = signingService.findPublicKey(alias2)
+        assertThat(publicKey, IsNull())
+    }
+
+    @Test
+    @Timeout(30)
+    fun `One key pair is generated`() {
+        val alias1 = UUID.randomUUID().toString()
+        val generatedPublicKey = signingService.generateKeyPair(alias1)
+        val generatedKeyData = get(generatedPublicKey)
+        validateGeneratedKeyData(generatedKeyData, generatedPublicKey, alias1)
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Second key pair is generated`() {
+        val alias1 = UUID.randomUUID().toString()
+        val alias2 = UUID.randomUUID().toString()
+        val generatedPublicKey1 = signingService.generateKeyPair(alias1)
+        val generatedPublicKey2 = signingService.generateKeyPair(alias2)
+        val generatedKeyData1 = get(generatedPublicKey1)
+        val generatedKeyData2 = get(generatedPublicKey2)
+        validateGeneratedKeyData(generatedKeyData1, generatedPublicKey1, alias1)
+        validateGeneratedKeyData(generatedKeyData2, generatedPublicKey2, alias2)
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Test signing and verification works with content signer using public key`() {
+        val alias = UUID.randomUUID().toString()
+        val publicKey = signingService.generateKeyPair(alias, defaultScheme)
+        val signer = keyManagementBackend.getSigner(publicKey)
+        signer.outputStream.write(testData)
+        val signature = signer.signature
+        assertNotNull(signature)
+        assertTrue(signature.isNotEmpty())
+        signatureVerifier.verify(publicKey, signature, testData)
+    }
+
+    private fun get(publicKey: PublicKey): SigningPersistentKey? {
+        return sessionFactory.openSession().use { session ->
+            session.get(SigningPersistentKey::class.java.name, publicKey.sha256().toHexString())
+                    as SigningPersistentKey?
+        }
+    }
+    
+    private fun validateGeneratedKeyData(generatedKeyData: SigningPersistentKey?, generatedPublicKey: PublicKey, alias: String) {
+        Assertions.assertNotNull(generatedKeyData)
+        assertThat(generatedKeyData!!.sandboxId, CoreMatchers.`is`(sandboxId))
+        assertThat(generatedKeyData.publicKeyHash, CoreMatchers.`is`(generatedPublicKey.sha256().toHexString()))
+        assertThat(generatedKeyData.externalId, IsNull())
+        assertThat(generatedKeyData.publicKey, CoreMatchers.`is`(generatedPublicKey.encoded))
+        assertThat(generatedKeyData.alias, CoreMatchers.`is`("$sandboxId:$alias"))
+        assertThat(generatedKeyData.privateKeyMaterial, IsNull())
+        assertThat(generatedKeyData.schemeCodeName, CoreMatchers.`is`(defaultScheme.codeName))
+        assertThat(generatedKeyData.version, CoreMatchers.`is`(1))
+    }
+}

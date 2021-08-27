@@ -6,6 +6,9 @@ plugins {
 description "Dependency Injection Impl"
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
@@ -14,4 +17,7 @@ dependencies {
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     implementation project(":libs:flows:dependency-injection")
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":libs:flows:statemachine")
 }

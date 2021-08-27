@@ -1,0 +1,176 @@
+package net.corda.cipher.suite.internal
+
+import net.corda.cipher.suite.internal.schemes.CordaSecureRandomService
+import net.corda.crypto.testkit.CryptoMocks
+import net.corda.crypto.testkit.MockSigningService
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.scheme.COMPOSITE_KEY_TEMPLATE
+import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.cipher.suite.scheme.KeyScheme
+import org.bouncycastle.asn1.ASN1ObjectIdentifier
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
+import java.security.KeyPairGenerator
+import java.util.UUID
+import kotlin.test.assertEquals
+
+class CipherSchemeMetadataTests {
+    companion object {
+        private lateinit var cryptoMocks: CryptoMocks
+        private lateinit var signer: MockSigningService
+        private lateinit var schemeMetadataProvider: CipherSchemeMetadataProviderImpl
+        private lateinit var schemeMetadata: CipherSchemeMetadata
+        private lateinit var unknownScheme: KeyScheme
+
+        @JvmStatic
+        fun signatureSchemes(): Array<KeyScheme> = schemeMetadata.keySchemes + schemeMetadata.compositeKeyScheme
+
+        @JvmStatic
+        @BeforeAll
+        fun setup() {
+            schemeMetadataProvider = CipherSchemeMetadataProviderImpl()
+            schemeMetadata = schemeMetadataProvider.create()
+            cryptoMocks = CryptoMocks(schemeMetadataImpl = schemeMetadata)
+            signer = cryptoMocks.signingService()
+            unknownScheme = COMPOSITE_KEY_TEMPLATE.copy(
+                    codeName = "unknown",
+                    signatureOID = AlgorithmIdentifier(ASN1ObjectIdentifier("1.2"))
+            )
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Should use SecureRandom provided by PlatformSecureRandomService`() {
+        assertEquals(CordaSecureRandomService.algorithm, schemeMetadata.secureRandom.algorithm)
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Should not contain banned digest algorithms`() {
+        schemeMetadata.digests.forEach {
+            assertFalse(CipherSchemeMetadata.BANNED_DIGESTS.contains(it), "Should not contain $it digest.")
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Should contain at least minimal set of digest algorithms`() {
+        assertTrue(schemeMetadata.digests.size > 1)
+        assertTrue(schemeMetadata.digests.contains("SHA-256"))
+        assertTrue(schemeMetadata.digests.contains("SHA-512"))
+        CipherSchemeMetadata.BANNED_DIGESTS.forEach {
+            assertFalse(schemeMetadata.digests.contains(it))
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Should contain predefined list of signature schemes`() {
+        assertEquals(5, schemeMetadata.keySchemes.size)
+        assertTrue(schemeMetadata.keySchemes.contains(schemeMetadataProvider.providerMap.RSA_SHA256))
+        assertTrue(schemeMetadata.keySchemes.contains(schemeMetadataProvider.providerMap.ECDSA_SECP256K1_SHA256))
+        assertTrue(schemeMetadata.keySchemes.contains(schemeMetadataProvider.providerMap.ECDSA_SECP256R1_SHA256))
+        assertTrue(schemeMetadata.keySchemes.contains(schemeMetadataProvider.providerMap.EDDSA_ED25519_SHA512))
+        assertTrue(schemeMetadata.keySchemes.contains(schemeMetadataProvider.providerMap.SPHINCS256_SHA256))
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Should contain predefined list of providers`() {
+        assertEquals(3, schemeMetadata.providers.size)
+        assertTrue(schemeMetadata.providers.containsKey(schemeMetadataProvider.providerMap.bouncyCastlePQCProvider.name))
+        assertTrue(schemeMetadata.providers.containsKey(schemeMetadataProvider.providerMap.cordaBouncyCastleProvider.name))
+        assertTrue(schemeMetadata.providers.containsKey(schemeMetadataProvider.providerMap.cordaSecurityProvider.name))
+    }
+
+    @Test
+    @Timeout(30)
+    fun `findScheme should throw IllegalArgumentException if the algorithm is not supported`() {
+        assertThrows<IllegalArgumentException> {
+            schemeMetadata.findKeyScheme(unknownScheme.signatureOID)
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    fun `findScheme should throw IllegalArgumentException if the scheme code name is not supported`() {
+        assertThrows<IllegalArgumentException> {
+            schemeMetadata.findKeyScheme(unknownScheme.codeName)
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    fun `findScheme should throw IllegalArgumentException if the public key is not supported`() {
+        val keyPairGenerator = KeyPairGenerator.getInstance("GOST3410", schemeMetadataProvider.providerMap.cordaBouncyCastleProvider)
+        val keyPair = keyPairGenerator.generateKeyPair()
+        assertThrows<IllegalArgumentException> {
+            schemeMetadata.findKeyScheme(keyPair.public)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("signatureSchemes")
+    @Timeout(30)
+    fun `Should find schemes for all supported scheme code names`(scheme: KeyScheme) {
+        val result = schemeMetadata.findKeyScheme(scheme.codeName)
+        assertEquals(scheme, result)
+    }
+
+    @ParameterizedTest
+    @MethodSource("signatureSchemes")
+    @Timeout(30)
+    fun `Should find schemes for all supported signing algorithms`(scheme: KeyScheme) {
+        val result = schemeMetadata.findKeyScheme(scheme.signatureOID)
+        assertEquals(scheme, result)
+    }
+
+    @ParameterizedTest
+    @MethodSource("signatureSchemes")
+    @Timeout(30)
+    fun `Should find schemes for all supported public keys`(scheme: KeyScheme) {
+        val publicKey = if(scheme == schemeMetadata.compositeKeyScheme) {
+            val alicePublicKey = signer.generateKeyPair(newAlias())
+            val bobPublicKey = signer.generateKeyPair(newAlias())
+            val charliePublicKey = signer.generateKeyPair(newAlias())
+            val aliceAndBob = CompositeKey.Builder()
+                    .addKey(alicePublicKey, 2)
+                    .addKey(bobPublicKey, 1)
+                    .build(threshold = 2)
+            CompositeKey.Builder()
+                    .addKey(aliceAndBob, 3)
+                    .addKey(charliePublicKey, 2)
+                    .build(threshold = 3)
+        } else {
+            signer.generateKeyPair(newAlias(), scheme)
+        }
+        val result = schemeMetadata.findKeyScheme(publicKey)
+        assertEquals(scheme, result)
+    }
+
+    @Test
+    @Timeout(30)
+    fun `findKeyFactory should throw IllegalArgumentException if the scheme not supported`() {
+        assertThrows<IllegalArgumentException> {
+            schemeMetadata.findKeyFactory(unknownScheme)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("signatureSchemes")
+    @Timeout(30)
+    fun `Should find key factories for all supported schemes`(scheme: KeyScheme) {
+        val factory = schemeMetadata.findKeyFactory(scheme)
+        assertEquals(scheme.providerName, factory.provider.name)
+    }
+
+    private fun newAlias() = UUID.randomUUID().toString()
+}
