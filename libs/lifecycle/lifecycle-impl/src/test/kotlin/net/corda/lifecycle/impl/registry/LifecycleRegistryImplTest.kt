@@ -127,4 +127,16 @@ class LifecycleRegistryImplTest {
         assertEquals(alice2Coordinator, registry.getCoordinator(aliceName.copy(instanceId = "second")))
         assertEquals(aliceCoordinator, registry.getCoordinator(aliceName))
     }
+
+    @Test
+    fun `can remove a registered coordinator`() {
+        val registry = LifecycleRegistryImpl()
+        val aliceCoordinator = mock<LifecycleCoordinator>()
+        registry.registerCoordinator(aliceName, aliceCoordinator)
+        assertEquals(aliceCoordinator, registry.getCoordinator(aliceName))
+        registry.removeCoordinator(aliceName)
+        assertThrows<LifecycleRegistryException> {
+            registry.getCoordinator(aliceName)
+        }
+    }
 }

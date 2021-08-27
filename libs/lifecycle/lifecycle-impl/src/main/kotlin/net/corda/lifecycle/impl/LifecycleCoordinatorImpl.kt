@@ -13,6 +13,7 @@ import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
 import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
@@ -88,6 +89,16 @@ class LifecycleCoordinatorImpl(
     private val isScheduled = AtomicBoolean(false)
 
     /**
+     * Backing atomic boolean for the [isClosed] flag. Used to prevent further events being sent when the coordinator is
+     * closed.
+     *
+     * This is unique among state on the coordinator as it is important for the coordinator to be marked as closed
+     * immediately to ensure no further attempts are made to create registrations on the coordinator once it has been
+     * shut down.
+     */
+    private val _isClosed = AtomicBoolean(false)
+
+    /**
      * Process a batch of events in the event queue.
      *
      * The main processing functionality is delegated to the LifecycleProcessor class. On a processing error, the
@@ -103,7 +114,7 @@ class LifecycleCoordinatorImpl(
         isScheduled.set(false)
         if (shutdown) {
             stopInternal(true)
-        } else {
+        } else if (lifecycleState.eventsQueued()) {
             scheduleIfRequired()
         }
     }
@@ -115,8 +126,7 @@ class LifecycleCoordinatorImpl(
      * conditions is processing events.
      */
     private fun scheduleIfRequired() {
-        // Must be this way around as isScheduled should not be set if no task is scheduled.
-        if (lifecycleState.eventsQueued() && !isScheduled.getAndSet(true)) {
+        if (!isScheduled.getAndSet(true)) {
             executor.submit(::processEvents)
         }
     }
@@ -143,6 +153,10 @@ class LifecycleCoordinatorImpl(
      * See [LifecycleCoordinator].
      */
     override fun postEvent(event: LifecycleEvent) {
+        if (_isClosed.get()) {
+            logger.error("An attempt was made to use coordinator $name after it has been closed. Event: $event")
+            throw LifecycleException("No events can be posted to a closed coordinator. Event: $event")
+        }
         lifecycleState.postEvent(event)
         scheduleIfRequired()
     }
@@ -151,6 +165,7 @@ class LifecycleCoordinatorImpl(
      * See [LifecycleCoordinator].
      */
     override fun setTimer(key: String, delay: Long, onTime: (String) -> TimerEvent) {
+        logger.trace { "$name: Creating timer for key $key" }
         postEvent(SetUpTimer(key, delay, onTime))
     }
 
@@ -158,6 +173,7 @@ class LifecycleCoordinatorImpl(
      * See [LifecycleCoordinator].
      */
     override fun cancelTimer(key: String) {
+        logger.trace { "$name: Cancelling timer for key $key" }
         postEvent(CancelTimer(key))
     }
 
@@ -165,6 +181,7 @@ class LifecycleCoordinatorImpl(
      * See [LifecycleCoordinator].
      */
     override fun updateStatus(newStatus: LifecycleStatus, reason: String) {
+        logger.trace { "$name: Updating status from ${lifecycleState.status} to $newStatus ($reason)" }
         postEvent(StatusChange(newStatus, reason))
     }
 
@@ -172,6 +189,11 @@ class LifecycleCoordinatorImpl(
      * See [LifecycleCoordinator].
      */
     override fun followStatusChanges(coordinators: Set<LifecycleCoordinator>): RegistrationHandle {
+        logger.trace { "$name: Registering on coordinators: ${coordinators.map { it.name }}" }
+        if (coordinators.contains(this)) {
+            logger.error("An attempt was made to register coordinator $name on itself")
+            throw LifecycleException("Attempt was made to register coordinator $name on itself")
+        }
         val registration = Registration(coordinators, this)
         postEvent(TrackRegistration(registration))
         coordinators.forEach { it.postEvent(NewRegistration(registration)) }
@@ -204,9 +226,16 @@ class LifecycleCoordinatorImpl(
         get() = lifecycleState.status
 
     /**
+     * See [LifecycleCoordinator].
+     */
+    override val isClosed: Boolean
+        get() = _isClosed.get()
+
+    /**
      * Start this coordinator.
      */
     override fun start() {
+        logger.trace { "$name: Starting coordinator" }
         postEvent(StartEvent())
     }
 
@@ -217,6 +246,24 @@ class LifecycleCoordinatorImpl(
      * are delivered to the user code.
      */
     override fun stop() {
+        logger.trace { "$name: Stopping coordinator" }
         stopInternal(false)
+    }
+
+    override fun close() {
+        logger.trace { "$name: Closing coordinator" }
+        if (!lifecycleState.registrationsEmpty()) {
+            logger.error(
+                "Attempt made to close coordinator $name with outstanding registrations. " +
+                        "Registrations must be closed before closing the coordinator."
+            )
+            throw LifecycleException(
+                "Attempt made to close coordinator $name with outstanding registrations. " +
+                        "Close all registrations involving this coordinator first."
+            )
+        }
+        stop()
+        postEvent(CloseCoordinator())
+        _isClosed.set(true)
     }
 }

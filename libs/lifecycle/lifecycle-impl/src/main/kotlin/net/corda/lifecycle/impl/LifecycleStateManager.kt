@@ -24,7 +24,7 @@ internal class LifecycleStateManager(
     /**
      * The set of registrations to post status updates to when this coordinator's status changes.
      */
-    val registrations = mutableSetOf<Registration>()
+    val registrations = ConcurrentHashMap<Registration, Unit>()
 
     /**
      * The set of registrations this coordinator has on other groups of registrations.
@@ -32,7 +32,7 @@ internal class LifecycleStateManager(
      * This is used to ensure that an UP event is delivered to this coordinator if the registration is UP at coordinator
      * start time.
      */
-    val trackedRegistrations = mutableSetOf<Registration>()
+    val trackedRegistrations = ConcurrentHashMap<Registration, Unit>()
 
     @Volatile
     var isRunning: Boolean = false
@@ -107,5 +107,17 @@ internal class LifecycleStateManager(
      */
     fun eventsQueued() : Boolean {
         return !eventQueue.isEmpty()
+    }
+
+    /**
+     * Returns whether this coordinator has any open registrations, either on other coordinators or with other
+     * coordinators on it.
+     *
+     * Used to ensure that the coordinator can only be closed if there are no registrations.
+     *
+     * @return True if there are no registrations, false otherwise.
+     */
+    fun registrationsEmpty() : Boolean {
+        return registrations.isEmpty() && trackedRegistrations.isEmpty()
     }
 }

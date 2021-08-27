@@ -65,3 +65,8 @@ internal data class StopTrackingRegistration(val registration: Registration) : L
  * @param reason The reason this status was entered, for diagnostic purposes
  */
 internal data class StatusChange(val newStatus: LifecycleStatus, val reason: String) : LifecycleEvent
+
+/**
+ * Perform any state cleanup for the coordinator as it closes.
+ */
+internal class CloseCoordinator : LifecycleEvent

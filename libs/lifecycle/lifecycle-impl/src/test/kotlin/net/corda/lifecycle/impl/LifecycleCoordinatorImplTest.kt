@@ -748,6 +748,7 @@ internal class LifecycleCoordinatorImplTest {
             assertEquals(handle, registration)
             assertEquals(LifecycleStatus.DOWN, status)
 
+            handle.close()
             it.stop()
             assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         }
@@ -854,6 +855,10 @@ internal class LifecycleCoordinatorImplTest {
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(4, totalStatusChanges)
             assertEquals(setOf(handle1, handle2), handleSet)
+            handle1.close()
+            handle2.close()
+            it.stop()
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         }
     }
 
@@ -907,6 +912,9 @@ internal class LifecycleCoordinatorImplTest {
             assertTrue(regLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(handle, registration)
             assertEquals(LifecycleStatus.UP, status)
+            handle.close()
+            it.stop()
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         }
     }
 
@@ -942,8 +950,9 @@ internal class LifecycleCoordinatorImplTest {
     }
 
     @Test
-    fun `can register on coordinators using the regsitry`() {
+    fun `can register on coordinators using the registry`() {
         val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
         val registry = mock<LifecycleRegistryCoordinatorAccess>()
         val coordinatorA = createCoordinator { _, _ -> }
         val coordinatorB = createCoordinator { _, _ -> }
@@ -958,6 +967,9 @@ internal class LifecycleCoordinatorImplTest {
             when (event) {
                 is StartEvent -> {
                     startLatch.countDown()
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
                 }
                 is RegistrationStatusChangeEvent -> {
                     registration = event.registration
@@ -977,6 +989,9 @@ internal class LifecycleCoordinatorImplTest {
             assertTrue(registrationLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(handle, registration)
             assertEquals(LifecycleStatus.UP, status)
+            handle.close()
+            it.stop()
+            assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         }
     }
 
@@ -1008,6 +1023,87 @@ internal class LifecycleCoordinatorImplTest {
         }
     }
 
+    @Test
+    fun `exception is thrown if attempt is made to register on yourself`() {
+        val coordinator = createCoordinator { _, _ -> }
+        assertThrows<LifecycleException> {
+            coordinator.followStatusChanges(setOf(coordinator))
+        }
+    }
+
+    @Test
+    fun `closing a coordinator prevents subsequent calls to restart or post events`() {
+        val startLatch = CountDownLatch(1)
+        val stopLatch = CountDownLatch(1)
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val registered = createCoordinator { _, _ -> }
+        val coordinator = createCoordinator(registry) { event, _ ->
+            when (event) {
+                is StartEvent -> {
+                    startLatch.countDown()
+                }
+                is StopEvent -> {
+                    stopLatch.countDown()
+                }
+            }
+        }
+        coordinator.use {
+            it.start()
+            assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+        }
+        assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+        verify(registry).removeCoordinator(coordinator.name)
+        assertThrows<LifecycleException> {
+            coordinator.start()
+        }
+        assertThrows<LifecycleException> {
+            coordinator.postEvent(object : LifecycleEvent {})
+        }
+        assertThrows<LifecycleException> {
+            coordinator.followStatusChanges(setOf(registered))
+        }
+    }
+
+    @Test
+    fun `cannot close coordinator if there are any registrations`() {
+        var latch = CountDownLatch(2)
+        val flushingEvent = object : LifecycleEvent {}
+        val coordinator1 = createCoordinator { event, _ ->
+            when (event) {
+                flushingEvent -> {
+                    latch.countDown()
+                }
+            }
+        }
+        val coordinator2 = createCoordinator { event, _ ->
+            when (event) {
+                flushingEvent -> {
+                    latch.countDown()
+                }
+            }
+        }
+        val registration = coordinator1.followStatusChanges(setOf(coordinator2))
+        coordinator1.start()
+        coordinator2.start()
+        coordinator1.postEvent(flushingEvent)
+        coordinator2.postEvent(flushingEvent)
+        assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertThrows<LifecycleException> {
+            coordinator1.close()
+        }
+        assertThrows<LifecycleException> {
+            coordinator2.close()
+        }
+
+        // Should be able to close both coordinators after closing the registration.
+        latch = CountDownLatch(2)
+        registration.close()
+        coordinator1.postEvent(flushingEvent)
+        coordinator2.postEvent(flushingEvent)
+        assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+        coordinator1.close()
+        coordinator2.close()
+    }
 
     private fun createCoordinator(
         registry: LifecycleRegistryCoordinatorAccess = mock(),

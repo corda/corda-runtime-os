@@ -90,7 +90,7 @@ internal class LifecycleProcessor(
                 }
             }
             is NewRegistration -> {
-                state.registrations.add(event.registration)
+                state.registrations[event.registration] = Unit
                 event.registration.updateCoordinatorStatus(coordinator, state.status)
                 true
             }
@@ -99,7 +99,7 @@ internal class LifecycleProcessor(
                 true
             }
             is TrackRegistration -> {
-                state.trackedRegistrations.add(event.registration)
+                state.trackedRegistrations[event.registration] = Unit
                 true
             }
             is StopTrackingRegistration -> {
@@ -117,6 +117,9 @@ internal class LifecycleProcessor(
                 }
                 true
             }
+            is CloseCoordinator -> {
+                processClose(coordinator)
+            }
             else -> {
                 if (state.isRunning) {
                     runUserEventHandler(event, coordinator)
@@ -133,7 +136,7 @@ internal class LifecycleProcessor(
     private fun processStartEvent(event: StartEvent, coordinator: LifecycleCoordinator): Boolean {
         return if (!state.isRunning) {
             state.isRunning = true
-            state.trackedRegistrations.forEach { it.notifyCurrentStatus() }
+            state.trackedRegistrations.keys.forEach { it.notifyCurrentStatus() }
             // If there was previously an error, clear this now.
             updateStatus(coordinator, LifecycleStatus.DOWN, STARTED_REASON)
             runUserEventHandler(event, coordinator)
@@ -174,13 +177,19 @@ internal class LifecycleProcessor(
         return true
     }
 
+    private fun processClose(coordinator: LifecycleCoordinator): Boolean {
+        state.isRunning = false
+        registry.removeCoordinator(coordinator.name)
+        return true
+    }
+
     /**
      * Perform any logic for updating the status of the coordinator. This includes informing other registered
      * coordinators of the status change and informing the registry.
      */
     private fun updateStatus(coordinator: LifecycleCoordinator, newStatus: LifecycleStatus, reason: String) {
         state.status = newStatus
-        state.registrations.forEach { it.updateCoordinatorStatus(coordinator, newStatus) }
+        state.registrations.keys.forEach { it.updateCoordinatorStatus(coordinator, newStatus) }
         registry.updateStatus(coordinator.name, newStatus, reason)
     }
 

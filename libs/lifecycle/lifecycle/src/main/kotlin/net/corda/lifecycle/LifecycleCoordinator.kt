@@ -122,5 +122,24 @@ interface LifecycleCoordinator : Lifecycle {
      */
     fun followStatusChangesByName(coordinatorNames: Set<LifecycleCoordinatorName>) : RegistrationHandle
 
-    //override fun close()
+    /**
+     * Flag indicating whether this coordinator has been closed.
+     *
+     * A closed coordinator is stopped and can no longer be restarted. If a component has its coordinator closed, it
+     * should be recreated.
+     */
+    val isClosed: Boolean
+
+    /**
+     * Close this lifecycle coordinator.
+     *
+     * Closing a lifecycle coordinator triggers a stop event as if the coordinator were stopped normally, but also
+     * unregisters it from the coordinator registry and prevents the coordinator from being restarted. This should be
+     * called if the component is to be permanently removed so cleanup can occur.
+     *
+     * Note that after calling close, any call to other APIs will lead to a [LifecycleException] being thrown.
+     *
+     * @throws LifecycleException if there are any registrations involving this coordinator.
+     */
+    override fun close()
 }

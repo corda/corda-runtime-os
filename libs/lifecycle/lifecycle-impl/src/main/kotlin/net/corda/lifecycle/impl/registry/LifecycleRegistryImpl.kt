@@ -67,6 +67,15 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
     }
 
     /**
+     * See [LifecycleRegistryCoordinatorAccess]
+     */
+    override fun removeCoordinator(name: LifecycleCoordinatorName) {
+        logger.trace { "Removing coordinator $name from registry" }
+        coordinators.remove(name)
+        statuses.remove(name)
+    }
+
+    /**
      * See [LifecycleRegistry].
      */
     override fun componentStatus(): Map<LifecycleCoordinatorName, CoordinatorStatus> {
