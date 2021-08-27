@@ -1,16 +1,14 @@
 package net.corda.internal.serialization
 
-import net.corda.v5.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.Metadata
 import net.corda.internal.serialization.amqp.Schema
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.internal.serialization.amqp.SerializerFactory
+import net.corda.v5.serialization.SerializationContext
 import org.apache.qpid.proton.codec.Data
-import org.assertj.core.api.Assertions
-import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import java.lang.reflect.Type
 import java.security.PublicKey
 
@@ -34,7 +32,7 @@ class OverridePKSerializerTest {
             get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
     }
 
-    class AMQPTestSerializationScheme : AbstractAMQPSerializationScheme() {
+    class AMQPTestSerializationScheme : AbstractAMQPSerializationScheme(mock()) {
 
         override fun canDeserializeVersion(magic: CordaSerializationMagic, target: SerializationContext.UseCase) = true
 
