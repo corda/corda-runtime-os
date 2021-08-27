@@ -18,8 +18,6 @@ dependencies {
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-serialization"
-    implementation project(":libs:crypto:crypto-impl")
-    implementation project(":libs:crypto:crypto-internal")
     implementation ("net.corda:corda-class-info:$cordaVersion") {
         transitive = false
     }
