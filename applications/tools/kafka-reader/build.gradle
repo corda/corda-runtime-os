@@ -18,7 +18,7 @@ dependencies {
 
     implementation project(':components:kafka-config-read')
     implementation project(":libs:configuration:configuration-read")
-    implementation project(":libs:lifecycle")
+    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":osgi-framework-api")
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
@@ -28,7 +28,7 @@ dependencies {
 
     runtimeOnly project(':components:kafka-config-read')
     runtimeOnly project(":libs:configuration:kafka-configuration-read-impl")
-    runtimeOnly project(":libs:lifecycle")
+    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     runtimeOnly project(":libs:messaging:messaging")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
