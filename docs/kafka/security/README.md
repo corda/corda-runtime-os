@@ -306,8 +306,9 @@ zookeeper-server-start.bat ../../config/zookeeper.properties
 ```
 
 SCRAM authentication credentials used by brokers and broker clients are stored in zookeeper. For convenience the unsecure port is used to connect to zookeeper from the command line.
-The `--zookeeper` must be used instead of `--bootstrap-server`.
+The `--zookeeper` must be used instead of `--bootstrap-server`. Ensure `KAFKA_OPTS` is set before executing kafka-configs commands.
 ```
+set KAFKA_OPTS=-Djava.security.auth.login.config=c:/dev/kafka/config/zookeeper_jaas.conf
 kafka-configs.bat --zookeeper localhost:2181 --alter --add-config SCRAM-SHA-256=[iterations=8192,password=password],SCRAM-SHA-512=[password=password] --entity-type users --entity-name kafkabroker
 kafka-configs.bat --zookeeper localhost:2181 --alter --add-config SCRAM-SHA-256=[iterations=8192,password=password],SCRAM-SHA-512=[password=password] --entity-type users --entity-name consumerClient
 kafka-configs.bat --zookeeper localhost:2181 --alter --add-config SCRAM-SHA-256=[iterations=8192,password=password],SCRAM-SHA-512=[password=password] --entity-type users --entity-name producerClient
@@ -351,7 +352,9 @@ kafka-topics.bat --zookeeper localhost:2181 --create --topic kafka-security-topi
 
 The following command will grant the producerClient `WRITE`, `CREATE` and `DESCRIBE` on the topic `kafka-security-topic`.
 This will allow this client to produce to the topic, create topics, add meta-data and get offsets.
+Again ensure KAFKA_OPTS is set before running kafka-acls commands.
 ```
+set KAFKA_OPTS=-Djava.security.auth.login.config=c:/dev/kafka/config/zookeeper_jaas.conf
 kafka-acls.bat --authorizer-properties zookeeper.connect=localhost:2181 --add --allow-principal User:producerClient --producer --topic kafka-security-topic
 ```
 
