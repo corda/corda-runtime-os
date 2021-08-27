@@ -566,7 +566,7 @@ class LifecycleProcessorTest {
         }
     }
 
-    private fun setupCoordinatorMock() : LifecycleCoordinator {
+    private fun setupCoordinatorMock(): LifecycleCoordinator {
         val coordinator = mock<LifecycleCoordinator>()
         doReturn(NAME).`when`(coordinator).name
         return coordinator

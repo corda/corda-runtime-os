@@ -6,6 +6,8 @@ plugins {
 description "Lifecycle implementation"
 
 dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:lifecycle:registry")
 

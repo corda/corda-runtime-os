@@ -11,27 +11,27 @@ package net.corda.lifecycle
  */
 interface Lifecycle : AutoCloseable {
 
-   /**
-    * It is `true` the component is running.
-    */
-   val isRunning: Boolean
+    /**
+     * It is `true` the component is running.
+     */
+    val isRunning: Boolean
 
-   /**
-    * Override to define how the component starts.
-    */
-   fun start()
+    /**
+     * Override to define how the component starts.
+     */
+    fun start()
 
-   /**
-    * Override to define how the component stops: close and release resources in this method.
-    */
-   fun stop()
+    /**
+     * Override to define how the component stops: close and release resources in this method.
+     */
+    fun stop()
 
-   //: AutoCloseable
+    //: AutoCloseable
 
-   /**
-    * Automatically called when this component is out of try-with-resource scope.
-    *
-    * See [AutoCloseable.close]
-    */
-   override fun close() = stop()
+    /**
+     * Automatically called when this component is out of try-with-resource scope.
+     *
+     * See [AutoCloseable.close]
+     */
+    override fun close() = stop()
 }

@@ -102,7 +102,7 @@ interface LifecycleCoordinator : Lifecycle {
      * @return The registration. The same handle is returned on status change events delivered to the client event
      *         handler.
      */
-    fun followStatusChanges(coordinators: Set<LifecycleCoordinator>) : RegistrationHandle
+    fun followStatusChanges(coordinators: Set<LifecycleCoordinator>): RegistrationHandle
 
     /**
      * Register for status changes from a set of dependent coordinators.
@@ -120,7 +120,7 @@ interface LifecycleCoordinator : Lifecycle {
      *         handler.
      * @throws LifecycleException if an invalid name was provided in the set of lifecycle coordinators.
      */
-    fun followStatusChangesByName(coordinatorNames: Set<LifecycleCoordinatorName>) : RegistrationHandle
+    fun followStatusChangesByName(coordinatorNames: Set<LifecycleCoordinatorName>): RegistrationHandle
 
     /**
      * Flag indicating whether this coordinator has been closed.

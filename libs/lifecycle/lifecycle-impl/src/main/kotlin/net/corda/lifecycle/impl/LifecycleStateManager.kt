@@ -104,7 +104,7 @@ internal class LifecycleStateManager(
      *
      * @return True if there are events to process, false otherwise.
      */
-    fun eventsQueued() : Boolean {
+    fun eventsQueued(): Boolean {
         return !eventQueue.isEmpty()
     }
 
@@ -116,7 +116,7 @@ internal class LifecycleStateManager(
      *
      * @return True if there are no registrations, false otherwise.
      */
-    fun registrationsEmpty() : Boolean {
+    fun registrationsEmpty(): Boolean {
         return registrations.isEmpty() && trackedRegistrations.isEmpty()
     }
 }

@@ -40,7 +40,7 @@ interface LifecycleRegistryCoordinatorAccess {
      * @return The coordinator for the given name
      * @throws LifecycleRegistryException if there is no coordinator registered under this name
      */
-    fun getCoordinator(name: LifecycleCoordinatorName) : LifecycleCoordinator
+    fun getCoordinator(name: LifecycleCoordinatorName): LifecycleCoordinator
 
     /**
      * Stop tracking the coordinator with a given name.

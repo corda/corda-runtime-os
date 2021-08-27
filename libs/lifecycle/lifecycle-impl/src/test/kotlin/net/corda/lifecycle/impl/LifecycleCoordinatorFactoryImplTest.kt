@@ -26,7 +26,7 @@ class LifecycleCoordinatorFactoryImplTest {
             factory.createCoordinator(name, 0) { _, _ -> }
         }
         assertThrows<LifecycleException> {
-            factory.createCoordinator(name,  -1) { _, _ -> }
+            factory.createCoordinator(name, -1) { _, _ -> }
         }
     }
 }
