@@ -1,7 +1,8 @@
 package net.corda.v5.httprpc.api.annotations
 
 /**
- * Marks a function of an @[HttpRpcResource] annotated interface to be exposed as a POST endpoint by the HTTP RPC generated web service.
+ * Marks a function of an @[HttpRpcResource] annotated interface to be exposed as a POST endpoint by the HTTP RPC
+ * generated web service.
  *
  * @property path The relative path of the endpoint within its resource. Defaults to the function name.
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
@@ -18,7 +19,8 @@ annotation class HttpRpcPOST (
 )
 
 /**
- * Marks a function function of an @[HttpRpcResource] annotated interface to be exposed as a GET endpoint by the HTTP RPC generated web service.
+ * Marks a function function of an @[HttpRpcResource] annotated interface to be exposed as a GET endpoint by the HTTP
+ * RPC generated web service.
  *
  * @property path The relative path of the endpoint within its resource. Defaults to the function name.
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
