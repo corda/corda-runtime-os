@@ -10,5 +10,5 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    implementation project(":libs:lifecycle")
+    implementation project(":libs:lifecycle:lifecycle")
 }
