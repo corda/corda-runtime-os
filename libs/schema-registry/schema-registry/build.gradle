@@ -1,9 +1,11 @@
 plugins {
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
 }
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
     api "org.apache.avro:avro:$avroVersion"
 }
 

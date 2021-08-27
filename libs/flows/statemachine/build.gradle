@@ -1,18 +1,19 @@
 plugins {
-    id 'corda.publish'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
 }
 
 description "State Machine"
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation("com.esotericsoftware:kryo:$kryoVersion")
 
-    implementation "net.corda:corda-application:$cordaVersion"
-    implementation "net.corda:corda-base-internal:$cordaVersion"
-    implementation "net.corda:corda-flow-dependency-injection-internal:$cordaVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-application"
+    implementation "net.corda:avro-schema"
 
-
-    implementation project(':data:avro-schema')
+    implementation project(':libs:flows:dependency-injection')
 }

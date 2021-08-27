@@ -162,7 +162,7 @@ ssl.truststore.password=password
 
 #Enable SASL mechanism
 sasl.enabled.mechanisms=SCRAM-SHA-256
-#define which protocol mechansim to use for inter boker communication.
+#define which protocol mechansim to use for inter-broker communication.
 sasl.mechanism.inter.broker.protocol=SCRAM-SHA-256
 
 #SASL account details used by this broker for authentication via SASL (SCRAM-SHA-256)

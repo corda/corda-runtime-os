@@ -1,5 +1,6 @@
 package net.corda.messaging.db.sync
 
+import net.corda.messaging.db.util.eventually
 import net.corda.v5.base.util.millis
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -49,7 +50,9 @@ class OffsetTrackerTest {
         offsetTracker.offsetReleased(thirdOffset)
         offsetTracker.offsetReleased(firstOffset)
 
-        assertThat(offsetTracker.maxVisibleOffset()).isEqualTo(thirdOffset)
+        eventually(waitBetween = 10.millis, waitBefore = 0.millis) {
+            assertThat(offsetTracker.maxVisibleOffset()).isEqualTo(thirdOffset)
+        }
     }
 
     @Test
@@ -81,7 +84,7 @@ class OffsetTrackerTest {
     fun `if offset gets advanced before the timeout expires, the awaiting method returns true`() {
         val newOffset = offsetTracker.getNextOffset()
 
-        val waitResult = executorService.submit(Callable { offsetTracker.waitForOffset(newOffset, 5.millis) } )
+        val waitResult = executorService.submit(Callable { offsetTracker.waitForOffset(newOffset, 50.millis) } )
 
         offsetTracker.offsetReleased(newOffset)
 
@@ -97,7 +100,7 @@ class OffsetTrackerTest {
             executorService.submit { offsetTracker.offsetReleased(offset) }
         }
 
-        assertTrue(offsetTracker.waitForOffset(maxOffset, 20.millis))
+        assertTrue(offsetTracker.waitForOffset(maxOffset, 150.millis))
         assertThat(offsetTracker.maxVisibleOffset()).isEqualTo(maxOffset)
     }
 

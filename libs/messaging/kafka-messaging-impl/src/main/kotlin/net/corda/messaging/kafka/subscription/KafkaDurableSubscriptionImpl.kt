@@ -8,7 +8,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
+import org.slf4j.LoggerFactory
 
 /**
  * Kafka implementation of a DurableSubscription.
@@ -35,6 +38,10 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private val processor: DurableProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?
 ) : Subscription<K, V> {
+
+    private val log = LoggerFactory.getLogger(
+        "${config.getString(CONSUMER_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
+    )
 
     private val subscription = KafkaEventLogSubscriptionImpl(config, consumerBuilder, producerBuilder,
         ForwardingEventLogProcessor(processor), partitionAssignmentListener)

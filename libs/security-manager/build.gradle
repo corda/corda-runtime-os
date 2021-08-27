@@ -1,0 +1,15 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+description 'Corda Security Manager'
+
+dependencies {
+    api "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+}

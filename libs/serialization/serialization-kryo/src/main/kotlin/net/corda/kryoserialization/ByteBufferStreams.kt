@@ -1,7 +1,7 @@
 @file:JvmName("ByteBufferStreams")
 package net.corda.kryoserialization
 
-import net.corda.internal.base.LazyPool
+import net.corda.utilities.LazyPool
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
