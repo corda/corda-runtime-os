@@ -35,6 +35,7 @@ dependencies {
 
 //    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "com.h2database:h2:$h2Version"
 
     testImplementation project(":libs:crypto:crypto-testkit")
