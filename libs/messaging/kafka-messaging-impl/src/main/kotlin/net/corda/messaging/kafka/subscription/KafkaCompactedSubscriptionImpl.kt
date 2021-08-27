@@ -130,14 +130,13 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
 
     private fun pollAndProcessSnapshot(consumer: CordaKafkaConsumer<K, V>) {
         val partitions = consumer.assignment()
-        val snapshotEnds = consumer.endOffsets(partitions)
+        val snapshotEnds = consumer.endOffsets(partitions).toMutableMap()
         consumer.seekToBeginning(partitions)
 
-        val partitionsSynced = partitions.associate { it.partition() to false }.toMutableMap()
         val currentData = getLatestValues()
         currentData.clear()
 
-        while (partitionsSynced.any { !it.value }) {
+        while (snapshotEnds.isNotEmpty()) {
             val consumerRecords = consumer.poll()
 
             consumerRecords.forEach {
@@ -152,7 +151,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                 val partitionId = partition.partition()
                 val topicPartition = TopicPartition(topic, partitionId)
                 if (consumer.position(topicPartition) >= snapshotEnds[topicPartition]!!) {
-                    partitionsSynced[partitionId] = true
+                    snapshotEnds.remove(topicPartition)
                 }
             }
         }
