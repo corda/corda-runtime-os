@@ -22,6 +22,7 @@ java: ${project.javaExecutable}
     bnd.identity;id='net.corda.kafka-messaging-impl',\
     bnd.identity;id='net.corda.schema-registry-impl',\
     bnd.identity;id='net.corda.topic-admin-impl',\
+    bnd.identity;id='net.corda.lifecycle-impl',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple',\
@@ -52,7 +53,9 @@ java: ${project.javaExecutable}
 	net.corda.kafka-topic-admin;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.21,1.4.22)',\
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
+	net.corda.lifecycle-impl;version='[5.0.0,5.0.1)',\
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
+	net.corda.registry;version='[5.0.0,5.0.1)',\
 	net.corda.schema-registry;version='[5.0.0,5.0.1)',\
 	net.corda.schema-registry-impl;version='[5.0.0,5.0.1)',\
 	net.corda.topic-admin;version='[5.0.0,5.0.1)',\

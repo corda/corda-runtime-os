@@ -18,7 +18,6 @@ dependencies {
     implementation "net.corda:corda-base"
 
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
-    implementation project(":libs:lifecycle")
     implementation project(":osgi-framework-api")
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
