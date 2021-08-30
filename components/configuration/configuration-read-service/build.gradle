@@ -1,0 +1,14 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "Configuration read service"
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
+    implementation project(":libs:lifecycle:lifecycle")
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+}
