@@ -145,9 +145,8 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
             }
 
             for (partition in snapshotEnds.keys) {
-                val topicPartition = TopicPartition(topic, partition.partition())
-                if (consumer.position(topicPartition) >= snapshotEnds[topicPartition]!!) {
-                    snapshotEnds.remove(topicPartition)
+                if (consumer.position(partition) >= snapshotEnds[partition]!!) {
+                    snapshotEnds.remove(partition)
                 }
             }
         }
