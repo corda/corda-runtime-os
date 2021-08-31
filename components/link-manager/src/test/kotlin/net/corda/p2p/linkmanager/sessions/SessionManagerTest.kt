@@ -19,6 +19,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
@@ -180,7 +181,8 @@ class SessionManagerTest {
 
         protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshakeMessage.payload as InitiatorHandshakeMessage,
-            netMapOutbound.getKeyPair().public
+            netMapOutbound.getKeyPair().public,
+            KeyAlgorithm.ECDSA
         )
 
         val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
@@ -210,7 +212,8 @@ class SessionManagerTest {
 
         protocolInitiator.validatePeerHandshakeMessage(
             responderHandshakeMessage?.payload as ResponderHandshakeMessage,
-            netMapInbound.getKeyPair().public
+            netMapInbound.getKeyPair().public,
+            KeyAlgorithm.ECDSA
         )
 
         return protocolInitiator.getSession()
@@ -276,7 +279,8 @@ class SessionManagerTest {
         val initiatorHandshakeMessage = outboundManager.processSessionMessage(LinkInMessage(responderHello))
         protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshakeMessage?.payload as InitiatorHandshakeMessage,
-            netMapOutbound.getKeyPair().public
+            netMapOutbound.getKeyPair().public,
+            KeyAlgorithm.ECDSA
         )
         return protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
             signDataWithKey(netMapInbound.getKeyPair().private, it)
@@ -441,7 +445,8 @@ class SessionManagerTest {
         protocolResponder.generateHandshakeSecrets()
         protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshakeMessage.payload as InitiatorHandshakeMessage,
-            netMapOutbound.getKeyPair().public
+            netMapOutbound.getKeyPair().public,
+            KeyAlgorithm.ECDSA
         )
 
         val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {

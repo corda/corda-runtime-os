@@ -150,7 +150,9 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
      * @throws InvalidHandshakeResponderKeyHash if the responder sent a key hash that does not match with the key we were expecting.
      * @throws InvalidHandshakeMessageException if the handshake message was invalid (e.g. due to invalid signatures, MACs etc.)
      */
-    fun validatePeerHandshakeMessage(responderHandshakeMessage: ResponderHandshakeMessage, theirPublicKey: PublicKey) {
+    fun validatePeerHandshakeMessage(responderHandshakeMessage: ResponderHandshakeMessage,
+                                     theirPublicKey: PublicKey,
+                                     theirPublicKeyAlgo: KeyAlgorithm) {
         transition(Step.SENT_HANDSHAKE_MESSAGE, Step.RECEIVED_HANDSHAKE_MESSAGE)
 
         val responderRecordHeader = responderHandshakeMessage.header.toByteBuffer().array()
@@ -180,7 +182,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         // validate signature
         val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! +
                                                       responderHandshakePayloadIncomplete.toByteBuffer().array()
-        val signatureWasValid = signature.verify(theirPublicKey,
+        val signatureWasValid = getSignature(theirPublicKeyAlgo).verify(theirPublicKey,
                                             RESPONDER_SIG_PAD.toByteArray(Charsets.UTF_8) + messageDigest.hash(initiatorHelloToResponderParty),
                                                  responderHandshakePayload.responderPartyVerify.array())
         if (!signatureWasValid) {

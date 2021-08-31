@@ -24,6 +24,7 @@ import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
@@ -75,6 +76,7 @@ class LinkManagerTest {
         val FIRST_DEST_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(
             FIRST_DEST.toHoldingIdentity(),
             keyPairGenerator.generateKeyPair().public,
+            KeyAlgorithm.ECDSA,
             FAKE_ENDPOINT
         )
 
@@ -125,7 +127,7 @@ class LinkManagerTest {
                 signingCallbackForA
             )
 
-            responder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public)
+            responder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA)
 
             val signingCallbackForB = { data: ByteArray ->
                 signature.initSign(partyBIdentityKey.private)
@@ -134,7 +136,7 @@ class LinkManagerTest {
             }
             val responderHandshakeMessage = responder.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
 
-            initiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
+            initiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, KeyAlgorithm.ECDSA)
             return SessionPair(initiator.getSession(), responder.getSession())
         }
 
