@@ -190,8 +190,8 @@ class GatewayTest : TestBase() {
             endTime = Instant.now().toEpochMilli()
         }
 
-        servers.forEach { it.stop() }
         logger.info("Done sending ${messageCount * serverAddresses.size} messages in ${endTime - startTime} milliseconds")
+        servers.forEach { it.stop() }
     }
 
     @Test
@@ -250,9 +250,10 @@ class GatewayTest : TestBase() {
         receivedLatch.await()
         barrier.countDown()
         val endTime = Instant.now().toEpochMilli()
+        logger.info("Done processing ${messageCount * 2} in ${endTime - startTime} milliseconds.")
+
         t1.join()
         t2.join()
-        logger.info("Done processing ${messageCount * 2} in ${endTime - startTime} milliseconds.")
     }
 
     private fun authenticatedP2PMessage(content: String) = AuthenticatedDataMessage.newBuilder().apply {
