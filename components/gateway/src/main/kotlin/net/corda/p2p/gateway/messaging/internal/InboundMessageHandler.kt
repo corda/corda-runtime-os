@@ -8,7 +8,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.LinkInMessage
-import net.corda.p2p.Step2Message
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
@@ -139,7 +138,6 @@ class InboundMessageHandler(private val server: HttpServer,
             is InitiatorHandshakeMessage -> (message.payload as InitiatorHandshakeMessage).header.sessionId
             is ResponderHelloMessage -> (message.payload as ResponderHelloMessage).header.sessionId
             is ResponderHandshakeMessage -> (message.payload as ResponderHandshakeMessage).header.sessionId
-            is Step2Message -> (message.payload as Step2Message).initiatorHello.header.sessionId
             is UnauthenticatedMessage -> {
                 logger.warn("No session associated with ${UnauthenticatedMessage::class.java}")
                 return null
