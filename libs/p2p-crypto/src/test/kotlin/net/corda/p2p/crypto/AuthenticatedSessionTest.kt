@@ -97,67 +97,6 @@ class AuthenticatedSessionTest {
     }
 
     @Test
-    fun `session can be established between two parties and used for transmission of authenticated data successfully with step 2 executed on separate component`() {
-        // Step 1: initiator sending hello message to responder.
-        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
-        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
-
-        // Step 2: responder sending hello message to initiator.
-        val responderHelloMsg = authenticationProtocolB.generateResponderHello()
-        authenticationProtocolA.receiveResponderHello(responderHelloMsg)
-
-        // Fronting component of responder sends data downstream so that protocol can be continued.
-        val (privateKey, publicKey) = authenticationProtocolB.getDHKeyPair()
-        val authenticationProtocolBDownstream = AuthenticationProtocolResponder.fromStep2(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, initiatorHelloMsg, responderHelloMsg, privateKey, publicKey)
-
-        // Both sides generate handshake secrets.
-        authenticationProtocolA.generateHandshakeSecrets()
-        authenticationProtocolBDownstream.generateHandshakeSecrets()
-
-        // Step 3: initiator sending handshake message and responder validating it.
-        val signingCallbackForA = { data: ByteArray ->
-            signature.initSign(partyAIdentityKey.private)
-            signature.update(data)
-            signature.sign()
-        }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
-
-        authenticationProtocolBDownstream.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public)
-
-        // Step 4: responder sending handshake message and initiator validating it.
-        val signingCallbackForB = { data: ByteArray ->
-            signature.initSign(partyBIdentityKey.private)
-            signature.update(data)
-            signature.sign()
-        }
-        val responderHandshakeMessage = authenticationProtocolBDownstream.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
-
-        authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
-
-        // Both sides generate session secrets
-        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
-        val authenticatedSessionOnB = authenticationProtocolBDownstream.getSession() as AuthenticatedSession
-
-        for (i in 1..3) {
-            // Data exchange: A sends message to B, which decrypts and validates it
-            val payload = "ping $i".toByteArray(Charsets.UTF_8)
-            val authenticationResult = authenticatedSessionOnA.createMac(payload)
-            val initiatorMsg = AuthenticatedDataMessage(authenticationResult.header, ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac))
-
-            authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload.array(), initiatorMsg.authTag.array())
-        }
-
-        for (i in 1..3) {
-            // Data exchange: B -> A
-            val payload = "pong $i".toByteArray(Charsets.UTF_8)
-            val authenticationResult = authenticatedSessionOnB.createMac(payload)
-            val responderMsg = AuthenticatedDataMessage(authenticationResult.header, ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac) )
-
-            authenticatedSessionOnA.validateMac(responderMsg.header, responderMsg.payload.array(), responderMsg.authTag.array())
-        }
-    }
-
-    @Test
     fun `when MAC on data message is altered during transmission, validation fails with an error`() {
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
