@@ -1,0 +1,30 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'net.corda.plugins.cordapp-cpk'
+}
+// compile(group: 'net.corda', name: 'corda-ledger', version: '5.0.0-DevPreview-RC02')
+dependencies {
+    cordaProvided project(":application")
+    // TODO:  using corda5 dev preview to build a cpk for the packaging unit tests, these libs aren't in corda-api yet
+    cordaProvided("net.corda:corda-ledger:$cordaDevPreviewVersion")
+
+    implementation group: 'org.jetbrains.kotlin', name: 'kotlin-osgi-bundle', version: kotlinVersion
+}
+
+tasks.named('jar', Jar) {
+    osgi {
+        symbolicName = contractSymbolicName
+    }
+}
+
+cordapp {
+    targetPlatformVersion 1000
+    minimumPlatformVersion 999 as Integer
+
+    contract {
+        name = 'Contract cpk to be used for unit tests for the packaging module'
+        versionId = 1
+        licence = 'Test-Licence'
+        vendor = 'R3'
+    }
+}

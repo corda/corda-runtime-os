@@ -36,6 +36,7 @@ pluginManagement {
     }
 
     plugins {
+        id 'net.corda.plugins.cordapp-cpk' version gradlePluginsVersion
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.noarg' version kotlinVersion
@@ -96,5 +97,8 @@ include 'cordapp-configuration-publish'
 include 'crypto'
 include 'data:avro-schema'
 include 'data:topic-schema'
+include 'packaging'
+include 'packaging:test:contract-cpk'
+include 'packaging:test:workflow-cpk'
 include 'persistence'
 include 'serialization'
