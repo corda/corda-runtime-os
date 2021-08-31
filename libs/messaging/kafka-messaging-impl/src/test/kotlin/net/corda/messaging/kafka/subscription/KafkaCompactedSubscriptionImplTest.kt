@@ -1,12 +1,5 @@
 package net.corda.messaging.kafka.subscription
 
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -26,6 +19,13 @@ import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -90,7 +90,7 @@ class KafkaCompactedSubscriptionImplTest {
     fun `compacted subscription returns correct results`() {
         val latch = CountDownLatch(4)
         val processor = TestProcessor()
-        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks(4)
 
         doAnswer {
             val iteration = latch.count
@@ -140,7 +140,7 @@ class KafkaCompactedSubscriptionImplTest {
     fun `compacted subscription removes record on null value`() {
         val latch = CountDownLatch(5)
         val processor = TestProcessor()
-        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks(5)
 
         doAnswer {
             when (val iteration = latch.count) {
@@ -194,7 +194,7 @@ class KafkaCompactedSubscriptionImplTest {
     @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `subscription stops on processor snapshot error`() {
         val processor = TestProcessor()
-        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks(0)
         doAnswer { initialSnapshotResult }.whenever(kafkaConsumer).poll()
 
         processor.fatalFailSnapshot = true
@@ -213,7 +213,7 @@ class KafkaCompactedSubscriptionImplTest {
     @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `subscription attempts to reconnect after intermittent failure`() {
         val latch = CountDownLatch(7)
-        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks(7)
         val processor = TestProcessor()
 
         doAnswer {
@@ -244,7 +244,7 @@ class KafkaCompactedSubscriptionImplTest {
     @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `subscription attempts to reconnect after processor failure`() {
         val latch = CountDownLatch(6)
-        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks(6)
         val processor = TestProcessor()
 
         doAnswer {
@@ -287,7 +287,7 @@ class KafkaCompactedSubscriptionImplTest {
         verify(consumerBuilder, times(4)).createCompactedConsumer(any(), any(), any(), any())
     }
 
-    private fun setupStandardMocks(): Pair<CordaKafkaConsumer<String, String>, ConsumerBuilder<String, String>> {
+    private fun setupStandardMocks(numberOfRecords: Long): Pair<CordaKafkaConsumer<String, String>, ConsumerBuilder<String, String>> {
         val kafkaConsumer: CordaKafkaConsumer<String, String> = mock()
         val consumerBuilder: ConsumerBuilder<String, String> = mock()
         doReturn(kafkaConsumer).whenever(consumerBuilder).createCompactedConsumer(any(), any(), any(), any())
@@ -299,6 +299,9 @@ class KafkaCompactedSubscriptionImplTest {
                 TopicPartition(TOPIC, 1) to 0,
             )
         ).whenever(kafkaConsumer).endOffsets(any())
+        doReturn(numberOfRecords+1).whenever(kafkaConsumer).position(any())
+        doReturn(setOf(TopicPartition(TOPIC, 0))).whenever(kafkaConsumer).assignment()
+        doReturn(mapOf(TopicPartition(TOPIC, 0) to numberOfRecords+1)).whenever(kafkaConsumer).endOffsets(any())
         return Pair(kafkaConsumer, consumerBuilder)
     }
 }

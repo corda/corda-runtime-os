@@ -17,7 +17,6 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.debug
-import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
@@ -127,27 +126,31 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
 
     private fun pollAndProcessSnapshot(consumer: CordaKafkaConsumer<K, V>) {
         val partitions = consumer.assignment()
-        val snapshotEnds = consumer.endOffsets(partitions)
-        val currentOffsets = consumer.beginningOffsets(partitions)
+        val snapshotEnds = consumer.endOffsets(partitions).toMutableMap()
         consumer.seekToBeginning(partitions)
 
         val currentData = getLatestValues()
         currentData.clear()
 
-        while (currentOffsets.any { it.value < (snapshotEnds[it.key] ?: 0) }) {
+        while (snapshotEnds.isNotEmpty()) {
             val consumerRecords = consumer.poll()
-            if (consumerRecords.isEmpty()) {
-                break
-            }
+
             consumerRecords.forEach {
                 if (it.record.value() != null) {
                     currentData[it.record.key()] = it.record.value()
                 } else {
                     currentData.remove(it.record.key())
                 }
-                currentOffsets[TopicPartition(it.record.topic(), it.record.partition())] = it.record.offset()
+            }
+
+            for (offsets in snapshotEnds) {
+                val partition = offsets.key
+                if (consumer.position(partition) >= offsets.value) {
+                    snapshotEnds.remove(partition)
+                }
             }
         }
+
         processor.onSnapshot(currentData)
     }
 
