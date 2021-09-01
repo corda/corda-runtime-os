@@ -1,0 +1,18 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "net.corda:corda-base"
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:messaging:messaging")
+
+    implementation "org.jboss:jboss-common-core:$jbossVersion"
+}
+
+description 'RPC Pattern API'
