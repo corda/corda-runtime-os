@@ -31,7 +31,7 @@ class DeliveryTracker(
     private var running = false
     private val startStopLock = ReentrantLock()
 
-    private val flowMessageReplayer = FlowMessageReplayer(publisherFactory, processAuthenticatedMessage)
+    private val flowMessageReplayer = AppMessageReplayer(publisherFactory, processAuthenticatedMessage)
     private val replayManager = ReplayScheduler(flowMessageReplayPeriod, flowMessageReplayer::replayMessage)
 
     private val messageTracker = MessageTracker(replayManager)
@@ -69,7 +69,7 @@ class DeliveryTracker(
         }
     }
 
-    class FlowMessageReplayer(
+    class AppMessageReplayer(
         publisherFactory: PublisherFactory,
         private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
     ): Lifecycle {
@@ -115,12 +115,20 @@ class DeliveryTracker(
 
     class MessageTracker(private val replayScheduler: ReplayScheduler<AuthenticatedMessageAndKey>)  {
 
+        companion object {
+            private val logger = LoggerFactory.getLogger(this::class.java.name)
+        }
+
         val processor = object : StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker> {
             override fun onNext(
                 state: AuthenticatedMessageDeliveryState?,
                 event: Record<String, AppMessageMarker>
             ): Response<AuthenticatedMessageDeliveryState> {
-                val marker = event.value ?: return respond(null)
+                val marker = event.value
+                if (marker == null) {
+                    logger.error("Received a null event. The state was not updated.")
+                    return respond(state)
+                }
                 val markerType = marker.marker
                 val timestamp = marker.timestamp
                 return when (markerType) {
