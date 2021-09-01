@@ -16,10 +16,9 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.types.toHexString
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
-import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
@@ -46,9 +45,9 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
     private val executor: ExecutorService?
 ) : Subscription<K, V> {
 
-    companion object {
-        private val log: Logger = contextLogger()
-    }
+    private val log = LoggerFactory.getLogger(
+        config.getString(CONSUMER_GROUP_ID)
+    )
 
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
     private val consumerPollAndProcessRetries = config.getLong(CONSUMER_POLL_AND_PROCESS_RETRIES)

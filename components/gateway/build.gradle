@@ -8,13 +8,16 @@ plugins {
 description 'P2P gateway component'
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation "net.corda:avro-schema"
     implementation "net.corda:topic-schema"
     implementation project(":libs:p2p-crypto")
     implementation project(":libs:messaging:messaging")
-    implementation project(":libs:lifecycle")
+    implementation project(":libs:lifecycle:lifecycle")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "io.reactivex:rxjava:$rxjavaVersion"

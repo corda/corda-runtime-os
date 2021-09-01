@@ -50,7 +50,7 @@ import java.util.*
 class SessionManagerTest {
 
     companion object {
-        private val KEY = ByteBuffer.wrap("KEY".toByteArray())
+        private val KEY = "KEY"
         private const val GROUP_ID = "myGroup"
         val OUTBOUND_PARTY = LinkManagerNetworkMap.HoldingIdentity("Out", GROUP_ID)
         val INBOUND_PARTY = LinkManagerNetworkMap.HoldingIdentity("In", GROUP_ID)

@@ -4,9 +4,7 @@ plugins {
 }
 
 dependencies {
-
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
     compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -15,7 +13,7 @@ dependencies {
     implementation "net.corda:avro-schema"
     implementation project(':libs:configuration:configuration-read')
     implementation project(":libs:messaging:messaging")
-    implementation project(":libs:lifecycle")
+    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":osgi-framework-api")
 }
 

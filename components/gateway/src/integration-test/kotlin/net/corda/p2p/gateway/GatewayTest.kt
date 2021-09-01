@@ -28,6 +28,7 @@ import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
+import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
@@ -42,6 +43,10 @@ import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 class GatewayTest : TestBase() {
+    companion object {
+        private val logger = contextLogger()
+    }
+
     private val sessionId = "session-1"
 
     private class Node(private val name: String) {
@@ -237,8 +242,8 @@ class GatewayTest : TestBase() {
             endTime = Instant.now().toEpochMilli()
         }
 
+        logger.info("Done sending ${messageCount * serversCount} messages in ${endTime - startTime} milliseconds")
         servers.forEach { it.stop() }
-        println("Done sending ${messageCount * serversCount} messages in ${endTime - startTime} milliseconds")
     }
 
     @Test
@@ -332,9 +337,10 @@ class GatewayTest : TestBase() {
         receivedLatch.await()
         barrier.countDown()
         val endTime = Instant.now().toEpochMilli()
+        logger.info("Done processing ${messageCount * 2} in ${endTime - startTime} milliseconds.")
+
         t1.join()
         t2.join()
-        println("Done processing ${messageCount * 2} in ${endTime - startTime} milliseconds.")
     }
 
     private fun authenticatedP2PMessage(content: String) = AuthenticatedDataMessage.newBuilder().apply {

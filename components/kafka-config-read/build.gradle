@@ -6,11 +6,14 @@ plugins {
 description "Kafka Config Read Component"
 
 dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
     implementation "net.corda:avro-schema"
     implementation project(':libs:configuration:configuration-read')
-    implementation project(":libs:lifecycle")
+    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
 }

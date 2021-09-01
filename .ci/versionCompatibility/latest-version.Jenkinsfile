@@ -4,7 +4,5 @@
 //  This is useful as it gives early indication of a downstream change that may introduce a breaking change
 //  It should not, however, be a PR gate.
 cordaCompatibilityCheckPipeline(
-    propertyOverrides: [
-        'cordaApiVersion': '5.0.0.+'
-    ]
+    useLatestBeta: true,
 )
