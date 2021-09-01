@@ -150,6 +150,7 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
      * @throws InvalidHandshakeResponderKeyHash if the responder sent a key hash that does not match with the key we were expecting.
      * @throws InvalidHandshakeMessageException if the handshake message was invalid (e.g. due to invalid signatures, MACs etc.)
      */
+    @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(responderHandshakeMessage: ResponderHandshakeMessage,
                                      theirPublicKey: PublicKey,
                                      theirPublicKeyAlgo: KeyAlgorithm) {

@@ -51,15 +51,15 @@ class CryptoServiceKeyCreator @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutdownOSGiFramework()
         } else {
-            val kafkaConnectionProperties = Properties()
+            val kafkaProperties = Properties()
             val kafkaPropertiesFile = parameters.kafkaConnection
             if (kafkaPropertiesFile == null) {
                 logError("No file path passed for --kafka.")
                 shutdown()
                 return
             }
-            kafkaConnectionProperties.load(FileInputStream(kafkaPropertiesFile))
-            if (!kafkaConnectionProperties.containsKey(KAFKA_BOOTSTRAP_SERVER)) {
+            kafkaProperties.load(FileInputStream(kafkaPropertiesFile))
+            if (!kafkaProperties.containsKey(KAFKA_BOOTSTRAP_SERVER)) {
                 logError("No $KAFKA_BOOTSTRAP_SERVER property found in file specified via --kafka!")
                 shutdown()
                 return
@@ -75,7 +75,7 @@ class CryptoServiceKeyCreator @Activate constructor(
 
             val topic = parameters.topic ?: CRYPTO_KEYS_TOPIC
             val publisherConfig = ConfigFactory.empty()
-                .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaConnectionProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
+                .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
                 .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("crypto-key-creator"))
             val publisher = publisherFactory.createPublisher(PublisherConfig("key-creator"), publisherConfig)
 
@@ -145,7 +145,8 @@ class CliParameters {
     )
     var kafkaConnection: File? = null
 
-    @CommandLine.Option(names = ["--topic"], description = ["Topic to write the records to. Defaults to $CRYPTO_KEYS_TOPIC, if not specified."])
+    @CommandLine.Option(names = ["--topic"], description = ["Topic to write the records to. " +
+            "Defaults to $CRYPTO_KEYS_TOPIC, if not specified."])
     var topic: String? = null
 
     @CommandLine.Option(names = ["--keys-config"], description = ["File containing key metadata used to populate Kafka."])

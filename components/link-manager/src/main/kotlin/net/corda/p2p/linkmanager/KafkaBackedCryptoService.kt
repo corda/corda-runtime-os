@@ -26,7 +26,8 @@ class KafkaBackedCryptoService(subscriptionFactory: SubscriptionFactory): LinkMa
 
     private val keyPairEntryProcessor = KeyPairEntryProcessor()
     private val subscriptionConfig = SubscriptionConfig("crypto-service", Schema.CRYPTO_KEYS_TOPIC)
-    private val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor)
+    private val subscription =
+        subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor)
 
     private val rsaSignature = Signature.getInstance(RSA_SIGNATURE_ALGO)
     private val ecdsaSignature = Signature.getInstance(ECDSA_SIGNATURE_ALGO)
@@ -62,7 +63,8 @@ class KafkaBackedCryptoService(subscriptionFactory: SubscriptionFactory): LinkMa
                 throw IllegalStateException("signData operation invoked while component was stopped.")
             }
 
-            val (privateKey, keyAlgo) = keyPairEntryProcessor.getPrivateKey(publicKey) ?: throw LinkManagerCryptoService.NoPrivateKeyForGroupException(publicKey)
+            val (privateKey, keyAlgo) = keyPairEntryProcessor.getPrivateKey(publicKey)
+                ?: throw LinkManagerCryptoService.NoPrivateKeyForGroupException(publicKey)
 
             return when (keyAlgo) {
                 KeyAlgorithm.RSA -> {
