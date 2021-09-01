@@ -1,0 +1,14 @@
+plugins {
+    id 'groovy-gradle-plugin'
+}
+// We can't get the values directly from `gradle.properties` from here for some gradle-y reason.
+// So we'll load it into our own object to grab what we need.
+def constants = new Properties()
+file("$rootDir/../gradle.properties").withInputStream { InputStream input -> constants.load(input) }
+def bndVersion = constants.getProperty('bndVersion')
+repositories {
+    gradlePluginPortal()
+}
+dependencies {
+    implementation "biz.aQute.bnd:biz.aQute.bnd.gradle:$bndVersion"
+}

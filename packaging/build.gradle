@@ -2,9 +2,9 @@ import aQute.bnd.version.MavenVersion
 import java.security.cert.CertificateFactory
 
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda-api.common-library'
     id 'org.jetbrains.kotlin.jvm'
-    id 'biz.aQute.bnd.builder'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
 description 'Corda Packaging'
@@ -54,14 +54,6 @@ dependencies {
     workflowLibs project(path: 'test:workflow-cpk', configuration: 'libFolderDependencies')
     flowsCPK(group: 'net.corda', name: 'corda-flows', version: "$cordaDevPreviewVersion", classifier: 'cordapp', ext: 'cpk')
     workflowCPK project(path: 'test:workflow-cpk', configuration: 'cordaCPK')
-}
-
-tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-packaging'
-    bnd '''\
-Bundle-Name: Corda application packaging library
-Bundle-SymbolicName: \${project.group}.packaging
-'''
 }
 
 def certificateProvider = provider {

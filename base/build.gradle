@@ -1,7 +1,7 @@
 plugins {
+    id 'corda-api.common-library'
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'org.jetbrains.kotlin.jvm'
-    id 'biz.aQute.bnd.builder'
 }
 
 description 'Corda Base'
@@ -17,10 +17,3 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
 }
 
-tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-base'
-    bnd """\
-Bundle-Name: Corda base library
-Bundle-SymbolicName: \${project.group}.base
-"""
-}

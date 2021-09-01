@@ -1,7 +1,7 @@
 plugins {
+    id 'corda-api.common-library'
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'org.jetbrains.kotlin.jvm'
-    id 'biz.aQute.bnd.builder'
 }
 
 description 'Corda Application'
@@ -27,14 +27,6 @@ dependencies {
 // Added to facilitate core-tests
 configurations {
     testArtifacts.extendsFrom testRuntimeClasspath
-}
-
-tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-application'
-    bnd """\
-Bundle-Name: Corda application library
-Bundle-SymbolicName: \${project.group}.application
-"""
 }
 
 def testJar = tasks.register('testJar', Jar) {

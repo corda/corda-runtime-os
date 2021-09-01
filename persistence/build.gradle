@@ -1,7 +1,7 @@
 plugins {
+    id 'corda-api.common-library'
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'org.jetbrains.kotlin.jvm'
-    id "biz.aQute.bnd.builder"
 }
 
 description 'Corda Persistence'
@@ -14,11 +14,4 @@ dependencies {
 
     implementation platform(project(':corda-api'))
     implementation project(":base")
-}
-tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-persistence'
-    bnd """\
-Bundle-Name: Corda persistence library 
-Bundle-SymbolicName: \${project.group}.persistence
-"""
 }

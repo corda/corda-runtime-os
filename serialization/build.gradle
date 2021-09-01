@@ -1,7 +1,7 @@
 plugins {
+    id 'corda-api.common-library'
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'org.jetbrains.kotlin.jvm'
-    id 'biz.aQute.bnd.builder'
 }
 
 description 'Corda Serialization'
@@ -13,15 +13,4 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     compileOnly 'org.osgi:osgi.annotation'
-
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
-}
-
-tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-serialization'
-    bnd """\
-Bundle-Name: Corda serialization library
-Bundle-SymbolicName: \${project.group}.serialization
-"""
 }
