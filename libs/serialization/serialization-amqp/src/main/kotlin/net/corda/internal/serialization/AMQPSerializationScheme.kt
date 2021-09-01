@@ -14,8 +14,9 @@ import net.corda.internal.serialization.custom.PublicKeySerializer
 import net.corda.sandbox.SandboxGroup
 import net.corda.utilities.toSynchronised
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.types.ByteSequence
+import net.corda.v5.base.util.uncheckedCast
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.serialization.ClassWhitelist
 import net.corda.v5.serialization.ContextPropertyKeys
 import net.corda.v5.serialization.SerializationContext
@@ -42,17 +43,19 @@ fun SerializerFactory.addToWhitelist(types: Collection<Class<*>>) {
     }
 }
 
-abstract class AbstractAMQPSerializationScheme(
+abstract class AbstractAMQPSerializationScheme private constructor(
         private val cordappCustomSerializers: Set<SerializationCustomSerializer<*, *>>,
         private val cordappSerializationWhitelists: Set<SerializationWhitelist>,
         maybeNotConcurrentSerializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory>,
+        cipherSchemeMetadata: CipherSchemeMetadata,
         val sff: SerializerFactoryFactory = createSerializerFactoryFactory(),
         internalCustomSerializerFactories: Set<(factory: SerializerFactory) -> CustomSerializer<out Any>> = emptySet()
 ) : SerializationScheme {
-    constructor() : this(
+    constructor(cipherSchemeMetadata: CipherSchemeMetadata) : this(
         emptySet<SerializationCustomSerializer<*, *>>(),
         emptySet<SerializationWhitelist>(),
-        AccessOrderLinkedHashMap<SerializationFactoryCacheKey, SerializerFactory>(128).toSynchronised()
+        AccessOrderLinkedHashMap<SerializationFactoryCacheKey, SerializerFactory>(128).toSynchronised(),
+        cipherSchemeMetadata
     )
 
     private val _internalCustomSerializerFactories: MutableSet<(factory: SerializerFactory) -> CustomSerializer<out Any>> = mutableSetOf()
@@ -115,7 +118,7 @@ abstract class AbstractAMQPSerializationScheme(
     }
 
     // Not used as a simple direct import to facilitate testing
-    open val publicKeySerializer: CustomSerializer<*> = PublicKeySerializer
+    open val publicKeySerializer: CustomSerializer<*> = PublicKeySerializer(cipherSchemeMetadata)
 
     fun getSerializerFactory(context: SerializationContext): SerializerFactory {
         val sandboxGroup = context.sandboxGroup as? SandboxGroup
