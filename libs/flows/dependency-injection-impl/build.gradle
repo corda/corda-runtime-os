@@ -17,4 +17,7 @@ dependencies {
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     implementation project(":libs:flows:dependency-injection")
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":libs:flows:statemachine")
 }

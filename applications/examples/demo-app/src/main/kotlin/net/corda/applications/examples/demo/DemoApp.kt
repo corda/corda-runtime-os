@@ -16,6 +16,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -42,13 +43,14 @@ class DemoApp @Activate constructor(
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = ConfigReadServiceFactory::class)
-    private var configReadServiceFactory: ConfigReadServiceFactory
+    private var configReadServiceFactory: ConfigReadServiceFactory,
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
 ) : Application {
 
     private companion object {
         val log: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-        const val BATCH_SIZE: Int = 128
         const val TOPIC_PREFIX = "messaging.topic.prefix"
         const val CONFIG_TOPIC_NAME = "config.topic.name"
         const val BOOTSTRAP_SERVERS = "bootstrap.servers"
@@ -78,8 +80,7 @@ class DemoApp @Activate constructor(
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
-                LifecycleCoordinatorFactory.createCoordinator<DemoApp>(
-                    BATCH_SIZE
+                coordinatorFactory.createCoordinator<DemoApp>(
                 ) { event: LifecycleEvent, _: LifecycleCoordinator ->
                     log.info("LifecycleEvent received: $event")
                     when (event) {

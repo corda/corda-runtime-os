@@ -29,7 +29,7 @@ dependencies {
     runtimeOnly project(':components:kafka-config-write')
     runtimeOnly project(":libs:configuration:kafka-configuration-write-impl")
     runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
-    runtimeOnly project(":libs:lifecycle")
+    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     runtimeOnly project(":libs:messaging:messaging")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
