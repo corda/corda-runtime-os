@@ -12,8 +12,8 @@ import net.corda.dependency.injection.DependencyInjectionService
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.flow.statemachine.factory.FlowStateMachineFactory
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandbox.cache.FlowMetadata
-import net.corda.sandbox.cache.SandboxCache
+import net.corda.virtual.node.cache.FlowMetadata
+import net.corda.virtual.node.cache.VirtualNodeCache
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.serialization.SerializedBytes
@@ -36,7 +36,7 @@ class FlowManagerImplTest {
     fun `start an initiating flow`() {
 
         val sandboxGroup: SandboxGroup = mock()
-        val sandboxCache: SandboxCache = mock()
+        val virtualNodeCache: VirtualNodeCache = mock()
         val checkpointSerialisationService: SerializationService = mock()
         val dependencyInjector: DependencyInjectionService = mock()
         val flowStateMachineFactory: FlowStateMachineFactory = mock()
@@ -64,14 +64,14 @@ class FlowManagerImplTest {
         val flowMetadata = FlowMetadata(flowName, flowKey)
         val serialized = SerializedBytes<String>("Test".toByteArray())
 
-        doReturn(sandboxGroup).`when`(sandboxCache).getSandboxGroupFor(any(), any())
+        doReturn(sandboxGroup).`when`(virtualNodeCache).getSandboxGroupFor(any(), any())
         doReturn(TestFlow::class.java).`when`(sandboxGroup).loadClass(any(), eq(Flow::class.java))
         doReturn(stateMachine).`when`(flowStateMachineFactory).createStateMachine(any(), any(), any(), any())
         doReturn(Pair(checkpoint, eventsOut)).`when`(stateMachine).waitForCheckpoint()
         doReturn(serialized).`when`(checkpointSerialisationService).serialize(any())
 
         val flowManager = FlowManagerImpl(
-            sandboxCache,
+            virtualNodeCache,
             checkpointSerialisationService,
             dependencyInjector,
             flowStateMachineFactory
