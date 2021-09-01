@@ -10,8 +10,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
-import net.corda.p2p.app.AppMessage
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
@@ -24,14 +24,14 @@ class DeliveryTracker(
     flowMessageReplayPeriod: Long,
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
-    processFlowMessage: (event: EventLogRecord<String, AppMessage>) -> List<Record<String, *>>
+    processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
 ): Lifecycle {
 
     @Volatile
     private var running = false
     private val startStopLock = ReentrantLock()
 
-    private val flowMessageReplayer = FlowMessageReplayer(publisherFactory, subscriptionFactory, processFlowMessage)
+    private val flowMessageReplayer = FlowMessageReplayer(publisherFactory, processAuthenticatedMessage)
     private val replayManager = ReplayScheduler(flowMessageReplayPeriod, flowMessageReplayer::replayMessage)
 
     private val messageTracker = MessageTracker(replayManager)
@@ -71,23 +71,15 @@ class DeliveryTracker(
 
     class FlowMessageReplayer(
         publisherFactory: PublisherFactory,
-        subscriptionFactory: SubscriptionFactory,
-        private val processFlowMessage: (event: EventLogRecord<String, AppMessage>) -> List<Record<String, *>>
+        private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
     ): Lifecycle {
 
         companion object {
             const val MESSAGE_REPLAYER_CLIENT_ID = "message-replayer-client"
-            const val MESSAGE_REPLAYER_SUBSCRIPTION_ID = "message-replayer-subscription"
         }
 
         private val config = PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, null)
         private val publisher = publisherFactory.createPublisher(config)
-        private val subscriptionConfig = SubscriptionConfig(MESSAGE_REPLAYER_SUBSCRIPTION_ID, Schema.P2P_OUT_TOPIC)
-        private val subscription = subscriptionFactory.createRandomAccessSubscription(
-            subscriptionConfig,
-            keyClass = String::class.java,
-            valueClass = AppMessage::class.java
-        )
         private var logger = LoggerFactory.getLogger(this::class.java.name)
 
         @Volatile
@@ -99,7 +91,6 @@ class DeliveryTracker(
         override fun start() {
             startStopLock.withLock {
                 if (!isRunning) {
-                    subscription.start()
                     publisher.start()
                 }
                 running = true
@@ -108,22 +99,12 @@ class DeliveryTracker(
 
         override fun stop() {
             startStopLock.withLock {
-                if (isRunning) {
-                    subscription.stop()
-                }
                 running = false
             }
         }
 
-        fun replayMessage(messagePosition: PositionInTopic) {
-            val message = subscription.getRecord(messagePosition.partition, messagePosition.offset)
-            if (message == null) {
-                logger.error("Could not find a message for replay at partition ${messagePosition.partition} and offset " +
-                        "${messagePosition.offset} in topic ${Schema.P2P_OUT_TOPIC}. The message was not replayed.")
-                return
-            }
-            val eventLogRecord = message.toEventLogRecord(messagePosition)
-            val records = processFlowMessage(eventLogRecord)
+        fun replayMessage(message: AuthenticatedMessageAndKey) {
+            val records = processAuthenticatedMessage(message)
             publisher.publish(records)
         }
 
@@ -132,7 +113,7 @@ class DeliveryTracker(
         }
     }
 
-    class MessageTracker(private val replayScheduler: ReplayScheduler<PositionInTopic>)  {
+    class MessageTracker(private val replayScheduler: ReplayScheduler<AuthenticatedMessageAndKey>)  {
 
         val processor = object : StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker> {
             override fun onNext(
@@ -143,13 +124,7 @@ class DeliveryTracker(
                 val markerType = marker.marker
                 val timestamp = marker.timestamp
                 return when (markerType) {
-                    is LinkManagerSentMarker -> Response(
-                        AuthenticatedMessageDeliveryState(
-                            markerType.partition,
-                            markerType.offset,
-                            timestamp
-                        ), emptyList()
-                    )
+                    is LinkManagerSentMarker -> Response(AuthenticatedMessageDeliveryState(markerType.message, timestamp), emptyList())
                     is LinkManagerReceivedMarker -> Response(null, emptyList())
                     else -> respond(state)
                 }
@@ -169,11 +144,7 @@ class DeliveryTracker(
             override fun onPostCommit(updatedStates: Map<String, AuthenticatedMessageDeliveryState?>) {
                 for ((key, state) in updatedStates) {
                     if (state != null) {
-                        replayScheduler.addForReplay(
-                            state.timestamp,
-                            key,
-                            PositionInTopic(state.partition.toInt(), state.offset)
-                        )
+                        replayScheduler.addForReplay(state.timestamp, key, state.message)
                     } else {
                         replayScheduler.removeFromReplay(key)
                     }
@@ -188,11 +159,7 @@ class DeliveryTracker(
 
             override fun onPartitionSynced(states: Map<String, AuthenticatedMessageDeliveryState>) {
                 for ((key, state) in states) {
-                    replayScheduler.addForReplay(
-                        state.timestamp,
-                        key,
-                        PositionInTopic(state.partition.toInt(), state.offset)
-                    )
+                    replayScheduler.addForReplay(state.timestamp, key, state.message)
                 }
             }
         }

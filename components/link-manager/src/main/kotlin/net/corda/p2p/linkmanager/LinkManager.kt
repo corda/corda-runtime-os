@@ -107,7 +107,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             config.flowMessageReplayPeriod,
             publisherFactory,
             subscriptionFactory,
-            outboundMessageProcessor::processEvent
+            outboundMessageProcessor::processAuthenticatedMessage
         )
     }
 
@@ -159,7 +159,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return records
         }
 
-        fun processEvent(event: EventLogRecord<String, AppMessage>, addMarker: Boolean = true): List<Record<String, *>> {
+        private fun processEvent(event: EventLogRecord<String, AppMessage>): List<Record<String, *>> {
 
             val message = event.value?.message
             if (message == null) {
@@ -190,9 +190,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             }
         }
 
-        private fun processAuthenticatedMessage(
+        fun processAuthenticatedMessage(
             message: AuthenticatedMessage,
-            event: EventLogRecord<String, AppMessage>
+            event: EventLogRecord<String, AppMessage>,
         ): List<Record<String, *>> {
             return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toHoldingIdentity())) {
                 listOf(
@@ -202,7 +202,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 )
             } else {
                 val flowMessageAndKey = AuthenticatedMessageAndKey(message, event.key)
-
                 when (val state = sessionManager.processOutboundFlowMessage(flowMessageAndKey)) {
                     is SessionState.NewSessionNeeded -> recordsForNewSession(state)
                     is SessionState.SessionEstablished -> recordsForSessionEstablished(state, flowMessageAndKey)

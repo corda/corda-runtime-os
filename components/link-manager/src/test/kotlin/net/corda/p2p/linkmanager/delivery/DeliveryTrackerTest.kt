@@ -3,24 +3,22 @@ package net.corda.p2p.linkmanager.delivery
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
-import net.corda.p2p.app.AppMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
-import net.corda.p2p.schema.Schema
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
@@ -28,18 +26,14 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
-import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 
 class DeliveryTrackerTest {
 
     companion object {
-        const val partition = 10L
-        const val offset = 50L
         const val replayPeriod = 10L
         const val timeStamp = 2635L
 
@@ -57,40 +51,13 @@ class DeliveryTrackerTest {
         loggingInterceptor.reset()
     }
 
-    private fun processEvent(event: EventLogRecord<String, AppMessage>): List<Record<String, *>> {
-        return listOf(Record("TOPIC", "Key", event.value))
+    private fun processAuthenticatedMessage(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> {
+        return listOf(Record("TOPIC", "Key", messageAndKey))
     }
 
-    private class MapBasedRandomAccessSubscription(
-        val latch: CountDownLatch? = null,
-        val waitLatch: CountDownLatch? = null
-    ): RandomAccessSubscription<ByteBuffer, AppMessage> {
+    class TestListBasedPublisher(private val publishLatch: CountDownLatch? = null, val waitLatch: CountDownLatch? = null): Publisher {
 
-        val records = ConcurrentHashMap<DeliveryTracker.PositionInTopic, Record<ByteBuffer, AppMessage>>()
-
-        @Volatile
-        override var isRunning = false
-
-        override fun stop() {
-            isRunning = false
-            return
-        }
-
-        override fun start() {
-            isRunning = true
-            return
-        }
-
-        override fun getRecord(partition: Int, offset: Long): Record<ByteBuffer, AppMessage>? {
-            latch?.countDown()
-            if (latch?.count == 0L) waitLatch?.await()
-            return records[DeliveryTracker.PositionInTopic(partition, offset)]
-        }
-    }
-
-    class TestListBasedPublisher: Publisher {
-
-        var list = mutableListOf<Record<*, *>>()
+        var list: MutableList<Record<*, *>> = Collections.synchronizedList(mutableListOf<Record<*, *>>())
 
         override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
             throw RuntimeException("publishToPartition should never be called in this test.")
@@ -98,6 +65,10 @@ class DeliveryTrackerTest {
 
         override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
             list.addAll(records)
+            publishLatch?.countDown()
+            publishLatch?.let {
+                if (it.count == 0L) waitLatch?.await()
+            }
             return emptyList()
         }
 
@@ -127,7 +98,6 @@ class DeliveryTrackerTest {
 
     private fun createTracker(
         publisher: TestListBasedPublisher,
-        randomAccessSubscription: MapBasedRandomAccessSubscription
     ): Triple<
         DeliveryTracker,
         StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker>,
@@ -137,8 +107,6 @@ class DeliveryTrackerTest {
         Mockito.`when`(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
 
         val subscriptionFactory = Mockito.mock(SubscriptionFactory::class.java)
-        Mockito.`when`(subscriptionFactory.createRandomAccessSubscription<ByteBuffer, AppMessage>(any(), any(), any(), any()))
-            .thenReturn(randomAccessSubscription)
         val mockSubscription = MockStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>()
         Mockito.`when`(subscriptionFactory
             .createStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>(any(), any(), any(), any()))
@@ -148,7 +116,7 @@ class DeliveryTrackerTest {
             replayPeriod,
             publisherFactory,
             subscriptionFactory,
-            ::processEvent
+            ::processAuthenticatedMessage
         )
 
         val processorCaptor = argumentCaptor<StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker>>()
@@ -162,23 +130,23 @@ class DeliveryTrackerTest {
     @Test
     fun `The DeliveryTracker updates the markers state topic after observing a LinkManagerSentMarker`() {
 
-        val (tracker, processor) = createTracker(TestListBasedPublisher(), MapBasedRandomAccessSubscription())
+        val (tracker, processor) = createTracker(TestListBasedPublisher())
         tracker.start()
         val messageId = UUID.randomUUID().toString()
-        val event = Record("topic", messageId, AppMessageMarker(LinkManagerSentMarker(partition, offset), timeStamp))
+        val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
+        val event = Record("topic", messageId, AppMessageMarker(LinkManagerSentMarker(messageAndKey), timeStamp))
         val response = processor.onNext(null, event)
         tracker.stop()
 
         assertEquals(0, response.responseEvents.size)
         assertNotNull(response.updatedState)
-        assertEquals(partition, response.updatedState!!.partition)
-        assertEquals(offset, response.updatedState!!.offset)
+        assertSame(messageAndKey, response.updatedState!!.message)
         assertEquals(timeStamp, response.updatedState!!.timestamp)
     }
 
     @Test
     fun `The DeliveryTracker deletes the markers state after observing a LinkManagerReceivedMarker`() {
-        val (tracker, processor) = createTracker(TestListBasedPublisher(), MapBasedRandomAccessSubscription())
+        val (tracker, processor) = createTracker(TestListBasedPublisher())
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
@@ -190,34 +158,27 @@ class DeliveryTrackerTest {
         assertNull(response.updatedState)
     }
 
-
     @Test
     fun `The DeliveryTracker replays messages after the markers state topic is committed`() {
         val replays = 2
 
-        val latch = CountDownLatch(replays + 1)
-        val waitLatch = CountDownLatch(1)
+        val latch = CountDownLatch(replays)
 
-        val randomAccessSubscription = MapBasedRandomAccessSubscription(latch, waitLatch)
-        val publisher = TestListBasedPublisher()
-        val (tracker, _, listener) = createTracker(publisher, randomAccessSubscription)
-
-        val flowMessage = Mockito.mock(AppMessage::class.java)
-        randomAccessSubscription.records[DeliveryTracker.PositionInTopic(partition.toInt(), offset)] =
-            Record(Schema.P2P_OUT_TOPIC, ByteBuffer.wrap("".toByteArray()), flowMessage)
+        val publisher = TestListBasedPublisher(latch)
+        val (tracker, _, listener) = createTracker(publisher)
 
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
+        val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
+        val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPostCommit(mapOf(messageId to state))
         latch.await()
 
-        assertEquals(replays, publisher.list.size)
+        assertTrue(publisher.list.size >= replays)
         assertEquals(publisher.list[0], publisher.list[1])
-        assertSame(flowMessage, publisher.list[0].value)
+        assertSame(messageAndKey, publisher.list[0].value)
 
-        waitLatch.countDown()
         tracker.stop()
     }
 
@@ -225,29 +186,23 @@ class DeliveryTrackerTest {
     fun `The DeliveryTracker replays messages when their is state in the markers state topic (on assignment)`() {
         val replays = 2
 
-        val latch = CountDownLatch(replays + 1)
-        val waitLatch = CountDownLatch(1)
-        val publisher = TestListBasedPublisher()
+        val latch = CountDownLatch(replays)
+        val publisher = TestListBasedPublisher(latch)
 
-        val randomAccessSubscription = MapBasedRandomAccessSubscription(latch, waitLatch)
-        val (tracker, _, listener) = createTracker(publisher, randomAccessSubscription)
-
-        val flowMessage = Mockito.mock(AppMessage::class.java)
-        randomAccessSubscription.records[DeliveryTracker.PositionInTopic(partition.toInt(), offset)] =
-            Record(Schema.P2P_OUT_TOPIC, ByteBuffer.wrap("".toByteArray()), flowMessage)
+        val (tracker, _, listener) = createTracker(publisher)
 
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
+        val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
+        val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPartitionSynced(mapOf(messageId to state))
         latch.await()
 
-        assertEquals(replays, publisher.list.size)
+        assertTrue(publisher.list.size >= replays)
         assertEquals(publisher.list[0], publisher.list[1])
-        assertSame(flowMessage, publisher.list[0].value)
+        assertSame(messageAndKey, publisher.list[0].value)
 
-        waitLatch.countDown()
         tracker.stop()
     }
 
@@ -255,33 +210,29 @@ class DeliveryTrackerTest {
     fun `The DeliverTracker stops replaying a message after observing a LinkManagerReceivedMarker`() {
         val replays = 2
 
-        val latch = CountDownLatch(replays + 1)
-        val waitLatch = CountDownLatch(1)
-        val publisher = TestListBasedPublisher()
+        val testWaitLatch = CountDownLatch(replays)
+        val publisherWaitLatch = CountDownLatch(1)
+        val publisher = TestListBasedPublisher(testWaitLatch, publisherWaitLatch)
 
-        val randomAccessSubscription = MapBasedRandomAccessSubscription(latch, waitLatch)
-        val flowMessage = Mockito.mock(AppMessage::class.java)
-        randomAccessSubscription.records[DeliveryTracker.PositionInTopic(partition.toInt(), offset)] =
-            Record(Schema.P2P_OUT_TOPIC, ByteBuffer.wrap("".toByteArray()), flowMessage)
-
-        val (tracker, _, listener) = createTracker(publisher, randomAccessSubscription)
+        val (tracker, _, listener) = createTracker(publisher)
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
+        val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
+        val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPartitionSynced(mapOf(messageId to state))
-        latch.await()
+        testWaitLatch.await()
 
         assertEquals(replays, publisher.list.size)
         assertEquals(publisher.list[0], publisher.list[1])
-        assertSame(flowMessage, publisher.list[0].value)
+        assertSame(messageAndKey, publisher.list[0].value)
         listener.onPostCommit(mapOf(messageId to null))
 
-        waitLatch.countDown()
+        publisherWaitLatch.countDown()
+
         Thread.sleep(5 * replayPeriod)
 
-        //We get one more replay (which was in progress while waitLatch.await()).
-        assertEquals(replays + 1, publisher.list.size)
+        assertEquals(replays, publisher.list.size)
 
         tracker.stop()
     }
@@ -290,61 +241,31 @@ class DeliveryTrackerTest {
     fun `The DeliverTracker stops replaying a message if the state is reassigned`() {
         val replays = 2
 
-        val latch = CountDownLatch(replays + 1)
-        val waitLatch = CountDownLatch(1)
-        val publisher = TestListBasedPublisher()
+        val testWaitLatch = CountDownLatch(replays)
+        val publisherWaitLatch = CountDownLatch(1)
 
-        val flowMessage = Mockito.mock(AppMessage::class.java)
-        val randomAccessSubscription = MapBasedRandomAccessSubscription(latch, waitLatch)
-        randomAccessSubscription.records[DeliveryTracker.PositionInTopic(partition.toInt(), offset)] =
-            Record(Schema.P2P_OUT_TOPIC, ByteBuffer.wrap("".toByteArray()), flowMessage)
+        val publisher = TestListBasedPublisher(testWaitLatch, publisherWaitLatch)
 
-        val (tracker, _, listener) = createTracker(publisher, randomAccessSubscription)
+        val (tracker, _, listener) = createTracker(publisher)
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
-        val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
+        val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
+        val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPartitionSynced(mapOf(messageId to state))
-        latch.await()
+        testWaitLatch.await()
 
         assertEquals(replays, publisher.list.size)
         assertEquals(publisher.list[0], publisher.list[1])
-        assertSame(flowMessage, publisher.list[0].value)
+        assertSame(messageAndKey, publisher.list[0].value)
         listener.onPartitionLost(mapOf(messageId to state))
 
-        waitLatch.countDown()
-        Thread.sleep(5 * replayPeriod)
-
-        //We get one more replay (which was in progress while waitLatch.await()).
-        assertEquals(replays + 1, publisher.list.size)
-
-        tracker.stop()
-    }
-
-    @Test
-    fun `The DeliveryTracker logs an error if it can't find a message to replay`() {
-        val replays = 1
-
-        val publisher = TestListBasedPublisher()
-
-        val latch = CountDownLatch(replays + 1)
-        val waitLatch = CountDownLatch(1)
-
-        val (tracker, _, listener) = createTracker(publisher, MapBasedRandomAccessSubscription(latch, waitLatch))
-        tracker.start()
-
-        val messageId = UUID.randomUUID().toString()
-        val state = AuthenticatedMessageDeliveryState(partition, offset, Instant.now().toEpochMilli())
-        listener.onPostCommit(mapOf(messageId to state))
-        latch.await()
-        loggingInterceptor.assertSingleError("Could not find a message for replay at partition $partition and offset $offset in topic " +
-                "p2p.out. The message was not replayed.")
-        waitLatch.countDown()
+        publisherWaitLatch.countDown()
 
         Thread.sleep(5 * replayPeriod)
 
-        tracker.stop()
-        assertEquals(0, publisher.list.size)
-    }
+        assertEquals(replays, publisher.list.size)
 
+        tracker.stop()
+    }
 }
