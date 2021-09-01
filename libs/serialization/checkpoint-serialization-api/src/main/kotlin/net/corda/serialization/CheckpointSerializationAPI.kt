@@ -10,10 +10,10 @@ import java.io.NotSerializableException
 @DoNotImplement
 interface CheckpointSerializer {
     @Throws(NotSerializableException::class)
-    fun <T : Any> deserialize(byteSequence: ByteSequence, clazz: Class<T>, context: CheckpointSerializationContext): T
+    fun <T : Any> deserialize(byteSequence: ByteSequence, clazz: Class<T>): T
 
     @Throws(NotSerializableException::class)
-    fun <T : Any> serialize(obj: T, context: CheckpointSerializationContext): ByteArray
+    fun <T : Any> serialize(obj: T): ByteArray
 }
 
 /**

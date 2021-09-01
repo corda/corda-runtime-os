@@ -1,16 +1,11 @@
 package net.corda.kryoserialization.serializers
 
-import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.util.MapReferenceResolver
-import net.corda.cipher.suite.internal.BasicHashingServiceImpl
 import net.corda.classinfo.ClassInfoService
-import net.corda.kryoserialization.KRYO_CHECKPOINT_CONTEXT
-import net.corda.kryoserialization.KryoCheckpointSerializerBuilder
-import net.corda.kryoserialization.impl.CheckpointSerializeAsTokenContextImpl
-import net.corda.kryoserialization.impl.withTokenContext
-import net.corda.kryoserialization.osgi.SandboxClassResolver
+import net.corda.kryoserialization.CheckpointSerializationContext
+import net.corda.kryoserialization.KryoCheckpointSerializer
+import net.corda.kryoserialization.KryoCheckpointSerializerBuilderImpl
+import net.corda.kryoserialization.impl.CheckpointSerializationContextImpl
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.CheckpointSerializationContext
 import net.corda.serialization.CheckpointSerializer
 import net.corda.v5.base.types.sequence
 import net.corda.v5.serialization.SerializationToken
@@ -23,7 +18,6 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
-import org.objenesis.strategy.SerializingInstantiatorStrategy
 
 class SerializeAsTokenSerializerTest {
 
@@ -66,9 +60,6 @@ class SerializeAsTokenSerializerTest {
         }
     }
 
-    private val serializer = createCheckpointSerializer()
-    private lateinit var context: CheckpointSerializationContext
-
     private val service1 = MyService1()
     private val service2 = MyService2()
     private val duplicateService1 = DuplicateService("please serialize me")
@@ -76,6 +67,9 @@ class SerializeAsTokenSerializerTest {
 
     private val classInfoService = mock<ClassInfoService>()
     private val sandboxGroup = mock<SandboxGroup>()
+
+    private val serializer = createCheckpointSerializer()
+    private lateinit var context: CheckpointSerializationContext
 
     @BeforeEach
     fun setup() {
@@ -85,53 +79,57 @@ class SerializeAsTokenSerializerTest {
 
     @Test
     fun `SerializeAsToken class serializes as a token and returns the original tokenized instance when deserialized`() {
-        val bytes = serializer.serialize(service1, context)
-        val output = serializer.deserialize(bytes.sequence(), MyService1::class.java, context)
+        val bytes = serializer.serialize(service1)
+        val output = serializer.deserialize(bytes.sequence(), MyService1::class.java)
         assertSame(service1, output)
         assertEquals(2, service1.count)
     }
 
     @Test
     fun `SerializeAsToken class serializes as a token and must be deserialized into its original class type`() {
-        val bytes = serializer.serialize(service1, context)
-        assertNotEquals(MyService2::class, serializer.deserialize(bytes.sequence(), MyService2::class.java, context)::class)
+        val bytes = serializer.serialize(service1)
+        assertNotEquals(MyService2::class, serializer.deserialize(bytes.sequence(), MyService2::class.java)::class)
     }
 
     @Test
     fun `SerializeAsToken classes serialize and deserialize the same class type into multiple instances when the tokens are unique`() {
-        val bytes = serializer.serialize(duplicateService1, context)
-        assertSame(duplicateService1, serializer.deserialize(bytes.sequence(), DuplicateService::class.java, context))
-        assertNotSame(duplicateService2, serializer.deserialize(bytes.sequence(), DuplicateService::class.java, context))
+        val bytes = serializer.serialize(duplicateService1)
+        assertSame(duplicateService1, serializer.deserialize(bytes.sequence(), DuplicateService::class.java))
+        assertNotSame(duplicateService2, serializer.deserialize(bytes.sequence(), DuplicateService::class.java))
     }
 
     @Test
     fun `Repeated serialization of a SerializeAsToken class caused regeneration of the SerializationToken`() {
-        val bytes1 = serializer.serialize(service1, context)
-        val output1 = serializer.deserialize(bytes1.sequence(), MyService1::class.java, context)
+        val bytes1 = serializer.serialize(service1)
+        val output1 = serializer.deserialize(bytes1.sequence(), MyService1::class.java)
         assertSame(service1, output1)
         assertEquals(2, service1.count)
 
-        val bytes2 = serializer.serialize(service1, context)
-        val output2 = serializer.deserialize(bytes2.sequence(), MyService1::class.java, context)
+        val bytes2 = serializer.serialize(service1)
+        val output2 = serializer.deserialize(bytes2.sequence(), MyService1::class.java)
         assertSame(service1, output2)
         assertEquals(3, service1.count)
     }
 
     private fun createCheckpointContext(): CheckpointSerializationContext {
-        return KRYO_CHECKPOINT_CONTEXT.withTokenContext(
-            CheckpointSerializeAsTokenContextImpl(
-                listOf(service1, service2, duplicateService1, duplicateService2),
-                serializer,
-                KRYO_CHECKPOINT_CONTEXT
-            )
-        ).withClassInfoService(classInfoService).withSandboxGroup(sandboxGroup)
+        return CheckpointSerializationContextImpl(
+            null,
+            KryoCheckpointSerializer::class.java.classLoader,
+            emptyMap(),
+            true,
+            classInfoService,
+            sandboxGroup
+        )
+//            CheckpointSerializeAsTokenContextImpl(
+//                listOf(service1, service2, duplicateService1, duplicateService2),
+//                serializer,
+//                KRYO_CHECKPOINT_CONTEXT
+//            )
     }
 
     private fun createCheckpointSerializer(): CheckpointSerializer {
-        val hashingService = BasicHashingServiceImpl()
-        val kryo = Kryo(SandboxClassResolver(classInfoService, sandboxGroup, hashingService), MapReferenceResolver())
-        kryo.instantiatorStrategy = SerializingInstantiatorStrategy()
-        val serializerBuilder = KryoCheckpointSerializerBuilder({ kryo }, hashingService)
-        return serializerBuilder.build()
+        return KryoCheckpointSerializerBuilderImpl(mock(), mock())
+            .newCheckpointSerializer(sandboxGroup)
+            .build()
     }
 }

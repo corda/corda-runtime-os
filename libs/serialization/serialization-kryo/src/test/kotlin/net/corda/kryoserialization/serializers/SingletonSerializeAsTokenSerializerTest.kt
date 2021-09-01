@@ -4,14 +4,13 @@ import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.util.MapReferenceResolver
 import net.corda.cipher.suite.internal.BasicHashingServiceImpl
 import net.corda.classinfo.ClassInfoService
-import net.corda.serialization.CheckpointSerializationContext
-import net.corda.serialization.CheckpointSerializer
-import net.corda.kryoserialization.KRYO_CHECKPOINT_CONTEXT
-import net.corda.kryoserialization.KryoCheckpointSerializerBuilder
-import net.corda.kryoserialization.impl.CheckpointSerializeAsTokenContextImpl
-import net.corda.kryoserialization.impl.withTokenContext
-import net.corda.kryoserialization.osgi.SandboxClassResolver
+import net.corda.kryoserialization.CheckpointSerializationContext
+import net.corda.kryoserialization.KryoCheckpointSerializer
+import net.corda.kryoserialization.KryoCheckpointSerializerBuilderImpl
+import net.corda.kryoserialization.impl.CheckpointSerializationContextImpl
+import net.corda.kryoserialization.resolver.SandboxClassResolver
 import net.corda.sandbox.SandboxGroup
+import net.corda.serialization.CheckpointSerializer
 import net.corda.v5.base.types.sequence
 import net.corda.v5.serialization.SerializeAsTokenContext
 import net.corda.v5.serialization.SingletonSerializationToken
@@ -69,62 +68,64 @@ class SingletonSerializeAsTokenSerializerTest {
 
     @Test
     fun `SingletonSerializeAsToken class serializes as a token and returns the original tokenized instance when deserialized`() {
-        val bytes = serializer.serialize(service1, context)
-        val output = serializer.deserialize(bytes.sequence(), MyService1::class.java, context)
+        val bytes = serializer.serialize(service1)
+        val output = serializer.deserialize(bytes.sequence(), MyService1::class.java)
         assertSame(service1, output)
         assertEquals(1, service1.count)
     }
 
     @Test
     fun `SingletonSerializeAsToken class serializes as a token and must be deserialized into its original class type`() {
-        val bytes = serializer.serialize(service1, context)
-        assertNotEquals(MyService2::class, serializer.deserialize(bytes.sequence(), MyService2::class.java, context)::class)
+        val bytes = serializer.serialize(service1)
+        assertNotEquals(MyService2::class, serializer.deserialize(bytes.sequence(), MyService2::class.java)::class)
     }
 
     @Test
     @Suppress("MaxLineLength")
     fun `SingletonSerializeAsToken class with custom tokenName serializes as a token and returns the original tokenized instance when deserialized`() {
-        val bytes = serializer.serialize(service4, context)
-        val output = serializer.deserialize(bytes.sequence(), MyService4::class.java, context)
+        val bytes = serializer.serialize(service4)
+        val output = serializer.deserialize(bytes.sequence(), MyService4::class.java)
         assertSame(service4, output)
     }
 
     @Test
     @Suppress("MaxLineLength")
     fun `SingletonSerializeAsToken class with custom toToken serializes as a token and returns the original tokenized instance when deserialized`() {
-        val bytes = serializer.serialize(service5, context)
-        val output = serializer.deserialize(bytes.sequence(), MyService5::class.java, context)
+        val bytes = serializer.serialize(service5)
+        val output = serializer.deserialize(bytes.sequence(), MyService5::class.java)
         assertSame(service5, output)
     }
 
     @Test
     fun `Repeated serialization of a SingletonSerializeAsToken class uses the stored token`() {
-        val bytes1 = serializer.serialize(service1, context)
-        val output1 = serializer.deserialize(bytes1.sequence(), MyService1::class.java, context)
+        val bytes1 = serializer.serialize(service1)
+        val output1 = serializer.deserialize(bytes1.sequence(), MyService1::class.java)
         assertSame(service1, output1)
         assertEquals(1, service1.count)
 
-        val bytes2 = serializer.serialize(service1, context)
-        val output2 = serializer.deserialize(bytes2.sequence(), MyService1::class.java, context)
+        val bytes2 = serializer.serialize(service1)
+        val output2 = serializer.deserialize(bytes2.sequence(), MyService1::class.java)
         assertSame(service1, output2)
         assertEquals(1, service1.count)
     }
 
     private fun createCheckpointContext(): CheckpointSerializationContext {
-        return KRYO_CHECKPOINT_CONTEXT.withTokenContext(
-            CheckpointSerializeAsTokenContextImpl(
-                listOf(service1, service2, service3, service4, service5),
-                serializer,
-                KRYO_CHECKPOINT_CONTEXT
-            )
-        ).withSandboxGroup(sandboxGroup).withClassInfoService(classInfoService)
+        return CheckpointSerializationContextImpl(
+            null,
+            KryoCheckpointSerializer::class.java.classLoader,
+            emptyMap(),
+            true,
+            classInfoService,
+            sandboxGroup
+        )
     }
 
     private fun createCheckpointSerializer(): CheckpointSerializer {
         val hashingService = BasicHashingServiceImpl()
         val kryo = Kryo(SandboxClassResolver(classInfoService, sandboxGroup, hashingService), MapReferenceResolver())
         kryo.instantiatorStrategy = SerializingInstantiatorStrategy()
-        val serializerBuilder = KryoCheckpointSerializerBuilder({ kryo }, hashingService)
-        return serializerBuilder.build()
+        return KryoCheckpointSerializerBuilderImpl(mock(), mock())
+            .newCheckpointSerializer(sandboxGroup)
+            .build()
     }
 }

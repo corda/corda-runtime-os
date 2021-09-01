@@ -7,6 +7,11 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
+    api "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+
+    implementation "net.corda:corda-class-info:$cordaVersion"
+    implementation "net.corda:corda-serialization:$cordaVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-serialization'
