@@ -119,7 +119,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 /*We must wait for partitions to be assigned to the inbound subscription before we can start the outbound
                 *subscription otherwise the gateway won't know which partition to route message back to.*/
                 inboundAssignmentListener.awaitFirstAssignment()
-                //messageReplayer.start()
+                messageReplayer.start()
                 outboundMessageSubscription.start()
                 running = true
             }

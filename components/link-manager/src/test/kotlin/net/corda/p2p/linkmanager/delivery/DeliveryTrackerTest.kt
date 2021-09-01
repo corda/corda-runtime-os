@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.delivery
 
-import com.typesafe.config.Config
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -9,7 +8,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageDeliveryState
 import net.corda.p2p.app.AppMessage

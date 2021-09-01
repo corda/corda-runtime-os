@@ -17,7 +17,6 @@ import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -197,7 +196,6 @@ class DeliveryTracker(
                 }
             }
         }
-
     }
 }
 

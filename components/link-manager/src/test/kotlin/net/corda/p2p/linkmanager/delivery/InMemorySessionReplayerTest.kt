@@ -100,11 +100,11 @@ class InMemorySessionReplayerTest {
             GROUP_ID
         ).generateInitiatorHello()
 
+        replayer.start()
         replayer.addMessageForReplay(
             id,
             SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
         )
-        replayer.start()
 
         publisher.testWaitLatch.await()
         assertEquals(totalReplays, publisher.list.size)
@@ -164,7 +164,7 @@ class InMemorySessionReplayerTest {
                 return publisher
             }
         }
-        val replayer = InMemorySessionReplayer(1L, publisherFactory, netMap)
+        val replayer = InMemorySessionReplayer(50L, publisherFactory, netMap)
         val firstId = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             firstId,
@@ -173,11 +173,6 @@ class InMemorySessionReplayerTest {
             KEY_PAIR.public,
             GROUP_ID
         ).generateInitiatorHello()
-
-        replayer.addMessageForReplay(
-            firstId,
-            SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
-        )
 
         val secondId = UUID.randomUUID().toString()
         val secondHelloMessage = AuthenticationProtocolInitiator(
@@ -188,12 +183,17 @@ class InMemorySessionReplayerTest {
             GROUP_ID
         ).generateInitiatorHello()
 
+        replayer.start()
+
+        replayer.addMessageForReplay(
+            firstId,
+            SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
+        )
         replayer.addMessageForReplay(
             secondId,
             SessionReplayer.SessionMessageReplay(secondHelloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
         )
 
-        replayer.start()
         publisher.testWaitLatch.await()
         assertEquals(initialReplays, publisher.list.size)
 
@@ -245,11 +245,11 @@ class InMemorySessionReplayerTest {
             GROUP_ID
         ).generateInitiatorHello()
 
+        replayer.start()
         replayer.addMessageForReplay(
             id,
             SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
         )
-        replayer.start()
         publisher.testWaitLatch.await()
         assertEquals(1, publisher.list.size)
         val record = publisher.list.single()
@@ -288,11 +288,11 @@ class InMemorySessionReplayerTest {
             GROUP_ID
             ).generateInitiatorHello()
 
+        replayer.start()
         replayer.addMessageForReplay(
             id,
             SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
         )
-        replayer.start()
         publisher.testWaitLatch.await()
         assertEquals(1, publisher.list.size)
         val record = publisher.list.single()
@@ -342,12 +342,12 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         val keyHash = hashKey(netMap.getMemberInfo(COUNTER_PARTY)!!.publicKey)
+        replayer.start()
         replayer.addMessageForReplay(
             id,
             SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.PublicKeyHash(keyHash, GROUP_ID))
         )
 
-        replayer.start()
         publisher.testWaitLatch.await()
 
         assertEquals(1, publisher.list.size)
