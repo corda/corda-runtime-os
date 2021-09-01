@@ -1,0 +1,12 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Database ORM API'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
+    api "javax.persistence:javax.persistence-api:$persistenceApiVersion"
+}
