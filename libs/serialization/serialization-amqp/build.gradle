@@ -21,9 +21,7 @@ dependencies {
     implementation ("net.corda:corda-class-info:$cordaVersion") {
         transitive = false
     }
-    implementation ("net.corda:corda-packaging:$cordaVersion") {
-        transitive = false
-    }
+    implementation ("net.corda:corda-packaging")
     implementation ("net.corda:corda-sandbox:$cordaVersion") {
         transitive = false
     }
