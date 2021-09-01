@@ -1,6 +1,5 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.tools.annotations.validation.ParameterBodyCordaSerializableAnnotationValidator
 import net.corda.v5.application.messaging.RPCOps
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.httprpc.api.annotations.HttpRpcPOST

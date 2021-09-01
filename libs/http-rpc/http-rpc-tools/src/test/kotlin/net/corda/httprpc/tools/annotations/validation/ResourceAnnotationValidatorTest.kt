@@ -1,6 +1,5 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.tools.annotations.validation.ResourceAnnotationValidator
 import net.corda.v5.application.messaging.RPCOps
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

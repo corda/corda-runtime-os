@@ -1,10 +1,10 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.v5.application.messaging.RPCOps
 import net.corda.httprpc.tools.annotations.validation.utils.EndpointType
 import net.corda.httprpc.tools.annotations.validation.utils.endpointPath
 import net.corda.httprpc.tools.annotations.validation.utils.endpointType
 import net.corda.httprpc.tools.annotations.validation.utils.endpoints
+import net.corda.v5.application.messaging.RPCOps
 import java.lang.reflect.Method
 
 /**

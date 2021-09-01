@@ -1,8 +1,8 @@
 package net.corda.httprpc.tools.annotations.validation
 
+import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.v5.application.messaging.RPCOps
 import net.corda.v5.httprpc.api.annotations.HttpRpcResource
-import net.corda.httprpc.tools.annotations.extensions.path
 
 /**
  * Validates that multiple classes do not have the same resource path.

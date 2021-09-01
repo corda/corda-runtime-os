@@ -1,13 +1,11 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.tools.annotations.validation.EndpointNameConflictValidator
-import net.corda.httprpc.tools.annotations.validation.HttpRpcInterfaceValidator
+import net.corda.httprpc.tools.annotations.validation.utils.EndpointType
 import net.corda.v5.application.messaging.RPCOps
 import net.corda.v5.httprpc.api.annotations.HttpRpcGET
 import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
 import net.corda.v5.httprpc.api.annotations.HttpRpcQueryParameter
 import net.corda.v5.httprpc.api.annotations.HttpRpcResource
-import net.corda.httprpc.tools.annotations.validation.utils.EndpointType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

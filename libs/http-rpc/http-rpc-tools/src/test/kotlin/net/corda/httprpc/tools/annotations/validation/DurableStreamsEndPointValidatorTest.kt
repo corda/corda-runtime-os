@@ -1,6 +1,5 @@
 package net.corda.httprpc.tools.annotations.validation
 
-import net.corda.httprpc.tools.annotations.validation.DurableStreamsEndPointValidator
 import net.corda.v5.application.messaging.RPCOps
 import net.corda.v5.base.stream.DurableCursorBuilder
 import net.corda.v5.base.stream.FiniteDurableCursorBuilder
