@@ -22,6 +22,7 @@ import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
@@ -104,7 +105,7 @@ class LinkManagerTest {
         fun createSessionPair(mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY): SessionPair {
             val partyAIdentityKey = keyPairGenerator.generateKeyPair()
             val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-            val signature = Signature.getInstance("ECDSA", provider)
+            val signature = Signature.getInstance(ECDSA_SIGNATURE_ALGO, provider)
 
             val initiator = AuthenticationProtocolInitiator(SESSION_ID, setOf(mode), MAX_MESSAGE_SIZE, partyAIdentityKey.public, GROUP_ID)
             val responder = AuthenticationProtocolResponder(SESSION_ID, setOf(mode), MAX_MESSAGE_SIZE)
