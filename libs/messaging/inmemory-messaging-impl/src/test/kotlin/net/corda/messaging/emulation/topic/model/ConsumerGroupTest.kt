@@ -31,7 +31,7 @@ class ConsumerGroupTest {
     }
     private val listener = mock<PartitionAssignmentListener>()
     private val firstConsumer = mock<Consumer> {
-        on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+        on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
     }
 
@@ -48,7 +48,7 @@ class ConsumerGroupTest {
         val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumer)
@@ -61,12 +61,12 @@ class ConsumerGroupTest {
         val consumerOne = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
         val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumerOne)
@@ -84,12 +84,12 @@ class ConsumerGroupTest {
         val consumerOne = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
         val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumerOne)
@@ -111,12 +111,12 @@ class ConsumerGroupTest {
         val consumerOne = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
         val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumerOne)
@@ -140,7 +140,7 @@ class ConsumerGroupTest {
             override val topicName = "topic"
             override val offsetStrategy = OffsetStrategy.EARLIEST
             override val partitionAssignmentListener = listener
-            override val commitStrategy = CommitStrategy.AUTO_COMMIT
+            override val commitStrategy = CommitStrategy.COMMIT_AFTER_PROCESSING
             override val partitionStrategy = PartitionStrategy.DIVIDE_PARTITIONS
 
             override fun handleRecords(records: Collection<RecordMetadata>) {
@@ -166,7 +166,7 @@ class ConsumerGroupTest {
             mock<Consumer> {
                 on { offsetStrategy } doReturn OffsetStrategy.LATEST
                 on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-                on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+                on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
             }
         }.onEach {
             group.createConsumption(it)
@@ -187,7 +187,7 @@ class ConsumerGroupTest {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionAssignmentListener } doReturn listener
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumer)
@@ -201,12 +201,12 @@ class ConsumerGroupTest {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionAssignmentListener } doReturn listener
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
         val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumerOne)
@@ -224,7 +224,7 @@ class ConsumerGroupTest {
         val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         val consumption = group.createConsumption(consumer)
@@ -237,7 +237,7 @@ class ConsumerGroupTest {
         val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
         group.createConsumption(consumer)
 
@@ -265,7 +265,7 @@ class ConsumerGroupTest {
         val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.LATEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumer)
@@ -281,7 +281,7 @@ class ConsumerGroupTest {
         val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumer)
@@ -307,7 +307,7 @@ class ConsumerGroupTest {
         val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumer)
@@ -326,7 +326,7 @@ class ConsumerGroupTest {
         val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumer)
@@ -350,7 +350,7 @@ class ConsumerGroupTest {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
             on { partitionAssignmentListener } doReturn listener
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumer)
@@ -376,7 +376,7 @@ class ConsumerGroupTest {
         val consumer = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumer)
@@ -390,12 +390,12 @@ class ConsumerGroupTest {
         val consumerOne = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
         val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumerOne)
@@ -410,12 +410,12 @@ class ConsumerGroupTest {
         val consumerOne = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
         val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumerOne)
@@ -430,12 +430,12 @@ class ConsumerGroupTest {
         val consumerOne = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
         val consumerTwo = mock<Consumer> {
             on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
             on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         }
 
         group.createConsumption(consumerOne)
@@ -523,7 +523,7 @@ class ConsumerGroupTest {
     @Test
     fun `createConsumption with the wrong partition strategy will break`() {
         val consumer = mock<Consumer> {
-            on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
             on { partitionStrategy } doReturn PartitionStrategy.SHARE_PARTITIONS
         }
         assertThrows<IllegalStateException> {

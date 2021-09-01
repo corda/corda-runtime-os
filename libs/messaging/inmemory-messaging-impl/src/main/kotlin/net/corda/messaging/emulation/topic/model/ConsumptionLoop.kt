@@ -15,7 +15,7 @@ internal class ConsumptionLoop(
     private fun readRecords(): Map<Partition, Collection<RecordMetadata>> {
         return group.getPartitions(consumer)
             .map { (partition, commitedOffset) ->
-                val offset = if (consumer.commitStrategy == CommitStrategy.AUTO_COMMIT)
+                val offset = if (consumer.commitStrategy == CommitStrategy.COMMIT_AFTER_PROCESSING)
                     commitedOffset
                 else
                     myOffsets[partition] ?: 0
@@ -28,7 +28,7 @@ internal class ConsumptionLoop(
     private fun commitRecords(records: Map<Partition, Collection<RecordMetadata>>) {
         val commits = records.mapValues { it.value.maxOf { it.offset } + 1 }
 
-        if (consumer.commitStrategy == CommitStrategy.AUTO_COMMIT) {
+        if (consumer.commitStrategy == CommitStrategy.COMMIT_AFTER_PROCESSING) {
             group.commit(commits)
         } else {
             myOffsets += commits

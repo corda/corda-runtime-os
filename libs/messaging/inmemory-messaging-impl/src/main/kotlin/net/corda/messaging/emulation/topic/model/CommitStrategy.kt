@@ -1,6 +1,6 @@
 package net.corda.messaging.emulation.topic.model
 
 enum class CommitStrategy {
-    AUTO_COMMIT,
+    COMMIT_AFTER_PROCESSING,
     NO_COMMIT
 }

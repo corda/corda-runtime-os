@@ -20,7 +20,7 @@ class ConsumptionLoopTest {
     private val config = SubscriptionConfiguration(10, Duration.ofSeconds(1))
     private val records = mutableListOf<RecordMetadata>()
     private val consumer = mock<Consumer> {
-        on { commitStrategy } doReturn CommitStrategy.AUTO_COMMIT
+        on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
         on { handleRecords(any()) } doAnswer {
             records.addAll(it.getArgument(0) as Collection<RecordMetadata>)
             Unit

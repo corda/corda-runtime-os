@@ -15,7 +15,7 @@ class EventLogConsumer<K : Any, V : Any>(
     override val groupName: String = subscription.groupName
     override val topicName: String = subscription.topicName
     override val partitionAssignmentListener: PartitionAssignmentListener? = subscription.partitionAssignmentListener
-    override val commitStrategy = CommitStrategy.AUTO_COMMIT
+    override val commitStrategy = CommitStrategy.COMMIT_AFTER_PROCESSING
     override val partitionStrategy = PartitionStrategy.DIVIDE_PARTITIONS
 
     override fun handleRecords(records: Collection<RecordMetadata>) {
