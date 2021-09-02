@@ -2,18 +2,23 @@ package net.corda.messaging.api.rpc.factory
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.rpc.responder.RPCResponder
+import net.corda.messaging.api.rpc.responder.RPCResponderProcessor
 import net.corda.messaging.api.rpc.sender.RPCSender
 
 interface RPCFactory<TREQ, TRESP> {
     /**
      * Create an instance of the [RPCSender]
-     * @param bootstrapConfig configuration object used to bootstrap the service
+     * @param subscriptionConfig configuration object used to initialize the subscription
+     * @param config other configuration settings if needed
      */
-    fun createRPCSender(bootstrapConfig: Config): RPCSender<TREQ, TRESP>
+    fun createRPCSender(subscriptionConfig: Config, config: Config): RPCSender<TREQ, TRESP>
 
     /**
      * Create an instance of the [RPCResponder]
-     * @param bootstrapConfig configuration object used to bootstrap the service
+     * @param subscriptionConfig configuration object used to initialize the subscription
+     * @param config other configuration settings if needed
+     * @param responderProcessor processor in charge of handling incoming requests
      */
-    fun createRPCResponder(bootstrapConfig: Config): RPCResponder<TREQ, TRESP>
+    fun createRPCResponder(subscriptionConfig: Config, config: Config,
+                           responderProcessor: RPCResponderProcessor<TREQ, TRESP>): RPCResponder<TREQ, TRESP>
 }
