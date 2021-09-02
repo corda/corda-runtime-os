@@ -1,4 +1,4 @@
 @Export
-package net.corda.rpc.responder.factory;
+package net.corda.messaging.api.rpc.factory;
 
 import org.osgi.annotation.bundle.Export;

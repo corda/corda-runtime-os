@@ -1,8 +1,8 @@
-package net.corda.rpc.factory
+package net.corda.messaging.api.rpc.factory
 
 import com.typesafe.config.Config
-import net.corda.rpc.responder.RPCResponder
-import net.corda.rpc.sender.RPCSender
+import net.corda.messaging.api.rpc.responder.RPCResponder
+import net.corda.messaging.api.rpc.sender.RPCSender
 
 interface RPCFactory<TREQ, TRESP> {
     /**

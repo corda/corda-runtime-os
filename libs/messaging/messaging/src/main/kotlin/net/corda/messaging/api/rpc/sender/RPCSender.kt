@@ -1,4 +1,4 @@
-package net.corda.rpc.sender
+package net.corda.messaging.api.rpc.sender
 
 import net.corda.lifecycle.Lifecycle
 import java.util.concurrent.CompletableFuture

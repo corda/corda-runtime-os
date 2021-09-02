@@ -1,4 +1,4 @@
 @Export
-package net.corda.rpc.sender;
+package net.corda.messaging.api.rpc.sender;
 
 import org.osgi.annotation.bundle.Export;
