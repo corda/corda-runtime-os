@@ -3,6 +3,8 @@ plugins {
     id 'net.corda.plugins.cordapp-cpk'
 }
 
+description 'Corda Sandbox CPK Two'
+
 group 'com.example.sandbox'
 version ''
 
@@ -22,6 +24,5 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     cordaProvided "org.osgi:osgi.core:$osgiVersion"
     cordaProvided "net.corda:corda-application:$cordaVersion"
-    cordapp project(':libs:sandbox:sandbox-cpk-one')
     implementation "org.slf4j:slf4j-api"
 }

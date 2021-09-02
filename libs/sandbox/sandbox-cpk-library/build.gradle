@@ -2,6 +2,8 @@ plugins {
     id 'corda.common-library'
 }
 
+description 'Corda Sandbox CPK Library'
+
 group 'com.example.sandbox'
 
 dependencies {

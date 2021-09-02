@@ -3,6 +3,8 @@ plugins {
     id 'net.corda.plugins.cordapp-cpk'
 }
 
+description 'Corda Sandbox CPK Three'
+
 group 'com.example.sandbox'
 version ''
 
