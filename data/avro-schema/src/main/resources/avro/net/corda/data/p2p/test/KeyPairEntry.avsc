@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "KeyPairEntry",
+  "namespace": "net.corda.p2p.test",
+  "fields": [
+    {
+      "name": "keyAlgo",
+      "type": "net.corda.p2p.test.KeyAlgorithm"
+    },
+    {
+      "name": "publicKey",
+      "type": "bytes"
+    },
+    {
+      "name": "privateKey",
+      "type": "bytes"
+    }
+  ]
+}
