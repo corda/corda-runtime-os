@@ -13,6 +13,6 @@ interface RPCSender: Lifecycle {
     /**
      * Send request via RPC
      */
-    fun sendRequest(): CompletableFuture<Unit>
+    fun sendRequest(key: String, message: String): CompletableFuture<Unit>
 
 }
