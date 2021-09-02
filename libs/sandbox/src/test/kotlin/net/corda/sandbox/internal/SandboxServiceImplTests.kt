@@ -108,7 +108,8 @@ class SandboxServiceImplTests {
             dependencies = cpkDependencies,
             libraryDependencies = libraries.associateTo(TreeMap()) {
                 it.fileName.toString() to SecureHash(hashAlgorithm, Random.nextBytes(hashLength))
-            }
+            },
+            cpkFile = Paths.get(".")
         )
 
         val cordappBundle = mock<Bundle>().apply {
