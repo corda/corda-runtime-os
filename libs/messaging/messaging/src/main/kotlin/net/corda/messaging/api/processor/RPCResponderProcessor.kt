@@ -7,4 +7,7 @@ interface RPCResponderProcessor<TREQ, TRESP> {
      * @param request
      */
     fun onNext(request: TREQ) : TRESP
+
+    val requestType: Class<TREQ>
+    val responseType: Class<TRESP>
 }
