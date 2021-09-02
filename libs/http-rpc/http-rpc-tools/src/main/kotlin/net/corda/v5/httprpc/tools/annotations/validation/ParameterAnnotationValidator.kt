@@ -1,14 +1,14 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
-import net.corda.v5.httprpc.tools.annotations.validation.utils.endpoints
-import net.corda.v5.application.messaging.RPCOps
+import net.corda.v5.httprpc.api.RpcOps
 import net.corda.v5.httprpc.api.annotations.isHttpRpcParameterAnnotation
+import net.corda.v5.httprpc.tools.annotations.validation.utils.endpoints
 import java.lang.reflect.Method
 
 /**
  * Validates that every method parameter is annotated with up to one of the expected annotations.
  */
-internal class ParameterAnnotationValidator(private val clazz: Class<out RPCOps>) : HttpRpcValidator {
+internal class ParameterAnnotationValidator(private val clazz: Class<out RpcOps>) : HttpRpcValidator {
     override fun validate(): HttpRpcValidationResult =
         clazz.endpoints.fold(HttpRpcValidationResult()) { total, method ->
             total + validateParametersOf(method)

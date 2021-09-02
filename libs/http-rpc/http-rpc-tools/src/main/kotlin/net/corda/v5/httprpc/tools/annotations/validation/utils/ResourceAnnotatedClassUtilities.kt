@@ -1,16 +1,16 @@
 package net.corda.v5.httprpc.tools.annotations.validation.utils
 
-import net.corda.v5.httprpc.tools.annotations.extensions.path
-import net.corda.v5.httprpc.tools.staticExposedGetMethods
-import net.corda.v5.application.messaging.RPCOps
+import net.corda.v5.httprpc.api.RpcOps
 import net.corda.v5.httprpc.api.annotations.HttpRpcGET
 import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
 import net.corda.v5.httprpc.api.annotations.HttpRpcPathParameter
+import net.corda.v5.httprpc.tools.annotations.extensions.path
+import net.corda.v5.httprpc.tools.staticExposedGetMethods
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import kotlin.reflect.full.createInstance
 
-internal val Class<out RPCOps>.endpoints
+internal val Class<out RpcOps>.endpoints
     get() = this.methods.filter { method ->
         method.annotations.any { annotation ->
             annotation is HttpRpcPOST || annotation is HttpRpcGET

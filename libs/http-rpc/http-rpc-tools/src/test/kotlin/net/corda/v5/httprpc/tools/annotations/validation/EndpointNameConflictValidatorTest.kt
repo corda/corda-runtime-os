@@ -1,7 +1,7 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
 import net.corda.v5.httprpc.tools.annotations.validation.utils.EndpointType
-import net.corda.v5.application.messaging.RPCOps
+import net.corda.v5.httprpc.api.RpcOps
 import net.corda.v5.httprpc.api.annotations.HttpRpcGET
 import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
 import net.corda.v5.httprpc.api.annotations.HttpRpcQueryParameter
@@ -14,7 +14,7 @@ class EndpointNameConflictValidatorTest {
     @Test
     fun `validate withEndpointNameConflictOnSamePath errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -35,7 +35,7 @@ class EndpointNameConflictValidatorTest {
     @Test
     fun `validate withEndpointNameConflictOnDifferentMethodType errorListIsEmpty`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -56,7 +56,7 @@ class EndpointNameConflictValidatorTest {
     @Test
     fun `validate withEndpointNameConflictOnMissingEndpointAnnotation errorListIsEmpty`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -75,7 +75,7 @@ class EndpointNameConflictValidatorTest {
     @Test
     fun `validate withEndpointNameConflictOnOverload errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -103,7 +103,7 @@ class EndpointNameConflictValidatorTest {
     @Test
     fun `validate withEndpointNameConflictOnSamePathWithDefaultName errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -124,10 +124,10 @@ class EndpointNameConflictValidatorTest {
     @Test
     fun `validate withEndpointNameConflictWithCapitalization errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
-
+            
             @HttpRpcGET
             fun teSt() {
             }
@@ -153,7 +153,7 @@ class EndpointNameConflictValidatorTest {
     @Test
     fun `validate withEndpointNameConflictOnSamePathWithStaticMethod errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 

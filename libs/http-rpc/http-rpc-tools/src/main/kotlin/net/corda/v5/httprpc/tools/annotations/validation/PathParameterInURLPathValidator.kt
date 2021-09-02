@@ -1,20 +1,20 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
+import net.corda.v5.httprpc.api.RpcOps
+import net.corda.v5.httprpc.api.annotations.HttpRpcPathParameter
 import net.corda.v5.httprpc.tools.annotations.extensions.name
 import net.corda.v5.httprpc.tools.annotations.validation.utils.asPathParam
 import net.corda.v5.httprpc.tools.annotations.validation.utils.endpointPath
 import net.corda.v5.httprpc.tools.annotations.validation.utils.endpointType
 import net.corda.v5.httprpc.tools.annotations.validation.utils.endpoints
 import net.corda.v5.httprpc.tools.annotations.validation.utils.pathParameters
-import net.corda.v5.application.messaging.RPCOps
-import net.corda.v5.httprpc.api.annotations.HttpRpcPathParameter
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 
 /**
  * Validates that every method path parameter is present in the endpoint path.
  */
-internal class PathParameterInURLPathValidator(private val clazz: Class<out RPCOps>) : HttpRpcValidator {
+internal class PathParameterInURLPathValidator(private val clazz: Class<out RpcOps>) : HttpRpcValidator {
     override fun validate(): HttpRpcValidationResult =
         clazz.endpoints.fold(HttpRpcValidationResult()) { total, method ->
             total + validateParameters(method, method.parameters.asList())

@@ -1,6 +1,6 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
-import net.corda.v5.application.messaging.RPCOps
+import net.corda.v5.httprpc.api.RpcOps
 import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
 import net.corda.v5.httprpc.api.annotations.HttpRpcPathParameter
 import net.corda.v5.httprpc.api.annotations.HttpRpcQueryParameter
@@ -12,7 +12,7 @@ class ParameterClassTypeValidatorTest {
     @Test
     fun `validate withInvalidParamClassTypes errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -31,7 +31,7 @@ class ParameterClassTypeValidatorTest {
     @Test
     fun `validate withValidParamClassTypes errorListIsEmpty`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 

@@ -1,6 +1,6 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
-import net.corda.v5.application.messaging.RPCOps
+import net.corda.v5.httprpc.api.RpcOps
 
 /**
  * This class is responsible for applying validations to an interface or list of interfaces that are expected to be exposed via HTTP RPC.
@@ -10,11 +10,11 @@ object HttpRpcInterfaceValidator {
     /**
      * Validates an interface
      *
-     * @param rpcOpsInterface An interface class extending [RPCOps]
+     * @param rpcOpsInterface An interface class extending [RpcOps]
      * @return A validation result, containing a list of the errors. The validation was successful if the error list is empty.
      */
     @JvmStatic
-    fun <T : RPCOps> validate(rpcOpsInterface: Class<T>): HttpRpcValidationResult =
+    fun <T : RpcOps> validate(rpcOpsInterface: Class<T>): HttpRpcValidationResult =
         listOf(
             ResourceAnnotationValidator(rpcOpsInterface),
             EndpointAnnotationValidator(rpcOpsInterface),
@@ -34,11 +34,11 @@ object HttpRpcInterfaceValidator {
     /**
      * Validates an interface
      *
-     * @param rpcOpsInterfaces A list of interface classes extending [RPCOps][net.corda.core.messaging.RPCOps]
+     * @param rpcOpsInterfaces A list of interface classes extending [RpcOps][net.corda.core.messaging.RpcOps]
      * @return A validation result, containing a list of the errors. The validation was successful if the error list is empty.
      */
     @JvmStatic
-    fun validate(rpcOpsInterfaces: List<Class<out RPCOps>>): HttpRpcValidationResult =
+    fun validate(rpcOpsInterfaces: List<Class<out RpcOps>>): HttpRpcValidationResult =
         listOf(
             ResourceNameConflictValidator(rpcOpsInterfaces)
         ).fold(HttpRpcValidationResult()) { total, nextValidation ->

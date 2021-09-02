@@ -1,17 +1,17 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
-import net.corda.v5.httprpc.tools.annotations.validation.utils.isBodyParameter
-import net.corda.v5.application.messaging.RPCOps
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.httprpc.api.RpcOps
 import net.corda.v5.httprpc.api.annotations.HttpRpcGET
 import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
+import net.corda.v5.httprpc.tools.annotations.validation.utils.isBodyParameter
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 
 /**
  * Validates that every body method parameter is [CordaSerializable].
  */
-class ParameterBodyCordaSerializableAnnotationValidator(private val clazz: Class<out RPCOps>) : HttpRpcValidator {
+class ParameterBodyCordaSerializableAnnotationValidator(private val clazz: Class<out RpcOps>) : HttpRpcValidator {
 
     companion object {
 

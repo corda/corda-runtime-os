@@ -1,6 +1,6 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
-import net.corda.v5.application.messaging.RPCOps
+import net.corda.v5.httprpc.api.RpcOps
 import net.corda.v5.httprpc.api.annotations.HttpRpcGET
 import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
 import java.lang.reflect.Method
@@ -8,7 +8,7 @@ import java.lang.reflect.Method
 /**
  * Validates that every method is not annotated with both [HttpRpcPOST] and [HttpRpcGET].
  */
-internal class EndpointAnnotationValidator(private val clazz: Class<out RPCOps>) : HttpRpcValidator {
+internal class EndpointAnnotationValidator(private val clazz: Class<out RpcOps>) : HttpRpcValidator {
 
     companion object {
         fun error(method: Method) = "Only one of ${HttpRpcPOST::class.simpleName}, ${HttpRpcGET::class.simpleName} " +

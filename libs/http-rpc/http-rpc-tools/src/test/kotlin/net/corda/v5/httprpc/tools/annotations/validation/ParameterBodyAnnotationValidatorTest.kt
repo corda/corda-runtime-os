@@ -1,6 +1,6 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
-import net.corda.v5.application.messaging.RPCOps
+import net.corda.v5.httprpc.api.RpcOps
 import net.corda.v5.httprpc.api.annotations.HttpRpcGET
 import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
 import net.corda.v5.httprpc.api.annotations.HttpRpcRequestBodyParameter
@@ -12,7 +12,7 @@ class ParameterBodyAnnotationValidatorTest {
     @Test
     fun `validate withInvalidBodyAnnotation errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -36,7 +36,7 @@ class ParameterBodyAnnotationValidatorTest {
     @Test
     fun `validate withManyBodyParametersAnnotations errorListIsEmpty`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 

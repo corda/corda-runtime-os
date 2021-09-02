@@ -1,17 +1,17 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
+import net.corda.v5.base.stream.returnsDurableCursorBuilder
+import net.corda.v5.httprpc.api.RpcOps
+import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
 import net.corda.v5.httprpc.tools.annotations.validation.utils.getParameterName
 import net.corda.v5.httprpc.tools.annotations.validation.utils.isBodyParameter
-import net.corda.v5.application.messaging.RPCOps
-import net.corda.v5.base.stream.returnsDurableCursorBuilder
-import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
 import java.lang.reflect.Method
 
 /**
  * Validates that durable stream methods do not contain a "context" parameter, as it would clash with the implicitly created parameter with
  * the same name.
  */
-class DurableStreamsContextParameterValidator(private val clazz: Class<out RPCOps>) : HttpRpcValidator {
+class DurableStreamsContextParameterValidator(private val clazz: Class<out RpcOps>) : HttpRpcValidator {
 
     companion object {
         const val error = "Methods returning DurableCursorBuilder or FiniteDurableCursorBuilder " +

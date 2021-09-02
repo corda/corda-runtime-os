@@ -1,6 +1,6 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
-import net.corda.v5.application.messaging.RPCOps
+import net.corda.v5.httprpc.api.RpcOps
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
 import net.corda.v5.httprpc.api.annotations.HttpRpcRequestBodyParameter
@@ -15,7 +15,7 @@ class ParameterBodyCordaSerializableAnnotationValidatorTest {
         data class CustomString(val s: String)
 
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -36,7 +36,7 @@ class ParameterBodyCordaSerializableAnnotationValidatorTest {
         data class CustomString(val s: String)
 
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -59,7 +59,7 @@ class ParameterBodyCordaSerializableAnnotationValidatorTest {
     @Test
     fun `validate withWrapperParam errorListContainsNoError`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -86,7 +86,7 @@ class ParameterBodyCordaSerializableAnnotationValidatorTest {
         data class CustomString(val s: String)
 
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 

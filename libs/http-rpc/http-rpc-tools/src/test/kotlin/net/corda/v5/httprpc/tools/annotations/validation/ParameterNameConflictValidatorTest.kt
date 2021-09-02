@@ -1,6 +1,6 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
-import net.corda.v5.application.messaging.RPCOps
+import net.corda.v5.httprpc.api.RpcOps
 import net.corda.v5.httprpc.api.annotations.HttpRpcGET
 import net.corda.v5.httprpc.api.annotations.HttpRpcPathParameter
 import net.corda.v5.httprpc.api.annotations.HttpRpcQueryParameter
@@ -13,7 +13,7 @@ class ParameterNameConflictValidatorTest {
     @Test
     fun `validate withSameParamNames errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -33,7 +33,7 @@ class ParameterNameConflictValidatorTest {
     @Test
     fun `validate withSameParamNamesInDefault errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -53,7 +53,7 @@ class ParameterNameConflictValidatorTest {
     @Test
     fun `validate withSameParamNamesWithCapitalization errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -78,7 +78,7 @@ class ParameterNameConflictValidatorTest {
     @Test
     fun `validate withSameParamNamesInDifferentTypes errorListIsEmpty`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
@@ -98,7 +98,7 @@ class ParameterNameConflictValidatorTest {
     @Test
     fun `validate withSameParamNamesInBody errorListContainsError`() {
         @HttpRpcResource
-        class TestInterface : RPCOps {
+        class TestInterface : RpcOps {
             override val protocolVersion: Int
                 get() = 1
 
