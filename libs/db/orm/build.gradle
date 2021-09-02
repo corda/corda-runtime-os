@@ -6,7 +6,8 @@ plugins {
 description 'Database ORM API'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    api "javax.persistence:javax.persistence-api:$persistenceApiVersion"
+    compileOnly "org.osgi:osgi.annotation"
+    api "javax.persistence:javax.persistence-api"
 }
