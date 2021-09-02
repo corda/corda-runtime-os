@@ -1,6 +1,7 @@
-package net.corda.messaging.api.rpc.responder
+package net.corda.messaging.api.subscription
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.messaging.api.processor.RPCResponderProcessor
 import java.util.concurrent.CompletableFuture
 
 interface RPCResponder<TREQ, TRESP> : Lifecycle {
@@ -13,6 +14,6 @@ interface RPCResponder<TREQ, TRESP> : Lifecycle {
     /**
      * Send response via RPC
      */
-    fun sendResponse(req: TREQ): CompletableFuture<Unit>
+    fun sendResponse(req: TREQ)
 
 }

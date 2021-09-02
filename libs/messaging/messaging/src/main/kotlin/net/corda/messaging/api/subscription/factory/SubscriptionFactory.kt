@@ -2,11 +2,8 @@ package net.corda.messaging.api.subscription.factory
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import net.corda.messaging.api.processor.CompactedProcessor
-import net.corda.messaging.api.processor.DurableProcessor
-import net.corda.messaging.api.processor.EventLogProcessor
-import net.corda.messaging.api.processor.PubSubProcessor
-import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.*
+import net.corda.messaging.api.subscription.RPCResponder
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.RandomAccessSubscription
@@ -142,5 +139,14 @@ interface SubscriptionFactory {
         keyClass: Class<K>,
         valueClass: Class<V>
     ): RandomAccessSubscription<K, V>
-    
+
+    /**
+     * Create an instance of the [RPCResponder]
+     * @param subscriptionConfig configuration object used to initialize the subscription
+     * @param config other configuration settings if needed
+     * @param responderProcessor processor in charge of handling incoming requests
+     */
+    fun <TREQ, TRESP> createRPCResponder(subscriptionConfig: Config, config: Config,
+                           responderProcessor: RPCResponderProcessor<TREQ, TRESP>
+    ): RPCResponder<TREQ, TRESP>
 }

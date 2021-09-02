@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.RPCSender
 
 /**
  * Interface for creating publishers of events. Only used for producers of events. Not used by consumers.
@@ -20,4 +21,13 @@ interface PublisherFactory {
         publisherConfig: PublisherConfig,
         nodeConfig: Config = ConfigFactory.empty()
     ): Publisher
+
+    /**
+     * Create an instance of the [RPCSender]
+     * @param subscriptionConfig configuration object used to initialize the subscription
+     * @param config other configuration settings if needed
+     */
+    fun <TREQ, TRESP> createRPCSender(publisherConfig: Config, config: Config): RPCSender<TREQ, TRESP>
+
+
 }
