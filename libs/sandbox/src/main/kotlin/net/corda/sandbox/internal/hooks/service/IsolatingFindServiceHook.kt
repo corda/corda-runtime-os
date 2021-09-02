@@ -18,7 +18,13 @@ internal class IsolatingFindServiceHook @Activate constructor(
         @Reference
         private val sandboxService: SandboxServiceInternal) : FindHook {
 
-    override fun find(context: BundleContext, name: String?, filter: String?, allServices: Boolean, references: MutableCollection<ServiceReference<*>>) {
+    override fun find(
+        context: BundleContext,
+        name: String?,
+        filter: String?,
+        allServices: Boolean,
+        references: MutableCollection<ServiceReference<*>>) {
+
         references.removeIf { reference ->
             !sandboxService.hasVisibility(context.bundle, reference.bundle)
         }
