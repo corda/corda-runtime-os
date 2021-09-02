@@ -19,8 +19,8 @@ dependencies {
     implementation project(":libs:crypto:crypto-impl")
     implementation "net.corda:corda-install:$cordaVersion"
     implementation "net.corda:corda-packaging"
-    implementation "net.corda:corda-serialization:$cordaVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "net.corda:corda-serialization"
+    implementation "org.slf4j:slf4j-api"
 
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation "org.assertj:assertj-core"
