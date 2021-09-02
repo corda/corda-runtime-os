@@ -6,12 +6,12 @@ plugins {
 description 'Database ORM Implementation'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    compileOnly "org.osgi:osgi.annotation"
+    implementation "org.slf4j:slf4j-api"
+    api "javax.persistence:javax.persistence-api"
 
-    api "javax.persistence:javax.persistence-api:$persistenceApiVersion"
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation "org.hibernate:hibernate-osgi:$hibernateVersion"
     implementation "com.zaxxer:HikariCP:$hikariCpVersion"
