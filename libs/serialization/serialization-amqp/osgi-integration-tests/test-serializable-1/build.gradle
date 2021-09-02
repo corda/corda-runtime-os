@@ -1,0 +1,26 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpk'
+}
+
+ext {
+    platformVersion = 999
+}
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    minimumPlatformVersion platformVersion as Integer
+    workflow {
+        name "Test Serializable Test"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    cordaProvided "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+}
+
+cpk {
+    archiveBaseName = 'TestSerializable1-workflows'
+}
