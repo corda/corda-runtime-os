@@ -58,6 +58,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
 
     var step = Step.INIT
     private lateinit var handshakeIdentityData: HandshakeIdentityData
+    private lateinit var responderHandshakeMessage: ResponderHandshakeMessage
 
     enum class Step {
         INIT,
@@ -102,6 +103,14 @@ class AuthenticationProtocolResponder(private val sessionId: String,
         responderHelloMessage = ResponderHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), selectedMode)
         initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
                                               responderHelloMessage!!.toByteBuffer().array()
+        return responderHelloMessage!!
+    }
+
+    /**
+     * Get responder hello message, this must have already been generated using [generateResponderHello].
+     */
+    fun getResponderHello(): ResponderHelloMessage {
+        checkState(Step.SENT_MY_DH_KEY)
         return responderHelloMessage!!
     }
 
@@ -191,7 +200,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
     }
 
     fun getHandshakeIdentityData(): HandshakeIdentityData {
-        checkState(Step.RECEIVED_HANDSHAKE_MESSAGE)
+        checkStateAtLeast(Step.RECEIVED_HANDSHAKE_MESSAGE)
         return handshakeIdentityData
     }
 
@@ -232,7 +241,17 @@ class AuthenticationProtocolResponder(private val sessionId: String,
         responderHandshakePayloadBytes = responderHandshakePayload.toByteBuffer().array()
         val (responderEncryptedData, responderTag) = aesCipher.encryptWithAssociatedData(responderRecordHeaderBytes,
                 sharedHandshakeSecrets!!.responderNonce, responderHandshakePayloadBytes!!, sharedHandshakeSecrets!!.responderEncryptionKey)
-        return ResponderHandshakeMessage(responderRecordHeader, ByteBuffer.wrap(responderEncryptedData), ByteBuffer.wrap(responderTag))
+        responderHandshakeMessage = ResponderHandshakeMessage(
+            responderRecordHeader,
+            ByteBuffer.wrap(responderEncryptedData),
+            ByteBuffer.wrap(responderTag)
+        )
+        return responderHandshakeMessage
+    }
+
+    fun getResponderHandshakeMessage(): ResponderHandshakeMessage {
+        checkState(Step.SESSION_ESTABLISHED)
+        return responderHandshakeMessage
     }
 
     /**
@@ -266,6 +285,14 @@ class AuthenticationProtocolResponder(private val sessionId: String,
     private fun checkState(expectedStep: Step) {
         if (step != expectedStep) {
             throw IncorrectAPIUsageException("This method must be invoked when the protocol is in step $expectedStep, but it was in step $step.")
+        }
+    }
+
+    private fun checkStateAtLeast(minimumStep: Step) {
+        if (step.ordinal < minimumStep.ordinal) {
+            throw IncorrectAPIUsageException(
+                "This method must be invoked when the protocol is at least at step $minimumStep, but it was in step $step."
+            )
         }
     }
 

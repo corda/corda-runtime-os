@@ -38,6 +38,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -524,63 +525,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `The session manager sends session negotiation messages to the InMemorySessionReplayer for replay when negotiating an outbound session`() {
-        val messageReplayer = MockSessionReplayer()
-        val mode = ProtocolMode.AUTHENTICATION_ONLY
-
-        val outboundManager = sessionManager(OUTBOUND_PARTY, messageReplayer = messageReplayer)
-        val state = outboundManager.processOutboundFlowMessage(wrappedMessage)
-
-        messageReplayer.assertSingleReplayMessage<InitiatorHelloMessage>(INBOUND_PARTY)
-        val initiatorHelloMessage = (state as NewSessionNeeded).sessionInitMessage.payload as InitiatorHelloMessage
-        val sessionId = initiatorHelloMessage.header.sessionId
-
-        val protocolResponder = AuthenticationProtocolResponder(sessionId, setOf(mode), MAX_MESSAGE_SIZE)
-        protocolResponder.receiveInitiatorHello(initiatorHelloMessage)
-
-        val responderHelloMessage = LinkInMessage(protocolResponder.generateResponderHello())
-        val initiatorHandshakeMessage = outboundManager.processSessionMessage(responderHelloMessage)
-        messageReplayer.assertSingleReplayMessage<InitiatorHandshakeMessage>(INBOUND_PARTY)
-
-        assertTrue(initiatorHandshakeMessage!!.payload is InitiatorHandshakeMessage)
-
-        protocolResponder.generateHandshakeSecrets()
-        protocolResponder.validatePeerHandshakeMessage(
-            initiatorHandshakeMessage.payload as InitiatorHandshakeMessage,
-            netMapOutbound.getKeyPair().public,
-            KeyAlgorithm.ECDSA
-        )
-
-        val handshakeMessage = protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
-            signDataWithKey(netMapInbound.getKeyPair().private, it)
-        }
-        outboundManager.processSessionMessage(LinkInMessage(handshakeMessage))
-
-        assertEquals(0, messageReplayer.messagesForReplay.size)
-    }
-
-    @Test
-    fun `The session manager sends session negotiation messages to the InMemorySessionReplayer for replay when negotiating an inbound session`() {
-        val messageReplayer = MockSessionReplayer()
-
-        val sessionId = "FakeSession"
-        val inboundManager = sessionManager(INBOUND_PARTY, messageReplayer = messageReplayer)
-
-        val initiatorHandshakeMessage = negotiateToInitiatorHandshake(inboundManager, sessionId)
-
-        inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
-        assertEquals(1, messageReplayer.messagesForReplay.size)
-        val messageReplay = messageReplayer.messagesForReplay.entries.single().value
-        assertTrue(messageReplay.dest is SessionReplayer.IdentityLookup.HoldingIdentity)
-        assertEquals(netMapOutbound.getOurMemberInfo().holdingIdentity, (messageReplay.dest as SessionReplayer.IdentityLookup.HoldingIdentity).id)
-        assertTrue(messageReplay.message is ResponderHandshakeMessage)
-
-        inboundManager.acknowledgeInboundSessionNegotiation(sessionId)
-        assertEquals(0, messageReplayer.messagesForReplay.size)
-    }
-
-    @Test
-    fun `Duplicated session negotiation messages (InitiatorHelloMessage, InitiatorHandshake) is dropped (with appropriate logging)`() {
+    fun `Duplicated session negotiation messages (InitiatorHelloMessage, InitiatorHandshake) cause a duplicated response (with appropriate logging)`() {
         val mode = ProtocolMode.AUTHENTICATION_ONLY
         val sessionId = "FakeSession"
         val inboundManager = sessionManager(INBOUND_PARTY)
@@ -592,10 +537,9 @@ class SessionManagerTest {
         val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
         val responderHelloMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
         assertTrue(responderHelloMessage!!.payload is ResponderHelloMessage)
-        assertNull(inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage)))
-
-        loggingInterceptor.assertSingleWarning("Already received a InitiatorHelloMessage for $sessionId. The message was discarded.")
-        loggingInterceptor.reset()
+        inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
+        //Duplicate InitiatorHandshakeMessage
+        assertSame(responderHelloMessage.payload, inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))!!.payload)
 
         protocolInitiator.receiveResponderHello(responderHelloMessage.payload as ResponderHelloMessage)
         protocolInitiator.generateHandshakeSecrets()
@@ -606,12 +550,8 @@ class SessionManagerTest {
         val responderHandshakeMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
         assertTrue(responderHandshakeMessage?.payload is ResponderHandshakeMessage)
 
-        // Duplicate InitiatorHandshakeMessage
-        assertNull(inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage)))
-        loggingInterceptor.assertSingleWarning(
-            "Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId " +
-                "$sessionId but there is no pending session with this id. The message was discarded."
-        )
+        //Duplicate InitiatorHandshakeMessage
+        assertSame(responderHandshakeMessage?.payload, inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))!!.payload)
     }
 
     @Test
