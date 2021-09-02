@@ -17,8 +17,9 @@ cordapp {
 
 dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
     implementation project(':libs:sandbox:sandbox-cpk-library')
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     cordaProvided "org.osgi:osgi.core:$osgiVersion"
+    cordaProvided "net.corda:corda-application:$cordaVersion"
     cordapp project(':libs:sandbox:sandbox-cpk-one')
 }
