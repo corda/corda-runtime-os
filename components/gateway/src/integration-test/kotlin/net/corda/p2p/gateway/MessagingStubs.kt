@@ -5,14 +5,17 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
+import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
+import net.corda.messaging.api.subscription.RPCResponder
 import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
@@ -234,6 +237,14 @@ class SubscriptionFactoryStub(private val topicService: TopicService) : Subscrip
     ): RandomAccessSubscription<K, V> {
         TODO("Not yet implemented")
     }
+
+    override fun <TREQ, TRESP> createRPCResponder(
+        subscriptionConfig: Config,
+        config: Config,
+        responderProcessor: RPCResponderProcessor<TREQ, TRESP>
+    ): RPCResponder<TREQ, TRESP> {
+        TODO("Not yet implemented")
+    }
 }
 
 /**
@@ -260,6 +271,10 @@ class PublisherStub(private val topicService: TopicService) : Publisher {
 class PublisherFactoryStub(private val topicService: TopicService) : PublisherFactory {
     override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
         return PublisherStub(topicService)
+    }
+
+    override fun <TREQ, TRESP> createRPCSender(publisherConfig: Config, config: Config): RPCSender<TREQ, TRESP> {
+        TODO("Not yet implemented")
     }
 }
 
