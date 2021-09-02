@@ -3,27 +3,21 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Flow Manager Implemenation"
+description "Virtual Node Cache Implementation"
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
     compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
-    implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation "net.corda:corda-application"
+    implementation "net.corda:corda-base"
     implementation "net.corda:corda-install:$cordaVersion"
     implementation "net.corda:corda-packaging:$cordaVersion"
     implementation "net.corda:corda-sandbox:$cordaVersion"
     implementation "net.corda:avro-schema"
 
-    implementation project(':libs:flows:dependency-injection')
-    implementation project(':libs:flows:flow-manager')
-    implementation project(':libs:flows:statemachine')
-    implementation project(':libs:flows:statemachine-impl')
-    implementation project(':libs:messaging:messaging')
-    implementation project(':libs:virtual-node:virtual-node-cache')
+    implementation project(":libs:virtual-node:virtual-node-cache")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
