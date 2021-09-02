@@ -20,9 +20,7 @@ import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
-import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
-import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
@@ -64,7 +62,6 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
-import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 class LinkManagerTest {
@@ -74,7 +71,7 @@ class LinkManagerTest {
         private val SECOND_SOURCE = HoldingIdentity("PartyA", "AnotherGroup")
         private val FIRST_DEST = HoldingIdentity("PartyB", "Group")
         private val SECOND_DEST = HoldingIdentity("PartyC", "Group")
-        private val PARTY_D = HoldingIdentity("PartyD", "Group")
+        private val LOCAL_PARTY = HoldingIdentity("PartyD", "Group")
         private const val FAKE_ADDRESS = "http://10.0.0.1/"
         private val provider = BouncyCastleProvider()
         private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
@@ -88,7 +85,7 @@ class LinkManagerTest {
         private val hostingMap = mock<LinkManagerHostingMap>().also {
             whenever(it.isHostedLocally(any())).thenReturn(false)
             whenever(it.isHostedLocally(FIRST_SOURCE.toHoldingIdentity())).thenReturn(true)
-            whenever(it.isHostedLocally(PARTY_D.toHoldingIdentity())).thenReturn(true)
+            whenever(it.isHostedLocally(LOCAL_PARTY.toHoldingIdentity())).thenReturn(true)
         }
         private val netMap = MockNetworkMap(listOf(FIRST_SOURCE.toHoldingIdentity(), SECOND_SOURCE.toHoldingIdentity(),
             FIRST_DEST.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity())).getSessionNetworkMapForNode(FIRST_SOURCE.toHoldingIdentity())
@@ -298,7 +295,7 @@ class LinkManagerTest {
         val processor = LinkManager.OutboundMessageProcessor(Mockito.mock(SessionManagerImpl::class.java), hostingMap, netMap, assignedListener(listOf(1)))
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
-            AuthenticatedMessageHeader(PARTY_D, FIRST_SOURCE, null, "message-id", "trace-id", "system-1"),
+            AuthenticatedMessageHeader(LOCAL_PARTY, FIRST_SOURCE, null, "message-id", "trace-id", "system-1"),
             ByteBuffer.wrap(payload.toByteArray())
         )
         val appMessage = AppMessage(authenticatedMsg)
@@ -324,7 +321,7 @@ class LinkManagerTest {
     fun `if destination identity is hosted locally, unauthenticated messages are looped back`() {
         val processor = LinkManager.OutboundMessageProcessor(Mockito.mock(SessionManagerImpl::class.java), hostingMap, netMap, assignedListener(listOf(1)))
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(UnauthenticatedMessageHeader(PARTY_D, FIRST_SOURCE), ByteBuffer.wrap(payload.toByteArray()))
+        val unauthenticatedMsg = UnauthenticatedMessage(UnauthenticatedMessageHeader(LOCAL_PARTY, FIRST_SOURCE), ByteBuffer.wrap(payload.toByteArray()))
         val appMessage = AppMessage(unauthenticatedMsg)
 
         val records = processor.onNext(listOf(EventLogRecord(P2P_OUT_TOPIC, KEY, appMessage, 1, 0)))
@@ -536,6 +533,7 @@ class LinkManagerTest {
             when (val value = record.value) {
                 is AppMessage -> {
                     assertEquals(P2P_IN_TOPIC, record.topic)
+                    assertTrue(value.message is AuthenticatedMessage)
                     assertArrayEquals(flowMessageAndKey.message.payload.array(), (value.message as AuthenticatedMessage).payload.array())
                     assertEquals(flowMessageAndKey.key, record.key)
                 }
@@ -617,6 +615,7 @@ class LinkManagerTest {
         for (record in records) {
             assertEquals(P2P_IN_TOPIC, record.topic)
             assertTrue(record.value is AppMessage)
+            assertTrue((record.value as AppMessage).message is AuthenticatedMessage)
             assertArrayEquals(flowMessageWrapper.message.payload.array(), ((record.value as AppMessage).message as AuthenticatedMessage).payload.array())
             assertEquals(flowMessageWrapper.key, record.key)
         }
