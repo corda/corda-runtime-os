@@ -23,11 +23,3 @@ jacocoTestCoverageVerification {
         }
     }
 }
-
-tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-http-rpc-tools'
-    bnd """\
-Bundle-Name: Corda HTTP RPC Tools
-Bundle-SymbolicName: \${project.group}.http-rpc-tools
-"""
-}
