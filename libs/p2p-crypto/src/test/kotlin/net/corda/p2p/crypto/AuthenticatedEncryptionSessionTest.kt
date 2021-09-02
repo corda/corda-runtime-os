@@ -1,7 +1,6 @@
 package net.corda.p2p.crypto
 
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
-import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
@@ -13,7 +12,6 @@ import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
-import java.time.Instant
 import java.util.UUID
 
 class AuthenticatedEncryptionSessionTest {
@@ -94,69 +92,6 @@ class AuthenticatedEncryptionSessionTest {
             val payload = "pong $i".toByteArray(Charsets.UTF_8)
             val encryptionResult = authenticatedSessionOnB.encryptData(payload)
             val responderMsg = AuthenticatedEncryptedDataMessage(encryptionResult.header, ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag))
-
-            val decryptedPayload = authenticatedSessionOnA.decryptData(responderMsg.header, responderMsg.encryptedPayload.array(), responderMsg.authTag.array())
-            assertTrue(decryptedPayload.contentEquals(payload))
-        }
-    }
-
-    @Test
-    fun `session can be established between two parties and used for transmission of authenticated and encrypted data successfully with step 2 executed on separate component`() {
-        // Step 1: initiator sending hello message to responder.
-        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
-        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
-
-        // Step 2: responder sending hello message to initiator.
-        val responderHelloMsg = authenticationProtocolB.generateResponderHello()
-        authenticationProtocolA.receiveResponderHello(responderHelloMsg)
-
-        // Fronting component of responder sends data downstream so that protocol can be continued.
-        val (privateKey, publicKey) = authenticationProtocolB.getDHKeyPair()
-        val authenticationProtocolBDownstream = AuthenticationProtocolResponder.fromStep2(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, initiatorHelloMsg, responderHelloMsg, privateKey, publicKey)
-
-        // Both sides generate handshake secrets.
-        authenticationProtocolA.generateHandshakeSecrets()
-        authenticationProtocolBDownstream.generateHandshakeSecrets()
-
-        // Step 3: initiator sending handshake message and responder validating it.
-        val signingCallbackForA = { data: ByteArray ->
-            signature.initSign(partyAIdentityKey.private)
-            signature.update(data)
-            signature.sign()
-        }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
-
-        authenticationProtocolBDownstream.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public)
-
-        // Step 4: responder sending handshake message and initiator validating it.
-        val signingCallbackForB = { data: ByteArray ->
-            signature.initSign(partyBIdentityKey.private)
-            signature.update(data)
-            signature.sign()
-        }
-        val responderHandshakeMessage = authenticationProtocolBDownstream.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
-
-        authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
-
-        // Both sides generate session secrets
-        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedEncryptionSession
-        val authenticatedSessionOnB = authenticationProtocolBDownstream.getSession() as AuthenticatedEncryptionSession
-
-        for (i in 1..3) {
-            // Data exchange: A sends message to B, which decrypts and validates it
-            val payload = "ping $i".toByteArray(Charsets.UTF_8)
-            val encryptionResult = authenticatedSessionOnA.encryptData(payload)
-            val initiatorMsg = AuthenticatedEncryptedDataMessage(encryptionResult.header, ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag))
-
-            val decryptedPayload = authenticatedSessionOnB.decryptData(initiatorMsg.header, initiatorMsg.encryptedPayload.array(), initiatorMsg.authTag.array())
-            assertTrue(decryptedPayload.contentEquals(payload))
-        }
-
-        for (i in 1..3) {
-            // Data exchange: B -> A
-            val payload = "pong $i".toByteArray(Charsets.UTF_8)
-            val encryptionResult = authenticatedSessionOnB.encryptData(payload)
-            val responderMsg = AuthenticatedEncryptedDataMessage(encryptionResult.header, ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag) )
 
             val decryptedPayload = authenticatedSessionOnA.decryptData(responderMsg.header, responderMsg.encryptedPayload.array(), responderMsg.authTag.array())
             assertTrue(decryptedPayload.contentEquals(payload))

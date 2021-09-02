@@ -1,0 +1,18 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "Virtual Node Cache Interface"
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-application"
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-install:$cordaVersion"
+    implementation "net.corda:corda-packaging:$cordaVersion"
+    implementation "net.corda:corda-sandbox:$cordaVersion"
+    implementation "net.corda:avro-schema"
+}

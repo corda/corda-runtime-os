@@ -14,7 +14,6 @@ import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.MessageAck
 import net.corda.p2p.SessionPartitions
-import net.corda.p2p.Step2Message
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessage
@@ -244,7 +243,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         DataMessage.AuthenticatedAndEncrypted(payload)
                     )
                     is ResponderHelloMessage, is ResponderHandshakeMessage,
-                    is InitiatorHandshakeMessage, is Step2Message -> processSessionMessage(message)
+                    is InitiatorHandshakeMessage -> processSessionMessage(message)
                     is UnauthenticatedMessage -> {
                         listOf(Record(Schema.P2P_IN_TOPIC, generateKey(), payload))
                     }

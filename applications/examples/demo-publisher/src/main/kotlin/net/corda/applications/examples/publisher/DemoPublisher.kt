@@ -9,6 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -29,13 +30,14 @@ class DemoPublisher @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = Shutdown::class)
-    private val shutDownService: Shutdown
+    private val shutDownService: Shutdown,
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory
 ) : Application {
 
     private companion object {
         val log: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-        const val BATCH_SIZE: Int = 128
         const val TOPIC_PREFIX = "messaging.topic.prefix"
         const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
@@ -57,8 +59,7 @@ class DemoPublisher @Activate constructor(
             val instanceId = parameters.instanceId?.toInt()
             var publisher: RunPublisher? = null
 
-            lifeCycleCoordinator = LifecycleCoordinatorFactory.createCoordinator<DemoPublisher>(
-                BATCH_SIZE
+            lifeCycleCoordinator = coordinatorFactory.createCoordinator<DemoPublisher>(
             ) { event: LifecycleEvent, _: LifecycleCoordinator ->
                 log.info("LifecycleEvent received: $event")
                 when (event) {
