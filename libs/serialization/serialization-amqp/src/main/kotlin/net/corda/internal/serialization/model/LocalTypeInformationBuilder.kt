@@ -30,6 +30,9 @@ import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
+import java.security.AccessController.doPrivileged
+import java.security.PrivilegedActionException
+import java.security.PrivilegedExceptionAction
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.primaryConstructor
@@ -77,7 +80,9 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
                 val previous = visited
                 try {
                     visited = visited + typeIdentifier
-                    buildIfNotFound(type, typeIdentifier, isOpaque)
+                    doPrivileged(PrivilegedExceptionAction { buildIfNotFound(type, typeIdentifier, isOpaque) })
+                } catch (e: PrivilegedActionException) {
+                    throw e.exception
                 } finally {
                     visited = previous
                 }
