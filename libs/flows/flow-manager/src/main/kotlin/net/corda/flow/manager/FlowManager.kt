@@ -3,7 +3,7 @@ package net.corda.flow.manager
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.event.FlowSessionMessage
 import net.corda.messaging.api.records.Record
-import net.corda.sandbox.cache.FlowMetadata
+import net.corda.virtual.node.cache.FlowMetadata
 
 data class FlowResult(
     val checkpoint: Checkpoint?,
