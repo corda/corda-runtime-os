@@ -1,0 +1,44 @@
+plugins {
+    id "corda.osgi-test-conventions"
+}
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:osgi.core"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+
+    api "javax.persistence:javax.persistence-api"
+
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+
+    integrationTestImplementation project(":libs:db:orm")
+    integrationTestImplementation project(":libs:db:orm-impl")
+
+    // TODO: not comfortable with these runtime dependencies as they aren't needed in the test bundle.
+    integrationTestRuntime project(":testing:bundles:cats")
+    integrationTestRuntime project(":testing:bundles:dogs")
+
+    // TODO: why do I need these here?
+    integrationTestRuntime 'antlr:antlr.osgi:2.7.7'
+    integrationTestRuntime 'com.sun.activation:javax.activation:1.2.0'
+
+    // TODO: and why do I need this?
+    integrationTestRuntime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+}
+
+// TODO: this doesn't work.
+//  trying to ensure dogs and cats aren't exported to the test bundle.
+//tasks.named('jar', Jar) {
+//    bnd """
+//Bundle-Name: Shell Tools
+//Bundle-SymbolicName: \${project.group}.shell
+//Import-Package:\
+//    java.io,\
+//    java.lang,kotlin;version="[1.4,2)",\
+//    org.junit.jupiter.api;version="[5.7,6)",\
+//    org.junit.jupiter.api.extension;version="[5.7,6)",\
+//    org.osgi.framework;version="[1.10,2)",\
+//    org.osgi.test.junit5.service;version="[1.0,2)
+//"""
+//}

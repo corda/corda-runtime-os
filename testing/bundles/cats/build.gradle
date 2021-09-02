@@ -1,0 +1,13 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Cats test bundle'
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    compileOnly "org.osgi:osgi.annotation"
+
+    api 'javax.persistence:javax.persistence-api'
+}
