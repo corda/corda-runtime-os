@@ -2,6 +2,7 @@ package net.corda.messaging.kafka.publisher.factory
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
@@ -41,5 +42,9 @@ class CordaKafkaPublisherFactory @Activate constructor(
         )
         val producer = KafkaProducerBuilderImpl(avroSchemaRegistry).createProducer(config.getConfig(KAFKA_PRODUCER))
         return CordaKafkaPublisherImpl(config, producer)
+    }
+
+    override fun <TREQ, TRESP> createRPCSender(publisherConfig: Config, config: Config): RPCSender<TREQ, TRESP> {
+        TODO("Not yet implemented")
     }
 }

@@ -6,9 +6,11 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
+import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
+import net.corda.messaging.api.subscription.RPCResponder
 import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
@@ -214,5 +216,13 @@ class KafkaSubscriptionFactory @Activate constructor(
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
 
         return KafkaRandomAccessSubscriptionImpl(config, consumerBuilder, keyClass, valueClass)
+    }
+
+    override fun <TREQ, TRESP> createRPCResponder(
+        subscriptionConfig: Config,
+        config: Config,
+        responderProcessor: RPCResponderProcessor<TREQ, TRESP>
+    ): RPCResponder<TREQ, TRESP> {
+        TODO("Not yet implemented")
     }
 }
