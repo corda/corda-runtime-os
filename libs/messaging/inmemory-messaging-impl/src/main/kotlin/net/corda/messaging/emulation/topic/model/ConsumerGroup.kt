@@ -4,21 +4,20 @@ import net.corda.messaging.emulation.properties.SubscriptionConfiguration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 internal class ConsumerGroup(
-    private val topicName: String,
     private val partitions: Collection<Partition>,
     internal val subscriptionConfig: SubscriptionConfiguration,
     firstConsumer: Consumer,
-    private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock(),
+    internal val lock: ReentrantReadWriteLock = ReentrantReadWriteLock(),
 ) {
-    private val consumers = ConcurrentHashMap<Consumer, Collection<Partition>>()
+    private val consumers = ConcurrentHashMap<Consumer, ConsumptionLoop>()
     private val commitments = ConcurrentHashMap<Partition, Long>()
 
     private val commitStrategy = firstConsumer.commitStrategy
     private val partitionStrategy = firstConsumer.partitionStrategy
+    private val offsetStrategy = firstConsumer.offsetStrategy
 
     private val newData = lock.writeLock().newCondition()
 
@@ -32,24 +31,26 @@ internal class ConsumerGroup(
         }
     }
 
-    internal fun getPartitions(consumer: Consumer): Collection<Pair<Partition, Long>> {
-        return lock.read {
-            consumers[consumer]?.map { partition ->
-                val offset = commitments.computeIfAbsent(partition) {
-                    when (consumer.offsetStrategy) {
-                        OffsetStrategy.LATEST -> partition.latestOffset()
-                        OffsetStrategy.EARLIEST -> 0L
-                    }
+    fun addPartitionsToLoop(loop: ConsumptionLoop, partitions: Collection<Partition>) {
+        val partitionToOffset = partitions.associateWith { partition ->
+            commitments.computeIfAbsent(partition) {
+                when (offsetStrategy) {
+                    OffsetStrategy.LATEST -> partition.latestOffset()
+                    OffsetStrategy.EARLIEST -> 0L
                 }
-                partition to offset
-            } ?: emptyList()
+            }
         }
+        loop.addPartitions(partitionToOffset)
+    }
+
+    fun commit(commits: Map<Partition, Long>) {
+        commitments += commits
     }
 
     fun stopConsuming(consumer: Consumer) {
-        val partitions = consumers.remove(consumer)
-        if (partitions != null) {
-            consumer.partitionAssignmentListener?.onPartitionsUnassigned(partitions.map { topicName to it.partitionId })
+        val loop = consumers.remove(consumer)
+        if (loop != null) {
+            loop.removePartitions(loop.partitions)
             if (consumers.isNotEmpty()) {
                 repartition()
             } else {
@@ -77,14 +78,11 @@ internal class ConsumerGroup(
 
     private fun repartitionShare() {
         lock.write {
-            val consumersWithoutPartitions = consumers.filterValues {
-                it.isEmpty()
-            }.keys
-            consumersWithoutPartitions.forEach { consumer ->
-                consumers[consumer] = partitions
-                consumer.partitionAssignmentListener?.onPartitionsAssigned(
-                    partitions.map { topicName to it.partitionId }
-                )
+            val loopsWithoutPartitions = consumers.filterValues {
+                it.partitions.isEmpty()
+            }
+            loopsWithoutPartitions.values.forEach { loop ->
+                addPartitionsToLoop(loop, partitions)
             }
 
             newData.signalAll()
@@ -98,30 +96,21 @@ internal class ConsumerGroup(
             }, {
                 it.value
             }).values
-                .zip(consumers.keys).onEach { (newPartitionList, consumer) ->
-                    val listener = consumer.partitionAssignmentListener
-                    if (listener != null) {
-                        val oldPartitionList = consumers[consumer] ?: emptyList()
-                        val assigned = newPartitionList - oldPartitionList
-                        val unassigned = oldPartitionList - newPartitionList
-                        if (unassigned.isNotEmpty()) {
-                            listener.onPartitionsUnassigned(unassigned.map { topicName to it.partitionId })
-                        }
-                        if (assigned.isNotEmpty()) {
-                            listener.onPartitionsAssigned(assigned.map { topicName to it.partitionId })
-                        }
+                .zip(consumers.entries).onEach { (newPartitionList, consumerAndLoop) ->
+                    val oldPartitionList = consumerAndLoop.value.partitions
+                    val unassigned = oldPartitionList - newPartitionList
+                    val assigned = newPartitionList - oldPartitionList
+                    consumerAndLoop.value.removePartitions(unassigned)
+                    if (assigned.isNotEmpty()) {
+                        addPartitionsToLoop(consumerAndLoop.value, assigned)
                     }
-                    consumers[consumer] = newPartitionList
                 }.map {
-                    it.second
+                    it.second.key
                 }
 
-            val consumersWithoutAssignedPartitions = consumers.keys - consumersWithAssignedPartitions
-            consumersWithoutAssignedPartitions.forEach { consumer ->
-                val unassigned = consumers.put(consumer, emptyList())
-                if (unassigned?.isNotEmpty() == true) {
-                    consumer.partitionAssignmentListener?.onPartitionsUnassigned(unassigned.map { topicName to it.partitionId })
-                }
+            val consumersWithoutAssignedPartitions = consumers - consumersWithAssignedPartitions
+            consumersWithoutAssignedPartitions.forEach { consumerAndLoop ->
+                consumerAndLoop.value.removePartitions(consumerAndLoop.value.partitions)
             }
             newData.signalAll()
         }
@@ -130,14 +119,17 @@ internal class ConsumerGroup(
     fun createConsumption(
         consumer: Consumer,
     ): Consumption {
-        if ((consumer.partitionStrategy != partitionStrategy) || (consumer.commitStrategy != commitStrategy)) {
+        if ((consumer.partitionStrategy != partitionStrategy) ||
+            (consumer.commitStrategy != commitStrategy) ||
+            (consumer.offsetStrategy != offsetStrategy)
+        ) {
             throw IllegalStateException("Can not subscribe two different consumer types to the same group")
         }
-        consumers.compute(consumer) { _, currentPartitions ->
+        val loop = consumers.compute(consumer) { _, currentPartitions ->
             if (currentPartitions != null) {
                 throw DuplicateConsumerException()
             }
-            ConcurrentHashMap.newKeySet()
+            ConsumptionLoop(consumer, this)
         }
         repartition()
         return ConsumptionThread(
@@ -147,11 +139,7 @@ internal class ConsumerGroup(
             killMe = {
                 this.stopConsuming(consumer)
             },
-            loop = ConsumptionLoop(consumer, this)
+            loop = loop!!
         )
-    }
-
-    fun commit(commits: Map<Partition, Long>) {
-        commitments += commits
     }
 }

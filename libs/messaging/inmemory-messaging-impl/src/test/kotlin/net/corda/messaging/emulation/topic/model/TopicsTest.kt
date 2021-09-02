@@ -49,6 +49,7 @@ class TopicsTest {
             on { topicName } doReturn "topic"
             on { partitionStrategy } doReturn PartitionStrategy.SHARE_PARTITIONS
             on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
+            on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
         }
         val thread = topics.createConsumption(consumer)
 

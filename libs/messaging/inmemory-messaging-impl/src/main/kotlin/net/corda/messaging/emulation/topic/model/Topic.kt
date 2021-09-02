@@ -37,7 +37,6 @@ internal class Topic(
     ): Consumption {
         return consumerGroups.computeIfAbsent(consumer.groupName) {
             ConsumerGroup(
-                consumer.topicName,
                 partitions,
                 subscriptionConfiguration,
                 consumer,

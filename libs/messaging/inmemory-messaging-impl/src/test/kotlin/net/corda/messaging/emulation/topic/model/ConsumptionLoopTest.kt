@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doReturnConsecutively
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -15,6 +14,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Duration
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 class ConsumptionLoopTest {
     private val config = SubscriptionConfiguration(10, Duration.ofSeconds(1))
@@ -29,18 +29,10 @@ class ConsumptionLoopTest {
     private val group = mock<ConsumerGroup> {
         on { subscriptionConfig } doReturn config
         on { pollSizePerPartition } doReturn 5
+        on { lock } doReturn ReentrantReadWriteLock()
     }
 
     private val loop = ConsumptionLoop(consumer, group)
-
-    @Test
-    fun `run will not ask for records if consumer is not subscribe`() {
-        doReturn(false).whenever(group).isConsuming(consumer)
-
-        loop.run()
-
-        verify(group, never()).getPartitions(any())
-    }
 
     @Test
     fun `run will not ask for records as long as the consumer is subscribe`() {
@@ -49,10 +41,12 @@ class ConsumptionLoopTest {
             .thenReturn(true)
             .thenReturn(true)
             .thenReturn(false)
+        val partition = mock<Partition>()
+        loop.addPartitions(mapOf(partition to 10L))
 
         loop.run()
 
-        verify(group, times(3)).getPartitions(any())
+        verify(partition, times(3)).getRecordsFrom(any(), any())
     }
 
     @Test
@@ -60,8 +54,6 @@ class ConsumptionLoopTest {
         whenever(group.isConsuming(consumer))
             .thenReturn(true)
             .thenReturn(false)
-        whenever(group.getPartitions(consumer))
-            .thenReturn(emptyList())
 
         loop.run()
 
@@ -76,8 +68,7 @@ class ConsumptionLoopTest {
         whenever(group.isConsuming(consumer))
             .thenReturn(true)
             .thenReturn(false)
-        whenever(group.getPartitions(consumer))
-            .thenReturn(listOf(partition to 1004L))
+        loop.addPartitions(mapOf(partition to 1004L))
 
         loop.run()
 
@@ -95,8 +86,7 @@ class ConsumptionLoopTest {
         whenever(group.isConsuming(consumer))
             .thenReturn(true)
             .thenReturn(false)
-        whenever(group.getPartitions(consumer))
-            .thenReturn(listOf(partition to 1004L))
+        loop.addPartitions(mapOf(partition to 1004L))
 
         loop.run()
 
@@ -120,13 +110,12 @@ class ConsumptionLoopTest {
         whenever(group.isConsuming(consumer))
             .thenReturn(true)
             .thenReturn(false)
-        whenever(group.getPartitions(consumer))
-            .thenReturn(
-                listOf(
-                    partitionOne to 1004L,
-                    partitionTwo to 1001L
-                )
+        loop.addPartitions(
+            mapOf(
+                partitionOne to 1004L,
+                partitionTwo to 1001L
             )
+        )
 
         loop.run()
 
@@ -140,7 +129,7 @@ class ConsumptionLoopTest {
 
     @Test
     fun `processRecords will not commit the records if there was an error`() {
-        val partitionOne = mock<Partition> {
+        val partition = mock<Partition> {
             on { getRecordsFrom(any(), any()) } doReturn (1..10).map {
                 RecordMetadata(it.toLong(), Record("topic", it, it), 2)
             }
@@ -148,12 +137,7 @@ class ConsumptionLoopTest {
         whenever(group.isConsuming(consumer))
             .thenReturn(true)
             .thenReturn(false)
-        whenever(group.getPartitions(consumer))
-            .thenReturn(
-                listOf(
-                    partitionOne to 1004L,
-                )
-            )
+        loop.addPartitions(mapOf(partition to 1004L))
         whenever(consumer.handleRecords(any())).doThrow(RuntimeException(""))
 
         loop.run()
@@ -190,13 +174,12 @@ class ConsumptionLoopTest {
         whenever(group.isConsuming(consumer))
             .thenReturn(true)
             .thenReturn(false)
-        whenever(group.getPartitions(consumer))
-            .thenReturn(
-                listOf(
-                    partitionOne to 1004L,
-                    partitionTwo to 1001L
-                )
+        loop.addPartitions(
+            mapOf(
+                partitionOne to 1004L,
+                partitionTwo to 1001L
             )
+        )
 
         loop.run()
 
@@ -237,13 +220,12 @@ class ConsumptionLoopTest {
             .thenReturn(true)
             .thenReturn(true)
             .thenReturn(false)
-        whenever(group.getPartitions(consumer))
-            .thenReturn(
-                listOf(
-                    partitionOne to 0L,
-                    partitionTwo to 0L
-                )
+        loop.addPartitions(
+            mapOf(
+                partitionOne to 0L,
+                partitionTwo to 0L
             )
+        )
 
         loop.run()
 

@@ -38,7 +38,7 @@ class TopicTest {
     fun `createConsumption will create a group with the correct arguments`() {
         val topic = Topic("topic", config)
         mockConstruction(ConsumerGroup::class.java) { _, context ->
-            assertThat(context.arguments()[1] as Collection<Any?>).hasSize(5)
+            assertThat(context.arguments()[0] as Collection<Any?>).hasSize(5)
         }.use {
             val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
             val consumer = mock<Consumer> {
