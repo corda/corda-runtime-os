@@ -7,7 +7,12 @@ import javax.persistence.Id
 import javax.persistence.JoinColumn
 import javax.persistence.JoinColumns
 import javax.persistence.ManyToOne
+import javax.persistence.NamedQuery
 
+@NamedQuery(
+    name = "Cat.findByOwner",
+    query = "select c.name from Cat as c join c.owner as o where o.name = :owner"
+)
 @Entity
 data class Cat(
     @Id
