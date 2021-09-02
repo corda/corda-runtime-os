@@ -22,9 +22,8 @@ dependencies {
         transitive = false
     }
     implementation "net.corda:corda-packaging"
-    implementation ("net.corda:corda-sandbox:$cordaVersion") {
-        transitive = false
-    }
+    implementation project(":libs:sandbox")
+
     implementation project(":libs:utilities")
     implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
     implementation project(":libs:serialization:serialization-encoding")
