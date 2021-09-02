@@ -7,7 +7,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.p2p.schema.Schema.Companion.CRYPTO_KEYS_TOPIC
+import net.corda.p2p.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.v5.base.util.contextLogger

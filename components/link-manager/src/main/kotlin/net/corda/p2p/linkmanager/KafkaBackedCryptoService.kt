@@ -7,7 +7,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RSA_SIGNATURE_ALGO
-import net.corda.p2p.schema.Schema
+import net.corda.p2p.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.v5.base.util.contextLogger
@@ -25,7 +25,7 @@ import kotlin.concurrent.write
 class KafkaBackedCryptoService(subscriptionFactory: SubscriptionFactory): LinkManagerCryptoService, Lifecycle {
 
     private val keyPairEntryProcessor = KeyPairEntryProcessor()
-    private val subscriptionConfig = SubscriptionConfig("crypto-service", Schema.CRYPTO_KEYS_TOPIC)
+    private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC)
     private val subscription =
         subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor)
 
