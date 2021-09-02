@@ -9,10 +9,10 @@ description 'Hello World Implementation'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.slf4j:slf4j-api"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'net.corda:corda-base'
     implementation project(":libs:examples:helloworld")
-    implementation 'org.slf4j:slf4j-api'
 }

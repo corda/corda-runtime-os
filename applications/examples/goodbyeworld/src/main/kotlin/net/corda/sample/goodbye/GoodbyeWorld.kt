@@ -1,5 +1,6 @@
 package net.corda.sample.goodbye
 
+import co.paralleluniverse.fibers.instrument.JavaAgent
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
@@ -29,6 +30,7 @@ class GoodbyeWorld @Activate constructor(
     @Activate
     override fun start(context: BundleContext?) {
         logger.info("START")
+        logger.info("${JavaAgent::class.qualifiedName} is ${if(JavaAgent.isActive()) "" else "not "}active")
     }
 
     override fun startup(args: Array<String>) {

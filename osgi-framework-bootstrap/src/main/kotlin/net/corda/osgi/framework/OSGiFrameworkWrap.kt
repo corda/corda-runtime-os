@@ -3,7 +3,6 @@ package net.corda.osgi.framework
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.osgi.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
-import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants
@@ -12,6 +11,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceReference
 import org.osgi.framework.launch.Framework
 import org.osgi.framework.launch.FrameworkFactory
+import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
@@ -49,7 +49,7 @@ class OSGiFrameworkWrap(
 
     companion object {
 
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(OSGiFrameworkWrap::class.java)
 
         /**
          * Map the bundle state number to a description of the state.

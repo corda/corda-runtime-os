@@ -1,9 +1,34 @@
+import org.w3c.dom.Document
+import org.w3c.dom.Element
+import org.w3c.dom.Text
+
+import javax.xml.transform.OutputKeys
+import javax.xml.parsers.DocumentBuilder
+import javax.xml.parsers.DocumentBuilderFactory
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.Transformer
+import javax.xml.transform.dom.DOMSource
+import javax.xml.transform.stream.StreamResult
 import java.nio.file.Files
 import java.util.jar.JarFile
 
+import groovy.transform.TupleConstructor
+
+import org.osgi.framework.Constants
+
 plugins {
-    id 'java'
-    id 'biz.aQute.bnd.builder'
+    id 'corda.common-library'
+}
+
+def applyDependencySubstitution = { Configuration conf ->
+    conf.resolutionStrategy.dependencySubstitution {
+        //Replace Kotlin stdlib
+        substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') using module("net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion")
+        substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') using module("net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion")
+        substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+        substitute module('org.jetbrains.kotlin:kotlin-stdlib') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+        substitute module('org.jetbrains.kotlin:kotlin-reflect') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+    }
 }
 
 pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
@@ -11,67 +36,52 @@ pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
 }
 
 configurations {
-    bootstrapClasspath {
-        transitive = true
-    }
     systemPackages {
         transitive = false
     }
+    bootstrapClasspath {
+        transitive = true
+        extendsFrom(systemPackages)
+        attributes { attrs ->
+            attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR))
+        }
+    }
+    compileOnly {
+        extendsFrom(systemPackages)
+    }
+    bundles {
+        transitive = true
+        extendsFrom(runtimeClasspath)
+        attributes { attrs ->
+            attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR))
+        }
+    }
+    applyDependencySubstitution(systemPackages)
+    applyDependencySubstitution(bootstrapClasspath)
+    applyDependencySubstitution(bundles)
 }
 
 dependencies {
-    bootstrapClasspath "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    bootstrapClasspath "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     bootstrapClasspath project(":osgi-framework-bootstrap")
 
+    systemPackages "net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion"
+    systemPackages "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    systemPackages "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
     systemPackages project(":osgi-framework-api")
 }
 
-def jarTask = tasks.named("jar", Jar) {
-    archiveBaseName = project.name
-    bnd """
-Bundle-Name: \${project.description}
-Bundle-SymbolicName: \${project.group}.\${project.name}
-"""
-}
+Provider<Jar> jarTask = tasks.named("jar", Jar)
 
 private boolean isBundle(JarFile jarFile) {
-    return jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME) != null
+    java.util.jar.Attributes mainAttributes = jarFile.manifest.mainAttributes
+    return mainAttributes.getValue(Constants.BUNDLE_SYMBOLICNAME) != null && mainAttributes.getValue(Constants.BUNDLE_VERSION) != null
 }
 
 private static boolean isJar(final File file) {
     return file.name.endsWith(".jar")
-}
-
-private addBundle(
-        final File source,
-        final File target,
-        final Set<String> systemBundleSet) {
-    Files.deleteIfExists(target.toPath())
-    Files.copy(source.toPath(), target.toPath())
-    systemBundleSet.add("bundles/${source.name}")
-    logger.info "OSGI Bundle $source.name included as resource."
-}
-
-private addBundles(
-        final ArtifactCollection artifacts,
-        final File bundlesDir,
-        final Set<String> systemBundleSet,
-        final Set<String> systemPackageSet) {
-    if (!bundlesDir.exists()) {
-        bundlesDir.mkdirs()
-    }
-    artifacts.each { resolvedArtifact ->
-        final def file = resolvedArtifact.file
-        if (isJar(file) && !systemPackageSet.contains(file.name)) {
-            final def jarFile = new JarFile(file)
-            if (isBundle(jarFile)) {
-                addBundle(file, new File(bundlesDir, file.name), systemBundleSet)
-            }
-        }
-    }
 }
 
 private def addSystemPackagesExtra(
@@ -125,80 +135,137 @@ private def addSystemPackagesExtra(
     jdkExtraPackages.each { export -> systemBundleExtraSet.add(export) }
 }
 
-def cordaAssembleBundlesTask = tasks.register("cordaAssembleBundles") {
-    dependsOn jarTask,
-            configurations.bootstrapClasspath,
-            configurations.runtimeClasspath,
-            configurations.systemPackages
+Provider<DefaultTask> createSystemBundlesFile = tasks.register("createSystemPackageFile") {
+    inputs.files(jarTask)
+    inputs.files(configurations.bundles)
+    File systemBundlesFile = new File(temporaryDir, "system_bundles")
+    outputs.file(systemBundlesFile)
     doLast {
-        final bundlesDir = new File(project.buildDir, "resources/main/bundles")
-        if (!bundlesDir.exists()) {
-            bundlesDir.mkdirs()
-        }
-        final Set<String> systemPackageSet = new TreeSet<>()
-        configurations.systemPackages.resolve().each { file ->
-            systemPackageSet.add(file.name)
-        }
-        final Set<String> systemBundleSet = new TreeSet<>()
-        configurations.runtimeClasspath.incoming.each { resolvableDependencies ->
-            addBundles(resolvableDependencies.artifacts as ArtifactCollection, bundlesDir, systemBundleSet, systemPackageSet)
-        }
-        new File(project.buildDir, "libs").listFiles().findAll { file ->
-            isJar(file) && !systemPackageSet.contains(file.name)
-        }.each { jar ->
-            addBundle(jar, new File(bundlesDir, jar.name), systemBundleSet)
-        }
-        new File(project.buildDir, "libs").listFiles().findAll { file -> isJar(file) }.each { jar ->
-            addBundle(jar, new File(bundlesDir, jar.name), systemBundleSet)
-        }
-        final systemBundlesFile = new File(project.buildDir, "resources/main/system_bundles")
         systemBundlesFile.withWriter { writer ->
-            systemBundleSet.each { line ->
-                writer.writeLine(line)
+            writer.writeLine("bundles/${jarTask.flatMap {it.archiveFile }.map(RegularFile.&getAsFile).map(File.&getName).get()}")
+            (configurations.bundles - configurations.systemPackages).files.grep { File file -> isJar(file) && isBundle(new JarFile(file)) }.each { File file ->
+                writer.writeLine("bundles/${file.name}")
             }
         }
-        final numberOfBundles = systemBundleSet.size()
-        logger.info "Included $numberOfBundles OSGi bundles in $systemBundlesFile resource."
     }
 }
 
-def cordaAssembleSystemPackagesExtraTask = tasks.register("cordaAssembleSystemPackagesExtra") {
-    dependsOn cordaAssembleBundlesTask
+def cordaAssembleSystemPackagesExtraTask = tasks.register("createSystemPackagesExtraFile") {
+    File systemPackagesExtraFile = new File(temporaryDir, "system_packages_extra")
+    outputs.file(systemPackagesExtraFile)
     doLast {
         final Set<String> systemBundleExtraSet = new TreeSet<>()
         configurations.systemPackages.incoming.each { resolvableDependencies ->
             addSystemPackagesExtra(resolvableDependencies.artifacts as ArtifactCollection, systemBundleExtraSet)
         }
-        final systemPackagesExtraFile = new File(project.buildDir, "resources/main/system_packages_extra")
-        Files.deleteIfExists(systemPackagesExtraFile.toPath())
         systemPackagesExtraFile.withWriter { writer ->
             systemBundleExtraSet.each { export -> writer.writeLine(export) }
         }
-        final def numberOfSystemPackagesExtra = systemBundleExtraSet.size()
-        logger.info "Included $numberOfSystemPackagesExtra OSGI system packages extra list in $systemPackagesExtraFile resource."
     }
 }
 
 
+@TupleConstructor
+class JavaAgent implements Serializable {
+    String className
+    String args
+}
+
+class JavaAgentExtension {
+    final List<JavaAgent> javaAgents = new ArrayList<JavaAgent>()
+
+    def agent(String className, String args) {
+        javaAgents.add(new JavaAgent(className, args))
+    }
+}
+
+JavaAgentExtension javaAgentExtension = extensions.create("javaAgents", JavaAgentExtension.class)
+
 def appJarBaseName = "corda-" + project.name
 
+class JavaAgentFile extends DefaultTask {
+
+    @OutputFile
+    File getOutputFile() {
+        return new File(temporaryDir, "javaAgents.xml")
+    }
+
+    @Input
+    List<JavaAgent> javaAgents = new ArrayList<JavaAgent>()
+
+    @TaskAction
+    def run() {
+        Files.newBufferedWriter(getOutputFile().toPath()).withCloseable { Writer writer ->
+            TransformerFactory transformerFactory = TransformerFactory.newInstance()
+            transformerFactory.setAttribute("indent-number", 4);
+            Transformer transformer = transformerFactory.newTransformer()
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes")
+            transformer.setOutputProperty(OutputKeys.METHOD, "xml")
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8")
+            transformer.setOutputProperty(OutputKeys.STANDALONE, "yes")
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes")
+
+            DocumentBuilderFactory docBuilderFectory = DocumentBuilderFactory.newInstance()
+            DocumentBuilder docBuilder = docBuilderFectory.newDocumentBuilder()
+            Document doc = docBuilder.newDocument()
+            Element agentsElement = doc.createElement("javaAgents")
+            doc.appendChild(agentsElement)
+            javaAgents.each { JavaAgent javaAgent ->
+                Element agentElement = doc.createElement("javaAgent")
+                agentElement.setAttribute("class", javaAgent.className)
+                Text agentArguments = doc.createTextNode(javaAgent.args)
+                agentElement.appendChild(agentArguments)
+                agentsElement.appendChild(agentElement)
+            }
+            transformer.transform(new DOMSource(agentsElement), new StreamResult(writer))
+        }
+    }
+}
+
+Provider<JavaAgentFile> javaAgentFileTask =  tasks.register("javaAgentFile", JavaAgentFile) {
+    javaAgents = javaAgentExtension.javaAgents
+}
+
 def appJar = tasks.register('appJar', Jar) {
-    dependsOn cordaAssembleSystemPackagesExtraTask
+    inputs.files(configurations.bootstrapClasspath)
+    inputs.files(configurations.bundles)
+    inputs.files(configurations.systemPackages)
+    inputs.files(jarTask)
+
     archivesBaseName = appJarBaseName
     destinationDirectory = layout.buildDirectory.dir("bin")
-    from(
-            configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) },
-            configurations.systemPackages.collect { it.isDirectory() ? it : zipTree(it) },
-            new File(project.buildDir, "resources/main")
-    )
+
+    exclude "META-INF/MANIFEST.MF"
     exclude "META-INF/*.SF"
     exclude "META-INF/*.DSA"
     exclude "META-INF/*.RSA"
     exclude "META-INF/*.EC"
-    exclude "**/module-info.class"
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    exclude "META-INF/DEPENDENCIES"
+    exclude "META-INF/LICENSE"
+    exclude "META-INF/NOTICE"
+    exclude "module-info.class"
+    exclude "META-INF/versions/*/module-info.class"
+    duplicatesStrategy = DuplicatesStrategy.WARN
     manifest {
         attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
+        attributes 'Launcher-Agent-Class': 'net.corda.osgi.framework.JavaAgentLauncher'
+        attributes 'Can-Redefine-Classes': true
+        attributes 'Can-Retransform-Classes': true
+    }
+
+    into("META-INF/") {
+        from(javaAgentFileTask)
+    }
+    from(configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) })
+    from(createSystemBundlesFile)
+    from(cordaAssembleSystemPackagesExtraTask)
+    into("bundles") {
+        from(jarTask)
+        from(configurations.bundles - configurations.systemPackages) {
+            eachFile { FileCopyDetails fileCopyDetails ->
+                if(!isJar(new File(fileCopyDetails.sourcePath))) fileCopyDetails.exclude()
+            }
+        }
     }
 }
 
