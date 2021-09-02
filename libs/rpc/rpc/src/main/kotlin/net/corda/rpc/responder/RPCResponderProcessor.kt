@@ -1,12 +1,13 @@
 package net.corda.rpc.responder
 
-import net.corda.messaging.api.records.Record
+import java.util.concurrent.CompletableFuture
 
-interface RPCResponderProcessor {
+interface RPCResponderProcessor<TREQ, TRESP> {
 
     /**
      * The implementation of this functional class will be used to notify you of any requests that need processing
-     * @param record that was received
+     * @param request
+     * @param responseFuture
      */
-    fun onUpdate(record: Record<String, String>)
+    fun onUpdate(request: TREQ, responseFuture:CompletableFuture<TRESP>): Unit
 }
