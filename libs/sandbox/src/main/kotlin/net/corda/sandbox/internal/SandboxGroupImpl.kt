@@ -16,22 +16,11 @@ internal class SandboxGroupImpl(private val sandboxesById: NavigableMap<Cpk.Iden
         getSandbox(cpkIdentifier).loadClass(className)
 
     override fun <T : Any> loadClass(className: String, type: Class<T>): Class<out T> {
-        var klass: Class<*>? = null
-        for (sandbox in sandboxes) {
-            try {
-                klass = sandbox.loadClass(className)
-                break
-            } catch (ex: SandboxException) {
-                continue
-            }
-        }
-
-        if (klass == null) {
-            throw SandboxException("Class $className could not be not found in sandbox group.")
-        }
+        val containingSandbox = sandboxes.find { sandbox -> sandbox.containsClass(className) }
+            ?: throw SandboxException("Class $className could not be not found in sandbox group.")
 
         return try {
-            klass.asSubclass(type)
+            containingSandbox.loadClass(className).asSubclass(type)
         } catch (e: ClassCastException) {
             throw SandboxException(
                 "Class $className was found in sandbox, but was not of the provided type $type."

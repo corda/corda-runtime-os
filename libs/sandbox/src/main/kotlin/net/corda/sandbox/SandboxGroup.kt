@@ -26,11 +26,10 @@ interface SandboxGroup {
     fun loadClass(cpkIdentifier: Cpk.Identifier, className: String): Class<*>
 
     /**
-     * Loads the [Class] with [className] from the sandbox group and casts it to type T.
-     * It is assumed the class will be unique within the group.
+     * Loads the [Class] with [className] from the sandbox group and casts it to type T. It is assumed that the class
+     * is only contained in one [Sandbox]'s CorDapp bundle across the group.
      *
-     * Throws [SandboxException] if the sandbox does not have a CorDapp bundle, the CorDapp bundle is
-     * uninstalled, or the class is not found in the sandbox.
+     * Throws [SandboxException] if the sandbox's CorDapp bundle is uninstalled, or does not contain the named class.
      */
     fun <T : Any> loadClass(className: String, type: Class<T>): Class<out T>
 
