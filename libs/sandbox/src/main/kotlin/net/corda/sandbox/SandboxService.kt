@@ -2,7 +2,6 @@ package net.corda.sandbox
 
 import net.corda.packaging.Cpk
 import net.corda.v5.crypto.SecureHash
-import java.util.UUID
 
 /**
  * OSGi service interface for managing sandboxes.
