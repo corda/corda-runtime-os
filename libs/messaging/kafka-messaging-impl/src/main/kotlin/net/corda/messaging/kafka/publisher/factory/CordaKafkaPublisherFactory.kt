@@ -45,7 +45,10 @@ class CordaKafkaPublisherFactory @Activate constructor(
         return CordaKafkaPublisherImpl(config, producer)
     }
 
-    override fun <TREQ, TRESP> createRPCSender(rpcConfig: RPCConfig<TREQ, TRESP>, nodeConfig: Config): RPCSender<TREQ, TRESP> {
+    override fun <TREQ : Any, TRESP : Any> createRPCSender(
+        rpcConfig: RPCConfig<TREQ, TRESP>,
+        nodeConfig: Config
+    ): RPCSender<TREQ, TRESP> {
         TODO("Not yet implemented")
     }
 }
