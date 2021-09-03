@@ -1,5 +1,4 @@
 package net.corda.common.json.serialization
-
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.junit.jupiter.api.Test
 import java.text.SimpleDateFormat
