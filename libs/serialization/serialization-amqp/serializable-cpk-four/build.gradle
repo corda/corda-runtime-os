@@ -17,8 +17,8 @@ cordapp {
 }
 
 dependencies {
-    cordapp project(":libs:serialization:serialization-amqp:osgi-integration-tests:test-serializable-2")
-    cordapp project(":libs:serialization:serialization-amqp:osgi-integration-tests:test-serializable-3")
+    cordapp project(":libs:serialization:serialization-amqp:serializable-cpk-two")
+    cordapp project(":libs:serialization:serialization-amqp:serializable-cpk-three")
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 }
