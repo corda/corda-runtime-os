@@ -14,6 +14,8 @@ ext {
     pluginGroup = 'net.corda.cordapp'
     pluginName = 'cordapp-configuration'
     pluginId = 'net.corda.cordapp.cordapp-configuration'
+
+    vcsUrl = System.getenv('GIT_URL') ?: 'https://github.com/corda/corda-api.git'
 }
 
 configurations {
@@ -61,25 +63,15 @@ def cordappConfigProject = gradle.includedBuild('cordapp-configuration')
 
 publishing {
     publications {
-        cordappConfiguration(MavenPublication) {
-            groupId pluginGroup
-            artifactId pluginName
-
-            artifact provider { configurations.gradlePlugin.singleFile }
-            artifact(
-                source: provider { configurations.pluginSources.singleFile },
-                builtBy: cordappConfigProject.task(':sourcesJar'),
-                classifier: 'sources'
-            )
-            artifact(
-                source: provider { configurations.pluginJavadoc.singleFile },
-                builtBy: cordappConfigProject.task(':javadocJar'),
-                classifier: 'javadoc'
-            )
-
+        configureEach {
             pom {
                 name = 'Cordapp CPK Configuration'
                 description = 'Configuration properties for cordapp-cpk Gradle plugin.'
+
+                url = vcsUrl - '.git'
+                scm {
+                    url = vcsUrl
+                }
 
                 licenses {
                     license {
@@ -97,6 +89,23 @@ publishing {
                     }
                 }
             }
+        }
+
+        cordappConfiguration(MavenPublication) {
+            groupId pluginGroup
+            artifactId pluginName
+
+            artifact provider { configurations.gradlePlugin.singleFile }
+            artifact(
+                source: provider { configurations.pluginSources.singleFile },
+                builtBy: cordappConfigProject.task(':sourcesJar'),
+                classifier: 'sources'
+            )
+            artifact(
+                source: provider { configurations.pluginJavadoc.singleFile },
+                builtBy: cordappConfigProject.task(':javadocJar'),
+                classifier: 'javadoc'
+            )
         }
 
         pluginMarker(MavenPublication) {
