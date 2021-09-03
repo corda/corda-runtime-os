@@ -5,18 +5,18 @@ import net.corda.packaging.Cpk
 /** An interface to a group of sandboxes with visibility of one another. */
 interface SandboxGroup {
     /** The sandboxes in the group. */
-    val sandboxes: Collection<Sandbox>
+    val sandboxes: Collection<CpkSandbox>
 
     /**
-     * Returns the [Sandbox] out of [sandboxes] with the given [Cpk.Identifier]. There is guaranteed to be at most
+     * Returns the [CpkSandbox] out of [sandboxes] with the given [Cpk.Identifier]. There is guaranteed to be at most
      * one.
      *
      * Throws a [SandboxException] if none of the [sandboxes] have the given [cpkIdentifier].
      */
-    fun getSandbox(cpkIdentifier: Cpk.Identifier): Sandbox
+    fun getSandbox(cpkIdentifier: Cpk.Identifier): CpkSandbox
 
     /**
-     * Finds the [Sandbox] out of [sandboxes] with the given [Cpk.Identifier] (there is guaranteed to be at most
+     * Finds the [CpkSandbox] out of [sandboxes] with the given [Cpk.Identifier] (there is guaranteed to be at most
      * one), and returns the [Class] with [className] from that sandbox.
      *
      * Throws [SandboxException] if there is no [Sandbox] with the given [cpkIdentifier]. If a matching sandbox is

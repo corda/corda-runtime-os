@@ -13,20 +13,20 @@ sealed class ClassInfo {
     abstract val bundleVersion: Version
 }
 
-/** A [ClassInfo] for a class from a platform bundle (i.e. one not loaded from a CPK). */
-data class PlatformClassInfo(override val bundleName: String, override val bundleVersion: Version) : ClassInfo()
+/** A [ClassInfo] for a class not loaded from a CPK (e.g. a platform or JDK class). */
+data class NonCpkClassInfo(override val bundleName: String, override val bundleVersion: Version) : ClassInfo()
 
 /**
  * A [ClassInfo] for a class from a CPK.
  *
- * @param cpkHash The hash of the CPK the class was loaded from.
+ * @param cpkFileHash The hash of the CPK the class was loaded from.
  * @param cpkPublicKeyHashes The public key hashes of the CPK the class was loaded from.
  * @param cpkDependencies The hashes of the CPK's dependencies.
  */
 data class CpkClassInfo(
     override val bundleName: String,
     override val bundleVersion: Version,
-    val cpkHash: SecureHash,
+    val cpkFileHash: SecureHash,
     val cpkPublicKeyHashes: NavigableSet<SecureHash>,
     val cpkDependencies: Set<SecureHash>
 ) : ClassInfo()

@@ -1,12 +1,12 @@
 package net.corda.sandbox.internal
 
 import net.corda.packaging.Cpk
-import net.corda.sandbox.Sandbox
+import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import java.util.NavigableMap
 
-class SandboxGroupImpl(private val sandboxesById: NavigableMap<Cpk.Identifier, Sandbox>) : SandboxGroup {
+class SandboxGroupImpl(private val sandboxesById: NavigableMap<Cpk.Identifier, CpkSandbox>) : SandboxGroup {
     override val sandboxes = sandboxesById.values
 
     override fun getSandbox(cpkIdentifier: Cpk.Identifier) = sandboxesById[cpkIdentifier]
@@ -47,6 +47,7 @@ class SandboxGroupImpl(private val sandboxesById: NavigableMap<Cpk.Identifier, S
             } catch (ex: SandboxException) {
                 continue
             }
+            // The count is only incremented if the attempt to load the class succeeds.
             count++
         }
         return count

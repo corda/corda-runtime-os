@@ -7,15 +7,14 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
-import org.osgi.framework.BundleException
 import java.util.UUID
 
 class SandboxImplTests {
-
     private fun generateSandboxId() = UUID.randomUUID()
     private val mockBundleUtils = BundleUtils(mock(BundleContext::class.java))
 
@@ -24,17 +23,20 @@ class SandboxImplTests {
         val cordappBundle = mock(Bundle::class.java).apply {
             whenever(loadClass(String::class.java.name)).thenReturn(String::class.java)
         }
-        val sandbox = SandboxImpl(mockBundleUtils, generateSandboxId(), null, cordappBundle, emptySet())
+        val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), cordappBundle, emptySet())
 
         assertEquals(String::class.java, sandbox.loadClass(String::class.java.name))
     }
 
     @Test
     fun `cannot load class from other bundles in sandbox`() {
+        val cordappBundle = mock(Bundle::class.java).apply {
+            whenever(loadClass(any())).thenThrow(ClassNotFoundException::class.java)
+        }
         val otherBundle = mock(Bundle::class.java).apply {
             whenever(loadClass(Int::class.java.name)).thenReturn(Int::class.java)
         }
-        val sandbox = SandboxImpl(mockBundleUtils, generateSandboxId(), null, null, setOf(otherBundle))
+        val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), cordappBundle, setOf(otherBundle))
 
         assertThrows<SandboxException> {
             sandbox.loadClass(Int::class.java.name)
@@ -44,9 +46,9 @@ class SandboxImplTests {
     @Test
     fun `throws if loading class from sandbox with an uninstalled bundle`() {
         val cordappBundle = mock(Bundle::class.java).apply {
-            whenever(loadClass(String::class.java.name)).thenThrow(IllegalStateException::class.java)
+            whenever(loadClass(any())).thenThrow(IllegalStateException::class.java)
         }
-        val sandbox = SandboxImpl(mockBundleUtils, generateSandboxId(), null, cordappBundle, emptySet())
+        val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), cordappBundle, emptySet())
 
         assertThrows<SandboxException> {
             sandbox.loadClass(Int::class.java.name)
@@ -59,7 +61,7 @@ class SandboxImplTests {
         val otherBundle = mock(Bundle::class.java)
         val excludedBundle = mock(Bundle::class.java)
 
-        val sandbox = SandboxImpl(mockBundleUtils, generateSandboxId(), null, cordappBundle, setOf(otherBundle))
+        val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), cordappBundle, setOf(otherBundle))
         assertTrue(sandbox.containsBundle(cordappBundle))
         assertTrue(sandbox.containsBundle(otherBundle))
         assertFalse(sandbox.containsBundle(excludedBundle))
@@ -78,7 +80,7 @@ class SandboxImplTests {
             whenever(getBundle(Boolean::class.java)).thenReturn(excludedBundle)
         }
 
-        val sandbox = SandboxImpl(mockBundleUtils, generateSandboxId(), null, cordappBundle, setOf(otherBundle))
+        val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), cordappBundle, setOf(otherBundle))
         assertTrue(sandbox.containsClass(String::class.java))
         assertTrue(sandbox.containsClass(Int::class.java))
         assertFalse(sandbox.containsClass(Boolean::class.java))
@@ -98,7 +100,7 @@ class SandboxImplTests {
             whenever(getBundle(Int::class.java)).thenReturn(otherBundle)
         }
 
-        val sandbox = SandboxImpl(mockBundleUtils, generateSandboxId(), sourceCpk, cordappBundle, setOf(otherBundle))
+        val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), sourceCpk, cordappBundle, setOf(otherBundle))
 
         assertEquals(cordappBundle, sandbox.getBundle(String::class.java))
         assertEquals(otherBundle, sandbox.getBundle(Int::class.java))
@@ -106,7 +108,11 @@ class SandboxImplTests {
 
     @Test
     fun `throws if asked to retrieve the bundle of a class not in the sandbox`() {
-        val sandbox = SandboxImpl(mockBundleUtils, generateSandboxId(), null, null, emptySet())
+        val cordappBundle = mock(Bundle::class.java).apply {
+            whenever(loadClass(any())).thenThrow(IllegalStateException::class.java)
+        }
+
+        val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), cordappBundle, emptySet())
 
         assertThrows<SandboxException> {
             sandbox.getBundle(String::class.java)
@@ -118,7 +124,7 @@ class SandboxImplTests {
         val cordappBundle = mock<Bundle>()
         val otherBundle = mock<Bundle>()
 
-        val sandbox = SandboxImpl(mockBundleUtils, generateSandboxId(), null, cordappBundle, setOf(otherBundle))
+        val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), cordappBundle, setOf(otherBundle))
 
         assertTrue(sandbox.isCordappBundle(cordappBundle))
         assertFalse(sandbox.isCordappBundle(otherBundle))
@@ -126,76 +132,30 @@ class SandboxImplTests {
 
     @Test
     fun `sandbox has visibility of itself`() {
-        val sandbox = SandboxImpl(mockBundleUtils, generateSandboxId(), null, null, emptySet())
-        assertTrue(sandbox.hasVisibility(sandbox))
-    }
-
-    @Test
-    fun `sandbox cannot revoke its visibility of itself`() {
-        val sandbox = SandboxImpl(mockBundleUtils, generateSandboxId(), null, null, emptySet())
-        assertFalse(sandbox.revokeVisibility(sandbox))
+        val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), mock(), emptySet())
         assertTrue(sandbox.hasVisibility(sandbox))
     }
 
     @Test
     fun `sandbox does not have visibility of other sandboxes by default`() {
-        val sandboxOne = SandboxImpl(mockBundleUtils, generateSandboxId(), null, null, emptySet())
-        val sandboxTwo = SandboxImpl(mockBundleUtils, generateSandboxId(), null, null, emptySet())
+        val sandboxOne = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), mock(), emptySet())
+        val sandboxTwo = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), mock(), emptySet())
         assertFalse(sandboxOne.hasVisibility(sandboxTwo))
-    }
-
-    @Test
-    fun `sandbox has no visibility of other sandboxes to revoke by default`() {
-        val sandboxOne = SandboxImpl(mockBundleUtils, generateSandboxId(), null, null, emptySet())
-        val sandboxTwo = SandboxImpl(mockBundleUtils, generateSandboxId(), null, null, emptySet())
-        assertFalse(sandboxOne.revokeVisibility(sandboxTwo))
     }
 
     @Test
     fun `sandbox has visibility of other sandboxes to which it is granted visibility`() {
-        val sandboxOne = SandboxImpl(mockBundleUtils, generateSandboxId(), null, null, emptySet())
-        val sandboxTwo = SandboxImpl(mockBundleUtils, generateSandboxId(), null, null, emptySet())
+        val sandboxOne = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), mock(), emptySet())
+        val sandboxTwo = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), mock(), emptySet())
         sandboxOne.grantVisibility(sandboxTwo)
         assertTrue(sandboxOne.hasVisibility(sandboxTwo))
-
-        // And check we can revoke this visibility again too.
-        assertTrue(sandboxOne.revokeVisibility(sandboxTwo))
-        assertFalse(sandboxOne.hasVisibility(sandboxTwo))
     }
 
     @Test
     fun `visibility between sandboxes is one-way`() {
-        val sandboxOne = SandboxImpl(mockBundleUtils, generateSandboxId(), null, null, emptySet())
-        val sandboxTwo = SandboxImpl(mockBundleUtils, generateSandboxId(), null, null, emptySet())
+        val sandboxOne = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), mock(), emptySet())
+        val sandboxTwo = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), mock(), emptySet())
         sandboxOne.grantVisibility(sandboxTwo)
         assertFalse(sandboxTwo.hasVisibility(sandboxOne))
-    }
-
-    @Test
-    fun `all bundles are uninstalled when uninstall is called`() {
-        val uninstalledBundles = mutableListOf<Bundle>()
-        val bundles = (0..1).map {
-            mock(Bundle::class.java).apply {
-                whenever(uninstall()).then { uninstalledBundles.add(this) }
-            }
-        }
-
-        val sandbox = SandboxImpl(mockBundleUtils, generateSandboxId(), null, bundles[0], setOf(bundles[1]))
-        sandbox.uninstallBundles()
-
-        assertEquals(bundles.size, uninstalledBundles.size)
-        assertEquals(bundles.toSet(), uninstalledBundles.toSet())
-    }
-
-    @Test
-    fun `throws if a bundle cannot be uninstalled`() {
-        val notUninstallableBundle = mock(Bundle::class.java).apply {
-            whenever(uninstall()).thenThrow(BundleException::class.java)
-        }
-        val sandbox = SandboxImpl(mockBundleUtils, generateSandboxId(), null, notUninstallableBundle, emptySet())
-
-        assertThrows<SandboxException> {
-            sandbox.uninstallBundles()
-        }
     }
 }

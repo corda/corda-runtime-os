@@ -6,9 +6,7 @@ import org.osgi.framework.Bundle
 import java.net.URI
 import java.util.UUID
 
-/**
- * Extends [Sandbox] with methods that are used by [SandboxServiceInternal].
- */
+/** Extends [Sandbox] with methods that are used by [SandboxServiceInternal]. */
 internal interface SandboxInternal : Sandbox {
     companion object {
         /** Generates a unique location to use when installing a bundle into sandbox [id] from [uri]. */
@@ -39,13 +37,4 @@ internal interface SandboxInternal : Sandbox {
 
     /** Grants this sandbox visibility of [otherSandboxes]. */
     fun grantVisibility(otherSandboxes: Collection<Sandbox>)
-
-    /**
-     * Removes this sandbox's visibility of [otherSandbox].
-     * @return true if visibility was revoked, otherwise false.
-     */
-    fun revokeVisibility(otherSandbox: Sandbox): Boolean
-
-    /** Uninstalls all the sandbox's bundles. */
-    fun uninstallBundles()
 }

@@ -6,7 +6,7 @@ import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolu
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.packaging.Cpk
 import net.corda.sandbox.CpkClassInfo
-import net.corda.sandbox.Sandbox
+import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
@@ -34,7 +34,7 @@ class SerializeAndReturnMetadataTest {
 
     private fun createCpkClassInfo(classBundleName: String = "dummyBundleName",
                                    classBundleVersion: Version = Version(1, 0, 0),
-                                   cpkHash: SecureHash = digestService.getZeroHash(DigestAlgorithmName.SHA2_256),
+                                   cpkFileHash: SecureHash = digestService.getZeroHash(DigestAlgorithmName.SHA2_256),
                                    cpkPublicKeyHashes: NavigableSet<SecureHash> = sortedSetOf(
                                        digestService.getAllOnesHash(DigestAlgorithmName.SHA2_256),
                                        digestService.getZeroHash(DigestAlgorithmName.SHA2_256)
@@ -44,7 +44,7 @@ class SerializeAndReturnMetadataTest {
         return CpkClassInfo(
                 bundleName = classBundleName,
                 bundleVersion = classBundleVersion,
-                cpkHash = cpkHash,
+                cpkFileHash = cpkFileHash,
                 cpkPublicKeyHashes = cpkPublicKeyHashes,
                 cpkDependencies = cpkDependencies
         )
@@ -67,7 +67,7 @@ class SerializeAndReturnMetadataTest {
     }
 
     private fun createSandboxGroup(clazz: Class<*>, cpkIdentifier: Cpk.Identifier): SandboxGroup {
-        val sandbox = mock(Sandbox::class.java).apply {
+        val sandbox = mock(CpkSandbox::class.java).apply {
             `when`(loadClass(clazz::class.java.name)).thenReturn(clazz)
         }
 

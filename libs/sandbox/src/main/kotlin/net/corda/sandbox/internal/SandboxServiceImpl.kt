@@ -4,7 +4,8 @@ import net.corda.install.InstallService
 import net.corda.packaging.Cpk
 import net.corda.sandbox.ClassInfo
 import net.corda.sandbox.CpkClassInfo
-import net.corda.sandbox.PlatformClassInfo
+import net.corda.sandbox.CpkSandbox
+import net.corda.sandbox.NonCpkClassInfo
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
@@ -62,15 +63,15 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     override fun getClassInfo(className: String): ClassInfo {
-        sandboxes.values.forEach { it ->
+        sandboxes.values.filterIsInstance<CpkSandboxImpl>().forEach { sandbox ->
             try {
-                val klass = it.loadClass(className)
-                val bundle = it.getBundle(klass)
-                val sandbox = sandboxes.values.find { it.containsBundle(bundle) }
-                sandbox?.let { return getClassInfo(klass, sandbox) }
-                    ?: logger.trace("Class $className not found in sandbox $it. ")
+                val klass = sandbox.loadClass(className)
+                val bundle = sandbox.getBundle(klass)
+                val matchingSandbox = sandboxes.values.find { it.containsBundle(bundle) }
+                matchingSandbox?.let { return getClassInfo(klass, matchingSandbox) }
+                    ?: logger.trace("Class $className not found in sandbox $sandbox. ")
             } catch (ex: SandboxException) {
-                logger.trace("Class $className not found in sandbox $it. ")
+                logger.trace("Class $className not found in sandbox $sandbox. ")
             }
         }
         throw SandboxException("Class $className is not contained in any sandbox.")
@@ -128,7 +129,14 @@ internal class SandboxServiceImpl @Activate constructor(
         )
     }
 
-    override fun getCallingCpk() = getCallingSandbox()?.cpk?.id
+    override fun getCallingCpk(): Cpk.Identifier? {
+        val callingSandbox = getCallingSandbox()
+        return if (callingSandbox is CpkSandbox) {
+            callingSandbox.cpk.id
+        } else {
+            null
+        }
+    }
 
     /**
      * Retrieves the CPKs from the [installService] based on their [cpkFileHashes], and verifies the CPKs.
@@ -139,8 +147,8 @@ internal class SandboxServiceImpl @Activate constructor(
      * Grants each sandbox visibility of the core sandbox and of the other sandboxes in the group.
      */
     private fun createSandboxes(cpkFileHashes: Iterable<SecureHash>, startBundles: Boolean): SandboxGroup {
-        val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkHash ->
-            installService.getCpk(cpkHash) ?: throw SandboxException("No CPK is installed for CPK file hash $cpkHash.")
+        val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
+            installService.getCpk(cpkFileHash) ?: throw SandboxException("No CPK is installed for CPK file hash $cpkFileHash.")
         }
         installService.verifyCpkGroup(cpks)
 
@@ -149,7 +157,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
         // We track which sandbox was created for which CPK identifier, so that we can pass this information during
         // the construction of the `SandboxGroup`.
-        val cpkSandboxMapping: NavigableMap<Cpk.Identifier, SandboxInternal> = TreeMap()
+        val cpkSandboxMapping: NavigableMap<Cpk.Identifier, CpkSandboxImpl> = TreeMap()
 
         // This line forces the lazy creation of the platform sandboxes. This *must* happen before the creation of any
         // CPK sandboxes.
@@ -162,7 +170,7 @@ internal class SandboxServiceImpl @Activate constructor(
             val libraryBundles = cpk.libraries.mapTo(LinkedHashSet()) { libraryJar ->
                 installBundle(libraryJar.toUri(), sandboxId)
             }
-            val sandbox = SandboxImpl(bundleUtils, sandboxId, cpk, cordappBundle, libraryBundles)
+            val sandbox = CpkSandboxImpl(bundleUtils, sandboxId, cpk, cordappBundle, libraryBundles)
             sandboxes[sandboxId] = sandbox
 
             // Every sandbox requires visibility of the core sandbox.
@@ -208,8 +216,8 @@ internal class SandboxServiceImpl @Activate constructor(
             bundle.symbolicName in CORE_BUNDLE_NAMES
         }
 
-        val coreSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), null, null, coreBundles.toSet())
-        val nonCoreSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), null, null, nonCoreBundles.toSet())
+        val coreSandbox = PlatformSandbox(bundleUtils, UUID.randomUUID(), coreBundles.toSet())
+        val nonCoreSandbox = PlatformSandbox(bundleUtils, UUID.randomUUID(), nonCoreBundles.toSet())
         nonCoreSandbox.grantVisibility(coreSandbox)
         coreSandbox.grantVisibility(nonCoreSandbox)
 
@@ -257,7 +265,11 @@ internal class SandboxServiceImpl @Activate constructor(
     /** Contains the logic that is shared between the two public `getClassInfo` methods. */
     private fun getClassInfo(klass: Class<*>, sandbox: SandboxInternal): ClassInfo {
         val bundle = sandbox.getBundle(klass)
-        val cpk = sandbox.cpk ?: return PlatformClassInfo(bundle.symbolicName, bundle.version)
+
+        val cpk = when (sandbox) {
+            is CpkSandbox -> sandbox.cpk
+            else -> return NonCpkClassInfo(bundle.symbolicName, bundle.version)
+        }
 
         // This lookup is required because a CPK's dependencies are only given as <name, version, public key hashes>
         // trios in CPK files.

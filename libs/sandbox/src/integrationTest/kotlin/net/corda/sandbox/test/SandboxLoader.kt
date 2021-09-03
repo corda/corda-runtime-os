@@ -2,6 +2,7 @@ package net.corda.sandbox.test
 
 import net.corda.install.InstallService
 import net.corda.packaging.Cpk
+import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.SandboxService
@@ -156,7 +157,7 @@ class SandboxLoader @Activate constructor(
     }
 
     @Suppress("SameParameterValue")
-    private fun getBundle(className: String, sandbox: Sandbox): Bundle {
+    private fun getBundle(className: String, sandbox: CpkSandbox): Bundle {
         return getBundle(sandbox.loadClass(className), sandbox)
     }
 
