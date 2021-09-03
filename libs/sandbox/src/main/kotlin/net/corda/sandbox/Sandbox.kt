@@ -8,7 +8,7 @@ interface Sandbox {
     // The sandbox's unique identifier.
     val id: UUID
 
-    // The CPK the sandbox was created for.
+    // The CPK the sandbox was created for, or null for a platform sandbox.
     val cpk: Cpk.Expanded?
 
     /**

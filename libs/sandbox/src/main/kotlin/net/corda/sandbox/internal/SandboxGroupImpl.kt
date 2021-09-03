@@ -16,20 +16,20 @@ class SandboxGroupImpl(private val sandboxesById: NavigableMap<Cpk.Identifier, S
 
     override fun <T : Any> loadClass(className: String, type: Class<T>): Class<out T> {
         var klass: Class<*>? = null
-        var cause = SandboxException("Sandbox group does not contain any sandboxes")
         for (sandbox in sandboxes) {
             try {
                 klass = sandbox.loadClass(className)
                 break
             }
             catch (ex: SandboxException) {
-                cause = ex
                 continue
             }
         }
+
         if (klass == null) {
-            throw SandboxException("Class $className could not be not found in sandbox group", cause)
+            throw SandboxException("Class $className could not be not found in sandbox group.")
         }
+
         return try {
             klass.asSubclass(type)
         } catch (e: ClassCastException) {
@@ -43,11 +43,11 @@ class SandboxGroupImpl(private val sandboxesById: NavigableMap<Cpk.Identifier, S
         for (sandbox in sandboxes) {
             try {
                 sandbox.loadClass(className)
-                count++
             }
             catch (ex: SandboxException) {
                 continue
             }
+            count++
         }
         return count
     }

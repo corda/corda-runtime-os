@@ -64,8 +64,8 @@ internal class ClassSerializer(
         }
 
         if (classInfo is CpkClassInfo) {
-            output.writeString(classInfo.classBundleName)
-            output.writeString(classInfo.classBundleVersion.toString())
+            output.writeString(classInfo.bundleName)
+            output.writeString(classInfo.bundleVersion.toString())
             output.writeVarInt(classInfo.cpkPublicKeyHashes.size, true)
             classInfo.cpkPublicKeyHashes.forEach {
                 output.writeString(it.toString())

@@ -10,9 +10,7 @@ import com.esotericsoftware.kryo.util.IntMap
 import net.corda.classinfo.ClassInfoException
 import net.corda.classinfo.ClassInfoService
 import net.corda.packaging.Cpk
-import net.corda.sandbox.CpkClassInfo
-import net.corda.sandbox.SandboxException
-import net.corda.sandbox.SandboxGroup
+import net.corda.sandbox.*
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.BasicHashingService
@@ -54,14 +52,14 @@ open class SandboxClassResolver(
         } catch (ex: NullPointerException) {
             logger.trace { "This is likely a unit test with mocked objects. ${ex.message}" }
             null
-        }
+        } ?: return null
 
         return when (classInfo) {
             is CpkClassInfo -> Cpk.Identifier(
-                    classInfo.classBundleName,
-                    classInfo.classBundleVersion.toString(),
+                    classInfo.bundleName,
+                    classInfo.bundleVersion.toString(),
                     TreeSet(classInfo.cpkPublicKeyHashes))
-            else -> null
+            is PlatformClassInfo -> null
         }
     }
 

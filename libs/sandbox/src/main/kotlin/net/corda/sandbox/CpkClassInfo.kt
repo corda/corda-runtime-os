@@ -4,23 +4,28 @@ import net.corda.v5.crypto.SecureHash
 import org.osgi.framework.Version
 import java.util.NavigableSet
 
-/** The restricted information about a class's bundle that is provided to `ClassInfoService`. */
-interface ClassInfo {
-    val classBundleName: String
-    val classBundleVersion: Version
+/** The restricted information about a class's bundle and CPK that is provided to `ClassInfoService`. */
+sealed class ClassInfo {
+    // The symbolic name of the bundle the class was loaded from.
+    abstract val bundleName: String
+    // The version of the bundle the class was loaded from.
+    abstract val bundleVersion: Version
 }
 
-/** The restricted information about a class's bundle that is provided to `ClassInfoService` for a platform bundle. */
-data class PlatformClassInfo(override val classBundleName: String, override val classBundleVersion: Version) : ClassInfo
+/** A [ClassInfo] for a class from a platform bundle (i.e. one not loaded from a CPK). */
+data class PlatformClassInfo(override val bundleName: String, override val bundleVersion: Version) : ClassInfo()
 
 /**
- * The restricted information about a class's bundle that is provided to `ClassInfoService` for a bundle derived from a
- * CPK.
+ * A [ClassInfo] for a class from a CPK.
+ *
+ * @param cpkHash The hash of the CPK the class was loaded from.
+ * @param cpkPublicKeyHashes The public key hashes of the CPK the class was loaded from.
+ * @param cpkDependencies The hashes of the CPK's dependencies.
  */
 data class CpkClassInfo(
-    override val classBundleName: String,
-    override val classBundleVersion: Version,
+    override val bundleName: String,
+    override val bundleVersion: Version,
     val cpkHash: SecureHash,
     val cpkPublicKeyHashes: NavigableSet<SecureHash>,
     val cpkDependencies: Set<SecureHash>
-) : ClassInfo
+) : ClassInfo()

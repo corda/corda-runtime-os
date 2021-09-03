@@ -190,9 +190,6 @@ class SandboxServiceImplTests {
 
         val sandboxesFromSandboxGroup = cpkDatas.map { cpkData -> sandboxGroup.getSandbox(cpkData.cpk.id) }
         assertEquals(sandboxes.toSet(), sandboxesFromSandboxGroup.toSet())
-
-        val sandboxesFromSandboxService = sandboxes.map { sandbox -> sandboxService.getSandbox(sandbox.id) as Sandbox }
-        assertEquals(sandboxes.toSet(), sandboxesFromSandboxService.toSet())
     }
 
     @Test
@@ -217,6 +214,15 @@ class SandboxServiceImplTests {
 
         sandboxService.createSandboxes(listOf(cpkOne.cpkHash))
         assertEquals(2, startedBundles.size)
+    }
+
+    @Test
+    fun `can create a sandbox without starting its bundles`() {
+        val startedBundles = mutableListOf<Bundle>()
+        val sandboxService = createSandboxService(startedBundles = startedBundles)
+
+        sandboxService.createSandboxesWithoutStarting(listOf(cpkOne.cpkHash))
+        assertEquals(0, startedBundles.size)
     }
 
     @Test
@@ -323,8 +329,7 @@ class SandboxServiceImplTests {
     fun `returns null if asked to retrieve an unknown sandbox`() {
         val sandboxService = SandboxServiceImpl(mock(), mock())
 
-        assertNull(sandboxService.getSandbox(randomUUID()))
-        assertNull(sandboxService.getSandbox(mock<Bundle>()))
+        assertNull(sandboxService.getSandbox(mock()))
     }
 
     @Test
@@ -559,27 +564,6 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `sandbox can be deleted, and all its bundles are uninstalled`() {
-        val uninstalledBundles = mutableListOf<Bundle>()
-        val sandboxService = createSandboxService(uninstalledBundles = uninstalledBundles)
-
-        val sandbox = sandboxService.createSandboxes(listOf(cpkOne.cpkHash)).sandboxes.single()
-        sandboxService.deleteSandbox(sandbox.id)
-
-        assertNull(sandboxService.getSandbox(sandbox.id))
-        assertEquals(2, uninstalledBundles.size)
-    }
-
-    @Test
-    fun `throws if asked to delete a non-existent sandbox`() {
-        val sandboxService = SandboxServiceImpl(mock(), mock())
-
-        assertThrows<SandboxException> {
-            sandboxService.deleteSandbox(randomUUID())
-        }
-    }
-
-    @Test
     fun `can retrieve calling sandbox`() {
         val mockInstallService = createMockInstallService(setOf(cpkOne))
 
@@ -670,7 +654,7 @@ class SandboxServiceImplTests {
     }
 }
 
-/** For testing, associates a [Cpk] with the bundles it contains, and the classes within those. */
+/** For testing, associates a [Cpk] with its corresponding bundles, and the classes within those. */
 private data class CpkData(
         val cpk: Cpk.Expanded,
         val cordappBundle: Bundle,
