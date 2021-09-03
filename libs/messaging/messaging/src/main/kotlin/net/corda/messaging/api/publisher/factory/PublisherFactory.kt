@@ -28,8 +28,8 @@ interface PublisherFactory {
      *
      * The RPC pattern provides and unreliable RPC mechanism across the message bus. This handles the sender side
      * of the pattern. The sender can post messages to the bus and a future is given back to the client. The future
-     * is completed when the response is received. It may also error if the response fails or is not received within
-     * the timeout
+     * is completed when the response is received. It may also error if the response fails. Timeouts should be handled
+     * by the client
      *
      * The client is responsible for retries
      *
