@@ -13,6 +13,7 @@ import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.amqpMagic
 import net.corda.packaging.Cpb
+import net.corda.packaging.Cpk
 import net.corda.sandbox.SandboxService
 import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializedBytes
@@ -118,9 +119,10 @@ class AMQPwithOSGiSerializationTests {
                 ?: fail("TestSerializable4-workflows-$cordappVersion-cordapp.cpk is missing")
 
         val cpb = assembleCpb(listOf(cpk1, cpk2, cpk3, cpk4))
+        val cpks = installService.getCpb(cpb.identifier)!!.cpks
 
         // Create sandbox group
-        val sandboxGroup = sandboxService.createSandboxes(cpb.identifier)
+        val sandboxGroup = sandboxService.createSandboxes(cpks.map(Cpk::cpkHash))
         assertThat(sandboxGroup).isNotNull
         assertThat(sandboxGroup.sandboxes).hasSize(4)
 
@@ -180,7 +182,7 @@ class AMQPwithOSGiSerializationTests {
         assertThat(deserialised.obj.javaClass.name).isEqualTo("net.corda.bundle4.Transfer")
         assertThat(deserialised.obj.javaClass.declaredFields.map { it.name }.toList()).contains("document")
 
-        val document = deserialised.obj.javaClass.getDeclaredField("document").also { it.trySetAccessible() }?.get(deserialised.obj)
+        val document = deserialised.obj.javaClass.getDeclaredField("document").also { it.trySetAccessible() }.get(deserialised.obj)
         assertThat(document?.javaClass?.declaredFields?.map { it.name }?.toList()).contains("content")
 
         val deserialisedValue = document?.javaClass?.getDeclaredField("content").also { it?.trySetAccessible() }?.get(document)
