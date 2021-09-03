@@ -155,7 +155,7 @@ interface SubscriptionFactory {
      * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
      * @param responderProcessor processor in charge of handling incoming requests
      */
-    fun <TREQ, TRESP> createRPCSubscription(rpcConfig: RPCConfig,
+    fun <TREQ, TRESP> createRPCSubscription(rpcConfig: RPCConfig<TREQ, TRESP>,
                                             nodeConfig: Config = ConfigFactory.empty(),
                                             responderProcessor: RPCResponderProcessor<TREQ, TRESP>
     ): RPCSubscription<TREQ, TRESP>

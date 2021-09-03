@@ -220,7 +220,7 @@ class KafkaSubscriptionFactory @Activate constructor(
     }
 
     override fun <TREQ, TRESP> createRPCSubscription(
-        rpcConfig: RPCConfig,
+        rpcConfig: RPCConfig<TREQ, TRESP>,
         nodeConfig: Config,
         responderProcessor: RPCResponderProcessor<TREQ, TRESP>
     ): RPCSubscription<TREQ, TRESP> {

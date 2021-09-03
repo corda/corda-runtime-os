@@ -7,6 +7,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.emulation.publisher.CordaPublisher
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
@@ -43,7 +44,7 @@ class CordaPublisherFactory @Activate constructor(
         return CordaPublisher(config, topicService)
     }
 
-    override fun <TREQ, TRESP> createRPCSender(publisherConfig: Config, config: Config): RPCSender<TREQ, TRESP> {
+    override fun <TREQ, TRESP> createRPCSender(rpcConfig: RPCConfig<TREQ, TRESP>, nodeConfig: Config): RPCSender<TREQ, TRESP> {
         TODO("Not yet implemented")
     }
 }
