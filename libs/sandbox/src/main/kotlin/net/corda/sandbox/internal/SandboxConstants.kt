@@ -1,11 +1,13 @@
 @file:JvmName("SandboxConstants")
+
 package net.corda.sandbox.internal
 
 import java.util.Collections.unmodifiableList
 
 // The symbolic names of the bundles that should be mapped into the core sandbox.
 // Wrapped inside an unmodifiable list to forbid any tampering.
-internal val CORE_BUNDLE_NAMES: List<String> = unmodifiableList(listOf(
+internal val CORE_BUNDLE_NAMES: List<String> = unmodifiableList(
+    listOf(
         "javax.persistence-api",
         "jcl.over.slf4j",
         "net.corda.application",
@@ -24,4 +26,5 @@ internal val CORE_BUNDLE_NAMES: List<String> = unmodifiableList(listOf(
         "org.hibernate.orm.core",
         "org.jetbrains.kotlin.osgi-bundle",
         "slf4j.api"
-))
+    )
+)

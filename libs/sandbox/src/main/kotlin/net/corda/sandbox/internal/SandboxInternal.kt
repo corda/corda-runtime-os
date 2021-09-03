@@ -9,7 +9,7 @@ import java.util.UUID
 /**
  * Extends [Sandbox] with methods that are used by [SandboxServiceInternal].
  */
-internal interface SandboxInternal: Sandbox {
+internal interface SandboxInternal : Sandbox {
     companion object {
         /** Generates a unique location to use when installing a bundle into sandbox [id] from [uri]. */
         fun getLocation(id: UUID, uri: URI) = SandboxLocation(id, uri)

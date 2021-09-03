@@ -8,6 +8,7 @@ import java.util.NavigableSet
 sealed class ClassInfo {
     // The symbolic name of the bundle the class was loaded from.
     abstract val bundleName: String
+
     // The version of the bundle the class was loaded from.
     abstract val bundleVersion: Version
 }

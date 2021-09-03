@@ -7,7 +7,7 @@ import org.osgi.framework.Bundle
 /**
  * Extends [SandboxService] with methods that are used within the sandboxing hooks.
  */
-internal interface SandboxServiceInternal: SandboxService {
+internal interface SandboxServiceInternal : SandboxService {
     /** Returns the [SandboxInternal] containing the given [bundle], or null if no match. */
     fun getSandbox(bundle: Bundle): SandboxInternal?
 

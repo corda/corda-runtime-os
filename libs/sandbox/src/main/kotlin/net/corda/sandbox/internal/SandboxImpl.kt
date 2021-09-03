@@ -17,11 +17,11 @@ import java.util.concurrent.ConcurrentHashMap
  * @param otherBundles All other bundles in the sandbox
  */
 internal class SandboxImpl(
-        private val bundleUtils: BundleUtils,
-        override val id: UUID,
-        override val cpk: Cpk.Expanded?,
-        private val cordappBundle: Bundle?,
-        otherBundles: Set<Bundle>
+    private val bundleUtils: BundleUtils,
+    override val id: UUID,
+    override val cpk: Cpk.Expanded?,
+    private val cordappBundle: Bundle?,
+    otherBundles: Set<Bundle>
 ) : SandboxInternal {
 
     private val bundles = (otherBundles + cordappBundle).filterNotNull()
@@ -54,7 +54,8 @@ internal class SandboxImpl(
         }
     }
 
-    override fun grantVisibility(otherSandboxes: Collection<Sandbox>): Unit = otherSandboxes.forEach(this::grantVisibility)
+    override fun grantVisibility(otherSandboxes: Collection<Sandbox>): Unit =
+        otherSandboxes.forEach(this::grantVisibility)
 
     override fun revokeVisibility(otherSandbox: Sandbox): Boolean {
         return (otherSandbox !== this) && visibleSandboxes.remove(otherSandbox)
@@ -64,7 +65,10 @@ internal class SandboxImpl(
         try {
             bundle.uninstall()
         } catch (e: BundleException) {
-            throw SandboxException("The following bundle in sandbox $id could not be uninstalled: ${bundle.location}.", e)
+            throw SandboxException(
+                "The following bundle in sandbox $id could not be uninstalled: ${bundle.location}.",
+                e
+            )
         }
     }
 }

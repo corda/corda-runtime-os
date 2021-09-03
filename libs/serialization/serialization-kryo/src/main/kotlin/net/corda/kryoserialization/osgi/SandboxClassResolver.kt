@@ -10,12 +10,15 @@ import com.esotericsoftware.kryo.util.IntMap
 import net.corda.classinfo.ClassInfoException
 import net.corda.classinfo.ClassInfoService
 import net.corda.packaging.Cpk
-import net.corda.sandbox.*
+import net.corda.sandbox.CpkClassInfo
+import net.corda.sandbox.PlatformClassInfo
+import net.corda.sandbox.SandboxException
+import net.corda.sandbox.SandboxGroup
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.BasicHashingService
 import net.corda.v5.crypto.SecureHash
-import java.util.*
+import java.util.TreeSet
 
 open class SandboxClassResolver(
     val classInfoService: Any?,
@@ -58,7 +61,8 @@ open class SandboxClassResolver(
             is CpkClassInfo -> Cpk.Identifier(
                     classInfo.bundleName,
                     classInfo.bundleVersion.toString(),
-                    TreeSet(classInfo.cpkPublicKeyHashes))
+                    TreeSet(classInfo.cpkPublicKeyHashes)
+            )
             is PlatformClassInfo -> null
         }
     }

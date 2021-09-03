@@ -32,13 +32,15 @@ import kotlin.streams.asSequence
 @Component(service = [SandboxService::class, SandboxServiceInternal::class])
 @Suppress("TooManyFunctions")
 internal class SandboxServiceImpl @Activate constructor(
-        @Reference
-        private val installService: InstallService,
-        @Reference
-        private val bundleUtils: BundleUtils) : SandboxServiceInternal, SingletonSerializeAsToken {
+    @Reference
+    private val installService: InstallService,
+    @Reference
+    private val bundleUtils: BundleUtils
+) : SandboxServiceInternal, SingletonSerializeAsToken {
 
     // These sandboxes are not persisted in any way; they are recreated on node startup.
     private val sandboxes = ConcurrentHashMap<UUID, SandboxInternal>()
+
     // Maps each sandbox ID to the sandbox group that the sandbox is part of.
     private val sandboxGroups = ConcurrentHashMap<UUID, SandboxGroup>()
 
@@ -51,7 +53,7 @@ internal class SandboxServiceImpl @Activate constructor(
         createSandboxes(cpkFileHashes, startBundles = true)
 
     override fun createSandboxesWithoutStarting(cpkFileHashes: Iterable<SecureHash>) =
-            createSandboxes(cpkFileHashes, startBundles = false)
+        createSandboxes(cpkFileHashes, startBundles = false)
 
     override fun getClassInfo(klass: Class<*>): ClassInfo {
         val sandbox = sandboxes.values.find { sandbox -> sandbox.containsClass(klass) }
@@ -65,7 +67,8 @@ internal class SandboxServiceImpl @Activate constructor(
                 val klass = it.loadClass(className)
                 val bundle = it.getBundle(klass)
                 val sandbox = sandboxes.values.find { it.containsBundle(bundle) }
-                sandbox?.let {return getClassInfo(klass, sandbox)} ?: logger.trace("Class $className not found in sandbox $it. ")
+                sandbox?.let { return getClassInfo(klass, sandbox) }
+                    ?: logger.trace("Class $className not found in sandbox $it. ")
             } catch (ex: SandboxException) {
                 logger.trace("Class $className not found in sandbox $it. ")
             }
@@ -93,7 +96,7 @@ internal class SandboxServiceImpl @Activate constructor(
                 // The "core" sandbox can always both see and be seen.
                 // Other sandboxes can only see each other's "main" jars.
                 lookingSandbox.hasVisibility(lookedAtSandbox)
-                    && (isCoreSandbox(lookingSandbox)
+                        && (isCoreSandbox(lookingSandbox)
                         || isCoreSandbox(lookedAtSandbox)
                         || lookedAtSandbox.isCordappBundle(lookedAtBundle))
         }
@@ -104,22 +107,25 @@ internal class SandboxServiceImpl @Activate constructor(
 
         val sandboxBundleLocation = stackWalkerInstance.walk { stackFrameStream ->
             stackFrameStream
-                    .asSequence()
-                    .mapNotNull { stackFrame -> bundleUtils.getBundle(stackFrame.declaringClass)?.location }
-                    .find { bundleLocation -> bundleLocation.startsWith("sandbox/") }
+                .asSequence()
+                .mapNotNull { stackFrame -> bundleUtils.getBundle(stackFrame.declaringClass)?.location }
+                .find { bundleLocation -> bundleLocation.startsWith("sandbox/") }
         } ?: return null
 
         val sandboxId = SandboxLocation.fromString(sandboxBundleLocation).id
 
-        return sandboxes[sandboxId] ?: throw SandboxException("A sandbox was found on the stack, but it did not " +
-                "match any sandbox known to this SandboxService.")
+        return sandboxes[sandboxId] ?: throw SandboxException(
+            "A sandbox was found on the stack, but it did not " +
+                    "match any sandbox known to this SandboxService."
+        )
     }
 
     override fun getCallingSandboxGroup(): SandboxGroup? {
         val sandboxId = getCallingSandbox()?.id ?: return null
 
-        return sandboxGroups[sandboxId] ?: throw SandboxException("A sandbox was found, but it was not part of any " +
-                "sandbox group.")
+        return sandboxGroups[sandboxId] ?: throw SandboxException(
+            "A sandbox was found, but it was not part of any sandbox group."
+        )
     }
 
     override fun getCallingCpk() = getCallingSandbox()?.cpk?.id
@@ -257,7 +263,8 @@ internal class SandboxServiceImpl @Activate constructor(
         // trios in CPK files.
         val cpkDependencyHashes = cpk.dependencies.mapTo(LinkedHashSet()) { cpkIdentifier ->
             (installService.getCpk(cpkIdentifier) ?: throw SandboxException(
-                    "CPK $cpkIdentifier is listed as a dependency of ${cpk.id}, but is not installed.")).cpkHash
+                "CPK $cpkIdentifier is listed as a dependency of ${cpk.id}, but is not installed."
+            )).cpkHash
         }
 
         return CpkClassInfo(bundle.symbolicName, bundle.version, cpk.cpkHash, cpk.id.signers, cpkDependencyHashes)

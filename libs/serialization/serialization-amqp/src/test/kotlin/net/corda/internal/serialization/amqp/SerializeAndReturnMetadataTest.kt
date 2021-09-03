@@ -42,8 +42,8 @@ class SerializeAndReturnMetadataTest {
                                    cpkDependencies: Set<SecureHash> = setOf()): CpkClassInfo {
 
         return CpkClassInfo(
-                classBundleName = classBundleName,
-                classBundleVersion = classBundleVersion,
+                bundleName = classBundleName,
+                bundleVersion = classBundleVersion,
                 cpkHash = cpkHash,
                 cpkPublicKeyHashes = cpkPublicKeyHashes,
                 cpkDependencies = cpkDependencies
