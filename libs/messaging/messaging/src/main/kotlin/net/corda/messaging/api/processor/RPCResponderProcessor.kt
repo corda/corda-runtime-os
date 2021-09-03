@@ -18,7 +18,7 @@ interface RPCResponderProcessor<TREQ, TRESP> {
      * @param request
      * @param respFuture
      */
-    fun onNext(request: TREQ, respFuture: CompletableFuture<TRESP>) : CompletableFuture<TRESP>
+    fun onNext(request: TREQ, respFuture: CompletableFuture<TRESP>)
 
     /**
      * [requestType] and [responseType] to easily get the request and response types the processor operates on.

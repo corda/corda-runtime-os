@@ -5,8 +5,8 @@ package net.corda.messaging.api.subscription.factory.config
  *
  * @property groupName The unique ID for a group of consumers.
  * @property clientName The name of the client sending the request
- * @property eventTopic Topic to send events to
+ * @property requestTopic Topic to send events to
  */
 data class RPCConfig (val groupName:String,
                       val clientName:String,
-                      val eventTopic: String)
+                      val requestTopic: String)
