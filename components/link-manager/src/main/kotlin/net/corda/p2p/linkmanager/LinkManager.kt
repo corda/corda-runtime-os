@@ -91,7 +91,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     init {
         val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, 1)
-        val outboundMessageProcessor = OutboundMessageProcessor(sessionManager, linkManagerHostingMap, linkManagerNetworkMap, inboundAssignmentListener)
+        val outboundMessageProcessor = OutboundMessageProcessor(
+            sessionManager,
+            linkManagerHostingMap,
+            linkManagerNetworkMap,
+            inboundAssignmentListener
+        )
+
         outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             outboundMessageSubscriptionConfig,
             outboundMessageProcessor,
@@ -106,9 +112,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         messageReplayer = DeliveryTracker(
             config.flowMessageReplayPeriod,
             publisherFactory,
-            subscriptionFactory,
-            outboundMessageProcessor::processAuthenticatedMessage
-        )
+            subscriptionFactory
+        ) { outboundMessageProcessor.processAuthenticatedMessage(it, false) }
     }
 
     override fun start() {
@@ -169,7 +174,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
             return when (message) {
                 is AuthenticatedMessage -> {
-                    processAuthenticatedMessage(message, event)
+                    processAuthenticatedMessage(AuthenticatedMessageAndKey(message, event.key))
                 }
                 is UnauthenticatedMessage -> {
                     processUnauthenticatedMessage(message)
@@ -191,23 +196,19 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         fun processAuthenticatedMessage(
-            message: AuthenticatedMessage,
-            event: EventLogRecord<String, AppMessage>,
+            messageAndKey: AuthenticatedMessageAndKey,
+            addMarkers: Boolean = true
         ): List<Record<String, *>> {
-            return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toHoldingIdentity())) {
-                listOf(
-                    Record(P2P_IN_TOPIC, event.key, AppMessage(message)),
-                    recordForLMSentMarker(event.partition, event.offset, message.header.messageId),
-                    recordForLMReceivedMarker(message.header.messageId)
-                )
+            val isHostedLocally = linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toHoldingIdentity())
+            return if (isHostedLocally) {
+                mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
             } else {
-                val flowMessageAndKey = AuthenticatedMessageAndKey(message, event.key)
-                when (val state = sessionManager.processOutboundFlowMessage(flowMessageAndKey)) {
+                when (val state = sessionManager.processOutboundFlowMessage(messageAndKey)) {
                     is SessionState.NewSessionNeeded -> recordsForNewSession(state)
-                    is SessionState.SessionEstablished -> recordsForSessionEstablished(state, flowMessageAndKey)
+                    is SessionState.SessionEstablished -> recordsForSessionEstablished(state, messageAndKey)
                     is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> emptyList()
-                } + recordForLMSentMarker(event.partition, event.offset, message.header.messageId)
-            }
+                }
+            } + if (addMarkers) recordsForMarkers(messageAndKey, isHostedLocally) else emptyList()
         }
 
         private fun recordsForNewSession(state: SessionState.NewSessionNeeded): List<Record<String, *>> {
@@ -228,8 +229,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return records
         }
 
-        private fun recordForLMSentMarker(partition: Int, offset: Long, messageId: String): Record<String, AppMessageMarker> {
-            val marker = AppMessageMarker(LinkManagerSentMarker(partition.toLong(), offset), Instant.now().toEpochMilli())
+        private fun recordsForMarkers(messageAndKey: AuthenticatedMessageAndKey, isHostedLocally: Boolean): List<Record<String, *>> {
+            val markers = mutableListOf(recordForLMSentMarker(messageAndKey, messageAndKey.message.header.messageId))
+            if (isHostedLocally) markers += listOf(recordForLMReceivedMarker(messageAndKey.message.header.messageId))
+            return markers
+        }
+
+        private fun recordForLMSentMarker(message: AuthenticatedMessageAndKey, messageId: String): Record<String, AppMessageMarker> {
+            val marker = AppMessageMarker(LinkManagerSentMarker(message), Instant.now().toEpochMilli())
             return Record(Schema.P2P_OUT_MARKERS, messageId, marker)
         }
 

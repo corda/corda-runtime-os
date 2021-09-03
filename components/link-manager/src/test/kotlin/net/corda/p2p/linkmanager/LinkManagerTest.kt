@@ -323,9 +323,14 @@ class LinkManagerTest {
         assertThat(records).hasSize(3)
         val markers = records.filter { it.value is AppMessageMarker }
         assertThat(markers).hasSize(2)
-        assertThat(markers.filter { (it.value as AppMessageMarker).marker is LinkManagerSentMarker }).hasSize(1)
-        assertThat(markers.filter { (it.value as AppMessageMarker).marker is LinkManagerReceivedMarker }).hasSize(1)
-        
+        val sentMarkers = markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerSentMarker }
+        assertThat(sentMarkers).hasSize(1)
+        val sentMarker = (sentMarkers.single().marker as LinkManagerSentMarker)
+        assertSame(authenticatedMsg, sentMarker.message.message)
+        assertEquals(KEY, sentMarker.message.key)
+
+        assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerReceivedMarker }).hasSize(1)
+
         assertThat(markers.map { it.topic }.distinct()).containsOnly(P2P_OUT_MARKERS)
         val messages = records.filter { it.value is AppMessage }
         assertThat(messages).hasSize(1)
