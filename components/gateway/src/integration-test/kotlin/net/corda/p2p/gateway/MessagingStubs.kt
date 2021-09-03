@@ -239,7 +239,7 @@ class SubscriptionFactoryStub(private val topicService: TopicService) : Subscrip
         TODO("Not yet implemented")
     }
 
-    override fun <TREQ, TRESP> createRPCSubscription(
+    override fun <TREQ : Any, TRESP : Any> createRPCSubscription(
         rpcConfig: RPCConfig<TREQ, TRESP>,
         nodeConfig: Config,
         responderProcessor: RPCResponderProcessor<TREQ, TRESP>
@@ -274,7 +274,10 @@ class PublisherFactoryStub(private val topicService: TopicService) : PublisherFa
         return PublisherStub(topicService)
     }
 
-    override fun <TREQ, TRESP> createRPCSender(rpcConfig: RPCConfig<TREQ, TRESP>, nodeConfig: Config): RPCSender<TREQ, TRESP> {
+    override fun <TREQ : Any, TRESP : Any> createRPCSender(
+        rpcConfig: RPCConfig<TREQ, TRESP>,
+        nodeConfig: Config
+    ): RPCSender<TREQ, TRESP> {
         TODO("Not yet implemented")
     }
 }
