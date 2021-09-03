@@ -16,6 +16,7 @@ import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
@@ -97,7 +98,7 @@ class InMemSubscriptionFactory @Activate constructor(
     }
 
     override fun <TREQ, TRESP> createRPCSubscription(
-        subscriptionConfig: Config,
+        rpcConfig: RPCConfig,
         config: Config,
         responderProcessor: RPCResponderProcessor<TREQ, TRESP>
     ): RPCSubscription<TREQ, TRESP> {

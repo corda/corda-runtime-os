@@ -14,6 +14,7 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import java.util.concurrent.ExecutorService
@@ -146,12 +147,16 @@ interface SubscriptionFactory {
     ): RandomAccessSubscription<K, V>
 
     /**
-     * Create an instance of the [RPCResponder]
-     * @param subscriptionConfig configuration object used to initialize the subscription
-     * @param config other configuration settings if needed
+     * Create an instance of the [RPCSubscription]
+     * This subscription is used to pick up requests of type [TREQ] posted by [RPCSender]
+     * The request is then processed and a response of type [TRESP] is posted back to the sender
+     *
+     * @param rpcConfig Define the mandatory params for creating a subscription.
+     * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
      * @param responderProcessor processor in charge of handling incoming requests
      */
-    fun <TREQ, TRESP> createRPCSubscription(subscriptionConfig: Config, config: Config,
+    fun <TREQ, TRESP> createRPCSubscription(rpcConfig: RPCConfig,
+                                            nodeConfig: Config = ConfigFactory.empty(),
                                             responderProcessor: RPCResponderProcessor<TREQ, TRESP>
     ): RPCSubscription<TREQ, TRESP>
 }

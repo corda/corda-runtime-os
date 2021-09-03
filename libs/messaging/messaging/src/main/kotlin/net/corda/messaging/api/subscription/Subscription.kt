@@ -30,6 +30,17 @@ interface Subscription<K, V> : Lifecycle {
     override val isRunning: Boolean
 }
 
+/**
+ * A subscription that handles requests of type [TREQ], processes the request and publishes the response in type [TRESP]
+ *
+ * See [SubscriptionFactory] for the creation of each subscription.
+ *
+ * Each subscription will have a different processor for sending feed updates to the user.  See
+ * [SubscriptionFactory] and the processor docs themselves for more details on each type.
+ *
+ * A subscription will begin consuming events upon start().
+ * A subscription will stop consuming events and close the connection upon close()/stop()
+ */
 interface RPCSubscription<TREQ, TRESP> : Lifecycle {
 
     /**
