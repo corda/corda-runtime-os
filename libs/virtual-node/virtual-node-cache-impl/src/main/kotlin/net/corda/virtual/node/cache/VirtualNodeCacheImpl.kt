@@ -48,9 +48,11 @@ class VirtualNodeCacheImpl @Activate constructor(
 
     override fun getSandboxGroupFor(identity: HoldingIdentity, flow: FlowMetadata): SandboxGroup {
         return cache.computeIfAbsent(identity) {
-            val cpb = cpbForFlow[flow.name]
+            val cpbIdentifier = cpbForFlow[flow.name]
                 ?: throw CordaRuntimeException("Flow not available in cordapp")
-            sandboxService.createSandboxes(cpb)
+            val cpb = installService.getCpb(cpbIdentifier)
+                ?: throw CordaRuntimeException("Could not get cpb from its identifier $cpbIdentifier")
+            sandboxService.createSandboxes(cpb.cpks.map { it.cpkHash })
         }
     }
 }

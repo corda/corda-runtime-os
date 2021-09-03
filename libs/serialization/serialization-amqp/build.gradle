@@ -18,13 +18,9 @@ dependencies {
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-serialization"
-    implementation ("net.corda:corda-class-info:$cordaVersion") {
-        transitive = false
-    }
+    implementation project(":libs:class-info")
     implementation "net.corda:corda-packaging"
-    implementation ("net.corda:corda-sandbox:$cordaVersion") {
-        transitive = false
-    }
+    implementation project(":libs:sandbox")
     implementation project(":libs:utilities")
     implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
     implementation project(":libs:serialization:serialization-encoding")
