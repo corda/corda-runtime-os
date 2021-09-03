@@ -38,7 +38,7 @@ interface PublisherFactory {
      * @param rpcConfig configuration object used to initialize the subscription
      * @param nodeConfig other configuration settings if needed
      */
-    fun <TREQ, TRESP> createRPCSender(
+    fun <TREQ: Any, TRESP: Any> createRPCSender(
         rpcConfig: RPCConfig<TREQ, TRESP>,
         nodeConfig: Config = ConfigFactory.empty()
     ): RPCSender<TREQ, TRESP>
