@@ -1,0 +1,21 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Corda Common JSON serialization'
+
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation "net.corda:corda-base"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+}
