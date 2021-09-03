@@ -32,6 +32,14 @@ hand should be considered lightweight.
 managing entities defined in separate OSGi bundles (and hence CPKs). The implementation uses a custom 
 implementation of `PersistenceUnitInfo` so to avoid the need of any XML configuration files.
 
+### OSGi
+
+When used in an OSGi context, the following bundles are required 
+(see `test.bndrun` in the `osgi-integration-tests` module):
+
+* `net.bytebuddy.byte-buddy`: needed by hibernate - byte buddy has replaced javassist as the default bytecode provider
+* db driver used by Hikari. E.g. `org.hsqldb.hsqldb` for in-memory (test) use, postgres TBC.
+
 ### Postgres
 
 TODO
@@ -50,9 +58,14 @@ integrationTestRuntime "org.hsqldb:hsqldb:$hsqldbVersion"
 
 `EntityManagerFactoryFactoryIntegrationTest` shows an example of an integration test using the in memory DB.
 
-#### end-to-end testing
+#### OSGi integration testing
 
-TODO: end to end test using Postgres and entities in separate OSGi bundles.
+The `osgi-integration-tests` module contains a test suite to test/validate/prove the DB modules in an OSGi context.
+The most important validation is persisting/querying entities across different OSGi bundles.
+
+The `confirm we can query cross-bundle` test uses a query that uses enties in both dogs and cats bundles. This is a 
+completely artificial scenario, and not one that we would expect to see in production code, but the sole purpose
+of this test is to validate that this is technically possible.
 
 ## Data definition (DDL) / Liquibase
 

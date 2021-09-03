@@ -14,8 +14,9 @@ data class Dog(
     @Column
     val name: String,
     @Column
-    val birthdate: LocalDate
+    val birthdate: LocalDate,
+    @Column
+    val owner: String
 ) {
-    // empty constructor for hibernate
-    constructor() : this(id = UUID.randomUUID(), name = "", birthdate = LocalDate.now())
+    constructor() : this(id = UUID.randomUUID(), name = "", birthdate = LocalDate.now(), owner = "")
 }
