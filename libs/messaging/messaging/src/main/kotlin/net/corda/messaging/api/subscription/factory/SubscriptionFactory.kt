@@ -68,12 +68,12 @@ interface SubscriptionFactory {
      * @param partitionAssignmentListener a listener that reacts to partition assignment and revocations.
      * @return A [Subscription] with key (of type [K]) and value (of type [V]) to manage lifecycle.
      */
-   fun <K : Any, V : Any> createDurableSubscription(
+    fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
         nodeConfig: Config = ConfigFactory.empty(),
         partitionAssignmentListener: PartitionAssignmentListener?
-    ) : Subscription<K, V>
+    ): Subscription<K, V>
 
     /**
      * Create a [CompactedSubscription] for processing events with keys (of type [K]) and values (of type [V]) from
@@ -91,7 +91,7 @@ interface SubscriptionFactory {
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
         nodeConfig: Config = ConfigFactory.empty(),
-    ) : CompactedSubscription<K, V>
+    ): CompactedSubscription<K, V>
 
     /**
      * Create a subscription for processing events from a durable topic, with a corresponding state on a compacted topic.
@@ -118,7 +118,7 @@ interface SubscriptionFactory {
         processor: StateAndEventProcessor<K, S, E>,
         nodeConfig: Config = ConfigFactory.empty(),
         stateAndEventListener: StateAndEventListener<K, S>? = null
-    ) : StateAndEventSubscription<K, S, E>
+    ): StateAndEventSubscription<K, S, E>
 
     /**
      * Creates an event log subscription.
@@ -127,7 +127,7 @@ interface SubscriptionFactory {
      * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
      * @param partitionAssignmentListener a listener that reacts to partition assignment and revocations.
      */
-    fun <K: Any, V: Any> createEventLogSubscription(
+    fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
         nodeConfig: Config = ConfigFactory.empty(),
@@ -139,7 +139,7 @@ interface SubscriptionFactory {
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
      */
-    fun <K: Any, V: Any> createRandomAccessSubscription(
+    fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
         nodeConfig: Config = ConfigFactory.empty(),
         keyClass: Class<K>,
@@ -151,12 +151,21 @@ interface SubscriptionFactory {
      * This subscription is used to pick up requests of type [TREQ] posted by [RPCSender]
      * The request is then processed and a response of type [TRESP] is posted back to the sender
      *
+     * RPC requests are handled asynchronously. Input messages are consumes as soon as they are posted to the user
+     * event handler. RPC responses are unreliable so do not use this pattern if you require reliable responses for
+     * your requests
+     *
+     * On start, the subscription goes to the latest message on the topic and not to the last one that was consumed.
+     * This means that any requests posted during a period of response side unavailability will not be processed
+     * (similar to the pub/sub pattern)
+     *
      * @param rpcConfig Define the mandatory params for creating a subscription.
      * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
      * @param responderProcessor processor in charge of handling incoming requests
      */
-    fun <TREQ, TRESP> createRPCSubscription(rpcConfig: RPCConfig<TREQ, TRESP>,
-                                            nodeConfig: Config = ConfigFactory.empty(),
-                                            responderProcessor: RPCResponderProcessor<TREQ, TRESP>
+    fun <TREQ : Any, TRESP : Any> createRPCSubscription(
+        rpcConfig: RPCConfig<TREQ, TRESP>,
+        nodeConfig: Config = ConfigFactory.empty(),
+        responderProcessor: RPCResponderProcessor<TREQ, TRESP>
     ): RPCSubscription<TREQ, TRESP>
 }

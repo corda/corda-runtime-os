@@ -8,6 +8,9 @@ package net.corda.messaging.api.subscription.factory.config
  * @property requestTopic Topic to send events to
  * @property requestType The request type class
  * @property responseType The response type class
+ *
+ * The response topic is not present due to the pattern making use of the convention where the response topic
+ * is called requestTopic.resp by default
  */
 data class RPCConfig<TREQ, TRESP>(
     val groupName: String,

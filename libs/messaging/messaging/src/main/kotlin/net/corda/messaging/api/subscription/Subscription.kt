@@ -33,26 +33,23 @@ interface Subscription<K, V> : Lifecycle {
 /**
  * A subscription that handles requests of type [TREQ], processes the request and publishes the response in type [TRESP]
  *
+ * RPC requests are processed asynchronously. Input messages are consume as soon as they have been posted to the
+ * user event handler. RPC responses are unreliable so do not use this pattern if reliable response are required.
+ *
  * See [SubscriptionFactory] for the creation of each subscription.
  *
  * Each subscription will have a different processor for sending feed updates to the user.  See
  * [SubscriptionFactory] and the processor docs themselves for more details on each type.
  *
  * A subscription will begin consuming events upon start().
+ *
+ * On first connection, the subscription goes to the latest message on the topic and not the last one consumed.
+ * This means that any requests sent when the response side is not yet operational will not be processed
+ * (similar to pub/sub pattern)
+ *
  * A subscription will stop consuming events and close the connection upon close()/stop()
  */
-interface RPCSubscription<TREQ, TRESP> : Lifecycle {
-
-    /**
-     * Start a subscription.
-     */
-    override fun start()
-
-    /**
-     * Check the state of a subscription. true if subscription is still active. false otherwise.
-     */
-    override val isRunning: Boolean
-}
+interface RPCSubscription<TREQ, TRESP> : Lifecycle
 
 /**
  * A subscription that can be used to manage the life cycle of consumption of both state and event records from a
