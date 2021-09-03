@@ -2,6 +2,7 @@ package net.corda.sandbox.internal
 
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxService
+import net.corda.sandbox.internal.sandbox.SandboxInternal
 import org.osgi.framework.Bundle
 
 /**

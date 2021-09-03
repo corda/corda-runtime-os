@@ -1,15 +1,13 @@
-package net.corda.sandbox.internal
+package net.corda.sandbox.internal.sandbox
 
 import net.corda.packaging.Cpk
-import net.corda.sandbox.CpkSandbox
-import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.utilities.BundleUtils
 import org.osgi.framework.Bundle
 import java.util.UUID
 
 /**
- * A [Sandbox] created from a CPK.
+ * Extends [SandboxImpl] to implement [CpkSandboxInternal].
  *
  * @param cordappBundle The CPK's CorDapp bundle.
  */
@@ -19,7 +17,7 @@ internal class CpkSandboxImpl(
     override val cpk: Cpk.Expanded,
     private val cordappBundle: Bundle,
     otherBundles: Set<Bundle>
-) : SandboxInternalAbstractImpl(bundleUtils, id, otherBundles + cordappBundle), CpkSandbox {
+) : SandboxImpl(bundleUtils, id, otherBundles + cordappBundle), CpkSandboxInternal {
 
     override fun loadClass(className: String): Class<*> = try {
         cordappBundle.loadClass(className)
@@ -30,4 +28,11 @@ internal class CpkSandboxImpl(
     }
 
     override fun isCordappBundle(bundle: Bundle) = bundle == cordappBundle
+
+    override fun containsClass(className: String) = try {
+        loadClass(className)
+        true
+    } catch (ex: SandboxException) {
+        false
+    }
 }

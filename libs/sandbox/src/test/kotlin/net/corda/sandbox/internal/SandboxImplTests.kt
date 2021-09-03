@@ -2,6 +2,7 @@ package net.corda.sandbox.internal
 
 import net.corda.packaging.Cpk
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.utilities.BundleUtils
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test

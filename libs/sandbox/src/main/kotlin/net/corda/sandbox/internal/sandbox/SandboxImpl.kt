@@ -1,4 +1,4 @@
-package net.corda.sandbox.internal
+package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
@@ -8,17 +8,16 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Provides an abstract implementation of [SandboxInternal], shared by [CpkSandboxImpl] and [PlatformSandbox].
+ * An implementation of [SandboxInternal].
  *
  * @param bundleUtils The [BundleUtils] that all OSGi activity are delegated to for testing purposes
  * @param bundles The set of [Bundle]s in this sandbox
  */
-internal abstract class SandboxInternalAbstractImpl(
+internal open class SandboxImpl(
     private val bundleUtils: BundleUtils,
     override val id: UUID,
     internal val bundles: Set<Bundle>
 ) : SandboxInternal {
-
     // The other sandboxes whose services, bundles and events this sandbox can receive.
     private val visibleSandboxes = ConcurrentHashMap.newKeySet<Sandbox>()
 
@@ -38,5 +37,9 @@ internal abstract class SandboxInternalAbstractImpl(
     }
 
     override fun grantVisibility(otherSandboxes: Collection<Sandbox>): Unit =
-        otherSandboxes.forEach(this::grantVisibility)
+        otherSandboxes.forEach { otherSandbox ->
+            if (otherSandbox !== this) {
+                visibleSandboxes.add(otherSandbox)
+            }
+        }
 }

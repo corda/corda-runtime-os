@@ -1,18 +1,11 @@
-package net.corda.sandbox.internal
+package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import org.osgi.framework.Bundle
-import java.net.URI
-import java.util.UUID
 
-/** Extends [Sandbox] with methods that are used by [SandboxServiceInternal]. */
+/** Extends [Sandbox] with internal methods. */
 internal interface SandboxInternal : Sandbox {
-    companion object {
-        /** Generates a unique location to use when installing a bundle into sandbox [id] from [uri]. */
-        fun getLocation(id: UUID, uri: URI) = SandboxLocation(id, uri)
-    }
-
     /** Indicates whether this sandbox contains the given [bundle]. */
     fun containsBundle(bundle: Bundle): Boolean
 
@@ -25,9 +18,6 @@ internal interface SandboxInternal : Sandbox {
      * Throws [SandboxException] if the class is not found in any bundle in the sandbox.
      */
     fun getBundle(klass: Class<*>): Bundle
-
-    /** Returns true if the [bundle] is this sandbox's CorDapp bundle. */
-    fun isCordappBundle(bundle: Bundle): Boolean
 
     /** Indicates whether this sandbox has visibility of [otherSandbox]. */
     fun hasVisibility(otherSandbox: Sandbox): Boolean

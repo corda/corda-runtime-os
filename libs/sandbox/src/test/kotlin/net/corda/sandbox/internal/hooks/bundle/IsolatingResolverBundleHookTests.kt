@@ -1,6 +1,6 @@
 package net.corda.sandbox.internal.hooks.bundle
 
-import net.corda.sandbox.internal.SandboxInternal
+import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.SandboxServiceInternal
 import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.createMockBundleCapability
 import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.createMockBundleRequirement

@@ -10,6 +10,10 @@ import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.SandboxService
+import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
+import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
+import net.corda.sandbox.internal.sandbox.SandboxImpl
+import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
@@ -96,10 +100,13 @@ internal class SandboxServiceImpl @Activate constructor(
             else ->
                 // The "core" sandbox can always both see and be seen.
                 // Other sandboxes can only see each other's "main" jars.
-                lookingSandbox.hasVisibility(lookedAtSandbox)
-                        && (isCoreSandbox(lookingSandbox)
-                        || isCoreSandbox(lookedAtSandbox)
-                        || lookedAtSandbox.isCordappBundle(lookedAtBundle))
+                lookingSandbox.hasVisibility(lookedAtSandbox) && (
+                        isCoreSandbox(lookingSandbox)
+                                || isCoreSandbox(lookedAtSandbox)
+                                || (lookedAtSandbox is CpkSandboxInternal && lookedAtSandbox.isCordappBundle(
+                            lookedAtBundle
+                        ))
+                        )
         }
     }
 
@@ -216,8 +223,8 @@ internal class SandboxServiceImpl @Activate constructor(
             bundle.symbolicName in CORE_BUNDLE_NAMES
         }
 
-        val coreSandbox = PlatformSandbox(bundleUtils, UUID.randomUUID(), coreBundles.toSet())
-        val nonCoreSandbox = PlatformSandbox(bundleUtils, UUID.randomUUID(), nonCoreBundles.toSet())
+        val coreSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), coreBundles.toSet())
+        val nonCoreSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), nonCoreBundles.toSet())
         nonCoreSandbox.grantVisibility(coreSandbox)
         coreSandbox.grantVisibility(nonCoreSandbox)
 
@@ -236,7 +243,7 @@ internal class SandboxServiceImpl @Activate constructor(
      * A [SandboxException] is thrown if a bundle fails to install.
      */
     private fun installBundle(jarLocation: URI, sandboxId: UUID): Bundle {
-        val sandboxedBundleLocation = SandboxInternal.getLocation(sandboxId, jarLocation)
+        val sandboxedBundleLocation = SandboxLocation(sandboxId, jarLocation)
         return try {
             bundleUtils.installAsBundle(sandboxedBundleLocation.toString(), jarLocation)
         } catch (e: BundleException) {
