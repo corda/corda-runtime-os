@@ -15,7 +15,7 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
-import net.corda.messaging.api.subscription.RPCResponder
+import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
@@ -242,7 +242,7 @@ class SubscriptionFactoryStub(private val topicService: TopicService) : Subscrip
         subscriptionConfig: Config,
         config: Config,
         responderProcessor: RPCResponderProcessor<TREQ, TRESP>
-    ): RPCResponder<TREQ, TRESP> {
+    ): RPCSubscription<TREQ, TRESP> {
         TODO("Not yet implemented")
     }
 }

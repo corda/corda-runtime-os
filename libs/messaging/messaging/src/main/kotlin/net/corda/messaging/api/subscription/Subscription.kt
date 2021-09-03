@@ -30,6 +30,19 @@ interface Subscription<K, V> : Lifecycle {
     override val isRunning: Boolean
 }
 
+interface RPCSubscription<TREQ, TRESP> : Lifecycle {
+
+    /**
+     * Start a subscription.
+     */
+    override fun start()
+
+    /**
+     * Check the state of a subscription. true if subscription is still active. false otherwise.
+     */
+    override val isRunning: Boolean
+}
+
 /**
  * A subscription that can be used to manage the life cycle of consumption of both state and event records from a
  * pair of topics.
