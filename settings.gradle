@@ -130,6 +130,7 @@ include 'libs:utilities'
 include 'libs:virtual-node:virtual-node-cache'
 include 'libs:virtual-node:virtual-node-cache-impl'
 include 'osgi-framework-api'
+include 'osgi-framework-application'
 include 'osgi-framework-bootstrap'
 include 'testing:apps:test-app'
 

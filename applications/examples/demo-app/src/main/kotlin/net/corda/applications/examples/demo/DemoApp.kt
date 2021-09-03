@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
+import java.lang.IllegalStateException
 import java.util.*
 
 enum class LifeCycleState {
@@ -40,8 +41,6 @@ enum class LifeCycleState {
 class DemoApp @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = Shutdown::class)
-    private val shutDownService: Shutdown,
     @Reference(service = ConfigReadServiceFactory::class)
     private var configReadServiceFactory: ConfigReadServiceFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -60,14 +59,13 @@ class DemoApp @Activate constructor(
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
 
     @Suppress("SpreadOperator")
-    override fun startup(args: Array<String>) {
+    override fun run(args: Array<String>) : Int {
         consoleLogger.info("Starting demo application...")
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
 
         if (parameters.helpRequested) {
             CommandLine.usage(CliParameters(), System.out)
-            shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
             var durableSub: RunDurableSub? = null
             var pubsubSub: RunPubSub? = null
@@ -141,6 +139,7 @@ class DemoApp @Activate constructor(
             lifeCycleCoordinator!!.start()
             consoleLogger.info("Demo application started")
         }
+        return 0
     }
 
     private fun getKafkaPropertiesFromFile(kafkaPropertiesFile: File?): Properties? {
@@ -171,16 +170,13 @@ class DemoApp @Activate constructor(
             if (default != null) {
                 return default
             }
-            log.error(
-                "No $path property found! " +
-                        "Pass property in via --kafka properties file or via -D$path"
-            )
-            shutdown()
+            throw IllegalStateException("No $path property found! " +
+                    "Pass property in via --kafka properties file or via -D$path")
         }
         return configValue
     }
 
-    override fun shutdown() {
+    fun deactivate() {
         consoleLogger.info("Stopping application")
         lifeCycleCoordinator?.stop()
         log.info("Stopping application")

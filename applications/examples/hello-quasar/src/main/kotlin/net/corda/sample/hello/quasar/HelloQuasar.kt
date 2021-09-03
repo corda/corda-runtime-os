@@ -52,7 +52,7 @@ class HelloQuasar : Application {
         }
     }
 
-    override fun startup(args: Array<String>) {
+    override fun run(args: Array<String>) : Int {
         log.info("${JavaAgent::class.java.name} is active: ${JavaAgent.isActive()}")
         val fiber = newFiber().start()
         serializer.getKryo().classLoader = javaClass.classLoader
@@ -71,7 +71,6 @@ class HelloQuasar : Application {
         }
         Fiber.unparkDeserialized(deserialized, DefaultFiberScheduler.getInstance())
         log.info("Fiber return value: ${deserialized.get()}")
+        return 0
     }
-
-    override fun shutdown() {}
 }

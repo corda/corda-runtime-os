@@ -40,32 +40,12 @@ package net.corda.osgi.api
  *}
  * ```
  */
-interface Application : AutoCloseable {
-
-    /**
-     * Call [shutdown].
-     *
-     * @see [AutoCloseable.close]
-     */
-    override fun close() {
-        shutdown()
-    }
+interface Application {
 
     /**
      * The `osgi-framework-bootstrap` module calls this method as entry point of the application.
      *
      * @param args passed from the OS starting the bootable JAR.
      */
-    fun startup(args: Array<String>)
-
-    /**
-     * The `osgi-framework-bootstrap` module calls this method before to stop the OSGi framework.
-     *
-     * *WARNING! Do not call [Shutdown] service from here because it calls this method
-     * resulting in an infinite recursive loop.
-     *
-     * *NOTE. The module `osgi-framework-bootstrap` implements an experimental solution to avoid shutdown loops'.
-     */
-    fun shutdown()
-
+    fun run(args: Array<String>) : Int
 }

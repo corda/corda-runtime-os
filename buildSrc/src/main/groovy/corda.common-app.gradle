@@ -1,8 +1,9 @@
-import groovy.transform.TupleConstructor
-import org.osgi.framework.Constants
-
 import java.nio.file.Files
 import java.util.jar.JarFile
+
+import groovy.transform.TupleConstructor
+import javax.inject.Inject
+import org.osgi.framework.Constants
 
 plugins {
     id 'corda.common-library'
@@ -59,6 +60,8 @@ dependencies {
     systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
     systemPackages project(":osgi-framework-api")
+
+    bundles project(":osgi-framework-application")
 }
 
 Provider<Jar> jarTask = tasks.named("jar", Jar)
@@ -159,17 +162,56 @@ class JavaAgent implements Serializable {
     String args
 }
 
-class JavaAgentExtension {
+class OsgiRun {
+
+
     final List<JavaAgent> javaAgents = new ArrayList<JavaAgent>()
+    final MapProperty<String, String> frameworkProperties
+
+    @Inject
+    OsgiRun(ObjectFactory objects) {
+        frameworkProperties = objects.mapProperty(String.class, String.class).convention(new HashMap<>())
+    }
 
     def agent(String className, String args) {
         javaAgents.add(new JavaAgent(className, args))
     }
 }
 
-JavaAgentExtension javaAgentExtension = extensions.create("javaAgents", JavaAgentExtension.class)
+OsgiRun osgiRun = extensions.create("osgiRun", OsgiRun.class)
 
 def appJarBaseName = "corda-" + project.name
+
+class FrameworkPropertyFile extends DefaultTask {
+
+    @OutputFile
+    File getOutputFile() {
+        return new File(temporaryDir, "framework.properties")
+    }
+
+    @Input
+    final MapProperty<String, String> frameworkProperties
+
+    @Inject
+    FrameworkPropertyFile(ObjectFactory objects) {
+        frameworkProperties = objects.mapProperty(String.class, String.class)
+    }
+
+    @TaskAction
+    void run() {
+        Files.newBufferedWriter(getOutputFile().toPath()).withCloseable { Writer writer ->
+            Properties properties = new Properties()
+            frameworkProperties.get().forEach {key, value ->
+                properties.put(key, value)
+            }
+            properties.store(writer, null)
+        }
+    }
+}
+
+Provider<FrameworkPropertyFile> writeFrameworkPropertyFile = tasks.register("writeFrameworkPropertyFile", FrameworkPropertyFile) {
+    frameworkProperties = osgiRun.frameworkProperties
+}
 
 class JavaAgentFile extends DefaultTask {
 
@@ -182,7 +224,7 @@ class JavaAgentFile extends DefaultTask {
     List<JavaAgent> javaAgents = new ArrayList<JavaAgent>()
 
     @TaskAction
-    def run() {
+    void run() {
         Files.newBufferedWriter(getOutputFile().toPath()).withCloseable { Writer writer ->
             Properties props = new Properties()
             javaAgents.each { JavaAgent javaAgent ->
@@ -194,7 +236,7 @@ class JavaAgentFile extends DefaultTask {
 }
 
 Provider<JavaAgentFile> javaAgentFileTask =  tasks.register("javaAgentFile", JavaAgentFile) {
-    javaAgents = javaAgentExtension.javaAgents
+    javaAgents = osgiRun.javaAgents
 }
 
 def appJar = tasks.register('appJar', Jar) {
@@ -230,6 +272,7 @@ def appJar = tasks.register('appJar', Jar) {
     from(configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) })
     from(createSystemBundlesFile)
     from(cordaAssembleSystemPackagesExtraTask)
+    from(writeFrameworkPropertyFile)
     into("bundles") {
         from(jarTask)
         from(configurations.bundles - configurations.systemPackages) {

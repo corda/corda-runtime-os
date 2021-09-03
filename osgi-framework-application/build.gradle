@@ -1,0 +1,14 @@
+plugins {
+    id 'corda.common-app'
+}
+
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly project(":osgi-framework-api")
+
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+}

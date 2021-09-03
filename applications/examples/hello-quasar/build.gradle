@@ -23,6 +23,13 @@ dependencies {
 
 description 'Quasar fiber example'
 
-javaAgents {
+osgiRun {
+    frameworkProperties = [
+            "org.osgi.framework.bootdelegation" :
+                    "co.paralleluniverse.fibers.suspend," +
+                            "com.esotericsoftware.reflectasm," +
+                            "org.jolokia.jvmagent,org.jolokia.util",
+            "org.osgi.framework.bundle.parent" : "app"
+    ]
     agent("co.paralleluniverse.fibers.instrument.JavaAgent", project.quasar.options.map { it.substring(1) }.get())
 }

@@ -15,7 +15,6 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'org.slf4j:slf4j-api'
     implementation project(":libs:examples:helloworld")
-    implementation project(":osgi-framework-api")
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
@@ -27,6 +26,13 @@ dependencies {
 
 description 'Goodbye World Application'
 
-javaAgents {
+osgiRun {
+    frameworkProperties = [
+        "org.osgi.framework.bootdelegation" :
+                "co.paralleluniverse.fibers.suspend," +
+                "com.esotericsoftware.reflectasm," +
+                "org.jolokia.jvmagent,org.jolokia.util",
+        "org.osgi.framework.bundle.parent" : "app"
+    ]
     agent("co.paralleluniverse.fibers.instrument.JavaAgent", project.quasar.options.map { it.substring(1) }.get())
 }
