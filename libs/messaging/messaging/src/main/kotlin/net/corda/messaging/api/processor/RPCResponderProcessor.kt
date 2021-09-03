@@ -10,6 +10,8 @@ import java.util.concurrent.CompletableFuture
  * If you want to receive events from a from [RPCSubscription] you should implement this interface.
  *
  * Subscribers will receive events as they come in as well as a response future
+ *
+ * There can be multiple responder processors to receive the requests off the topic
  */
 interface RPCResponderProcessor<TREQ, TRESP> {
 
@@ -25,10 +27,4 @@ interface RPCResponderProcessor<TREQ, TRESP> {
      * result of that call is ready, the future is set
      */
     fun onNext(request: TREQ, respFuture: CompletableFuture<TRESP>)
-
-    /**
-     * [requestType] and [responseType] to easily get the request and response types the processor operates on.
-     */
-    val requestType: Class<TREQ>
-    val responseType: Class<TRESP>
 }
