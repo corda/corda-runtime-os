@@ -221,7 +221,7 @@ class KafkaSubscriptionFactory @Activate constructor(
 
     override fun <TREQ, TRESP> createRPCSubscription(
         rpcConfig: RPCConfig,
-        config: Config,
+        nodeconfig: Config,
         responderProcessor: RPCResponderProcessor<TREQ, TRESP>
     ): RPCSubscription<TREQ, TRESP> {
         TODO("Not yet implemented")

@@ -99,7 +99,7 @@ class InMemSubscriptionFactory @Activate constructor(
 
     override fun <TREQ, TRESP> createRPCSubscription(
         rpcConfig: RPCConfig,
-        config: Config,
+        nodeConfig: Config,
         responderProcessor: RPCResponderProcessor<TREQ, TRESP>
     ): RPCSubscription<TREQ, TRESP> {
         TODO("Not yet implemented")
