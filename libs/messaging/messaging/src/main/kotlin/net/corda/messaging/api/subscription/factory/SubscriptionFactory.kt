@@ -151,7 +151,7 @@ interface SubscriptionFactory {
      * @param config other configuration settings if needed
      * @param responderProcessor processor in charge of handling incoming requests
      */
-    fun <TREQ, TRESP> createRPCResponder(subscriptionConfig: Config, config: Config,
-                           responderProcessor: RPCResponderProcessor<TREQ, TRESP>
+    fun <TREQ, TRESP> createRPCSubscription(subscriptionConfig: Config, config: Config,
+                                            responderProcessor: RPCResponderProcessor<TREQ, TRESP>
     ): RPCSubscription<TREQ, TRESP>
 }

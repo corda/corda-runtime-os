@@ -238,7 +238,7 @@ class SubscriptionFactoryStub(private val topicService: TopicService) : Subscrip
         TODO("Not yet implemented")
     }
 
-    override fun <TREQ, TRESP> createRPCResponder(
+    override fun <TREQ, TRESP> createRPCSubscription(
         subscriptionConfig: Config,
         config: Config,
         responderProcessor: RPCResponderProcessor<TREQ, TRESP>

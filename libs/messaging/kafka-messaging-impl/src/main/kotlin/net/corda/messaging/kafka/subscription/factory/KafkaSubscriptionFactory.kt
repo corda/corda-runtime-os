@@ -218,7 +218,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         return KafkaRandomAccessSubscriptionImpl(config, consumerBuilder, keyClass, valueClass)
     }
 
-    override fun <TREQ, TRESP> createRPCResponder(
+    override fun <TREQ, TRESP> createRPCSubscription(
         subscriptionConfig: Config,
         config: Config,
         responderProcessor: RPCResponderProcessor<TREQ, TRESP>
