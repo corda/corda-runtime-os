@@ -28,5 +28,7 @@ internal class SandboxGroupImpl(private val sandboxesById: NavigableMap<Cpk.Iden
         }
     }
 
-    override fun classCount(className: String) = sandboxes.count { sandbox -> sandbox.cordappBundleContainsClass(className) }
+    override fun cordappClassCount(className: String) = sandboxes.count { sandbox ->
+        sandbox.cordappBundleContainsClass(className)
+    }
 }

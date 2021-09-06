@@ -57,17 +57,6 @@ class CpkSandboxImplTests {
     }
 
     @Test
-    fun `correctly indicates whether a bundle is the CorDapp bundle in the CPK sandbox`() {
-        val cordappBundle = mock<Bundle>()
-        val otherBundle = mock<Bundle>()
-
-        val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), cordappBundle, setOf(otherBundle))
-
-        assertTrue(sandbox.isCordappBundle(cordappBundle))
-        assertFalse(sandbox.isCordappBundle(otherBundle))
-    }
-
-    @Test
     fun `correctly indicates whether the CPK sandbox's CorDapp bundle contains a given class`() {
         val cordappBundle = mock(Bundle::class.java).apply {
             whenever(loadClass(String::class.java.name)).thenReturn(String::class.java)

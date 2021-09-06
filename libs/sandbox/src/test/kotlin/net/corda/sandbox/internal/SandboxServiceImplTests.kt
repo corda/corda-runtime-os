@@ -378,6 +378,8 @@ class SandboxServiceImplTests {
         val expectedClassInfo = CpkClassInfo(
             cpkWithDependenciesData.cordappBundle.symbolicName,
             cpkWithDependenciesData.cordappBundle.version,
+            cpkWithDependenciesData.cordappBundle.symbolicName,
+            cpkWithDependenciesData.cordappBundle.version,
             cpkWithDependenciesData.cpk.cpkHash,
             cpkWithDependenciesData.cpk.id.signers,
             setOf(cpkOne.cpkHash)
@@ -408,6 +410,8 @@ class SandboxServiceImplTests {
         val expectedCpkClassInfo = CpkClassInfo(
             cpkWithDependenciesData.libraryBundle.symbolicName,
             cpkWithDependenciesData.libraryBundle.version,
+            cpkWithDependenciesData.cordappBundle.symbolicName,
+            cpkWithDependenciesData.cordappBundle.version,
             cpkWithDependenciesData.cpk.cpkHash,
             cpkWithDependenciesData.cpk.id.signers,
             setOf(cpkOne.cpkHash)
@@ -465,6 +469,8 @@ class SandboxServiceImplTests {
         val classInfo = sandboxService.getClassInfo(cordappClasses[0].canonicalName)
 
         val expectedClassInfo = CpkClassInfo(
+            cpkWithDependenciesData.cordappBundle.symbolicName,
+            cpkWithDependenciesData.cordappBundle.version,
             cpkWithDependenciesData.cordappBundle.symbolicName,
             cpkWithDependenciesData.cordappBundle.version,
             cpkWithDependenciesData.cpk.cpkHash,
@@ -557,7 +563,7 @@ class SandboxServiceImplTests {
 
         val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
         val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }
-        val sandboxTwoCordappBundle = sandboxTwoBundles.find { bundle -> sandboxTwo.isCordappBundle(bundle) }!!
+        val sandboxTwoCordappBundle = sandboxTwoBundles.find { bundle -> sandboxTwo.cordappBundle == bundle }!!
         val sandboxTwoOtherBundles = sandboxTwoBundles - sandboxTwoCordappBundle
 
         sandboxOneBundles.forEach { sandboxOneBundle ->

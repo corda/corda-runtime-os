@@ -38,5 +38,5 @@ interface SandboxGroup {
      *
      * Throws [SandboxException] if the sandbox does not have a CorDapp bundle, or the CorDapp bundle is uninstalled.
      */
-    fun classCount(className: String): Int
+    fun cordappClassCount(className: String): Int
 }

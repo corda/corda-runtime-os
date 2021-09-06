@@ -6,16 +6,12 @@ import net.corda.sandbox.internal.utilities.BundleUtils
 import org.osgi.framework.Bundle
 import java.util.UUID
 
-/**
- * Extends [SandboxImpl] to implement [CpkSandboxInternal].
- *
- * @param cordappBundle The CPK's CorDapp bundle.
- */
+/** Extends [SandboxImpl] to implement [CpkSandboxInternal]. */
 internal class CpkSandboxImpl(
     bundleUtils: BundleUtils,
     id: UUID,
     override val cpk: Cpk.Expanded,
-    private val cordappBundle: Bundle,
+    override val cordappBundle: Bundle,
     otherBundles: Set<Bundle>
 ) : SandboxImpl(bundleUtils, id, otherBundles + cordappBundle), CpkSandboxInternal {
 
@@ -26,8 +22,6 @@ internal class CpkSandboxImpl(
     } catch (e: IllegalStateException) {
         throw SandboxException("The bundle $cordappBundle in sandbox $id has been uninstalled.", e)
     }
-
-    override fun isCordappBundle(bundle: Bundle) = bundle == cordappBundle
 
     override fun cordappBundleContainsClass(className: String) = try {
         loadClass(className)

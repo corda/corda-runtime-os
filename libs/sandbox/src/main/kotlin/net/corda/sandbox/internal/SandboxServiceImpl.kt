@@ -103,9 +103,8 @@ internal class SandboxServiceImpl @Activate constructor(
                 lookingSandbox.hasVisibility(lookedAtSandbox) && (
                         isCoreSandbox(lookingSandbox)
                                 || isCoreSandbox(lookedAtSandbox)
-                                || (lookedAtSandbox is CpkSandboxInternal && lookedAtSandbox.isCordappBundle(
-                            lookedAtBundle
-                        ))
+                                || (lookedAtSandbox is CpkSandboxInternal
+                                && lookedAtSandbox.cordappBundle == lookedAtBundle)
                         )
         }
     }
@@ -274,7 +273,7 @@ internal class SandboxServiceImpl @Activate constructor(
         val bundle = sandbox.getBundle(klass)
 
         val cpk = when (sandbox) {
-            is CpkSandbox -> sandbox.cpk
+            is CpkSandboxInternal -> sandbox.cpk
             else -> return NonCpkClassInfo(bundle.symbolicName, bundle.version)
         }
 
@@ -286,7 +285,14 @@ internal class SandboxServiceImpl @Activate constructor(
             )).cpkHash
         }
 
-        return CpkClassInfo(bundle.symbolicName, bundle.version, cpk.cpkHash, cpk.id.signers, cpkDependencyHashes)
+        return CpkClassInfo(
+            bundle.symbolicName,
+            bundle.version,
+            sandbox.cordappBundle.symbolicName,
+            sandbox.cordappBundle.version,
+            cpk.cpkHash,
+            cpk.id.signers,
+            cpkDependencyHashes)
     }
 }
 
