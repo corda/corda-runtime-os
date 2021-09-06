@@ -7,10 +7,10 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.common.identity.CordaX500Name
 import net.corda.common.identity.CordaX500NameDeserializer
 import net.corda.v5.base.annotations.CordaInternal
 import java.util.TimeZone
+import net.corda.v5.application.identity.CordaX500Name
 
 /**
  * General purpose Jackson Mapper which has sensible security default applied to it.
@@ -24,9 +24,6 @@ fun jacksonObjectMapper() = ObjectMapper().apply {
     setTimeZone(TimeZone.getTimeZone("UTC"))
     disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 
-    // There is also `CordaModule`, but:
-    // a. It is in a different upstream module
-    // b. It has more mappers/mixins we may not need as standard
     registerModule(with(SimpleModule("Standard types")) {
         addDeserializer(CordaX500Name::class.java, CordaX500NameDeserializer)
         this

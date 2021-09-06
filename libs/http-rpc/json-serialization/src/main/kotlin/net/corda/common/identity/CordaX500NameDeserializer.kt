@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
+import net.corda.v5.application.identity.CordaX500Name
 
 object CordaX500NameDeserializer : JsonDeserializer<CordaX500Name>() {
     private val log = LoggerFactory.getLogger(this::class.java)
