@@ -17,27 +17,14 @@ import java.util.UUID
 class AuthenticationProtocolTest {
 
     private val provider = BouncyCastleProvider()
-    private val ecKeyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-    private val ecdsaSignature = Signature.getInstance(ECDSA_SIGNATURE_ALGO, provider)
-
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
 
     // party A
     private val partyAMaxMessageSize = 1_000_000
-    private val partyAIdentityKey = ecKeyPairGenerator.generateKeyPair()
-    private val authenticationProtocolA = AuthenticationProtocolInitiator(
-        sessionId,
-        setOf(ProtocolMode.AUTHENTICATION_ONLY),
-        partyAMaxMessageSize,
-        partyAIdentityKey.public,
-        groupId
-    )
 
     // party B
     private val partyBMaxMessageSize = 1_500_000
-    private val partyBIdentityKey = ecKeyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
 
     @Test
     fun `no handshake message crosses the minimum value allowed for max message size`() {
