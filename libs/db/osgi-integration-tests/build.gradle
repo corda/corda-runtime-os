@@ -1,3 +1,5 @@
+import aQute.bnd.gradle.TestOSGi
+
 plugins {
     id "corda.osgi-test-conventions"
 }
@@ -32,7 +34,3 @@ dependencies {
     // TODO: and why do I need this?
     integrationTestRuntime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
-
-//tasks.named("integrationTest").configure {
-//    systemProperty 'postgresPort', 5432
-//}
