@@ -16,7 +16,7 @@ internal class SandboxGroupImpl(private val sandboxesById: NavigableMap<Cpk.Iden
         getSandbox(cpkIdentifier).loadClass(className)
 
     override fun <T : Any> loadClass(className: String, type: Class<T>): Class<out T> {
-        val containingSandbox = sandboxes.find { sandbox -> sandbox.containsClass(className) }
+        val containingSandbox = sandboxes.find { sandbox -> sandbox.cordappBundleContainsClass(className) }
             ?: throw SandboxException("Class $className could not be not found in sandbox group.")
 
         return try {
@@ -28,5 +28,5 @@ internal class SandboxGroupImpl(private val sandboxesById: NavigableMap<Cpk.Iden
         }
     }
 
-    override fun classCount(className: String) = sandboxes.count { sandbox -> sandbox.containsClass(className) }
+    override fun classCount(className: String) = sandboxes.count { sandbox -> sandbox.cordappBundleContainsClass(className) }
 }

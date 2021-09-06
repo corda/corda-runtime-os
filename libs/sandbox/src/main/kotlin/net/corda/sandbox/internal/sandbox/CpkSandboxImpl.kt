@@ -29,7 +29,7 @@ internal class CpkSandboxImpl(
 
     override fun isCordappBundle(bundle: Bundle) = bundle == cordappBundle
 
-    override fun containsClass(className: String) = try {
+    override fun cordappBundleContainsClass(className: String) = try {
         loadClass(className)
         true
     } catch (ex: SandboxException) {

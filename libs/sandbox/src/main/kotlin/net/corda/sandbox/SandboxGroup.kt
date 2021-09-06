@@ -34,10 +34,9 @@ interface SandboxGroup {
     fun <T : Any> loadClass(className: String, type: Class<T>): Class<out T>
 
     /**
-     * Returns number of times class [className] appears in the sandbox group.
+     * Returns number of times class [className] appears in the CorDapp bundles of the sandbox group's CPK sandboxes.
      *
-     * Throws [SandboxException] if the sandbox does not have a CorDapp bundle, the CorDapp bundle is
-     * uninstalled.
+     * Throws [SandboxException] if the sandbox does not have a CorDapp bundle, or the CorDapp bundle is uninstalled.
      */
     fun classCount(className: String): Int
 }
