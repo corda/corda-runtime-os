@@ -7,7 +7,6 @@ plugins {
 description 'Corda Class Information'
 
 dependencies {
-    api "org.jetbrains.kotlin:kotlin-osgi-bundle"
     api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
     compileOnly "org.osgi:osgi.annotation"
