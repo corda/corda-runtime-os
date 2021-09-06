@@ -44,7 +44,6 @@ pluginManagement {
         id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
         id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
-        id 'corda.common-library' version internalPublishVersion
     }
 }
 

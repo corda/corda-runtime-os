@@ -29,6 +29,5 @@ repositories {
             includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
         }
     }
-    mavenCentral()
-
+    gradlePluginPortal()
 }
