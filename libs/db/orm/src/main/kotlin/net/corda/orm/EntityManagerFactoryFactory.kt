@@ -14,7 +14,7 @@ interface EntityManagerFactoryFactory {
      * @param configuration for the target data source
      * @return [EntityManagerFactory]
      */
-    fun createEntityManagerFactory(
+    fun create(
         persistenceUnitName: String,
         entities: List<Class<*>>,
         configuration: EntityManagerConfiguration

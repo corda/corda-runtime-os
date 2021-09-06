@@ -36,8 +36,8 @@ class EntityManagerFactoryFactoryImplTest {
     }
 
     @Test
-    fun `when createEntityManagerFactory set persistenceUnitName`() {
-        EntityManagerFactoryFactoryImpl(mockBuilder).createEntityManagerFactory(
+    fun `when create set persistenceUnitName`() {
+        EntityManagerFactoryFactoryImpl(mockBuilder).create(
             "Unit Test", listOf(TestEntity::class.java), config
         )
         verify(mockBuilder)(
@@ -48,8 +48,8 @@ class EntityManagerFactoryFactoryImplTest {
     }
 
     @Test
-    fun `when createEntityManagerFactory set properties`() {
-        EntityManagerFactoryFactoryImpl(mockBuilder).createEntityManagerFactory(
+    fun `when create set properties`() {
+        EntityManagerFactoryFactoryImpl(mockBuilder).create(
             "Unit Test", listOf(TestEntity::class.java), config
         )
         verify(mockBuilder)(
@@ -65,8 +65,8 @@ class EntityManagerFactoryFactoryImplTest {
     }
 
     @Test
-    fun `when createEntityManagerFactory set entity list`() {
-        EntityManagerFactoryFactoryImpl(mockBuilder).createEntityManagerFactory(
+    fun `when create set entity list`() {
+        EntityManagerFactoryFactoryImpl(mockBuilder).create(
             "Unit Test", listOf(TestEntity::class.java, AnotherTestEntity::class.java), config
         )
         verify(mockBuilder)(
@@ -79,8 +79,8 @@ class EntityManagerFactoryFactoryImplTest {
     }
 
     @Test
-    fun `when createEntityManagerFactory set datasource`() {
-        EntityManagerFactoryFactoryImpl(mockBuilder).createEntityManagerFactory(
+    fun `when create set datasource`() {
+        EntityManagerFactoryFactoryImpl(mockBuilder).create(
             "Unit Test", listOf(TestEntity::class.java), config
         )
         verify(mockBuilder)(
@@ -99,7 +99,7 @@ class EntityManagerFactoryFactoryImplTest {
             originalEntity.classLoader.parent
         )
         val newEntity = newClassLoader.loadClass(originalEntity.name)
-        EntityManagerFactoryFactoryImpl(mockBuilder).createEntityManagerFactory(
+        EntityManagerFactoryFactoryImpl(mockBuilder).create(
             "Unit Test",
             listOf(TestEntity::class.java, AnotherTestEntity::class.java, newEntity),
             config

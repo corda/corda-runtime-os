@@ -1,5 +1,7 @@
 package net.corda.orm.impl
 
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import net.corda.orm.DdlManage
 
 @Suppress("LongParameterList")
@@ -11,7 +13,10 @@ class PostgresEntityManagerConfiguration(
     showSql: Boolean = false,
     formatSql: Boolean = false,
     isAutoCommit: Boolean = false,
-    maximumPoolSize: Int = 10
+    maximumPoolSize: Int = 10,
+    hikariDataSourceFactory: (c: HikariConfig) -> HikariDataSource = { c ->
+        HikariDataSource(c)
+    }
 ) : DbEntityManagerConfiguration(
     "org.postgresql.Driver",
     jdbcUrl,
@@ -21,5 +26,6 @@ class PostgresEntityManagerConfiguration(
     showSql,
     formatSql,
     isAutoCommit,
-    maximumPoolSize
+    maximumPoolSize,
+    hikariDataSourceFactory
 )

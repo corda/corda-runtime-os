@@ -34,27 +34,27 @@ class EntityManagerFactoryFactoryImpl(
      * @param configuration for the target data source
      * @return [EntityManagerFactory]
      */
-    override fun createEntityManagerFactory(
+    override fun create(
         persistenceUnitName: String,
         entities: List<Class<*>>,
         configuration: EntityManagerConfiguration
     ): EntityManagerFactory {
-        return createEntityManagerFactory(
+        return create(
             persistenceUnitName,
             entities.map { it.classLoader }.distinct(),
-            entities,
+            entities.map { it.canonicalName },
             configuration
         )
     }
 
     // could possibly expose this on the api if there would be a need to pass in custom classloader(s)
-    private fun createEntityManagerFactory(
+    private fun create(
         persistenceUnitName: String,
         classLoaders: List<ClassLoader>,
-        entities: List<Class<*>>,
+        entities: List<String>,
         configuration: EntityManagerConfiguration
     ): EntityManagerFactory {
-        log.info("Creating createEntityManagerFactory for $persistenceUnitName")
+        log.info("Creating create for $persistenceUnitName")
 
         val props = mapOf(
             "hibernate.show_sql" to configuration.showSql.toString(),
@@ -69,7 +69,7 @@ class EntityManagerFactoryFactoryImpl(
 
         val persistenceUnitInfo = CustomPersistenceUnitInfo(
             persistenceUnitName,
-            entities.map { it.canonicalName },
+            entities,
             props,
             configuration.dataSource
         )

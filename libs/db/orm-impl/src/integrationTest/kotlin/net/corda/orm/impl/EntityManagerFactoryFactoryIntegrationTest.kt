@@ -10,7 +10,7 @@ class EntityManagerFactoryFactoryIntegrationTest {
     @Test
     fun `can persist JPA entity`() {
 
-        val emf = EntityManagerFactoryFactoryImpl().createEntityManagerFactory(
+        val emf = EntityManagerFactoryFactoryImpl().create(
             "cats",
             listOf(Cat::class.java, Owner::class.java),
             InMemoryEntityManagerConfiguration("cats")
@@ -33,7 +33,7 @@ class EntityManagerFactoryFactoryIntegrationTest {
     @Test
     fun `can named query`() {
 
-        val emf = EntityManagerFactoryFactoryImpl().createEntityManagerFactory(
+        val emf = EntityManagerFactoryFactoryImpl().create(
             "cats",
             listOf(Cat::class.java, Owner::class.java),
             InMemoryEntityManagerConfiguration("cats")
