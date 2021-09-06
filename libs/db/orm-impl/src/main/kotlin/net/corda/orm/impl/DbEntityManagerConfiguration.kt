@@ -16,7 +16,10 @@ open class DbEntityManagerConfiguration(
     override val showSql: Boolean,
     override val formatSql: Boolean,
     isAutoCommit: Boolean,
-    maximumPoolSize: Int
+    maximumPoolSize: Int,
+    hikariDataSourceFactory: (c: HikariConfig) -> HikariDataSource = { c ->
+        HikariDataSource(c)
+    }
 ) : EntityManagerConfiguration {
     private val ds by lazy {
         val conf = HikariConfig()
@@ -26,7 +29,7 @@ open class DbEntityManagerConfiguration(
         conf.password = password
         conf.isAutoCommit = isAutoCommit
         conf.maximumPoolSize = maximumPoolSize
-        HikariDataSource(conf)
+        hikariDataSourceFactory(conf)
     }
 
     override val dataSource: DataSource

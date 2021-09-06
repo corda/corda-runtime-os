@@ -21,7 +21,8 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
-    integrationTestRuntime "org.hsqldb:hsqldb:$hsqldbVersion"
+    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
 }
 
 // TODO: integrationTest/integration-test inconsistency

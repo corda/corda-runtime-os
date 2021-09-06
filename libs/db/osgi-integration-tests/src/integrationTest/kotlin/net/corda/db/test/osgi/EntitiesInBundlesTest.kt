@@ -84,7 +84,7 @@ class EntitiesInBundlesTest {
             println("Create Entities".emphasise())
 
             // TODO: should EntityManagerFactoryFactory be injected as an OSGi service?
-            val emf = emff.createEntityManagerFactory(
+            val emf = emff.create(
                 "pets",
                 listOf(catClass, ownerClass, dogClass),
                 dbConfig
@@ -113,7 +113,7 @@ class EntitiesInBundlesTest {
     fun `validate entities are persisted`() {
         println("Load persisted entities".emphasise())
 
-        val emf = emff.createEntityManagerFactory(
+        val emf = emff.create(
             "pets",
             listOf(catClass, ownerClass, dogClass),
             dbConfig
@@ -137,7 +137,7 @@ class EntitiesInBundlesTest {
          */
         println("Query cross-bundle entities".emphasise())
 
-        val emf = emff.createEntityManagerFactory(
+        val emf = emff.create(
             "pets",
             listOf(catClass, ownerClass, dogClass),
             dbConfig

@@ -12,7 +12,7 @@ The main interface in this module is `EntityManagerFactoryFactory`, which expose
 instance of `EntityManagerFactory` to manage given list of JPA annotated entities:
 
 ```kotlin
-fun createEntityManagerFactory(
+fun create(
         persistenceUnitName: String,
         entities: List<Class<*>>,
         configuration: EntityManagerConfiguration
