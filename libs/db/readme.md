@@ -42,7 +42,15 @@ When used in an OSGi context, the following bundles are required
 
 ### Postgres
 
-TODO
+Start container like so:
+
+```bash
+docker run --rm --name test-instance -e POSTGRES_PASSWORD=password -p 5432:5432 postgres
+```
+
+NOTES: 
+* we cannot use the `testcontainers` library as it does not work with OSGi.
+* Change the port forwarding if needed.
 
 ### Testing
 

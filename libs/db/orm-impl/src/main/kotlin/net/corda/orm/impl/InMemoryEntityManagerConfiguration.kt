@@ -22,3 +22,4 @@ class InMemoryEntityManagerConfiguration(dbName: String) : EntityManagerConfigur
     override val ddlManage: DdlManage
         get() = DdlManage.UPDATE
 }
+
