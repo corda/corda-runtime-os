@@ -12,7 +12,6 @@ import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
-import net.corda.p2p.gateway.messaging.internal.PartitionAssignmentListenerImpl
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import org.osgi.service.component.annotations.Reference
@@ -66,7 +65,7 @@ class Gateway(config: GatewayConfiguration,
         p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
             outboundMessageProcessor,
             ConfigFactory.empty(),
-            PartitionAssignmentListenerImpl())
+            null)
     }
 
     override fun start() {

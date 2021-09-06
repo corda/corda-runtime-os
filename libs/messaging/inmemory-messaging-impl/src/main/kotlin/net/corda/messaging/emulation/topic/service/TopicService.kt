@@ -1,8 +1,8 @@
 package net.corda.messaging.emulation.topic.service
 
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.emulation.topic.model.OffsetStrategy
-import net.corda.messaging.emulation.topic.model.RecordMetadata
+import net.corda.messaging.emulation.topic.model.Consumer
+import net.corda.messaging.emulation.topic.model.Consumption
 
 /**
  * Service to interact with the kafka topic emulator
@@ -10,26 +10,27 @@ import net.corda.messaging.emulation.topic.model.RecordMetadata
 interface TopicService {
     /**
      * Add a list of records to each of their topics.
-     * This operation is done atomically.
-     * Topics are locked while writing to them.
+     * This operation is done atomically per partition.
      */
     fun addRecords(records: List<Record<*, *>>)
 
     /**
-     * Get list of records of max size [numberOfRecords] for the given [topicName] and [consumerGroup].
-     * Set [autoCommitOffset] to true to update [consumerGroup] position in the topic automatically.
-     * Otherwise set to false and commit back offsets using [commitOffset]
+     * Add a list of records to each of their topics with specific partition number.
+     * This operation is done atomically per partition..
      */
-    fun getRecords(topicName: String, consumerGroup: String, numberOfRecords: Int, autoCommitOffset: Boolean = true) : List<RecordMetadata>
+    fun addRecordsToPartition(records: List<Record<*, *>>, partition: Int)
 
     /**
-     * Commit the [offset] to a topic for the given [topicName], [consumerGroup]
-     */
-    fun commitOffset(topicName: String, consumerGroup: String, offset: Long)
-
-    /**
-     * Subscribe to a [topicName] with the given [consumerGroup] and [offsetStrategy]
+     * Subscribe to with the given [consumer].
      * If the topic does not exist it is created.
+     * To unsubscribe, close the returned lifecycle
      */
-    fun subscribe(topicName: String, consumerGroup: String, offsetStrategy: OffsetStrategy)
+    fun subscribe(consumer: Consumer): Consumption
+
+    /**
+     * Get the latest added offsets of a specific [topicName].
+     *
+     * Return a map from a partition ID to the offset of that partition (-1 if no record was added).
+     */
+    fun getLatestOffsets(topicName: String): Map<Int, Long>
 }
