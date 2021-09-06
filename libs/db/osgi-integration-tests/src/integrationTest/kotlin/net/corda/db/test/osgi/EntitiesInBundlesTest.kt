@@ -62,21 +62,20 @@ class EntitiesInBundlesTest {
         private val cat = catCtor.newInstance(UUID.randomUUID(), "Stray", "Tabby", owner)
 
         private val dbConfig = run {
-            //if (null != System.getProperty("postgresPort")) {
+            if (null != System.getProperty("postgresPort").toIntOrNull()) {
                 println("Using Postgres on port ${System.getProperty("postgresPort")}".emphasise())
                 PostgresEntityManagerConfiguration(
-                    "jdbc:postgresql://localhost:5432/postgres",
-//                    "jdbc:postgresql://localhost:${System.getProperty("postgresPort")}/postgres",
+                    "jdbc:postgresql://localhost:${System.getProperty("postgresPort")}/postgres",
                     "postgres",
                     "password",
                     DdlManage.UPDATE,
                     formatSql = true,
                     showSql = true
                 )
-//            } else {
-//                println("Using in-memory (HSQL) DB".emphasise())
-//                InMemoryEntityManagerConfiguration("pets")
-//            }
+            } else {
+                println("Using in-memory (HSQL) DB".emphasise())
+                InMemoryEntityManagerConfiguration("pets")
+            }
         }
 
         @JvmStatic

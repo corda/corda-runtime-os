@@ -38,7 +38,7 @@ When used in an OSGi context, the following bundles are required
 (see `test.bndrun` in the `osgi-integration-tests` module):
 
 * `net.bytebuddy.byte-buddy`: needed by hibernate - byte buddy has replaced javassist as the default bytecode provider
-* db driver used by Hikari. E.g. `org.hsqldb.hsqldb` for in-memory (test) use, postgres TBC.
+* db driver used by Hikari. E.g. `org.hsqldb.hsqldb` for in-memory (test) use.
 
 ### Postgres
 
@@ -48,9 +48,17 @@ Start container like so:
 docker run --rm --name test-instance -e POSTGRES_PASSWORD=password -p 5432:5432 postgres
 ```
 
+Set the `postgresPort` gradle property, e.g.:
+
+```bash
+gradle clean :libs:db:osgi-integration-tests:integrationTest -PpostgresPort=5432
+```
+
 NOTES: 
 * we cannot use the `testcontainers` library as it does not work with OSGi.
 * Change the port forwarding if needed.
+* Other postgres properties could be added (e.g. host etc)
+* System property must be set in the bndrun file, which can use gradle properties: `postgresPort=${project.postgresPort}`
 
 ### Testing
 

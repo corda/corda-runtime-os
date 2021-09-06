@@ -21,7 +21,8 @@ java: ${project.javaExecutable}
     order=sortbynameversion,\
     begin=-1
 -runproperties: \
-    org.osgi.framework.bsnversion=multiple
+    org.osgi.framework.bsnversion=multiple,\
+    postgresPort=${project.postgresPort}
 # NOTE: everything after -runbundles: \ is auto generated
 -runbundles: \
 	antlr.osgi;version='[2.7.7,2.7.8)',\
