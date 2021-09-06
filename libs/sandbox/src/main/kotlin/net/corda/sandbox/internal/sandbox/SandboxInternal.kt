@@ -1,20 +1,11 @@
-package net.corda.sandbox.internal
+package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import org.osgi.framework.Bundle
-import java.net.URI
-import java.util.UUID
 
-/**
- * Extends [Sandbox] with methods that are used by [SandboxServiceInternal].
- */
-internal interface SandboxInternal: Sandbox {
-    companion object {
-        /** Generates a unique location to use when installing a bundle into sandbox [id] from [uri]. */
-        fun getLocation(id: UUID, uri: URI) = SandboxLocation(id, uri)
-    }
-
+/** Extends [Sandbox] with internal methods. */
+internal interface SandboxInternal : Sandbox {
     /** Indicates whether this sandbox contains the given [bundle]. */
     fun containsBundle(bundle: Bundle): Boolean
 
@@ -28,9 +19,6 @@ internal interface SandboxInternal: Sandbox {
      */
     fun getBundle(klass: Class<*>): Bundle
 
-    /** Returns true if the [bundle] is this sandbox's CorDapp bundle. */
-    fun isCordappBundle(bundle: Bundle): Boolean
-
     /** Indicates whether this sandbox has visibility of [otherSandbox]. */
     fun hasVisibility(otherSandbox: Sandbox): Boolean
 
@@ -39,13 +27,4 @@ internal interface SandboxInternal: Sandbox {
 
     /** Grants this sandbox visibility of [otherSandboxes]. */
     fun grantVisibility(otherSandboxes: Collection<Sandbox>)
-
-    /**
-     * Removes this sandbox's visibility of [otherSandbox].
-     * @return true if visibility was revoked, otherwise false.
-     */
-    fun revokeVisibility(otherSandbox: Sandbox): Boolean
-
-    /** Uninstalls all the sandbox's bundles. */
-    fun uninstallBundles()
 }

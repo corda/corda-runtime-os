@@ -152,7 +152,7 @@ class DefaultLocalSerializerFactory(
                 val classInfo = Cpk.Identifier(
                         classInfoParts[0] as String,
                         classInfoParts[1] as String,
-                        TreeSet((classInfoParts[2] as List<*>).map { SecureHash.create(it as String) }.toList())
+                        TreeSet((classInfoParts[4] as List<*>).map { SecureHash.create(it as String) }.toList())
                 )
                 (context.sandboxGroup as? SandboxGroup)?.loadClass(classInfo, typeName)
             } catch (_: SandboxException) {
