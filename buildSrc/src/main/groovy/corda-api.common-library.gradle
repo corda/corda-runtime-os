@@ -5,6 +5,10 @@ plugins {
     id 'biz.aQute.bnd.builder'
 }
 
+pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
+    throw new StopExecutionException('corda-api.common-library plugin is incompatible with building CPKs and CPBs')
+}
+
 configurations {
     testArtifacts {
         canBeResolved = false
