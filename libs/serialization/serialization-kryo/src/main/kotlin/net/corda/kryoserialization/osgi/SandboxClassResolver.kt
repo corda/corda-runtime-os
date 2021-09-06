@@ -59,8 +59,8 @@ open class SandboxClassResolver(
 
         return when (classInfo) {
             is CpkClassInfo -> Cpk.Identifier(
-                    classInfo.bundleName,
-                    classInfo.bundleVersion.toString(),
+                    classInfo.classBundleName,
+                    classInfo.classBundleVersion.toString(),
                     TreeSet(classInfo.cpkPublicKeyHashes)
             )
             is NonCpkClassInfo -> null
@@ -140,7 +140,7 @@ open class SandboxClassResolver(
      *
      * @param [input] an input stream for reading the serialised data.
      *
-     * @return [registration] a registry of serializers.
+     * @return [Registration] a registry of serializers.
      */
     override fun readName(input: Input): Registration {
         checkAndInitReadStructures()

@@ -32,21 +32,25 @@ class SerializeAndReturnMetadataTest {
 
     private val digestService: DigestService = mock(DigestService::class.java)
 
-    private fun createCpkClassInfo(classBundleName: String = "dummyBundleName",
-                                   classBundleVersion: Version = Version(1, 0, 0),
-                                   cpkFileHash: SecureHash = digestService.getZeroHash(DigestAlgorithmName.SHA2_256),
-                                   cpkPublicKeyHashes: NavigableSet<SecureHash> = sortedSetOf(
-                                       digestService.getAllOnesHash(DigestAlgorithmName.SHA2_256),
-                                       digestService.getZeroHash(DigestAlgorithmName.SHA2_256)
-                                   ),
-                                   cpkDependencies: Set<SecureHash> = setOf()): CpkClassInfo {
+    private fun createCpkClassInfo(classBundleName: String = "dummyBundleName"): CpkClassInfo {
+        val classBundleVersion = Version(1, 0, 0)
+        val cordappBundleName = "dummyCorDappBundleName"
+        val cordappBundleVersion = Version(1, 0, 0)
+        val cpkFileHash = digestService.getZeroHash(DigestAlgorithmName.SHA2_256)
+        val cpkPublicKeyHashes: NavigableSet<SecureHash> = sortedSetOf(
+            digestService.getAllOnesHash(DigestAlgorithmName.SHA2_256),
+            digestService.getZeroHash(DigestAlgorithmName.SHA2_256)
+        )
+        val cpkDependencies = setOf<SecureHash>()
 
         return CpkClassInfo(
-                bundleName = classBundleName,
-                bundleVersion = classBundleVersion,
-                cpkFileHash = cpkFileHash,
-                cpkPublicKeyHashes = cpkPublicKeyHashes,
-                cpkDependencies = cpkDependencies
+            classBundleName = classBundleName,
+            classBundleVersion = classBundleVersion,
+            cordappBundleName = cordappBundleName,
+            cordappBundleVersion = cordappBundleVersion,
+            cpkFileHash = cpkFileHash,
+            cpkPublicKeyHashes = cpkPublicKeyHashes,
+            cpkDependencies = cpkDependencies
         )
     }
 
@@ -82,16 +86,6 @@ class SerializeAndReturnMetadataTest {
         return classInfoService.apply {
             `when`(getClassInfo(clazz)).thenReturn(cpkClassInfo)
         }
-    }
-
-    @Throws(NotSerializableException::class)
-    private fun <T : Any> SerializationOutput.serialize(obj: T): SerializedBytes<T> {
-        val bundleName = "bundle-${obj::class.java.name}"
-        val klazz = obj::class.java
-        return serialize(obj, testSerializationContext
-                .withClassInfoService(createClassInfoService(klazz, createCpkClassInfo(bundleName)))
-                .withSandboxGroup(createSandboxGroup(klazz, createCpkIdentifier(bundleName)))
-        )
     }
 
     @Test
