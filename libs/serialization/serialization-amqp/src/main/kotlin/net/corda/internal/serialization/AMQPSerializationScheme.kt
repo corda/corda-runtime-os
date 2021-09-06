@@ -14,6 +14,7 @@ import net.corda.internal.serialization.custom.PublicKeySerializer
 import net.corda.sandbox.SandboxGroup
 import net.corda.utilities.toSynchronised
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -39,7 +40,12 @@ fun SerializerFactory.addToWhitelist(types: Collection<Class<*>>) {
         "Cannot add duplicate classes to the whitelist ($duplicates)."
     }
     for (type in types) {
-        (this.whitelist as? MutableClassWhitelist)?.add(type)
+        val mutableClassWhitelist = this.whitelist as? MutableClassWhitelist
+        if (mutableClassWhitelist == null) {
+            throw CordaRuntimeException("whitelist is not an instance of MutableClassWhitelist, cannot whitelist type $type")
+        } else {
+            mutableClassWhitelist.add(type)
+        }
     }
 }
 
