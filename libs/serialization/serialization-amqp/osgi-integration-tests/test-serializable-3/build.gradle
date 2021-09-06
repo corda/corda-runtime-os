@@ -18,8 +18,16 @@ cordapp {
 
 dependencies {
     cordapp project(":libs:serialization:serialization-amqp:osgi-integration-tests:test-serializable-1")
-    cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
-    cordaProvided "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+}
+
+tasks.named('jar', Jar) {
+    osgi {
+        // We only want to export package 'net.corda.bundle3'.
+        // 'net.corda.bundle2' must be a private package.
+        autoExport = false
+    }
 }
 
 cpk {

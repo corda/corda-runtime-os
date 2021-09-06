@@ -4,13 +4,14 @@ plugins {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-base"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-base'
+    implementation 'org.slf4j:slf4j-api'
     implementation project(":libs:examples:helloworld")
     implementation project(":osgi-framework-api")
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"

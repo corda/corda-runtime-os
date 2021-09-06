@@ -17,10 +17,11 @@ configurations {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
     compileOnly "org.ow2.asm:asm:$asmVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
@@ -28,6 +29,7 @@ dependencies {
     testRuntimeOnly "org.ow2.asm:asm:$asmVersion"
 
     integrationTestImplementation project(':libs:kotlin-reflection:kotlin-reflection-test-example')
+    integrationTestImplementation 'org.slf4j:slf4j-api'
     integrationTestImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     integrationTestImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     integrationTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"

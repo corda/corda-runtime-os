@@ -4,11 +4,11 @@ plugins {
 }
 
 dependencies {
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
-    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:osgi.core"
 
     api project(":libs:security-manager:osgi-integration-tests:osgi-invoker")
 }

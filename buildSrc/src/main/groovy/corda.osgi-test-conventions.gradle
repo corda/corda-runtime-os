@@ -16,9 +16,9 @@ configurations {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     integrationTestImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     integrationTestImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"

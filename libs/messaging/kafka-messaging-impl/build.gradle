@@ -5,7 +5,6 @@ import aQute.bnd.gradle.TestOSGi
 plugins {
     id 'corda.common-library'
     id 'com.r3.internal.gradle.plugins.r3Publish'
-    id 'biz.aQute.bnd.builder'
 }
 
 description 'Kafka Messaging API Impl'
@@ -29,14 +28,14 @@ configurations {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:schema-registry:schema-registry")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-base"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
@@ -46,15 +45,17 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "net.corda:avro-schema"
 
-    testRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
+    testRuntimeOnly 'org.osgi:osgi.core'
 
     kafkaIntegrationTestImplementation project(":libs:messaging:kafka-messaging-impl")
     kafkaIntegrationTestImplementation project(":components:kafka-topic-admin")
+    kafkaIntegrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
 
     //runtime implementation dependencies
     kafkaIntegrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     kafkaIntegrationTestRuntimeOnly project(":libs:kafka-utils:topic-admin-impl")
     kafkaIntegrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    kafkaIntegrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
     kafkaIntegrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     kafkaIntegrationTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     kafkaIntegrationTestRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
