@@ -1,8 +1,10 @@
 package net.corda.db.test.osgi
 
+import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.InMemoryEntityManagerConfiguration
+import net.corda.orm.impl.PostgresEntityManagerConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -10,7 +12,6 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.framework.FrameworkUtil
 import org.osgi.test.junit5.service.ServiceExtension
-import java.lang.reflect.Constructor
 import java.time.LocalDate
 import java.util.UUID
 import kotlin.math.ceil
@@ -60,8 +61,23 @@ class EntitiesInBundlesTest {
         private val owner = ownerCtor.newInstance(UUID.randomUUID(), "Bob", 26)
         private val cat = catCtor.newInstance(UUID.randomUUID(), "Stray", "Tabby", owner)
 
-        // TODO: use Postgres
-        private val dbConfig = InMemoryEntityManagerConfiguration("pets")
+        private val dbConfig = run {
+            //if (null != System.getProperty("postgresPort")) {
+                println("Using Postgres on port ${System.getProperty("postgresPort")}".emphasise())
+                PostgresEntityManagerConfiguration(
+                    "jdbc:postgresql://localhost:5432/postgres",
+//                    "jdbc:postgresql://localhost:${System.getProperty("postgresPort")}/postgres",
+                    "postgres",
+                    "password",
+                    DdlManage.UPDATE,
+                    formatSql = true,
+                    showSql = true
+                )
+//            } else {
+//                println("Using in-memory (HSQL) DB".emphasise())
+//                InMemoryEntityManagerConfiguration("pets")
+//            }
+        }
 
         @JvmStatic
         @BeforeAll

@@ -18,8 +18,8 @@ dependencies {
     // bytebuddy needed for recent hibernate
     integrationTestImplementation "net.bytebuddy:byte-buddy:$bytebuddyVersion"
 
-    // TODO: replace with postgres
     integrationTestImplementation "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestImplementation "org.postgresql:postgresql:$postgresDriverVersion"
 
     // TODO: not comfortable with these runtime dependencies as they aren't needed in the test bundle.
     integrationTestRuntime project(":testing:bundles:cats")
@@ -32,3 +32,7 @@ dependencies {
     // TODO: and why do I need this?
     integrationTestRuntime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
+
+//tasks.named("integrationTest").configure {
+//    systemProperty 'postgresPort', 5432
+//}
