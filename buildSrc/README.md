@@ -77,8 +77,8 @@ the `build.gradle` file of the module must include the following dependencies.
 ```groovy
 dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
 
     implementation project(":osgi-framework-api")                           // Used to define a Corda application.
 

@@ -6,14 +6,15 @@ plugins {
 description "Lifecycle implementation"
 
 dependencies {
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:lifecycle:registry")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-base"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-base'
+    implementation 'org.slf4j:slf4j-api'
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
