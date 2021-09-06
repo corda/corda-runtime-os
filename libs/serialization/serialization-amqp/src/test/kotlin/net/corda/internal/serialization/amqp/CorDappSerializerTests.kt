@@ -1,8 +1,10 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.AbstractMutableClassWhitelist
 import net.corda.v5.serialization.ClassWhitelist
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.internal.serialization.AllWhitelist
+import net.corda.internal.serialization.MutableClassWhitelist
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvelope
 import net.corda.internal.serialization.amqp.testutils.serialize
@@ -98,8 +100,12 @@ class CorDappSerializerTests {
 	fun testWithWhitelistNotAllowed() {
         data class A(val a: Int, val b: NeedsProxy)
 
-        class WL : ClassWhitelist {
-            private val allowedClasses = emptySet<String>()
+        class WL : MutableClassWhitelist {
+            private val allowedClasses = mutableSetOf<String>()
+
+            override fun add(entry: Class<*>) {
+                allowedClasses.add(entry.name)
+            }
 
             override fun hasListed(type: Class<*>): Boolean = type.name in allowedClasses
         }
@@ -119,10 +125,14 @@ class CorDappSerializerTests {
 	fun testWithWhitelistAllowed() {
         data class A(val a: Int, val b: NeedsProxy)
 
-        class WL : ClassWhitelist {
-            private val allowedClasses = setOf<String>(
+        class WL : MutableClassWhitelist {
+            private val allowedClasses = mutableSetOf<String>(
                     A::class.java.name,
                     NeedsProxy::class.java.name)
+
+            override fun add(entry: Class<*>) {
+                allowedClasses.add(entry.name)
+            }
 
             override fun hasListed(type: Class<*>): Boolean = type.name in allowedClasses
         }
@@ -146,9 +156,13 @@ class CorDappSerializerTests {
 	fun testWithWhitelistAllowedOuterOnly() {
         data class A(val a: Int, val b: NeedsProxy)
 
-        class WL : ClassWhitelist {
+        class WL : MutableClassWhitelist {
             // explicitly don't add NeedsProxy
-            private val allowedClasses = setOf<String>(A::class.java.name)
+            private val allowedClasses = mutableSetOf<String>(A::class.java.name)
+
+            override fun add(entry: Class<*>) {
+                allowedClasses.add(entry.name)
+            }
 
             override fun hasListed(type: Class<*>): Boolean = type.name in allowedClasses
         }
