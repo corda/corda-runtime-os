@@ -274,5 +274,15 @@ subprojects {
     }
 
     task allDependencyInsight(type: DependencyInsightReportTask) {}
+
+    configurations {
+        all {
+            resolutionStrategy {
+                dependencySubstitution {
+                    substitute module('antlr:antlr') using module("antlr:antlr.osgi:$antlrVersion")
+                }
+            }
+        }
+    }
 }
 

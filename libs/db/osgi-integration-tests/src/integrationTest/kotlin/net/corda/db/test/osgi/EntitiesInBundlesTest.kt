@@ -27,9 +27,9 @@ import kotlin.math.ceil
 @ExtendWith(ServiceExtension::class)
 class EntitiesInBundlesTest {
     companion object {
-        val DOG_CLASS_NAME = "net.corda.testing.bundles.dogs.Dog"
-        val CAT_CLASS_NAME = "net.corda.testing.bundles.cats.Cat"
-        val OWNER_CLASS_NAME = "net.corda.testing.bundles.cats.Owner"
+        const val DOG_CLASS_NAME = "net.corda.testing.bundles.dogs.Dog"
+        const val CAT_CLASS_NAME = "net.corda.testing.bundles.cats.Cat"
+        const val OWNER_CLASS_NAME = "net.corda.testing.bundles.cats.Owner"
 
         private val dogBundle = run {
             val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
@@ -101,11 +101,11 @@ class EntitiesInBundlesTest {
     @Test
     fun `confirm dog and cats are not available to this bundle`() {
         assertThrows<ClassNotFoundException> {
-            Class.forName(DOG_CLASS_NAME)
+            Class.forName(DOG_CLASS_NAME, true, this::class.java.classLoader)
         }
 
         assertThrows<ClassNotFoundException> {
-            Class.forName(CAT_CLASS_NAME)
+            Class.forName(CAT_CLASS_NAME, true, this::class.java.classLoader)
         }
     }
 
@@ -156,7 +156,7 @@ class EntitiesInBundlesTest {
 }
 
 // trying to make it easy to find the print lines in the very verbose osgi test logging
-private fun String.emphasise(paddingChars: String = "#", width: Int = 150): String {
+private fun String.emphasise(paddingChars: String = "#", width: Int = 120): String {
     val padding = paddingChars.repeat(ceil((width - this.length - 2).toDouble() / 2).toInt())
     return "$padding $this $padding"
 }
