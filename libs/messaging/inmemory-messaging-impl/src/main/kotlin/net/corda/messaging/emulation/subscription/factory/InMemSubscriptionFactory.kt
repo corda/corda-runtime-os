@@ -16,6 +16,8 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import net.corda.messaging.emulation.subscription.compacted.InMemoryCompactedSubscription
+import net.corda.messaging.emulation.subscription.eventlog.EventLogSubscription
 import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
@@ -43,7 +45,7 @@ class InMemSubscriptionFactory @Activate constructor(
         executor: ExecutorService?,
         nodeConfig: Config
     ): Subscription<K, V> {
-        //TODO - replace with config service
+        // TODO - replace with config service
         val config = ConfigFactory.load("tmpInMemDefaults")
             .withValue(GROUP_NAME, ConfigValueFactory.fromAnyRef(subscriptionConfig.groupName))
             .withValue(EVENT_TOPIC, ConfigValueFactory.fromAnyRef(subscriptionConfig.eventTopic))
@@ -64,14 +66,18 @@ class InMemSubscriptionFactory @Activate constructor(
         processor: CompactedProcessor<K, V>,
         nodeConfig: Config
     ): CompactedSubscription<K, V> {
-        TODO("Not yet implemented")
+        return InMemoryCompactedSubscription(
+            subscriptionConfig,
+            processor,
+            topicService
+        )
     }
 
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
         nodeConfig: Config,
-        stateAndEventListener: StateAndEventListener<K, S>?
+        stateAndEventListener: StateAndEventListener<K, S>?,
     ): StateAndEventSubscription<K, S, E> {
         TODO("Not yet implemented")
     }
@@ -82,7 +88,12 @@ class InMemSubscriptionFactory @Activate constructor(
         nodeConfig: Config,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
-        TODO("Not yet implemented")
+        return EventLogSubscription(
+            subscriptionConfig,
+            processor,
+            partitionAssignmentListener,
+            topicService,
+        )
     }
 
     override fun <K : Any, V : Any> createRandomAccessSubscription(

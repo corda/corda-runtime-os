@@ -1,4 +1,4 @@
-# LifeCycle
+# Lifecycle
 
 This module defines the interfaces and classes to coordinate Corda components.
 
