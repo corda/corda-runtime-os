@@ -71,15 +71,8 @@ object OSGiFrameworkMain {
      * 2.  **Load bundles in bootstrapper**
      *      1. Install OSGi bundles in the OSGi framework,
      *      2. Activate OSGi bundles.
-     * 3. **Call application entry-point**
-     *      1. Call the [net.corda.osgi.api.Application.startup] method of active application bundles, if any,
-     *      passing [args].
      *
-     *  Then, the method waits for the JVM receives the signal to terminate to
-     *  1. **Shut Down**
-     *      1. Call the [net.corda.osgi.api.Application.shutdown] method of application bundles, if any.
-     *      1. Deactivate OSGi bundles.
-     *      2. Stop the OSGi framework.
+     *  Then the method waits for the framework to stop
      *
      * @param args passed by the OS when invoking JVM to run this bootable JAR.
      */

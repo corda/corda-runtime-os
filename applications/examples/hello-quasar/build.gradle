@@ -4,11 +4,11 @@ plugins {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
-    compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:osgi.core"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
 
+    implementation "org.slf4j:slf4j-api"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "com.esotericsoftware:kryo:$kryoVersion"

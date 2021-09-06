@@ -11,10 +11,9 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.osgi.api.Application
-import net.corda.osgi.api.Shutdown
+import net.corda.osgi.api.FrameworkService
 import net.corda.v5.base.util.contextLogger
-import org.osgi.framework.FrameworkUtil
+import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -23,17 +22,14 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
-import java.util.*
+import java.util.Properties
 
 @Component
 class DemoPublisher @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = Shutdown::class)
-    private val shutDownService: Shutdown,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory
-) : Application {
+    private val coordinatorFactory: LifecycleCoordinatorFactory) {
 
     private companion object {
         val log: Logger = contextLogger()
@@ -45,16 +41,18 @@ class DemoPublisher @Activate constructor(
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
 
-    @Suppress("SpreadOperator")
-    override fun startup(args: Array<String>) {
+    fun activate(ctx : BundleContext) {
+        val frameworkService = ctx.getService(ctx.getServiceReference(FrameworkService::class.java))
+
         consoleLogger.info("Starting publisher...")
 
         val parameters = CliParameters()
-        CommandLine(parameters).parseArgs(*args)
+        @Suppress("SpreadOperator")
+        CommandLine(parameters).parseArgs(*frameworkService.getArgs())
 
         if (parameters.helpRequested) {
             CommandLine.usage(CliParameters(), System.out)
-            shutdownOSGiFramework()
+            ctx.getBundle(0).stop()
         } else {
             val instanceId = parameters.instanceId?.toInt()
             var publisher: RunPublisher? = null
@@ -68,7 +66,7 @@ class DemoPublisher @Activate constructor(
                     }
                     is StopEvent -> {
                         publisher?.stop()
-                        shutdownOSGiFramework()
+                        ctx.getBundle(0).stop()
                     }
                     else -> {
                         log.error("$event unexpected!")
@@ -90,14 +88,10 @@ class DemoPublisher @Activate constructor(
         }
     }
 
-    override fun shutdown() {
+    fun deactivate() {
         consoleLogger.info("Stopping publisher")
         log.info("Stopping application")
         lifeCycleCoordinator?.stop()
-    }
-
-    private fun shutdownOSGiFramework() {
-        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
 
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
@@ -117,11 +111,8 @@ class DemoPublisher @Activate constructor(
             if (default != null) {
                 return default
             }
-            log.error(
-                "No $path property found! " +
-                        "Pass property in via --kafka properties file or via -D$path"
-            )
-            shutdown()
+            throw RuntimeException("No $path property found! " +
+                    "Pass property in via --kafka properties file or via -D$path")
         }
         return configValue
     }

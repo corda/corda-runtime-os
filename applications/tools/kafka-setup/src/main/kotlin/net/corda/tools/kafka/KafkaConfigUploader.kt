@@ -6,7 +6,6 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.osgi.api.Application
-import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -17,6 +16,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
+import java.lang.IllegalArgumentException
 import java.util.*
 
 @Suppress("SpreadOperator")
@@ -25,10 +25,7 @@ class KafkaConfigUploader @Activate constructor(
     @Reference(service = KafkaTopicAdmin::class)
     private var topicAdmin: KafkaTopicAdmin,
     @Reference(service = KafkaConfigWrite::class)
-    private var configWriter: KafkaConfigWrite,
-    @Reference(service = Shutdown::class)
-    private val shutDownService: Shutdown
-) : Application {
+    private var configWriter: KafkaConfigWrite) : Application {
 
     private companion object {
         private val logger: Logger = contextLogger()
@@ -39,14 +36,13 @@ class KafkaConfigUploader @Activate constructor(
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
-    override fun startup(args: Array<String>) {
+    override fun run(args: Array<String>) : Int {
         consoleLogger.info("Starting kafka setup tool...")
 
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
         if (parameters.helpRequested) {
             CommandLine.usage(CliParameters(), System.out)
-            shutdownOSGiFramework()
         } else {
             val kafkaConnectionProperties = Properties()
             val kafkaPropertiesFile = parameters.kafkaConnection
@@ -75,8 +71,8 @@ class KafkaConfigUploader @Activate constructor(
                 logger.info("Write complete")
                 consoleLogger.info("Write of config to topic completed")
             }
-            shutdownOSGiFramework()
         }
+        return 0
     }
 
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
@@ -96,23 +92,17 @@ class KafkaConfigUploader @Activate constructor(
         }
 
         if (configValue == null) {
-            logger.error(
+            throw IllegalArgumentException(
                 "No $path property found! " +
                         "Pass property in via --kafka properties file or via -D$path"
             )
-            shutdown()
         }
         return configValue
     }
 
-    override fun shutdown() {
+    fun deactivate() {
         consoleLogger.info("Shutting down kafka setup tool")
-        shutdownOSGiFramework()
         logger.info("Shutting down config uploader")
-    }
-
-    private fun shutdownOSGiFramework() {
-        shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
 }
 

@@ -1,8 +1,10 @@
 package net.corda.osgi.api
 
 /**
- * The `osgi-framework-bootstrap` module calls [startup] of the class implementing this interface
- * as entry point of the application and [shutdown] before to stop the OSGi framework.
+ * The `osgi-framework-bootstrap` module calls [run] passing the process cli arguments as parameters
+ * and shutdowns the framework cleanly when the method terminates using the value returned by the [run] method
+ * as the process exit codes. If a framework contains are multiple OSGi Components implementing
+ * the [Application] service an error is raised
  *
  * **NOTE:**
  * *To distribute an application as a bootable JAR built with the `corda.common.app` plugin,
@@ -30,13 +32,10 @@ package net.corda.osgi.api
  * private var kafkaTopicAdmin: KafkaTopicAdmin,
  * ): Application {
  *
- *  override fun startup(args: Array<String>) {
+ *  override fun run(args: Array<String>) : Int {
  *      println("startup with ${kafkaTopicAdmin}")
  *  }
  *
- *  override fun shutdown() {
- *      println("shutdown")
- *  }
  *}
  * ```
  */

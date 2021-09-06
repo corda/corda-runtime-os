@@ -4,11 +4,12 @@ plugins {
 
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:osgi.core"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
     compileOnly project(":osgi-framework-api")
 
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "org.slf4j:slf4j-api"
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }
