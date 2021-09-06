@@ -525,7 +525,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `Duplicated session negotiation messages (InitiatorHelloMessage, InitiatorHandshake) cause a duplicated response (with appropriate logging)`() {
+    fun `Duplicated session negotiation messages (InitiatorHelloMessage, InitiatorHandshake) cause a duplicated response`() {
         val mode = ProtocolMode.AUTHENTICATION_ONLY
         val sessionId = "FakeSession"
         val inboundManager = sessionManager(INBOUND_PARTY)
@@ -552,6 +552,34 @@ class SessionManagerTest {
 
         //Duplicate InitiatorHandshakeMessage
         assertSame(responderHandshakeMessage?.payload, inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))!!.payload)
+
+        inboundManager.acknowledgeInboundSessionNegotiation(sessionId)
+        assertNull(inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage)))
+    }
+
+    @Test
+    fun `Reordered duplicated session negotiation messages (InitiatorHelloMessage, InitiatorHandshake) cause the correct response`() {
+        val mode = ProtocolMode.AUTHENTICATION_ONLY
+        val sessionId = "FakeSession"
+        val inboundManager = sessionManager(INBOUND_PARTY)
+
+        val protocolInitiator = AuthenticationProtocolInitiator(sessionId, setOf(mode), MAX_MESSAGE_SIZE, netMapOutbound.getKeyPair().public, GROUP_ID)
+        val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
+        val responderHelloMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
+        assertTrue(responderHelloMessage!!.payload is ResponderHelloMessage)
+        inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
+
+        protocolInitiator.receiveResponderHello(responderHelloMessage.payload as ResponderHelloMessage)
+        protocolInitiator.generateHandshakeSecrets()
+        val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(
+            netMapInbound.getKeyPair().public,
+        ) { signDataWithKey(netMapOutbound.getKeyPair().private, it) }
+
+        val responderHandshakeMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
+        assertTrue(responderHandshakeMessage?.payload is ResponderHandshakeMessage)
+
+        //Duplicate InitiatorHandshakeMessage
+        assertNull(inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage)))
     }
 
     @Test
