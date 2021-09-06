@@ -132,11 +132,14 @@ allprojects {
         }
         mavenCentral()
 
-        // TODO: really?
-        maven {
-            url = "https://repository.mulesoft.org/nexus/content/repositories/public/"
-            content {
-                includeGroup("antlr")
+        exclusiveContent {
+            forRepository {
+                maven {
+                    url 'https://repository.mulesoft.org/nexus/content/repositories/public'
+                }
+            }
+            filter {
+                includeGroup 'antlr'
             }
         }
 
