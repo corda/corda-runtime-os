@@ -1,5 +1,4 @@
 plugins {
-    id 'corda.common-library'
     id 'net.corda.plugins.cordapp-cpk'
 }
 
@@ -18,11 +17,11 @@ cordapp {
 }
 
 dependencies {
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation project(':libs:sandbox:sandbox-cpk-library')
-    cordaProvided "org.osgi:osgi.core:$osgiVersion"
-    cordaProvided "net.corda:corda-application:$cordaVersion"
-    implementation "org.slf4j:slf4j-api"
+    cordaProvided 'org.osgi:osgi.core'
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'org.slf4j:slf4j-api'
 }

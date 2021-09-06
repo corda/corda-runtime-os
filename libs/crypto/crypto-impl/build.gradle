@@ -4,8 +4,8 @@ plugins {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-crypto"
@@ -13,10 +13,9 @@ dependencies {
     implementation project(":libs:crypto:crypto-internal")
     implementation project(":libs:utilities")
 
-    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation 'org.slf4j:slf4j-api'
 
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
@@ -30,8 +29,8 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
-    runtime "com.sun.activation:javax.activation:$activationVersion"
-    runtime "javax.xml.bind:jaxb-api:$jaxbVersion"
+    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    runtimeOnly "javax.xml.bind:jaxb-api:$jaxbVersion"
 
 //    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
@@ -43,3 +42,10 @@ dependencies {
 
 description 'Crypto Implementation'
 
+tasks.named('jar', Jar) {
+    bnd """\
+Import-Package:\
+    net.i2p.crypto.eddsa.math;resolution:=optional,\
+    *
+"""
+}
