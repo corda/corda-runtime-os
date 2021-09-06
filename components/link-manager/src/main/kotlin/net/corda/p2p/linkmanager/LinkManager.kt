@@ -109,7 +109,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
             partitionAssignmentListener = inboundAssignmentListener
         )
-        messageReplayer = DeliveryTracker(
+        deliveryTracker = DeliveryTracker(
             config.flowMessageReplayPeriod,
             publisherFactory,
             subscriptionFactory

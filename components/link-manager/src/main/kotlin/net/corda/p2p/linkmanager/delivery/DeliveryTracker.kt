@@ -31,8 +31,8 @@ class DeliveryTracker(
     private var running = false
     private val startStopLock = ReentrantLock()
 
-    private val flowMessageReplayer = AppMessageReplayer(publisherFactory, processAuthenticatedMessage)
-    private val replayManager = ReplayScheduler(flowMessageReplayPeriod, flowMessageReplayer::replayMessage)
+    private val appMessageReplayer = AppMessageReplayer(publisherFactory, processAuthenticatedMessage)
+    private val replayScheduler = ReplayScheduler(flowMessageReplayPeriod, flowMessageReplayer::replayMessage)
 
     private val messageTracker = MessageTracker(replayManager)
 
@@ -99,7 +99,10 @@ class DeliveryTracker(
 
         override fun stop() {
             startStopLock.withLock {
+          if(running) {
+                publisher.close()
                 running = false
+          }
             }
         }
 
