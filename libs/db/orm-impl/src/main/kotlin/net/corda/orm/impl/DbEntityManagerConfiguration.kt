@@ -6,6 +6,7 @@ import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
 import javax.sql.DataSource
 
+@Suppress("LongParameterList")
 open class DbEntityManagerConfiguration(
     driverClass: String,
     jdbcUrl: String,
