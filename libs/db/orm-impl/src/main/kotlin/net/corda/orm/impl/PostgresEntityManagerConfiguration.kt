@@ -2,6 +2,7 @@ package net.corda.orm.impl
 
 import net.corda.orm.DdlManage
 
+@Suppress("LongParameterList")
 class PostgresEntityManagerConfiguration(
     jdbcUrl: String,
     username: String,
