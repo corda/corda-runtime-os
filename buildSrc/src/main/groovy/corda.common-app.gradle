@@ -1,20 +1,8 @@
-import org.w3c.dom.Document
-import org.w3c.dom.Element
-import org.w3c.dom.Text
+import groovy.transform.TupleConstructor
+import org.osgi.framework.Constants
 
-import javax.xml.transform.OutputKeys
-import javax.xml.parsers.DocumentBuilder
-import javax.xml.parsers.DocumentBuilderFactory
-import javax.xml.transform.TransformerFactory
-import javax.xml.transform.Transformer
-import javax.xml.transform.dom.DOMSource
-import javax.xml.transform.stream.StreamResult
 import java.nio.file.Files
 import java.util.jar.JarFile
-
-import groovy.transform.TupleConstructor
-
-import org.osgi.framework.Constants
 
 plugins {
     id 'corda.common-library'
@@ -187,7 +175,7 @@ class JavaAgentFile extends DefaultTask {
 
     @OutputFile
     File getOutputFile() {
-        return new File(temporaryDir, "javaAgents.xml")
+        return new File(temporaryDir, "javaAgents.properties")
     }
 
     @Input
@@ -196,28 +184,11 @@ class JavaAgentFile extends DefaultTask {
     @TaskAction
     def run() {
         Files.newBufferedWriter(getOutputFile().toPath()).withCloseable { Writer writer ->
-            TransformerFactory transformerFactory = TransformerFactory.newInstance()
-            transformerFactory.setAttribute("indent-number", 4);
-            Transformer transformer = transformerFactory.newTransformer()
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes")
-            transformer.setOutputProperty(OutputKeys.METHOD, "xml")
-            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8")
-            transformer.setOutputProperty(OutputKeys.STANDALONE, "yes")
-            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes")
-
-            DocumentBuilderFactory docBuilderFectory = DocumentBuilderFactory.newInstance()
-            DocumentBuilder docBuilder = docBuilderFectory.newDocumentBuilder()
-            Document doc = docBuilder.newDocument()
-            Element agentsElement = doc.createElement("javaAgents")
-            doc.appendChild(agentsElement)
+            Properties props = new Properties()
             javaAgents.each { JavaAgent javaAgent ->
-                Element agentElement = doc.createElement("javaAgent")
-                agentElement.setAttribute("class", javaAgent.className)
-                Text agentArguments = doc.createTextNode(javaAgent.args)
-                agentElement.appendChild(agentArguments)
-                agentsElement.appendChild(agentElement)
+                props.setProperty(javaAgent.className, javaAgent.args)
             }
-            transformer.transform(new DOMSource(agentsElement), new StreamResult(writer))
+            props.store(writer, null)
         }
     }
 }

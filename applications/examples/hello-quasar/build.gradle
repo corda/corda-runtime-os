@@ -1,0 +1,28 @@
+plugins {
+    id 'net.corda.plugins.quasar-utils'
+    id 'corda.common-app'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    compileOnly "org.osgi:osgi.core:$osgiVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly "org.slf4j:slf4j-api:$slf4jVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation "com.esotericsoftware:kryo:$kryoVersion"
+    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
+    systemPackages "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
+
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+
+}
+
+description 'Quasar fiber example'
+
+javaAgents {
+    agent("co.paralleluniverse.fibers.instrument.JavaAgent", project.quasar.options.map { it.substring(1) }.get())
+}
