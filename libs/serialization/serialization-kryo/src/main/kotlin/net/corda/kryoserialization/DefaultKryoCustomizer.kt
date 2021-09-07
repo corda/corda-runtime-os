@@ -20,12 +20,8 @@ import net.corda.kryoserialization.serializers.LinkedHashMapEntrySerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
 import net.corda.kryoserialization.serializers.LinkedListItrSerializer
 import net.corda.kryoserialization.serializers.LoggerSerializer
-import net.corda.kryoserialization.serializers.SerializeAsTokenSerializer
-import net.corda.kryoserialization.serializers.SingletonSerializeAsTokenSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
 import net.corda.utilities.LazyMappedList
-import net.corda.v5.serialization.SerializeAsToken
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.objenesis.instantiator.ObjectInstantiator
 import org.objenesis.strategy.InstantiatorStrategy
 import org.objenesis.strategy.StdInstantiatorStrategy
@@ -56,8 +52,6 @@ class DefaultKryoCustomizer {
                 // Note that return type should be specifically set to InputStream, otherwise it may not work,
                 // i.e. val aStream : InputStream = HashCheckingStream(...).
                 addDefaultSerializer(InputStream::class.java, InputStreamSerializer)
-                addDefaultSerializer(SingletonSerializeAsToken::class.java, SingletonSerializeAsTokenSerializer)
-                addDefaultSerializer(SerializeAsToken::class.java, SerializeAsTokenSerializer<SerializeAsToken>())
                 addDefaultSerializer(Logger::class.java, LoggerSerializer)
                 addDefaultSerializer(X509Certificate::class.java, X509CertificateSerializer)
 
@@ -69,25 +63,25 @@ class DefaultKryoCustomizer {
                     LinkedHashMapIteratorSerializer.getIterator()::class.java.superclass,
                     LinkedHashMapIteratorSerializer
                 )
-                register(LinkedHashMapEntrySerializer.getEntry()::class.java, LinkedHashMapEntrySerializer)
-                register(LinkedListItrSerializer.getListItr()::class.java, LinkedListItrSerializer)
-                register(Arrays.asList("").javaClass, ArraysAsListSerializer())
-                register(LazyMappedList::class.java, LazyMappedListSerializer)
+                addDefaultSerializer(LinkedHashMapEntrySerializer.getEntry()::class.java, LinkedHashMapEntrySerializer)
+                addDefaultSerializer(LinkedListItrSerializer.getListItr()::class.java, LinkedListItrSerializer)
+                addDefaultSerializer(Arrays.asList("").javaClass, ArraysAsListSerializer())
+                addDefaultSerializer(LazyMappedList::class.java, LazyMappedListSerializer)
                 UnmodifiableCollectionsSerializer.registerSerializers(this)
                 // InputStream subclasses whitelisting, required for attachments.
-                register(BufferedInputStream::class.java, InputStreamSerializer)
+                addDefaultSerializer(BufferedInputStream::class.java, InputStreamSerializer)
                 val jarUrlInputStreamClass = JarURLConnection::class.java.declaredClasses.single {
                     it.simpleName == "JarURLInputStream"
                 }
-                register(jarUrlInputStreamClass, InputStreamSerializer)
+                addDefaultSerializer(jarUrlInputStreamClass, InputStreamSerializer)
                 // Exceptions. We don't bother sending the stack traces as the client will fill in its own anyway.
                 register(Array<StackTraceElement>::class, read = { _, _ -> emptyArray() }, write = { _, _, _ -> })
-                register(BitSet::class.java, BitSetSerializer())
-                register(FileInputStream::class.java, InputStreamSerializer)
-                register(CertPath::class.java, CertPathSerializer)
+                addDefaultSerializer(BitSet::class.java, BitSetSerializer())
+                addDefaultSerializer(FileInputStream::class.java, InputStreamSerializer)
+                addDefaultSerializer(CertPath::class.java, CertPathSerializer)
 
                 register(java.lang.invoke.SerializedLambda::class.java)
-                register(ClosureSerializer.Closure::class.java, CordaClosureBlacklistSerializer)
+                addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureBlacklistSerializer)
 
                 addDefaultSerializer(Iterator::class.java) { kryo, type ->
                     IteratorSerializer(type, CompatibleFieldSerializer<Iterator<*>>(kryo, type).apply {
@@ -103,7 +97,7 @@ class DefaultKryoCustomizer {
                 register(LoggerFactory.getLogger(this::class.java)::class.java, LOGGER_ID)
 
                 addDefaultSerializer(AutoCloseable::class.java, AutoCloseableSerialisationDetector)
-                register(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
+                addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
             }
         }
     }

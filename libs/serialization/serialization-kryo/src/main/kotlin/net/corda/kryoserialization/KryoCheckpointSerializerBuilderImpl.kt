@@ -40,7 +40,6 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
     }
 
     private val serializers: MutableMap<Class<*>, CheckpointInternalCustomSerializer<*>> = mutableMapOf()
-    private val noReferenceWithin: MutableList<Class<*>> = mutableListOf()
     private var checkpointContext: CheckpointSerializationContext? = null
 
     private val kryoFromQuasar = (Fiber.getFiberSerializer(false) as KryoSerializer).kryo
@@ -50,7 +49,6 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
             log.warn("Checkpoint serializer build was already in progress!  Restarting checkpoint build. " +
                     "Previous build information will be lost.")
             serializers.clear()
-            noReferenceWithin.clear()
         }
         checkpointContext = createCheckpointContext(sandboxGroup)
         return this
@@ -72,11 +70,6 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
         serializer: CheckpointInternalCustomSerializer<*>
     ): CheckpointSerializerBuilder {
         serializers += classes.associateWith { serializer }
-        return this
-    }
-
-    override fun addNoReferencesWithin(clazz: Class<*>): CheckpointSerializerBuilder {
-        noReferenceWithin += clazz
         return this
     }
 
@@ -103,14 +96,12 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
             serializers +
                     publicKeyClasses.associateWith { PublicKeySerializer() } +
                     privateKeyClasses.associateWith { PrivateKeySerializer() },
-            noReferenceWithin,
             hashingService,
             checkpointContext
         ).also {
             // Clear the builder state
             this.checkpointContext = null
             serializers.clear()
-            noReferenceWithin.clear()
         }
     }
 

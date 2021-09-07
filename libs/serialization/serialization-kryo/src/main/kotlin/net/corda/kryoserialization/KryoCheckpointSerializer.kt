@@ -4,10 +4,8 @@ import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.KryoException
 import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.ClassSerializer
-import net.corda.kryoserialization.serializers.NoReferencesSerializer
 import net.corda.serialization.CheckpointInternalCustomSerializer
 import net.corda.serialization.CheckpointSerializer
-import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.crypto.BasicHashingService
 import org.osgi.framework.FrameworkUtil
@@ -17,7 +15,6 @@ import java.io.ByteArrayInputStream
 class KryoCheckpointSerializer(
     kryoFromQuasar: Kryo,
     private val serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>>,
-    private val noReferenceWithin: List<Class<*>>,
     private val hashingService: BasicHashingService,
     private val checkpointContext: CheckpointSerializationContext
 ) : CheckpointSerializer {
@@ -55,14 +52,11 @@ class KryoCheckpointSerializer(
             for (serializer in serializers) {
                 addDefaultSerializer(serializer.key, KryoCheckpointSerializerAdapter(serializer.value).adapt())
             }
-            for (noRef in noReferenceWithin) {
-                addDefaultSerializer(noRef, NoReferencesSerializer(getSerializer(noRef)))
-            }
         }
     }
 
     override fun <T : Any> deserialize(
-        byteSequence: ByteSequence,
+        byteSequence: ByteArray,
         clazz: Class<T>,
     ): T {
         val payload = kryoMagic.consume(byteSequence)

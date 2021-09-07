@@ -5,7 +5,6 @@ import com.esotericsoftware.kryo.Registration
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
-import net.corda.kryoserialization.impl.serializationContextKey
 import kotlin.reflect.KClass
 
 /**
@@ -40,14 +39,4 @@ inline fun <T : Any> Kryo.register(
     )
 }
 
-fun <T> Kryo.withoutReferences(block: () -> T): T {
-    val previousValue = setReferences(false)
-    try {
-        return block()
-    } finally {
-        references = previousValue
-    }
-}
-
-fun Kryo.serializationContext(): SerializeAsTokenContextInternal? = context.get(serializationContextKey) as? SerializeAsTokenContextInternal
 val kryoMagic = CordaSerializationMagic("corda".toByteArray() + byteArrayOf(0, 0))

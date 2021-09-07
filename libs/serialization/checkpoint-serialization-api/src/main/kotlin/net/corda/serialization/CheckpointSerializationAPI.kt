@@ -1,7 +1,6 @@
 package net.corda.serialization
 
 import net.corda.v5.base.annotations.DoNotImplement
-import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.serialization.CheckpointCustomSerializer
 import net.corda.v5.serialization.ClassWhitelist
 import net.corda.v5.serialization.SerializationEncoding
@@ -10,7 +9,7 @@ import java.io.NotSerializableException
 @DoNotImplement
 interface CheckpointSerializer {
     @Throws(NotSerializableException::class)
-    fun <T : Any> deserialize(byteSequence: ByteSequence, clazz: Class<T>): T
+    fun <T : Any> deserialize(byteSequence: ByteArray, clazz: Class<T>): T
 
     @Throws(NotSerializableException::class)
     fun <T : Any> serialize(obj: T): ByteArray
