@@ -2,7 +2,6 @@ package net.corda.sandbox
 
 import net.corda.packaging.Cpk
 import net.corda.v5.crypto.SecureHash
-import java.util.UUID
 
 /**
  * OSGi service interface for managing sandboxes.
@@ -10,6 +9,7 @@ import java.util.UUID
 interface SandboxService {
     /**
      * Creates a new [SandboxGroup] containing a sandbox for each of the CPKs identified by the [cpkFileHashes].
+     * Duplicate [cpkFileHashes] are discarded (i.e. if two hashes are identical, only one sandbox will be created).
      *
      * A [SandboxException] is thrown if the sandbox creation fails.
      */
@@ -17,13 +17,11 @@ interface SandboxService {
 
     /**
      * Creates a new [SandboxGroup] containing a sandbox for each of the CPKs identified by the [cpkFileHashes].
+     * Duplicate [cpkFileHashes] are discarded (i.e. if two hashes are identical, only one sandbox will be created).
      *
      * A [SandboxException] is thrown if the sandbox creation fails.
      */
     fun createSandboxesWithoutStarting(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
-
-    /** Get the [Sandbox] with the given [id], or null if no match. */
-    fun getSandbox(id: UUID): Sandbox?
 
     /**
      * Returns the [ClassInfo] for the given [klass].
@@ -40,13 +38,6 @@ interface SandboxService {
      * A [SandboxException] is thrown if [className] is not found in the sandboxGroup.
      */
     fun getClassInfo(className: String): ClassInfo
-
-    /**
-     * Deletes the [Sandbox] with the given [id], and uninstall its bundles.
-     *
-     * A [SandboxException] is thrown if the sandbox does not exist, or its bundles cannot be uninstalled.
-     */
-    fun deleteSandbox(id: UUID)
 
     /**
      * Returns the [Sandbox] lowest in the stack of calls to this function, or null if no sandbox is on the stack.

@@ -2,18 +2,18 @@ package net.corda.sandbox.internal
 
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxService
+import net.corda.sandbox.internal.sandbox.SandboxInternal
 import org.osgi.framework.Bundle
 
 /**
  * Extends [SandboxService] with methods that are used within the sandboxing hooks.
  */
-internal interface SandboxServiceInternal: SandboxService {
+internal interface SandboxServiceInternal : SandboxService {
     /** Returns the [SandboxInternal] containing the given [bundle], or null if no match. */
     fun getSandbox(bundle: Bundle): SandboxInternal?
 
     /**
-     * Checks whether the [sandbox] is one of the platform sandboxes (i.e. the sandboxes containing the platform's
-     * bundles).
+     * Checks whether the [sandbox] is the platform sandbox (i.e. the sandbox containing the platform's bundles).
      */
     fun isPlatformSandbox(sandbox: Sandbox): Boolean
 

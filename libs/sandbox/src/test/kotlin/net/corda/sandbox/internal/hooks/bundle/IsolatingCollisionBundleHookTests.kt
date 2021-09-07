@@ -1,6 +1,6 @@
 package net.corda.sandbox.internal.hooks.bundle
 
-import net.corda.sandbox.internal.SandboxInternal
+import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.SandboxServiceInternal
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach

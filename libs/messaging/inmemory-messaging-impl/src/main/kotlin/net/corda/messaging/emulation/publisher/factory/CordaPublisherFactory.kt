@@ -4,8 +4,10 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.emulation.publisher.CordaPublisher
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
@@ -40,5 +42,12 @@ class CordaPublisherFactory @Activate constructor(
             config = config.withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId))
         }
         return CordaPublisher(config, topicService)
+    }
+
+    override fun <TREQ : Any, TRESP : Any> createRPCSender(
+        rpcConfig: RPCConfig<TREQ, TRESP>,
+        nodeConfig: Config
+    ): RPCSender<TREQ, TRESP> {
+        TODO("Not yet implemented")
     }
 }
