@@ -1,6 +1,7 @@
 package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.Sandbox
+import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.utilities.BundleUtils
 import org.osgi.framework.Bundle
 import java.util.UUID
@@ -16,7 +17,7 @@ internal open class SandboxImpl(
     private val bundleUtils: BundleUtils,
     override val id: UUID,
     final override val publicBundles: Set<Bundle>,
-    privateBundles: Set<Bundle>
+    private val privateBundles: Set<Bundle>
 ) : SandboxInternal {
     // The other sandboxes whose services, bundles and events this sandbox can receive.
     private val visibleSandboxes = ConcurrentHashMap.newKeySet<Sandbox>()
@@ -42,4 +43,27 @@ internal open class SandboxImpl(
                 visibleSandboxes.add(otherSandbox)
             }
         }
+
+    override fun getBundle(bundleName: String) = (publicBundles + privateBundles).find { bundle ->
+        bundle.symbolicName == bundleName
+    }
+
+    override fun loadClass(className: String, bundleName: String): Class<*> {
+        val bundle = getBundle(bundleName) ?: throw SandboxException(
+            "The sandbox identified by the class tag does not contain a bundle with the " +
+                    "requested symbolic name, $bundleName."
+        )
+
+        return try {
+            bundle.loadClass(className)
+        } catch (e: ClassNotFoundException) {
+            throw SandboxException(
+                "Class $className could not be loaded from bundle ${bundle.symbolicName} in sandbox $id.", e
+            )
+        } catch (e: IllegalStateException) {
+            throw SandboxException(
+                "The bundle ${bundle.symbolicName} in sandbox $id has been uninstalled.", e
+            )
+        }
+    }
 }

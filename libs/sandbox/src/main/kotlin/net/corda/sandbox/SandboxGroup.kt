@@ -40,15 +40,12 @@ interface SandboxGroup {
      */
     fun cordappClassCount(className: String): Int
 
-    // TODO - Handle gracefully when a platform class is requested.
     /** Returns the [KryoClassTag] for a given [klass]. */
     fun getKryoClassTag(klass: Class<*>): KryoClassTag
 
-    // TODO - Handle gracefully when a platform class is requested.
     /** Returns the [AMQPClassTag] for a given [klass]. */
     fun getAMQPClassTag(klass: Class<*>): AMQPClassTag
 
-    // TODO - Handle gracefully when a platform class is requested.
     /** Returns the [Class] identified by the [className] and the [classTag]. */
     fun getClass(className: String, classTag: ClassTag): Class<*>
 }

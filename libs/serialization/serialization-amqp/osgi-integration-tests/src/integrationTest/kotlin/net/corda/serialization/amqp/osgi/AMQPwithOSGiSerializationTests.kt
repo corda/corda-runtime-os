@@ -142,13 +142,13 @@ class AMQPwithOSGiSerializationTests {
                 sandboxGroup = sandboxGroup)
 
         // Serialise our object
-        val cashClass = sandboxGroup.loadClass(
+        val cashClass = sandboxGroup.loadClassFromCordappBundle(
                 cpkIdentifier = installService.getCpb(cpb.identifier)!!.cpks.find {
                     it.id.symbolicName == "net.corda.test-serializable-1" }!!.id,
                 className = "net.corda.bundle1.Cash")
         val cashInstance = cashClass.getConstructor(Int::class.java).newInstance(100)
 
-        val obligationClass = sandboxGroup.loadClass(
+        val obligationClass = sandboxGroup.loadClassFromCordappBundle(
                 cpkIdentifier = installService.getCpb(cpb.identifier)!!.cpks.find {
                     it.id.symbolicName == "net.corda.test-serializable-3" }!!.id,
                 className = "net.corda.bundle3.Obligation")
@@ -159,13 +159,13 @@ class AMQPwithOSGiSerializationTests {
 
         val content = "This is a transfer document"
 
-        val documentClass = sandboxGroup.loadClass(
+        val documentClass = sandboxGroup.loadClassFromCordappBundle(
                 cpkIdentifier = installService.getCpb(cpb.identifier)!!.cpks.find {
                     it.id.symbolicName == "net.corda.test-serializable-2" }!!.id,
                 className = "net.corda.bundle2.Document")
         val documentInstance = documentClass.getConstructor(String::class.java).newInstance(content)
 
-        val transferClass = sandboxGroup.loadClass(
+        val transferClass = sandboxGroup.loadClassFromCordappBundle(
                 cpkIdentifier = installService.getCpb(cpb.identifier)!!.cpks.find {
                     it.id.symbolicName == "net.corda.test-serializable-4" }!!.id,
                 className = "net.corda.bundle4.Transfer")

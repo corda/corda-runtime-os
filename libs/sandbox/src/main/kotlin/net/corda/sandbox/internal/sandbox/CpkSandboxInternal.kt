@@ -10,7 +10,4 @@ internal interface CpkSandboxInternal: CpkSandbox {
 
     /** Indicates whether the [CpkSandbox]'s CorDapp bundle contains a class named [className]. */
     fun cordappBundleContainsClass(className: String): Boolean
-
-    /** Returns the bundle with symbolic name [bundleName] from sandbox, or null if no bundle has a matching name. */
-    fun getBundle(bundleName: String): Bundle?
 }

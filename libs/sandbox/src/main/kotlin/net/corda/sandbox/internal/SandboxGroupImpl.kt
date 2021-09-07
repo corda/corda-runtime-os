@@ -7,7 +7,10 @@ import net.corda.sandbox.KryoClassTag
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
+import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
+import net.corda.v5.crypto.SecureHash
+import java.util.Collections
 import java.util.NavigableMap
 
 /**
@@ -15,11 +18,22 @@ import java.util.NavigableMap
  *
  * @param bundleUtils The [BundleUtils] that all OSGi activity is delegated to for testing purposes
  * @param sandboxesById The [CpkSandboxImpl]s in this sandbox group, keyed by the identifier of their CPK
+ * @param platformSandbox The sandbox containing all the platform (i.e. non CPK) bundles
  */
 internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils,
-    private val sandboxesById: NavigableMap<Cpk.Identifier, CpkSandboxImpl>
+    private val sandboxesById: NavigableMap<Cpk.Identifier, CpkSandboxImpl>,
+    private val platformSandbox: SandboxInternal
 ) : SandboxGroup {
+
+    companion object {
+        // Used as placeholders when generating class tags for platform classes. However, it is not safe to use these
+        // to determine whether a given tag corresponds to a platform bundle. The `ClassTag.isPlatformClass` property
+        // should be used instead.
+        private const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "PLATFORM_BUNDLE"
+        private val PLACEHOLDER_CPK_FILE_HASH = SecureHash.create("SHA-256:0000000000000000")
+        private val PLACEHOLDER_CPK_PUBLIC_KEY_HASHES = Collections.emptyNavigableSet<SecureHash>()
+    }
 
     override val sandboxes = sandboxesById.values
 
@@ -47,50 +61,50 @@ internal class SandboxGroupImpl(
     }
 
     override fun getKryoClassTag(klass: Class<*>): KryoClassTag {
-        val sandbox = sandboxes.find { sandbox -> sandbox.containsClass(klass) }
-            ?: throw SandboxException("Class $klass is not contained in any sandbox.")
-
         val bundle = bundleUtils.getBundle(klass)
             ?: throw SandboxException("Class $klass is not loaded from any bundle.")
 
-        return KryoClassTag(sandbox.cpk.cpkHash, bundle.symbolicName)
+        return if (platformSandbox.containsBundle(bundle)) {
+            KryoClassTag(PLACEHOLDER_CPK_FILE_HASH, isPlatformClass = true, bundle.symbolicName)
+        } else {
+            val sandbox = sandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
+                ?: throw SandboxException("Bundle $bundle is not contained in any sandbox.")
+            KryoClassTag(sandbox.cpk.cpkHash, isPlatformClass = false, bundle.symbolicName)
+        }
     }
 
     override fun getAMQPClassTag(klass: Class<*>): AMQPClassTag {
-        val sandbox = sandboxes.find { sandbox -> sandbox.containsClass(klass) }
-            ?: throw SandboxException("Class $klass is not contained in any sandbox.")
-
         val bundle = bundleUtils.getBundle(klass)
             ?: throw SandboxException("Class $klass is not loaded from any bundle.")
 
-        return AMQPClassTag(
-            sandbox.cordappBundle.symbolicName,
-            sandbox.cpk.id.signers,
-            bundle.symbolicName
-        )
+        return if (platformSandbox.containsBundle(bundle)) {
+            AMQPClassTag(
+                PLACEHOLDER_CORDAPP_BUNDLE_NAME,
+                PLACEHOLDER_CPK_PUBLIC_KEY_HASHES,
+                isPlatformClass = true,
+                bundle.symbolicName
+            )
+        } else {
+            val sandbox = sandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
+                ?: throw SandboxException("Bundle $bundle is not contained in any sandbox.")
+            AMQPClassTag(
+                sandbox.cordappBundle.symbolicName,
+                sandbox.cpk.id.signers,
+                isPlatformClass = false,
+                bundle.symbolicName
+            )
+        }
     }
 
     override fun getClass(className: String, classTag: ClassTag): Class<*> {
-        val sandbox = when (classTag) {
-            is KryoClassTag -> getSandboxFromKryoClassTag(classTag)
-            is AMQPClassTag -> getSandboxFromAMQPClassTag(classTag)
-        }
-
-        val bundle = sandbox.getBundle(classTag.classBundleName) ?: throw SandboxException(
-            "The sandbox identified by the class tag does not contain a bundle with the " +
-                    "requested symbolic name, ${classTag.classBundleName}."
-        )
-
-        return try {
-            bundle.loadClass(className)
-        } catch (e: ClassNotFoundException) {
-            throw SandboxException(
-                "Class $className could not be loaded from bundle ${bundle.symbolicName} in sandbox ${sandbox.id}.", e
-            )
-        } catch (e: IllegalStateException) {
-            throw SandboxException(
-                "The bundle ${bundle.symbolicName} in sandbox ${sandbox.id} has been uninstalled.", e
-            )
+        return if (classTag.isPlatformClass) {
+            platformSandbox.loadClass(className, classTag.classBundleName)
+        } else {
+            val sandbox = when (classTag) {
+                is KryoClassTag -> getSandboxFromKryoClassTag(classTag)
+                is AMQPClassTag -> getSandboxFromAMQPClassTag(classTag)
+            }
+            sandbox.loadClass(className, classTag.classBundleName)
         }
     }
 

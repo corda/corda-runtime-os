@@ -6,16 +6,18 @@ import java.util.NavigableSet
 /**
  * Identifies a sandboxed class during serialisation and deserialisation.
  *
+ * @param isPlatformClass Indicates whether the class is a platform class. If so, the other values can be ignored.
  * @param classBundleName The symbolic name of the bundle that the class is from.
  */
-sealed class ClassTag(val classBundleName: String)
+sealed class ClassTag(val isPlatformClass: Boolean, val classBundleName: String)
 
 /**
  * Identifies a sandboxed class during Kryo serialisation and deserialisation.
  *
  * @param cpkFileHash The hash of the CPK that the class is from.
  */
-class KryoClassTag(val cpkFileHash: SecureHash, classBundleName: String) : ClassTag(classBundleName)
+class KryoClassTag(val cpkFileHash: SecureHash, isPlatformClass: Boolean, classBundleName: String)
+    : ClassTag(isPlatformClass, classBundleName)
 
 // TODO - Replace public key hashes with summary of hashes.
 /**
@@ -27,5 +29,6 @@ class KryoClassTag(val cpkFileHash: SecureHash, classBundleName: String) : Class
 class AMQPClassTag(
     val cordappBundleName: String,
     val cpkPublicKeyHashes: NavigableSet<SecureHash>,
+    isPlatformClass: Boolean,
     classBundleName: String
-) : ClassTag(classBundleName)
+) : ClassTag(isPlatformClass, classBundleName)

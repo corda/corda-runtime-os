@@ -198,7 +198,11 @@ internal class SandboxServiceImpl @Activate constructor(
             startBundles(bundles)
         }
 
-        val sandboxGroup = SandboxGroupImpl(bundleUtils, Collections.unmodifiableNavigableMap(cpkSandboxMapping))
+        val sandboxGroup = SandboxGroupImpl(
+            bundleUtils,
+            Collections.unmodifiableNavigableMap(cpkSandboxMapping),
+            platformSandbox
+        )
 
         // We update the mapping from sandbox IDs to the sandbox group that the sandbox is part of.
         sandboxes.forEach { sandbox ->

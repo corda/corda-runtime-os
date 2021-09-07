@@ -29,8 +29,4 @@ internal class CpkSandboxImpl(
     } catch (ex: SandboxException) {
         false
     }
-
-    override fun getBundle(bundleName: String) = (privateBundles + cordappBundle).find { bundle ->
-        bundle.symbolicName == bundleName
-    }
 }
