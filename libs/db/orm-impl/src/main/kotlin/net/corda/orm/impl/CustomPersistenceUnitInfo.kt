@@ -194,7 +194,7 @@ class CustomPersistenceUnitInfo(
      * @since Java Persistence 2.0
      */
     override fun getPersistenceXMLSchemaVersion(): String {
-        return "2.1"
+        return "2.2"
     }
 
     /**
