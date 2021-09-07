@@ -12,6 +12,8 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.framework.FrameworkUtil
 import org.osgi.test.junit5.service.ServiceExtension
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.util.UUID
 import kotlin.math.ceil
@@ -31,11 +33,13 @@ class EntitiesInBundlesTest {
         const val CAT_CLASS_NAME = "net.corda.testing.bundles.cats.Cat"
         const val OWNER_CLASS_NAME = "net.corda.testing.bundles.cats.Owner"
 
+        private val logger: Logger = LoggerFactory.getLogger("TEST")
+
         private val dogBundle = run {
             val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
                 bundle.symbolicName == "net.corda.dogs"
             }
-            println("Dog bundle $bundle".emphasise())
+            logger.info("Dog bundle $bundle".emphasise())
             bundle
         }
 
@@ -43,7 +47,7 @@ class EntitiesInBundlesTest {
             val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
                 bundle.symbolicName == "net.corda.cats"
             }
-            println("Cat bundle $bundle".emphasise())
+            logger.info("Cat bundle $bundle".emphasise())
             bundle
         }
 
@@ -63,7 +67,7 @@ class EntitiesInBundlesTest {
 
         private val dbConfig = run {
             if (null != System.getProperty("postgresPort").toIntOrNull()) {
-                println("Using Postgres on port ${System.getProperty("postgresPort")}".emphasise())
+                logger.info("Using Postgres on port ${System.getProperty("postgresPort")}".emphasise())
                 PostgresEntityManagerConfiguration(
                     "jdbc:postgresql://localhost:${System.getProperty("postgresPort")}/postgres",
                     "postgres",
@@ -73,7 +77,7 @@ class EntitiesInBundlesTest {
                     showSql = true
                 )
             } else {
-                println("Using in-memory (HSQL) DB".emphasise())
+                logger.info("Using in-memory (HSQL) DB".emphasise())
                 InMemoryEntityManagerConfiguration("pets")
             }
         }
@@ -81,7 +85,7 @@ class EntitiesInBundlesTest {
         @JvmStatic
         @BeforeAll
         fun setupEntities() {
-            println("Create Entities".emphasise())
+            logger.info("Create Entities".emphasise())
 
             // TODO: should EntityManagerFactoryFactory be injected as an OSGi service?
             val emf = emff.create(
@@ -111,7 +115,7 @@ class EntitiesInBundlesTest {
 
     @Test
     fun `validate entities are persisted`() {
-        println("Load persisted entities".emphasise())
+        logger.info("Load persisted entities".emphasise())
 
         val emf = emff.create(
             "pets",
@@ -135,7 +139,7 @@ class EntitiesInBundlesTest {
          * This isn't a best practise example, and this example is a bit silly, but
          * its only purpose is to prove we can do this.
          */
-        println("Query cross-bundle entities".emphasise())
+        logger.info("Query cross-bundle entities".emphasise())
 
         val emf = emff.create(
             "pets",
@@ -150,13 +154,15 @@ class EntitiesInBundlesTest {
             .createQuery("select o.age from Owner as o where o.name in (select d.owner from Dog as d where d.name = :dog)")
             .setParameter("dog", "Faraway")
             .resultList
-        println("Age(s) of owners with the same name as \"Faraway's\" (dog) owner: $queryResults".emphasise())
+        logger.info("Age(s) of owners with the same name as \"Faraway's\" (dog) owner: $queryResults".emphasise())
         assertThat(queryResults).contains(26)
     }
 }
 
 // trying to make it easy to find the print lines in the very verbose osgi test logging
-private fun String.emphasise(paddingChars: String = "#", width: Int = 120): String {
-    val padding = paddingChars.repeat(ceil((width - this.length - 2).toDouble() / 2).toInt())
+private fun String.emphasise(paddingChars: String = "#", width: Int = 80): String {
+    val padding = paddingChars.repeat(
+        kotlin.math.max(ceil((width - this.length - 2).toDouble() / 2).toInt(), 4)
+    )
     return "$padding $this $padding"
 }
