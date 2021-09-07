@@ -1,11 +1,11 @@
 package net.corda.sandbox.internal
 
 import net.corda.packaging.Cpk
-import net.corda.sandbox.ClassTag
 import net.corda.sandbox.AMQPClassTag
+import net.corda.sandbox.ClassTag
+import net.corda.sandbox.KryoClassTag
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandbox.KryoClassTag
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.utilities.BundleUtils
 import java.util.NavigableMap
@@ -70,34 +70,45 @@ internal class SandboxGroupImpl(
         )
     }
 
-    override fun getClass(className: String, classTag: ClassTag) = when (classTag) {
-        is KryoClassTag -> getClassFromKryoClassTag(className, classTag)
-        is AMQPClassTag -> getClassFromAMQPClassTag(className, classTag)
+    override fun getClass(className: String, classTag: ClassTag): Class<*> {
+        val sandbox = when (classTag) {
+            is KryoClassTag -> getSandboxFromKryoClassTag(classTag)
+            is AMQPClassTag -> getSandboxFromAMQPClassTag(classTag)
+        }
+
+        val bundle = sandbox.getBundle(classTag.classBundleName) ?: throw SandboxException(
+            "The sandbox identified by the class tag does not contain a bundle with the " +
+                    "requested symbolic name, ${classTag.classBundleName}."
+        )
+
+        return try {
+            bundle.loadClass(className)
+        } catch (e: ClassNotFoundException) {
+            throw SandboxException(
+                "Class $className could not be loaded from bundle ${bundle.symbolicName} in sandbox ${sandbox.id}.", e
+            )
+        } catch (e: IllegalStateException) {
+            throw SandboxException(
+                "The bundle ${bundle.symbolicName} in sandbox ${sandbox.id} has been uninstalled.", e
+            )
+        }
     }
 
-    /** Returns the [Class] identified by the [className] and the [kryoClassTag]. */
-    private fun getClassFromKryoClassTag(className: String, kryoClassTag: KryoClassTag): Class<*> {
-        val sandbox = sandboxes.find { sandbox -> sandbox.cpk.cpkHash == kryoClassTag.cpkFileHash }
-            ?: throw SandboxException("Bad bad bad") // TODO - Update exception.
 
-        val bundle = sandbox.getBundle(kryoClassTag.classBundleName)
-            ?: throw SandboxException("Bad bad bad") // TODO - Update exception.
+    /** Returns the [CpkSandboxImpl] identified by the [kryoClassTag]. */
+    private fun getSandboxFromKryoClassTag(kryoClassTag: KryoClassTag) = sandboxes.find { sandbox ->
+        sandbox.cpk.cpkHash == kryoClassTag.cpkFileHash
+    } ?: throw SandboxException(
+        "The sandbox group does not contain a sandbox for the CPK with the requested hash, ${kryoClassTag.cpkFileHash}."
+    )
 
-        // TODO - Handle exception.
-        return bundleUtils.loadClass(bundle, className)
-    }
-
-    /** Returns the [Class] identified by the [className] and the [amqpClassTag]. */
-    private fun getClassFromAMQPClassTag(className: String, amqpClassTag: AMQPClassTag): Class<*> {
-        val sandbox = sandboxes.find { sandbox ->
-            sandbox.cpk.id.signers == amqpClassTag.cpkPublicKeyHashes
-                    && sandbox.cordappBundle.symbolicName == amqpClassTag.cordappBundleName
-        } ?: throw SandboxException("Bad bad bad") // TODO - Update exception.
-
-        val bundle = sandbox.getBundle(amqpClassTag.classBundleName)
-            ?: throw SandboxException("Bad bad bad") // TODO - Update exception.
-
-        // TODO - Handle exception.
-        return bundleUtils.loadClass(bundle, className)
-    }
+    /** Returns the [CpkSandboxImpl] identified by the [amqpClassTag]. */
+    private fun getSandboxFromAMQPClassTag(amqpClassTag: AMQPClassTag) = sandboxes.find { sandbox ->
+        sandbox.cpk.id.signers == amqpClassTag.cpkPublicKeyHashes
+                && sandbox.cordappBundle.symbolicName == amqpClassTag.cordappBundleName
+    } ?: throw SandboxException(
+        "The sandbox group does not contain a sandbox for the CPK with the requested signers, " +
+                "${amqpClassTag.cpkPublicKeyHashes}, and the requested CorDapp bundle symbolic name, " +
+                "${amqpClassTag.cordappBundleName}."
+    )
 }

@@ -51,12 +51,4 @@ internal class BundleUtils @Activate constructor(private val bundleContext: Bund
 
     /** Returns the list of all installed bundles. */
     val allBundles get() = bundleContext.bundles.toList()
-
-    /**
-     * Loads the class with [className] from [bundle].
-     *
-     * Throws [ClassNotFoundException] if the bundle does not contain the named class. Throws [IllegalStateException]
-     * if the bundle has been uninstalled.
-     */
-    fun loadClass(bundle: Bundle, className: String): Class<*> = bundle.loadClass(className)
 }
