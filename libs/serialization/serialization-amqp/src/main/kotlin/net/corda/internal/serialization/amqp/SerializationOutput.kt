@@ -143,9 +143,11 @@ open class SerializationOutput constructor(
             if (classInfo is CpkClassInfo && !metadata.containsKey(type.typeName)) {
                 val key = type.typeName
                 val value = listOf(
-                        classInfo.classBundleName,
-                        classInfo.classBundleVersion.toString(),
-                        classInfo.cpkPublicKeyHashes.map(SecureHash::toString)
+                    classInfo.classBundleName,
+                    classInfo.classBundleVersion.toString(),
+                    classInfo.cordappBundleName,
+                    classInfo.cordappBundleVersion.toString(),
+                    classInfo.cpkPublicKeyHashes.map(SecureHash::toString)
                 )
                 metadata.putValue(key, value)
             }

@@ -45,6 +45,7 @@ import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
 import net.corda.p2p.schema.Schema.Companion.P2P_OUT_MARKERS
+import net.corda.p2p.schema.Schema.Companion.P2P_OUT_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -58,6 +59,8 @@ import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
@@ -70,6 +73,7 @@ class LinkManagerTest {
         private val SECOND_SOURCE = HoldingIdentity("PartyA", "AnotherGroup")
         private val FIRST_DEST = HoldingIdentity("PartyB", "Group")
         private val SECOND_DEST = HoldingIdentity("PartyC", "Group")
+        private val LOCAL_PARTY = HoldingIdentity("PartyD", "Group")
         private const val FAKE_ADDRESS = "http://10.0.0.1/"
         private val provider = BouncyCastleProvider()
         private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
@@ -81,6 +85,11 @@ class LinkManagerTest {
             FAKE_ENDPOINT
         )
 
+        private val hostingMap = mock<LinkManagerHostingMap>().also {
+            whenever(it.isHostedLocally(any())).thenReturn(false)
+            whenever(it.isHostedLocally(FIRST_SOURCE.toHoldingIdentity())).thenReturn(true)
+            whenever(it.isHostedLocally(LOCAL_PARTY.toHoldingIdentity())).thenReturn(true)
+        }
         private val netMap = MockNetworkMap(listOf(FIRST_SOURCE.toHoldingIdentity(), SECOND_SOURCE.toHoldingIdentity(),
             FIRST_DEST.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity())).getSessionNetworkMapForNode(FIRST_SOURCE.toHoldingIdentity())
 
@@ -285,10 +294,53 @@ class LinkManagerTest {
     }
 
     @Test
-    fun `OutboundMessageProcessor forwards unauthenticated messages directly to link out topic`() {
-        val processor = LinkManager.OutboundMessageProcessor(Mockito.mock(SessionManagerImpl::class.java), netMap, assignedListener(listOf(1)))
+    fun `if destination identity is hosted locally, authenticated messages are looped back and immediately acknowledged`() {
+        val processor = LinkManager.OutboundMessageProcessor(Mockito.mock(SessionManagerImpl::class.java), hostingMap, netMap, assignedListener(listOf(1)))
         val payload = "test"
-        val unauthenticatedMsg = UnauthenticatedMessage(UnauthenticatedMessageHeader(FIRST_SOURCE, FIRST_DEST), ByteBuffer.wrap(payload.toByteArray()))
+        val authenticatedMsg = AuthenticatedMessage(
+            AuthenticatedMessageHeader(LOCAL_PARTY, FIRST_SOURCE, null, "message-id", "trace-id", "system-1"),
+            ByteBuffer.wrap(payload.toByteArray())
+        )
+        val appMessage = AppMessage(authenticatedMsg)
+
+        val records = processor.onNext(listOf(EventLogRecord(P2P_OUT_TOPIC, KEY, appMessage, 1, 0)))
+
+        assertThat(records).hasSize(3)
+        val markers = records.filter { it.value is FlowMessageMarker }
+        assertThat(markers).hasSize(2)
+        assertThat(markers.map { it.value as FlowMessageMarker }).containsExactlyInAnyOrder(
+            FlowMessageMarker(LinkManagerSentMarker(1, 0)),
+            FlowMessageMarker(LinkManagerReceivedMarker()),
+        )
+        assertThat(markers.map { it.topic }.distinct()).containsOnly(P2P_OUT_MARKERS)
+        val messages = records.filter { it.value is AppMessage }
+        assertThat(messages).hasSize(1)
+        assertThat(messages.first().key).isEqualTo(KEY)
+        assertThat(messages.first().value).isEqualTo(appMessage)
+        assertThat(messages.first().topic).isEqualTo(P2P_IN_TOPIC)
+    }
+
+    @Test
+    fun `if destination identity is hosted locally, unauthenticated messages are looped back`() {
+        val processor = LinkManager.OutboundMessageProcessor(Mockito.mock(SessionManagerImpl::class.java), hostingMap, netMap, assignedListener(listOf(1)))
+        val payload = "test"
+        val unauthenticatedMsg = UnauthenticatedMessage(UnauthenticatedMessageHeader(LOCAL_PARTY, FIRST_SOURCE), ByteBuffer.wrap(payload.toByteArray()))
+        val appMessage = AppMessage(unauthenticatedMsg)
+
+        val records = processor.onNext(listOf(EventLogRecord(P2P_OUT_TOPIC, KEY, appMessage, 1, 0)))
+
+        assertThat(records).hasSize(1)
+        val newMessage = records.first()
+        assertThat(newMessage.topic).isEqualTo(P2P_IN_TOPIC)
+        assertThat(newMessage.value).isInstanceOf(AppMessage::class.java)
+        assertThat((newMessage.value as AppMessage)).isEqualTo(appMessage)
+    }
+
+    @Test
+    fun `OutboundMessageProcessor forwards unauthenticated messages directly to link out topic`() {
+        val processor = LinkManager.OutboundMessageProcessor(Mockito.mock(SessionManagerImpl::class.java), hostingMap, netMap, assignedListener(listOf(1)))
+        val payload = "test"
+        val unauthenticatedMsg = UnauthenticatedMessage(UnauthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE), ByteBuffer.wrap(payload.toByteArray()))
         val appMessage = AppMessage(unauthenticatedMsg)
 
         val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, appMessage, 1, 0)))
@@ -305,7 +357,7 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.processOutboundFlowMessage(any())).thenReturn(SessionManager.SessionState.SessionAlreadyPending)
 
-        val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
+        val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, hostingMap, netMap, assignedListener(listOf(1)))
 
         val numberOfMessages = 3
         val messages = mutableListOf<EventLogRecord<String, AppMessage>>()
@@ -338,7 +390,7 @@ class LinkManagerTest {
 
         val inboundSubscribedTopics = listOf(1, 5, 9)
 
-        val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, netMap, assignedListener(inboundSubscribedTopics))
+        val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, hostingMap, netMap, assignedListener(inboundSubscribedTopics))
         val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
         val records = processor.onNext(messages)
 
@@ -366,7 +418,7 @@ class LinkManagerTest {
         val state = SessionManager.SessionState.SessionEstablished(createSessionPair().initiatorSession)
         Mockito.`when`(mockSessionManager.processOutboundFlowMessage(any())).thenReturn(state)
 
-        val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
+        val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, hostingMap, netMap, assignedListener(listOf(1)))
         val messageIds = listOf("Id1", "Id2", "Id3")
 
         val messages = listOf(
@@ -405,7 +457,7 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
         Mockito.`when`(mockSessionManager.processOutboundFlowMessage(any())).thenReturn(SessionManager.SessionState.CannotEstablishSession)
 
-        val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
+        val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, hostingMap, netMap, assignedListener(listOf(1)))
         val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
         val records = processor.onNext(messages)
 
@@ -427,7 +479,7 @@ class LinkManagerTest {
         Mockito.`when`(mockNetworkMap.getMemberInfo(FIRST_SOURCE.toHoldingIdentity())).thenReturn(FIRST_DEST_MEMBER_INFO)
         Mockito.`when`(mockNetworkMap.getMemberInfo(FIRST_DEST.toHoldingIdentity())).thenReturn(null)
 
-        val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, mockNetworkMap, assignedListener(listOf(1)))
+        val processor = LinkManager.OutboundMessageProcessor(mockSessionManager, hostingMap, mockNetworkMap, assignedListener(listOf(1)))
         val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
         val records = processor.onNext(messages)
 
@@ -478,13 +530,14 @@ class LinkManagerTest {
         val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
 
         val records = processor.onNext(messages)
-        assertThat(records).filteredOn { it.value is AuthenticatedMessage }.hasSize(messages.size)
+        assertThat(records).filteredOn { it.value is AppMessage }.hasSize(messages.size)
         assertThat(records).filteredOn { it.value is LinkOutMessage }.hasSize(messages.size)
         for (record in records) {
             when (val value = record.value) {
-                is AuthenticatedMessage -> {
+                is AppMessage -> {
                     assertEquals(P2P_IN_TOPIC, record.topic)
-                    assertArrayEquals(flowMessageAndKey.message.payload.array(), value.payload.array())
+                    assertTrue(value.message is AuthenticatedMessage)
+                    assertArrayEquals(flowMessageAndKey.message.payload.array(), (value.message as AuthenticatedMessage).payload.array())
                     assertEquals(flowMessageAndKey.key, record.key)
                 }
                 is LinkOutMessage -> {
@@ -564,8 +617,9 @@ class LinkManagerTest {
         assertEquals(messages.size, records.size)
         for (record in records) {
             assertEquals(P2P_IN_TOPIC, record.topic)
-            assertTrue(record.value is AuthenticatedMessage)
-            assertArrayEquals(flowMessageWrapper.message.payload.array(), (record.value as AuthenticatedMessage).payload.array())
+            assertTrue(record.value is AppMessage)
+            assertTrue((record.value as AppMessage).message is AuthenticatedMessage)
+            assertArrayEquals(flowMessageWrapper.message.payload.array(), ((record.value as AppMessage).message as AuthenticatedMessage).payload.array())
             assertEquals(flowMessageWrapper.key, record.key)
         }
     }

@@ -11,13 +11,14 @@ import net.corda.classinfo.ClassInfoException
 import net.corda.classinfo.ClassInfoService
 import net.corda.packaging.Cpk
 import net.corda.sandbox.CpkClassInfo
+import net.corda.sandbox.NonCpkClassInfo
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.BasicHashingService
 import net.corda.v5.crypto.SecureHash
-import java.util.*
+import java.util.TreeSet
 
 open class SandboxClassResolver(
     val classInfoService: Any?,
@@ -54,14 +55,15 @@ open class SandboxClassResolver(
         } catch (ex: NullPointerException) {
             logger.trace { "This is likely a unit test with mocked objects. ${ex.message}" }
             null
-        }
+        } ?: return null
 
         return when (classInfo) {
             is CpkClassInfo -> Cpk.Identifier(
                     classInfo.classBundleName,
                     classInfo.classBundleVersion.toString(),
-                    TreeSet(classInfo.cpkPublicKeyHashes))
-            else -> null
+                    TreeSet(classInfo.cpkPublicKeyHashes)
+            )
+            is NonCpkClassInfo -> null
         }
     }
 
@@ -99,7 +101,7 @@ open class SandboxClassResolver(
         output.writeVarInt(nameId, true)
         output.writeString(type.name)
 
-        // If the type is a PlatformClassInfo, write noCpkId
+        // If the type is a NonCpkClassInfo, write noCpkId
         val cpk = getCpkFromClass(type)
         if (cpk == null) {
             output.writeVarInt(noCpkId, true)
@@ -138,7 +140,7 @@ open class SandboxClassResolver(
      *
      * @param [input] an input stream for reading the serialised data.
      *
-     * @return [registration] a registry of serializers.
+     * @return [Registration] a registry of serializers.
      */
     override fun readName(input: Input): Registration {
         checkAndInitReadStructures()

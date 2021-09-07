@@ -109,3 +109,6 @@ bnd/
 build
 /.idea/codeStyles/codeStyleConfig.xml
 /.idea/codeStyles/Project.xml
+
+
+kafka-docker/data/

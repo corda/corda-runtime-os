@@ -1,0 +1,61 @@
+# Bndrun for Hello World sample
+# Ensure Bnd uses the same Java executable as Gradle.
+java: ${project.javaExecutable}
+
+-tester: biz.aQute.tester.junit-platform
+
+-runee: JavaSE-11
+-runfw: org.apache.felix.framework
+-resolve.effective: active
+
+#uncomment to remote debug
+#-runjdb: 5005
+
+-runproperties: \
+    org.osgi.framework.bootdelegation=sun.reflect,\
+    org.slf4j.api.defaultLogLevel=info,\
+    org.slf4j.api.showShortLogName=true,\
+    org.slf4j.api.showThreadName=false,\
+    org.slf4j.api.showDateTime=true,\
+    org.slf4j.api.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
+
+-runrequires: \
+    bnd.identity;id='net.corda.inmemory-messaging-impl',\
+    bnd.identity;id='net.corda.messaging',\
+    bnd.identity;id='junit-jupiter-engine',\
+    bnd.identity;id='junit-platform-launcher',\
+    bnd.identity;id='junit-platform-launcher',\
+    bnd.identity;id='slf4j.simple',\
+    bnd.identity;id='${project.archivesBaseName}-tests'
+
+# This will help us keep -runbundles sorted
+-runstartlevel: \
+    order=sortbynameversion,\
+    begin=-1
+
+# The version ranges will change as the versions of
+# the artifacts and/or their dependencies change.
+-runbundles: \
+	com.typesafe.config;version='[1.4.1,1.4.2)',\
+	inmemory-messaging-impl-tests;version='[5.0.0,5.0.1)',\
+	junit-jupiter-api;version='[5.7.2,5.7.3)',\
+	junit-jupiter-engine;version='[5.7.2,5.7.3)',\
+	junit-jupiter-params;version='[5.7.2,5.7.3)',\
+	junit-platform-commons;version='[1.7.2,1.7.3)',\
+	junit-platform-engine;version='[1.7.2,1.7.3)',\
+	junit-platform-launcher;version='[1.7.2,1.7.3)',\
+	net.corda.base;version='[5.0.0,5.0.1)',\
+	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
+	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.21,1.4.22)',\
+	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
+	net.corda.messaging;version='[5.0.0,5.0.1)',\
+	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
+	org.assertj.core;version='[3.12.2,3.12.3)',\
+	org.jetbrains.kotlin.osgi-bundle;version='[1.4.21,1.4.22)',\
+	org.opentest4j;version='[1.2.0,1.2.1)',\
+	org.osgi.test.common;version='[1.0.0,1.0.1)',\
+	org.osgi.test.junit5;version='[1.0.0,1.0.1)',\
+	org.osgi.util.function;version='[1.1.0,1.1.1)',\
+	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
+	slf4j.api;version='[1.7.32,1.7.33)',\
+	slf4j.simple;version='[1.7.30,1.7.31)'
