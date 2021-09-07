@@ -2,7 +2,8 @@ package net.corda.serialization.amqp.osgi
 
 import net.corda.classinfo.ClassInfoService
 import net.corda.install.InstallService
-import net.corda.sandbox.SandboxService
+import net.corda.sandbox.SandboxContextService
+import net.corda.sandbox.SandboxCreationService
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -14,7 +15,8 @@ class ServiceLocator {
         private val serviceMap = mutableMapOf<String, Any>()
 
         fun getInstallService(): InstallService = getService()
-        fun getSandboxService(): SandboxService = getService()
+        fun getSandboxCreationService(): SandboxCreationService = getService()
+        fun getSandboxContextService(): SandboxContextService = getService()
         fun getClassInfoService(): ClassInfoService = getService()
         fun getConfigurationService(): ConfigurationAdmin = getService()
 
@@ -31,7 +33,11 @@ class ServiceLocator {
 
     @Reference
     @Suppress("UNUSED")
-    private fun setSandboxService(sandboxService: SandboxService) = setService(sandboxService)
+    private fun setSandboxCreationService(sandboxCreationService: SandboxCreationService) = setService(sandboxCreationService)
+
+    @Reference
+    @Suppress("UNUSED")
+    private fun setSandboxContextService(sandboxContextService: SandboxContextService) = setService(sandboxContextService)
 
     @Reference
     @Suppress("UNUSED")

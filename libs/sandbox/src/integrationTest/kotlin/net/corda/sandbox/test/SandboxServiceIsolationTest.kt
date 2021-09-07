@@ -24,7 +24,7 @@ class SandboxServiceIsolationTest {
         lateinit var sandboxLoader: SandboxLoader
 
         private fun runFlow(className: String, group: SandboxGroup): List<Class<out Any>> {
-            val workflowClass = group.loadClass(className, Flow::class.java)
+            val workflowClass = group.loadClassFromCordappBundle(className, Flow::class.java)
             @Suppress("unchecked_cast")
             return sandboxLoader.getServiceFor(Flow::class.java, workflowClass).call() as? List<Class<out Any>>
                 ?: fail("Workflow does not return a List")
@@ -66,12 +66,12 @@ class SandboxServiceIsolationTest {
         // services inside CPK2's "main" jar, but nothing from CPK3.
         assertThat(serviceClasses)
             .hasNoServiceFromGroup(otherGroup)
-            .hasNoService(sandbox2.loadClass(QUERY_CLASS))
-            .hasService(sandbox1.loadClass(QUERY_CLASS))
+            .hasNoService(sandbox2.loadClassFromCordappBundle(QUERY_CLASS))
+            .hasService(sandbox1.loadClassFromCordappBundle(QUERY_CLASS))
             .hasService(ServiceComponentRuntime::class.java)
             .hasService(Resolver::class.java)
-            .hasService(sandbox1.loadClass(SERVICES1_FLOW_CLASS))
-            .hasService(sandbox2.loadClass(SERVICES2_FLOW_CLASS))
+            .hasService(sandbox1.loadClassFromCordappBundle(SERVICES1_FLOW_CLASS))
+            .hasService(sandbox2.loadClassFromCordappBundle(SERVICES2_FLOW_CLASS))
     }
 
     @Test
@@ -86,12 +86,12 @@ class SandboxServiceIsolationTest {
         // services inside CPK1's "main" jar, but nothing from CPK3.
         assertThat(serviceClasses)
             .hasNoServiceFromGroup(otherGroup)
-            .hasNoService(sandbox1.loadClass(QUERY_CLASS))
-            .hasService(sandbox2.loadClass(QUERY_CLASS))
+            .hasNoService(sandbox1.loadClassFromCordappBundle(QUERY_CLASS))
+            .hasService(sandbox2.loadClassFromCordappBundle(QUERY_CLASS))
             .hasService(ServiceComponentRuntime::class.java)
             .hasService(Resolver::class.java)
-            .hasService(sandbox1.loadClass(SERVICES1_FLOW_CLASS))
-            .hasService(sandbox2.loadClass(SERVICES2_FLOW_CLASS))
+            .hasService(sandbox1.loadClassFromCordappBundle(SERVICES1_FLOW_CLASS))
+            .hasService(sandbox2.loadClassFromCordappBundle(SERVICES2_FLOW_CLASS))
     }
 
     @Test
@@ -105,9 +105,9 @@ class SandboxServiceIsolationTest {
         // no service belonging to either CPK1 or CPK2.
         assertThat(serviceClasses)
             .hasNoServiceFromGroup(otherGroup)
-            .hasService(sandbox3.loadClass(QUERY_CLASS))
+            .hasService(sandbox3.loadClassFromCordappBundle(QUERY_CLASS))
             .hasService(ServiceComponentRuntime::class.java)
             .hasService(Resolver::class.java)
-            .hasService(sandbox3.loadClass(SERVICES3_FLOW_CLASS))
+            .hasService(sandbox3.loadClassFromCordappBundle(SERVICES3_FLOW_CLASS))
     }
 }

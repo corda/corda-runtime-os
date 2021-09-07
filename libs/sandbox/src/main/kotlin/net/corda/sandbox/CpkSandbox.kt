@@ -11,5 +11,5 @@ interface CpkSandbox: Sandbox {
      *
      * Throws [SandboxException] if the CorDapp bundle is uninstalled, or the class is not found in the sandbox.
      */
-    fun loadClass(className: String): Class<*>
+    fun loadClassFromCordappBundle(className: String): Class<*>
 }

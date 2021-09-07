@@ -17,26 +17,38 @@ interface SandboxGroup {
 
     /**
      * Finds the [CpkSandbox] out of [sandboxes] with the given [Cpk.Identifier] (there is guaranteed to be at most
-     * one), and returns the [Class] with [className] from that sandbox.
+     * one), and returns the [Class] with [className] from the CorDapp bundle of that sandbox.
      *
      * Throws [SandboxException] if there is no [Sandbox] with the given [cpkIdentifier]. If a matching sandbox is
      * found, throws [SandboxException] if the sandbox does not have a CorDapp bundle, the CorDapp bundle is
      * uninstalled, or the class is not found in the sandbox.
      */
-    fun loadClass(cpkIdentifier: Cpk.Identifier, className: String): Class<*>
+    fun loadClassFromCordappBundle(cpkIdentifier: Cpk.Identifier, className: String): Class<*>
 
     /**
-     * Loads the [Class] with [className] from the sandbox group and casts it to type T. It is assumed that the class
-     * is only contained in one [Sandbox]'s CorDapp bundle across the group.
+     * Attempts to load the [Class] with [className] from the CorDapp bundle of each sandbox in the sandbox group in
+     * turn. Casts the first match to type [T] and returns it.
      *
      * Throws [SandboxException] if the sandbox's CorDapp bundle is uninstalled, or does not contain the named class.
      */
-    fun <T : Any> loadClass(className: String, type: Class<T>): Class<out T>
+    fun <T : Any> loadClassFromCordappBundle(className: String, type: Class<T>): Class<out T>
 
     /**
-     * Returns number of times class [className] appears in the CorDapp bundles of the sandbox group's CPK sandboxes.
+     * Returns number of times class [className] appears in the CorDapp bundles of the sandbox group's sandboxes.
      *
      * Throws [SandboxException] if the sandbox does not have a CorDapp bundle, or the CorDapp bundle is uninstalled.
      */
     fun cordappClassCount(className: String): Int
+
+    // TODO - Handle gracefully when a platform class is requested.
+    /** Returns the [KryoClassTag] for a given [klass]. */
+    fun getKryoClassTag(klass: Class<*>): KryoClassTag
+
+    // TODO - Handle gracefully when a platform class is requested.
+    /** Returns the [AMQPClassTag] for a given [klass]. */
+    fun getAMQPClassTag(klass: Class<*>): AMQPClassTag
+
+    // TODO - Handle gracefully when a platform class is requested.
+    /** Returns the [Class] identified by the [className] and the [classTag]. */
+    fun getClass(className: String, classTag: ClassTag): Class<*>
 }

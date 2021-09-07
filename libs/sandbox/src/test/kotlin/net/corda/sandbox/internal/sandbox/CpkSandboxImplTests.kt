@@ -26,7 +26,7 @@ class CpkSandboxImplTests {
         }
         val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), cordappBundle, emptySet())
 
-        assertEquals(String::class.java, sandbox.loadClass(String::class.java.name))
+        assertEquals(String::class.java, sandbox.loadClassFromCordappBundle(String::class.java.name))
     }
 
     @Test
@@ -40,7 +40,7 @@ class CpkSandboxImplTests {
         val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), cordappBundle, setOf(otherBundle))
 
         assertThrows<SandboxException> {
-            sandbox.loadClass(Int::class.java.name)
+            sandbox.loadClassFromCordappBundle(Int::class.java.name)
         }
     }
 
@@ -52,7 +52,7 @@ class CpkSandboxImplTests {
         val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), cordappBundle, emptySet())
 
         assertThrows<SandboxException> {
-            sandbox.loadClass(Int::class.java.name)
+            sandbox.loadClassFromCordappBundle(Int::class.java.name)
         }
     }
 

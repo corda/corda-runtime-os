@@ -4,8 +4,8 @@ import net.corda.install.InstallService
 import net.corda.packaging.Cpk
 import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.Sandbox
+import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandbox.SandboxService
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -33,7 +33,7 @@ class SandboxLoader @Activate constructor(
     private val installService: InstallService,
 
     @Reference
-    private val sandboxService: SandboxService
+    private val sandboxCreationService: SandboxCreationService
 ) {
     companion object {
         const val LIBRARY_SYMBOLIC_NAME = "com.example.sandbox.sandbox-cpk-library"
@@ -140,7 +140,7 @@ class SandboxLoader @Activate constructor(
     }
 
     private fun createSandboxGroupFor(vararg cpks: Cpk): SandboxGroup {
-        return sandboxService.createSandboxes(cpks.map(Cpk::cpkHash))
+        return sandboxCreationService.createSandboxes(cpks.map(Cpk::cpkHash))
     }
 
     fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {
@@ -158,7 +158,7 @@ class SandboxLoader @Activate constructor(
 
     @Suppress("SameParameterValue")
     private fun getBundle(className: String, sandbox: CpkSandbox): Bundle {
-        return FrameworkUtil.getBundle(sandbox.loadClass(className))
+        return FrameworkUtil.getBundle(sandbox.loadClassFromCordappBundle(className))
     }
 
     fun containsBundle(bundle: Bundle, sandbox: Sandbox): Boolean {

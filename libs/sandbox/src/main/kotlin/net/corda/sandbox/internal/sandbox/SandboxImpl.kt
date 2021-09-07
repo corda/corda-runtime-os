@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * An implementation of [SandboxInternal].
  *
- * @param bundleUtils The [BundleUtils] that all OSGi activity are delegated to for testing purposes
+ * @param bundleUtils The [BundleUtils] that all OSGi activity is delegated to for testing purposes
  * @param privateBundles The set of non-public [Bundle]s in this sandbox
  */
 internal open class SandboxImpl(

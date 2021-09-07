@@ -24,7 +24,7 @@ class SandboxBundleIsolationTest {
         lateinit var sandboxLoader: SandboxLoader
 
         private fun runFlow(className: String, group: SandboxGroup): List<Bundle> {
-            val workflowClass = group.loadClass(className, Flow::class.java)
+            val workflowClass = group.loadClassFromCordappBundle(className, Flow::class.java)
             @Suppress("unchecked_cast")
             return sandboxLoader.getServiceFor(Flow::class.java, workflowClass).call() as? List<Bundle>
                 ?: fail("Workflow does not return a List")

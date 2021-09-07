@@ -1,7 +1,6 @@
 package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.Sandbox
-import net.corda.sandbox.SandboxException
 import org.osgi.framework.Bundle
 
 /** Extends [Sandbox] with internal methods. */

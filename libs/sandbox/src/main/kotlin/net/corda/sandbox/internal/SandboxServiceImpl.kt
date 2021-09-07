@@ -7,9 +7,10 @@ import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.NonCpkClassInfo
 import net.corda.sandbox.Sandbox
+import net.corda.sandbox.SandboxContextService
+import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandbox.SandboxService
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxImpl
@@ -32,9 +33,9 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
 
 /**
- * An implementation of the [SandboxService] OSGi service interface.
+ * An implementation of the [SandboxCreationService] and [SandboxContextService] OSGi service interfaces.
  */
-@Component(service = [SandboxService::class, SandboxServiceInternal::class])
+@Component(service = [SandboxCreationService::class, SandboxContextService::class, SandboxServiceInternal::class])
 @Suppress("TooManyFunctions")
 internal class SandboxServiceImpl @Activate constructor(
     @Reference
@@ -69,7 +70,7 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun getClassInfo(className: String): ClassInfo {
         sandboxes.values.filterIsInstance<CpkSandboxImpl>().forEach { sandbox ->
             try {
-                val klass = sandbox.loadClass(className)
+                val klass = sandbox.loadClassFromCordappBundle(className)
                 val bundle = bundleUtils.getBundle(klass)
                     ?: throw SandboxException("Class $klass is not loaded from any bundle.")
                 val matchingSandbox = sandboxes.values.find { it.containsBundle(bundle) }
@@ -197,7 +198,7 @@ internal class SandboxServiceImpl @Activate constructor(
             startBundles(bundles)
         }
 
-        val sandboxGroup = SandboxGroupImpl(Collections.unmodifiableNavigableMap(cpkSandboxMapping))
+        val sandboxGroup = SandboxGroupImpl(bundleUtils, Collections.unmodifiableNavigableMap(cpkSandboxMapping))
 
         // We update the mapping from sandbox IDs to the sandbox group that the sandbox is part of.
         sandboxes.forEach { sandbox ->

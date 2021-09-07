@@ -1,6 +1,5 @@
 package net.corda.sandbox.internal.utilities
 
-import net.corda.sandbox.SandboxService
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
@@ -12,7 +11,7 @@ import java.security.AccessController.doPrivileged
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 
-/** Handles bundle operations for the [SandboxService]. */
+/** Handles bundle operations for the `SandboxCreationService` and the `SandboxContextService`. */
 @Component(service = [BundleUtils::class])
 internal class BundleUtils @Activate constructor(private val bundleContext: BundleContext) {
     /**
@@ -52,4 +51,12 @@ internal class BundleUtils @Activate constructor(private val bundleContext: Bund
 
     /** Returns the list of all installed bundles. */
     val allBundles get() = bundleContext.bundles.toList()
+
+    /**
+     * Loads the class with [className] from [bundle].
+     *
+     * Throws [ClassNotFoundException] if the bundle does not contain the named class. Throws [IllegalStateException]
+     * if the bundle has been uninstalled.
+     */
+    fun loadClass(bundle: Bundle, className: String): Class<*> = bundle.loadClass(className)
 }

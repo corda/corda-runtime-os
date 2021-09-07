@@ -14,7 +14,7 @@ import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.amqpMagic
 import net.corda.packaging.Cpb
 import net.corda.packaging.Cpk
-import net.corda.sandbox.SandboxService
+import net.corda.sandbox.SandboxCreationService
 import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -40,7 +40,7 @@ class AMQPwithOSGiSerializationTests {
     companion object {
         lateinit var installService: InstallService
         lateinit var classInfoService: ClassInfoService
-        lateinit var sandboxService: SandboxService
+        lateinit var sandboxCreationService: SandboxCreationService
 
         private val cordappVersion = System.getProperty("test.cordapp.version") ?: fail("Version number missing")
 
@@ -53,11 +53,11 @@ class AMQPwithOSGiSerializationTests {
             val configurationAdmin = ServiceLocator.getConfigurationService()
             installService = ServiceLocator.getInstallService()
             classInfoService = ServiceLocator.getClassInfoService()
-            sandboxService = ServiceLocator.getSandboxService()
+            sandboxCreationService = ServiceLocator.getSandboxCreationService()
 
             assertThat(configurationAdmin).isNotNull
             assertThat(installService).isNotNull
-            assertThat(sandboxService).isNotNull
+            assertThat(sandboxCreationService).isNotNull
             assertThat(classInfoService).isNotNull
 
             // Initialise configurationAdmin
@@ -122,7 +122,7 @@ class AMQPwithOSGiSerializationTests {
         val cpks = installService.getCpb(cpb.identifier)!!.cpks
 
         // Create sandbox group
-        val sandboxGroup = sandboxService.createSandboxes(cpks.map(Cpk::cpkHash))
+        val sandboxGroup = sandboxCreationService.createSandboxes(cpks.map(Cpk::cpkHash))
         assertThat(sandboxGroup).isNotNull
         assertThat(sandboxGroup.sandboxes).hasSize(4)
 

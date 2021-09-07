@@ -12,10 +12,10 @@ internal class CpkSandboxImpl(
     id: UUID,
     override val cpk: Cpk.Expanded,
     override val cordappBundle: Bundle,
-    privateBundles: Set<Bundle>
+    private val privateBundles: Set<Bundle>
 ) : SandboxImpl(bundleUtils, id, setOf(cordappBundle), privateBundles), CpkSandboxInternal {
 
-    override fun loadClass(className: String): Class<*> = try {
+    override fun loadClassFromCordappBundle(className: String): Class<*> = try {
         cordappBundle.loadClass(className)
     } catch (e: ClassNotFoundException) {
         throw SandboxException("Class $className could not be loaded from sandbox $id.", e)
@@ -24,9 +24,13 @@ internal class CpkSandboxImpl(
     }
 
     override fun cordappBundleContainsClass(className: String) = try {
-        loadClass(className)
+        loadClassFromCordappBundle(className)
         true
     } catch (ex: SandboxException) {
         false
+    }
+
+    override fun getBundle(bundleName: String) = (privateBundles + cordappBundle).find { bundle ->
+        bundle.symbolicName == bundleName
     }
 }
