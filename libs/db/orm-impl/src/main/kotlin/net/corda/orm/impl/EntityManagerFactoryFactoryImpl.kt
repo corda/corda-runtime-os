@@ -23,7 +23,7 @@ class EntityManagerFactoryFactoryImpl(
         }
 ) : EntityManagerFactoryFactory {
     companion object {
-        val log = contextLogger()
+        private val log = contextLogger()
     }
 
     /**

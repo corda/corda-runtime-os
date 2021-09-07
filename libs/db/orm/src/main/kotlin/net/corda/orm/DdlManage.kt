@@ -11,6 +11,7 @@ enum class DdlManage {
     NONE;
 
     companion object {
+        @JvmField
         val default = NONE
     }
 }
