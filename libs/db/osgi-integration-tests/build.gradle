@@ -17,7 +17,7 @@ dependencies {
     integrationTestImplementation project(":libs:db:orm")
     integrationTestImplementation project(":libs:db:orm-impl")
 
-    integrationTestRuntimeOnly 'com.sun.activation:javax.activation:1.2.0'
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
@@ -26,5 +26,5 @@ dependencies {
     integrationTestRuntimeOnly project(":testing:bundles:cats")
     integrationTestRuntimeOnly project(":testing:bundles:dogs")
 
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestImplementation "org.slf4j:slf4j-simple:$slf4jVersion"
 }
