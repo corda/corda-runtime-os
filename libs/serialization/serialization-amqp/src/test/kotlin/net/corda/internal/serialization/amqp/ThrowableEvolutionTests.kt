@@ -55,7 +55,8 @@ class ThrowableEvolutionTests {
 //        val exception = RemoveConstructorParametersException(message, toBeRemovedValue)
 //        saveSerializedObject(exception)
 
-        val bytes = ThrowableEvolutionTests::class.java.getResource("ThrowableEvolutionTests.RemoveConstructorParametersException").readBytes()
+        val bytes = ThrowableEvolutionTests::class.java.getResource(
+            "ThrowableEvolutionTests.RemoveConstructorParametersException").readBytes()
         val sf = testDefaultFactory()
         val deserializedException = DeserializationInput(sf).deserialize(SerializedBytes<RemoveConstructorParametersException>(bytes))
 
@@ -69,7 +70,8 @@ class ThrowableEvolutionTests {
 //        val exception = AddAndRemoveConstructorParametersException(message, toBeRemovedValue)
 //        saveSerializedObject(exception)
 
-        val bytes = ThrowableEvolutionTests::class.java.getResource("ThrowableEvolutionTests.AddAndRemoveConstructorParametersException").readBytes()
+        val bytes = ThrowableEvolutionTests::class.java.getResource(
+            "ThrowableEvolutionTests.AddAndRemoveConstructorParametersException").readBytes()
 
         val sf = testDefaultFactory()
         val deserializedException = DeserializationInput(sf).deserialize(SerializedBytes<AddAndRemoveConstructorParametersException>(bytes))

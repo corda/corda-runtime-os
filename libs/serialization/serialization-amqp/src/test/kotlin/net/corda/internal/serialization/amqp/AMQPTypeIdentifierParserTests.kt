@@ -21,6 +21,7 @@ interface TestCommandData
 data class TestCommand<T : TestCommandData>(val value: T, val signers: List<String>)
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
+@Suppress("MaxLineLength")
 class AMQPTypeIdentifierParserTests {
 
     @Test
@@ -106,6 +107,7 @@ class AMQPTypeIdentifierParserTests {
 
     @Test
 	fun `test list of commands`() {
+        @Suppress("MaxLineLength")
         verify("java.util.List<net.corda.internal.serialization.amqp.TestCommand<net.corda.internal.serialization.amqp.TestCommand<net.corda.internal.serialization.amqp.TestCommandData>>>")
     }
 

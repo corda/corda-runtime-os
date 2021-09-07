@@ -41,7 +41,11 @@ class AuthenticationProtocolFailureTest {
     // party B
     private val partyBMaxMessageSize = 1_500_000
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
+    private val authenticationProtocolB =
+        AuthenticationProtocolResponder(
+            sessionId,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize
+        )
 
     @Test
     fun `session authentication fails if malicious actor changes initiator's handshake message`() {
@@ -168,7 +172,9 @@ class AuthenticationProtocolFailureTest {
             partyAIdentityKey.public,
             sessionId
         )
-        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize)
+        val authenticationProtocolB = AuthenticationProtocolResponder(
+            sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize
+        )
 
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
@@ -178,6 +184,4 @@ class AuthenticationProtocolFailureTest {
         assertThatThrownBy { authenticationProtocolB.generateResponderHello() }
             .isInstanceOf(NoCommonModeError::class.java)
     }
-
-
 }

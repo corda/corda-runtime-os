@@ -39,7 +39,11 @@ class AuthenticatedEncryptionSessionTest {
     // party B
     private val partyBMaxMessageSize = 1_500_000
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize)
+    private val authenticationProtocolB =
+        AuthenticationProtocolResponder(
+            sessionId,
+            setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize
+        )
 
     @Test
     fun `session can be established between two parties and used for transmission of authenticated and encrypted data successfully`() {
@@ -83,9 +87,15 @@ class AuthenticatedEncryptionSessionTest {
             // Data exchange: A sends message to B, which decrypts and validates it
             val payload = "ping $i".toByteArray(Charsets.UTF_8)
             val encryptionResult = authenticatedSessionOnA.encryptData(payload)
-            val initiatorMsg = AuthenticatedEncryptedDataMessage(encryptionResult.header, ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag))
+            val initiatorMsg = AuthenticatedEncryptedDataMessage(
+                encryptionResult.header,
+                ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag)
+            )
 
-            val decryptedPayload = authenticatedSessionOnB.decryptData(initiatorMsg.header, initiatorMsg.encryptedPayload.array(), initiatorMsg.authTag.array())
+            val decryptedPayload = authenticatedSessionOnB.decryptData(
+                initiatorMsg.header, initiatorMsg.encryptedPayload.array(),
+                initiatorMsg.authTag.array()
+            )
             assertTrue(decryptedPayload.contentEquals(payload))
         }
 
@@ -93,9 +103,15 @@ class AuthenticatedEncryptionSessionTest {
             // Data exchange: B -> A
             val payload = "pong $i".toByteArray(Charsets.UTF_8)
             val encryptionResult = authenticatedSessionOnB.encryptData(payload)
-            val responderMsg = AuthenticatedEncryptedDataMessage(encryptionResult.header, ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag))
+            val responderMsg = AuthenticatedEncryptedDataMessage(
+                encryptionResult.header,
+                ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag)
+            )
 
-            val decryptedPayload = authenticatedSessionOnA.decryptData(responderMsg.header, responderMsg.encryptedPayload.array(), responderMsg.authTag.array())
+            val decryptedPayload = authenticatedSessionOnA.decryptData(
+                responderMsg.header, responderMsg.encryptedPayload.array(),
+                responderMsg.authTag.array()
+            )
             assertTrue(decryptedPayload.contentEquals(payload))
         }
     }
@@ -141,7 +157,11 @@ class AuthenticatedEncryptionSessionTest {
         // Data exchange: A sends message to B, B receives corrupted data which fail validation.
         val payload = "ping".toByteArray(Charsets.UTF_8)
         val encryptionResult = authenticatedSessionOnA.encryptData(payload)
-        val initiatorMsg = AuthenticatedDataMessage(encryptionResult.header, ByteBuffer.wrap(encryptionResult.encryptedPayload) , ByteBuffer.wrap(encryptionResult.authTag))
+        val initiatorMsg =
+            AuthenticatedDataMessage(
+                encryptionResult.header,
+                ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag)
+            )
 
         Assertions.assertThatThrownBy {
             val modifiedHeader = initiatorMsg.header
@@ -161,7 +181,7 @@ class AuthenticatedEncryptionSessionTest {
                 initiatorMsg.authTag.array()
             )
         }.isInstanceOf(DecryptionFailedError::class.java)
-         .hasMessageContaining("Decryption failed due to bad authentication tag.")
+            .hasMessageContaining("Decryption failed due to bad authentication tag.")
 
         Assertions.assertThatThrownBy {
             authenticatedSessionOnB.decryptData(
@@ -212,7 +232,9 @@ class AuthenticatedEncryptionSessionTest {
 
         Assertions.assertThatThrownBy { authenticatedSessionOnA.encryptData(ByteArray(partyAMaxMessageSize + 1)) }
             .isInstanceOf(MessageTooLargeError::class.java)
-            .hasMessageContaining("Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message size of the session ($partyAMaxMessageSize bytes)")
+            .hasMessageContaining(
+                "Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message " +
+                    "size of the session ($partyAMaxMessageSize bytes)"
+            )
     }
-
 }

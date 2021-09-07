@@ -492,6 +492,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `throws if asked to retrieve CPK info for a CorDapp class name which is not installed in one of the sandboxes the associated class's sandbox has visibility of`() {
         val unknownClassName = Iterable::class.java.name
 

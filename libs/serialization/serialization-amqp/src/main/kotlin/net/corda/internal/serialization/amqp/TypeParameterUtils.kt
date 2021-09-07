@@ -46,7 +46,8 @@ private fun inferTypeVariables(actualClass: Class<*>, declaredClass: Class<*>, d
         val newResolved = resolved.resolveType(chainEntry)
         TypeResolver().where(chainEntry, newResolved)
     }
-    // The end type is a special case as it is a Class, so we need to fake up a ParameterizedType for it to get the TypeResolver to do anything.
+    // The end type is a special case as it is a Class, so we need to fake up a ParameterizedType for it to get
+    // the TypeResolver to do anything.
     val endType = actualClass.asParameterizedType()
     return resolver.resolveType(endType)
 }

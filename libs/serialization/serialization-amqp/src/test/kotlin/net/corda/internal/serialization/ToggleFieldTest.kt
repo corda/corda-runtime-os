@@ -55,8 +55,12 @@ class ToggleFieldTest {
     }
 
     @Test
-	fun `toggle is enforced`() {
-        listOf(SimpleToggleField<String>("simple"), ThreadLocalToggleField<String>("local"), inheritableThreadLocalToggleField()).forEach { field ->
+    fun `toggle is enforced`() {
+        listOf(
+            SimpleToggleField<String>("simple"),
+            ThreadLocalToggleField<String>("local"),
+            inheritableThreadLocalToggleField()
+        ).forEach { field ->
             assertNull(field.get())
             assertThatThrownBy { field.set(null) }.isInstanceOf(IllegalStateException::class.java)
             field.set("hello")
@@ -70,7 +74,7 @@ class ToggleFieldTest {
     }
 
     @Test
-	fun `write-at-most-once field works`() {
+    fun `write-at-most-once field works`() {
         val field = SimpleToggleField<String>("field", true)
         assertNull(field.get())
         assertThatThrownBy { field.set(null) }.isInstanceOf(IllegalStateException::class.java)
@@ -83,7 +87,7 @@ class ToggleFieldTest {
     }
 
     @Test
-	fun `thread local works`() {
+    fun `thread local works`() {
         val field = ThreadLocalToggleField<String>("field")
         assertNull(field.get())
         field.set("hello")
@@ -96,7 +100,7 @@ class ToggleFieldTest {
     }
 
     @Test
-	fun `inheritable thread local works`() {
+    fun `inheritable thread local works`() {
         val field = inheritableThreadLocalToggleField<String>()
         assertNull(field.get())
         field.set("hello")
@@ -109,7 +113,7 @@ class ToggleFieldTest {
     }
 
     @Test
-	fun `existing threads do not inherit`() {
+    fun `existing threads do not inherit`() {
         val field = inheritableThreadLocalToggleField<String>()
         withSingleThreadExecutor {
             field.set("hello")
@@ -119,7 +123,7 @@ class ToggleFieldTest {
     }
 
     @Test
-	fun `inherited values are poisoned on clear`() {
+    fun `inherited values are poisoned on clear`() {
         val field = inheritableThreadLocalToggleField<String>()
         field.set("hello")
         withSingleThreadExecutor {
@@ -142,69 +146,81 @@ class ToggleFieldTest {
 
     /** We log a warning rather than failing-fast as the new thread may be an undetected global. */
     @Test
-	fun `leaked thread propagates holder to non-global thread, with warning`() {
+    fun `leaked thread propagates holder to non-global thread, with warning`() {
         val field = inheritableThreadLocalToggleField<String>()
         field.set("hello")
         withSingleThreadExecutor {
             assertEquals("hello", supplyAsync(field::get, this).getOrThrow())
             field.set(null) // The executor thread is now considered leaked.
-            supplyAsync({
-                val leakedThreadName = Thread.currentThread().name
-                verifyNoMoreInteractions(log)
-                withSingleThreadExecutor {
-                    // If ThreadLeakException is seen in practice, these warnings form a trail of where the holder has been:
-                    verify(log).warn(argThat { contains(leakedThreadName) && contains("hello") })
-                    val newThreadName = supplyAsync({ Thread.currentThread().name }, this).getOrThrow()
-                    val future = supplyAsync(field::get, this)
-                    assertThatThrownBy { future.getOrThrow() }
-                        .isInstanceOf(ThreadLeakException::class.java)
-                        .hasMessageContaining(newThreadName)
-                        .hasMessageContaining("hello")
-                    supplyAsync({
-                        verifyNoMoreInteractions(log)
-                        withSingleThreadExecutor {
-                            verify(log).warn(argThat { contains(newThreadName) && contains("hello") })
-                        }
-                    }, this).getOrThrow()
-                }
-            }, this).getOrThrow()
-        }
-    }
-
-    @Test
-	fun `leaked thread does not propagate holder to global thread, with warning`() {
-        val field = inheritableThreadLocalToggleField<String>()
-        field.set("hello")
-        withSingleThreadExecutor {
-            assertEquals("hello", supplyAsync(field::get, this).getOrThrow())
-            field.set(null) // The executor thread is now considered leaked.
-            supplyAsync({
-                val leakedThreadName = Thread.currentThread().name
-                globalThreadCreationMethod {
+            supplyAsync(
+                {
+                    val leakedThreadName = Thread.currentThread().name
                     verifyNoMoreInteractions(log)
                     withSingleThreadExecutor {
+                        // If ThreadLeakException is seen in practice, these warnings form a trail of where the holder has been:
                         verify(log).warn(argThat { contains(leakedThreadName) && contains("hello") })
-                        // In practice the new thread is for example a static thread we can't get rid of:
-                        assertNull(supplyAsync(field::get, this).getOrThrow())
+                        val newThreadName = supplyAsync({ Thread.currentThread().name }, this).getOrThrow()
+                        val future = supplyAsync(field::get, this)
+                        assertThatThrownBy { future.getOrThrow() }
+                            .isInstanceOf(ThreadLeakException::class.java)
+                            .hasMessageContaining(newThreadName)
+                            .hasMessageContaining("hello")
+                        supplyAsync(
+                            {
+                                verifyNoMoreInteractions(log)
+                                withSingleThreadExecutor {
+                                    verify(log).warn(argThat { contains(newThreadName) && contains("hello") })
+                                }
+                            },
+                            this
+                        ).getOrThrow()
                     }
-                }
-            }, this).getOrThrow()
+                },
+                this
+            ).getOrThrow()
         }
     }
 
     @Test
-	fun `non-leaked thread does not propagate holder to global thread, without warning`() {
+    fun `leaked thread does not propagate holder to global thread, with warning`() {
         val field = inheritableThreadLocalToggleField<String>()
         field.set("hello")
         withSingleThreadExecutor {
-            supplyAsync({
-                assertEquals("hello", field.get())
-                globalThreadCreationMethod {
-                    withSingleThreadExecutor {
-                        assertNull(supplyAsync(field::get, this).getOrThrow())
+            assertEquals("hello", supplyAsync(field::get, this).getOrThrow())
+            field.set(null) // The executor thread is now considered leaked.
+            supplyAsync(
+                {
+                    val leakedThreadName = Thread.currentThread().name
+                    globalThreadCreationMethod {
+                        verifyNoMoreInteractions(log)
+                        withSingleThreadExecutor {
+                            verify(log).warn(argThat { contains(leakedThreadName) && contains("hello") })
+                            // In practice the new thread is for example a static thread we can't get rid of:
+                            assertNull(supplyAsync(field::get, this).getOrThrow())
+                        }
                     }
-                }
-            }, this).getOrThrow()
+                },
+                this
+            ).getOrThrow()
+        }
+    }
+
+    @Test
+    fun `non-leaked thread does not propagate holder to global thread, without warning`() {
+        val field = inheritableThreadLocalToggleField<String>()
+        field.set("hello")
+        withSingleThreadExecutor {
+            supplyAsync(
+                {
+                    assertEquals("hello", field.get())
+                    globalThreadCreationMethod {
+                        withSingleThreadExecutor {
+                            assertNull(supplyAsync(field::get, this).getOrThrow())
+                        }
+                    }
+                },
+                this
+            ).getOrThrow()
         }
     }
 }
