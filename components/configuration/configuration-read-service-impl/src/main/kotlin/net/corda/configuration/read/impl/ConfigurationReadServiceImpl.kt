@@ -67,7 +67,6 @@ class ConfigurationReadServiceImpl @Activate constructor(
                 callbackHandles.removeSubscription()
                 subscription?.stop()
                 subscription = null
-                lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
             }
             is ErrorEvent -> {
                 logger.error(
