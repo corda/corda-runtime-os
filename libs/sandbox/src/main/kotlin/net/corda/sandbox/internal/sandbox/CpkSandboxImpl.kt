@@ -12,8 +12,8 @@ internal class CpkSandboxImpl(
     id: UUID,
     override val cpk: Cpk.Expanded,
     override val cordappBundle: Bundle,
-    otherBundles: Set<Bundle>
-) : SandboxImpl(bundleUtils, id, otherBundles + cordappBundle), CpkSandboxInternal {
+    privateBundles: Set<Bundle>
+) : SandboxImpl(bundleUtils, id, setOf(cordappBundle), privateBundles), CpkSandboxInternal {
 
     override fun loadClass(className: String): Class<*> = try {
         cordappBundle.loadClass(className)
