@@ -7,13 +7,16 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
+import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
+import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.emulation.subscription.compacted.InMemoryCompactedSubscription
@@ -102,6 +105,14 @@ class InMemSubscriptionFactory @Activate constructor(
         keyClass: Class<K>,
         valueClass: Class<V>
     ): RandomAccessSubscription<K, V> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <TREQ : Any, TRESP : Any> createRPCSubscription(
+        rpcConfig: RPCConfig<TREQ, TRESP>,
+        nodeConfig: Config,
+        responderProcessor: RPCResponderProcessor<TREQ, TRESP>
+    ): RPCSubscription<TREQ, TRESP> {
         TODO("Not yet implemented")
     }
 }
