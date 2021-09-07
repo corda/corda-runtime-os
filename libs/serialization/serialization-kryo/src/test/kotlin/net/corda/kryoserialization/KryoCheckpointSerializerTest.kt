@@ -4,7 +4,6 @@ import com.esotericsoftware.kryo.Kryo
 import net.corda.serialization.CheckpointInput
 import net.corda.serialization.CheckpointInternalCustomSerializer
 import net.corda.serialization.CheckpointOutput
-import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.crypto.BasicHashingService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -48,7 +47,7 @@ internal class KryoCheckpointSerializerTest {
 
         val tester = Tester(someInt, someString)
         val bytes = serializer.serialize(tester)
-        val tested = serializer.deserialize(ByteSequence.Companion.of(bytes), Tester::class.java)
+        val tested = serializer.deserialize(bytes, Tester::class.java)
 
         assertThat(tested.someInt).isEqualTo(tester.someInt)
         assertThat(tested.someString).isEqualTo(tester.someString)
@@ -70,7 +69,7 @@ internal class KryoCheckpointSerializerTest {
 
         // deserialize in this one
         val serializer = createCheckpointSerializer(serializers)
-        val tested = serializer.deserialize(ByteSequence.Companion.of(serializedBytes!!), Tester::class.java)
+        val tested = serializer.deserialize(serializedBytes!!, Tester::class.java)
 
         assertThat(tested.someInt).isEqualTo(someInt)
         assertThat(tested.someString).isEqualTo(someString)
@@ -88,7 +87,6 @@ internal class KryoCheckpointSerializerTest {
         return KryoCheckpointSerializer(
             kryoFromQuasar,
             serializers,
-            emptyList(),
             hashingService,
             checkpointContext
         )
