@@ -22,7 +22,7 @@ dependencies {
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
-    // NOTE: these are only needed for resolving bundle requirements
+    // NOTE: these are needed for resolving bundle requirements
     integrationTestRuntimeOnly project(":testing:bundles:cats")
     integrationTestRuntimeOnly project(":testing:bundles:dogs")
 
