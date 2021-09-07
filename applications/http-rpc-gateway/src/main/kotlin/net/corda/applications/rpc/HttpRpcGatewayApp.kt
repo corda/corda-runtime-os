@@ -58,7 +58,7 @@ class HttpRpcGatewayApp @Activate constructor(
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
-        consoleLogger.info("Starting demo application...")
+        consoleLogger.info("Starting HTTP RPC Gateway application...")
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
 
@@ -107,7 +107,7 @@ class HttpRpcGatewayApp @Activate constructor(
 
             log.info("Starting life cycle coordinator")
             lifeCycleCoordinator!!.start()
-            consoleLogger.info("Demo application started")
+            consoleLogger.info("HTTP RPC Gateway application started")
         }
     }
 
