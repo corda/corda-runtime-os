@@ -4,9 +4,9 @@ package net.corda.sandbox.internal
 
 import java.util.Collections.unmodifiableList
 
-// The symbolic names of the bundles that should be mapped into the core sandbox.
+// The symbolic names of the bundles that should be public in the platform sandbox.
 // Wrapped inside an unmodifiable list to forbid any tampering.
-internal val CORE_BUNDLE_NAMES: List<String> = unmodifiableList(
+internal val PUBLIC_PLATFORM_BUNDLE_NAMES: List<String> = unmodifiableList(
     listOf(
         "javax.persistence-api",
         "jcl.over.slf4j",

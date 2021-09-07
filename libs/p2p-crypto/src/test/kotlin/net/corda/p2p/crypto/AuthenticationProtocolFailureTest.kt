@@ -1,9 +1,11 @@
 package net.corda.p2p.crypto
 
 import net.corda.p2p.crypto.protocol.NoCommonModeError
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -20,7 +22,7 @@ class AuthenticationProtocolFailureTest {
 
     private val provider = BouncyCastleProvider()
     private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-    private val signature = Signature.getInstance("ECDSA", provider)
+    private val signature = Signature.getInstance(ECDSA_SIGNATURE_ALGO, provider)
 
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
@@ -64,7 +66,7 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
         val modifiedInitiatorHandshakeMessage = InitiatorHandshakeMessage(initiatorHandshakeMessage.header, ByteBuffer.wrap(initiatorHandshakeMessage.encryptedData.array() + "0".toByte()), initiatorHandshakeMessage.authTag)
-        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(modifiedInitiatorHandshakeMessage, partyAIdentityKey.public) }
+        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(modifiedInitiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA) }
                 .isInstanceOf(InvalidHandshakeMessageException::class.java)
     }
 
@@ -90,7 +92,7 @@ class AuthenticationProtocolFailureTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
-        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public) }
+        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA) }
                 .isInstanceOf(InvalidHandshakeMessageException::class.java)
     }
 
@@ -117,7 +119,7 @@ class AuthenticationProtocolFailureTest {
             signature.sign()
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
-        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, wrongPublicKey) }
+        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, wrongPublicKey, KeyAlgorithm.ECDSA) }
             .isInstanceOf(WrongPublicKeyHashException::class.java)
     }
 
@@ -143,7 +145,7 @@ class AuthenticationProtocolFailureTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public)
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA)
 
         // Step 4: responder creating different signature than the one expected.
         val signingCallbackForB = { data: ByteArray ->
@@ -153,7 +155,7 @@ class AuthenticationProtocolFailureTest {
         }
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
 
-        assertThatThrownBy { authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public) }
+        assertThatThrownBy { authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, KeyAlgorithm.ECDSA) }
                 .isInstanceOf(InvalidHandshakeMessageException::class.java)
     }
 

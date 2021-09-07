@@ -11,6 +11,7 @@ import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.createSessionPair
@@ -102,6 +103,7 @@ class MessageConverterTest {
             LinkManagerNetworkMap.MemberInfo(
                 us.toHoldingIdentity(),
                 keyPairGenerator.genKeyPair().public,
+                KeyAlgorithm.ECDSA,
                 LinkManagerNetworkMap.EndPoint("")
             )
         )
@@ -137,6 +139,7 @@ class MessageConverterTest {
             LinkManagerNetworkMap.MemberInfo(
                 peer.toHoldingIdentity(),
                 keyPairGenerator.genKeyPair().public,
+                KeyAlgorithm.ECDSA,
                 LinkManagerNetworkMap.EndPoint("")
             )
         )
