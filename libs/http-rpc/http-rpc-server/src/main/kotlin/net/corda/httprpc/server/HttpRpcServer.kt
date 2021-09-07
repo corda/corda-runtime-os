@@ -1,8 +1,5 @@
 package net.corda.httprpc.server
 
-interface HttpRpcServer {
+import net.corda.lifecycle.Lifecycle
 
-    fun start()
-    fun stop()
-    fun close()
-}
+interface HttpRpcServer : Lifecycle

@@ -18,6 +18,8 @@ import net.corda.httprpc.server.security.provider.bearer.azuread.AzureAdAuthenti
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.write
 
 @SuppressWarnings("TooGenericExceptionThrown", "TooGenericExceptionCaught", "LongParameterList")
 class HttpRPCServerImpl(
@@ -32,6 +34,13 @@ class HttpRPCServerImpl(
         private val log = contextLogger()
     }
 
+    @Volatile
+    private var running = false
+    private val startStopLock = ReentrantReadWriteLock()
+
+    override val isRunning: Boolean
+        get() = running
+
 
     private val resources = getResources(rpcOpsImpls)
     private val httpRpcObjectConfigProvider = HttpRpcObjectSettingsProvider(httpRpcSettings, devMode)
@@ -42,19 +51,24 @@ class HttpRPCServerImpl(
         OpenApiInfoProvider(resources, httpRpcObjectConfigProvider)
     )
 
+
     override fun start() {
-        httpRpcServerInternal.start()
+        startStopLock.write {
+            if (!running) {
+                httpRpcServerInternal.start()
+                running = true
+            }
+        }
     }
 
     override fun stop() {
-        log.info("Stop the server.")
-        httpRpcServerInternal.stop()
-    }
-
-    override fun close() {
-        log.info("Close the server.")
-        stop()
-        log.info("Close the server completed.")
+        startStopLock.write {
+            if (running) {
+                log.info("Stop the server.")
+                httpRpcServerInternal.stop()
+                running = false
+            }
+        }
     }
 
     private fun getResources(rpcOpsImpls: List<PluggableRPCOps<out RPCOps>>): List<Resource> {

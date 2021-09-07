@@ -118,6 +118,9 @@ allprojects {
         maven {
             url = "$artifactoryContextUrl/corda-dependencies"
         }
+        maven {
+            url = "$artifactoryContextUrl/corda-dependencies-dev"
+        }
         //needed for C5 binaries
         maven {
             url = "$artifactoryContextUrl/corda-os-maven-unstable"

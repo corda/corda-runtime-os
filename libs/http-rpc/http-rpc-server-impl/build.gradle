@@ -11,6 +11,7 @@ dependencies {
     implementation project(":osgi-framework-api")
 
     implementation project(":libs:http-rpc:http-rpc")
+    implementation project(":libs:lifecycle:lifecycle")
 
     implementation "net.corda:corda-base"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
