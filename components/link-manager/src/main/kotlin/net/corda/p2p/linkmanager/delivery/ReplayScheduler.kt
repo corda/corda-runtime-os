@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.delivery
 
 import net.corda.lifecycle.Lifecycle
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
@@ -8,8 +9,10 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
+import kotlin.concurrent.withLock
 import kotlin.concurrent.write
 
 /**
@@ -24,9 +27,14 @@ class ReplayScheduler<M>(
     @Volatile
     private var running = false
     private val startStopLock = ReentrantReadWriteLock()
+    private val replayLock = ReentrantLock()
 
     private lateinit var executorService: ScheduledExecutorService
     private val replayFutures = ConcurrentHashMap<String, ScheduledFuture<*>>()
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java)
+    }
 
     override val isRunning: Boolean
         get() = running
@@ -55,12 +63,37 @@ class ReplayScheduler<M>(
                 throw MessageAddedForReplayWhenNotStartedException(this::class.java.simpleName)
             }
             val delay = replayPeriod.toMillis() + originalAttemptTimestamp - currentTimestamp()
-            val future = executorService.scheduleAtFixedRate({ replayMessage(message) }, delay, replayPeriod.toMillis(), TimeUnit.MILLISECONDS)
+            val future = executorService.schedule({ replay(message, uniqueId) }, delay, TimeUnit.MILLISECONDS)
             replayFutures[uniqueId] = future
         }
     }
 
     fun removeFromReplay(uniqueId: String) {
-        replayFutures[uniqueId]?.cancel(false)
+        replayLock.withLock {
+            replayFutures[uniqueId]?.cancel(false)
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun replay(message: M, uniqueId: String) {
+        try {
+            replayMessage(message)
+        } catch (exception: Exception) {
+            logger.error("An exception was thrown when replaying a message. The task will be retired again in " +
+                "${replayPeriod.toMillis()} ms.\nException:",
+                exception
+            )
+            reschedule(message, uniqueId)
+        }
+        reschedule(message, uniqueId)
+    }
+
+    private fun reschedule(message: M, uniqueId: String) {
+        replayLock.withLock {
+            if (replayFutures[uniqueId]?.isCancelled == false) {
+                val future = executorService.schedule({ replay(message, uniqueId) }, replayPeriod.toMillis(), TimeUnit.MILLISECONDS)
+                replayFutures[uniqueId] = future
+            }
+        }
     }
 }

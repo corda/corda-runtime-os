@@ -1,6 +1,9 @@
 package net.corda.p2p.linkmanager.delivery
 
+import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.Duration
@@ -11,6 +14,18 @@ class ReplaySchedulerTest {
 
     companion object {
         private val replayPeriod = Duration.ofMillis(2)
+        lateinit var loggingInterceptor: LoggingInterceptor
+
+        @BeforeAll
+        @JvmStatic
+        fun setup() {
+            loggingInterceptor = LoggingInterceptor.setupLogging()
+        }
+    }
+
+    @AfterEach
+    fun resetLogging() {
+        loggingInterceptor.reset()
     }
 
     class TrackReplayedMessages(numUniqueMessages: Int) {
@@ -116,6 +131,38 @@ class ReplaySchedulerTest {
         tracker.secondPhaseWaitLatch.await()
         Assertions.assertArrayEquals(messageIdsToNotRemove.toTypedArray(), tracker.replayedMessageIds.keys.toTypedArray())
 
+        replayManager.stop()
+    }
+
+    class ThrowExceptionOnFirstReplay {
+        private val latch = CountDownLatch(2)
+        private var shouldThrow = true
+
+        @Suppress("UNUSED_PARAMETER")
+        fun replayMessage(arg: Any) {
+            latch.countDown()
+            if (shouldThrow) {
+                shouldThrow = false
+                throw MyException()
+            }
+        }
+
+        class MyException: Exception("Ohh No")
+
+        fun await() {
+            latch.await()
+        }
+    }
+
+    @Test
+    fun `The ReplayScheduler handles exceptions`() {
+        val throwOnFirstReplay = ThrowExceptionOnFirstReplay()
+        val replayManager = ReplayScheduler(replayPeriod, throwOnFirstReplay::replayMessage) { 0 }
+        replayManager.start()
+        replayManager.addForReplay(0, "", Any())
+        throwOnFirstReplay.await()
+        loggingInterceptor.assertErrorContains(
+            "An exception was thrown when replaying a message. The task will be retired again in ${replayPeriod.toMillis()} ms.")
         replayManager.stop()
     }
 }
