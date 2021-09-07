@@ -1,10 +1,7 @@
 package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
-import net.corda.serialization.CheckpointInput
 import net.corda.serialization.CheckpointInternalCustomSerializer
-import net.corda.serialization.CheckpointOutput
-import net.corda.v5.crypto.BasicHashingService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -23,31 +20,15 @@ internal class KryoCheckpointSerializerTest {
         const val someString = "this is a string"
     }
 
-    private class Tester(
-        val someInt: Int,
-        val someString: String
-    )
-
-    private class TesterSerializer : CheckpointInternalCustomSerializer<Tester> {
-        override fun write(output: CheckpointOutput, obj: Tester) {
-            output.writeInt(obj.someInt)
-            output.writeString(obj.someString)
-        }
-
-        override fun read(input: CheckpointInput, type: Class<Tester>): Tester {
-            return Tester(input.readInt(), input.readString())
-        }
-    }
-
     @Test
     fun `serialization of a simple object back a forth`() {
         val serializer = createCheckpointSerializer(
-            mapOf(Tester::class.java to TesterSerializer())
+            mapOf(TestClass::class.java to TestClass.Serializer())
         )
+        val tester = TestClass(someInt, someString)
 
-        val tester = Tester(someInt, someString)
         val bytes = serializer.serialize(tester)
-        val tested = serializer.deserialize(bytes, Tester::class.java)
+        val tested = serializer.deserialize(bytes, TestClass::class.java)
 
         assertThat(tested.someInt).isEqualTo(tester.someInt)
         assertThat(tested.someString).isEqualTo(tester.someString)
@@ -57,37 +38,47 @@ internal class KryoCheckpointSerializerTest {
     fun `serialization of a simple object back a forth from different threads`() {
         val executor = Executors.newSingleThreadExecutor()
         val serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>> =
-            mapOf(Tester::class.java to TesterSerializer())
+            mapOf(TestClass::class.java to TestClass.Serializer())
 
         var serializedBytes: ByteArray? = null
         // serialize in another thread
         executor.submit {
             val serializer = createCheckpointSerializer(serializers)
-            val tester = Tester(someInt, someString)
+            val tester = TestClass(someInt, someString)
             serializedBytes = serializer.serialize(tester)
         }.get()
 
         // deserialize in this one
         val serializer = createCheckpointSerializer(serializers)
-        val tested = serializer.deserialize(serializedBytes!!, Tester::class.java)
+        val tested = serializer.deserialize(serializedBytes!!, TestClass::class.java)
 
         assertThat(tested.someInt).isEqualTo(someInt)
         assertThat(tested.someString).isEqualTo(someString)
     }
 
+    @Test
+    fun `serialization of a simple object using the kryo default serialization`() {
+        val serializer = createCheckpointSerializer()
+        val tester = TestClass(someInt, someString)
+
+        val bytes = serializer.serialize(tester)
+        val tested = serializer.deserialize(bytes, TestClass::class.java)
+
+        assertThat(tested.someInt).isEqualTo(tester.someInt)
+        assertThat(tested.someString).isEqualTo(tester.someString)
+    }
+
     private fun createCheckpointSerializer(
-        serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>>
+        serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>> = emptyMap()
     ): KryoCheckpointSerializer {
-        val kryoFromQuasar = Kryo()
-        val hashingService: BasicHashingService = mock()
         val checkpointContext: CheckpointSerializationContext = mock()
         whenever(checkpointContext.classInfoService).thenReturn(mock())
         whenever(checkpointContext.sandboxGroup).thenReturn(mock())
 
         return KryoCheckpointSerializer(
-            kryoFromQuasar,
+            Kryo(),
             serializers,
-            hashingService,
+            mock(),
             checkpointContext
         )
     }

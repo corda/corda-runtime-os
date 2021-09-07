@@ -56,10 +56,10 @@ class KryoCheckpointSerializer(
     }
 
     override fun <T : Any> deserialize(
-        byteSequence: ByteArray,
+        bytes: ByteArray,
         clazz: Class<T>,
     ): T {
-        val payload = kryoMagic.consume(byteSequence)
+        val payload = kryoMagic.consume(bytes)
             ?: throw KryoException("Serialized bytes header does not match expected format.")
         return kryoInput(ByteArrayInputStream(payload)) {
             uncheckedCast(kryo.readClassAndObject(this))
