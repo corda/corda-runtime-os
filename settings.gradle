@@ -44,7 +44,6 @@ pluginManagement {
         id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
         id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
-        id 'corda.common-library' version internalPublishVersion
     }
 }
 
@@ -88,6 +87,7 @@ include 'libs:flows:statemachine'
 include 'libs:flows:statemachine-impl'
 include 'libs:http-rpc:http-rpc'
 include 'libs:http-rpc:http-rpc-tools'
+include 'libs:http-rpc:json-serialization'
 include 'libs:kafka-utils:topic-admin'
 include 'libs:kafka-utils:topic-admin-impl'
 include 'libs:kotlin-reflection'

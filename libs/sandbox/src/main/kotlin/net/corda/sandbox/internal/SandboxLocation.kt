@@ -12,12 +12,15 @@ data class SandboxLocation(val id: UUID, val uri: URI) {
             val components = string.split('/')
 
             if (components.size != 3) {
-                throw SandboxException("Sandbox bundle location had incorrect format: $string. Expected " +
-                        "\"sandbox/{sandbox-id}/{sandbox-source-uri}\".")
+                throw SandboxException(
+                    "Sandbox bundle location had incorrect format: $string. Expected " +
+                            "\"sandbox/{sandbox-id}/{sandbox-source-uri}\"."
+                )
             }
 
-            if (components[0] != "sandbox") throw SandboxException("Sandbox bundle location had incorrect format: " +
-                    "$string. Expected first component to be \"sandbox\".")
+            if (components[0] != "sandbox") throw SandboxException(
+                "Sandbox bundle location had incorrect format: $string. Expected first component to be \"sandbox\"."
+            )
 
             val sandboxId = try {
                 UUID.fromString(components[1])

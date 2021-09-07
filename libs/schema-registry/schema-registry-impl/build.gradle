@@ -4,16 +4,16 @@ plugins {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-base"
     implementation "org.apache.avro:avro:$avroVersion"
     implementation "net.corda:avro-schema"
     implementation project(":libs:schema-registry:schema-registry")
 
-    testRuntimeOnly "org.osgi:osgi.core:$osgiVersion"
+    testRuntimeOnly 'org.osgi:osgi.core'
 }
 
 description 'Schema Registry Library Implementation'

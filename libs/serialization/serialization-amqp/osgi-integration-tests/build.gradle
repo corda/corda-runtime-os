@@ -30,10 +30,10 @@ dependencies {
     cpks project(path: ':libs:serialization:serialization-amqp:osgi-integration-tests:test-serializable-3', configuration: 'cordaCPK')
     cpks project(path: ':libs:serialization:serialization-amqp:osgi-integration-tests:test-serializable-4', configuration: 'cordaCPK')
 
-    integrationTestCompileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
-    integrationTestCompileOnly "org.osgi:osgi.annotation:$osgiVersion"
+    integrationTestCompileOnly 'org.osgi:org.osgi.service.component.annotations'
+    integrationTestCompileOnly 'org.osgi:osgi.annotation'
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
-    integrationTestCompileOnly "org.osgi:osgi.core:$osgiVersion"
+    integrationTestCompileOnly 'org.osgi:osgi.core'
 
     integrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
@@ -44,9 +44,8 @@ dependencies {
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
-    integrationTestImplementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
-    integrationTestImplementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
-    integrationTestImplementation "org.slf4j:slf4j-api:$slf4jVersion"
+    integrationTestImplementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    integrationTestImplementation "org.slf4j:slf4j-api"
     integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
     integrationTestImplementation "org.apache.qpid:proton-j:$protonjVersion"
 }

@@ -1,7 +1,6 @@
 plugins {
     id 'biz.aQute.bnd.builder'
     id 'com.r3.internal.gradle.plugins.r3Publish'
-    id 'corda.common-library'
 }
 description 'Corda Serialization encoding'
 
@@ -13,14 +12,14 @@ configurations {
 }
 
 dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
     compileOnly "org.iq80.snappy:snappy:$snappyVersion"
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
 
-    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.slf4j:slf4j-api'
 }
 
 def jar = tasks.named('jar', Jar) {

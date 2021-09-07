@@ -4,7 +4,7 @@ package net.corda.lifecycle
  * This interface defines a component it can [start] and [stop] and be used as a try-with-resource as
  *
  * ```kotlin
- * object: LifeCycle { ... }.use { lifecycle -> ... }
+ * object: Lifecycle { ... }.use { lifecycle -> ... }
  * ```
  *
  * When the component goes out of scope, [close] is automatically called, hence [stop].
