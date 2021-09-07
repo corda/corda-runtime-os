@@ -43,12 +43,19 @@ class KafkaBackedCryptoServiceTest {
     @Test
     fun `crypto service can sign payloads successfully`() {
         val snapshot = mapOf(
-            "key-1" to KeyPairEntry(KeyAlgorithm.RSA, ByteBuffer.wrap(firstKeyPair.public.encoded), ByteBuffer.wrap(firstKeyPair.private.encoded)),
-            "key-2" to KeyPairEntry(KeyAlgorithm.ECDSA, ByteBuffer.wrap(secondKeyPair.public.encoded), ByteBuffer.wrap(secondKeyPair.private.encoded))
+            "key-1" to KeyPairEntry(
+                KeyAlgorithm.RSA,
+                ByteBuffer.wrap(firstKeyPair.public.encoded),
+                ByteBuffer.wrap(firstKeyPair.private.encoded)
+            ),
+            "key-2" to KeyPairEntry(
+                KeyAlgorithm.ECDSA,
+                ByteBuffer.wrap(secondKeyPair.public.encoded),
+                ByteBuffer.wrap(secondKeyPair.private.encoded)
+            )
         )
         clientProcessor!!.onSnapshot(snapshot)
         val payload = "some-payload".toByteArray()
-
 
         var signedData = cryptoService.signData(firstKeyPair.public, payload)
         rsaSignature.initVerify(firstKeyPair.public)
@@ -60,5 +67,4 @@ class KafkaBackedCryptoServiceTest {
         ecdsaSignature.update(payload)
         assertTrue(ecdsaSignature.verify(signedData))
     }
-
 }
