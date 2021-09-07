@@ -37,22 +37,24 @@ class HttpRpcGateway(
     get() = receivedSnapshot
 
     fun start(bootstrapConfig: Config) {
+        log.info("Starting with bootstrapped config")
         this.bootstrapConfig = bootstrapConfig
         this.start()
     }
 
     override fun start() {
+        log.info("Starting from lifecycle event")
         if(bootstrapConfig != null) {
             configReadService = readServiceFactory.createReadService(bootstrapConfig!!)
             val lister = ConfigListener { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
                 if (!receivedSnapshot) {
                     if (changedKeys.contains(MESSAGING_CONFIG)) {
-                        log.info("Config read service config snapshot received")
+                        log.info("Config snapshot received")
                         receivedSnapshot = true
                         lifeCycleCoordinator.postEvent(ConfigReceivedEvent(currentConfigurationSnapshot))
                     }
                 } else {
-                    log.info("Config read service config update received")
+                    log.info("Config update received")
                     if (changedKeys.contains(MESSAGING_CONFIG)) {
                         log.info("Config update contains kafka config")
                         lifeCycleCoordinator.postEvent(MessagingConfigUpdateEvent(currentConfigurationSnapshot))
