@@ -12,27 +12,8 @@ buildscript {
         // Remember where our Java executable lives (until Bnd supports Gradle toolchains).
         javaExecutable = file("${System.getProperty('java.home')}/bin/java")
 
+        // Create another Quasar property in this repository's chosen format.
         quasarVersion = quasar_version
-        quasar_exclusions = [
-                'co.paralleluniverse**',
-                'com.esotericsoftware.**',
-                'jdk**',
-                'junit**',
-                'kotlin**',
-                'net.rubygrapefruit.**',
-                'org.gradle.**',
-                'org.apache.**',
-                'org.jacoco.**',
-                'org.junit**',
-                'org.slf4j**',
-                'worker.org.gradle.**',
-                'com.nhaarman.mockito_kotlin**',
-                'org.assertj**',
-                'org.hamcrest**',
-                'org.mockito**',
-                'org.opentest4j**',
-                'org.eclipse**'
-        ]
     }
 }
 

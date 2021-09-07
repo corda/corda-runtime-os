@@ -27,9 +27,11 @@ pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
 configurations {
     systemPackages {
         transitive = false
+        canBeConsumed = false
     }
     bootstrapClasspath {
         transitive = true
+        canBeConsumed = false
         extendsFrom(systemPackages)
         attributes { attrs ->
             attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR))
@@ -40,6 +42,7 @@ configurations {
     }
     bundles {
         transitive = true
+        canBeConsumed = false
         extendsFrom(runtimeClasspath)
         attributes { attrs ->
             attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR))

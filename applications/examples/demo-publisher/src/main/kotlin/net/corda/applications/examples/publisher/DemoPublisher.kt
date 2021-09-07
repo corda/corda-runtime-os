@@ -111,7 +111,7 @@ class DemoPublisher @Activate constructor(
             if (default != null) {
                 return default
             }
-            throw RuntimeException("No $path property found! " +
+            throw IllegalArgumentException("No $path property found! " +
                     "Pass property in via --kafka properties file or via -D$path")
         }
         return configValue

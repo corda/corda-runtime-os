@@ -7,7 +7,6 @@ import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.osgi.api.Application
 import net.corda.v5.base.util.contextLogger
-import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -16,8 +15,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
-import java.lang.IllegalArgumentException
-import java.util.*
+import java.util.Properties
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)

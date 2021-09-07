@@ -119,7 +119,7 @@ internal class OSGiFrameworkWrapTest {
             frameworkStorageDir,
             OSGiFrameworkWrap.getFrameworkPropertyFrom(OSGiFrameworkMain.SYSTEM_PACKAGES_EXTRA)
         )
-        OSGiFrameworkWrap(framework).use { frameworkWrap ->
+        OSGiFrameworkWrap(framework).let { frameworkWrap ->
             frameworkWrap.start()
             frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
             frameworkWrap.activate()
@@ -154,7 +154,7 @@ internal class OSGiFrameworkWrapTest {
             frameworkStorageDir,
             OSGiFrameworkWrap.getFrameworkPropertyFrom(OSGiFrameworkMain.SYSTEM_PACKAGES_EXTRA)
         )
-        OSGiFrameworkWrap(framework).use { frameworkWrap ->
+        OSGiFrameworkWrap(framework).let { frameworkWrap ->
             frameworkWrap.start()
             frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
             val bundleLocationList = readTextLines(OSGiFrameworkMain.SYSTEM_BUNDLES)
@@ -170,7 +170,7 @@ internal class OSGiFrameworkWrapTest {
     fun install_IllegalStateException(frameworkFactoryFQN: String) {
         assertThrows<IllegalStateException> {
             val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
-            OSGiFrameworkWrap(framework).use { frameworkWrap ->
+            OSGiFrameworkWrap(framework).let { frameworkWrap ->
                 frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
             }
         }
@@ -181,7 +181,7 @@ internal class OSGiFrameworkWrapTest {
     fun install_IOException(frameworkFactoryFQN: String) {
         assertThrows<IOException> {
             val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
-            OSGiFrameworkWrap(framework).use { frameworkWrap ->
+            OSGiFrameworkWrap(framework).let { frameworkWrap ->
                 frameworkWrap.start()
                 frameworkWrap.install(NO_SYSTEM_BUNDLES)
             }
@@ -193,7 +193,7 @@ internal class OSGiFrameworkWrapTest {
     fun installBundleJar_IOException(frameworkFactoryFQN: String) {
         assertThrows<IOException> {
             val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
-            OSGiFrameworkWrap(framework).use { frameworkWrap ->
+            OSGiFrameworkWrap(framework).let { frameworkWrap ->
                 frameworkWrap.start()
                 frameworkWrap.install(SICK_SYSTEM_BUNDLES)
             }
@@ -205,7 +205,7 @@ internal class OSGiFrameworkWrapTest {
     fun installBundleList_IOException(frameworkFactoryFQN: String) {
         assertThrows<IOException> {
             val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
-            OSGiFrameworkWrap(framework).use { frameworkWrap ->
+            OSGiFrameworkWrap(framework).let { frameworkWrap ->
                 frameworkWrap.start()
                 frameworkWrap.install(NO_SYSTEM_BUNDLES)
             }
@@ -221,7 +221,7 @@ internal class OSGiFrameworkWrapTest {
             assertTrue(startupStateAtomic.get() < frameworkEvent.bundle.state)
             assertTrue(startupStateAtomic.compareAndSet(startupStateAtomic.get(), frameworkEvent.bundle.state))
         })
-        OSGiFrameworkWrap(framework).use { frameworkWrap ->
+        OSGiFrameworkWrap(framework).let { frameworkWrap ->
             framework.bundleContext.addBundleListener { bundleEvent ->
                 assertTrue(bundleEvent.type >= BundleEvent.STARTED)
                 assertEquals(framework, bundleEvent.bundle)
@@ -234,7 +234,7 @@ internal class OSGiFrameworkWrapTest {
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
     fun stop(frameworkFactoryFQN: String) {
         val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
-        OSGiFrameworkWrap(framework).use { frameworkWrap ->
+        OSGiFrameworkWrap(framework).let { frameworkWrap ->
             frameworkWrap.start()
             assertEquals(Bundle.ACTIVE, framework.state)
             framework.bundleContext.addBundleListener { bundleEvent ->

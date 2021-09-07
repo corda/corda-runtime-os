@@ -1,6 +1,5 @@
 plugins {
-    id 'net.corda.plugins.quasar-utils'
-    id 'corda.common-app'
+    id 'corda.quasar-app'
 }
 
 dependencies {
@@ -11,10 +10,6 @@ dependencies {
     implementation "org.slf4j:slf4j-api"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation "com.esotericsoftware:kryo:$kryoVersion"
-    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
-    systemPackages "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
-
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
@@ -23,13 +18,3 @@ dependencies {
 
 description 'Quasar fiber example'
 
-osgiRun {
-    frameworkProperties = [
-            "org.osgi.framework.bootdelegation" :
-                    "co.paralleluniverse.fibers.suspend," +
-                            "com.esotericsoftware.reflectasm," +
-                            "org.jolokia.jvmagent,org.jolokia.util",
-            "org.osgi.framework.bundle.parent" : "app"
-    ]
-    agent("co.paralleluniverse.fibers.instrument.JavaAgent", project.quasar.options.map { it.substring(1) }.get())
-}

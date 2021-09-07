@@ -64,7 +64,8 @@ class OSGiFrameworkWrap(
             override fun toString() = description
 
             companion object {
-                fun fromCode(code: Int) = values().find { it.code == code } ?: throw IllegalArgumentException("Unknown bundle state with code $code")
+                fun fromCode(code: Int) = values().find { it.code == code }
+                    ?: throw IllegalArgumentException("Unknown bundle state with code $code")
             }
         }
 
