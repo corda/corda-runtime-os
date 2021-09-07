@@ -1,11 +1,5 @@
 package net.corda.messaging.kafka.publisher
 
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -35,6 +29,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.function.Executable
 import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
@@ -125,7 +125,6 @@ class CordaKafkaPublisherImplTest {
         assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
     }
 
-
     @Test
     fun testPublishUnknownError() {
         mockProducer = MockProducer(false, StringSerializer(), ByteBufferSerializer())
@@ -161,7 +160,6 @@ class CordaKafkaPublisherImplTest {
         verify(producer, times(1)).tryCommitTransaction()
     }
 
-
     @Test
     fun testTransactionBeginTransactionFailureIllegalStateException() {
         doThrow(IllegalStateException("")).whenever(producer).beginTransaction()
@@ -181,7 +179,6 @@ class CordaKafkaPublisherImplTest {
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(0)).tryCommitTransaction()
     }
-
 
     @Test
     fun testTransactionBeginTransactionAuthorizationException() {
@@ -346,7 +343,10 @@ class CordaKafkaPublisherImplTest {
         return cordaKafkaPublisherImpl.publish(records)
     }
 
-    private fun publishToPartition(isTransaction: Boolean = false, recordsWithPartitions: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
+    private fun publishToPartition(
+        isTransaction: Boolean = false,
+        recordsWithPartitions: List<Pair<Int, Record<*, *>>>
+    ): List<CompletableFuture<Unit>> {
         val publisherConfig = if (isTransaction) {
             kafkaConfig
                 .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
@@ -360,5 +360,4 @@ class CordaKafkaPublisherImplTest {
 
         return cordaKafkaPublisherImpl.publishToPartition(recordsWithPartitions)
     }
-
 }

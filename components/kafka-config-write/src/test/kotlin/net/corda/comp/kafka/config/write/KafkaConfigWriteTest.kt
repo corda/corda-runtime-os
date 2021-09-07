@@ -11,7 +11,11 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import org.mockito.Captor
 import org.mockito.Mockito
-import org.mockito.kotlin.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.capture
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import java.io.BufferedReader
 
 class KafkaConfigWriteTest {
@@ -24,14 +28,12 @@ class KafkaConfigWriteTest {
     @Captor
     var keyCaptor: ArgumentCaptor<CordaConfigurationKey> = ArgumentCaptor.forClass(CordaConfigurationKey::class.java)
 
-
     @BeforeEach
     fun beforeEach() {
         kafkaConfigWrite = KafkaConfigWrite(configWriteServiceFactory)
         Mockito.`when`(configWriteServiceFactory.createWriteService(any(), any()))
             .thenReturn(configWriteService)
     }
-
 
     @Test
     fun `test config is read and saved properly`() {
@@ -54,7 +56,6 @@ class KafkaConfigWriteTest {
         verify(configWriteService, times(2)).updateConfiguration(capture(keyCaptor), any())
         Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
         Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
-
     }
 
     @Test
@@ -78,8 +79,6 @@ class KafkaConfigWriteTest {
         Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
         Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
     }
-
-
 
     @Test
     fun `test saving multi package configs while filtering out unversioned packages `() {

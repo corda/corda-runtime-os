@@ -92,5 +92,4 @@ class AuthenticationProtocolTest {
         assertThat(responderHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
         protocolInitiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, keyAlgo)
     }
-
 }

@@ -70,11 +70,11 @@ class AMQPExceptionsTests {
     // if the exception is a normal not serializable exception we'll have manipulated the
     // message
     @Test
-	fun catchNotSerializable() {
+    fun catchNotSerializable() {
         fun catchAssert(msg: String, f: () -> Unit) {
             Assertions.assertThatThrownBy { f() }
-                    .isInstanceOf(NotSerializableException::class.java)
-                    .hasMessageContaining(msg)
+                .isInstanceOf(NotSerializableException::class.java)
+                .hasMessageContaining(msg)
         }
 
         catchAssert("$aName -> END") {
@@ -97,7 +97,8 @@ class AMQPExceptionsTests {
     // However, if its a shiny new AMQPNotSerializable one, we have cool new toys, so
     // lets make sure those are set
     @Test
-	fun catchAMQPNotSerializable() {
+    fun catchAMQPNotSerializable() {
+        @Suppress("TooGenericExceptionThrown")
         fun catchAssert(stack: List<String>, f: () -> Unit): AMQPNotSerializableException {
             try {
                 f()
@@ -109,14 +110,14 @@ class AMQPExceptionsTests {
             throw Exception("FAILED")
         }
 
-
         catchAssert(listOf(ENDAMQP::class.java.name, aName)) {
             A(ENDAMQP(true)).run()
         }.apply {
             assertEquals(
-                    "Serialization failed direction=\"up\", type=\"$eaName\", msg=\"End it all\", " +
-                            "ClassChain=\"$aName -> $eaName\"",
-                    errorMessage("up"))
+                "Serialization failed direction=\"up\", type=\"$eaName\", msg=\"End it all\", " +
+                    "ClassChain=\"$aName -> $eaName\"",
+                errorMessage("up")
+            )
         }
 
         catchAssert(listOf(ENDAMQP::class.java.name, aName, aName)) {

@@ -227,7 +227,9 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalArgumentException()).whenever(consumer).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
+        doThrow(IllegalArgumentException())
+            .whenever(consumer).subscribe(
+                Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             cordaKafkaConsumer.subscribeToTopic()
         }
