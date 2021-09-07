@@ -1,4 +1,8 @@
 package net.corda.httprpc.server
 
-interface HttpRpcServer : AutoCloseable{
+interface HttpRpcServer {
+
+    fun start()
+    fun stop()
+    fun close()
 }

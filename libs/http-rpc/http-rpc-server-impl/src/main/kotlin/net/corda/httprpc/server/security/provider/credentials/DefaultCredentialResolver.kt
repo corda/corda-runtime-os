@@ -1,0 +1,36 @@
+package net.corda.httprpc.server.security.provider.credentials
+
+import io.javalin.core.util.Header.AUTHORIZATION
+import io.javalin.http.Context
+import net.corda.httprpc.server.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
+import net.corda.httprpc.server.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
+import javax.security.auth.login.FailedLoginException
+
+internal class DefaultCredentialResolver : CredentialResolver {
+    companion object {
+        private val TOKEN_PATTERN = "^Bearer (?<token>[a-zA-Z0-9-._~+/]+=*)$".toRegex()
+        private val log = contextLogger()
+    }
+
+    override fun resolve(context: Context): AuthenticationCredentials? {
+        val authorization = context.header(AUTHORIZATION) ?: return null
+
+        return when {
+            authorization.startsWith("bearer", true) -> {
+                log.trace { "Get bearer token auth credentials." }
+                val match = TOKEN_PATTERN.matchEntire(authorization) ?: throw FailedLoginException("Malformed Bearer token.")
+                BearerTokenAuthenticationCredentials(match.groups["token"]!!.value)
+            }
+            context.basicAuthCredentialsExist() -> {
+                log.trace { "Get basic auth credentials." }
+                val creds = context.basicAuthCredentials()
+                UsernamePasswordAuthenticationCredentials(creds.username, creds.password)
+            }
+            else -> {
+                null
+            }
+        }
+    }
+}

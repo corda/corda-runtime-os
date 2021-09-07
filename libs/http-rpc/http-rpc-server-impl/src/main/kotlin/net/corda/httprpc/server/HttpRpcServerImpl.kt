@@ -1,0 +1,86 @@
+package net.corda.httprpc.server
+
+import net.corda.ext.internal.rpc.security.RPCSecurityManager
+import net.corda.v5.application.messaging.RPCOps
+import net.corda.ext.api.rpc.PluggableRPCOps
+import net.corda.httprpc.server.apigen.models.Resource
+import net.corda.httprpc.server.apigen.processing.APIStructureRetriever
+import net.corda.httprpc.server.apigen.processing.JavalinRouteProviderImpl
+import net.corda.httprpc.server.apigen.processing.openapi.OpenApiInfoProvider
+import net.corda.httprpc.server.config.HttpRpcSettingsProvider
+import net.corda.httprpc.server.config.impl.HttpRpcObjectSettingsProvider
+import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.internal.HttpRpcServerInternal
+import net.corda.httprpc.server.security.SecurityManagerRPCImpl
+import net.corda.httprpc.server.security.provider.AuthenticationProvider
+import net.corda.httprpc.server.security.provider.basic.UsernamePasswordAuthenticationProvider
+import net.corda.httprpc.server.security.provider.bearer.azuread.AzureAdAuthenticationProvider
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
+
+@SuppressWarnings("TooGenericExceptionThrown", "TooGenericExceptionCaught", "LongParameterList")
+class HttpRPCServerImpl(
+    rpcOpsImpls: List<PluggableRPCOps<out RPCOps>>,
+    rpcSecurityManager: RPCSecurityManager,
+    httpRpcSettings: HttpRpcSettings,
+    devMode: Boolean,
+    cordappClassLoader: ClassLoader
+
+): HttpRpcServer {
+    private companion object {
+        private val log = contextLogger()
+    }
+
+
+    private val resources = getResources(rpcOpsImpls)
+    private val httpRpcObjectConfigProvider = HttpRpcObjectSettingsProvider(httpRpcSettings, devMode)
+    private val httpRpcServerInternal = HttpRpcServerInternal(
+        JavalinRouteProviderImpl(httpRpcSettings.context.basePath, httpRpcSettings.context.version, resources, cordappClassLoader),
+        SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManager)),
+        httpRpcObjectConfigProvider,
+        OpenApiInfoProvider(resources, httpRpcObjectConfigProvider)
+    )
+
+    override fun start() {
+        httpRpcServerInternal.start()
+    }
+
+    override fun stop() {
+        log.info("Stop the server.")
+        httpRpcServerInternal.stop()
+    }
+
+    override fun close() {
+        log.info("Close the server.")
+        stop()
+        log.info("Close the server completed.")
+    }
+
+    private fun getResources(rpcOpsImpls: List<PluggableRPCOps<out RPCOps>>): List<Resource> {
+        log.debug { "Get resources for RPCOps implementations of ${rpcOpsImpls.joinToString()}." }
+        var resources = emptyList<Resource>()
+        log.trace { "Generating resource model for http rpc" }
+        APIStructureRetriever(rpcOpsImpls).structure.doOnFailure {
+            "Error during Get resources for RPCOps implementations of ${rpcOpsImpls.joinToString()}".let { msg ->
+                log.error("$msg: ${it.message}")
+                throw Exception(msg, it)
+            }
+        }.doOnSuccess { res ->
+            log.debug { "Http RPC resources count: ${res.size}" }
+            resources = res
+        }
+
+        log.debug { "Get resources for RPCOps implementations of ${rpcOpsImpls.joinToString()} completed." }
+        return resources
+    }
+
+    private fun createAuthenticationProviders(settings: HttpRpcSettingsProvider, rpcSecurityManager: RPCSecurityManager): Set<AuthenticationProvider> {
+        val result = mutableSetOf<AuthenticationProvider>(UsernamePasswordAuthenticationProvider(rpcSecurityManager))
+        val azureAdSettings = settings.getSsoSettings()?.azureAd()
+        if(azureAdSettings != null) {
+            result.add(AzureAdAuthenticationProvider.createDefault(azureAdSettings, rpcSecurityManager))
+        }
+        return result
+    }
+}
