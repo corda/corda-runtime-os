@@ -1,8 +1,10 @@
 package net.corda.osgi.framework
 
+import net.corda.osgi.api.ExitCode
 import net.corda.osgi.framework.OSGiFrameworkMain.main
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
+import kotlin.system.exitProcess
 
 /**
  * This class provided the main entry point for the applications built with the `corda.common-app` plugin.
@@ -80,6 +82,8 @@ object OSGiFrameworkMain {
     @Suppress("TooGenericExceptionCaught")
     fun main(args: Array<String>) {
         val logger = LoggerFactory.getLogger(OSGiFrameworkMain::class.java)
+        var exitCode = ExitCode.SUCCESS
+        var osgiFrameworkWrap : OSGiFrameworkWrap? = null
         try {
             val frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX)
             Runtime.getRuntime().addShutdownHook(Thread {
@@ -89,29 +93,24 @@ object OSGiFrameworkMain {
                     ?.sorted(Comparator.reverseOrder())
                     ?.forEach(Files::delete)
             })
-            val osgiFrameworkWrap = OSGiFrameworkWrap(
+            osgiFrameworkWrap = OSGiFrameworkWrap(
                 OSGiFrameworkWrap.getFrameworkFrom(
                     FRAMEWORK_FACTORY_FQN,
                     frameworkStorageDir,
                     OSGiFrameworkWrap.getFrameworkPropertyFrom(SYSTEM_PACKAGES_EXTRA)
                 )
             )
-            try {
-                osgiFrameworkWrap
-                    .start()
-                    .install(SYSTEM_BUNDLES)
-                    .activate()
-                    .waitForStop(NO_TIMEOUT)
-            } catch (e: Exception) {
-                logger.error("Error: ${e.message}!", e)
-            }
-            osgiFrameworkWrap.exitCode?.let(System::exit)
-        } catch (e: IllegalArgumentException) {
-            logger.error("Error: ${e.message}!", e)
-        } catch (e: UnsupportedOperationException) {
-            logger.error("Error: ${e.message}!", e)
-        } catch (e: SecurityException) {
-            logger.error("Error: ${e.message}!", e)
+            osgiFrameworkWrap
+                .start()
+                .install(SYSTEM_BUNDLES)
+                .activate()
+        } catch(ex : Exception) {
+            logger.error(ex.message, ex)
+            osgiFrameworkWrap?.stop()
+            exitCode = ExitCode.ERROR
+        } finally {
+            osgiFrameworkWrap?.waitForStop(NO_TIMEOUT)
         }
+        exitProcess(osgiFrameworkWrap?.exitCode ?: exitCode)
     }
 }
