@@ -1,11 +1,13 @@
-package net.corda.ext.internal.rpc.security
+package net.corda.httprpc.security
 
-import net.corda.ext.internal.logging.context.pushToLoggingContext
-import net.corda.internal.application.context.InvocationContext
+
+import net.corda.ext.internal.rpc.security.AuthorizingSubject
 import org.slf4j.MDC
 
-data class RpcAuthContext(val invocation: InvocationContext.Rpc,
-                          private val authorizer: AuthorizingSubject)
+data class RpcAuthContext(
+    val invocation: InvocationContext.Rpc,
+                          private val authorizer: AuthorizingSubject
+)
     : AuthorizingSubject by authorizer
 
 
@@ -32,7 +34,7 @@ internal class CurrentRpcContext : ThreadLocal<RpcAuthContext>() {
             context != null -> {
                 super.set(context)
                 // this is needed here as well because the Shell sets the context without going through the RpcServer
-                context.invocation.pushToLoggingContext()
+                //context.invocation.pushToLoggingContext()
             }
             else -> remove()
         }

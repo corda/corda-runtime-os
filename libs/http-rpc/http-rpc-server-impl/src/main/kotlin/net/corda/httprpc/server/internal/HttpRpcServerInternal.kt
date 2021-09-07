@@ -8,34 +8,22 @@ import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.HandlerType
 import io.javalin.http.HttpResponseException
-import io.javalin.http.NotFoundResponse
 import io.javalin.http.UnauthorizedResponse
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
 import net.corda.v5.application.flows.BadRpcStartFlowRequestException
-import net.corda.v5.application.identity.CordaX500Name
-import net.corda.ext.api.flow.FlowNotFoundException
-import net.corda.ext.api.flow.StartFlowPermissionException
-import net.corda.ext.api.network.InvalidCordaX500NameException
-import net.corda.ext.api.network.MemberNotFoundException
 import net.corda.ext.internal.rpc.security.AuthorizingSubject
-import net.corda.ext.internal.rpc.security.CURRENT_RPC_CONTEXT
-import net.corda.ext.internal.rpc.security.RpcAuthContext
 import net.corda.httprpc.server.apigen.processing.RouteInfo
 import net.corda.httprpc.server.apigen.processing.RouteProvider
 import net.corda.httprpc.server.apigen.processing.openapi.OpenApiInfoProvider
 import net.corda.httprpc.server.config.HttpRpcSettingsProvider
-import net.corda.httprpc.server.exceptions.MissingParameterException
 import net.corda.httprpc.server.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.server.utils.addHeaderValues
-import net.corda.internal.application.executeWithThreadContextClassLoader
-import net.corda.internal.application.context.Actor
-import net.corda.internal.application.context.InvocationContext
-import net.corda.nodeapi.internal.lifecycle.ServiceStateSupport
+import net.corda.httprpc.server.utils.executeWithThreadContextClassLoader
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.internal.base.rootCause
-import net.corda.internal.base.rootMessage
+import net.corda.utilities.rootCause
+import net.corda.utilities.rootMessage
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -153,8 +141,9 @@ internal class HttpRpcServerInternal(
 
         try {
             return securityManager.authenticate(credentials).also {
-                val rpcAuthContext = RpcAuthContext(InvocationContext.Rpc(Actor.service(this::javaClass.toString(), CordaX500Name.parse(CORDA_X500_NAME))), it)
-                CURRENT_RPC_CONTEXT.set(rpcAuthContext)
+                //TODO no auth context set
+//                val rpcAuthContext = RpcAuthContext(InvocationContext.Rpc(Actor.service(this::javaClass.toString(), CordaX500Name.parse(CORDA_X500_NAME))), it)
+//                CURRENT_RPC_CONTEXT.set(rpcAuthContext)
                 log.trace { """Authenticate user "${it.principal}" completed.""" }
             }
         } catch (e: FailedLoginException) {
@@ -264,13 +253,15 @@ internal class HttpRpcServerInternal(
         val messageEscaped = message.replace("\n", " ")
         when (e) {
             is HttpResponseException -> throw e
-            is StartFlowPermissionException -> throw ForbiddenResponse(messageEscaped)
-            is FlowNotFoundException -> throw NotFoundResponse(messageEscaped)
+
             is BadRpcStartFlowRequestException -> throw BadRequestResponse(messageEscaped)
             is JsonProcessingException -> throw BadRequestResponse(messageEscaped)
-            is MissingParameterException -> throw BadRequestResponse(messageEscaped)
-            is InvalidCordaX500NameException -> throw BadRequestResponse(messageEscaped)
-            is MemberNotFoundException -> throw NotFoundResponse(messageEscaped)
+//TODO restore these when possible
+//            is StartFlowPermissionException -> throw ForbiddenResponse(messageEscaped)
+//            is FlowNotFoundException -> throw NotFoundResponse(messageEscaped)
+//            is MissingParameterException -> throw BadRequestResponse(messageEscaped)
+//            is InvalidCordaX500NameException -> throw BadRequestResponse(messageEscaped)
+//            is MemberNotFoundException -> throw NotFoundResponse(messageEscaped)
 
             else -> {
                 with(mutableMapOf<String, String>()) {
@@ -283,7 +274,7 @@ internal class HttpRpcServerInternal(
         }
     }
 
-    override fun start() {
+     fun start() {
         val existingSystemErrStream = System.err
         try {
             log.trace { "Starting the Javalin server." }
@@ -303,7 +294,7 @@ internal class HttpRpcServerInternal(
         }
     }
 
-    override fun stop() {
+     fun stop() {
         log.trace { "Stop the Javalin server." }
         server.stop()
         log.trace { "Stop the Javalin server completed." }

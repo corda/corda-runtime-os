@@ -5,7 +5,7 @@ import io.javalin.http.Context
 import io.javalin.plugin.json.JavalinJson
 import net.corda.httprpc.server.apigen.processing.Parameter
 import net.corda.httprpc.server.apigen.processing.ParameterType
-import net.corda.httprpc.server.exceptions.MissingParameterException
+import net.corda.httprpc.server.exception.MissingParameterException
 import net.corda.httprpc.server.utils.mapTo
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace

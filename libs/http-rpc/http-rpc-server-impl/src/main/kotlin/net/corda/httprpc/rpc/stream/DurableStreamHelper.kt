@@ -1,8 +1,8 @@
-package net.corda.ext.api.rpc.stream
+package net.corda.httprpc.rpc.stream
 
 import net.corda.v5.base.stream.FiniteDurableCursorBuilder
 import net.corda.internal.base.stream.DurableStreamContext
-import net.corda.ext.internal.rpc.security.rpcContext
+import net.corda.httprpc.security.rpcContext
 import net.corda.internal.base.stream.DurableCursorTransferObject
 import net.corda.internal.base.stream.DurableCursorTransferObject.Companion.PollResultImpl
 import net.corda.internal.base.stream.DurableCursorTransferObject.Companion.PositionedValueImpl

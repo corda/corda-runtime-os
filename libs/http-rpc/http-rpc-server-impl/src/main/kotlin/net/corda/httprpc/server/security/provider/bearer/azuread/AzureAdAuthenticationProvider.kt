@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.security.provider.bearer.azuread
 
 import com.nimbusds.jose.util.DefaultResourceRetriever
-import net.corda.ext.internal.rpc.security.RPCSecurityManager
+import net.corda.httprpc.security.RPCSecurityManager
 import net.corda.httprpc.server.config.AzureAdSettingsProvider
 import net.corda.httprpc.server.security.provider.bearer.oauth.JwtAuthenticationProvider
 import net.corda.httprpc.server.security.provider.bearer.oauth.JwtProcessor
@@ -12,7 +12,8 @@ import net.corda.httprpc.server.security.provider.scheme.AuthenticationSchemePro
 
 internal class AzureAdAuthenticationProvider(private val settings: AzureAdSettingsProvider,
                                              jwtProcessor: JwtProcessor,
-                                             rpcSecurityManager: RPCSecurityManager) :
+                                             rpcSecurityManager: RPCSecurityManager
+) :
         JwtAuthenticationProvider(jwtProcessor,
                 PriorityListJwtClaimExtractor(settings.getPrincipalClaimList()),
                 rpcSecurityManager), AuthenticationSchemeProvider {

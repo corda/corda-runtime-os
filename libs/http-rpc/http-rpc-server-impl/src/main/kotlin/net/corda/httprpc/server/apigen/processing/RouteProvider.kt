@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.apigen.processing
 
 import net.corda.v5.base.util.contextLogger
-import net.corda.ext.api.rpc.proxies.RpcAuthHelper
+import net.corda.httprpc.rpc.proxies.RpcAuthHelper
 import net.corda.httprpc.server.apigen.models.Endpoint
 import net.corda.httprpc.server.apigen.models.EndpointMethod
 import net.corda.httprpc.server.apigen.models.EndpointParameter

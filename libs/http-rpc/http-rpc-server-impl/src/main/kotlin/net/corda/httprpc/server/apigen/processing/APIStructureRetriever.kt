@@ -1,8 +1,6 @@
 package net.corda.httprpc.server.apigen.processing
 
-import net.corda.v5.application.messaging.RPCOps
 import net.corda.v5.base.util.contextLogger
-import net.corda.ext.api.rpc.PluggableRPCOps
 import net.corda.v5.httprpc.api.annotations.HttpRpcGET
 import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
 import net.corda.v5.httprpc.api.annotations.HttpRpcResource
@@ -21,6 +19,8 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
+import net.corda.v5.httprpc.api.PluggableRPCOps
+import net.corda.v5.httprpc.api.RpcOps
 import net.corda.v5.httprpc.tools.annotations.extensions.name
 import net.corda.v5.httprpc.tools.annotations.extensions.path
 import net.corda.v5.httprpc.tools.annotations.extensions.title
@@ -43,7 +43,7 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
     val structure: Try<List<Resource>> by lazy { Try.on { retrieveResources() } }
     private val delegationTargetsMap by lazy { retrieveImplMap() }
 
-    private fun retrieveImplMap(): Map<Class<out RPCOps>, PluggableRPCOps<*>> {
+    private fun retrieveImplMap(): Map<Class<out RpcOps>, PluggableRPCOps<*>> {
         try {
             log.trace { "Retrieve implementations by target interface map." }
             return opsImplList.mapNotNull { opsImpl ->
@@ -81,7 +81,7 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
         }
     }
 
-    private fun List<Class<out RPCOps>>.validated(): List<Class<out RPCOps>> {
+    private fun List<Class<out RpcOps>>.validated(): List<Class<out RpcOps>> {
         try {
             log.trace { "Validate resource classes: ${this.joinToString(",")}." }
             return this.apply {
@@ -98,7 +98,7 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
         }
     }
 
-    private fun retrieveTargetInterface(impl: PluggableRPCOps<*>): Class<out RPCOps>? {
+    private fun retrieveTargetInterface(impl: PluggableRPCOps<*>): Class<out RpcOps>? {
         try {
             log.trace { "Retrieve target interface for implementation \"${impl::class.java.name}\"." }
             return impl.targetInterface.takeIf { it.annotations.any { annotation -> annotation is HttpRpcResource } }
@@ -111,7 +111,7 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
         }
     }
 
-    private fun retrieveEndpoints(clazz: Class<out RPCOps>): List<Endpoint> {
+    private fun retrieveEndpoints(clazz: Class<out RpcOps>): List<Endpoint> {
         try {
             log.trace { "Retrieve endpoints." }
             val methods = clazz.methods
@@ -132,7 +132,7 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
             method.toEndpoint()
         }
 
-    private fun getImplicitGETEndpoints(methods: Array<Method>, clazz: Class<out RPCOps>) =
+    private fun getImplicitGETEndpoints(methods: Array<Method>, clazz: Class<out RpcOps>) =
             methods.filter {
                 isImplicitlyExposedGETMethod(it)
             }.map {method ->
@@ -244,7 +244,7 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
         ).also { log.trace { "Method \"${this.name}\" to POST endpoint completed." } }
     }
 
-    private fun Method.getInvocationMethod(clazz: Class<out RPCOps>? = null): InvocationMethod {
+    private fun Method.getInvocationMethod(clazz: Class<out RpcOps>? = null): InvocationMethod {
         try {
             log.debug { "Get invocation method for \"${this.name}\"." }
             return InvocationMethod(

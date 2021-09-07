@@ -1,10 +1,10 @@
 package net.corda.httprpc.server.apigen.processing
 
-import net.corda.ext.internal.rpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.server.apigen.models.InvocationMethod
 import net.corda.httprpc.server.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.apigen.processing.streams.FiniteDurableReturnResult
-import net.corda.internal.application.executeWithThreadContextClassLoader
+import net.corda.httprpc.server.utils.executeWithThreadContextClassLoader
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.stream.Cursor
 import net.corda.internal.base.stream.DurableStreamContext

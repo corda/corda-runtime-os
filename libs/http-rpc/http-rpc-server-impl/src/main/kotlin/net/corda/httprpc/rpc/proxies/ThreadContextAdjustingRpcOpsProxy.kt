@@ -1,6 +1,7 @@
-package net.corda.ext.api.rpc.proxies
+package net.corda.httprpc.rpc.proxies
 
-import net.corda.internal.application.executeWithThreadContextClassLoader
+import net.corda.ext.api.rpc.proxies.InvocationHandlerTemplate
+import net.corda.httprpc.server.utils.executeWithThreadContextClassLoader
 import net.corda.v5.application.messaging.RPCOps
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
@@ -19,7 +20,8 @@ internal object ThreadContextAdjustingRpcOpsProxy {
         return Proxy.newProxyInstance(delegate::class.java.classLoader, arrayOf(clazz), handler) as T
     }
 
-    internal class ThreadContextAdjustingInvocationHandler(override val delegate: Any, private val classLoader: ClassLoader) : InvocationHandlerTemplate {
+    internal class ThreadContextAdjustingInvocationHandler(override val delegate: Any, private val classLoader: ClassLoader) :
+        InvocationHandlerTemplate {
         override fun invoke(proxy: Any, method: Method, arguments: Array<out Any?>?): Any? {
             return executeWithThreadContextClassLoader(this.classLoader) { super.invoke(proxy, method, arguments) }
         }

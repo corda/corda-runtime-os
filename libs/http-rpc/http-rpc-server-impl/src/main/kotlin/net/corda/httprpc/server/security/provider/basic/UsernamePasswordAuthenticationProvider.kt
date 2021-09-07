@@ -2,7 +2,7 @@ package net.corda.httprpc.server.security.provider.basic
 
 import net.corda.ext.internal.rpc.security.AuthorizingSubject
 import net.corda.ext.internal.rpc.security.Password
-import net.corda.ext.internal.rpc.security.RPCSecurityManager
+import net.corda.httprpc.security.RPCSecurityManager
 import net.corda.httprpc.server.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.security.provider.credentials.AuthenticationCredentials
 import net.corda.httprpc.server.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials

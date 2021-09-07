@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.apigen.processing.openapi.schema
 
-import com.google.common.annotations.VisibleForTesting
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 import java.text.SimpleDateFormat

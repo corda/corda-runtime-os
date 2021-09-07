@@ -1,8 +1,6 @@
 package net.corda.httprpc.server
 
-import net.corda.ext.internal.rpc.security.RPCSecurityManager
-import net.corda.v5.application.messaging.RPCOps
-import net.corda.ext.api.rpc.PluggableRPCOps
+import net.corda.httprpc.security.RPCSecurityManager
 import net.corda.httprpc.server.apigen.models.Resource
 import net.corda.httprpc.server.apigen.processing.APIStructureRetriever
 import net.corda.httprpc.server.apigen.processing.JavalinRouteProviderImpl
@@ -18,12 +16,14 @@ import net.corda.httprpc.server.security.provider.bearer.azuread.AzureAdAuthenti
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.v5.httprpc.api.PluggableRPCOps
+import net.corda.v5.httprpc.api.RpcOps
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
 
 @SuppressWarnings("TooGenericExceptionThrown", "TooGenericExceptionCaught", "LongParameterList")
 class HttpRPCServerImpl(
-    rpcOpsImpls: List<PluggableRPCOps<out RPCOps>>,
+    rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
     rpcSecurityManager: RPCSecurityManager,
     httpRpcSettings: HttpRpcSettings,
     devMode: Boolean,
@@ -71,7 +71,7 @@ class HttpRPCServerImpl(
         }
     }
 
-    private fun getResources(rpcOpsImpls: List<PluggableRPCOps<out RPCOps>>): List<Resource> {
+    private fun getResources(rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>): List<Resource> {
         log.debug { "Get resources for RPCOps implementations of ${rpcOpsImpls.joinToString()}." }
         var resources = emptyList<Resource>()
         log.trace { "Generating resource model for http rpc" }
