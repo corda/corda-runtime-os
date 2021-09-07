@@ -43,6 +43,7 @@ import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import java.time.Instant
@@ -79,7 +80,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory)
     private val sessionReplayer: InMemorySessionReplayer =
-        InMemorySessionReplayer(config.sessionMessageReplayPeriod, publisherFactory, linkManagerNetworkMap)
+        InMemorySessionReplayer(Duration.ofSeconds(config.messageReplayPeriodSecs), publisherFactory, linkManagerNetworkMap)
+
     private val sessionManager: SessionManager = SessionManagerImpl(
         SessionManagerImpl.ParametersForSessionNegotiation(config.maxMessageSize, config.protocolModes),
         linkManagerNetworkMap,
@@ -87,7 +89,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         messagesPendingSession,
         sessionReplayer
     )
-    private val messageReplayer: DeliveryTracker
+    private val deliveryTracker: DeliveryTracker
 
     init {
         val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, 1)
@@ -110,7 +112,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             partitionAssignmentListener = inboundAssignmentListener
         )
         deliveryTracker = DeliveryTracker(
-            config.flowMessageReplayPeriod,
+            Duration.ofSeconds(config.messageReplayPeriodSecs),
             publisherFactory,
             subscriptionFactory
         ) { outboundMessageProcessor.processAuthenticatedMessage(it, false) }
@@ -124,7 +126,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 /*We must wait for partitions to be assigned to the inbound subscription before we can start the outbound
                 *subscription otherwise the gateway won't know which partition to route message back to.*/
                 inboundAssignmentListener.awaitFirstAssignment()
-                messageReplayer.start()
+                deliveryTracker.start()
                 outboundMessageSubscription.start()
                 running = true
             }
@@ -137,6 +139,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 sessionReplayer.stop()
                 inboundMessageSubscription.stop()
                 outboundMessageSubscription.stop()
+                deliveryTracker.stop()
                 running = false
             }
         }

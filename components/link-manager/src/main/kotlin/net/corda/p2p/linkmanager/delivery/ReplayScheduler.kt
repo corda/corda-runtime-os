@@ -1,28 +1,29 @@
 package net.corda.p2p.linkmanager.delivery
 
 import net.corda.lifecycle.Lifecycle
-import net.corda.v5.base.exceptions.CordaRuntimeException
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
  * This class keeps track of messages which may need to be replayed.
  */
-class ReplayScheduler<REPLAY_ARGUMENT>(
-    private val replayPeriod: Long,
-    private val replayMessage: (argument: REPLAY_ARGUMENT) -> Unit,
-    private val timestamp: () -> Long = { Instant.now().toEpochMilli() }
+class ReplayScheduler<M>(
+    private val replayPeriod: Duration,
+    private val replayMessage: (message: M) -> Unit,
+    private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() }
 ) : Lifecycle {
 
     @Volatile
     private var running = false
-    private val startStopLock = ReentrantLock()
+    private val startStopLock = ReentrantReadWriteLock()
 
     private lateinit var executorService: ScheduledExecutorService
     private val replayFutures = ConcurrentHashMap<String, ScheduledFuture<*>>()
@@ -31,7 +32,7 @@ class ReplayScheduler<REPLAY_ARGUMENT>(
         get() = running
 
     override fun start() {
-        startStopLock.withLock{
+        startStopLock.write {
             if (!running) {
                 executorService = Executors.newSingleThreadScheduledExecutor()
                 running = true
@@ -40,7 +41,7 @@ class ReplayScheduler<REPLAY_ARGUMENT>(
     }
 
     override fun stop() {
-        startStopLock.withLock{
+        startStopLock.write {
             if (running) {
                 executorService.shutdown()
                 running = false
@@ -48,13 +49,15 @@ class ReplayScheduler<REPLAY_ARGUMENT>(
         }
     }
 
-    fun addForReplay(timestamp: Long, uniqueId: String, replayArgument: REPLAY_ARGUMENT) {
-        if (!running) {
-            throw TaskAddedForReplayWhenNotStartedException()
+    fun addForReplay(originalAttemptTimestamp: Long, uniqueId: String, message: M) {
+        startStopLock.read {
+            if (!running) {
+                throw TaskAddedForReplayWhenNotStartedException()
+            }
+            val delay = replayPeriod.toMillis() + originalAttemptTimestamp - currentTimestamp()
+            val future = executorService.scheduleAtFixedRate({ replayMessage(message) }, delay, replayPeriod.toMillis(), TimeUnit.MILLISECONDS)
+            replayFutures[uniqueId] = future
         }
-        val delay = replayPeriod + timestamp() - timestamp
-        val future = executorService.scheduleAtFixedRate({ replayMessage(replayArgument) }, delay, replayPeriod, TimeUnit.MILLISECONDS)
-        replayFutures[uniqueId] = future
     }
 
     fun removeFromReplay(uniqueId: String) {
@@ -62,5 +65,5 @@ class ReplayScheduler<REPLAY_ARGUMENT>(
     }
 
     class TaskAddedForReplayWhenNotStartedException:
-        CordaRuntimeException("A task was added for replay before the ReplayScheduler was started.")
+        IllegalStateException("A task was added for replay before the ReplayScheduler was started.")
 }

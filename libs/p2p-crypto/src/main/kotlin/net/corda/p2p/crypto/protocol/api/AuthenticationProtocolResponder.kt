@@ -110,7 +110,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
      * Get responder hello message, this must have already been generated using [generateResponderHello].
      */
     fun getResponderHello(): ResponderHelloMessage {
-        checkState(Step.SENT_MY_DH_KEY)
+        checkStateAtLeast(Step.SENT_MY_DH_KEY)
         return responderHelloMessage!!
     }
 

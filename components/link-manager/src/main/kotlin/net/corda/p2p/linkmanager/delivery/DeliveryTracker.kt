@@ -17,11 +17,12 @@ import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class DeliveryTracker(
-    flowMessageReplayPeriod: Long,
+    flowMessageReplayPeriod: Duration,
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
@@ -32,9 +33,9 @@ class DeliveryTracker(
     private val startStopLock = ReentrantLock()
 
     private val appMessageReplayer = AppMessageReplayer(publisherFactory, processAuthenticatedMessage)
-    private val replayScheduler = ReplayScheduler(flowMessageReplayPeriod, flowMessageReplayer::replayMessage)
+    private val replayScheduler = ReplayScheduler(flowMessageReplayPeriod, appMessageReplayer::replayMessage)
 
-    private val messageTracker = MessageTracker(replayManager)
+    private val messageTracker = MessageTracker(replayScheduler)
 
     private val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
         SubscriptionConfig("message-tracker-group", Schema.P2P_OUT_MARKERS),
@@ -42,16 +43,14 @@ class DeliveryTracker(
         stateAndEventListener = messageTracker.listener
     )
 
-    data class PositionInTopic(val partition: Partition, val offset: Offset)
-
     override val isRunning: Boolean
         get() = running
 
     override fun start() {
         startStopLock.withLock {
             if (!isRunning) {
-                flowMessageReplayer.start()
-                replayManager.start()
+                appMessageReplayer.start()
+                replayScheduler.start()
                 messageTrackerSubscription.start()
                 running = true
             }
@@ -59,17 +58,17 @@ class DeliveryTracker(
     }
 
     override fun stop() {
-        if (isRunning) {
-            startStopLock.withLock {
-                flowMessageReplayer.stop()
-                replayManager.stop()
+        startStopLock.withLock {
+            if (isRunning) {
+                appMessageReplayer.stop()
+                replayScheduler.stop()
                 messageTrackerSubscription.stop()
                 running = false
             }
         }
     }
 
-    class AppMessageReplayer(
+    private class AppMessageReplayer(
         publisherFactory: PublisherFactory,
         private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
     ): Lifecycle {
@@ -80,7 +79,6 @@ class DeliveryTracker(
 
         private val config = PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, null)
         private val publisher = publisherFactory.createPublisher(config)
-        private var logger = LoggerFactory.getLogger(this::class.java.name)
 
         @Volatile
         private var running = false
@@ -99,10 +97,10 @@ class DeliveryTracker(
 
         override fun stop() {
             startStopLock.withLock {
-          if(running) {
+              if(running) {
                 publisher.close()
                 running = false
-          }
+              }
             }
         }
 
@@ -110,13 +108,9 @@ class DeliveryTracker(
             val records = processAuthenticatedMessage(message)
             publisher.publish(records)
         }
-
-        private fun <K: Any, V : Any> Record<K, V>.toEventLogRecord(positionInTopic: PositionInTopic): EventLogRecord<K, V> {
-            return EventLogRecord(topic, key, value, positionInTopic.partition, positionInTopic.offset)
-        }
     }
 
-    class MessageTracker(private val replayScheduler: ReplayScheduler<AuthenticatedMessageAndKey>)  {
+    private class MessageTracker(private val replayScheduler: ReplayScheduler<AuthenticatedMessageAndKey>)  {
 
         companion object {
             private val logger = LoggerFactory.getLogger(this::class.java.name)
@@ -176,6 +170,3 @@ class DeliveryTracker(
         }
     }
 }
-
-typealias Partition = Int
-typealias Offset = Long

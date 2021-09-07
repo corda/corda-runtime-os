@@ -156,8 +156,7 @@ class SessionManagerTest {
             assertEquals(1, messagesForReplay.size)
             val messageReplay = messagesForReplay.entries.single().value
             assertTrue(messageReplay.message is T)
-            assertTrue(messageReplay.dest is SessionReplayer.IdentityLookup.HoldingIdentity)
-            assertEquals(dest, (messageReplay.dest as SessionReplayer.IdentityLookup.HoldingIdentity).id)
+            assertEquals(dest, messageReplay.dest)
         }
 
     }

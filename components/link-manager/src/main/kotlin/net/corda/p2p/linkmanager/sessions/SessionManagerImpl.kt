@@ -23,7 +23,6 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.delivery.SessionReplayer
 import net.corda.p2p.linkmanager.delivery.SessionReplayer.SessionMessageReplay
-import net.corda.p2p.linkmanager.delivery.SessionReplayer.IdentityLookup.HoldingIdentity
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
@@ -160,7 +159,7 @@ open class SessionManagerImpl(
         val sessionInitPayload = session.generateInitiatorHello()
         sessionReplayer.addMessageForReplay(
             sessionId,
-            SessionMessageReplay(sessionInitPayload, HoldingIdentity(sessionKey.responderId))
+            SessionMessageReplay(sessionInitPayload, sessionKey.responderId)
         )
 
         val responderMemberInfo = networkMap.getMemberInfo(sessionKey.responderId)
@@ -223,7 +222,7 @@ open class SessionManagerImpl(
         sessionReplayer.removeMessageFromReplay(message.header.sessionId)
         sessionReplayer.addMessageForReplay(
             message.header.sessionId,
-            SessionMessageReplay(payload, HoldingIdentity(sessionInfo.responderId))
+            SessionMessageReplay(payload, sessionInfo.responderId)
         )
 
         val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)

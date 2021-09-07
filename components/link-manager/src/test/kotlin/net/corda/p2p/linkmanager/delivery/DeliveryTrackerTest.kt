@@ -26,6 +26,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -34,8 +35,8 @@ import java.util.concurrent.CountDownLatch
 class DeliveryTrackerTest {
 
     companion object {
-        const val replayPeriod = 10L
         const val timeStamp = 2635L
+        private val replayPeriod = Duration.ofMillis(10)
 
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -72,9 +73,7 @@ class DeliveryTrackerTest {
             return emptyList()
         }
 
-        override fun close() {
-            throw RuntimeException("close should never be called in this test.")
-        }
+        override fun close() {}
     }
 
     class MockStateAndEventSubscription<K : Any, S: Any, E: Any>(): StateAndEventSubscription<K, S, E> {
@@ -230,7 +229,7 @@ class DeliveryTrackerTest {
 
         publisherWaitLatch.countDown()
 
-        Thread.sleep(5 * replayPeriod)
+        Thread.sleep(5 * replayPeriod.toMillis())
 
         assertEquals(replays, publisher.list.size)
 
@@ -262,7 +261,7 @@ class DeliveryTrackerTest {
 
         publisherWaitLatch.countDown()
 
-        Thread.sleep(5 * replayPeriod)
+        Thread.sleep(5 * replayPeriod.toMillis())
 
         assertEquals(replays, publisher.list.size)
 

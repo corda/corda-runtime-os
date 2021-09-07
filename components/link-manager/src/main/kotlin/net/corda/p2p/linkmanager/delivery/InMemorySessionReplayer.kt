@@ -7,15 +7,15 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.messaging.MessageConverter
-import net.corda.p2p.linkmanager.delivery.SessionReplayer.IdentityLookup
 import net.corda.p2p.schema.Schema
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class InMemorySessionReplayer(
-    sessionMessageReplayPeriod: Long,
+    sessionMessageReplayPeriod: Duration,
     publisherFactory: PublisherFactory,
     private val networkMap: LinkManagerNetworkMap
 ): Lifecycle, SessionReplayer {
@@ -64,36 +64,22 @@ class InMemorySessionReplayer(
 
     private fun replayMessage(messageReplay: SessionReplayer.SessionMessageReplay) {
 
-        val responderMemberInfo = when (val dest = messageReplay.dest) {
-            is IdentityLookup.HoldingIdentity -> {
-                val memberInfo = networkMap.getMemberInfo(dest.id)
-                if (memberInfo == null) {
-                    logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
-                    " with peer ${dest.id} which is not in the network map. The message was not replayed.")
-                    return
-                }
-                memberInfo
-            }
-            is IdentityLookup.PublicKeyHash -> {
-                val memberInfo = networkMap.getMemberInfo(dest.hash, dest.groupId)
-                if (memberInfo == null) {
-                    logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
-                        " with public key hash ${messageReplay.dest} which is not in the network map. The message was not replayed.")
-                    return
-                }
-                memberInfo
-            }
-        }
-
-        val networkType = networkMap.getNetworkType(responderMemberInfo.holdingIdentity.groupId)
-        if (networkType == null) {
-            logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
-                    " could not find the network type in the NetworkMap for group ${responderMemberInfo.holdingIdentity.groupId}." +
-                    " The message was not replayed.")
+        val memberInfo = networkMap.getMemberInfo(messageReplay.dest)
+        if (memberInfo == null) {
+            logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
+                " with peer ${messageReplay.dest} which is not in the network map. The message was not replayed.")
             return
         }
 
-        val message = MessageConverter.createLinkOutMessage(messageReplay.message, responderMemberInfo, networkType)
+        val networkType = networkMap.getNetworkType(memberInfo.holdingIdentity.groupId)
+        if (networkType == null) {
+            logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
+                " could not find the network type in the NetworkMap for group ${memberInfo.holdingIdentity.groupId}." +
+                " The message was not replayed.")
+            return
+        }
+
+        val message = MessageConverter.createLinkOutMessage(messageReplay.message, memberInfo, networkType)
         publisher.publish(listOf(Record(Schema.LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
     }
 }

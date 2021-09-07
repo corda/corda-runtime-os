@@ -3,10 +3,15 @@ package net.corda.p2p.linkmanager.delivery
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Duration
 import java.util.*
 import java.util.concurrent.CountDownLatch
 
 class ReplaySchedulerTest {
+
+    companion object {
+        private val replayPeriod = Duration.ofMillis(2)
+    }
 
     class TrackReplayedMessages(numUniqueMessages: Int) {
         private val latch = CountDownLatch(numUniqueMessages)
@@ -25,7 +30,6 @@ class ReplaySchedulerTest {
 
     @Test
     fun `The ReplayScheduler will not replay before start`() {
-        val replayPeriod = 5L
         val replayManager = ReplayScheduler(replayPeriod, { _: Any -> } ) { 0 }
         assertThrows<ReplayScheduler.TaskAddedForReplayWhenNotStartedException> {
             replayManager.addForReplay(0,"", Any())
@@ -34,7 +38,6 @@ class ReplaySchedulerTest {
 
     @Test
     fun `The ReplayScheduler replays added messages`() {
-        val replayPeriod = 5L
         val messages = 9
 
         val tracker = TrackReplayedMessages(messages)
@@ -83,7 +86,6 @@ class ReplaySchedulerTest {
 
     @Test
     fun `The ReplayScheduler doesn't replay removed messages`() {
-        val replayPeriod = 5L
         val messages = 8
 
         val tracker = TwoPhaseTrackReplayedMessages(messages, 4)

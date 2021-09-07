@@ -73,7 +73,6 @@ class StateAndEventSubscriptionIntegrationTest {
 
     @Test
     fun `create topic with two partitions, start two statevent sub, publish records with two keys, no outputs`() {
-
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC1_TEMPLATE)
 
         val onNextLatch1 = CountDownLatch(5)

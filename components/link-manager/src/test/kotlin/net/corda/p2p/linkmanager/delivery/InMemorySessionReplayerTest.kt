@@ -8,7 +8,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
-import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
@@ -24,8 +23,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import java.security.KeyPairGenerator
-import java.security.MessageDigest
-import java.security.PublicKey
+import java.time.Duration
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
@@ -40,6 +38,7 @@ class InMemorySessionReplayerTest {
         lateinit var loggingInterceptor: LoggingInterceptor
 
         private val KEY_PAIR = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).genKeyPair()
+        private val replayPeriod = Duration.ofMillis(2)
 
         @BeforeAll
         @JvmStatic
@@ -90,7 +89,7 @@ class InMemorySessionReplayerTest {
                 return publisher
             }
         }
-        val replayer = InMemorySessionReplayer(1L, publisherFactory, netMap)
+        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, netMap)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -101,10 +100,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         replayer.start()
-        replayer.addMessageForReplay(
-            id,
-            SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
-        )
+        replayer.addMessageForReplay(id, SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY))
 
         publisher.testWaitLatch.await()
         assertEquals(totalReplays, publisher.list.size)
@@ -164,7 +160,7 @@ class InMemorySessionReplayerTest {
                 return publisher
             }
         }
-        val replayer = InMemorySessionReplayer(50L, publisherFactory, netMap)
+        val replayer = InMemorySessionReplayer(Duration.ofMillis(50), publisherFactory, netMap)
         val firstId = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             firstId,
@@ -187,11 +183,11 @@ class InMemorySessionReplayerTest {
 
         replayer.addMessageForReplay(
             firstId,
-            SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
+            SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY)
         )
         replayer.addMessageForReplay(
             secondId,
-            SessionReplayer.SessionMessageReplay(secondHelloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
+            SessionReplayer.SessionMessageReplay(secondHelloMessage, COUNTER_PARTY)
         )
 
         publisher.testWaitLatch.await()
@@ -235,7 +231,7 @@ class InMemorySessionReplayerTest {
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(null).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(mockNetworkMap.getMemberInfo(COUNTER_PARTY)).thenReturn(netMap.getMemberInfo(COUNTER_PARTY))
 
-        val replayer = InMemorySessionReplayer(1L, publisherFactory, mockNetworkMap)
+        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -246,10 +242,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         replayer.start()
-        replayer.addMessageForReplay(
-            id,
-            SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
-        )
+        replayer.addMessageForReplay(id, SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY))
         publisher.testWaitLatch.await()
         assertEquals(1, publisher.list.size)
         val record = publisher.list.single()
@@ -278,7 +271,7 @@ class InMemorySessionReplayerTest {
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(mockNetworkMap.getMemberInfo(COUNTER_PARTY)).thenReturn(null).thenReturn(netMap.getMemberInfo(COUNTER_PARTY))
 
-        val replayer = InMemorySessionReplayer(1L, publisherFactory, mockNetworkMap)
+        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -289,10 +282,7 @@ class InMemorySessionReplayerTest {
             ).generateInitiatorHello()
 
         replayer.start()
-        replayer.addMessageForReplay(
-            id,
-            SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.HoldingIdentity(COUNTER_PARTY))
-        )
+        replayer.addMessageForReplay(id, SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY))
         publisher.testWaitLatch.await()
         assertEquals(1, publisher.list.size)
         val record = publisher.list.single()
@@ -305,61 +295,5 @@ class InMemorySessionReplayerTest {
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
             "${InitiatorHelloMessage::class.java.simpleName}) with peer $COUNTER_PARTY which is not in the network" +
             " map. The message was not replayed.")
-    }
-
-    private fun hashKey(key: PublicKey): ByteArray {
-        val provider = BouncyCastleProvider()
-        val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
-        messageDigest.reset()
-        messageDigest.update(key.encoded)
-        return messageDigest.digest()
-    }
-
-    @Test
-    fun `InMemorySessionReplayer logs a warning when the responder public key is not in the network map`() {
-        val totalReplays = 1
-        val publisher = SinglePhaseTestListBasedPublisher(totalReplays)
-        val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
-                return publisher
-            }
-        }
-
-        val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
-        Mockito.`when`(
-            mockNetworkMap.getMemberInfo(any(), any())
-        ).thenReturn(null).thenReturn(netMap.getMemberInfo(COUNTER_PARTY))
-
-        val replayer = InMemorySessionReplayer(1L, publisherFactory, mockNetworkMap)
-        val id = UUID.randomUUID().toString()
-        val helloMessage = AuthenticationProtocolInitiator(
-            id,
-            setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            MAX_MESSAGE_SIZE,
-            KEY_PAIR.public,
-            GROUP_ID
-        ).generateInitiatorHello()
-
-        val keyHash = hashKey(netMap.getMemberInfo(COUNTER_PARTY)!!.publicKey)
-        replayer.start()
-        replayer.addMessageForReplay(
-            id,
-            SessionReplayer.SessionMessageReplay(helloMessage, SessionReplayer.IdentityLookup.PublicKeyHash(keyHash, GROUP_ID))
-        )
-
-        publisher.testWaitLatch.await()
-
-        assertEquals(1, publisher.list.size)
-        val record = publisher.list.single()
-        assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
-        assertTrue(record.value is LinkOutMessage)
-
-        publisher.publisherWaitLatch.countDown()
-        replayer.stop()
-
-        loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
-            "${InitiatorHelloMessage::class.java.simpleName}) with public key hash ${SessionReplayer.IdentityLookup.PublicKeyHash(keyHash, GROUP_ID)}" +
-            " which is not in the network map. The message was not replayed.")
     }
 }
