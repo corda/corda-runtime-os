@@ -13,7 +13,8 @@ class ProtocolConstants {
         const val HMAC_ALGO = "HMac-SHA256"
         const val HMAC_KEY_SIZE_BYTES = 32
 
-        const val SIGNATURE_ALGO = "ECDSA"
+        const val RSA_SIGNATURE_ALGO = "SHA256withRSA"
+        const val ECDSA_SIGNATURE_ALGO = "SHA256withECDSA"
 
         const val ELLIPTIC_CURVE_ALGO = "X25519"
         const val ELLIPTIC_CURVE_KEY_SIZE_BITS = 256
