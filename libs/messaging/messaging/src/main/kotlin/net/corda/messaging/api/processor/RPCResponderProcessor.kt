@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture
  *
  * Subscribers will receive events as they come in as well as a response future
  *
- * There can be multiple responder processors to receive the requests off the topic
+ * There can be multiple workers servicing RPC request messages
  */
 interface RPCResponderProcessor<TREQ, TRESP> {
 
