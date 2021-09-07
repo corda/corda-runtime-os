@@ -87,8 +87,8 @@ class CustomPersistenceUnitInfoTest {
     }
 
     @Test
-    fun `set schema version to 2point1`() {
-        assertThat(persistenceUnitInfo.persistenceXMLSchemaVersion).isEqualTo("2.1")
+    fun `set schema version to 2point2`() {
+        assertThat(persistenceUnitInfo.persistenceXMLSchemaVersion).isEqualTo("2.2")
     }
 
     @Test
