@@ -5,7 +5,6 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -19,7 +18,10 @@ import net.corda.p2p.schema.Schema
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
 import kotlin.concurrent.withLock
+import kotlin.concurrent.write
 
 class DeliveryTracker(
     flowMessageReplayPeriod: Duration,
@@ -82,12 +84,12 @@ class DeliveryTracker(
 
         @Volatile
         private var running = false
-        private val startStopLock = ReentrantLock()
+        private val startStopLock = ReentrantReadWriteLock()
         override val isRunning: Boolean
             get() = running
 
         override fun start() {
-            startStopLock.withLock {
+            startStopLock.write {
                 if (!isRunning) {
                     publisher.start()
                 }
@@ -96,8 +98,8 @@ class DeliveryTracker(
         }
 
         override fun stop() {
-            startStopLock.withLock {
-              if(running) {
+            startStopLock.write {
+              if (running) {
                 publisher.close()
                 running = false
               }
@@ -105,8 +107,14 @@ class DeliveryTracker(
         }
 
         fun replayMessage(message: AuthenticatedMessageAndKey) {
-            val records = processAuthenticatedMessage(message)
-            publisher.publish(records)
+            startStopLock.read {
+                if (running) {
+                    val records = processAuthenticatedMessage(message)
+                    publisher.publish(records)
+                } else {
+                    throw MessageAddedForReplayWhenNotStartedException(this::class.java.simpleName)
+                }
+            }
         }
     }
 

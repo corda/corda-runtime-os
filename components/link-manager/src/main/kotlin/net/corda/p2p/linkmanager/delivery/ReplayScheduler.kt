@@ -52,7 +52,7 @@ class ReplayScheduler<M>(
     fun addForReplay(originalAttemptTimestamp: Long, uniqueId: String, message: M) {
         startStopLock.read {
             if (!running) {
-                throw TaskAddedForReplayWhenNotStartedException()
+                throw MessageAddedForReplayWhenNotStartedException(this::class.java.simpleName)
             }
             val delay = replayPeriod.toMillis() + originalAttemptTimestamp - currentTimestamp()
             val future = executorService.scheduleAtFixedRate({ replayMessage(message) }, delay, replayPeriod.toMillis(), TimeUnit.MILLISECONDS)
@@ -63,7 +63,4 @@ class ReplayScheduler<M>(
     fun removeFromReplay(uniqueId: String) {
         replayFutures[uniqueId]?.cancel(false)
     }
-
-    class TaskAddedForReplayWhenNotStartedException:
-        IllegalStateException("A task was added for replay before the ReplayScheduler was started.")
 }

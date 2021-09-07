@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import java.security.KeyPairGenerator
@@ -295,5 +296,27 @@ class InMemorySessionReplayerTest {
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
             "${InitiatorHelloMessage::class.java.simpleName}) with peer $COUNTER_PARTY which is not in the network" +
             " map. The message was not replayed.")
+    }
+
+    @Test
+    fun `The InMemorySessionReplayer will not replay before start`() {
+        val publisher = Mockito.mock(Publisher::class.java)
+        val publisherFactory = object : PublisherFactory {
+            override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
+                return publisher
+            }
+        }
+        val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        val helloMessage = AuthenticationProtocolInitiator(
+            "",
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            MAX_MESSAGE_SIZE,
+            KEY_PAIR.public,
+            GROUP_ID
+        ).generateInitiatorHello()
+        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap)
+        assertThrows<MessageAddedForReplayWhenNotStartedException> {
+            replayer.addMessageForReplay("", SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY))
+        }
     }
 }

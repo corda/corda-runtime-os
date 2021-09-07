@@ -12,7 +12,10 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
 import kotlin.concurrent.withLock
+import kotlin.concurrent.write
 
 class InMemorySessionReplayer(
     sessionMessageReplayPeriod: Duration,
@@ -28,7 +31,7 @@ class InMemorySessionReplayer(
 
     @Volatile
     private var running = false
-    private val startStopLock = ReentrantLock()
+    private val startStopLock = ReentrantReadWriteLock()
     private val config = PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, null)
     private val publisher = publisherFactory.createPublisher(config)
     private val replayScheduler = ReplayScheduler(sessionMessageReplayPeriod, ::replayMessage)
@@ -37,7 +40,7 @@ class InMemorySessionReplayer(
         get() = running
 
     override fun start() {
-        startStopLock.withLock {
+        startStopLock.write {
             if (!isRunning) {
                 publisher.start()
                 replayScheduler.start()
@@ -47,7 +50,7 @@ class InMemorySessionReplayer(
     }
 
     override fun stop() {
-        startStopLock.withLock {
+        startStopLock.write {
             if (isRunning) {
                 running = false
             }
@@ -55,7 +58,13 @@ class InMemorySessionReplayer(
     }
 
     override fun addMessageForReplay(uniqueId: String, messageReplay: SessionReplayer.SessionMessageReplay) {
-        replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay)
+        startStopLock.read {
+            if (running) {
+                replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay)
+            } else {
+                throw MessageAddedForReplayWhenNotStartedException(this::class.java.simpleName)
+            }
+        }
     }
 
     override fun removeMessageFromReplay(uniqueId: String) {

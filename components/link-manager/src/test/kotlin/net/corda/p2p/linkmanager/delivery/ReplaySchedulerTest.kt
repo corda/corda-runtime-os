@@ -31,7 +31,7 @@ class ReplaySchedulerTest {
     @Test
     fun `The ReplayScheduler will not replay before start`() {
         val replayManager = ReplayScheduler(replayPeriod, { _: Any -> } ) { 0 }
-        assertThrows<ReplayScheduler.TaskAddedForReplayWhenNotStartedException> {
+        assertThrows<MessageAddedForReplayWhenNotStartedException> {
             replayManager.addForReplay(0,"", Any())
         }
     }
