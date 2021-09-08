@@ -25,9 +25,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.net.URI
-import java.util.Collections
-import java.util.NavigableMap
-import java.util.TreeMap
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
@@ -162,7 +159,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
         // We track which sandbox was created for which CPK identifier, so that we can pass this information during
         // the construction of the `SandboxGroup`.
-        val cpkSandboxMapping: NavigableMap<Cpk.Identifier, CpkSandboxImpl> = TreeMap()
+        val cpkSandboxMapping = mutableMapOf<Cpk.Identifier, CpkSandboxImpl>()
 
         cpks.forEach { cpk ->
             val sandboxId = UUID.randomUUID()
@@ -204,7 +201,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
         val sandboxGroup = SandboxGroupImpl(
             bundleUtils,
-            Collections.unmodifiableNavigableMap(cpkSandboxMapping),
+            cpkSandboxMapping,
             platformSandbox
         )
 

@@ -44,9 +44,13 @@ class SandboxImplTests {
         whenever(getBundle(nonSandboxClass)).thenReturn(nonSandboxBundle)
     }
 
+    /** Creates a [SandboxImpl] for testing. */
+    private fun createSandboxImpl() =
+        SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+
     @Test
     fun `correctly indicates whether bundles are in the sandbox`() {
-        val sandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+        val sandbox = createSandboxImpl()
         assertTrue(sandbox.containsBundle(publicBundle))
         assertTrue(sandbox.containsBundle(privateBundle))
         assertFalse(sandbox.containsBundle(nonSandboxBundle))
@@ -54,7 +58,7 @@ class SandboxImplTests {
 
     @Test
     fun `correctly indicates whether classes are in the sandbox`() {
-        val sandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+        val sandbox = createSandboxImpl()
         assertTrue(sandbox.containsClass(publicBundleClass))
         assertTrue(sandbox.containsClass(privateBundleClass))
         assertFalse(sandbox.containsClass(nonSandboxClass))
@@ -62,36 +66,36 @@ class SandboxImplTests {
 
     @Test
     fun `sandbox has visibility of itself`() {
-        val sandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+        val sandbox = createSandboxImpl()
         assertTrue(sandbox.hasVisibility(sandbox))
     }
 
     @Test
     fun `sandbox does not have visibility of other sandboxes by default`() {
-        val sandboxOne = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
-        val sandboxTwo = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+        val sandboxOne = createSandboxImpl()
+        val sandboxTwo = createSandboxImpl()
         assertFalse(sandboxOne.hasVisibility(sandboxTwo))
     }
 
     @Test
     fun `sandbox has visibility of other sandboxes to which it is granted visibility`() {
-        val sandboxOne = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
-        val sandboxTwo = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+        val sandboxOne = createSandboxImpl()
+        val sandboxTwo = createSandboxImpl()
         sandboxOne.grantVisibility(sandboxTwo)
         assertTrue(sandboxOne.hasVisibility(sandboxTwo))
     }
 
     @Test
     fun `visibility between sandboxes is one-way`() {
-        val sandboxOne = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
-        val sandboxTwo = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+        val sandboxOne = createSandboxImpl()
+        val sandboxTwo = createSandboxImpl()
         sandboxOne.grantVisibility(sandboxTwo)
         assertFalse(sandboxTwo.hasVisibility(sandboxOne))
     }
 
     @Test
     fun `can retrieve public and private bundles from the sandbox by name`() {
-        val sandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+        val sandbox = createSandboxImpl()
         assertEquals(publicBundle, sandbox.getBundle(PUBLIC_BUNDLE_NAME))
         assertEquals(privateBundle, sandbox.getBundle(PRIVATE_BUNDLE_NAME))
         assertNull(sandbox.getBundle("bad_name"))
@@ -99,20 +103,20 @@ class SandboxImplTests {
 
     @Test
     fun `can load classes from public and private sandbox bundles`() {
-        val sandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+        val sandbox = createSandboxImpl()
         assertEquals(publicBundleClass, sandbox.loadClass(publicBundleClass.name, PUBLIC_BUNDLE_NAME))
         assertEquals(privateBundleClass, sandbox.loadClass(privateBundleClass.name, PRIVATE_BUNDLE_NAME))
     }
 
     @Test
     fun `returns null when attempting to load a class from a bundle that doesn't exist`() {
-        val sandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+        val sandbox = createSandboxImpl()
         assertNull(sandbox.loadClass(publicBundleClass.name, "bad_name"))
     }
 
     @Test
     fun `returns null when attempting to load a class from a bundle that doesn't contain the class`() {
-        val sandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+        val sandbox = createSandboxImpl()
         assertNull(sandbox.loadClass(privateBundleClass.name, PUBLIC_BUNDLE_NAME))
     }
 

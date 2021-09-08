@@ -34,16 +34,27 @@ interface SandboxGroup {
     /**
      * Returns number of times class [className] appears in the CorDapp bundles of the sandbox group's sandboxes.
      *
-     * Throws [SandboxException] if the sandbox does not have a CorDapp bundle, or the CorDapp bundle is uninstalled.
+     * Throws [SandboxException] if any of the sandboxes' CorDapp bundles are uninstalled.
      */
     fun cordappClassCount(className: String): Int
 
-    /** Returns the [KryoClassTag] for a given [klass]. */
-    fun getKryoClassTag(klass: Class<*>): KryoClassTag
+    /**
+     * Returns the [KryoClassTag] for a given [klass]. Returns null if the class is not contained in any bundle, or is
+     * contained in a bundle that is not contained in any sandbox in the group.
+     */
+    fun getKryoClassTag(klass: Class<*>): KryoClassTag?
 
-    /** Returns the [AMQPClassTag] for a given [klass]. */
-    fun getAMQPClassTag(klass: Class<*>): AMQPClassTag
+    /**
+     * Returns the [AMQPClassTag] for a given [klass]. Returns null if the class is not contained in any bundle, or is
+     * contained in a bundle that is not contained in any sandbox in the group.
+     */
+    fun getAMQPClassTag(klass: Class<*>): AMQPClassTag?
 
-    /** Returns the [Class] identified by the [className] and the [classTag]. */
+    /**
+     * Returns the [Class] identified by the [className] and the [classTag]. Returns null if there is no sandbox
+     * matching the tag, or if the matching sandbox does not contain the class.
+     *
+     * Throws [SandboxException] if the [ClassTag] implementation is not recognised.
+     */
     fun getClass(className: String, classTag: ClassTag): Class<*>?
 }

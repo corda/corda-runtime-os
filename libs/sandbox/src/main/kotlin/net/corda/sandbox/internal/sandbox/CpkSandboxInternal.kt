@@ -5,7 +5,7 @@ import net.corda.sandbox.CpkSandbox
 import org.osgi.framework.Bundle
 
 /** Extends [CpkSandbox] with internal methods. */
-internal interface CpkSandboxInternal: CpkSandbox {
+internal interface CpkSandboxInternal: CpkSandbox, SandboxInternal {
     // The CPK's CorDapp bundle.
     val cordappBundle: Bundle
 

@@ -20,7 +20,9 @@ internal open class SandboxImpl(
     private val privateBundles: Set<Bundle>
 ) : SandboxInternal {
     // The other sandboxes whose services, bundles and events this sandbox can receive.
-    private val visibleSandboxes = ConcurrentHashMap.newKeySet<Sandbox>()
+    private val visibleSandboxes = ConcurrentHashMap.newKeySet<Sandbox>().also {
+        it.add(this)
+    }
 
     // All the bundles in the sandbox.
     private val allBundles = privateBundles + publicBundles
@@ -29,12 +31,10 @@ internal open class SandboxImpl(
 
     override fun containsClass(klass: Class<*>) = bundleUtils.getBundle(klass) in allBundles
 
-    override fun hasVisibility(otherSandbox: Sandbox) = (otherSandbox == this) || (otherSandbox in visibleSandboxes)
+    override fun hasVisibility(otherSandbox: Sandbox) = otherSandbox in visibleSandboxes
 
     override fun grantVisibility(otherSandbox: Sandbox) {
-        if (otherSandbox !== this) {
-            visibleSandboxes.add(otherSandbox)
-        }
+        visibleSandboxes.add(otherSandbox)
     }
 
     override fun getBundle(bundleName: String) = (publicBundles + privateBundles).find { bundle ->

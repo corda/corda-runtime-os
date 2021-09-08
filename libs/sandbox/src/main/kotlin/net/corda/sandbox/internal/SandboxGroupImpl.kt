@@ -6,23 +6,22 @@ import net.corda.sandbox.ClassTag
 import net.corda.sandbox.KryoClassTag
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
+import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.crypto.SecureHash
 import java.util.Collections
-import java.util.NavigableMap
 
 /**
  * An implementation of the [SandboxGroup] interface.
  *
  * @param bundleUtils The [BundleUtils] that all OSGi activity is delegated to for testing purposes
- * @param sandboxesById The [CpkSandboxImpl]s in this sandbox group, keyed by the identifier of their CPK
+ * @param sandboxesById The [CpkSandboxInternal]s in this sandbox group, keyed by the identifier of their CPK
  * @param platformSandbox The sandbox containing all the platform (i.e. non CPK) bundles
  */
 internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils,
-    private val sandboxesById: NavigableMap<Cpk.Identifier, CpkSandboxImpl>,
+    private val sandboxesById: Map<Cpk.Identifier, CpkSandboxInternal>,
     private val platformSandbox: SandboxInternal
 ) : SandboxGroup {
 
@@ -59,33 +58,52 @@ internal class SandboxGroupImpl(
         sandbox.cordappBundleContainsClass(className)
     }
 
-    override fun getKryoClassTag(klass: Class<*>): KryoClassTag {
-        val bundle = bundleUtils.getBundle(klass)
-            ?: throw SandboxException("Class $klass is not loaded from any bundle.")
+    override fun getKryoClassTag(klass: Class<*>) = getClassTag(klass, isKryoClassTag = true) as KryoClassTag?
 
-        return if (platformSandbox.containsBundle(bundle)) {
-            KryoClassTag(PLACEHOLDER_CPK_FILE_HASH, isPlatformClass = true, bundle.symbolicName)
+    override fun getAMQPClassTag(klass: Class<*>) = getClassTag(klass, isKryoClassTag = false) as AMQPClassTag?
+
+    override fun getClass(className: String, classTag: ClassTag): Class<*>? {
+        return if (classTag.isPlatformClass) {
+            platformSandbox.loadClass(className, classTag.classBundleName)
         } else {
-            val sandbox = sandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
-                ?: throw SandboxException("Bundle $bundle is not contained in any sandbox.")
-            KryoClassTag(sandbox.cpk.cpkHash, isPlatformClass = false, bundle.symbolicName)
+            val sandbox = when (classTag) {
+                is KryoClassTag -> sandboxes.find { sandbox -> sandbox.cpk.cpkHash == classTag.cpkFileHash }
+                is AMQPClassTag -> sandboxes.find { sandbox ->
+                    sandbox.cpk.id.signers == classTag.cpkPublicKeyHashes
+                            && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
+                }
+                else -> throw SandboxException("Unrecognised class tag type ${classTag::class.java.name}.")
+            }
+            sandbox?.loadClass(className, classTag.classBundleName)
         }
     }
 
-    override fun getAMQPClassTag(klass: Class<*>): AMQPClassTag {
-        val bundle = bundleUtils.getBundle(klass)
-            ?: throw SandboxException("Class $klass is not loaded from any bundle.")
+    /**
+     * Returns the [ClassTag] for a given [klass]. Returns null if the class is not contained in any bundle, or is
+     * contained in a bundle that is not contained in any sandbox in the group.
+     *
+     * If [isKryoClassTag] is true, a [KryoClassTag] is returned. Otherwise, an [AMQPClassTag] is returned.
+     */
+    private fun getClassTag(klass: Class<*>, isKryoClassTag: Boolean): ClassTag? {
+        val bundle = bundleUtils.getBundle(klass) ?: return null
 
-        return if (platformSandbox.containsBundle(bundle)) {
-            AMQPClassTag(
-                PLACEHOLDER_CORDAPP_BUNDLE_NAME,
-                PLACEHOLDER_CPK_PUBLIC_KEY_HASHES,
-                isPlatformClass = true,
-                bundle.symbolicName
-            )
+        if (platformSandbox.containsBundle(bundle)) {
+            return if (isKryoClassTag) {
+                KryoClassTag(PLACEHOLDER_CPK_FILE_HASH, isPlatformClass = true, bundle.symbolicName)
+            } else {
+                AMQPClassTag(
+                    PLACEHOLDER_CORDAPP_BUNDLE_NAME,
+                    PLACEHOLDER_CPK_PUBLIC_KEY_HASHES,
+                    isPlatformClass = true,
+                    bundle.symbolicName
+                )
+            }
+        }
+
+        val sandbox = sandboxes.find { sandbox -> sandbox.containsBundle(bundle) } ?: return null
+        return if (isKryoClassTag) {
+            KryoClassTag(sandbox.cpk.cpkHash, isPlatformClass = false, bundle.symbolicName)
         } else {
-            val sandbox = sandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
-                ?: throw SandboxException("Bundle $bundle is not contained in any sandbox.")
             AMQPClassTag(
                 sandbox.cordappBundle.symbolicName,
                 sandbox.cpk.id.signers,
@@ -94,34 +112,4 @@ internal class SandboxGroupImpl(
             )
         }
     }
-
-    override fun getClass(className: String, classTag: ClassTag): Class<*>? {
-        return if (classTag.isPlatformClass) {
-            platformSandbox.loadClass(className, classTag.classBundleName)
-        } else {
-            val sandbox = when (classTag) {
-                is KryoClassTag -> getSandboxFromKryoClassTag(classTag)
-                is AMQPClassTag -> getSandboxFromAMQPClassTag(classTag)
-            }
-            sandbox.loadClass(className, classTag.classBundleName)
-        }
-    }
-
-
-    /** Returns the [CpkSandboxImpl] identified by the [kryoClassTag]. */
-    private fun getSandboxFromKryoClassTag(kryoClassTag: KryoClassTag) = sandboxes.find { sandbox ->
-        sandbox.cpk.cpkHash == kryoClassTag.cpkFileHash
-    } ?: throw SandboxException(
-        "The sandbox group does not contain a sandbox for the CPK with the requested hash, ${kryoClassTag.cpkFileHash}."
-    )
-
-    /** Returns the [CpkSandboxImpl] identified by the [amqpClassTag]. */
-    private fun getSandboxFromAMQPClassTag(amqpClassTag: AMQPClassTag) = sandboxes.find { sandbox ->
-        sandbox.cpk.id.signers == amqpClassTag.cpkPublicKeyHashes
-                && sandbox.cordappBundle.symbolicName == amqpClassTag.cordappBundleName
-    } ?: throw SandboxException(
-        "The sandbox group does not contain a sandbox for the CPK with the requested signers, " +
-                "${amqpClassTag.cpkPublicKeyHashes}, and the requested CorDapp bundle symbolic name, " +
-                "${amqpClassTag.cordappBundleName}."
-    )
 }
