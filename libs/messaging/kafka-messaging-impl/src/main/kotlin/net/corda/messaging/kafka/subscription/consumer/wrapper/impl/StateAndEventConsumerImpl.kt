@@ -46,8 +46,11 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
     private val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
 
+    private val currentStates = partitionState.currentStates
+    private val partitionsToSync = partitionState.partitionsToSync
+
     override fun getValue(key: K): S? {
-        partitionState.currentStates.forEach {
+        currentStates.forEach {
             val state = it.value[key]
             if (state != null) {
                 return state.second
@@ -83,7 +86,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private fun getSyncedEventPartitions() : Set<TopicPartition> {
         val partitionsSynced = mutableSetOf<TopicPartition>()
-        val statePartitionsToSync = partitionState.partitionsToSync
+        val statePartitionsToSync = partitionsToSync
         for (partition in statePartitionsToSync) {
             val partitionId = partition.key
             val stateTopicPartition = TopicPartition(stateTopic.topic, partitionId)
@@ -114,7 +117,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun updateInMemoryState(state: ConsumerRecordAndMeta<K, S>) {
-        partitionState.currentStates[state.record.partition()]?.compute(state.record.key()) { _, currentState ->
+        currentStates[state.record.partition()]?.compute(state.record.key()) { _, currentState ->
             if (currentState == null || currentState.first <= state.record.timestamp()) {
                 if (state.record.value() == null) {
                     // Removes this state from the map
@@ -136,7 +139,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             for (entry in states) {
                 val key = entry.key
                 val value = entry.value
-                val currentStatesByPartition = partitionState.currentStates.computeIfAbsent(partitionId) { mapFactory.createMap() }
+                val currentStatesByPartition = currentStates.computeIfAbsent(partitionId) { mapFactory.createMap() }
                 if (value != null) {
                     updatedStatesByKey[key] = value
                     currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)
@@ -151,6 +154,6 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun getStatesForPartition(partitionId: Int): Map<K, S> {
-        return partitionState.currentStates[partitionId]?.map { state -> Pair(state.key, state.value.second) }?.toMap() ?: mapOf()
+        return currentStates[partitionId]?.map { state -> Pair(state.key, state.value.second) }?.toMap() ?: mapOf()
     }
 }
