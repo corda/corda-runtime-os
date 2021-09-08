@@ -1,5 +1,3 @@
-import aQute.bnd.gradle.TestOSGi
-
 plugins {
     id "corda.osgi-test-conventions"
 }
