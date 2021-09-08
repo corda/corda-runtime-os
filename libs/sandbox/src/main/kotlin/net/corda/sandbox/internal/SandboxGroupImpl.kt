@@ -63,10 +63,11 @@ internal class SandboxGroupImpl(
     override fun getAMQPClassTag(klass: Class<*>) = getClassTag(klass, isKryoClassTag = false) as AMQPClassTag?
 
     override fun getClass(className: String, classTag: ClassTag): Class<*>? {
-        return if (classTag.isPlatformClass) {
-            platformSandbox.loadClass(className, classTag.classBundleName)
+        val sandbox = if (classTag.isPlatformClass) {
+            platformSandbox
+
         } else {
-            val sandbox = when (classTag) {
+            when (classTag) {
                 is KryoClassTag -> sandboxes.find { sandbox -> sandbox.cpk.cpkHash == classTag.cpkFileHash }
                 is AMQPClassTag -> sandboxes.find { sandbox ->
                     sandbox.cpk.id.signers == classTag.cpkPublicKeyHashes
@@ -74,8 +75,9 @@ internal class SandboxGroupImpl(
                 }
                 else -> throw SandboxException("Unrecognised class tag type ${classTag::class.java.name}.")
             }
-            sandbox?.loadClass(className, classTag.classBundleName)
         }
+
+        return sandbox?.loadClass(className, classTag.classBundleName)
     }
 
     /**

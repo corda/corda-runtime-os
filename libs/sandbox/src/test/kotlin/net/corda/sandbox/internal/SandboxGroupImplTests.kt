@@ -2,7 +2,9 @@ package net.corda.sandbox.internal
 
 import net.corda.packaging.Cpk
 import net.corda.sandbox.AMQPClassTag
+import net.corda.sandbox.ClassTag
 import net.corda.sandbox.KryoClassTag
+import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
@@ -10,6 +12,7 @@ import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
@@ -53,9 +56,11 @@ class SandboxGroupImplTests {
         whenever(cpk).thenReturn(mockCpk)
         whenever(containsBundle(mockNonPlatformBundle)).thenReturn(true)
         whenever(cordappBundle).thenReturn(mockCordappBundle)
+        whenever(loadClass(nonPlatformClass.name, NON_PLATFORM_BUNDLE_NAME)).thenReturn(nonPlatformClass)
     }
     private val mockPlatformSandbox = mock<SandboxInternal>().apply {
         whenever(containsBundle(mockPlatformBundle)).thenReturn(true)
+        whenever(loadClass(platformClass.name, PLATFORM_BUNDLE_NAME)).thenReturn(platformClass)
     }
 
     private val mockBundleUtils = mock<BundleUtils>().apply {
@@ -66,6 +71,20 @@ class SandboxGroupImplTests {
 
     private val sandboxesById = mapOf(mockCpk.id to mockNonPlatformSandbox)
     private val sandboxGroupImpl = SandboxGroupImpl(mockBundleUtils, sandboxesById, mockPlatformSandbox)
+
+    private val kryoNonPlatformClassTag = KryoClassTag(mockCpk.cpkHash, false, NON_PLATFORM_BUNDLE_NAME)
+    private val kryoPlatformClassTag = KryoClassTag(PLACEHOLDER_CPK_FILE_HASH, true, PLATFORM_BUNDLE_NAME)
+
+    private val amqpNonPlatformClassTag = AMQPClassTag(
+        mockNonPlatformSandbox.cordappBundle.symbolicName,
+        mockCpk.id.signers,
+        false,
+        NON_PLATFORM_BUNDLE_NAME)
+    private val amqpPlatformClassTag = AMQPClassTag(
+        PLACEHOLDER_CORDAPP_BUNDLE_NAME,
+        PLACEHOLDER_CPK_PUBLIC_KEY_HASHES,
+        true,
+        PLATFORM_BUNDLE_NAME)
 
     /** Generates a random [SecureHash]. */
     private fun randomSecureHash(): SecureHash {
@@ -89,14 +108,12 @@ class SandboxGroupImplTests {
 
     @Test
     fun `creates valid Kryo class tag for a non-platform class`() {
-        val expectedKryoClassTag = KryoClassTag(mockCpk.cpkHash, false, NON_PLATFORM_BUNDLE_NAME)
-        assertEquals(expectedKryoClassTag, sandboxGroupImpl.getKryoClassTag(nonPlatformClass))
+        assertEquals(kryoNonPlatformClassTag, sandboxGroupImpl.getKryoClassTag(nonPlatformClass))
     }
 
     @Test
     fun `creates valid Kryo class tag for a platform class`() {
-        val expectedKryoClassTag = KryoClassTag(PLACEHOLDER_CPK_FILE_HASH, true, PLATFORM_BUNDLE_NAME)
-        assertEquals(expectedKryoClassTag, sandboxGroupImpl.getKryoClassTag(platformClass))
+        assertEquals(kryoPlatformClassTag, sandboxGroupImpl.getKryoClassTag(platformClass))
     }
 
     @Test
@@ -111,22 +128,12 @@ class SandboxGroupImplTests {
 
     @Test
     fun `creates valid AMQP class tag for a non-platform class`() {
-        val expectedAMQPClassTag = AMQPClassTag(
-            mockNonPlatformSandbox.cordappBundle.symbolicName,
-            mockCpk.id.signers,
-            false,
-            NON_PLATFORM_BUNDLE_NAME)
-        assertEquals(expectedAMQPClassTag, sandboxGroupImpl.getAMQPClassTag(nonPlatformClass))
+        assertEquals(amqpNonPlatformClassTag, sandboxGroupImpl.getAMQPClassTag(nonPlatformClass))
     }
 
     @Test
     fun `creates valid AMQP class tag for a platform class`() {
-        val expectedAMQPClassTag = AMQPClassTag(
-            PLACEHOLDER_CORDAPP_BUNDLE_NAME,
-            PLACEHOLDER_CPK_PUBLIC_KEY_HASHES,
-            true,
-            PLATFORM_BUNDLE_NAME)
-        assertEquals(expectedAMQPClassTag, sandboxGroupImpl.getAMQPClassTag(platformClass))
+        assertEquals(amqpPlatformClassTag, sandboxGroupImpl.getAMQPClassTag(platformClass))
     }
 
     @Test
@@ -137,5 +144,67 @@ class SandboxGroupImplTests {
     @Test
     fun `returns null if asked to create AMQP class tag for a class in a bundle not in the sandbox group`() {
         assertNull(sandboxGroupImpl.getAMQPClassTag(nonSandboxClass))
+    }
+
+    @Test
+    fun `returns non-platform class identified by a Kryo class tag`() {
+        assertEquals(nonPlatformClass, sandboxGroupImpl.getClass(nonPlatformClass.name, kryoNonPlatformClassTag))
+    }
+
+    @Test
+    fun `returns platform class identified by a Kryo class tag`() {
+        assertEquals(platformClass, sandboxGroupImpl.getClass(platformClass.name, kryoPlatformClassTag))
+    }
+
+    @Test
+    fun `returns non-platform class identified by an AMQP class tag`() {
+        assertEquals(nonPlatformClass, sandboxGroupImpl.getClass(nonPlatformClass.name, amqpNonPlatformClassTag))
+    }
+
+    @Test
+    fun `returns platform class identified by an AMQP class tag`() {
+        assertEquals(platformClass, sandboxGroupImpl.getClass(platformClass.name, amqpPlatformClassTag))
+    }
+
+    @Test
+    fun `returns null if asked to return class but cannot find matching sandbox for the Kryo class tag`() {
+        val invalidCpkFileHash = randomSecureHash()
+        val kryoClassTag = KryoClassTag(invalidCpkFileHash, false, NON_PLATFORM_BUNDLE_NAME)
+        assertNull(sandboxGroupImpl.getClass(nonPlatformClass.name, kryoClassTag))
+    }
+
+    @Test
+    fun `returns null if asked to return class but cannot find matching sandbox for the AMQP class tag`() {
+        val invalidCordappBundleName = "invalid_cordapp_bundle_name"
+        val invalidCordappBundleNameAmqpClassTag = AMQPClassTag(
+            invalidCordappBundleName,
+            mockCpk.id.signers,
+            false,
+            NON_PLATFORM_BUNDLE_NAME)
+        assertNull(sandboxGroupImpl.getClass(nonPlatformClass.name, invalidCordappBundleNameAmqpClassTag))
+
+        val invalidSigners = TreeSet(setOf(randomSecureHash()))
+        val invalidSignersAmqpClassTag = AMQPClassTag(
+            mockNonPlatformSandbox.cordappBundle.symbolicName,
+            invalidSigners,
+            false,
+            NON_PLATFORM_BUNDLE_NAME)
+        assertNull(sandboxGroupImpl.getClass(nonPlatformClass.name, invalidSignersAmqpClassTag))
+    }
+
+    @Test
+    fun `returns null if asked to return class but cannot find class in matching sandbox`() {
+        assertNull(sandboxGroupImpl.getClass(nonSandboxClass.name, kryoNonPlatformClassTag))
+    }
+
+    @Test
+    fun `throws if asked to return class identified by an unrecognised tag type`() {
+        val unrecognisedClassTag = object : ClassTag {
+            override val isPlatformClass: Boolean = false
+            override val classBundleName: String = ""
+        }
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.getClass(platformClass.name, unrecognisedClassTag)
+        }
     }
 }

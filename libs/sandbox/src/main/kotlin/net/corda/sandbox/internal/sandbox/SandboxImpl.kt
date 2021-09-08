@@ -20,9 +20,7 @@ internal open class SandboxImpl(
     private val privateBundles: Set<Bundle>
 ) : SandboxInternal {
     // The other sandboxes whose services, bundles and events this sandbox can receive.
-    private val visibleSandboxes = ConcurrentHashMap.newKeySet<Sandbox>().also {
-        it.add(this)
-    }
+    private val visibleSandboxes = ConcurrentHashMap.newKeySet<Sandbox>().also { hashMap -> hashMap.add(this) }
 
     // All the bundles in the sandbox.
     private val allBundles = privateBundles + publicBundles
