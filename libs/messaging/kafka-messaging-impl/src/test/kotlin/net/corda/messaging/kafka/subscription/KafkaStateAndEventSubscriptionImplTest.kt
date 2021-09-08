@@ -64,7 +64,8 @@ class KafkaStateAndEventSubscriptionImplTest {
         doAnswer { producer }.whenever(builder).createProducer(any())
         doAnswer { setOf(topicPartition) }.whenever(stateConsumer).assignment()
         doAnswer { listOf(state) }.whenever(stateConsumer).poll()
-        doAnswer { Pair(stateAndEventConsumer, rebalanceListener) }.whenever(builder).createStateEventConsumerAndRebalanceListener(any(), any(), any(), any(), anyOrNull())
+        doAnswer { Pair(stateAndEventConsumer, rebalanceListener) }.whenever(builder)
+            .createStateEventConsumerAndRebalanceListener(any(), any(), any(), any(), anyOrNull())
 
         val mockConsumerRecords = generateMockConsumerRecordAndMetaList(iterations, TOPIC, 0)
         var eventsPaused = false
@@ -97,7 +98,9 @@ class KafkaStateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning) { Thread.sleep(10) }
+        while (subscription.isRunning) {
+            Thread.sleep(10)
+        }
         assertThat(latch.count).isEqualTo(0)
 
         val eventConsumer = stateAndEventConsumer.eventConsumer
@@ -134,7 +137,9 @@ class KafkaStateAndEventSubscriptionImplTest {
         )
 
         subscription.start()
-        while (subscription.isRunning) { Thread.sleep(10) }
+        while (subscription.isRunning) {
+            Thread.sleep(10)
+        }
         assertThat(latch.count).isEqualTo(0)
 
         val eventConsumer = stateAndEventConsumer.eventConsumer
