@@ -82,6 +82,7 @@ class SingletonSerializeAsTokenSerializerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `SingletonSerializeAsToken class with custom tokenName serializes as a token and returns the original tokenized instance when deserialized`() {
         val bytes = serializer.serialize(service4, context)
         val output = serializer.deserialize(bytes.sequence(), MyService4::class.java, context)
@@ -89,6 +90,7 @@ class SingletonSerializeAsTokenSerializerTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `SingletonSerializeAsToken class with custom toToken serializes as a token and returns the original tokenized instance when deserialized`() {
         val bytes = serializer.serialize(service5, context)
         val output = serializer.deserialize(bytes.sequence(), MyService5::class.java, context)

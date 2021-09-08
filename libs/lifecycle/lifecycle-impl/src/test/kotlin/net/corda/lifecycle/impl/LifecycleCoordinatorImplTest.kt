@@ -919,6 +919,7 @@ internal class LifecycleCoordinatorImplTest {
     }
 
     @Test
+    @Suppress("TooGenericExceptionThrown")
     fun `when a coordinator stops with an error the status is set to error`() {
         var startLatch = CountDownLatch(1)
         val stopLatch = CountDownLatch(1)

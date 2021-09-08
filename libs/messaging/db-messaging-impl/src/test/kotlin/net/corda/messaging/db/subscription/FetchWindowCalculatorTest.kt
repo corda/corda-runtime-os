@@ -26,14 +26,18 @@ class FetchWindowCalculatorTest {
             2 to 6L,
             3 to 12L
         )
-        maxVisibleOffsetsPerPartition.forEach { (partition, offset) -> `when`(offsetTrackersManager.maxVisibleOffset(topic, partition)).thenReturn(offset) }
+        maxVisibleOffsetsPerPartition.forEach { (partition, offset) ->
+            `when`(offsetTrackersManager.maxVisibleOffset(topic, partition)).thenReturn(offset)
+        }
 
         val windows = fetchWindowCalculator.calculateWindows(topic, 10, committedOffsetsPerPartition)
-        assertThat(windows).containsAll(listOf(
-            FetchWindow(1, 6, 25, 8),
-            FetchWindow(2, 5, 6, 1),
-            FetchWindow(3, 9, 12, 1)
-        ))
+        assertThat(windows).containsAll(
+            listOf(
+                FetchWindow(1, 6, 25, 8),
+                FetchWindow(2, 5, 6, 1),
+                FetchWindow(3, 9, 12, 1)
+            )
+        )
     }
 
     @Test
@@ -48,14 +52,18 @@ class FetchWindowCalculatorTest {
             2 to 25L,
             3 to 25L
         )
-        maxVisibleOffsetsPerPartition.forEach { (partition, offset) -> `when`(offsetTrackersManager.maxVisibleOffset(topic, partition)).thenReturn(offset) }
+        maxVisibleOffsetsPerPartition.forEach { (partition, offset) ->
+            `when`(offsetTrackersManager.maxVisibleOffset(topic, partition)).thenReturn(offset)
+        }
 
         val windows = fetchWindowCalculator.calculateWindows(topic, 15, committedOffsetsPerPartition)
-        assertThat(windows).containsAll(listOf(
-            FetchWindow(1, 6, 25, 5),
-            FetchWindow(2, 6, 25, 5),
-            FetchWindow(3, 6, 25, 5)
-        ))
+        assertThat(windows).containsAll(
+            listOf(
+                FetchWindow(1, 6, 25, 5),
+                FetchWindow(2, 6, 25, 5),
+                FetchWindow(3, 6, 25, 5)
+            )
+        )
     }
 
     @Test
@@ -70,12 +78,17 @@ class FetchWindowCalculatorTest {
             2 to 5L,
             3 to 5L
         )
-        maxVisibleOffsetsPerPartition.forEach { (partition, offset) -> `when`(offsetTrackersManager.maxVisibleOffset(topic, partition)).thenReturn(offset) }
+        maxVisibleOffsetsPerPartition.forEach {
+            (partition, offset) ->
+            `when`(offsetTrackersManager.maxVisibleOffset(topic, partition)).thenReturn(offset)
+        }
 
         val windows = fetchWindowCalculator.calculateWindows(topic, 10, committedOffsetsPerPartition)
-        assertThat(windows).containsAll(listOf(
-            FetchWindow(1, 6, 8, 10)
-        ))
+        assertThat(windows).containsAll(
+            listOf(
+                FetchWindow(1, 6, 8, 10)
+            )
+        )
     }
 
     @Test
@@ -90,10 +103,11 @@ class FetchWindowCalculatorTest {
             2 to 5L,
             3 to 5L
         )
-        maxVisibleOffsetsPerPartition.forEach { (partition, offset) -> `when`(offsetTrackersManager.maxVisibleOffset(topic, partition)).thenReturn(offset) }
+        maxVisibleOffsetsPerPartition.forEach { (partition, offset) ->
+            `when`(offsetTrackersManager.maxVisibleOffset(topic, partition)).thenReturn(offset)
+        }
 
         val windows = fetchWindowCalculator.calculateWindows(topic, 15, committedOffsetsPerPartition)
         assertThat(windows).isEmpty()
     }
-
 }

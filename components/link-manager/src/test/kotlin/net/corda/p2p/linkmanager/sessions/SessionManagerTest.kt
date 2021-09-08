@@ -15,10 +15,12 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.ProtocolConstants
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
@@ -58,7 +60,7 @@ class SessionManagerTest {
         val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("http://10.0.0.1/")
         const val MAX_MESSAGE_SIZE = 1024 * 1024
         private val provider = BouncyCastleProvider()
-        private val signature = Signature.getInstance("ECDSA", provider)
+        private val signature = Signature.getInstance(ECDSA_SIGNATURE_ALGO, provider)
         lateinit var loggingInterceptor: LoggingInterceptor
 
         private fun sessionManagerWithNetMap(
@@ -89,7 +91,6 @@ class SessionManagerTest {
         fun setup() {
             loggingInterceptor = LoggingInterceptor.setupLogging()
         }
-
     }
 
     @AfterEach
@@ -136,19 +137,26 @@ class SessionManagerTest {
 
     private val payload = ByteBuffer.wrap("Hi inbound it's outbound here".toByteArray())
 
-    private val wrappedMessage = AuthenticatedMessageAndKey(AuthenticatedMessage(AuthenticatedMessageHeader(
-        INBOUND_PARTY.toHoldingIdentity(),
-        OUTBOUND_PARTY.toHoldingIdentity(),
-        null,
-        "messageId",
-        "", "system-1"), payload), KEY)
+    private val wrappedMessage = AuthenticatedMessageAndKey(
+        AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                INBOUND_PARTY.toHoldingIdentity(),
+                OUTBOUND_PARTY.toHoldingIdentity(),
+                null,
+                "messageId",
+                "", "system-1"
+            ),
+            payload
+        ),
+        KEY
+    )
 
     private fun sessionManager(
         party: LinkManagerNetworkMap.HoldingIdentity,
         queues: MockSessionMessageQueues = MockSessionMessageQueues(),
         mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY,
         cryptoService: LinkManagerCryptoService? = null
-    ) : SessionManagerImpl {
+    ): SessionManagerImpl {
         val netMap = globalNetMap.getSessionNetworkMapForNode(party)
         val realCryptoService = cryptoService ?: MockCryptoService(netMap)
         return SessionManagerImpl(
@@ -156,7 +164,8 @@ class SessionManagerTest {
             netMap,
             realCryptoService,
             MAX_MESSAGE_SIZE,
-            queues)
+            queues
+        )
     }
 
     private fun negotiateOutboundSession(
@@ -170,7 +179,9 @@ class SessionManagerTest {
 
         val initiatorHelloMessage = state.sessionInitMessage.payload as InitiatorHelloMessage
 
-        val protocolResponder = AuthenticationProtocolResponder(initiatorHelloMessage.header.sessionId, setOf(supportedMode), MAX_MESSAGE_SIZE)
+        val protocolResponder = AuthenticationProtocolResponder(
+            initiatorHelloMessage.header.sessionId, setOf(supportedMode), MAX_MESSAGE_SIZE
+        )
         protocolResponder.receiveInitiatorHello(initiatorHelloMessage)
 
         val initiatorHandshakeMessage = outboundManager.processSessionMessage(LinkInMessage(protocolResponder.generateResponderHello()))
@@ -180,7 +191,8 @@ class SessionManagerTest {
 
         protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshakeMessage.payload as InitiatorHandshakeMessage,
-            netMapOutbound.getKeyPair().public
+            netMapOutbound.getKeyPair().public,
+            KeyAlgorithm.ECDSA
         )
 
         val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
@@ -196,7 +208,10 @@ class SessionManagerTest {
         inboundManager: SessionManager,
         supportedMode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY
     ): Session {
-        val protocolInitiator = AuthenticationProtocolInitiator(sessionId, setOf(supportedMode), MAX_MESSAGE_SIZE, netMapOutbound.getKeyPair().public, GROUP_ID)
+        val protocolInitiator = AuthenticationProtocolInitiator(
+            sessionId, setOf(supportedMode),
+            MAX_MESSAGE_SIZE, netMapOutbound.getKeyPair().public, GROUP_ID
+        )
         val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
         val responderHelloMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))?.payload
         assertTrue(responderHelloMessage is ResponderHelloMessage)
@@ -210,7 +225,8 @@ class SessionManagerTest {
 
         protocolInitiator.validatePeerHandshakeMessage(
             responderHandshakeMessage?.payload as ResponderHandshakeMessage,
-            netMapInbound.getKeyPair().public
+            netMapInbound.getKeyPair().public,
+            KeyAlgorithm.ECDSA
         )
 
         return protocolInitiator.getSession()
@@ -221,7 +237,9 @@ class SessionManagerTest {
         sessionId: String,
         mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY,
     ): InitiatorHandshakeMessage {
-        val protocolInitiator = AuthenticationProtocolInitiator(sessionId, setOf(mode), MAX_MESSAGE_SIZE, netMapOutbound.getKeyPair().public, GROUP_ID)
+        val protocolInitiator = AuthenticationProtocolInitiator(
+            sessionId, setOf(mode), MAX_MESSAGE_SIZE, netMapOutbound.getKeyPair().public, GROUP_ID
+        )
         val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
 
         val responderHello = inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))?.payload
@@ -246,7 +264,8 @@ class SessionManagerTest {
         val protocolResponder = AuthenticationProtocolResponder(
             message.header.sessionId,
             setOf(mode),
-            MAX_MESSAGE_SIZE)
+            MAX_MESSAGE_SIZE
+        )
         protocolResponder.receiveInitiatorHello(message)
         return protocolResponder.generateResponderHello()
     }
@@ -269,14 +288,16 @@ class SessionManagerTest {
         val protocolResponder = AuthenticationProtocolResponder(
             initiatorHelloMessage.header.sessionId,
             setOf(mode),
-            MAX_MESSAGE_SIZE)
+            MAX_MESSAGE_SIZE
+        )
         protocolResponder.receiveInitiatorHello(initiatorHelloMessage)
         val responderHello = protocolResponder.generateResponderHello()
         protocolResponder.generateHandshakeSecrets()
         val initiatorHandshakeMessage = outboundManager.processSessionMessage(LinkInMessage(responderHello))
         protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshakeMessage?.payload as InitiatorHandshakeMessage,
-            netMapOutbound.getKeyPair().public
+            netMapOutbound.getKeyPair().public,
+            KeyAlgorithm.ECDSA
         )
         return protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
             signDataWithKey(netMapInbound.getKeyPair().private, it)
@@ -308,7 +329,10 @@ class SessionManagerTest {
         assertTrue(messageFromQueue.payload is AuthenticatedDataMessage)
         val authenticatedDataMessage = (messageFromQueue.payload as AuthenticatedDataMessage)
 
-        val responderMessage = extractPayload(responderSession, "", DataMessage.Authenticated(authenticatedDataMessage), AuthenticatedMessageAndKey::fromByteBuffer)
+        val responderMessage = extractPayload(
+            responderSession, "",
+            DataMessage.Authenticated(authenticatedDataMessage), AuthenticatedMessageAndKey::fromByteBuffer
+        )
 
         assertNotNull(responderMessage)
         assertEquals(wrappedMessage.message.payload, responderMessage!!.message.payload)
@@ -327,7 +351,11 @@ class SessionManagerTest {
         assertTrue(messageFromQueue.payload is AuthenticatedEncryptedDataMessage)
         val authenticatedDataMessage = (messageFromQueue.payload as AuthenticatedEncryptedDataMessage)
 
-        val responderMessage = extractPayload(responderSession, "", DataMessage.AuthenticatedAndEncrypted(authenticatedDataMessage), AuthenticatedMessageAndKey::fromByteBuffer)
+        val responderMessage = extractPayload(
+            responderSession, "",
+            DataMessage.AuthenticatedAndEncrypted(authenticatedDataMessage),
+            AuthenticatedMessageAndKey::fromByteBuffer
+        )
         assertNotNull(responderMessage)
 
         assertEquals(wrappedMessage.message.payload, responderMessage!!.message.payload)
@@ -402,14 +430,18 @@ class SessionManagerTest {
         val fakeSession = "Fake Session"
         Mockito.`when`(mockHeader.sessionId).thenReturn(fakeSession)
 
-        val mockMessages = listOf(mockResponderHelloMessage,
+        val mockMessages = listOf(
+            mockResponderHelloMessage,
             mockResponderHandshakeMessage,
-            mockInitiatorHandshakeMessage)
+            mockInitiatorHandshakeMessage
+        )
 
         for (mockMessage in mockMessages) {
             assertNull(inboundManager.processSessionMessage(LinkInMessage(mockMessage)))
-            loggingInterceptor.assertSingleWarning("Received ${mockMessage::class.java.simpleName} with sessionId" +
-                    " $fakeSession but there is no pending session with this id. The message was discarded.")
+            loggingInterceptor.assertSingleWarning(
+                "Received ${mockMessage::class.java.simpleName} with sessionId" +
+                    " $fakeSession but there is no pending session with this id. The message was discarded."
+            )
             loggingInterceptor.reset()
         }
     }
@@ -430,10 +462,12 @@ class SessionManagerTest {
         val responderHelloMessage = LinkInMessage(protocolResponder.generateResponderHello())
         val initiatorHandshakeMessage = outboundManager.processSessionMessage(responderHelloMessage)
 
-        //Duplicate Responder Hello message (second time the SessionManager should return null).
+        // Duplicate Responder Hello message (second time the SessionManager should return null).
         assertNull(outboundManager.processSessionMessage(responderHelloMessage))
-        loggingInterceptor.assertSingleWarning("Already received a ${ResponderHelloMessage::class.java.simpleName} for " +
-            "$sessionId. The message was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Already received a ${ResponderHelloMessage::class.java.simpleName} for " +
+                "$sessionId. The message was discarded."
+        )
         loggingInterceptor.reset()
 
         assertTrue(initiatorHandshakeMessage!!.payload is InitiatorHandshakeMessage)
@@ -441,18 +475,21 @@ class SessionManagerTest {
         protocolResponder.generateHandshakeSecrets()
         protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshakeMessage.payload as InitiatorHandshakeMessage,
-            netMapOutbound.getKeyPair().public
+            netMapOutbound.getKeyPair().public,
+            KeyAlgorithm.ECDSA
         )
 
         val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
             signDataWithKey(netMapInbound.getKeyPair().private, it)
         }
 
-        //Duplicate ResponderHandshakeMessage
+        // Duplicate ResponderHandshakeMessage
         assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHandshakeMessage)))
         assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHandshakeMessage)))
-        loggingInterceptor.assertSingleWarning("Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId " +
-            "$sessionId but there is no pending session with this id. The message was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId " +
+                "$sessionId but there is no pending session with this id. The message was discarded."
+        )
     }
 
     @Test
@@ -461,7 +498,10 @@ class SessionManagerTest {
         val sessionId = "FakeSession"
         val inboundManager = sessionManager(INBOUND_PARTY)
 
-        val protocolInitiator = AuthenticationProtocolInitiator(sessionId, setOf(mode), MAX_MESSAGE_SIZE, netMapOutbound.getKeyPair().public, GROUP_ID)
+        val protocolInitiator = AuthenticationProtocolInitiator(
+            sessionId, setOf(mode), MAX_MESSAGE_SIZE,
+            netMapOutbound.getKeyPair().public, GROUP_ID
+        )
         val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
         val responderHelloMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
         assertTrue(responderHelloMessage!!.payload is ResponderHelloMessage)
@@ -479,10 +519,12 @@ class SessionManagerTest {
         val responderHandshakeMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
         assertTrue(responderHandshakeMessage?.payload is ResponderHandshakeMessage)
 
-        //Duplicate InitiatorHandshakeMessage
+        // Duplicate InitiatorHandshakeMessage
         assertNull(inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage)))
-        loggingInterceptor.assertSingleWarning("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId " +
-            "$sessionId but there is no pending session with this id. The message was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId " +
+                "$sessionId but there is no pending session with this id. The message was discarded."
+        )
     }
 
     @Test
@@ -501,8 +543,10 @@ class SessionManagerTest {
         Mockito.`when`(mockInitiatorHandshakeMessage.encryptedData).thenReturn(ByteBuffer.wrap("EncryptedData".toByteArray()))
 
         inboundManager.processSessionMessage(LinkInMessage(mockInitiatorHandshakeMessage))
-        loggingInterceptor.assertSingleWarning("Received ${mockInitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId," +
-            " which failed validation with: The handshake message was invalid. The message was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Received ${mockInitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId," +
+                " which failed validation with: The handshake message was invalid. The message was discarded."
+        )
     }
 
     @Test
@@ -519,9 +563,11 @@ class SessionManagerTest {
         Mockito.`when`(mockResponderHandshakeMessage.authTag).thenReturn(ByteBuffer.wrap("AuthTag".toByteArray()))
         Mockito.`when`(mockResponderHandshakeMessage.encryptedData).thenReturn(ByteBuffer.wrap("EncryptedData".toByteArray()))
 
-        assertNull(outboundManager.processSessionMessage(LinkInMessage(mockResponderHandshakeMessage)) )
-        loggingInterceptor.assertSingleWarning("Received ${mockResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId," +
-            " which failed validation with: The handshake message was invalid. The message was discarded.")
+        assertNull(outboundManager.processSessionMessage(LinkInMessage(mockResponderHandshakeMessage)))
+        loggingInterceptor.assertSingleWarning(
+            "Received ${mockResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId," +
+                " which failed validation with: The handshake message was invalid. The message was discarded."
+        )
     }
 
     @Test
@@ -550,8 +596,10 @@ class SessionManagerTest {
         val state = outboundSessionManager.processOutboundFlowMessage(message)
 
         assertTrue(state is SessionManager.SessionState.CannotEstablishSession)
-        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId $groupId." +
-            " The sessionInit message was not sent.")
+        loggingInterceptor.assertSingleWarning(
+            "Could not find the network type in the NetworkMap for groupId $groupId." +
+                " The sessionInit message was not sent."
+        )
     }
 
     @Test
@@ -576,8 +624,10 @@ class SessionManagerTest {
         val state = outboundSessionManager.processOutboundFlowMessage(message)
 
         assertTrue(state is SessionManager.SessionState.CannotEstablishSession)
-        loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $OUTBOUND_PARTY but our identity " +
-            "$PARTY_NOT_IN_NETMAP is not in the network map. The sessionInit message was not sent.")
+        loggingInterceptor.assertSingleWarning(
+            "Attempted to start session negotiation with peer $OUTBOUND_PARTY but our identity " +
+                "$PARTY_NOT_IN_NETMAP is not in the network map. The sessionInit message was not sent."
+        )
     }
 
     @Test
@@ -585,18 +635,26 @@ class SessionManagerTest {
         val outboundSessionManager = sessionManager(OUTBOUND_PARTY)
 
         val message = AuthenticatedMessageAndKey(
-            AuthenticatedMessage(AuthenticatedMessageHeader(
-            PARTY_NOT_IN_NETMAP.toHoldingIdentity(),
-            OUTBOUND_PARTY.toHoldingIdentity(),
-            null,
-            "messageId",
-            "", "system-1"), payload), KEY)
+            AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    PARTY_NOT_IN_NETMAP.toHoldingIdentity(),
+                    OUTBOUND_PARTY.toHoldingIdentity(),
+                    null,
+                    "messageId",
+                    "", "system-1"
+                ),
+                payload
+            ),
+            KEY
+        )
 
         val state = outboundSessionManager.processOutboundFlowMessage(message)
 
         assertTrue(state is SessionManager.SessionState.CannotEstablishSession)
-        loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PARTY_NOT_IN_NETMAP which is not in" +
-            " the network map. The sessionInit message was not sent.")
+        loggingInterceptor.assertSingleWarning(
+            "Attempted to start session negotiation with peer $PARTY_NOT_IN_NETMAP which is not in" +
+                " the network map. The sessionInit message was not sent."
+        )
     }
 
     @Test
@@ -611,9 +669,11 @@ class SessionManagerTest {
         val responderHello = negotiateToResponderHello(outboundManager, wrappedMessage)
         assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHello)))
 
-        loggingInterceptor.assertSingleWarning("Received ${ResponderHelloMessage::class.java.simpleName} with sessionId" +
-            " ${responderHello.header.sessionId} but cannot find public key for our identity ${outboundInfo.holdingIdentity}." +
-            " The message was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Received ${ResponderHelloMessage::class.java.simpleName} with sessionId" +
+                " ${responderHello.header.sessionId} but cannot find public key for our identity ${outboundInfo.holdingIdentity}." +
+                " The message was discarded."
+        )
     }
 
     @Test
@@ -627,8 +687,10 @@ class SessionManagerTest {
         val responderHello = negotiateToResponderHello(outboundManager, wrappedMessage)
         assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHello)))
 
-        loggingInterceptor.assertSingleWarning("Received ResponderHelloMessage with sessionId ${responderHello.header.sessionId}" +
-            " from peer $INBOUND_PARTY which is not in the network map. The message was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Received ResponderHelloMessage with sessionId ${responderHello.header.sessionId}" +
+                " from peer $INBOUND_PARTY which is not in the network map. The message was discarded."
+        )
     }
 
     @Test
@@ -648,8 +710,10 @@ class SessionManagerTest {
         val responderHello = negotiateToResponderHello(outboundManager, wrappedMessage)
         assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHello)))
 
-        loggingInterceptor.assertSingleWarning("Could not find the private key corresponding to public key" +
-            " $key. The ResponderHelloMessage with sessionId ${responderHello.header.sessionId} was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Could not find the private key corresponding to public key" +
+                " $key. The ResponderHelloMessage with sessionId ${responderHello.header.sessionId} was discarded."
+        )
     }
 
     @Test
@@ -663,8 +727,10 @@ class SessionManagerTest {
         val responderHello = negotiateToResponderHello(outboundManager, wrappedMessage)
         assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHello)))
 
-        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId $GROUP_ID. The " +
-            "ResponderHelloMessage for sessionId ${responderHello.header.sessionId} was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Could not find the network type in the NetworkMap for groupId $GROUP_ID. The " +
+                "ResponderHelloMessage for sessionId ${responderHello.header.sessionId} was discarded."
+        )
     }
 
     @Test
@@ -684,9 +750,12 @@ class SessionManagerTest {
         val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
         inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))?.payload
 
-        loggingInterceptor.assertSingleWarning("Received InitiatorHelloMessage with sessionId SessionId. The received public key hash" +
-            " (${initiatorHelloMessage.source.initiatorPublicKeyHash.array().toBase64()}) corresponding to one of the senders holding " +
-            "identities is not in the network map. The message was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Received InitiatorHelloMessage with sessionId SessionId. The received public key hash" +
+                " (${initiatorHelloMessage.source.initiatorPublicKeyHash.array().toBase64()}) " +
+                "corresponding to one of the senders holding " +
+                "identities is not in the network map. The message was discarded."
+        )
     }
 
     @Test
@@ -709,8 +778,10 @@ class SessionManagerTest {
         val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
         inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))?.payload
 
-        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId $GROUP_ID. " +
-            "The InitiatorHelloMessage for sessionId SessionId was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Could not find the network type in the NetworkMap for groupId $GROUP_ID. " +
+                "The InitiatorHelloMessage for sessionId SessionId was discarded."
+        )
     }
 
     @Test
@@ -722,7 +793,7 @@ class SessionManagerTest {
         Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
         Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
 
-        //Called first inside processInitiatorHello and then in processInitiatorHandshake
+        // Called first inside processInitiatorHello and then in processInitiatorHandshake
         Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
             .thenReturn(netMapOutbound.getOurMemberInfo()).thenReturn(null)
 
@@ -733,9 +804,12 @@ class SessionManagerTest {
         assertNull(response)
 
         val keyHash = hashKeyToBase64(netMapOutbound.getKeyPair().public)
-        loggingInterceptor.assertSingleWarning("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
-            " The received public key hash ($keyHash) corresponding to one of the senders holding identities is not in the network map." +
-            " The message was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
+                " The received public key hash ($keyHash) corresponding to one of the senders holding " +
+                "identities is not in the network map." +
+                " The message was discarded."
+        )
     }
 
     @Test
@@ -756,9 +830,11 @@ class SessionManagerTest {
         assertNull(response)
 
         val keyHash = hashKeyToBase64(netMapInbound.getKeyPair().public)
-        loggingInterceptor.assertSingleWarning("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
-            " The received public key hash ($keyHash) corresponding to one of our holding identities is not in the network map." +
-            " The message was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
+                " The received public key hash ($keyHash) corresponding to one of our holding identities is not in the network map." +
+                " The message was discarded."
+        )
     }
 
     @Test
@@ -784,9 +860,11 @@ class SessionManagerTest {
         val response = inboundManager.processSessionMessage(LinkInMessage(message))
         assertNull(response)
 
-        loggingInterceptor.assertSingleWarning("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
-            " Could not find the private key corresponding to public key ${netMapOutbound.getKeyPair().public}. The message was" +
-            " discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
+                " Could not find the private key corresponding to public key ${netMapOutbound.getKeyPair().public}. The message was" +
+                " discarded."
+        )
     }
 
     @Test
@@ -807,8 +885,10 @@ class SessionManagerTest {
         val response = inboundManager.processSessionMessage(LinkInMessage(message))
         assertNull(response)
 
-        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId" +
-            " $GROUP_ID. The InitiatorHandshakeMessage for sessionId $sessionId was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Could not find the network type in the NetworkMap for groupId" +
+                " $GROUP_ID. The InitiatorHandshakeMessage for sessionId $sessionId was discarded."
+        )
     }
 
     @Test
@@ -817,7 +897,7 @@ class SessionManagerTest {
         Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
 
         Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
-        //Called for the first time in `getSessionInitMessage`, the second time in `processResponderHello` and
+        // Called for the first time in `getSessionInitMessage`, the second time in `processResponderHello` and
         // the third in processResponderHandshake.
         Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY))
             .thenReturn(netMapInbound.getOurMemberInfo())
@@ -835,7 +915,9 @@ class SessionManagerTest {
         assertNull(response)
 
         val sessionId = message.header.sessionId
-        loggingInterceptor.assertSingleWarning("Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId " +
-            "$sessionId from peer $INBOUND_PARTY which is not in the network map. The message was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId " +
+                "$sessionId from peer $INBOUND_PARTY which is not in the network map. The message was discarded."
+        )
     }
 }

@@ -91,6 +91,7 @@ class PartitionsWriteLockTest {
     }
 
     @Test
+    @Suppress("EmptyCatchBlock")
     fun `write will unlock after Exception`() {
         try {
             locks.write {

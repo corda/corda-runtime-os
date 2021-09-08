@@ -1,6 +1,5 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
-import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.service.TopicService

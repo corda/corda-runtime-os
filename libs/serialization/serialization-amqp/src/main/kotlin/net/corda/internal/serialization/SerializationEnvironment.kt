@@ -7,15 +7,15 @@ interface SerializationEnvironment {
 
     companion object {
         fun with(
-                serializationFactory: SerializationFactory,
-                p2pContext: SerializationContext,
-                storageContext: SerializationContext? = null
+            serializationFactory: SerializationFactory,
+            p2pContext: SerializationContext,
+            storageContext: SerializationContext? = null
         ): SerializationEnvironment =
-                SerializationEnvironmentImpl(
-                        serializationFactory = serializationFactory,
-                        p2pContext = p2pContext,
-                        optionalStorageContext = storageContext
-                )
+            SerializationEnvironmentImpl(
+                serializationFactory = serializationFactory,
+                p2pContext = p2pContext,
+                optionalStorageContext = storageContext
+            )
     }
 
     val serializationFactory: SerializationFactory
@@ -56,8 +56,8 @@ private class SerializationEnvironmentImpl(
     private val optionalStorageContext: SerializationContext? = null
 ) : SerializationEnvironment {
 
-    override val storageContext: SerializationContext get() = optionalStorageContext ?:
-        throw UnsupportedOperationException("Storage serialization not supported in this environment")
+    override val storageContext: SerializationContext get() = optionalStorageContext
+        ?: throw UnsupportedOperationException("Storage serialization not supported in this environment")
 
     override val p2pSerialization: P2pSerializationService by lazy { P2pSerializationServiceImpl(SerializationServiceImpl(this, p2pContext)) }
 
@@ -87,19 +87,23 @@ val _driverSerializationEnv = SimpleToggleField<SerializationEnvironment>("drive
 
 val _contextSerializationEnv = ThreadLocalToggleField<SerializationEnvironment>("contextSerializationEnv")
 
-val _inheritableContextSerializationEnv = InheritableThreadLocalToggleField<SerializationEnvironment>("inheritableContextSerializationEnv") { stack ->
-    stack.fold(false) { isAGlobalThreadBeingCreated, e ->
-        isAGlobalThreadBeingCreated ||
+@Suppress("TopLevelPropertyNaming")
+val _inheritableContextSerializationEnv =
+    InheritableThreadLocalToggleField<SerializationEnvironment>(
+        "inheritableContextSerializationEnv"
+    ) { stack ->
+        stack.fold(false) { isAGlobalThreadBeingCreated, e ->
+            isAGlobalThreadBeingCreated ||
                 (e.className == "io.netty.util.concurrent.GlobalEventExecutor" && e.methodName == "startThread") ||
                 (e.className == "java.util.concurrent.ForkJoinPool\$DefaultForkJoinWorkerThreadFactory" && e.methodName == "newThread")
+        }
     }
-}
 
 private val serializationEnvFields = listOf(
-        _nodeSerializationEnv,
-        _driverSerializationEnv,
-        _contextSerializationEnv,
-        _inheritableContextSerializationEnv
+    _nodeSerializationEnv,
+    _driverSerializationEnv,
+    _contextSerializationEnv,
+    _inheritableContextSerializationEnv
 )
 
 val _allEnabledSerializationEnvs: List<Pair<String, SerializationEnvironment>>
@@ -110,7 +114,7 @@ val effectiveSerializationEnv: SerializationEnvironment
         return _allEnabledSerializationEnvs.let {
             checkNotNull(it.singleOrNull()?.second) {
                 "Expected exactly 1 of {${serializationEnvFields.joinToString(", ") { it.name }}} " +
-                        "but got: {${it.joinToString(", ") { it.first }}}"
+                    "but got: {${it.joinToString(", ") { it.first }}}"
             }
         }
     }

@@ -1,11 +1,15 @@
 package net.corda.p2p.crypto
 
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
+import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.util.UUID
@@ -13,43 +17,60 @@ import java.util.UUID
 class AuthenticationProtocolTest {
 
     private val provider = BouncyCastleProvider()
-    private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-    private val signature = Signature.getInstance("ECDSA", provider)
-
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
 
     // party A
     private val partyAMaxMessageSize = 1_000_000
-    private val partyAIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolA = AuthenticationProtocolInitiator(
-        sessionId,
-        setOf(ProtocolMode.AUTHENTICATION_ONLY),
-        partyAMaxMessageSize,
-        partyAIdentityKey.public,
-        groupId
-    )
 
     // party B
     private val partyBMaxMessageSize = 1_500_000
-    private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
 
     @Test
     fun `no handshake message crosses the minimum value allowed for max message size`() {
+        val signature = Signature.getInstance(ECDSA_SIGNATURE_ALGO, provider)
+        val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
+        val partyAIdentityKey = keyPairGenerator.generateKeyPair()
+        val partyBIdentityKey = keyPairGenerator.generateKeyPair()
+
+        executeProtocol(partyAIdentityKey, partyBIdentityKey, signature, KeyAlgorithm.ECDSA)
+    }
+
+    @Test
+    fun `authentication protocol works successfully with RSA signatures`() {
+        val signature = Signature.getInstance(RSA_SIGNATURE_ALGO, provider)
+        val keyPairGenerator = KeyPairGenerator.getInstance("RSA", provider)
+        val partyAIdentityKey = keyPairGenerator.generateKeyPair()
+        val partyBIdentityKey = keyPairGenerator.generateKeyPair()
+
+        executeProtocol(partyAIdentityKey, partyBIdentityKey, signature, KeyAlgorithm.RSA)
+    }
+
+    private fun executeProtocol(partyAIdentityKey: KeyPair,
+                                partyBIdentityKey: KeyPair,
+                                signature: Signature, keyAlgo: KeyAlgorithm) {
+        val protocolInitiator = AuthenticationProtocolInitiator(
+            sessionId,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            partyAMaxMessageSize,
+            partyAIdentityKey.public,
+            groupId
+        )
+        val protocolResponder = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
+
         // Step 1: initiator sending hello message to responder.
-        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        val initiatorHelloMsg = protocolInitiator.generateInitiatorHello()
         assertThat(initiatorHelloMsg.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
+        protocolResponder.receiveInitiatorHello(initiatorHelloMsg)
 
         // Step 2: responder sending hello message to initiator.
-        val responderHelloMsg = authenticationProtocolB.generateResponderHello()
+        val responderHelloMsg = protocolResponder.generateResponderHello()
         assertThat(responderHelloMsg.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        authenticationProtocolA.receiveResponderHello(responderHelloMsg)
+        protocolInitiator.receiveResponderHello(responderHelloMsg)
 
         // Both sides generate handshake secrets.
-        authenticationProtocolA.generateHandshakeSecrets()
-        authenticationProtocolB.generateHandshakeSecrets()
+        protocolInitiator.generateHandshakeSecrets()
+        protocolResponder.generateHandshakeSecrets()
 
         // Step 3: initiator sending handshake message and responder validating it.
         val signingCallbackForA = { data: ByteArray ->
@@ -57,9 +78,9 @@ class AuthenticationProtocolTest {
             signature.update(data)
             signature.sign()
         }
-        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
+        val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
         assertThat(initiatorHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public)
+        protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, keyAlgo)
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
@@ -67,9 +88,8 @@ class AuthenticationProtocolTest {
             signature.update(data)
             signature.sign()
         }
-        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
+        val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
         assertThat(responderHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
-        authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
+        protocolInitiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, keyAlgo)
     }
-
 }
