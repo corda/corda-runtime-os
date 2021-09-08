@@ -38,7 +38,7 @@ import kotlin.random.Random
 /**
  * Tests of [SandboxServiceImpl].
  *
- * Does not test whether the two platform sandboxes are set up correctly.
+ * Does not test whether the platform sandbox are set up correctly.
  */
 class SandboxServiceImplTests {
     companion object {
