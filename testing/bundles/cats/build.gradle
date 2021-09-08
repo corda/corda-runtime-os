@@ -6,6 +6,7 @@ plugins {
 description 'Cats test bundle'
 
 dependencies {
+    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly "org.osgi:osgi.annotation"
 

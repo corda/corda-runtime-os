@@ -142,18 +142,6 @@ allprojects {
                 includeGroup 'antlr'
             }
         }
-
-        //TODO remove this when we can as its only needed for kotlinx-html-jvm
-        jcenter()
-
-        maven {
-            // For Apache ServiceMix.
-            url = 'https://repository.mulesoft.org/nexus/content/repositories/public'
-            content {
-                // The repo contains this artifact but without its jar.
-                excludeGroup 'com.github.detro'
-            }
-        }
     }
 
     sourceSets {
@@ -282,7 +270,8 @@ subprojects {
         all {
             resolutionStrategy {
                 dependencySubstitution {
-                    substitute module('antlr:antlr') using module("antlr:antlr.osgi:$antlrVersion")
+                    substitute module("antlr:antlr") using module("antlr:antlr.osgi:$antlrVersion")
+                    substitute module("org.dom4j:dom4j") using module("org.apache.servicemix.bundles:org.apache.servicemix.bundles.dom4j:$dom4jOsgiVersion")
                 }
             }
         }
