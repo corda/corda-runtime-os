@@ -22,7 +22,7 @@ data class StaticTag(
     override val classBundleName: String
 ) : ClassTag
 
-// TODO - Replace public key hashes with summary of hashes.
+// TODO: CORE-2557 - Replace public key hashes with summary of hashes to identify CPKs.
 /**
  * Identifies a sandboxed class in an evolvable way.
  *
