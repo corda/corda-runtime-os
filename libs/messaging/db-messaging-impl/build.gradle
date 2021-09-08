@@ -21,7 +21,9 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":libs:test-utilities")
 
+    integrationTestImplementation project(":libs:utilities")
     integrationTestImplementation "com.h2database:h2:$h2Version"
     integrationTestImplementation "org.postgresql:postgresql:$postgresDriverVersion"
     integrationTestImplementation "com.microsoft.sqlserver:mssql-jdbc:$sqlServerDriverVersion"
