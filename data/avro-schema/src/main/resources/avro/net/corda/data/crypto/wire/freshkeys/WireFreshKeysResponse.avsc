@@ -1,0 +1,44 @@
+{
+  "type": "record",
+  "name": "WireFreshKeysResponse",
+  "namespace": "net.corda.data.crypto.wire.freshkeys",
+  "doc": "Internal over-the-wire response for crypto's [FreshKeysSigningService] operations",
+  "fields": [
+    {
+      "name": "requestingComponent",
+      "type": "string",
+      "doc": "Name of the component which requested the operation, copied from the corresponding request"
+    },
+    {
+      "name": "requestTimestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Time ([Instant]) in milliseconds of the request, copied from the corresponding request"
+    },
+    {
+      "name": "responseTimestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Time ([Instant]) in milliseconds of the response"
+    },
+    {
+      "name": "correlation",
+      "type": "string",
+      "doc": "Optional correlation id, copied from the corresponding request"
+    },
+    {
+      "name": "memberId",
+      "type": "string",
+      "doc": "Member's ID on which behalf the request is made, copied from the corresponding request"
+    },
+    {
+      "name": "response",
+      "type": [
+        "net.corda.data.crypto.wire.WirePublicKey",
+        "net.corda.data.crypto.wire.WirePublicKeys",
+        "net.corda.data.crypto.wire.WireSignatureWithKey"
+      ],
+      "doc": "Response's payload, depends on the requested operation"
+    }
+  ]
+}

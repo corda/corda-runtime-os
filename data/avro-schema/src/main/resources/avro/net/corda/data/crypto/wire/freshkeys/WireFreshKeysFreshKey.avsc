@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "WireFreshKeysFreshKey",
+  "namespace": "net.corda.data.crypto.wire.freshkeys",
+  "doc": "Internal over-the-wire request to generate new wrapped key pair",
+  "fields": [
+    {
+      "name": "externalId",
+      "type": [
+        "null",
+        {
+          "type": "string",
+          "logicalType": "uuid"
+        }
+      ],
+      "doc": "If provided then the key will be associated with that id"
+    }
+  ]
+}

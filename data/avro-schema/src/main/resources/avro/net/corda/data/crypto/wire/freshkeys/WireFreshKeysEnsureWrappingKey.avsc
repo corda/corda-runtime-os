@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "WireFreshKeysEnsureWrappingKey",
+  "namespace": "net.corda.data.crypto.wire.freshkeys",
+  "doc": "Internal over-the-wire request to ensure that the wrapping key exists",
+  "fields": [
+  ]
+}

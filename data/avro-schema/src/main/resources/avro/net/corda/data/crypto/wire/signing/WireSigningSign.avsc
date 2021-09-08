@@ -1,0 +1,37 @@
+{
+  "type": "record",
+  "name": "WireSigningSign",
+  "namespace": "net.corda.data.crypto.wire.signing",
+  "doc": "Internal over-the-wire request to sign, either [publicKey] or alias must be specified",
+  "fields": [
+    {
+      "name": "publicKey",
+      "type": [
+        "null",
+        "bytes"
+      ],
+      "doc": "If provided then it's used to look up the matching private key information and sign the data"
+    },
+    {
+      "name": "alias",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "If provided then it's used to look up the matching private key information and sign the data"
+    },
+    {
+      "name": "signatureSpec",
+      "type": [
+        "null",
+        "net.corda.data.crypto.wire.WireSignatureSpec"
+      ],
+      "doc": "If provided than it overrides the default signature scheme, otherwise the default scheme is used"
+    },
+    {
+      "name": "bytes",
+      "type": "bytes",
+      "doc": "The data to sign"
+    }
+  ]
+}

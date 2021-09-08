@@ -1,0 +1,42 @@
+{
+  "type": "record",
+  "name": "WireSigningRequest",
+  "namespace": "net.corda.data.crypto.wire.signing",
+  "doc": "Internal over-the-wire request for crypto's [SigningService], the service operations are multiplexed",
+  "fields": [
+    {
+      "name": "requestingComponent",
+      "type": "string",
+      "doc": "Name of the component which requested the operation"
+    },
+    {
+      "name": "requestTimestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Time ([Instant]) in milliseconds of the request"
+    },
+    {
+      "name": "correlation",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "Optional correlation id"
+    },
+    {
+      "name": "memberId",
+      "type": "string",
+      "doc": "Member's ID on which behalf the request is made"
+    },
+    {
+      "name": "request",
+      "type": [
+        "WireSigningFindPublicKey",
+        "WireSigningGenerateKeyPair",
+        "WireSigningSign",
+        "WireSigningGetSupportedSchemes"
+      ],
+      "doc": "Request's payload, depends on the requested operation"
+    }
+  ]
+}
