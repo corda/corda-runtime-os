@@ -1,14 +1,14 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.trace
-import net.corda.v5.serialization.MissingSerializerException
-import net.corda.v5.serialization.SerializationContext
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.LocalTypeModel
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeDescriptor
 import net.corda.internal.serialization.model.TypeLoader
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
+import net.corda.v5.serialization.MissingSerializerException
+import net.corda.v5.serialization.SerializationContext
 import java.io.NotSerializableException
 import java.util.Collections.singletonList
 
@@ -24,7 +24,12 @@ interface RemoteSerializerFactory {
      * @param schema The schemas sent along with the serialized data.
      */
     @Throws(NotSerializableException::class, ClassNotFoundException::class)
-    fun get(typeDescriptor: TypeDescriptor, serializationSchemas: SerializationSchemas, metadata: Metadata, context: SerializationContext): AMQPSerializer<Any>
+    fun get(
+        typeDescriptor: TypeDescriptor,
+        serializationSchemas: SerializationSchemas,
+        metadata: Metadata,
+        context: SerializationContext
+    ): AMQPSerializer<Any>
 }
 
 /**
@@ -32,8 +37,9 @@ interface RemoteSerializerFactory {
  * decisions about evolution.
  */
 data class RemoteAndLocalTypeInformation(
-        val remoteTypeInformation: RemoteTypeInformation,
-        val localTypeInformation: LocalTypeInformation)
+    val remoteTypeInformation: RemoteTypeInformation,
+    val localTypeInformation: LocalTypeInformation
+)
 
 /**
  * A [RemoteSerializerFactory] which uses an [AMQPRemoteTypeModel] to interpret AMQP [Schema]s into [RemoteTypeInformation],
@@ -51,24 +57,26 @@ data class RemoteAndLocalTypeInformation(
  * @param typeLoader The [TypeLoader] to use to load local [Type]s reflecting [RemoteTypeInformation].
  * @param localSerializerFactory The [LocalSerializerFactory] to use to obtain serializers for non-evolved types.
  */
+@Suppress("LongParameterList")
 class DefaultRemoteSerializerFactory(
-        private val evolutionSerializerFactory: EvolutionSerializerFactory,
-        private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-        private val remoteTypeModel: AMQPRemoteTypeModel,
-        private val localTypeModel: LocalTypeModel,
-        private val typeLoader: TypeLoader,
-        private val localSerializerFactory: LocalSerializerFactory)
-    : RemoteSerializerFactory {
+    private val evolutionSerializerFactory: EvolutionSerializerFactory,
+    private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
+    private val remoteTypeModel: AMQPRemoteTypeModel,
+    private val localTypeModel: LocalTypeModel,
+    private val typeLoader: TypeLoader,
+    private val localSerializerFactory: LocalSerializerFactory
+) :
+    RemoteSerializerFactory {
 
     companion object {
         private val logger = contextLogger()
     }
 
     override fun get(
-            typeDescriptor: TypeDescriptor,
-            serializationSchemas: SerializationSchemas,
-            metadata: Metadata,
-            context: SerializationContext
+        typeDescriptor: TypeDescriptor,
+        serializationSchemas: SerializationSchemas,
+        metadata: Metadata,
+        context: SerializationContext
     ): AMQPSerializer<Any> =
         // If we have seen this descriptor before, we assume we have seen everything in this schema before.
         descriptorBasedSerializerRegistry.getOrBuild(typeDescriptor) {
@@ -94,10 +102,10 @@ class DefaultRemoteSerializerFactory(
         }
 
     private fun getUncached(
-            remoteTypeInformation: RemoteTypeInformation,
-            localTypeInformation: LocalTypeInformation,
-            context: SerializationContext,
-            metadata: Metadata
+        remoteTypeInformation: RemoteTypeInformation,
+        localTypeInformation: LocalTypeInformation,
+        context: SerializationContext,
+        metadata: Metadata
     ): AMQPSerializer<Any> {
         val remoteDescriptor = remoteTypeInformation.typeDescriptor
 
@@ -116,7 +124,7 @@ class DefaultRemoteSerializerFactory(
             // the local serializer if it returns null (i.e. no evolution required).
             remoteTypeInformation.isEvolvableTo(localTypeInformation) ->
                 evolutionSerializerFactory.getEvolutionSerializer(remoteTypeInformation, localTypeInformation)
-                        ?: localSerializer
+                    ?: localSerializer
 
             // The type descriptors are never going to match when we deserialise into
             // the DJVM's sandbox, but we don't want the node logs to fill up with
@@ -128,7 +136,8 @@ class DefaultRemoteSerializerFactory(
             // Descriptors don't match, and something is probably broken, but we let the framework do what it can with the local
             // serialiser (BlobInspectorTest uniquely breaks if we throw an exception here, and passes if we just warn and continue).
             else -> {
-                logger.warn("""
+                logger.warn(
+                    """
 Mismatch between type descriptors, but remote type is not evolvable to local type.
 
 Remote type (descriptor: $remoteDescriptor)
@@ -136,7 +145,8 @@ ${remoteTypeInformation.prettyPrint(false)}
 
 Local type (descriptor $localDescriptor):
 ${localTypeInformation.prettyPrint(false)}
-        """)
+        """
+                )
 
                 localSerializer
             }
@@ -144,7 +154,7 @@ ${localTypeInformation.prettyPrint(false)}
     }
 
     private fun reflect(remoteInformation: Map<TypeDescriptor, RemoteTypeInformation>, context: SerializationContext, metadata: Metadata):
-            Map<TypeDescriptor, RemoteAndLocalTypeInformation> {
+        Map<TypeDescriptor, RemoteAndLocalTypeInformation> {
         val localInformationByIdentifier = typeLoader.load(remoteInformation.values, context, metadata).mapValues { (_, type) ->
             localTypeModel.inspect(type)
         }
@@ -154,16 +164,18 @@ ${localTypeInformation.prettyPrint(false)}
         }
     }
 
-    private fun RemoteTypeInformation.isEvolvableTo(localTypeInformation: LocalTypeInformation): Boolean = when(this) {
+    private fun RemoteTypeInformation.isEvolvableTo(localTypeInformation: LocalTypeInformation): Boolean = when (this) {
         is RemoteTypeInformation.Composable -> localTypeInformation is LocalTypeInformation.Composable
         is RemoteTypeInformation.AnEnum -> localTypeInformation is LocalTypeInformation.AnEnum
         else -> false
     }
 
     private fun RemoteTypeInformation.isDeserialisableWithoutEvolutionTo(localTypeInformation: LocalTypeInformation) =
-            this is RemoteTypeInformation.Parameterised &&
-                (localTypeInformation is LocalTypeInformation.ACollection ||
-                localTypeInformation is LocalTypeInformation.AMap)
+        this is RemoteTypeInformation.Parameterised &&
+            (
+                localTypeInformation is LocalTypeInformation.ACollection ||
+                    localTypeInformation is LocalTypeInformation.AMap
+                )
 
     private fun RemoteTypeInformation.isCompatibleWith(
         localTypeInformation: LocalTypeInformation,
@@ -171,7 +183,7 @@ ${localTypeInformation.prettyPrint(false)}
         metadata: Metadata
     ): Boolean {
         val localTypes = typeLoader.load(singletonList(this), context, metadata)
-        return localTypes.size == 1
-            && localTypeInformation.observedType == localTypes.values.first()
+        return localTypes.size == 1 &&
+            localTypeInformation.observedType == localTypes.values.first()
     }
 }

@@ -136,9 +136,6 @@ allprojects {
                 excludeGroup 'com.github.detro'
             }
         }
-
-        //TODO remove this when we can as its only needed for kotlinx-html-jvm
-        jcenter()
     }
 
     sourceSets {

@@ -1,9 +1,11 @@
 package net.corda.p2p.crypto
 
 import net.corda.p2p.crypto.protocol.NoCommonModeError
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -20,7 +22,7 @@ class AuthenticationProtocolFailureTest {
 
     private val provider = BouncyCastleProvider()
     private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-    private val signature = Signature.getInstance("ECDSA", provider)
+    private val signature = Signature.getInstance(ECDSA_SIGNATURE_ALGO, provider)
 
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
@@ -39,7 +41,11 @@ class AuthenticationProtocolFailureTest {
     // party B
     private val partyBMaxMessageSize = 1_500_000
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
+    private val authenticationProtocolB =
+        AuthenticationProtocolResponder(
+            sessionId,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize
+        )
 
     @Test
     fun `session authentication fails if malicious actor changes initiator's handshake message`() {
@@ -63,9 +69,16 @@ class AuthenticationProtocolFailureTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
-        val modifiedInitiatorHandshakeMessage = InitiatorHandshakeMessage(initiatorHandshakeMessage.header, ByteBuffer.wrap(initiatorHandshakeMessage.encryptedData.array() + "0".toByte()), initiatorHandshakeMessage.authTag)
-        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(modifiedInitiatorHandshakeMessage, partyAIdentityKey.public) }
-                .isInstanceOf(InvalidHandshakeMessageException::class.java)
+        val modifiedInitiatorHandshakeMessage = InitiatorHandshakeMessage(
+            initiatorHandshakeMessage.header,
+            ByteBuffer.wrap(initiatorHandshakeMessage.encryptedData.array() + "0".toByte()), initiatorHandshakeMessage.authTag
+        )
+        assertThatThrownBy {
+            authenticationProtocolB.validatePeerHandshakeMessage(
+                modifiedInitiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA
+            )
+        }
+            .isInstanceOf(InvalidHandshakeMessageException::class.java)
     }
 
     @Test
@@ -90,8 +103,12 @@ class AuthenticationProtocolFailureTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
-        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public) }
-                .isInstanceOf(InvalidHandshakeMessageException::class.java)
+        assertThatThrownBy {
+            authenticationProtocolB.validatePeerHandshakeMessage(
+                initiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA
+            )
+        }
+            .isInstanceOf(InvalidHandshakeMessageException::class.java)
     }
 
     @Test
@@ -117,7 +134,11 @@ class AuthenticationProtocolFailureTest {
             signature.sign()
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
-        assertThatThrownBy { authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, wrongPublicKey) }
+        assertThatThrownBy {
+            authenticationProtocolB.validatePeerHandshakeMessage(
+                initiatorHandshakeMessage, wrongPublicKey, KeyAlgorithm.ECDSA
+            )
+        }
             .isInstanceOf(WrongPublicKeyHashException::class.java)
     }
 
@@ -143,7 +164,7 @@ class AuthenticationProtocolFailureTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public)
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA)
 
         // Step 4: responder creating different signature than the one expected.
         val signingCallbackForB = { data: ByteArray ->
@@ -153,8 +174,12 @@ class AuthenticationProtocolFailureTest {
         }
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
 
-        assertThatThrownBy { authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public) }
-                .isInstanceOf(InvalidHandshakeMessageException::class.java)
+        assertThatThrownBy {
+            authenticationProtocolA.validatePeerHandshakeMessage(
+                responderHandshakeMessage, partyBIdentityKey.public, KeyAlgorithm.ECDSA
+            )
+        }
+            .isInstanceOf(InvalidHandshakeMessageException::class.java)
     }
 
     @Test
@@ -166,7 +191,9 @@ class AuthenticationProtocolFailureTest {
             partyAIdentityKey.public,
             sessionId
         )
-        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize)
+        val authenticationProtocolB = AuthenticationProtocolResponder(
+            sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize
+        )
 
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
@@ -176,6 +203,4 @@ class AuthenticationProtocolFailureTest {
         assertThatThrownBy { authenticationProtocolB.generateResponderHello() }
             .isInstanceOf(NoCommonModeError::class.java)
     }
-
-
 }

@@ -6,6 +6,7 @@ import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_KEY_SIZE_BYTES
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_NONCE_SIZE_BYTES
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ELLIPTIC_CURVE_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ELLIPTIC_CURVE_KEY_SIZE_BITS
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.HASH_ALGO
@@ -21,7 +22,8 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_HANDS
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_HANDSHAKE_MAC_KEY_INFO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSION_ENCRYPTION_KEY_INFO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSION_NONCE_INFO
-import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.SIGNATURE_ALGO
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RSA_SIGNATURE_ALGO
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.util.convertToBCDigest
 import net.corda.p2p.crypto.util.generateKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -72,10 +74,19 @@ abstract class AuthenticationProtocol {
     protected val keyAgreement = KeyAgreement.getInstance(ELLIPTIC_CURVE_ALGO, provider)
     protected val hmac = Mac.getInstance(HMAC_ALGO, provider)
     protected val aesCipher = Cipher.getInstance(CIPHER_ALGO, provider)
-    protected val signature = Signature.getInstance(SIGNATURE_ALGO, provider)
     protected val messageDigest = MessageDigest.getInstance(HASH_ALGO, provider)
 
     private val hkdfGenerator = HKDFBytesGenerator(messageDigest.convertToBCDigest())
+
+    private val rsaSignature = Signature.getInstance(RSA_SIGNATURE_ALGO)
+    private val ecdsaSignature = Signature.getInstance(ECDSA_SIGNATURE_ALGO)
+
+    fun getSignature(keyAlgo: KeyAlgorithm): Signature {
+        return when (keyAlgo) {
+            KeyAlgorithm.ECDSA -> ecdsaSignature
+            KeyAlgorithm.RSA -> rsaSignature
+        }
+    }
 
     fun generateHandshakeSecrets(inputKeyMaterial: ByteArray, initiatorHelloToResponderHello: ByteArray): SharedHandshakeSecrets {
         val initiatorEncryptionKeyBytes = hkdfGenerator.generateKey(initiatorHelloToResponderHello, inputKeyMaterial,

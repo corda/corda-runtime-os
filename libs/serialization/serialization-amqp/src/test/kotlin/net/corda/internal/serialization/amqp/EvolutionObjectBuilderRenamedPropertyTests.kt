@@ -1,11 +1,11 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.serialization.SerializedBytes
-import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.writeTestResource
+import net.corda.v5.serialization.SerializedBytes
+import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.reflect.KClass
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
+@Suppress("MaxLineLength")
 class EvolutionObjectBuilderRenamedPropertyTests {
     private val cordappVersionTestValue = 38854445
     private val dataTestValue = "d7af8af0-c10e-45bc-a5f7-92de432be0ef"
@@ -70,7 +71,12 @@ class EvolutionObjectBuilderRenamedPropertyTests {
     @TestBelongsToContract(TemplateContract::class)
     data class TemplateState(val cordappVersion: Int, val data: String, val y: String?, override val participants: List<TestParty> = listOf()) : TestContractState {
         @DeprecatedConstructorForDeserialization(1)
-        constructor(cordappVersion: Int, data: String, x: Int?, participants: List<TestParty>) : this(cordappVersion, data, x?.toString(), participants)
+        constructor(
+            cordappVersion: Int,
+            data: String,
+            x: Int?,
+            participants: List<TestParty>
+        ) : this(cordappVersion, data, x?.toString(), participants)
     }
 
     @Test
@@ -87,7 +93,7 @@ class EvolutionObjectBuilderRenamedPropertyTests {
 
         val serializerFactory: SerializerFactory = testDefaultFactory()
         val deserializedObject = DeserializationInput(serializerFactory)
-                .deserialize(SerializedBytes<TemplateState>(bytes))
+            .deserialize(SerializedBytes<TemplateState>(bytes))
 
         Assertions.assertThat(deserializedObject.cordappVersion).isEqualTo(cordappVersionTestValue)
         Assertions.assertThat(deserializedObject.data).isEqualTo(dataTestValue)
@@ -100,5 +106,5 @@ class EvolutionObjectBuilderRenamedPropertyTests {
      * Write serialized object to resources folder
      */
     @Suppress("unused")
-    fun <T : Any> saveSerializedObject(obj : T) = writeTestResource(SerializationOutput(testDefaultFactory()).serialize(obj))
+    fun <T : Any> saveSerializedObject(obj: T) = writeTestResource(SerializationOutput(testDefaultFactory()).serialize(obj))
 }

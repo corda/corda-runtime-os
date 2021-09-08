@@ -1,9 +1,11 @@
 package net.corda.p2p.crypto
 
+import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidMac
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.MessageTooLargeError
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -18,7 +20,7 @@ class AuthenticatedSessionTest {
 
     private val provider = BouncyCastleProvider()
     private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
-    private val signature = Signature.getInstance("ECDSA", provider)
+    private val signature = Signature.getInstance(ECDSA_SIGNATURE_ALGO, provider)
 
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
@@ -37,7 +39,9 @@ class AuthenticatedSessionTest {
     // party B
     private val partyBMaxMessageSize = 1_500_000
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
+    private val authenticationProtocolB = AuthenticationProtocolResponder(
+        sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize
+    )
 
     @Test
     fun `session can be established between two parties and used for transmission of authenticated data successfully`() {
@@ -61,7 +65,7 @@ class AuthenticatedSessionTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public)
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA)
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
@@ -71,7 +75,7 @@ class AuthenticatedSessionTest {
         }
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
 
-        authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
+        authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, KeyAlgorithm.ECDSA)
 
         // Both sides generate session secrets
         val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
@@ -81,7 +85,10 @@ class AuthenticatedSessionTest {
             // Data exchange: A sends message to B, which decrypts and validates it
             val payload = "ping $i".toByteArray(Charsets.UTF_8)
             val authenticationResult = authenticatedSessionOnA.createMac(payload)
-            val initiatorMsg = AuthenticatedDataMessage(authenticationResult.header, ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac))
+            val initiatorMsg = AuthenticatedDataMessage(
+                authenticationResult.header, ByteBuffer.wrap(payload),
+                ByteBuffer.wrap(authenticationResult.mac)
+            )
 
             authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload.array(), initiatorMsg.authTag.array())
         }
@@ -90,7 +97,11 @@ class AuthenticatedSessionTest {
             // Data exchange: B -> A
             val payload = "pong $i".toByteArray(Charsets.UTF_8)
             val authenticationResult = authenticatedSessionOnB.createMac(payload)
-            val responderMsg = AuthenticatedDataMessage(authenticationResult.header, ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac))
+            val responderMsg =
+                AuthenticatedDataMessage(
+                    authenticationResult.header,
+                    ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac)
+                )
 
             authenticatedSessionOnA.validateMac(responderMsg.header, responderMsg.payload.array(), responderMsg.authTag.array())
         }
@@ -118,7 +129,7 @@ class AuthenticatedSessionTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public)
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA)
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
@@ -128,7 +139,7 @@ class AuthenticatedSessionTest {
         }
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
 
-        authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
+        authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, KeyAlgorithm.ECDSA)
 
         // Both sides generate session secrets
         val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
@@ -137,9 +148,17 @@ class AuthenticatedSessionTest {
         // Data exchange: A sends message to B, B receives corrupted data which fail validation.
         val payload = "ping".toByteArray(Charsets.UTF_8)
         val authenticationResult = authenticatedSessionOnA.createMac(payload)
-        val initiatorMsg = AuthenticatedDataMessage(authenticationResult.header, ByteBuffer.wrap(payload) , ByteBuffer.wrap(authenticationResult.mac))
+        val initiatorMsg = AuthenticatedDataMessage(
+            authenticationResult.header, ByteBuffer.wrap(payload),
+            ByteBuffer.wrap(authenticationResult.mac)
+        )
 
-        assertThatThrownBy { authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload.array() + "0".toByteArray(Charsets.UTF_8), initiatorMsg.authTag.array()) }
+        assertThatThrownBy {
+            authenticatedSessionOnB.validateMac(
+                initiatorMsg.header,
+                initiatorMsg.payload.array() + "0".toByteArray(Charsets.UTF_8), initiatorMsg.authTag.array()
+            )
+        }
             .isInstanceOf(InvalidMac::class.java)
     }
 
@@ -165,7 +184,7 @@ class AuthenticatedSessionTest {
         }
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
 
-        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public)
+        authenticationProtocolB.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, KeyAlgorithm.ECDSA)
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
@@ -175,7 +194,7 @@ class AuthenticatedSessionTest {
         }
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
 
-        authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public)
+        authenticationProtocolA.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, KeyAlgorithm.ECDSA)
 
         // Both sides generate session secrets
         val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
@@ -183,13 +202,18 @@ class AuthenticatedSessionTest {
 
         assertThatThrownBy { authenticatedSessionOnA.createMac(ByteArray(partyAMaxMessageSize + 1)) }
             .isInstanceOf(MessageTooLargeError::class.java)
-            .hasMessageContaining("Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message size of the session ($partyAMaxMessageSize bytes)")
+            .hasMessageContaining(
+                "Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message " +
+                    "size of the session ($partyAMaxMessageSize bytes)"
+            )
 
         val payload = ByteArray(partyAMaxMessageSize + 1)
         val header = CommonHeader(MessageType.DATA, 1, "some-session-id", 4, Instant.now().toEpochMilli())
         assertThatThrownBy { authenticatedSessionOnB.validateMac(header, payload, ByteArray(0)) }
             .isInstanceOf(MessageTooLargeError::class.java)
-            .hasMessageContaining("Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message size of the session ($partyAMaxMessageSize bytes)")
+            .hasMessageContaining(
+                "Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message" +
+                    " size of the session ($partyAMaxMessageSize bytes)"
+            )
     }
-
 }

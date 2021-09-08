@@ -15,12 +15,15 @@ class ErrorMessagesTests {
     }
 
     private fun errMsg(property: String, testname: String) =
-            "Property '$property' or its getter is non public, this renders class 'class $testname\$C' unserializable -> class $testname\$C"
+        "Property '$property' or its getter is non public, this renders class 'class $testname\$C' unserializable -> class $testname\$C"
 
     // Java allows this to be set at the class level yet Kotlin doesn't for some reason
-    @Disabled("Current behaviour allows for the serialization of objects with private members, this will be disallowed at some point in the future")
+    @Disabled(
+        "Current behaviour allows for the serialization of objects with private members," +
+            " this will be disallowed at some point in the future"
+    )
     @Test
-	fun privateProperty() {
+    fun privateProperty() {
         data class C(private val a: Int)
 
         val sf = testDefaultFactory()
@@ -33,9 +36,12 @@ class ErrorMessagesTests {
     }
 
     // Java allows this to be set at the class level yet Kotlin doesn't for some reason
-    @Disabled("Current behaviour allows for the serialization of objects with private members, this will be disallowed at some point in the future")
+    @Disabled(
+        "Current behaviour allows for the serialization of objects with private members," +
+            " this will be disallowed at some point in the future"
+    )
     @Test
-	fun privateProperty2() {
+    fun privateProperty2() {
         data class C(val a: Int, private val b: Int)
 
         val sf = testDefaultFactory()
@@ -48,9 +54,12 @@ class ErrorMessagesTests {
     }
 
     // Java allows this to be set at the class level yet Kotlin doesn't for some reason
-    @Disabled("Current behaviour allows for the serialization of objects with private members, this will be disallowed at some point in the future")
+    @Disabled(
+        "Current behaviour allows for the serialization of objects with private members, " +
+            "this will be disallowed at some point in the future"
+    )
     @Test
-	fun privateProperty3() {
+    fun privateProperty3() {
         // despite b being private, the getter we've added is public and thus allows for the serialisation
         // of the object
         data class C(val a: Int, private val b: Int) {
@@ -65,9 +74,12 @@ class ErrorMessagesTests {
     }
 
     // Java allows this to be set at the class level yet Kotlin doesn't for some reason
-    @Disabled("Current behaviour allows for the serialization of objects with private members, this will be disallowed at some point in the future")
+    @Disabled(
+        "Current behaviour allows for the serialization of objects with private members, " +
+            "this will be disallowed at some point in the future"
+    )
     @Test
-	fun protectedProperty() {
+    fun protectedProperty() {
         open class C(@Suppress("unused") protected val a: Int)
 
         val sf = testDefaultFactory()

@@ -158,12 +158,7 @@ class SandboxLoader @Activate constructor(
 
     @Suppress("SameParameterValue")
     private fun getBundle(className: String, sandbox: CpkSandbox): Bundle {
-        return getBundle(sandbox.loadClass(className), sandbox)
-    }
-
-    private fun getBundle(clazz: Class<*>, sandbox: Sandbox): Bundle {
-        val getBundleMethod = sandbox::class.java.getMethod("getBundle", Class::class.java)
-        return getBundleMethod.invoke(sandbox, clazz) as Bundle
+        return FrameworkUtil.getBundle(sandbox.loadClass(className))
     }
 
     fun containsBundle(bundle: Bundle, sandbox: Sandbox): Boolean {

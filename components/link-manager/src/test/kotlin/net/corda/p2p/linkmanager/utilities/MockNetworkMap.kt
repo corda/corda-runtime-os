@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.utilities
 
 import net.corda.p2p.crypto.protocol.ProtocolConstants
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.sessions.SessionManagerTest
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -54,12 +55,12 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
             }
 
             override fun getOurMemberInfo(): LinkManagerNetworkMap.MemberInfo {
-                return LinkManagerNetworkMap.MemberInfo(node, getKeyPair().public, SessionManagerTest.FAKE_ENDPOINT)
+                return LinkManagerNetworkMap.MemberInfo(node, getKeyPair().public, KeyAlgorithm.ECDSA, SessionManagerTest.FAKE_ENDPOINT)
             }
 
             override fun getMemberInfo(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
                 val publicKey = keys[holdingIdentity]?.public ?: return null
-                return LinkManagerNetworkMap.MemberInfo(holdingIdentity, publicKey, SessionManagerTest.FAKE_ENDPOINT)
+                return LinkManagerNetworkMap.MemberInfo(holdingIdentity, publicKey, KeyAlgorithm.ECDSA, SessionManagerTest.FAKE_ENDPOINT)
             }
 
             override fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerNetworkMap.MemberInfo? {

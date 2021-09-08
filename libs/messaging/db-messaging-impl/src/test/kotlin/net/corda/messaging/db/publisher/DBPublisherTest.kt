@@ -1,6 +1,5 @@
 package net.corda.messaging.db.publisher
 
-import org.mockito.kotlin.anyOrNull
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -19,6 +18,7 @@ import org.mockito.Mockito.anyInt
 import org.mockito.Mockito.anyList
 import org.mockito.Mockito.anyLong
 import org.mockito.Mockito.mock
+import org.mockito.kotlin.anyOrNull
 import java.nio.ByteBuffer
 import java.sql.SQLNonTransientException
 import java.sql.SQLTransientException
@@ -90,7 +90,7 @@ class DBPublisherTest {
             Record(topic, "key2", "value2")
         )
 
-        dbPublisher.use {  publisher ->
+        dbPublisher.use { publisher ->
             val results = publisher.publish(records)
             assertThat(results).hasSize(1)
             results.first().get()
@@ -105,7 +105,10 @@ class DBPublisherTest {
 
     @Test
     fun `non-transactional publisher writes records and releases offsets successfully`() {
-        val dbPublisher = DBPublisher(nonTransactionalConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
+        val dbPublisher = DBPublisher(
+            nonTransactionalConfig, avroSchemaRegistry,
+            dbAccessProvider, offsetTrackersManager, partitionAssignor
+        )
         dbPublisher.start()
         val records = listOf(
             Record(topic, "key1", "value1"),
@@ -127,24 +130,30 @@ class DBPublisherTest {
 
     @Test
     fun `publisher can write records with explicit partitions successfully`() {
-        val dbPublisher = DBPublisher(nonTransactionalConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
+        val dbPublisher =
+            DBPublisher(
+                nonTransactionalConfig, avroSchemaRegistry,
+                dbAccessProvider, offsetTrackersManager, partitionAssignor
+            )
         dbPublisher.start()
         val records = listOf(
             1 to Record(topic, "key1", "value1"),
             2 to Record(topic, "key2", "value2")
         )
 
-        dbPublisher.use {publisher ->
+        dbPublisher.use { publisher ->
             val results = publisher.publishToPartition(records)
             assertThat(results).hasSize(records.size)
             results.forEach { it.get() }
 
             assertThat(writtenDbRecords).hasSize(2)
             val keyValueEntries = writtenDbRecords.map { String(it.key) to Pair(it.partition, String(it.value!!)) }.toMap()
-            assertThat(keyValueEntries).containsAllEntriesOf(mapOf(
-                "key1" to Pair(1, "value1"),
-                "key2" to Pair(2, "value2")
-            ))
+            assertThat(keyValueEntries).containsAllEntriesOf(
+                mapOf(
+                    "key1" to Pair(1, "value1"),
+                    "key2" to Pair(2, "value2")
+                )
+            )
             assertThat(releasedOffsetsPerPartition[1]).containsExactly(1)
             assertThat(releasedOffsetsPerPartition[2]).containsExactly(1)
         }
@@ -166,10 +175,12 @@ class DBPublisherTest {
 
             assertThat(writtenDbRecords).hasSize(2)
             val keyValueEntries = writtenDbRecords.map { String(it.key) to it.value }.toMap()
-            assertThat(keyValueEntries).containsAllEntriesOf(mapOf(
-                "key1" to null,
-                "key2" to null
-            ))
+            assertThat(keyValueEntries).containsAllEntriesOf(
+                mapOf(
+                    "key1" to null,
+                    "key2" to null
+                )
+            )
             assertThat(releasedOffsetsPerPartition[2]).containsExactlyInAnyOrder(1, 2)
             assertThat(releasedOffsetsPerPartition[1]).isEmpty()
         }
@@ -220,5 +231,4 @@ class DBPublisherTest {
             assertThat(writtenDbRecords).isEmpty()
         }
     }
-
 }
