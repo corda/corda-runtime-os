@@ -74,6 +74,16 @@ class CordaKafkaConsumerBuilderImpl<K : Any, V : Any>(
         return CordaKafkaConsumerImpl(consumerConfig, consumer, null)
     }
 
+    override fun createRPCConsumer(
+        consumerConfig: Config,
+        reqClazz: Class<K>,
+        respClazz: Class<V>,
+        onError: (String, ByteArray) -> Unit
+    ): CordaKafkaConsumer<K, V> {
+        val consumer = createKafkaConsumer(consumerConfig, onError, reqClazz, respClazz)
+        return CordaKafkaConsumerImpl(consumerConfig, consumer, null)
+    }
+
     private fun createKafkaConsumer(
         consumerConfig: Config,
         onError: (String, ByteArray) -> Unit,

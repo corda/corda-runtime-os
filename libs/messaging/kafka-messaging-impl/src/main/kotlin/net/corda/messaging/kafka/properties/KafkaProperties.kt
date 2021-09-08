@@ -12,6 +12,7 @@ class KafkaProperties {
 
         const val TOPIC_PREFIX = "topic.prefix"
         const val TOPIC_NAME = "topic.name"
+        const val TOPIC_SUFFIX = "topic.suffix"
 
         const val KAFKA_PRODUCER = "producer"
         const val KAFKA_CONSUMER = "consumer"
@@ -25,6 +26,7 @@ class KafkaProperties {
         const val PATTERN_STATEANDEVENT = "messaging.pattern.stateAndEvent"
         const val PATTERN_EVENTLOG = "messaging.pattern.eventLog"
         const val PATTERN_RANDOMACCESS = "messaging.pattern.randomAccess"
+        const val PATTERN_RPC = "messaging.pattern.rpc"
 
         const val CLOSE_TIMEOUT = "close.timeout"
         const val PRODUCER_CLOSE_TIMEOUT = "producer.$CLOSE_TIMEOUT"

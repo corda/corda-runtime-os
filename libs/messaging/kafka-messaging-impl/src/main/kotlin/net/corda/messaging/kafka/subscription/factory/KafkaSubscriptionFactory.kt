@@ -1,6 +1,8 @@
 package net.corda.messaging.kafka.subscription.factory
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
@@ -19,16 +21,21 @@ import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.GROUP
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.INSTANCE_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_COMPACTED
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_DURABLE
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_EVENTLOG
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBSUB
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RANDOMACCESS
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RPC
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_STATEANDEVENT
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
 import net.corda.messaging.kafka.subscription.KafkaCompactedSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaEventLogSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
+import net.corda.messaging.kafka.subscription.KafkaRPCSubscription
 import net.corda.messaging.kafka.subscription.KafkaRandomAccessSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaStateAndEventSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
@@ -224,6 +231,26 @@ class KafkaSubscriptionFactory @Activate constructor(
         nodeConfig: Config,
         responderProcessor: RPCResponderProcessor<TREQ, TRESP>
     ): RPCSubscription<TREQ, TRESP> {
-        TODO("Not yet implemented")
+
+        val rpcConfiguration = ConfigFactory.empty()
+            .withValue(GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
+            .withValue(TOPIC, ConfigValueFactory.fromAnyRef(rpcConfig.requestTopic))
+            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(rpcConfig.clientName))
+            .withValue("REQUEST_TYPE", ConfigValueFactory.fromAnyRef(rpcConfig.requestType))
+            .withValue("RESPONSE_TYPE", ConfigValueFactory.fromAnyRef(rpcConfig.responseType))
+
+        val config = resolveSubscriptionConfiguration(
+            rpcConfiguration,
+            nodeConfig,
+            clientIdCounter.getAndIncrement(),
+            PATTERN_RPC
+        )
+        val consumerBuilder = CordaKafkaConsumerBuilderImpl<TREQ, TRESP>(avroSchemaRegistry)
+
+        return KafkaRPCSubscription(
+            config,
+            consumerBuilder,
+            responderProcessor
+        )
     }
 }
