@@ -12,11 +12,11 @@ interface ClassTag {
 }
 
 /**
- * Identifies a sandboxed class during Kryo serialisation and deserialisation.
+ * Identifies a sandboxed class based on the exact CPK version it comes from.
  *
  * @param cpkFileHash The hash of the CPK that the class is from.
  */
-data class KryoClassTag(
+data class StaticTag(
     val cpkFileHash: SecureHash,
     override val isPlatformClass: Boolean,
     override val classBundleName: String
@@ -24,12 +24,12 @@ data class KryoClassTag(
 
 // TODO - Replace public key hashes with summary of hashes.
 /**
- * Identifies a sandboxed class during AMQP serialisation and deserialisation.
+ * Identifies a sandboxed class in an evolvable way.
  *
  * @param cordappBundleName The symbolic name of the CorDapp bundle of the CPK that the class if from.
  * @param cpkPublicKeyHashes The hashes of the public keys that signed the CPK the class was loaded from.
  */
-data class AMQPClassTag(
+data class EvolvableTag(
     val cordappBundleName: String,
     val cpkPublicKeyHashes: NavigableSet<SecureHash>,
     override val isPlatformClass: Boolean,

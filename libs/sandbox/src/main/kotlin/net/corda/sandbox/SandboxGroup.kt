@@ -39,16 +39,16 @@ interface SandboxGroup {
     fun cordappClassCount(className: String): Int
 
     /**
-     * Returns the [KryoClassTag] for a given [klass]. Returns null if the class is not contained in any bundle, or is
+     * Returns the [StaticTag] for a given [klass]. Returns null if the class is not contained in any bundle, or is
      * contained in a bundle that is not contained in any sandbox in the group.
      */
-    fun getKryoClassTag(klass: Class<*>): KryoClassTag?
+    fun getStaticTag(klass: Class<*>): StaticTag?
 
     /**
-     * Returns the [AMQPClassTag] for a given [klass]. Returns null if the class is not contained in any bundle, or is
+     * Returns the [EvolvableTag] for a given [klass]. Returns null if the class is not contained in any bundle, or is
      * contained in a bundle that is not contained in any sandbox in the group.
      */
-    fun getAMQPClassTag(klass: Class<*>): AMQPClassTag?
+    fun getEvolvableTag(klass: Class<*>): EvolvableTag?
 
     /**
      * Returns the [Class] identified by the [className] and the [classTag]. Returns null if there is no sandbox

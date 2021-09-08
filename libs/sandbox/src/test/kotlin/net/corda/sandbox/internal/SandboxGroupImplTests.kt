@@ -1,10 +1,10 @@
 package net.corda.sandbox.internal
 
 import net.corda.packaging.Cpk
-import net.corda.sandbox.AMQPClassTag
 import net.corda.sandbox.ClassTag
-import net.corda.sandbox.KryoClassTag
+import net.corda.sandbox.EvolvableTag
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
@@ -72,15 +72,15 @@ class SandboxGroupImplTests {
     private val sandboxesById = mapOf(mockCpk.id to mockNonPlatformSandbox)
     private val sandboxGroupImpl = SandboxGroupImpl(mockBundleUtils, sandboxesById, mockPlatformSandbox)
 
-    private val kryoNonPlatformClassTag = KryoClassTag(mockCpk.cpkHash, false, NON_PLATFORM_BUNDLE_NAME)
-    private val kryoPlatformClassTag = KryoClassTag(PLACEHOLDER_CPK_FILE_HASH, true, PLATFORM_BUNDLE_NAME)
+    private val nonPlatformStaticTag = StaticTag(mockCpk.cpkHash, false, NON_PLATFORM_BUNDLE_NAME)
+    private val platformStaticTag = StaticTag(PLACEHOLDER_CPK_FILE_HASH, true, PLATFORM_BUNDLE_NAME)
 
-    private val amqpNonPlatformClassTag = AMQPClassTag(
+    private val nonPlatformEvolvableTag = EvolvableTag(
         mockNonPlatformSandbox.cordappBundle.symbolicName,
         mockCpk.id.signers,
         false,
         NON_PLATFORM_BUNDLE_NAME)
-    private val amqpPlatformClassTag = AMQPClassTag(
+    private val platformEvolvableTag = EvolvableTag(
         PLACEHOLDER_CORDAPP_BUNDLE_NAME,
         PLACEHOLDER_CPK_PUBLIC_KEY_HASHES,
         true,
@@ -107,94 +107,94 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `creates valid Kryo class tag for a non-platform class`() {
-        assertEquals(kryoNonPlatformClassTag, sandboxGroupImpl.getKryoClassTag(nonPlatformClass))
+    fun `creates valid static tag for a non-platform class`() {
+        assertEquals(nonPlatformStaticTag, sandboxGroupImpl.getStaticTag(nonPlatformClass))
     }
 
     @Test
-    fun `creates valid Kryo class tag for a platform class`() {
-        assertEquals(kryoPlatformClassTag, sandboxGroupImpl.getKryoClassTag(platformClass))
+    fun `creates valid static tag for a platform class`() {
+        assertEquals(platformStaticTag, sandboxGroupImpl.getStaticTag(platformClass))
     }
 
     @Test
-    fun `returns null if asked to create Kryo class tag for a class outside any bundle`() {
-        assertNull(sandboxGroupImpl.getKryoClassTag(nonBundleClass))
+    fun `returns null if asked to create static tag for a class outside any bundle`() {
+        assertNull(sandboxGroupImpl.getStaticTag(nonBundleClass))
     }
 
     @Test
-    fun `returns null if asked to create Kryo class tag for a class in a bundle not in the sandbox group`() {
-        assertNull(sandboxGroupImpl.getKryoClassTag(nonSandboxClass))
+    fun `returns null if asked to create static tag for a class in a bundle not in the sandbox group`() {
+        assertNull(sandboxGroupImpl.getStaticTag(nonSandboxClass))
     }
 
     @Test
-    fun `creates valid AMQP class tag for a non-platform class`() {
-        assertEquals(amqpNonPlatformClassTag, sandboxGroupImpl.getAMQPClassTag(nonPlatformClass))
+    fun `creates valid evolvable tag for a non-platform class`() {
+        assertEquals(nonPlatformEvolvableTag, sandboxGroupImpl.getEvolvableTag(nonPlatformClass))
     }
 
     @Test
-    fun `creates valid AMQP class tag for a platform class`() {
-        assertEquals(amqpPlatformClassTag, sandboxGroupImpl.getAMQPClassTag(platformClass))
+    fun `creates valid evolvable tag for a platform class`() {
+        assertEquals(platformEvolvableTag, sandboxGroupImpl.getEvolvableTag(platformClass))
     }
 
     @Test
-    fun `returns null if asked to create AMQP class tag for a class outside any bundle`() {
-        assertNull(sandboxGroupImpl.getAMQPClassTag(nonBundleClass))
+    fun `returns null if asked to create evolvable tag for a class outside any bundle`() {
+        assertNull(sandboxGroupImpl.getEvolvableTag(nonBundleClass))
     }
 
     @Test
-    fun `returns null if asked to create AMQP class tag for a class in a bundle not in the sandbox group`() {
-        assertNull(sandboxGroupImpl.getAMQPClassTag(nonSandboxClass))
+    fun `returns null if asked to create evolvable tag for a class in a bundle not in the sandbox group`() {
+        assertNull(sandboxGroupImpl.getEvolvableTag(nonSandboxClass))
     }
 
     @Test
-    fun `returns non-platform class identified by a Kryo class tag`() {
-        assertEquals(nonPlatformClass, sandboxGroupImpl.getClass(nonPlatformClass.name, kryoNonPlatformClassTag))
+    fun `returns non-platform class identified by a static tag`() {
+        assertEquals(nonPlatformClass, sandboxGroupImpl.getClass(nonPlatformClass.name, nonPlatformStaticTag))
     }
 
     @Test
-    fun `returns platform class identified by a Kryo class tag`() {
-        assertEquals(platformClass, sandboxGroupImpl.getClass(platformClass.name, kryoPlatformClassTag))
+    fun `returns platform class identified by a static tag`() {
+        assertEquals(platformClass, sandboxGroupImpl.getClass(platformClass.name, platformStaticTag))
     }
 
     @Test
-    fun `returns non-platform class identified by an AMQP class tag`() {
-        assertEquals(nonPlatformClass, sandboxGroupImpl.getClass(nonPlatformClass.name, amqpNonPlatformClassTag))
+    fun `returns non-platform class identified by an evolvable tag`() {
+        assertEquals(nonPlatformClass, sandboxGroupImpl.getClass(nonPlatformClass.name, nonPlatformEvolvableTag))
     }
 
     @Test
-    fun `returns platform class identified by an AMQP class tag`() {
-        assertEquals(platformClass, sandboxGroupImpl.getClass(platformClass.name, amqpPlatformClassTag))
+    fun `returns platform class identified by an evolvable tag`() {
+        assertEquals(platformClass, sandboxGroupImpl.getClass(platformClass.name, platformEvolvableTag))
     }
 
     @Test
-    fun `returns null if asked to return class but cannot find matching sandbox for the Kryo class tag`() {
+    fun `returns null if asked to return class but cannot find matching sandbox for a static tag`() {
         val invalidCpkFileHash = randomSecureHash()
-        val kryoClassTag = KryoClassTag(invalidCpkFileHash, false, NON_PLATFORM_BUNDLE_NAME)
-        assertNull(sandboxGroupImpl.getClass(nonPlatformClass.name, kryoClassTag))
+        val invalidStaticTag = StaticTag(invalidCpkFileHash, false, NON_PLATFORM_BUNDLE_NAME)
+        assertNull(sandboxGroupImpl.getClass(nonPlatformClass.name, invalidStaticTag))
     }
 
     @Test
-    fun `returns null if asked to return class but cannot find matching sandbox for the AMQP class tag`() {
+    fun `returns null if asked to return class but cannot find matching sandbox for an evolvable tag`() {
         val invalidCordappBundleName = "invalid_cordapp_bundle_name"
-        val invalidCordappBundleNameAmqpClassTag = AMQPClassTag(
+        val invalidCordappBundleNameEvolvableTag = EvolvableTag(
             invalidCordappBundleName,
             mockCpk.id.signers,
             false,
             NON_PLATFORM_BUNDLE_NAME)
-        assertNull(sandboxGroupImpl.getClass(nonPlatformClass.name, invalidCordappBundleNameAmqpClassTag))
+        assertNull(sandboxGroupImpl.getClass(nonPlatformClass.name, invalidCordappBundleNameEvolvableTag))
 
         val invalidSigners = TreeSet(setOf(randomSecureHash()))
-        val invalidSignersAmqpClassTag = AMQPClassTag(
+        val invalidSignersEvolvableTag = EvolvableTag(
             mockNonPlatformSandbox.cordappBundle.symbolicName,
             invalidSigners,
             false,
             NON_PLATFORM_BUNDLE_NAME)
-        assertNull(sandboxGroupImpl.getClass(nonPlatformClass.name, invalidSignersAmqpClassTag))
+        assertNull(sandboxGroupImpl.getClass(nonPlatformClass.name, invalidSignersEvolvableTag))
     }
 
     @Test
     fun `returns null if asked to return class but cannot find class in matching sandbox`() {
-        assertNull(sandboxGroupImpl.getClass(nonSandboxClass.name, kryoNonPlatformClassTag))
+        assertNull(sandboxGroupImpl.getClass(nonSandboxClass.name, nonPlatformStaticTag))
     }
 
     @Test

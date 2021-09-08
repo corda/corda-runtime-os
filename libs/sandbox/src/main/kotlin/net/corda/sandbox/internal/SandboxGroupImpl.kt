@@ -1,9 +1,9 @@
 package net.corda.sandbox.internal
 
 import net.corda.packaging.Cpk
-import net.corda.sandbox.AMQPClassTag
+import net.corda.sandbox.EvolvableTag
 import net.corda.sandbox.ClassTag
-import net.corda.sandbox.KryoClassTag
+import net.corda.sandbox.StaticTag
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
@@ -58,9 +58,9 @@ internal class SandboxGroupImpl(
         sandbox.cordappBundleContainsClass(className)
     }
 
-    override fun getKryoClassTag(klass: Class<*>) = getClassTag(klass, isKryoClassTag = true) as KryoClassTag?
+    override fun getStaticTag(klass: Class<*>) = getClassTag(klass, isStaticTag = true) as StaticTag?
 
-    override fun getAMQPClassTag(klass: Class<*>) = getClassTag(klass, isKryoClassTag = false) as AMQPClassTag?
+    override fun getEvolvableTag(klass: Class<*>) = getClassTag(klass, isStaticTag = false) as EvolvableTag?
 
     override fun getClass(className: String, classTag: ClassTag): Class<*>? {
         val sandbox = if (classTag.isPlatformClass) {
@@ -68,8 +68,8 @@ internal class SandboxGroupImpl(
 
         } else {
             when (classTag) {
-                is KryoClassTag -> sandboxes.find { sandbox -> sandbox.cpk.cpkHash == classTag.cpkFileHash }
-                is AMQPClassTag -> sandboxes.find { sandbox ->
+                is StaticTag -> sandboxes.find { sandbox -> sandbox.cpk.cpkHash == classTag.cpkFileHash }
+                is EvolvableTag -> sandboxes.find { sandbox ->
                     sandbox.cpk.id.signers == classTag.cpkPublicKeyHashes
                             && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
                 }
@@ -84,16 +84,16 @@ internal class SandboxGroupImpl(
      * Returns the [ClassTag] for a given [klass]. Returns null if the class is not contained in any bundle, or is
      * contained in a bundle that is not contained in any sandbox in the group.
      *
-     * If [isKryoClassTag] is true, a [KryoClassTag] is returned. Otherwise, an [AMQPClassTag] is returned.
+     * If [isStaticTag] is true, a [StaticTag] is returned. Otherwise, an [EvolvableTag] is returned.
      */
-    private fun getClassTag(klass: Class<*>, isKryoClassTag: Boolean): ClassTag? {
+    private fun getClassTag(klass: Class<*>, isStaticTag: Boolean): ClassTag? {
         val bundle = bundleUtils.getBundle(klass) ?: return null
 
         if (platformSandbox.containsBundle(bundle)) {
-            return if (isKryoClassTag) {
-                KryoClassTag(PLACEHOLDER_CPK_FILE_HASH, isPlatformClass = true, bundle.symbolicName)
+            return if (isStaticTag) {
+                StaticTag(PLACEHOLDER_CPK_FILE_HASH, isPlatformClass = true, bundle.symbolicName)
             } else {
-                AMQPClassTag(
+                EvolvableTag(
                     PLACEHOLDER_CORDAPP_BUNDLE_NAME,
                     PLACEHOLDER_CPK_PUBLIC_KEY_HASHES,
                     isPlatformClass = true,
@@ -103,10 +103,10 @@ internal class SandboxGroupImpl(
         }
 
         val sandbox = sandboxes.find { sandbox -> sandbox.containsBundle(bundle) } ?: return null
-        return if (isKryoClassTag) {
-            KryoClassTag(sandbox.cpk.cpkHash, isPlatformClass = false, bundle.symbolicName)
+        return if (isStaticTag) {
+            StaticTag(sandbox.cpk.cpkHash, isPlatformClass = false, bundle.symbolicName)
         } else {
-            AMQPClassTag(
+            EvolvableTag(
                 sandbox.cordappBundle.symbolicName,
                 sandbox.cpk.id.signers,
                 isPlatformClass = false,
