@@ -44,6 +44,7 @@ class DbAccessProviderCachedTest {
     }
 
     @Test
+    @Suppress("TooGenericExceptionThrown")
     fun `when transaction for write records is not committed, records are not cached`() {
         @Suppress("UNCHECKED_CAST")
         `when`(dbAccessProviderImpl.writeRecords(anyOrNull(), anyOrNull()))
@@ -65,7 +66,7 @@ class DbAccessProviderCachedTest {
         }
 
         // exception propagated and post tx function invoked
-        assertThatThrownBy{ dbAccessProviderCached.writeRecords(records, postTxFn) }
+        assertThatThrownBy { dbAccessProviderCached.writeRecords(records, postTxFn) }
             .isInstanceOf(RuntimeException::class.java)
             .hasMessage("boom!")
         assertThat(returnedTxResult).isEqualTo(TransactionResult.ROLLED_BACK)
@@ -75,6 +76,7 @@ class DbAccessProviderCachedTest {
     }
 
     @Test
+    @Suppress("TooGenericExceptionThrown")
     fun `when transaction for write offsets and records is not committed, records are not cached`() {
         @Suppress("UNCHECKED_CAST")
         `when`(dbAccessProviderImpl.writeOffsetsAndRecordsAtomically(anyString(), anyString(), anyOrNull(), anyOrNull(), anyOrNull()))
@@ -96,7 +98,12 @@ class DbAccessProviderCachedTest {
         }
 
         // exception propagated and post tx function invoked
-        assertThatThrownBy{ dbAccessProviderCached.writeOffsetsAndRecordsAtomically(topic, consumerGroup, mapOf(3 to 1), records, postTxFn) }
+        assertThatThrownBy {
+            dbAccessProviderCached.writeOffsetsAndRecordsAtomically(
+                topic,
+                consumerGroup, mapOf(3 to 1), records, postTxFn
+            )
+        }
             .isInstanceOf(RuntimeException::class.java)
             .hasMessage("boom!")
         assertThat(returnedTxResult).isEqualTo(TransactionResult.ROLLED_BACK)
@@ -184,10 +191,9 @@ class DbAccessProviderCachedTest {
     @Test
     fun `create topic adds the new topic to the cache`() {
         val newTopic = "test.topic-2"
-        dbAccessProviderCached.createTopic( newTopic, 5)
+        dbAccessProviderCached.createTopic(newTopic, 5)
 
         verify(dbAccessProviderImpl, times(1)).createTopic(newTopic, 5)
         assertThat(dbAccessProviderCached.getCache().getAllEntries(newTopic, 2)).isNotNull
     }
-
 }

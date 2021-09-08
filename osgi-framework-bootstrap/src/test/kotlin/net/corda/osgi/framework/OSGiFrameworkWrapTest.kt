@@ -2,7 +2,9 @@ package net.corda.osgi.framework
 
 import com.google.common.jimfs.Jimfs
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -12,7 +14,12 @@ import org.osgi.framework.BundleEvent
 import org.osgi.framework.FrameworkEvent
 import org.osgi.framework.FrameworkListener
 import java.io.IOException
-import java.nio.file.*
+import java.nio.file.FileSystem
+import java.nio.file.FileSystems
+import java.nio.file.FileVisitResult
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -65,7 +72,8 @@ internal class OSGiFrameworkWrapTest {
 
         private fun deletePath(path: Path) {
             if (Files.exists(path)) {
-                Files.walkFileTree(path,
+                Files.walkFileTree(
+                    path,
                     object : SimpleFileVisitor<Path>() {
                         @Throws(IOException::class)
                         override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
@@ -78,7 +86,8 @@ internal class OSGiFrameworkWrapTest {
                             Files.delete(file)
                             return FileVisitResult.CONTINUE
                         }
-                    })
+                    }
+                )
             }
         }
 
@@ -97,8 +106,7 @@ internal class OSGiFrameworkWrapTest {
                 }
             }
         }
-
-    } //~ companion object
+    } // ~ companion object
 
     private lateinit var frameworkStorageDir: Path
 
@@ -140,7 +148,7 @@ internal class OSGiFrameworkWrapTest {
 
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
-    fun getFrameworkFrom_ClassNotFoundException() {
+    fun `getFrameworkFrom ClassNotFoundException`() {
         assertThrows<ClassNotFoundException> {
             OSGiFrameworkWrap.getFrameworkFrom("no_class", frameworkStorageDir)
         }
@@ -167,7 +175,7 @@ internal class OSGiFrameworkWrapTest {
 
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
-    fun install_IllegalStateException(frameworkFactoryFQN: String) {
+    fun `install IllegalStateException`(frameworkFactoryFQN: String) {
         assertThrows<IllegalStateException> {
             val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
             OSGiFrameworkWrap(framework).use { frameworkWrap ->
@@ -178,7 +186,7 @@ internal class OSGiFrameworkWrapTest {
 
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
-    fun install_IOException(frameworkFactoryFQN: String) {
+    fun `install IOException`(frameworkFactoryFQN: String) {
         assertThrows<IOException> {
             val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
             OSGiFrameworkWrap(framework).use { frameworkWrap ->
@@ -190,7 +198,7 @@ internal class OSGiFrameworkWrapTest {
 
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
-    fun installBundleJar_IOException(frameworkFactoryFQN: String) {
+    fun `installBundleJar IOException`(frameworkFactoryFQN: String) {
         assertThrows<IOException> {
             val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
             OSGiFrameworkWrap(framework).use { frameworkWrap ->
@@ -202,7 +210,7 @@ internal class OSGiFrameworkWrapTest {
 
     @ParameterizedTest
     @ArgumentsSource(OSGiFrameworkTestArgumentsProvider::class)
-    fun installBundleList_IOException(frameworkFactoryFQN: String) {
+    fun `installBundleList IOException`(frameworkFactoryFQN: String) {
         assertThrows<IOException> {
             val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
             OSGiFrameworkWrap(framework).use { frameworkWrap ->
@@ -217,10 +225,12 @@ internal class OSGiFrameworkWrapTest {
     fun start(frameworkFactoryFQN: String) {
         val startupStateAtomic = AtomicInteger(0)
         val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
-        framework.init(FrameworkListener { frameworkEvent ->
-            assertTrue(startupStateAtomic.get() < frameworkEvent.bundle.state)
-            assertTrue(startupStateAtomic.compareAndSet(startupStateAtomic.get(), frameworkEvent.bundle.state))
-        })
+        framework.init(
+            FrameworkListener { frameworkEvent ->
+                assertTrue(startupStateAtomic.get() < frameworkEvent.bundle.state)
+                assertTrue(startupStateAtomic.compareAndSet(startupStateAtomic.get(), frameworkEvent.bundle.state))
+            }
+        )
         OSGiFrameworkWrap(framework).use { frameworkWrap ->
             framework.bundleContext.addBundleListener { bundleEvent ->
                 assertTrue(bundleEvent.type >= BundleEvent.STARTED)
@@ -258,5 +268,4 @@ internal class OSGiFrameworkWrapTest {
         assertTrue { Files.notExists(fallBackStorageDir) }
         fileSystem.close()
     }
-
 }

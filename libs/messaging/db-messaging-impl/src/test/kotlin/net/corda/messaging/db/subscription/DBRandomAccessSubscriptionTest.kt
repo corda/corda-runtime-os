@@ -1,6 +1,5 @@
 package net.corda.messaging.db.subscription
 
-import org.mockito.kotlin.anyOrNull
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -11,7 +10,12 @@ import net.corda.schema.registry.AvroSchemaRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.*
+import org.mockito.ArgumentMatchers.anyInt
+import org.mockito.ArgumentMatchers.anyLong
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.Mockito.`when`
+import org.mockito.Mockito.mock
+import org.mockito.kotlin.anyOrNull
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.sql.SQLNonTransientException
@@ -32,7 +36,7 @@ class DBRandomAccessSubscriptionTest {
             val topic = invocation.arguments[0] as String
             val partition = invocation.arguments[1] as Int
             val offset = invocation.arguments[2] as Long
-            dbRecords.find { it.topic == topic && it.partition == partition &&  it.offset == offset }
+            dbRecords.find { it.topic == topic && it.partition == partition && it.offset == offset }
         }
     }
 
@@ -55,7 +59,11 @@ class DBRandomAccessSubscriptionTest {
     }
 
     private val subscriptionConfig = SubscriptionConfig("group-1", topic)
-    private val randomAccessSubscription = DBRandomAccessSubscription(subscriptionConfig, avroSchemaRegistry, offsetTrackersManager, dbAccessProvider, String::class.java, String::class.java)
+    private val randomAccessSubscription =
+        DBRandomAccessSubscription(
+            subscriptionConfig, avroSchemaRegistry,
+            offsetTrackersManager, dbAccessProvider, String::class.java, String::class.java
+        )
 
     @Test
     fun `when no record exists at the specified location, null is returned`() {
@@ -89,5 +97,4 @@ class DBRandomAccessSubscriptionTest {
         assertThatThrownBy { randomAccessSubscription.getRecord(1, 2) }
             .isInstanceOf(CordaMessageAPIFatalException::class.java)
     }
-
 }

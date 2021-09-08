@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.Duration
 
+@Suppress("ClassNaming")
 class InMemoryConfigurationTest {
     private val configuration = InMemoryConfiguration()
     @Nested

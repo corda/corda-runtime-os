@@ -1,7 +1,11 @@
 package net.corda.osgi.framework
 
 import org.apache.sling.testing.mock.osgi.MockOsgi
-import org.osgi.framework.*
+import org.osgi.framework.Bundle
+import org.osgi.framework.BundleContext
+import org.osgi.framework.BundleEvent
+import org.osgi.framework.BundleException
+import org.osgi.framework.BundleListener
 import java.io.InputStream
 import java.util.concurrent.ConcurrentHashMap
 
@@ -33,7 +37,7 @@ class OSGiBundleContextMock(
         }
     }
 
-    //: BundleContext
+    // : BundleContext
 
     /**
      * See [BundleContext.getBundle].
@@ -90,13 +94,13 @@ class OSGiBundleContextMock(
         BundleException::class
     )
     override fun installBundle(location: String, input: InputStream?): Bundle =
-    // If the specified `InputStream` is `null`, the Framework must
-    // create the `InputStream` from which to read the bundle by
-    // interpreting, in an implementation dependent manner, the specified `location`.
+        // If the specified `InputStream` is `null`, the Framework must
+        // create the `InputStream` from which to read the bundle by
+        // interpreting, in an implementation dependent manner, the specified `location`.
 
-    // The following steps are required to install a bundle.
-    // If a bundle containing the same location identifier is already
-    // installed, the `Bundle` object for that bundle is returned.
+        // The following steps are required to install a bundle.
+        // If a bundle containing the same location identifier is already
+        // installed, the `Bundle` object for that bundle is returned.
         framework.getBundle(location) ?: framework.installBundle(location)
             .also {
                 // The bundle's associated resources are allocated. The associated
@@ -107,5 +111,4 @@ class OSGiBundleContextMock(
                 notifyToListeners(BundleEvent(BundleEvent.INSTALLED, bundle))
                 // The `Bundle` object for the newly or previously installed bundle is returned.
             }
-
 }

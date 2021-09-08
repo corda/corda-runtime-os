@@ -1,6 +1,5 @@
 package net.corda.messaging.db.subscription
 
-import org.mockito.kotlin.anyOrNull
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -29,6 +28,7 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.mockito.kotlin.anyOrNull
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 import java.sql.SQLTransientException
@@ -42,12 +42,18 @@ class DBEventLogSubscriptionTest {
     private val topic1 = "test.topic1"
     private val topic2 = "test.topic2"
     private val topicPartitions = 2
-    private val dbRecords = listOf(topic1, topic2).map { it to (1..topicPartitions).map { it to mutableListOf<RecordDbEntry>() }.toMap()  }.toMap()
+    private val dbRecords = listOf(topic1, topic2).map {
+        it to (1..topicPartitions).map { it to mutableListOf<RecordDbEntry>() }.toMap()
+    }.toMap()
     private val dbCommittedOffsets = listOf(topic1, topic2)
         .map { it to (1..topicPartitions).map { it to Collections.synchronizedList<Long>(mutableListOf()) }.toMap() }.toMap()
 
-    private val offsetsPerTopicPartition = listOf(topic1, topic2).map { it to (1..topicPartitions).map { it to AtomicLong(1) }.toMap() }.toMap()
-    private val releasedOffsetsPerTopicPartition = listOf(topic1, topic2).map { it to (1..topicPartitions).map { it to mutableListOf<Long>() }.toMap() }.toMap()
+    private val offsetsPerTopicPartition = listOf(topic1, topic2).map {
+        it to (1..topicPartitions).map { it to AtomicLong(1) }.toMap()
+    }.toMap()
+    private val releasedOffsetsPerTopicPartition = listOf(topic1, topic2).map {
+        it to (1..topicPartitions).map { it to mutableListOf<Long>() }.toMap()
+    }.toMap()
 
     private val processedRecords = mutableListOf<EventLogRecord<String, String>>()
 
@@ -74,14 +80,13 @@ class DBEventLogSubscriptionTest {
                 } finally {
                     postTxFn(records, transactionResult!!)
                 }
-
             }
         @Suppress("UNCHECKED_CAST")
         `when`(readRecords(anyString(), anyList()))
             .thenAnswer { invocation ->
                 val topic = invocation.arguments[0] as String
                 val fetchWindows = invocation.arguments[1] as List<FetchWindow>
-                fetchWindows.flatMap {  window ->
+                fetchWindows.flatMap { window ->
                     dbRecords[topic]!![window.partition]!!
                         .filter { it.offset >= window.startOffset && it.offset <= window.endOffset }
                         .take(window.limit)
@@ -124,10 +129,12 @@ class DBEventLogSubscriptionTest {
                 val partitions = invocation.arguments[2] as Set<Int>
                 partitions.map { it to dbCommittedOffsets[topic]!![it]!!.maxOrNull() }.toMap()
             }
-        `when`(getTopics()).thenReturn(mapOf(
-            topic1 to topicPartitions,
-            topic2 to topicPartitions
-        ))
+        `when`(getTopics()).thenReturn(
+            mapOf(
+                topic1 to topicPartitions,
+                topic2 to topicPartitions
+            )
+        )
     }
     private val avroSchemaRegistry = mock(AvroSchemaRegistry::class.java).apply {
         `when`(serialize(anyOrNull())).thenAnswer { invocation ->
@@ -170,7 +177,6 @@ class DBEventLogSubscriptionTest {
         `when`(assign(anyOrNull(), anyInt())).thenReturn(2)
     }
 
-
     private val transactionalConfig = SubscriptionConfig("consumer-group-1", topic1, 1)
     private val nonTransactionalConfig = SubscriptionConfig("consumer-group-1", topic1)
 
@@ -182,7 +188,10 @@ class DBEventLogSubscriptionTest {
         )
         dbRecords[topic1]!![1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
-        val subscription = DBEventLogSubscription(nonTransactionalConfig, processor, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
+        val subscription = DBEventLogSubscription(
+            nonTransactionalConfig, processor,
+            null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout
+        )
 
         subscription.start()
 
@@ -191,10 +200,12 @@ class DBEventLogSubscriptionTest {
             synchronized(dbCommittedOffsets[topic1]!![1]!!) {
                 assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
             }
-            assertThat(dbRecords[topic2]!![2]!!).containsExactlyElementsOf(listOf(
-                RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
-                RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), "value-2".toByteArray())
-            ))
+            assertThat(dbRecords[topic2]!![2]!!).containsExactlyElementsOf(
+                listOf(
+                    RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+                    RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), "value-2".toByteArray())
+                )
+            )
             assertThat(releasedOffsetsPerTopicPartition[topic2]!![2]!!).containsExactlyElementsOf(listOf(1, 2))
         }
 
@@ -209,7 +220,12 @@ class DBEventLogSubscriptionTest {
         )
         dbRecords[topic1]!![1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
-        val subscription = DBEventLogSubscription(transactionalConfig, processor, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
+        val subscription =
+            DBEventLogSubscription(
+                transactionalConfig,
+                processor, null,
+                avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout
+            )
 
         subscription.start()
 
@@ -218,10 +234,12 @@ class DBEventLogSubscriptionTest {
             synchronized(dbCommittedOffsets[topic1]!![1]!!) {
                 assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
             }
-            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(listOf(
-                RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
-                RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), "value-2".toByteArray())
-            ))
+            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(
+                listOf(
+                    RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+                    RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), "value-2".toByteArray())
+                )
+            )
             assertThat(releasedOffsetsPerTopicPartition[topic2]!![2]).containsExactlyElementsOf(listOf(1, 2))
         }
 
@@ -236,7 +254,10 @@ class DBEventLogSubscriptionTest {
         )
         dbRecords[topic1]!![1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
-        val subscription = DBEventLogSubscription(transactionalConfig, processor, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
+        val subscription = DBEventLogSubscription(
+            transactionalConfig, processor, null,
+            avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout
+        )
 
         subscription.start()
 
@@ -256,6 +277,7 @@ class DBEventLogSubscriptionTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `if transactional db write fails temporarily, transactional subscription delivers records to processor multiple times`() {
         failuresToSimulateForAtomicDbWrite = 3
         val topic1Records = listOf(
@@ -274,10 +296,12 @@ class DBEventLogSubscriptionTest {
             synchronized(dbCommittedOffsets[topic1]!![1]!!) {
                 assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
             }
-            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(listOf(
-                RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
-                RecordDbEntry(topic2, 2, 8, "key-2".toByteArray(), "value-2".toByteArray())
-            ))
+            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(
+                listOf(
+                    RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
+                    RecordDbEntry(topic2, 2, 8, "key-2".toByteArray(), "value-2".toByteArray())
+                )
+            )
             assertThat(releasedOffsetsPerTopicPartition[topic2]!![2]).containsExactlyElementsOf((1L..8L).toList())
         }
 
@@ -285,6 +309,7 @@ class DBEventLogSubscriptionTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `if writing of records to db fails fails temporarily, non-transactional subscription delivers records to processor multiple times`() {
         failuresToSimulateForDbRecordsWrite = 3
         val topic1Records = listOf(
@@ -303,10 +328,12 @@ class DBEventLogSubscriptionTest {
             synchronized(dbCommittedOffsets[topic1]!![1]!!) {
                 assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
             }
-            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(listOf(
-                RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
-                RecordDbEntry(topic2, 2, 8, "key-2".toByteArray(), "value-2".toByteArray())
-            ))
+            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(
+                listOf(
+                    RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
+                    RecordDbEntry(topic2, 2, 8, "key-2".toByteArray(), "value-2".toByteArray())
+                )
+            )
             assertThat(releasedOffsetsPerTopicPartition[topic2]!![2]).containsExactlyElementsOf((1L..8L).toList())
         }
 
@@ -314,6 +341,7 @@ class DBEventLogSubscriptionTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `if writing of offsets to db fails fails temporarily, non-transactional subscription produces records and delivers them to processor multiple times`() {
         failuresToSimulateForDbOffsetWrite = 3
         val topic1Records = listOf(
@@ -332,16 +360,18 @@ class DBEventLogSubscriptionTest {
             synchronized(dbCommittedOffsets[topic1]!![1]!!) {
                 assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
             }
-            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(listOf(
-                RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
-                RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), "value-2".toByteArray()),
-                RecordDbEntry(topic2, 2, 3, "key-1".toByteArray(), "value-1".toByteArray()),
-                RecordDbEntry(topic2, 2, 4, "key-2".toByteArray(), "value-2".toByteArray()),
-                RecordDbEntry(topic2, 2, 5, "key-1".toByteArray(), "value-1".toByteArray()),
-                RecordDbEntry(topic2, 2, 6, "key-2".toByteArray(), "value-2".toByteArray()),
-                RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
-                RecordDbEntry(topic2, 2, 8, "key-2".toByteArray(), "value-2".toByteArray())
-            ))
+            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(
+                listOf(
+                    RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+                    RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), "value-2".toByteArray()),
+                    RecordDbEntry(topic2, 2, 3, "key-1".toByteArray(), "value-1".toByteArray()),
+                    RecordDbEntry(topic2, 2, 4, "key-2".toByteArray(), "value-2".toByteArray()),
+                    RecordDbEntry(topic2, 2, 5, "key-1".toByteArray(), "value-1".toByteArray()),
+                    RecordDbEntry(topic2, 2, 6, "key-2".toByteArray(), "value-2".toByteArray()),
+                    RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
+                    RecordDbEntry(topic2, 2, 8, "key-2".toByteArray(), "value-2".toByteArray())
+                )
+            )
             assertThat(releasedOffsetsPerTopicPartition[topic2]!![2]).containsExactlyElementsOf((1L..8L).toList())
         }
 
@@ -352,22 +382,28 @@ class DBEventLogSubscriptionTest {
     fun `partition assignment listener is invoked when partitions are unassigned`() {
         val partitionListener = mock(PartitionAssignmentListener::class.java)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic1)
-        val subscription = DBEventLogSubscription(nonTransactionalConfig, processor, partitionListener, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
+        val subscription = DBEventLogSubscription(
+            nonTransactionalConfig, processor,
+            partitionListener, avroSchemaRegistry,
+            offsetTrackersManager, partitionAllocator, partitionAssignor,
+            dbAccessProvider, pollingTimeout
+        )
 
         subscription.start()
         verify(partitionListener, times(1)).onPartitionsAssigned(listOf(topic1 to 1, topic1 to 2))
         verify(partitionListener, never()).onPartitionsUnassigned(anyList())
     }
 
-    class InMemoryProcessor<K: Any, V: Any>(private val processedRecords: MutableList<EventLogRecord<K, V>>,
-                                            override val keyClass: Class<K>,
-                                            override val valueClass: Class<V>,
-                                            private val topicToWriteTo: String): EventLogProcessor<K, V> {
+    class InMemoryProcessor<K : Any, V : Any>(
+        private val processedRecords: MutableList<EventLogRecord<K, V>>,
+        override val keyClass: Class<K>,
+        override val valueClass: Class<V>,
+        private val topicToWriteTo: String
+    ) : EventLogProcessor<K, V> {
 
         override fun onNext(events: List<EventLogRecord<K, V>>): List<Record<*, *>> {
             processedRecords.addAll(events)
             return events.map { Record(topicToWriteTo, it.key, it.value) }
         }
     }
-
 }

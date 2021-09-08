@@ -193,6 +193,7 @@ class LifecycleProcessorTest {
     }
 
     @Test
+    @Suppress("TooGenericExceptionThrown")
     fun `when an unhandled error is processed by the user the batch is marked as failed`() {
         val state = LifecycleStateManager(5)
         state.isRunning = true
@@ -213,6 +214,7 @@ class LifecycleProcessorTest {
     }
 
     @Test
+    @Suppress("TooGenericExceptionThrown")
     fun `when a handled error is processed by the user the batch is marked as succeeded`() {
         val state = LifecycleStateManager(5)
         state.isRunning = true
@@ -234,6 +236,7 @@ class LifecycleProcessorTest {
     }
 
     @Test
+    @Suppress("TooGenericExceptionThrown")
     fun `when the error handler throws another error the batch is marked as failed`() {
         val state = LifecycleStateManager(5)
         state.isRunning = true
@@ -256,6 +259,7 @@ class LifecycleProcessorTest {
     }
 
     @Test
+    @Suppress("TooGenericExceptionThrown")
     fun `in a failed batch the remainder of the batch is processed after the failure`() {
         val state = LifecycleStateManager(5)
         state.isRunning = true

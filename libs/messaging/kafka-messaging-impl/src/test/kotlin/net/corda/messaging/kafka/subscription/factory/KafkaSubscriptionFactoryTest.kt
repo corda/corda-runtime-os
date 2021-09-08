@@ -13,8 +13,8 @@ import org.mockito.kotlin.mock
 class KafkaSubscriptionFactoryTest {
 
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
-    private lateinit var factory :KafkaSubscriptionFactory
-    private lateinit var config :Config
+    private lateinit var factory: KafkaSubscriptionFactory
+    private lateinit var config: Config
     private val subscriptionConfig = SubscriptionConfig("group1", "event", 1)
 
     @BeforeEach
@@ -35,12 +35,17 @@ class KafkaSubscriptionFactoryTest {
 
     @Test
     fun createDurableSub() {
-        factory.createDurableSubscription<Any, Any>(subscriptionConfig, mock(),  ConfigFactory.empty(), null)
+        factory.createDurableSubscription<Any, Any>(subscriptionConfig, mock(), ConfigFactory.empty(), null)
     }
 
     @Test
     fun createDurableSubNoInstanceId() {
-        assertThrows<CordaMessageAPIFatalException> { factory.createDurableSubscription<Any, Any>( SubscriptionConfig("group1", "event"), mock(), ConfigFactory.empty(), null) }
+        assertThrows<CordaMessageAPIFatalException> {
+            factory.createDurableSubscription<Any, Any>(
+                SubscriptionConfig("group1", "event"),
+                mock(), ConfigFactory.empty(), null
+            )
+        }
     }
 
     @Test
