@@ -23,8 +23,12 @@ class StateAndEventRebalanceListenerTest {
     @Test
     fun testPartitionsRevoked() {
         val (stateAndEventListener, eventConsumer, stateConsumer, config, mapFactory, partitions) = setupMocks()
-        val partitionState = StateAndEventPartitionState<String, String>(mutableMapOf(partitions.first().partition() to mutableMapOf()), mutableMapOf(partitions.first().partition() to Long.MAX_VALUE))
-        val rebalanceListener = StateAndEventRebalanceListener(config, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val partitionState = StateAndEventPartitionState<String, String>(
+            mutableMapOf(partitions.first().partition() to mutableMapOf()),
+            mutableMapOf(partitions.first().partition() to Long.MAX_VALUE)
+        )
+        val rebalanceListener =
+            StateAndEventRebalanceListener(config, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
         rebalanceListener.onPartitionsRevoked(partitions)
 
         verify(stateConsumer, times(1)).assignment()
@@ -36,8 +40,12 @@ class StateAndEventRebalanceListenerTest {
     @Test
     fun testPartitionsAssigned() {
         val (stateAndEventListener, eventConsumer, stateConsumer, config, mapFactory, partitions) = setupMocks()
-        val partitionState = StateAndEventPartitionState<String, String>(mutableMapOf(partitions.first().partition() to mutableMapOf()), mutableMapOf(partitions.first().partition() to Long.MAX_VALUE))
-        val rebalanceListener = StateAndEventRebalanceListener(config, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val partitionState = StateAndEventPartitionState<String, String>(
+            mutableMapOf(partitions.first().partition() to mutableMapOf()),
+            mutableMapOf(partitions.first().partition() to Long.MAX_VALUE)
+        )
+        val rebalanceListener =
+            StateAndEventRebalanceListener(config, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
         rebalanceListener.onPartitionsAssigned(partitions)
 
         verify(stateConsumer, times(1)).seekToBeginning(any())
@@ -64,8 +72,8 @@ class StateAndEventRebalanceListenerTest {
         val stateAndEventListener: StateAndEventListener<String, String>,
         val eventConsumer: CordaKafkaConsumer<String, String>,
         val stateConsumer: CordaKafkaConsumer<String, String>,
-        val config : Config,
-        val mapFactory : SubscriptionMapFactory<String, Pair<Long, String>>,
-        val partitions : Set<TopicPartition>
+        val config: Config,
+        val mapFactory: SubscriptionMapFactory<String, Pair<Long, String>>,
+        val partitions: Set<TopicPartition>
     )
 }
