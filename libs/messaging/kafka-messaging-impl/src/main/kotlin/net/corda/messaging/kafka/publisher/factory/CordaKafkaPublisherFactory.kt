@@ -3,7 +3,6 @@ package net.corda.messaging.kafka.publisher.factory
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -13,13 +12,10 @@ import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBLISHER
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RPC
 import net.corda.messaging.kafka.publisher.CordaKafkaPublisherImpl
 import net.corda.messaging.kafka.publisher.CordaKafkaRPCSenderImpl
-import net.corda.messaging.kafka.subscription.KafkaRPCSubscription
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.utils.ConfigUtils.Companion.resolvePublisherConfiguration
-import net.corda.messaging.kafka.utils.ConfigUtils.Companion.resolveSubscriptionConfiguration
 import net.corda.messaging.kafka.utils.toConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
@@ -56,8 +52,7 @@ class CordaKafkaPublisherFactory @Activate constructor(
 
     override fun <TREQ : Any, TRESP : Any> createRPCSender(
         rpcConfig: RPCConfig<TREQ, TRESP>,
-        nodeConfig: Config,
-        responderProcessor: RPCResponderProcessor<TREQ, TRESP>
+        nodeConfig: Config
     ): RPCSender<TREQ, TRESP> {
 
         val publisherConfiguration = ConfigFactory.empty()
@@ -72,29 +67,10 @@ class CordaKafkaPublisherFactory @Activate constructor(
             PATTERN_PUBLISHER
         )
 
-        val consumerConfiguration = ConfigFactory.empty()
-            .withValue(KafkaProperties.GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
-            .withValue(KafkaProperties.TOPIC, ConfigValueFactory.fromAnyRef(rpcConfig.requestTopic + ".resp"))
-            .withValue("clientName", ConfigValueFactory.fromAnyRef(rpcConfig.clientName))
-
-        val consumerConfig = resolveSubscriptionConfiguration(
-            consumerConfiguration,
-            nodeConfig,
-            clientIdCounter.getAndIncrement(),
-            PATTERN_RPC
-        )
-
         val publisher = createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)
 
-            KafkaProducerBuilderImpl(avroSchemaRegistry).createProducer(publisherConfig.getConfig(KAFKA_PRODUCER))
-        val rpcSubscription =
-            KafkaRPCSubscription(
-                rpcConfig,
-                consumerConfig,
-                CordaKafkaConsumerBuilderImpl(avroSchemaRegistry),
-                responderProcessor
-            )
+        val consumerBuilder = CordaKafkaConsumerBuilderImpl<TREQ, TRESP>(avroSchemaRegistry)
 
-        return CordaKafkaRPCSenderImpl(rpcConfig, publisherConfig, publisher, rpcSubscription)
+        return CordaKafkaRPCSenderImpl(rpcConfig, publisherConfig, publisher, consumerBuilder)
     }
 }
