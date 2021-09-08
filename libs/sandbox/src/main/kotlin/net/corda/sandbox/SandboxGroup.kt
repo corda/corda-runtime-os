@@ -40,19 +40,19 @@ interface SandboxGroup {
 
     /**
      * Returns the [StaticTag] for a given [klass]. Returns null if the class is not contained in any bundle, or is
-     * contained in a bundle that is not contained in any sandbox in the group.
+     * contained in a bundle that is not contained in any sandbox in the group or in the platform sandbox.
      */
     fun getStaticTag(klass: Class<*>): StaticTag?
 
     /**
      * Returns the [EvolvableTag] for a given [klass]. Returns null if the class is not contained in any bundle, or is
-     * contained in a bundle that is not contained in any sandbox in the group.
+     * contained in a bundle that is not contained in any sandbox in the group or in the platform sandbox.
      */
     fun getEvolvableTag(klass: Class<*>): EvolvableTag?
 
     /**
      * Returns the [Class] identified by the [className] and the [classTag]. Returns null if there is no sandbox
-     * matching the tag, or if the matching sandbox does not contain the class.
+     * matching the tag, or if the class is not contained in the matching sandbox or in the platform sandbox.
      *
      * Throws [SandboxException] if the [ClassTag] implementation is not recognised.
      */
