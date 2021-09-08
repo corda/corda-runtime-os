@@ -10,8 +10,8 @@ import org.junit.jupiter.api.assertThrows
 import java.io.NotSerializableException
 import java.lang.reflect.Type
 import java.time.LocalDateTime
-import java.util.UUID
 import java.util.Date
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -21,6 +21,7 @@ interface TestCommandData
 data class TestCommand<T : TestCommandData>(val value: T, val signers: List<String>)
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
+@Suppress("MaxLineLength")
 class AMQPTypeIdentifierParserTests {
 
     @Test
@@ -44,7 +45,7 @@ class AMQPTypeIdentifierParserTests {
     }
 
     @Test
-	fun `unparameterised types`() {
+    fun `unparameterised types`() {
         assertParseResult<LocalDateTime>("java.time.LocalDateTime")
         assertParseResult<Array<LocalDateTime>>("java.time.LocalDateTime[]")
         assertParseResult<Array<Array<LocalDateTime>>>("java.time.LocalDateTime[][]")
@@ -60,9 +61,9 @@ class AMQPTypeIdentifierParserTests {
     }
 
     @Test
-	fun `parameterised types, nested, with arrays`() {
+    fun `parameterised types, nested, with arrays`() {
         assertParsesTo<WithParameters<IntArray, WithParameter<Array<WithParameters<Array<Array<Date>>, UUID>>>>>(
-                "WithParameters<int[], WithParameter<WithParameters<Date[][], UUID>[]>>"
+            "WithParameters<int[], WithParameter<WithParameters<Date[][], UUID>[]>>"
         )
 
         // We set a limit to the maximum depth of nested type parameters.
@@ -72,7 +73,7 @@ class AMQPTypeIdentifierParserTests {
     }
 
     @Test
-	fun `compatibility test`() {
+    fun `compatibility test`() {
         assertParsesCompatibly<Int>()
         assertParsesCompatibly<IntArray>()
         assertParsesCompatibly<Array<Int>>()
@@ -85,27 +86,27 @@ class AMQPTypeIdentifierParserTests {
 
     // Old tests for DeserializedParameterizedType
     @Test
-	fun `test nested`() {
+    fun `test nested`() {
         verify(" java.util.Map < java.util.Map< java.lang.String, java.lang.Integer >, java.util.Map < java.lang.Long , java.lang.String > >")
     }
 
     @Test
-	fun `test simple`() {
+    fun `test simple`() {
         verify("java.util.List<java.lang.String>")
     }
 
     @Test
-	fun `test multiple args`() {
+    fun `test multiple args`() {
         verify("java.util.Map<java.lang.String,java.lang.Integer>")
     }
 
     @Test
-	fun `test trailing whitespace`() {
+    fun `test trailing whitespace`() {
         verify("java.util.Map<java.lang.String, java.lang.Integer> ")
     }
 
     @Test
-	fun `test list of commands`() {
+    fun `test list of commands`() {
         verify("java.util.List<net.corda.internal.serialization.amqp.TestCommand<net.corda.internal.serialization.amqp.TestCommand<net.corda.internal.serialization.amqp.TestCommandData>>>")
     }
 
@@ -173,7 +174,7 @@ class AMQPTypeIdentifierParserTests {
     }
 
     @Test
-	fun `test no parameters`() {
+    fun `test no parameters`() {
         verify("java.lang.String")
     }
 
@@ -216,7 +217,6 @@ class AMQPTypeIdentifierParserTests {
         val parsedIdentifier = AMQPTypeIdentifierParser.parse(nameForType)
         assertEquals(expectedIdentifierPrettyPrint, parsedIdentifier.prettyPrint())
     }
-
 
     private fun normalise(string: String): String {
         return string.replace(" ", "")
