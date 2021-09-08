@@ -5,7 +5,6 @@ description("OSGi Framework Bootstrap")
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-base"
     implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     implementation project(":osgi-framework-api")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
