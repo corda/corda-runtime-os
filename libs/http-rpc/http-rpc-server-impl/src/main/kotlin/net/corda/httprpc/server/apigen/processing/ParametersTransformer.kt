@@ -103,7 +103,9 @@ internal class BodyParametersTransformer(
     override fun transform(): EndpointParameter {
         log.trace { "Transform body parameter \"${parameter.name}\"" }
         return if (annotation != null) {
-            transformWithAnnotation(annotation).also { log.trace { "Transform body parameter \"${parameter.name}\" completed. Result:\n$it" } }
+            transformWithAnnotation(annotation).also {
+                log.trace { "Transform body parameter \"${parameter.name}\" completed. Result:\n$it" }
+            }
         } else {
             transformWithAnnotation(HttpRpcRequestBodyParameter::class.createInstance()).also {
                 log.trace { "Transform body parameter  \"${parameter.name}\" without explicit annotation completed. Result:\n$it" }

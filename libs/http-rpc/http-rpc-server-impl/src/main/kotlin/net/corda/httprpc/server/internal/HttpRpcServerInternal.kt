@@ -17,13 +17,18 @@ import net.corda.httprpc.server.apigen.processing.RouteInfo
 import net.corda.httprpc.server.apigen.processing.RouteProvider
 import net.corda.httprpc.server.apigen.processing.openapi.OpenApiInfoProvider
 import net.corda.httprpc.server.config.HttpRpcSettingsProvider
+import net.corda.httprpc.server.security.Actor
+import net.corda.httprpc.server.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.server.security.HttpRpcSecurityManager
+import net.corda.httprpc.server.security.InvocationContext
+import net.corda.httprpc.server.security.RpcAuthContext
 import net.corda.httprpc.server.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.server.utils.addHeaderValues
 import net.corda.httprpc.server.utils.executeWithThreadContextClassLoader
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.utilities.rootCause
 import net.corda.utilities.rootMessage
+import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -142,9 +147,9 @@ internal class HttpRpcServerInternal(
 
         try {
             return securityManager.authenticate(credentials).also {
-                //TODO no auth context set
-//                val rpcAuthContext = RpcAuthContext(InvocationContext.Rpc(Actor.service(this::javaClass.toString(), CordaX500Name.parse(CORDA_X500_NAME))), it)
-//                CURRENT_RPC_CONTEXT.set(rpcAuthContext)
+                val rpcAuthContext = RpcAuthContext(InvocationContext.Rpc(Actor.service(this::javaClass.toString(),
+                        CordaX500Name.parse(CORDA_X500_NAME))), it)
+                CURRENT_RPC_CONTEXT.set(rpcAuthContext)
                 log.trace { """Authenticate user "${it.principal}" completed.""" }
             }
         } catch (e: FailedLoginException) {
@@ -311,7 +316,8 @@ internal class HttpRpcServerInternal(
     @SuppressWarnings("ComplexMethod")
     private fun createSecureServer(): Server {
         log.trace { "Create secure (HTTPS) server." }
-        require(configurationsProvider.getSSLKeyStorePath() != null) { "SSL key store path must be present in order to start a secure server" }
+        require(configurationsProvider.getSSLKeyStorePath() != null) {
+            "SSL key store path must be present in order to start a secure server" }
         require(configurationsProvider.getSSLKeyStorePassword() != null) { SSL_PASSWORD_MISSING }
 
         log.trace { "Get SslContextFactory." }

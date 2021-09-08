@@ -27,7 +27,8 @@ internal open class JwtAuthenticationProvider(
         } catch (e: Exception) {
             logger.error("Unexpected exception when parsing token", e)
             // Catching Exception here to mitigate https://nvd.nist.gov/vuln/detail/CVE-2021-27568,
-            // even though: `com.nimbusds.jose.util.JSONObjectUtils.parse` already has similar sort of logic, but this may change in the future
+            // even though: `com.nimbusds.jose.util.JSONObjectUtils.parse` already has similar sort of logic,
+            // but this may change in the future
             // versions.
             throw FailedLoginException("Failed to parse JWT token.")
         }

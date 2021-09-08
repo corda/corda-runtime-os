@@ -19,7 +19,8 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 
 /**
- * [OpenApiInfoProvider] is responsible for providing OpenAPI related values from the given list of [Resource] and the [HttpRpcSettingsProvider].
+ * [OpenApiInfoProvider] is responsible for providing OpenAPI related values
+ * from the given list of [Resource] and the [HttpRpcSettingsProvider].
  */
 internal class OpenApiInfoProvider(
     private val resources: List<Resource>,

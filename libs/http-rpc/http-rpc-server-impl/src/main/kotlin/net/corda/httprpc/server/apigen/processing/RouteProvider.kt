@@ -92,13 +92,15 @@ internal class RouteInfo(
     val methodFullName get() = RpcAuthHelper.methodFullName(endpoint.invocationMethod.method)
     private val methodInvoker = when {
         endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() -> FiniteDurableStreamsMethodInvoker(
-            endpoint.invocationMethod,
-            cl
+                endpoint.invocationMethod,
+                cl
         )
-        endpoint.invocationMethod.method.returnsDurableCursorBuilder() && !endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() -> DurableStreamsMethodInvoker(
-            endpoint.invocationMethod,
-            cl
-        )
+        endpoint.invocationMethod.method.returnsDurableCursorBuilder()
+        && !endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() ->
+            DurableStreamsMethodInvoker(
+                    endpoint.invocationMethod,
+                    cl
+            )
         else -> DefaultMethodInvoker(endpoint.invocationMethod, cl)
     }
 
@@ -108,7 +110,11 @@ internal class RouteInfo(
         log.trace { "Invoke delegated method \"${endpoint.invocationMethod.method.name}\" with args size: ${args.size}." }
         try {
             return methodInvoker.invoke(*args)
-                .also { log.trace { "Invoke delegated method \"${endpoint.invocationMethod.method.name}\" with args size: ${args.size} completed." } }
+                    .also {
+                        log.trace {
+                            "Invoke delegated method \"${endpoint.invocationMethod.method.name}\" with args size: ${args.size} completed."
+                        }
+                    }
         } catch (e: InvocationTargetException) {
             e.cause?.let { throw it } ?: throw e
         }

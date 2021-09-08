@@ -39,7 +39,7 @@ internal class SwaggerUIRenderer(private val configurationProvider: HttpRpcSetti
                 }
             }
         }
-
+        @Suppress("MaxLineLength")
         ctx.html(
             """
             <head>

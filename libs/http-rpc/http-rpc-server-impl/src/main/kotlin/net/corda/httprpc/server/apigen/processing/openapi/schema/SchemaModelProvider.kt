@@ -47,10 +47,12 @@ internal interface SchemaModelProvider {
 }
 
 /**
- * [DefaultSchemaModelProvider] is implementing the [SchemaModelProvider] and uses a collection of potential builders
+ * [DefaultSchemaModelProvider] is implementing the [SchemaModelProvider]
+ * and uses a collection of potential builders
  * and the [SchemaModelContextHolder] in order to generate the requested model.
  *
- * If the object returned from the builder is a [SchemaObjectModel], then it is a candidate for referencing using [SchemaModelContextHolder].
+ * If the object returned from the builder is a [SchemaObjectModel],
+ * then it is a candidate for referencing using [SchemaModelContextHolder].
  * Thus, it is not advised to use the [SchemaObjectBuilder] for generic objects where the generic types need to be represented.
  */
 internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: SchemaModelContextHolder) :
@@ -157,7 +159,8 @@ internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: 
             }
             else -> model
         }.also {
-            log.trace { """Return or register and return ref for class: "${parameterizedClass.clazz}", model: "$model", returned model: "$it" completed.""" }
+            log.trace { """Return or register and return ref for class: "${parameterizedClass.clazz}", 
+                |model: "$model", returned model: "$it" completed.""".trimMargin() }
         }
     }
 

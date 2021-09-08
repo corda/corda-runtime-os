@@ -107,7 +107,12 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
         try {
             log.trace { "Retrieve target interface for implementation \"${impl::class.java.name}\"." }
             return impl.targetInterface.takeIf { it.annotations.any { annotation -> annotation is HttpRpcResource } }
-                .also { log.trace { "Retrieved target interface \"${impl.targetInterface.name}\" for implementation \"${impl::class.java.name}\" completed." } }
+                    .also {
+                        log.trace {
+                            "Retrieved target interface \"${impl.targetInterface.name}\" " +
+                                    "for implementation \"${impl::class.java.name}\" completed."
+                        }
+                    }
         } catch (e: Exception) {
             "Error during retrieve target interface for implementation \"${impl::class.java.name}\"".let {
                 log.error("$it: ${e.message}")
@@ -163,7 +168,8 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
         val matchingMethod = staticExposedGetMethods.firstOrNull { it.equals(method.name, true) }
         return (matchingMethod != null)
             .also {
-                log.trace { "Is implicitly exposed method check for method \"${method.name} \", result \"$it\", matching method name \"$matchingMethod\" completed." }
+                log.trace { "Is implicitly exposed method check for method \"${method.name} \", " +
+                        "result \"$it\", matching method name \"$matchingMethod\" completed." }
             }
     }
 
@@ -177,10 +183,14 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
             return when (count) {
                 1 -> true
                 0 -> false
-                else -> throw IllegalArgumentException("Only one of ${HttpRpcPOST::class.simpleName}, ${HttpRpcGET::class.simpleName} can be specified on an endpoint")
+                else -> throw IllegalArgumentException("Only one of ${HttpRpcPOST::class.simpleName}, " +
+                        "${HttpRpcGET::class.simpleName} can be specified on an endpoint")
             }.also {
                 val annotationTypeText = if (countGET > 0) "HttpRpcGET" else "HttpRpcPOST"
-                log.trace { "Has endpoint annotation check for method \"${method.name}\" with annotation $annotationTypeText found completed." }
+                log.trace {
+                    "Has endpoint annotation check for method \"${method.name}\" " +
+                            "with annotation $annotationTypeText found completed."
+                }
             }
         } catch (e: Exception) {
             "Error during endpoint annotation check for method \"${method.name}\" ".let {

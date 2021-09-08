@@ -82,7 +82,11 @@ internal open class DurableStreamsMethodInvoker(private val invocationMethod: In
 
         val durableCursorTransferObject = uncheckedCast<Any, Supplier<Cursor.PollResult<Any>>>(returnValue as Any)
         return durableCursorTransferObject.get()
-            .also { log.trace { """Invoke durable streams method "${invocationMethod.method.name}" with args size: ${args.size} completed.""" } }
+                .also {
+                    log.trace {
+                        """Invoke durable streams method "${invocationMethod.method.name}" with args size: ${args.size} completed."""
+                    }
+                }
     }
 }
 
