@@ -28,11 +28,17 @@ class KotlinMemberSignatureTest {
     @ArgumentsSource(MethodProvider::class)
     fun testInterfaceForClass(method: Method) {
         val api = method.toSignature()
+        @Suppress("SpreadOperator")
         val impl = ExampleImpl::class.java.getMethod(api.name, *api.parameterTypes).toSignature()
-        assertAll(method.name,
+        assertAll(
+            method.name,
             { assertTrue(api.isAssignableFrom(impl), "API not assignable from Impl") },
-            { assertTrue(!impl.isAssignableFrom(api) || impl == api,
-                    "Impl incorrectly assignable from API") }
+            {
+                assertTrue(
+                    !impl.isAssignableFrom(api) || impl == api,
+                    "Impl incorrectly assignable from API"
+                )
+            }
         )
     }
 

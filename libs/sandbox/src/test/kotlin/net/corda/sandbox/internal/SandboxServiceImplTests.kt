@@ -7,6 +7,7 @@ import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
+import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.crypto.SecureHash
@@ -16,7 +17,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers.anyString
@@ -492,6 +492,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
+    @Suppress("MaxLineLength")
     fun `throws if asked to retrieve CPK info for a CorDapp class name which is not installed in one of the sandboxes the associated class's sandbox has visibility of`() {
         val unknownClassName = Iterable::class.java.name
 
@@ -553,7 +554,31 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `a bundle can only see the CorDapp bundle and no other bundles in another sandbox it has visibility of`() {
+    fun `a bundle can only see the public bundles in another sandbox it has visibility of`() {
+        val startedBundles = mutableListOf<Bundle>()
+        val sandboxService = createSandboxService(startedBundles = startedBundles)
+
+        val sandboxes = sandboxService.createSandboxes(listOf(cpkOne.cpkHash, cpkTwo.cpkHash)).sandboxes.toList()
+        val sandboxOne = sandboxes[0] as SandboxImpl
+        val sandboxTwo = sandboxes[1] as SandboxImpl
+
+        val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
+        val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }
+        val sandboxTwoPublicBundles = sandboxTwoBundles.filter { bundle -> bundle in sandboxTwo.publicBundles }
+        val sandboxTwoPrivateBundles = sandboxTwoBundles - sandboxTwoPublicBundles
+
+        sandboxOneBundles.forEach { sandboxOneBundle ->
+            sandboxTwoPublicBundles.forEach { sandboxTwoPublicBundle ->
+                assertTrue(sandboxService.hasVisibility(sandboxOneBundle, sandboxTwoPublicBundle))
+            }
+            sandboxTwoPrivateBundles.forEach { sandboxTwoPrivateBundle ->
+                assertFalse(sandboxService.hasVisibility(sandboxOneBundle, sandboxTwoPrivateBundle))
+            }
+        }
+    }
+
+    @Test
+    fun `a bundle can only see the CorDapp bundle in another CPK sandbox it has visibility of`() {
         val startedBundles = mutableListOf<Bundle>()
         val sandboxService = createSandboxService(startedBundles = startedBundles)
 
@@ -563,61 +588,39 @@ class SandboxServiceImplTests {
 
         val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
         val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }
-        val sandboxTwoCordappBundle = sandboxTwoBundles.find { bundle -> sandboxTwo.cordappBundle == bundle }!!
-        val sandboxTwoOtherBundles = sandboxTwoBundles - sandboxTwoCordappBundle
+        val sandboxTwoCordappBundle = sandboxTwo.cordappBundle
+        val sandboxTwoPrivateBundles = sandboxTwoBundles - sandboxTwoCordappBundle
 
         sandboxOneBundles.forEach { sandboxOneBundle ->
             assertTrue(sandboxService.hasVisibility(sandboxOneBundle, sandboxTwoCordappBundle))
-            sandboxTwoOtherBundles.forEach { sandboxTwoOtherBundle ->
-                assertFalse(sandboxService.hasVisibility(sandboxOneBundle, sandboxTwoOtherBundle))
+            sandboxTwoPrivateBundles.forEach { sandboxTwoPrivateBundle ->
+                assertFalse(sandboxService.hasVisibility(sandboxOneBundle, sandboxTwoPrivateBundle))
             }
         }
     }
 
     @Test
-    fun `bundles in core sandbox can both see and be seen by sandbox`() {
+    fun `public bundles in the platform sandbox can both see and be seen by other sandboxes`() {
         val startedBundles = mutableListOf<Bundle>()
         val sandboxService = createSandboxService(startedBundles = startedBundles)
 
         sandboxService.createSandboxes(listOf(cpkOne.cpkHash, cpkTwo.cpkHash))
         assertThat(startedBundles).isNotEmpty
-        val visibilityTests = startedBundles.flatMap { bundle ->
-            listOf(
-                {
-                    assertTrue(
-                        sandboxService.hasVisibility(bundle, applicationBundle),
-                        "$bundle cannot see $applicationBundle"
-                    )
-                },
-                {
-                    assertTrue(
-                        sandboxService.hasVisibility(applicationBundle, bundle),
-                        "$applicationBundle cannot see $bundle"
-                    )
-                },
-                {
-                    assertTrue(
-                        sandboxService.hasVisibility(bundle, frameworkBundle),
-                        "$bundle cannot see $frameworkBundle"
-                    )
-                },
-                {
-                    assertTrue(
-                        sandboxService.hasVisibility(frameworkBundle, bundle),
-                        "$frameworkBundle cannot see $bundle"
-                    )
-                },
-                { assertTrue(sandboxService.hasVisibility(bundle, scrBundle), "$bundle cannot see $scrBundle") },
-                { assertTrue(sandboxService.hasVisibility(scrBundle, bundle), "$scrBundle cannot see $bundle") },
-                { assertTrue(sandboxService.hasVisibility(bundle, slf4jBundle), "$bundle cannot see $slf4jBundle") },
-                { assertTrue(sandboxService.hasVisibility(slf4jBundle, bundle), "$slf4jBundle cannot see $bundle") },
 
-                // This non-core bundle should remain invisible to the sandbox.
-                { assertFalse(sandboxService.hasVisibility(bundle, secretBundle), "$bundle can see $secretBundle") },
-                { assertFalse(sandboxService.hasVisibility(secretBundle, bundle), "$secretBundle can see $bundle") }
-            )
+        startedBundles.forEach { bundle ->
+            // The public bundles in the platform sandbox should be visible and have visibility.
+            assertTrue(sandboxService.hasVisibility(bundle, applicationBundle))
+            assertTrue(sandboxService.hasVisibility(applicationBundle, bundle))
+            assertTrue(sandboxService.hasVisibility(bundle, frameworkBundle))
+            assertTrue(sandboxService.hasVisibility(frameworkBundle, bundle))
+            assertTrue(sandboxService.hasVisibility(bundle, scrBundle))
+            assertTrue(sandboxService.hasVisibility(scrBundle, bundle))
+            assertTrue(sandboxService.hasVisibility(bundle, slf4jBundle))
+            assertTrue(sandboxService.hasVisibility(slf4jBundle, bundle))
+
+            // The non-public bundles in the platform sandbox should not be visible.
+            assertFalse(sandboxService.hasVisibility(bundle, secretBundle))
         }
-        assertAll("Core bundles can both see and be seen", visibilityTests)
     }
 
     @Test

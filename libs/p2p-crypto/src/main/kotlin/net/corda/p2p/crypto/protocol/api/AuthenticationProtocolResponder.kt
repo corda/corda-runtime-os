@@ -123,7 +123,8 @@ class AuthenticationProtocolResponder(private val sessionId: String,
     @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(
         initiatorHandshakeMessage: InitiatorHandshakeMessage,
-        initiatorPublicKey: PublicKey
+        initiatorPublicKey: PublicKey,
+        initiatorPublicKeyAlgo: KeyAlgorithm
     ): HandshakeIdentityData {
         transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.RECEIVED_HANDSHAKE_MESSAGE)
 
@@ -155,7 +156,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
         // validate signature
         val initiatorHelloToInitiatorPublicKeyHash = initiatorHelloToResponderHelloBytes!! +
                                                               initiatorHandshakePayloadIncomplete.toByteBuffer().array()
-        val signatureWasValid = signature.verify(initiatorPublicKey,
+        val signatureWasValid = getSignature(initiatorPublicKeyAlgo).verify(initiatorPublicKey,
                                     INITIATOR_SIG_PAD.toByteArray(Charsets.UTF_8) +
                                          messageDigest.hash(initiatorHelloToInitiatorPublicKeyHash),
                                          initiatorHandshakePayload.initiatorPartyVerify.array())

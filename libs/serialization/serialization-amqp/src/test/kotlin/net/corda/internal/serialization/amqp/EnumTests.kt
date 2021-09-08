@@ -1,8 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.serialization.ClassWhitelist
-import net.corda.v5.serialization.SerializedBytes
 import net.corda.internal.serialization.EmptyWhitelist
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
@@ -10,6 +7,9 @@ import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvel
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.serialization.ClassWhitelist
+import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Test
@@ -22,6 +22,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
+@Suppress("VariableNaming")
 class EnumTests {
     enum class Bras {
         TSHIRT, UNDERWIRE, PUSHUP, BRALETTE, STRAPLESS, SPORTS, BACKLESS, PADDED
@@ -34,9 +35,9 @@ class EnumTests {
 
     // The state of the OldBras enum when the tests in changedEnum1 were serialised
     //      - use if the test file needs regenerating
-    //enum class OldBras {
+    // enum class OldBras {
     //    TSHIRT, UNDERWIRE, PUSHUP, BRALETTE
-    //}
+    // }
 
     // the new state, SPACER has been added to change the ordinality
     enum class OldBras {
@@ -45,9 +46,9 @@ class EnumTests {
 
     // The state of the OldBras2 enum when the tests in changedEnum2 were serialised
     //      - use if the test file needs regenerating
-    //enum class OldBras2 {
+    // enum class OldBras2 {
     //    TSHIRT, UNDERWIRE, PUSHUP, BRALETTE
-    //}
+    // }
 
     // the new state, note in the test we serialised with value UNDERWIRE so the spacer
     // occurring after this won't have changed the ordinality of our serialised value
@@ -55,7 +56,6 @@ class EnumTests {
     enum class OldBras2 {
         TSHIRT, UNDERWIRE, PUSHUP, SPACER, BRALETTE, SPACER2
     }
-
 
     enum class BrasWithInit(val someList: List<Int>) {
         TSHIRT(emptyList()),
@@ -79,7 +79,7 @@ class EnumTests {
     private val sf1 = testDefaultFactoryNoEvolution()
 
     @Test
-	fun serialiseSimpleTest() {
+    fun serialiseSimpleTest() {
         data class C(val c: Bras)
 
         val schema = TestSerializationOutput(VERBOSE, sf1).serializeAndReturnSchema(C(Bras.UNDERWIRE)).schema
@@ -103,11 +103,12 @@ class EnumTests {
     }
 
     @Test
-	fun deserialiseSimpleTest() {
+    fun deserialiseSimpleTest() {
         data class C(val c: Bras)
 
         val objAndEnvelope = DeserializationInput(sf1).deserializeAndReturnEnvelope(
-                TestSerializationOutput(VERBOSE, sf1).serialize(C(Bras.UNDERWIRE)))
+            TestSerializationOutput(VERBOSE, sf1).serialize(C(Bras.UNDERWIRE))
+        )
 
         val obj = objAndEnvelope.obj
         val schema = objAndEnvelope.envelope.schema
@@ -131,14 +132,17 @@ class EnumTests {
     }
 
     @Test
-	fun multiEnum() {
+    fun multiEnum() {
         data class Support(val top: Bras, val day: DayOfWeek)
         data class WeeklySupport(val tops: List<Support>)
 
-        val week = WeeklySupport(listOf(
+        val week = WeeklySupport(
+            listOf(
                 Support(Bras.PUSHUP, DayOfWeek.MONDAY),
                 Support(Bras.UNDERWIRE, DayOfWeek.WEDNESDAY),
-                Support(Bras.PADDED, DayOfWeek.SUNDAY)))
+                Support(Bras.PADDED, DayOfWeek.SUNDAY)
+            )
+        )
 
         val obj = DeserializationInput(sf1).deserialize(TestSerializationOutput(VERBOSE, sf1).serialize(week))
 
@@ -151,7 +155,7 @@ class EnumTests {
     }
 
     @Test
-	fun enumWithInit() {
+    fun enumWithInit() {
         data class C(val c: BrasWithInit)
 
         val c = C(BrasWithInit.PUSHUP)
@@ -206,7 +210,7 @@ class EnumTests {
     }
 
     @Test
-	fun enumNotWhitelistedFails() {
+    fun enumNotWhitelistedFails() {
         data class C(val c: Bras)
 
         class WL(val allowed: String) : ClassWhitelist {
@@ -224,13 +228,13 @@ class EnumTests {
     }
 
     @Test
-	fun enumWhitelisted() {
+    fun enumWhitelisted() {
         data class C(val c: Bras)
 
         class WL : ClassWhitelist {
             override fun hasListed(type: Class<*>): Boolean {
                 return type.name == "net.corda.internal.serialization.amqp.EnumTests\$enumWhitelisted\$C" ||
-                        type.name == "net.corda.internal.serialization.amqp.EnumTests\$Bras"
+                    type.name == "net.corda.internal.serialization.amqp.EnumTests\$Bras"
             }
         }
 
@@ -242,7 +246,7 @@ class EnumTests {
     }
 
     @Test
-	fun enumAnnotated() {
+    fun enumAnnotated() {
         @CordaSerializable data class C(val c: AnnotatedBras)
 
         class WL : ClassWhitelist {
@@ -257,7 +261,7 @@ class EnumTests {
     }
 
     @Test
-	fun deserializeNonWhitlistedEnum() {
+    fun deserializeNonWhitlistedEnum() {
         data class C(val c: Bras)
 
         class WL(val allowed: List<String>) : ClassWhitelist {
@@ -265,8 +269,12 @@ class EnumTests {
         }
 
         // first serialise the class using a context in which Bras are whitelisted
-        val whitelist = WL(listOf(classTestName("C"),
-                "net.corda.internal.serialization.amqp.EnumTests\$Bras"))
+        val whitelist = WL(
+            listOf(
+                classTestName("C"),
+                "net.corda.internal.serialization.amqp.EnumTests\$Bras"
+            )
+        )
         val factory = SerializerFactoryBuilder.build(whitelist)
         val bytes = TestSerializationOutput(VERBOSE, factory).serialize(C(Bras.UNDERWIRE))
 

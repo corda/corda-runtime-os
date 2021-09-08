@@ -202,13 +202,14 @@ open class SessionManagerImpl(
             return null
         }
 
-        val responderKey = networkMap.getMemberInfo(sessionInfo.responderId)?.publicKey
-        if (responderKey == null) {
+        val memberInfo = networkMap.getMemberInfo(sessionInfo.responderId)
+        if (memberInfo == null) {
             logger.peerNotInTheNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.responderId)
             return null
         }
+
         try {
-            session.validatePeerHandshakeMessage(message, responderKey)
+            session.validatePeerHandshakeMessage(message, memberInfo.publicKey, memberInfo.publicKeyAlgorithm)
         } catch (exception: InvalidHandshakeResponderKeyHash) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
@@ -281,7 +282,7 @@ open class SessionManagerImpl(
 
         session.generateHandshakeSecrets()
         val identityData = try {
-            session.validatePeerHandshakeMessage(message, peer.publicKey)
+            session.validatePeerHandshakeMessage(message, peer.publicKey, peer.publicKeyAlgorithm)
         } catch (exception: WrongPublicKeyHashException) {
             logger.error(exception.message)
             return null

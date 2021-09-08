@@ -19,6 +19,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 
+@Suppress("ClassNaming")
 class CordaPublisherTest {
     private val topicService = mock<TopicService>()
     private val config = ConfigFactory.empty()

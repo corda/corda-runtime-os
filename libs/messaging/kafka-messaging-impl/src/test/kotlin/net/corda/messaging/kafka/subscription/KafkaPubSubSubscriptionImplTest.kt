@@ -125,6 +125,7 @@ class KafkaPubSubSubscriptionImplTest {
             KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService)
 
         kafkaPubSubSubscription.start()
+        @Suppress("EmptyWhileBlock")
         while (kafkaPubSubSubscription.isRunning) { }
 
         assertThat(latch.count).isEqualTo(1)
@@ -149,6 +150,7 @@ class KafkaPubSubSubscriptionImplTest {
             KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService)
 
         kafkaPubSubSubscription.start()
+        @Suppress("EmptyWhileBlock")
         while (kafkaPubSubSubscription.isRunning) { }
 
         verify(mockCordaConsumer, times(0)).poll()
@@ -175,6 +177,7 @@ class KafkaPubSubSubscriptionImplTest {
             KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService)
 
         kafkaPubSubSubscription.start()
+        @Suppress("EmptyWhileBlock")
         while (kafkaPubSubSubscription.isRunning) {
         }
 
@@ -210,6 +213,7 @@ class KafkaPubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription.start()
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        @Suppress("EmptyWhileBlock")
         while (kafkaPubSubSubscription.isRunning) {}
         assertThat(latch.count).isEqualTo(0)
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
@@ -238,6 +242,7 @@ class KafkaPubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription.start()
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        @Suppress("EmptyWhileBlock")
         while (kafkaPubSubSubscription.isRunning) {}
         assertThat(latch.count).isEqualTo(0)
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
