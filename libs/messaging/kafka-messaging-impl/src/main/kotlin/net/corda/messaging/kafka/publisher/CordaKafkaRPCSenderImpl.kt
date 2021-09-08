@@ -1,32 +1,22 @@
 package net.corda.messaging.kafka.publisher
 
 import com.typesafe.config.Config
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.kafka.producer.builder.ProducerBuilder
-import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
-import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.kafka.subscription.KafkaRPCSubscription
-import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
-import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import org.apache.kafka.clients.producer.Producer
 import org.slf4j.Logger
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
+    private val rpcConfig: RPCConfig<TREQ, TRESP>,
     private val config: Config,
     private val publisher: Publisher,
     private val subscription: KafkaRPCSubscription<TREQ, TRESP>
@@ -61,9 +51,9 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     }
 
     override fun sendRequest(req: TREQ): CompletableFuture<TRESP> {
-
-//        publisher.publishToPartition()
-        return CompletableFuture()
+        val record = Record(rpcConfig.requestTopic, req, null)
+        publisher.publishToPartition(listOf(subscription.getSubscriptionPartitions()[0].partition() to record))
+        return CompletableFuture<TRESP>()
     }
 
 }

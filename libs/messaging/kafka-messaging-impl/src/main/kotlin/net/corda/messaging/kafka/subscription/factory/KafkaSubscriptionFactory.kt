@@ -22,7 +22,6 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.GROUP
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.INSTANCE_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_COMPACTED
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_DURABLE
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_EVENTLOG

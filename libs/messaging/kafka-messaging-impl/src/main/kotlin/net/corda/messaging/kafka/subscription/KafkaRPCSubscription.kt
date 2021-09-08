@@ -12,6 +12,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAnd
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.debug
+import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
@@ -41,6 +42,8 @@ class KafkaRPCSubscription<TREQ : Any, TRESP : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
+
+    var partitions: List<TopicPartition> = listOf()
 
     override val isRunning: Boolean
         get() = stopped
@@ -86,7 +89,7 @@ class KafkaRPCSubscription<TREQ : Any, TRESP : Any>(
                     rpcConfig.requestType,
                     rpcConfig.responseType
                 ).use {
-                    val partitions = it.getPartitions(
+                    partitions = it.getPartitions(
                         topicPrefix + topic,
                         Duration.ofSeconds(consumerThreadStopTimeout)
                     )
@@ -134,5 +137,9 @@ class KafkaRPCSubscription<TREQ : Any, TRESP : Any>(
         consumerRecords.forEach {
             responderProcessor.onNext(it.record.key(), CompletableFuture<TRESP>())
         }
+    }
+
+    fun getSubscriptionPartitions(): List<TopicPartition> {
+        return partitions
     }
 }

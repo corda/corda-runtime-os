@@ -95,6 +95,6 @@ class CordaKafkaPublisherFactory @Activate constructor(
                 responderProcessor
             )
 
-        return CordaKafkaRPCSenderImpl(publisherConfig, publisher, rpcSubscription)
+        return CordaKafkaRPCSenderImpl(rpcConfig, publisherConfig, publisher, rpcSubscription)
     }
 }
