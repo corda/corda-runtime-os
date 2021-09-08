@@ -60,7 +60,7 @@ class CompactedSubscriptionIntegrationTest {
     fun `create compacted topic, publish records, start compacted sub, publish again`() {
         topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC1_TEMPLATE)
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
 

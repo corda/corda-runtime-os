@@ -92,7 +92,7 @@ class StateAndEventSubscriptionIntegrationTest {
         stateEventSub1.start()
         stateEventSub2.start()
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getRecords(EVENT_TOPIC1, 5, 2)).forEach { it.get() }
 
@@ -117,7 +117,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         stateEventSub1.start()
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC2)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getRecords(EVENT_TOPIC2, 5, 2)).forEach { it.get() }
 
@@ -151,7 +151,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         stateEventSub1.start()
 
-        publisherConfig = PublisherConfig(CLIENT_ID, 1)
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC3, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getStringRecords(EVENT_TOPIC3, 2, 1)).forEach { it.get() }
 
@@ -215,7 +215,7 @@ class StateAndEventSubscriptionIntegrationTest {
         stateEventSub1.start()
         stateEventSub2.start()
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC4)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getRecords(EVENT_TOPIC4, 5, 3)).forEach { it.get() }
 

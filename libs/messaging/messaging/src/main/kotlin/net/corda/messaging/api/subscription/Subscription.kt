@@ -47,22 +47,7 @@ interface Subscription<K, V> : Lifecycle {
  * (that is, within a single _transaction_).  However, records for different keys may be batched up to
  * improve performance.
  */
-interface StateAndEventSubscription<K, S, E> : Lifecycle {
-    /**
-     *  Queries the topic values for the most recent state [S] of the given [key] [K].
-     *  For partitioned topics not all values may be available.  However, any key
-     *  provided by [StateAndEventProcessor.onNext] will guaranteed available.
-     *
-     *  This is not thread-safe! It will be safer to call this from within the [StateAndEventProcessor] provided
-     *  to the subscription in order to ensure thread safety.
-     *
-     *  @param key the topic key for a given state
-     *  @return the current state for the given key, or null if it's not available
-     *  @throws IllegalArgumentException when the [key] is on a remotely managed partition
-     */
-    @Throws(IllegalArgumentException::class)
-    fun getValue(key: K): S?
-}
+interface StateAndEventSubscription<K, S, E> : Lifecycle
 
 /**
  * This subscription should be used when consuming records from a compacted topic

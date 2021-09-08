@@ -38,7 +38,7 @@ import java.time.Duration
 class CordaKafkaConsumerImpl<K : Any, V : Any>(
     config: Config,
     private val consumer: Consumer<K, V>,
-    private val listener: ConsumerRebalanceListener?,
+    private val defaultListener: ConsumerRebalanceListener?,
 ) : CordaKafkaConsumer<K, V>, Consumer<K, V> by consumer {
 
     companion object {
@@ -149,12 +149,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun subscribeToTopic() {
+    override fun subscribeToTopic(listener: ConsumerRebalanceListener?) {
         var attempts = 0L
         var attemptSubscription = true
         while (attemptSubscription) {
             try {
-                consumer.subscribe(listOf(topicPrefix + topic), listener)
+                consumer.subscribe(listOf(topicPrefix + topic), listener ?: defaultListener)
                 attemptSubscription = false
             } catch (ex: Exception) {
                 val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"

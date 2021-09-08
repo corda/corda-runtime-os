@@ -40,7 +40,6 @@ java: ${project.javaExecutable}
 	com.typesafe.config;version='[1.4.1,1.4.2)',\
 	io.netty.common;version='[4.1.65,4.1.66)',\
 	javassist;version='[3.27.0,3.27.1)',\
-	javax.activation-api;version='[1.2.0,1.2.1)',\
 	javax.interceptor-api;version='[1.2.0,1.2.1)',\
 	javax.persistence-api;version='[2.2.0,2.2.1)',\
 	jaxb-api;version='[2.3.1,2.3.2)',\
@@ -57,6 +56,7 @@ java: ${project.javaExecutable}
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-api;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-impl;version='[5.0.0,5.0.1)',\
+	net.corda.crypto-internal;version='[5.0.0,5.0.1)',\
 	net.corda.install;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-reflection;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.21,1.4.22)',\

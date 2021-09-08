@@ -149,20 +149,20 @@ class KafkaSubscriptionFactory @Activate constructor(
         val eventConsumerBuilder = CordaKafkaConsumerBuilderImpl<K, E>(avroSchemaRegistry)
         val stateConsumerBuilder = CordaKafkaConsumerBuilderImpl<K, S>(avroSchemaRegistry)
 
-        val stateAndEventBuilder = StateAndEventBuilderImpl(
-            stateConsumerBuilder,
-            eventConsumerBuilder,
-            producerBuilder,
-        )
-
         val mapFactory = object : SubscriptionMapFactory<K, Pair<Long, S>> {
             override fun createMap(): MutableMap<K, Pair<Long, S>> = ConcurrentHashMap()
             override fun destroyMap(map: MutableMap<K, Pair<Long, S>>) = map.clear()
         }
 
+        val stateAndEventBuilder = StateAndEventBuilderImpl(
+            stateConsumerBuilder,
+            eventConsumerBuilder,
+            producerBuilder,
+            mapFactory
+        )
+
         return KafkaStateAndEventSubscriptionImpl(
             config,
-            mapFactory,
             stateAndEventBuilder,
             processor,
             stateAndEventListener
