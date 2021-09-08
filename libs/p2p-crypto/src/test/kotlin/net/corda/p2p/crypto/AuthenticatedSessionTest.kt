@@ -39,7 +39,9 @@ class AuthenticatedSessionTest {
     // party B
     private val partyBMaxMessageSize = 1_500_000
     private val partyBIdentityKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
+    private val authenticationProtocolB = AuthenticationProtocolResponder(
+        sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize
+    )
 
     @Test
     fun `session can be established between two parties and used for transmission of authenticated data successfully`() {
@@ -83,7 +85,10 @@ class AuthenticatedSessionTest {
             // Data exchange: A sends message to B, which decrypts and validates it
             val payload = "ping $i".toByteArray(Charsets.UTF_8)
             val authenticationResult = authenticatedSessionOnA.createMac(payload)
-            val initiatorMsg = AuthenticatedDataMessage(authenticationResult.header, ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac))
+            val initiatorMsg = AuthenticatedDataMessage(
+                authenticationResult.header, ByteBuffer.wrap(payload),
+                ByteBuffer.wrap(authenticationResult.mac)
+            )
 
             authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload.array(), initiatorMsg.authTag.array())
         }
@@ -92,7 +97,11 @@ class AuthenticatedSessionTest {
             // Data exchange: B -> A
             val payload = "pong $i".toByteArray(Charsets.UTF_8)
             val authenticationResult = authenticatedSessionOnB.createMac(payload)
-            val responderMsg = AuthenticatedDataMessage(authenticationResult.header, ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac))
+            val responderMsg =
+                AuthenticatedDataMessage(
+                    authenticationResult.header,
+                    ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac)
+                )
 
             authenticatedSessionOnA.validateMac(responderMsg.header, responderMsg.payload.array(), responderMsg.authTag.array())
         }
@@ -139,9 +148,17 @@ class AuthenticatedSessionTest {
         // Data exchange: A sends message to B, B receives corrupted data which fail validation.
         val payload = "ping".toByteArray(Charsets.UTF_8)
         val authenticationResult = authenticatedSessionOnA.createMac(payload)
-        val initiatorMsg = AuthenticatedDataMessage(authenticationResult.header, ByteBuffer.wrap(payload) , ByteBuffer.wrap(authenticationResult.mac))
+        val initiatorMsg = AuthenticatedDataMessage(
+            authenticationResult.header, ByteBuffer.wrap(payload),
+            ByteBuffer.wrap(authenticationResult.mac)
+        )
 
-        assertThatThrownBy { authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload.array() + "0".toByteArray(Charsets.UTF_8), initiatorMsg.authTag.array()) }
+        assertThatThrownBy {
+            authenticatedSessionOnB.validateMac(
+                initiatorMsg.header,
+                initiatorMsg.payload.array() + "0".toByteArray(Charsets.UTF_8), initiatorMsg.authTag.array()
+            )
+        }
             .isInstanceOf(InvalidMac::class.java)
     }
 
@@ -185,13 +202,18 @@ class AuthenticatedSessionTest {
 
         assertThatThrownBy { authenticatedSessionOnA.createMac(ByteArray(partyAMaxMessageSize + 1)) }
             .isInstanceOf(MessageTooLargeError::class.java)
-            .hasMessageContaining("Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message size of the session ($partyAMaxMessageSize bytes)")
+            .hasMessageContaining(
+                "Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message " +
+                    "size of the session ($partyAMaxMessageSize bytes)"
+            )
 
         val payload = ByteArray(partyAMaxMessageSize + 1)
         val header = CommonHeader(MessageType.DATA, 1, "some-session-id", 4, Instant.now().toEpochMilli())
         assertThatThrownBy { authenticatedSessionOnB.validateMac(header, payload, ByteArray(0)) }
             .isInstanceOf(MessageTooLargeError::class.java)
-            .hasMessageContaining("Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message size of the session ($partyAMaxMessageSize bytes)")
+            .hasMessageContaining(
+                "Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message" +
+                    " size of the session ($partyAMaxMessageSize bytes)"
+            )
     }
-
 }

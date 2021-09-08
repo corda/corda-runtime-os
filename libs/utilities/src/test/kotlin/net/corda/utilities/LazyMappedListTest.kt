@@ -34,6 +34,7 @@ class LazyMappedListTest {
     }
 
     @Test
+    @Suppress("TooGenericExceptionThrown")
     fun testMissingAttachments() {
         val lazyList = (0 until 5).toList().lazyMapped<Int, Int> { _, _ ->
             throw Exception("Uncatchable!")
