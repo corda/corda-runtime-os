@@ -18,6 +18,8 @@ interface SandboxCreationService {
      * Creates a new [SandboxGroup] containing a sandbox for each of the CPKs identified by the [cpkFileHashes].
      * Duplicate [cpkFileHashes] are discarded (i.e. if two hashes are identical, only one sandbox will be created).
      *
+     * The bundles in each sandbox are not started, meaning that their bundle activators are not called.
+     *
      * A [SandboxException] is thrown if the sandbox creation fails.
      */
     fun createSandboxesWithoutStarting(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
