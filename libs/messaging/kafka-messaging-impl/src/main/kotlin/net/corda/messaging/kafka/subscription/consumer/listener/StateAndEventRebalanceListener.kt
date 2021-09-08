@@ -40,6 +40,9 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
     private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
     private val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
 
+    private val currentStates = partitionState.currentStates
+    private val partitionsToSync = partitionState.partitionsToSync
+
     /**
      *  This rebalance is called for the event consumer, though most of the work is to ensure the state consumer
      *  keeps up
@@ -55,11 +58,11 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
         // will be handled in the normal poll cycle
         val syncablePartitions = filterSyncablePartitions(newStatePartitions)
         log.debug { "Syncing the following new state partitions: $syncablePartitions" }
-        partitionState.partitionsToSync.putAll(syncablePartitions)
+        partitionsToSync.putAll(syncablePartitions)
         eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) })
 
         statePartitions.forEach {
-            partitionState.currentStates.computeIfAbsent(it.partition()) { mapFactory.createMap() }
+            currentStates.computeIfAbsent(it.partition()) { mapFactory.createMap() }
         }
     }
 
@@ -74,9 +77,9 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
         stateConsumer.assign(statePartitions)
         for (topicPartition in removedStatePartitions) {
             val partitionId = topicPartition.partition()
-            partitionState.partitionsToSync.remove(partitionId)
+            partitionsToSync.remove(partitionId)
 
-            partitionState.currentStates[partitionId]?.let { partitionStates ->
+            currentStates[partitionId]?.let { partitionStates ->
                 stateAndEventListener?.onPartitionLost(getStatesForPartition(partitionId))
                 mapFactory.destroyMap(partitionStates)
             }
@@ -98,7 +101,7 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
     }
 
     private fun getStatesForPartition(partitionId: Int): Map<K, S> {
-        return partitionState.currentStates[partitionId]?.map { state -> Pair(state.key, state.value.second) }?.toMap() ?: mapOf()
+        return currentStates[partitionId]?.map { state -> Pair(state.key, state.value.second) }?.toMap() ?: mapOf()
     }
 
     private fun TopicPartition.toStateTopic() = TopicPartition(stateTopic.topic, partition())
