@@ -5,7 +5,6 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.components.rpc.ConfigReceivedEvent
 import net.corda.components.rpc.HttpRpcGateway
-import net.corda.components.rpc.HttpRpcGateway.Companion.MESSAGING_CONFIG
 import net.corda.components.rpc.MessagingConfigUpdateEvent
 import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
 import net.corda.lifecycle.LifecycleCoordinator
