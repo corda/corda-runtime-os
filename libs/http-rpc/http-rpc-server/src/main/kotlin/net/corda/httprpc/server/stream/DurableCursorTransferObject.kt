@@ -8,11 +8,14 @@ import net.corda.v5.base.stream.PositionManager
 import java.util.function.Supplier
 
 /**
- * Implementation of [FiniteDurableCursorBuilder] which is created on the server side to be marshalled back to the client.
- * Methods of [FiniteDurableCursorBuilder] are not meant to be used, it is just a data container that wraps [Cursor.PollResult].
+ * Implementation of [FiniteDurableCursorBuilder] which is created on the server side to be marshalled back
+ * to the client.
+ * Methods of [FiniteDurableCursorBuilder] are not meant to be used, it is just a data container
+ * that wraps [Cursor.PollResult].
  */
 @CordaSerializable
-class DurableCursorTransferObject<T>(private val pollResult: Cursor.PollResult<T>) : FiniteDurableCursorBuilder<T>, Supplier<Cursor.PollResult<T>> {
+class DurableCursorTransferObject<T>(private val pollResult: Cursor.PollResult<T>) : FiniteDurableCursorBuilder<T>,
+    Supplier<Cursor.PollResult<T>> {
 
     companion object {
         data class PollResultImpl<T>(
@@ -21,7 +24,8 @@ class DurableCursorTransferObject<T>(private val pollResult: Cursor.PollResult<T
             override val isLastResult: Boolean
         ) : Cursor.PollResult<T>
 
-        data class PositionedValueImpl<T>(override val value: T, override val position: Long) : Cursor.PollResult.PositionedValue<T>
+        data class PositionedValueImpl<T>(override val value: T, override val position: Long) :
+            Cursor.PollResult.PositionedValue<T>
     }
 
     override fun get(): Cursor.PollResult<T> = pollResult

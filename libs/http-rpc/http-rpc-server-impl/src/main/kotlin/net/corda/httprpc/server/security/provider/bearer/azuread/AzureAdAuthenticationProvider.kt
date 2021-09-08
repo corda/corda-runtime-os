@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.security.provider.bearer.azuread
 
 import com.nimbusds.jose.util.DefaultResourceRetriever
-import net.corda.httprpc.security.RPCSecurityManager
+import net.corda.httprpc.server.security.RPCSecurityManager
 import net.corda.httprpc.server.config.AzureAdSettingsProvider
 import net.corda.httprpc.server.security.provider.bearer.oauth.JwtAuthenticationProvider
 import net.corda.httprpc.server.security.provider.bearer.oauth.JwtProcessor

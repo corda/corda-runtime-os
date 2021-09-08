@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.apigen.processing
 
-import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.server.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.server.apigen.models.InvocationMethod
 import net.corda.httprpc.server.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.apigen.processing.streams.FiniteDurableReturnResult

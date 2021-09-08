@@ -1,7 +1,5 @@
-package net.corda.httprpc.security
+package net.corda.httprpc.server.security
 
-import net.corda.ext.internal.rpc.security.AuthorizingSubject
-import net.corda.ext.internal.rpc.security.Password
 import javax.security.auth.login.FailedLoginException
 
 /**

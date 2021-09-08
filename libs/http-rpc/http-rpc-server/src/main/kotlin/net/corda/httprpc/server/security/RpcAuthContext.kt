@@ -1,12 +1,11 @@
-package net.corda.httprpc.security
+package net.corda.httprpc.server.security
 
 
-import net.corda.ext.internal.rpc.security.AuthorizingSubject
 import org.slf4j.MDC
 
 data class RpcAuthContext(
     val invocation: InvocationContext.Rpc,
-                          private val authorizer: AuthorizingSubject
+    private val authorizer: AuthorizingSubject
 )
     : AuthorizingSubject by authorizer
 

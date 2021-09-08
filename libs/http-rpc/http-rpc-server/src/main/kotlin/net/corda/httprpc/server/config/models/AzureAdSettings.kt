@@ -9,6 +9,7 @@ data class AzureAdSettings(val clientId: String,
     companion object {
         val DEFAULT_CLAIMS = listOf("upn", "preferred_username", "email", "appid", "azp")
     }
-    override fun toString() = "AzureAdSettings(clientId=$clientId, tenantId=$tenantId, principalNameClaims=$principalNameClaims, appIdUri=$appIdUri, trustedIssuers=$trustedIssuers)"
+    override fun toString() = "AzureAdSettings(clientId=$clientId, tenantId=$tenantId, " +
+            "principalNameClaims=$principalNameClaims, appIdUri=$appIdUri, trustedIssuers=$trustedIssuers)"
 
 }

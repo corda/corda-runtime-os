@@ -1,6 +1,6 @@
 package net.corda.httprpc.server
 
-import net.corda.httprpc.security.RPCSecurityManager
+import net.corda.httprpc.server.security.RPCSecurityManager
 import net.corda.httprpc.server.apigen.models.Resource
 import net.corda.httprpc.server.apigen.processing.APIStructureRetriever
 import net.corda.httprpc.server.apigen.processing.JavalinRouteProviderImpl

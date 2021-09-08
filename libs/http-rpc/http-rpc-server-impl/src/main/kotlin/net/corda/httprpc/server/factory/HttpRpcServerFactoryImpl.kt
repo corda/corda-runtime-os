@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.factory
 
 
-import net.corda.httprpc.security.RPCSecurityManager
+import net.corda.httprpc.server.security.RPCSecurityManager
 import net.corda.httprpc.server.HttpRPCServerImpl
 import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.config.models.HttpRpcSettings

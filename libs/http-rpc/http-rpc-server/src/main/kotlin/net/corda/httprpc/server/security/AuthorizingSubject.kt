@@ -1,4 +1,4 @@
-package net.corda.ext.internal.rpc.security
+package net.corda.httprpc.server.security
 
 /**
  * Provides permission checking for the subject identified by the given [principal].

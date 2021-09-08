@@ -1,4 +1,4 @@
-package net.corda.httprpc.security
+package net.corda.httprpc.server.security
 
 import net.corda.internal.base.stream.DurableStreamContext
 import net.corda.v5.application.identity.CordaX500Name
@@ -7,9 +7,9 @@ import java.security.Principal
 
 /**
  * Models the information needed to trace an invocation in Corda.
- * Includes initiating actor, origin, trace information, and optional external trace information to correlate clients' IDs.
+ * Includes initiating actor, origin, trace information, and optional external trace information to
+ * correlate clients' IDs.
  *
- * @property trace Corda invocation trace.
  */
 @CordaSerializable
 sealed class InvocationContext {
@@ -74,7 +74,8 @@ sealed class InvocationContext {
 data class Actor(val id: Id, val serviceId: AuthServiceId, val owningLegalIdentity: CordaX500Name) {
 
     companion object {
-        fun service(serviceClassName: String, owningLegalIdentity: CordaX500Name): Actor = Actor(Id(serviceClassName), AuthServiceId("SERVICE"), owningLegalIdentity)
+        fun service(serviceClassName: String, owningLegalIdentity: CordaX500Name): Actor = Actor(Id(serviceClassName),
+            AuthServiceId("SERVICE"), owningLegalIdentity)
     }
 
     /**
