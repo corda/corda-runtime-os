@@ -64,8 +64,6 @@ class CordaKafkaPublisherFactory @Activate constructor(
             .withValue(KafkaProperties.GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
             .withValue(KafkaProperties.TOPIC, ConfigValueFactory.fromAnyRef(rpcConfig.requestTopic))
             .withValue("clientName", ConfigValueFactory.fromAnyRef(rpcConfig.clientName))
-            .withValue("REQUEST_TYPE", ConfigValueFactory.fromAnyRef(rpcConfig.requestType))
-            .withValue("RESPONSE_TYPE", ConfigValueFactory.fromAnyRef(rpcConfig.responseType))
 
         val publisherConfig = resolvePublisherConfiguration(
             publisherConfiguration,
@@ -78,8 +76,6 @@ class CordaKafkaPublisherFactory @Activate constructor(
             .withValue(KafkaProperties.GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
             .withValue(KafkaProperties.TOPIC, ConfigValueFactory.fromAnyRef(rpcConfig.requestTopic + ".resp"))
             .withValue("clientName", ConfigValueFactory.fromAnyRef(rpcConfig.clientName))
-            .withValue("REQUEST_TYPE", ConfigValueFactory.fromAnyRef(rpcConfig.requestType))
-            .withValue("RESPONSE_TYPE", ConfigValueFactory.fromAnyRef(rpcConfig.responseType))
 
         val consumerConfig = resolveSubscriptionConfiguration(
             consumerConfiguration,

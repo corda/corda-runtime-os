@@ -235,9 +235,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         val rpcConfiguration = ConfigFactory.empty()
             .withValue(GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
             .withValue(TOPIC, ConfigValueFactory.fromAnyRef(rpcConfig.requestTopic))
-            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(rpcConfig.clientName))
-            .withValue("REQUEST_TYPE", ConfigValueFactory.fromAnyRef(rpcConfig.requestType))
-            .withValue("RESPONSE_TYPE", ConfigValueFactory.fromAnyRef(rpcConfig.responseType))
+            .withValue("clientName", ConfigValueFactory.fromAnyRef(rpcConfig.clientName))
 
         val config = resolveSubscriptionConfiguration(
             rpcConfiguration,
@@ -248,6 +246,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<TREQ, TRESP>(avroSchemaRegistry)
 
         return KafkaRPCSubscription(
+            rpcConfig,
             config,
             consumerBuilder,
             responderProcessor
