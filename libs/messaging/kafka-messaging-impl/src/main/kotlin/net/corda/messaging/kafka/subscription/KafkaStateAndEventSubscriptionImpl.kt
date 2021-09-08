@@ -121,17 +121,16 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             attempts++
             try {
                 producer = builder.createProducer(config)
-                val stateAndEventConsumerAndListener = builder.createStateEventConsumerAndRebalanceListener(
+                val (stateAndEventConsumerTmp, rebalanceListener) = builder.createStateEventConsumerAndRebalanceListener(
                     config,
                     processor.keyClass,
                     processor.stateValueClass,
                     processor.eventValueClass,
                     stateAndEventListener
                 )
-                stateAndEventConsumer = stateAndEventConsumerAndListener.first
+                stateAndEventConsumer = stateAndEventConsumerTmp
                 eventConsumer = stateAndEventConsumer.eventConsumer
-
-                eventConsumer.subscribeToTopic(stateAndEventConsumerAndListener.second)
+                eventConsumer.subscribeToTopic(rebalanceListener)
 
                 while (!stopped) {
                     stateAndEventConsumer.updateStatesAndSynchronizePartitions()
