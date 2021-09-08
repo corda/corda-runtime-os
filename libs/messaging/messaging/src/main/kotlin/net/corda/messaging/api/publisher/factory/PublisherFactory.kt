@@ -2,6 +2,7 @@ package net.corda.messaging.api.publisher.factory
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.RPCSender
@@ -40,7 +41,8 @@ interface PublisherFactory {
      */
     fun <TREQ: Any, TRESP: Any> createRPCSender(
         rpcConfig: RPCConfig<TREQ, TRESP>,
-        nodeConfig: Config = ConfigFactory.empty()
+        nodeConfig: Config = ConfigFactory.empty(),
+        responderProcessor: RPCResponderProcessor<TREQ, TRESP>,
     ): RPCSender<TREQ, TRESP>
 
 

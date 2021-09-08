@@ -12,7 +12,6 @@ class KafkaProperties {
 
         const val TOPIC_PREFIX = "topic.prefix"
         const val TOPIC_NAME = "topic.name"
-        const val TOPIC_SUFFIX = "topic.suffix"
 
         const val KAFKA_PRODUCER = "producer"
         const val KAFKA_CONSUMER = "consumer"
