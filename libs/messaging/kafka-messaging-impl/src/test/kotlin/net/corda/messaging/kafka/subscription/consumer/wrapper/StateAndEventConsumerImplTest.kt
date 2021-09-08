@@ -43,7 +43,6 @@ class StateAndEventConsumerImplTest {
         assertThat(valueKey2).isNull()
     }
 
-
     @Test
     fun testOnProcessorStateUpdated() {
         val (stateAndEventListener, eventConsumer, stateConsumer, config, mapFactory, partitions) = setupMocks()
@@ -53,14 +52,12 @@ class StateAndEventConsumerImplTest {
 
         consumer.onProcessorStateUpdated(mutableMapOf(partitions.first().partition() to mutableMapOf("key1" to null, "key2" to "value2")), Clock.systemUTC())
 
-
         val currentStates = partitionState.currentStates
         assertThat(currentStates[partitionId]?.get("key1")).isNull()
         assertThat(currentStates[partitionId]?.get("key2")).isNotNull
 
         verify(stateAndEventListener, times(1)).onPostCommit(any())
     }
-
 
     private fun setupMocks(): Mocks {
         val listener: StateAndEventListener<String, String> = mock()
