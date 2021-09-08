@@ -10,19 +10,22 @@ import com.nimbusds.jwt.proc.JWTClaimsSetAwareJWSKeySelector
 import net.corda.httprpc.server.config.AzureAdSettingsProvider
 import net.corda.httprpc.server.security.provider.bearer.oauth.JwtProcessor
 
-internal class AzureAdJwtProcessorImpl(private val settings: AzureAdSettingsProvider,
-                              private val tokenIssuers: AzureAdIssuers,
-                              private val jwsKeySelector: JWTClaimsSetAwareJWSKeySelector<SecurityContext>) : JwtProcessor {
+internal class AzureAdJwtProcessorImpl(
+    private val settings: AzureAdSettingsProvider,
+    private val tokenIssuers: AzureAdIssuers,
+    private val jwsKeySelector: JWTClaimsSetAwareJWSKeySelector<SecurityContext>
+) : JwtProcessor {
     private val jwtProcessor = DefaultJWTProcessor<SecurityContext>().apply {
-        jwtClaimsSetVerifier = object : DefaultJWTClaimsVerifier<SecurityContext>(getValidAudiences(), null, null, null) {
-            override fun verify(claimsSet: JWTClaimsSet, ctx: SecurityContext?) {
-                super.verify(claimsSet, ctx)
-                val issuer: String = claimsSet.issuer
-                if (!tokenIssuers.valid(issuer)) {
-                    throw BadJWTException("Invalid token issuer")
+        jwtClaimsSetVerifier =
+            object : DefaultJWTClaimsVerifier<SecurityContext>(getValidAudiences(), null, null, null) {
+                override fun verify(claimsSet: JWTClaimsSet, ctx: SecurityContext?) {
+                    super.verify(claimsSet, ctx)
+                    val issuer: String = claimsSet.issuer
+                    if (!tokenIssuers.valid(issuer)) {
+                        throw BadJWTException("Invalid token issuer")
+                    }
                 }
             }
-        }
         jwtClaimsSetAwareJWSKeySelector = this@AzureAdJwtProcessorImpl.jwsKeySelector
     }
 

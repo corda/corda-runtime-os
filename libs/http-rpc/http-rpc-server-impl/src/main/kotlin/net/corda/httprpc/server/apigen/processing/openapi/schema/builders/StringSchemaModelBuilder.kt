@@ -10,8 +10,9 @@ import javax.security.auth.x500.X500Principal
 class StringSchemaModelBuilder : SchemaBuilder {
     override val keys = listOf(X500Principal::class.java, CordaX500Name::class.java)
 
-    override fun build(clazz: Class<*>, parameterizedClassList: List<GenericParameterizedType>): SchemaModel = SchemaModel(
+    override fun build(clazz: Class<*>, parameterizedClassList: List<GenericParameterizedType>): SchemaModel =
+        SchemaModel(
             type = DataType.STRING,
             format = DataFormat.STRING
-    )
+        )
 }

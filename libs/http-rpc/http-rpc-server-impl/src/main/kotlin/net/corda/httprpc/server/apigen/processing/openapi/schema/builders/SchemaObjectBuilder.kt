@@ -15,7 +15,10 @@ import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.javaField
 import kotlin.reflect.jvm.javaType
 
-internal class SchemaObjectBuilder(private val schemaModelProvider: SchemaModelProvider, private val schemaModelContextHolder: SchemaModelContextHolder) : SchemaBuilder {
+internal class SchemaObjectBuilder(
+    private val schemaModelProvider: SchemaModelProvider,
+    private val schemaModelContextHolder: SchemaModelContextHolder
+) : SchemaBuilder {
     override val keys: List<Class<*>> = listOf(Any::class.java)
 
     override fun build(clazz: Class<*>, parameterizedClassList: List<GenericParameterizedType>): SchemaModel {
@@ -27,26 +30,27 @@ internal class SchemaObjectBuilder(private val schemaModelProvider: SchemaModelP
 
         schemaModelContextHolder.markDiscovered(ParameterizedClass(clazz, parameterizedClassList))
         return SchemaObjectModel(
-                // retransforming to kotlin, because otherwise @JvmField is needed to have these fields exposed to java reflection
-                // and we don't want to force users to add more annotations :)
-                clazz.kotlin.memberProperties.filter {
-                    it.visibility == KVisibility.PUBLIC &&
-                            it.annotations.none { annotation -> annotation is JsonIgnore } &&
-                            // annotations targeting ElementType.FIELD need to be resolved from javaField instead
-                            // however, it doesn't hurt to check kotlin property annotations too as above
-                            (it.javaField?.annotations?.none { annotation -> annotation is JsonIgnore } ?: true)
+            // retransforming to kotlin, because otherwise @JvmField is needed to have these fields exposed to java reflection
+            // and we don't want to force users to add more annotations :)
+            clazz.kotlin.memberProperties.filter {
+                it.visibility == KVisibility.PUBLIC &&
+                        it.annotations.none { annotation -> annotation is JsonIgnore } &&
+                        // annotations targeting ElementType.FIELD need to be resolved from javaField instead
+                        // however, it doesn't hurt to check kotlin property annotations too as above
+                        (it.javaField?.annotations?.none { annotation -> annotation is JsonIgnore } ?: true)
 
-                }.associate {
-                    it.name to schemaModelProvider.toSchemaModel(
-                            ParameterizedClass(
-                                    (it.returnType.classifier as? KClass<*>?)?.java ?: Any::class.java,
-                                    it.returnType.arguments.mapNotNull { argument ->
-                                        argument.type?.javaType?.toEndpointParameterParameterizedType()
-                                    },
-                                    it.returnType.isMarkedNullable)
-
+            }.associate {
+                it.name to schemaModelProvider.toSchemaModel(
+                    ParameterizedClass(
+                        (it.returnType.classifier as? KClass<*>?)?.java ?: Any::class.java,
+                        it.returnType.arguments.mapNotNull { argument ->
+                            argument.type?.javaType?.toEndpointParameterParameterizedType()
+                        },
+                        it.returnType.isMarkedNullable
                     )
-                }
+
+                )
+            }
         )
     }
 }

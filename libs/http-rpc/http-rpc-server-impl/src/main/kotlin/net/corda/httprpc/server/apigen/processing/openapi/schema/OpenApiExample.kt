@@ -16,7 +16,7 @@ private val dateFormatPattern = "yyyy-MM-dd'T'HH:mm:ss"
 @VisibleForTesting
 fun Class<*>.toExample(): Any {
     fun List<Class<*>>.anyIsAssignableFrom(clazz: Class<*>) =
-            this.any { it.isAssignableFrom(clazz) }
+        this.any { it.isAssignableFrom(clazz) }
 
     log.trace { """To example for class: "$this".""" }
 
@@ -29,12 +29,19 @@ fun Class<*>.toExample(): Any {
 
     return when {
         listOf(String::class.java).anyIsAssignableFrom(this) -> "string"
-        listOf(Int::class.java, Integer::class.java, Long::class.java, Long::class.javaObjectType).anyIsAssignableFrom(this) -> 0
-        listOf(Double::class.java, Double::class.javaObjectType, Float::class.java, Float::class.javaObjectType).anyIsAssignableFrom(this) -> 0.0
+        listOf(Int::class.java, Integer::class.java, Long::class.java, Long::class.javaObjectType).anyIsAssignableFrom(
+            this
+        ) -> 0
+        listOf(
+            Double::class.java,
+            Double::class.javaObjectType,
+            Float::class.java,
+            Float::class.javaObjectType
+        ).anyIsAssignableFrom(this) -> 0.0
         listOf(Boolean::class.java, Boolean::class.javaObjectType).anyIsAssignableFrom(this) -> true
         listOf(Instant::class.java).anyIsAssignableFrom(this) -> Instant.now()
         listOf(Date::class.java).anyIsAssignableFrom(this) -> SimpleDateFormat(dateFormatPattern).format(Date())
-        listOf(ZonedDateTime::class.java) .anyIsAssignableFrom(this) -> ZonedDateTime.now()
+        listOf(ZonedDateTime::class.java).anyIsAssignableFrom(this) -> ZonedDateTime.now()
         listOf(TemporalAmount::class.java).anyIsAssignableFrom(this) -> "PT15M" // 15 minutes in ISO-8601
         else -> "No example available for this type"
     }

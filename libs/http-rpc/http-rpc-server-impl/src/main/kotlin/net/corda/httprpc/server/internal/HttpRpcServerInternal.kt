@@ -44,12 +44,12 @@ import javax.security.auth.login.FailedLoginException
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "TooGenericExceptionCaught")
 internal class HttpRpcServerInternal(
-        private val resourceProvider: RouteProvider,
-        private val securityManager: HttpRpcSecurityManager,
-        private val configurationsProvider: HttpRpcSettingsProvider,
-        private val openApiInfoProvider: OpenApiInfoProvider,
+    private val resourceProvider: RouteProvider,
+    private val securityManager: HttpRpcSecurityManager,
+    private val configurationsProvider: HttpRpcSettingsProvider,
+    private val openApiInfoProvider: OpenApiInfoProvider,
 
-)  {
+    ) {
 
     internal companion object {
         private val log = contextLogger()
@@ -57,11 +57,12 @@ internal class HttpRpcServerInternal(
         private const val contentTypeApplicationJson = "application/json"
 
         @VisibleForTesting
-        internal const val SSL_PASSWORD_MISSING = "SSL key store password must be present in order to start a secure server"
+        internal const val SSL_PASSWORD_MISSING =
+            "SSL key store password must be present in order to start a secure server"
 
         @VisibleForTesting
         internal const val INSECURE_SERVER_DEV_MODE_WARNING =
-                "Creating insecure (HTTP) server is only permitted when using `devMode=true` in the node configuration."
+            "Creating insecure (HTTP) server is only permitted when using `devMode=true` in the node configuration."
         internal const val CORDA_X500_NAME = "O=Http RPC Server, L=New York, C=US"
         internal const val CONTENT_LENGTH_EXCEEEDS_LIMIT = "Content length is %d which exceeds the maximum limit of %d."
     }
@@ -78,9 +79,9 @@ internal class HttpRpcServerInternal(
         // Swagger UI's static files manually instead.
         if (rendererBundle != null) {
             val swaggerUiBundle = rendererBundle
-                    .bundleContext
-                    .bundles
-                    .find { bundle -> bundle.symbolicName == OptionalDependency.SWAGGERUI.symbolicName }
+                .bundleContext
+                .bundles
+                .find { bundle -> bundle.symbolicName == OptionalDependency.SWAGGERUI.symbolicName }
 
             if (swaggerUiBundle != null) {
                 val swaggerUiClassloader = swaggerUiBundle.adapt(BundleWiring::class.java).classLoader
@@ -97,16 +98,16 @@ internal class HttpRpcServerInternal(
         }
         it.server {
             configurationsProvider.getSSLKeyStorePath()
-                    ?.let { createSecureServer() }
-                    ?: INSECURE_SERVER_DEV_MODE_WARNING.let { msg ->
-                        if (configurationsProvider.isDevModeEnabled())
-                            log.warn(msg)
-                        else {
-                            log.error(msg)
-                            throw UnsupportedOperationException(msg)
-                        }
-                        createInsecureServer()
+                ?.let { createSecureServer() }
+                ?: INSECURE_SERVER_DEV_MODE_WARNING.let { msg ->
+                    if (configurationsProvider.isDevModeEnabled())
+                        log.warn(msg)
+                    else {
+                        log.error(msg)
+                        throw UnsupportedOperationException(msg)
                     }
+                    createInsecureServer()
+                }
         }
         it.defaultContentType = contentTypeApplicationJson
     }.apply {
@@ -133,11 +134,11 @@ internal class HttpRpcServerInternal(
         log.debug { """Authenticate for path: "${ctx.path()}".""" }
 
         val credentials = credentialResolver.resolve(ctx)
-                ?: """User credentials are empty or cannot be resolved""".let {
-                    log.info(it)
-                    addWwwAuthenticateHeaders(ctx)
-                    throw UnauthorizedResponse(it)
-                }
+            ?: """User credentials are empty or cannot be resolved""".let {
+                log.info(it)
+                addWwwAuthenticateHeaders(ctx)
+                throw UnauthorizedResponse(it)
+            }
 
         try {
             return securityManager.authenticate(credentials).also {
@@ -158,7 +159,8 @@ internal class HttpRpcServerInternal(
     private fun authorize(authorizingSubject: AuthorizingSubject, methodFullName: String) {
         val principal = authorizingSubject.principal
         log.trace { "Authorize \"$principal\" for \"$methodFullName\"." }
-        if (!authorizingSubject.isPermitted(methodFullName)) throw ForbiddenResponse("Method \"$methodFullName\" not allowed for: \"$principal\".")
+        if (!authorizingSubject.isPermitted(methodFullName))
+            throw ForbiddenResponse("Method \"$methodFullName\" not allowed for: \"$principal\".")
         log.trace { "Authorize \"$principal\" for \"$methodFullName\" completed." }
     }
 
@@ -184,13 +186,19 @@ internal class HttpRpcServerInternal(
             resourceProvider.httpGetRoutes.map { routeInfo ->
 
                 before(routeInfo.fullPath) {
-                    authorize(authenticate(it), routeInfo.methodFullName) }
+                    authorize(authenticate(it), routeInfo.methodFullName)
+                }
                 registerHandlerForRoute(routeInfo, HandlerType.GET)
             }
             resourceProvider.httpPostRoutes.map { routeInfo ->
                 before(routeInfo.fullPath) {
                     with(configurationsProvider.maxContentLength()) {
-                        if (it.contentLength() > this) throw BadRequestResponse(CONTENT_LENGTH_EXCEEEDS_LIMIT.format(it.contentLength(), this))
+                        if (it.contentLength() > this) throw BadRequestResponse(
+                            CONTENT_LENGTH_EXCEEEDS_LIMIT.format(
+                                it.contentLength(),
+                                this
+                            )
+                        )
                     }
                     authorize(authenticate(it), routeInfo.methodFullName)
                 }
@@ -274,7 +282,7 @@ internal class HttpRpcServerInternal(
         }
     }
 
-     fun start() {
+    fun start() {
         val existingSystemErrStream = System.err
         try {
             log.trace { "Starting the Javalin server." }
@@ -294,7 +302,7 @@ internal class HttpRpcServerInternal(
         }
     }
 
-     fun stop() {
+    fun stop() {
         log.trace { "Stop the Javalin server." }
         server.stop()
         log.trace { "Stop the Javalin server completed." }

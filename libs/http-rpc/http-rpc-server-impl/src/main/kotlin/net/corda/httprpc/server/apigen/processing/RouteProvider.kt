@@ -18,12 +18,17 @@ import java.lang.reflect.InvocationTargetException
  *
  */
 internal interface RouteProvider {
-    val httpNoAuthRequiredGetRoutes : List<RouteInfo>
+    val httpNoAuthRequiredGetRoutes: List<RouteInfo>
     val httpGetRoutes: List<RouteInfo>
     val httpPostRoutes: List<RouteInfo>
 }
 
-internal class JavalinRouteProviderImpl(private val basePath: String, private val apiVersion: String, private val resources: List<Resource>, private val cl: ClassLoader) : RouteProvider {
+internal class JavalinRouteProviderImpl(
+    private val basePath: String,
+    private val apiVersion: String,
+    private val resources: List<Resource>,
+    private val cl: ClassLoader
+) : RouteProvider {
 
     private companion object {
         private val log = contextLogger()
@@ -32,38 +37,51 @@ internal class JavalinRouteProviderImpl(private val basePath: String, private va
     }
 
     override val httpNoAuthRequiredGetRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.GET)
-            .filter { routeInfo ->
-                val methodName = routeInfo.method.method.name
-                noAuthRequiredGETEndpoints.any { methodName.equals(it, true) }
-            }
+        .filter { routeInfo ->
+            val methodName = routeInfo.method.method.name
+            noAuthRequiredGETEndpoints.any { methodName.equals(it, true) }
+        }
     override val httpGetRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.GET)
-            .filter { routeInfo ->
-                val methodName = routeInfo.method.method.name
-                noAuthRequiredGETEndpoints.none { methodName.equals(it, true) }
-            }
+        .filter { routeInfo ->
+            val methodName = routeInfo.method.method.name
+            noAuthRequiredGETEndpoints.none { methodName.equals(it, true) }
+        }
     override val httpPostRoutes = mapResourcesToRoutesByHttpMethod(EndpointMethod.POST)
 
     private fun mapResourcesToRoutesByHttpMethod(httpMethod: EndpointMethod): List<RouteInfo> {
         log.trace { "Map resources to routes by http method." }
         return resources.flatMap { resource ->
             resource.endpoints.filter { it.method == httpMethod }
-                    .map { it.copy(path = replacePathParametersInEndpointPath(it.path)) }
-                    .map { RouteInfo(basePath, resource.path, apiVersion, it, cl) }
+                .map { it.copy(path = replacePathParametersInEndpointPath(it.path)) }
+                .map { RouteInfo(basePath, resource.path, apiVersion, it, cl) }
 
         }.also { log.trace { "Map resources to routes by http method completed." } }
     }
 
     private fun replacePathParametersInEndpointPath(path: String): String =
-            path.replace(pathParamRegex) { matchResult -> ":${matchResult.groupValues[1]}" }
+        path.replace(pathParamRegex) { matchResult -> ":${matchResult.groupValues[1]}" }
 }
 
 internal enum class ParameterType {
     PATH, QUERY, BODY
 }
 
-internal data class Parameter(val classType: Class<*>, val name: String, val type: ParameterType, val required: Boolean, val nullable: Boolean, val default: String?)
+internal data class Parameter(
+    val classType: Class<*>,
+    val name: String,
+    val type: ParameterType,
+    val required: Boolean,
+    val nullable: Boolean,
+    val default: String?
+)
 
-internal class RouteInfo(private val basePath: String, private val resourcePath: String, private val apiVersion: String, private val endpoint: Endpoint, private val cl: ClassLoader = ClassLoader.getSystemClassLoader()) {
+internal class RouteInfo(
+    private val basePath: String,
+    private val resourcePath: String,
+    private val apiVersion: String,
+    private val endpoint: Endpoint,
+    private val cl: ClassLoader = ClassLoader.getSystemClassLoader()
+) {
     private companion object {
         private val log = contextLogger()
     }
@@ -73,18 +91,24 @@ internal class RouteInfo(private val basePath: String, private val resourcePath:
     val method get() = endpoint.invocationMethod
     val methodFullName get() = RpcAuthHelper.methodFullName(endpoint.invocationMethod.method)
     private val methodInvoker = when {
-        endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() -> FiniteDurableStreamsMethodInvoker(endpoint.invocationMethod, cl)
-        endpoint.invocationMethod.method.returnsDurableCursorBuilder() && !endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() -> DurableStreamsMethodInvoker(endpoint.invocationMethod, cl)
+        endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() -> FiniteDurableStreamsMethodInvoker(
+            endpoint.invocationMethod,
+            cl
+        )
+        endpoint.invocationMethod.method.returnsDurableCursorBuilder() && !endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() -> DurableStreamsMethodInvoker(
+            endpoint.invocationMethod,
+            cl
+        )
         else -> DefaultMethodInvoker(endpoint.invocationMethod, cl)
     }
 
 
     @Suppress("SpreadOperator")
     fun invokeDelegatedMethod(vararg args: Any?): Any? {
-        log.trace{"Invoke delegated method \"${endpoint.invocationMethod.method.name}\" with args size: ${args.size}."}
+        log.trace { "Invoke delegated method \"${endpoint.invocationMethod.method.name}\" with args size: ${args.size}." }
         try {
             return methodInvoker.invoke(*args)
-                    .also { log.trace{"Invoke delegated method \"${endpoint.invocationMethod.method.name}\" with args size: ${args.size} completed."} }
+                .also { log.trace { "Invoke delegated method \"${endpoint.invocationMethod.method.name}\" with args size: ${args.size} completed." } }
         } catch (e: InvocationTargetException) {
             e.cause?.let { throw it } ?: throw e
         }
@@ -101,7 +125,14 @@ internal class RouteInfo(private val basePath: String, private val resourcePath:
         log.trace { "Map endpoint parameters of endpoint \"$fullPath\" to route provider parameters, list size: \"${parameters.size}\"." }
         return parameters.map {
             log.trace { "Map endpoint parameter \"${it.name}\"." }
-            Parameter(it.classType, it.name, ParameterType.valueOf(it.type.name), it.required, it.nullable, it.default).also { result ->
+            Parameter(
+                it.classType,
+                it.name,
+                ParameterType.valueOf(it.type.name),
+                it.required,
+                it.nullable,
+                it.default
+            ).also { result ->
                 log.trace { "Map endpoint parameter \"${it.name}\" completed. Result: \"$result\"" }
             }
         }.also {

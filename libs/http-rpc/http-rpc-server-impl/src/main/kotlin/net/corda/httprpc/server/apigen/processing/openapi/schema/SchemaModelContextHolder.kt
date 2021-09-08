@@ -5,7 +5,8 @@ import net.corda.httprpc.server.apigen.processing.openapi.schema.model.SchemaRef
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 
-private val log = LoggerFactory.getLogger("net.corda.httprpc.server.apigen.processing.openapi.schema.SchemaModelContextHolder.kt")
+private val log =
+    LoggerFactory.getLogger("net.corda.httprpc.server.apigen.processing.openapi.schema.SchemaModelContextHolder.kt")
 
 /**
  * [SchemaModelContextHolder] is responsible for keeping track of discovered schemas,
@@ -35,31 +36,32 @@ class SchemaModelContextHolder {
     private fun generateName(parameterizedClass: ParameterizedClass): String {
         log.trace { """Generate name for class "$parameterizedClass".""" }
         val classSimpleName = parameterizedClass.clazz.simpleName
-        val existingClassNameInDifferentPackagesCount = pClass2Name.keys.count { it.clazz != parameterizedClass.clazz && it.clazz.simpleName == classSimpleName }
+        val existingClassNameInDifferentPackagesCount =
+            pClass2Name.keys.count { it.clazz != parameterizedClass.clazz && it.clazz.simpleName == classSimpleName }
 
         return (if (existingClassNameInDifferentPackagesCount == 0) classSimpleName
         else "${classSimpleName}_$existingClassNameInDifferentPackagesCount") +
                 parameterizedClass.parameterizedClassList.mapKey
-                        .also { log.trace { """Generate name for class "$parameterizedClass".""" } }
+                    .also { log.trace { """Generate name for class "$parameterizedClass".""" } }
     }
 
     internal fun getName(parameterizedClass: ParameterizedClass): String? {
         log.trace { """Get name for "$parameterizedClass".""" }
         return pClass2Name[parameterizedClass]
-                .also { log.trace { """Get name for "$parameterizedClass" completed.""" } }
+            .also { log.trace { """Get name for "$parameterizedClass" completed.""" } }
     }
 
     internal fun getSchema(parameterizedClass: ParameterizedClass): SchemaObjectModel? {
         log.trace { """Get schema for "$parameterizedClass".""" }
         return pClass2Model[parameterizedClass]
-                .also { log.trace { """Get schema for "$parameterizedClass" completed.""" } }
+            .also { log.trace { """Get schema for "$parameterizedClass" completed.""" } }
     }
 
     internal fun getAllSchemas(): Map<String, SchemaObjectModel> {
 
         log.trace { "Get all schemas." }
         return pClass2Model.map { pClass2Name[it.key]!! to it.value }.toMap().plus(propertyWrapperModels)
-                .also { log.trace { """Get all schemas, size: "${it.size}", completed.""" } } as Map<String, SchemaObjectModel>
+            .also { log.trace { """Get all schemas, size: "${it.size}", completed.""" } } as Map<String, SchemaObjectModel>
     }
 
     internal fun markDiscovered(parameterizedClass: ParameterizedClass) {

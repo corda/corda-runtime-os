@@ -40,11 +40,13 @@ internal class SwaggerUIRenderer(private val configurationProvider: HttpRpcSetti
             }
         }
 
-        ctx.html("""
+        ctx.html(
+            """
             <head>
                 <meta charset="UTF-8">
                 <title>Swagger UI</title>
-                <link rel="icon" type="image/png" href="${ctx.contextPath()}/webjars/swagger-ui/$swaggerVersion/favicon-16x16.png" sizes="16x16" />
+                <link rel="icon" type="image/png" 
+                href="${ctx.contextPath()}/webjars/swagger-ui/$swaggerVersion/favicon-16x16.png" sizes="16x16" />
                 <link rel="stylesheet" href="${ctx.contextPath()}/webjars/swagger-ui/$swaggerVersion/swagger-ui.css" >
                 <script src="${ctx.contextPath()}/webjars/swagger-ui/$swaggerVersion/swagger-ui-bundle.js"></script>
                 <style>body{background:#fafafa;}</style>
@@ -56,7 +58,8 @@ internal class SwaggerUIRenderer(private val configurationProvider: HttpRpcSetti
                         window.open = function (open) {
                             return function (url) {
                                 url = url
-                                    // Swagger UI does not support custom response_type parameters. Azure Active Directory requires an 'id_token' value to
+                                    // Swagger UI does not support custom response_type parameters. 
+                                    //gAzure Active Directory requires an 'id_token' value to
                                     // be passed instead of 'token' (See https://github.com/swagger-api/swagger-ui/issues/1974).
                                     .replace('response_type=token', 'response_type=id_token');
                                 return open.call(window, url);
@@ -84,9 +87,9 @@ internal class SwaggerUIRenderer(private val configurationProvider: HttpRpcSetti
         )
     }
 
-    private fun getInitOAuth() : String {
+    private fun getInitOAuth(): String {
         val sso = configurationProvider.getSsoSettings()?.azureAd()
-        return if(sso != null) {
+        return if (sso != null) {
             """
                 ui.initOAuth({
                         clientId: "${sso.getClientId()}",

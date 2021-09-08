@@ -41,9 +41,21 @@ internal class SecurityManagerRPCImpl(private val providers: Set<AuthenticationP
     }
 
     override fun authorize(authenticatedUser: AuthorizingSubject, method: Method): Boolean {
-        log.debug { """Authorizing user: "${authenticatedUser.principal}" on method: "${RpcAuthHelper.methodFullName(method)}"""" }
+        log.debug {
+            """Authorizing user: "${authenticatedUser.principal}" on method: "${
+                RpcAuthHelper.methodFullName(
+                    method
+                )
+            }""""
+        }
         return authenticatedUser.isPermitted(RpcAuthHelper.methodFullName(method)).also {
-            log.trace { """Authorizing user: "${authenticatedUser.principal}" on method: "${RpcAuthHelper.methodFullName(method)}" completed. Result: $it""" }
+            log.trace {
+                """Authorizing user: "${authenticatedUser.principal}" on method: "${
+                    RpcAuthHelper.methodFullName(
+                        method
+                    )
+                }" completed. Result: $it"""
+            }
         }
     }
 }

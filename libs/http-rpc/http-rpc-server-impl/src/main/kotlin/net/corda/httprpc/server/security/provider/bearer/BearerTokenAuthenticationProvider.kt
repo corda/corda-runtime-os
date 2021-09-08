@@ -11,12 +11,12 @@ internal abstract class BearerTokenAuthenticationProvider : AuthenticationProvid
     }
 
     override fun authenticate(credential: AuthenticationCredentials): AuthorizingSubject {
-        if(credential !is BearerTokenAuthenticationCredentials) {
+        if (credential !is BearerTokenAuthenticationCredentials) {
             throw IllegalArgumentException("Provider only supports bearer tokens.")
         }
 
         return doAuthenticate(credential)
     }
 
-    protected abstract fun doAuthenticate(credential: BearerTokenAuthenticationCredentials) : AuthorizingSubject
+    protected abstract fun doAuthenticate(credential: BearerTokenAuthenticationCredentials): AuthorizingSubject
 }

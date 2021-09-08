@@ -33,7 +33,8 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 
-private val log = LoggerFactory.getLogger("net.corda.httprpc.server.apigen.processing.openapi.schema.SchemaModelProvider.kt")
+private val log =
+    LoggerFactory.getLogger("net.corda.httprpc.server.apigen.processing.openapi.schema.SchemaModelProvider.kt")
 
 /**
  * [SchemaModelProvider] is responsible for providing a [SchemaModel] from the passed argument(s).
@@ -52,90 +53,98 @@ internal interface SchemaModelProvider {
  * If the object returned from the builder is a [SchemaObjectModel], then it is a candidate for referencing using [SchemaModelContextHolder].
  * Thus, it is not advised to use the [SchemaObjectBuilder] for generic objects where the generic types need to be represented.
  */
-internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: SchemaModelContextHolder): SchemaModelProvider {
+internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: SchemaModelContextHolder) :
+    SchemaModelProvider {
     private val defaultBuilder = SchemaObjectBuilder(this, schemaModelContextHolder)
 
     private val builders = listOf(
-            SchemaSetBuilder(this),
-            SchemaCollectionBuilder(this),
-            SchemaMapBuilder(this),
-            SchemaBooleanBuilder(),
-            SchemaIntegerBuilder(),
-            SchemaLongBuilder(),
-            SchemaBigIntegerBuilder(),
-            SchemaFloatBuilder(),
-            SchemaDoubleBuilder(),
-            SchemaBigDecimalBuilder(),
-            SchemaStringBuilder(),
-            SchemaByteArrayBuilder(),
-            SchemaInputStreamBuilder(),
-            SchemaDateBuilder(),
-            SchemaDateTimeBuilder(),
-            SchemaEnumBuilder(),
-            SchemaUUIDBuilder(),
-            SchemaDurationBuilder(),
-            StringSchemaModelBuilder(),
-            SchemaPairBuilder(this),
-            SchemaDurableReturnResultBuilder(this),
-            SchemaPositionedValueBuilder(this)
+        SchemaSetBuilder(this),
+        SchemaCollectionBuilder(this),
+        SchemaMapBuilder(this),
+        SchemaBooleanBuilder(),
+        SchemaIntegerBuilder(),
+        SchemaLongBuilder(),
+        SchemaBigIntegerBuilder(),
+        SchemaFloatBuilder(),
+        SchemaDoubleBuilder(),
+        SchemaBigDecimalBuilder(),
+        SchemaStringBuilder(),
+        SchemaByteArrayBuilder(),
+        SchemaInputStreamBuilder(),
+        SchemaDateBuilder(),
+        SchemaDateTimeBuilder(),
+        SchemaEnumBuilder(),
+        SchemaUUIDBuilder(),
+        SchemaDurationBuilder(),
+        StringSchemaModelBuilder(),
+        SchemaPairBuilder(this),
+        SchemaDurableReturnResultBuilder(this),
+        SchemaPositionedValueBuilder(this)
     )
 
     override fun toSchemaModel(properties: List<EndpointParameter>, schemaModelName: String): SchemaModel {
         val schemaRefObjectModel: SchemaRefObjectModel
-            log.debug { """To schema model "$schemaModelName" from endpointParameters: "${properties.joinToString(",")}".""" }
-            properties.associateBy ({ it.id }, { toSchemaModel(it) } ).also { schemaRefObjectModels ->
-                schemaRefObjectModel = SchemaMultiRefObjectModel(ref = schemaModelName, properties = schemaRefObjectModels)
-                        .also {
-                            it.name = schemaModelName
-                            it.description = schemaModelName
-                            it.required = properties.any { p -> p.required }
-                            it.nullable = properties.all { p -> p.nullable }
-                        }
-            }
+        log.debug { """To schema model "$schemaModelName" from endpointParameters: "${properties.joinToString(",")}".""" }
+        properties.associateBy({ it.id }, { toSchemaModel(it) }).also { schemaRefObjectModels ->
+            schemaRefObjectModel = SchemaMultiRefObjectModel(ref = schemaModelName, properties = schemaRefObjectModels)
+                .also {
+                    it.name = schemaModelName
+                    it.description = schemaModelName
+                    it.required = properties.any { p -> p.required }
+                    it.nullable = properties.all { p -> p.nullable }
+                }
+        }
         schemaModelContextHolder.addRefObjectWrapperSchema(schemaModelName, schemaRefObjectModel)
-        return  SchemaRefObjectModel(ref = schemaModelName).also {
-            log.debug { """To schema model "$schemaModelName" from endpointParameter(s) completed.""" } }
+        return SchemaRefObjectModel(ref = schemaModelName).also {
+            log.debug { """To schema model "$schemaModelName" from endpointParameter(s) completed.""" }
+        }
     }
 
     override fun toSchemaModel(param: EndpointParameter): SchemaModel {
         log.debug { """To schema model from endpointParameter: "$param".""" }
         val parameterizedClass = ParameterizedClass(param.classType, param.parameterizedTypes)
         return schemaModelContextHolder.getSchema(parameterizedClass)?.let {
-            SchemaRefObjectModel(ref = schemaModelContextHolder.getName(parameterizedClass)!!) }?.also {
+            SchemaRefObjectModel(ref = schemaModelContextHolder.getName(parameterizedClass)!!)
+        }?.also {
             it.required = param.required
             it.nullable = param.nullable
             log.debug { """Schema for class: "${param.classType}" found in context. To schema model from endpointParameter completed.""" }
         } ?: getBuilderFor(param.classType).build(param.classType, param.parameterizedTypes).applyMetaInfo(param)
-                .apply {
-                    if (this !is SchemaObjectModel) this.example = param.classType.toExample()
-                }
-                .let {
-                    returnOrRegisterAndReturnRef(it, parameterizedClass)
-                }.also {
-                    log.debug { """To schema model from endpointParameter: "$param" completed.""" }
-                }
+            .apply {
+                if (this !is SchemaObjectModel) this.example = param.classType.toExample()
+            }
+            .let {
+                returnOrRegisterAndReturnRef(it, parameterizedClass)
+            }.also {
+                log.debug { """To schema model from endpointParameter: "$param" completed.""" }
+            }
     }
 
     override fun toSchemaModel(parameterizedClass: ParameterizedClass): SchemaModel {
         log.debug { """To schema model for class: "$parameterizedClass".""" }
         return schemaModelContextHolder.getSchema(parameterizedClass)?.let {
-            SchemaRefObjectModel(ref = schemaModelContextHolder.getName(parameterizedClass)!!) }?.also {
+            SchemaRefObjectModel(ref = schemaModelContextHolder.getName(parameterizedClass)!!)
+        }?.also {
             it.nullable = parameterizedClass.nullable
             log.debug { """Schema for class: "$parameterizedClass" found in context. To schema model completed.""" }
-        } ?: getBuilderFor(parameterizedClass.clazz).build(parameterizedClass.clazz, parameterizedClass.parameterizedClassList).apply {
+        } ?: getBuilderFor(parameterizedClass.clazz).build(
+            parameterizedClass.clazz,
+            parameterizedClass.parameterizedClassList
+        ).apply {
             this.nullable = parameterizedClass.nullable
             if (this !is SchemaObjectModel) this.example = parameterizedClass.clazz.toExample()
-                }.let {
-                    returnOrRegisterAndReturnRef(it, parameterizedClass)
-                }.also {
-                    log.debug { """To schema model for class: "$parameterizedClass" completed.""" }
-                }
+        }.let {
+            returnOrRegisterAndReturnRef(it, parameterizedClass)
+        }.also {
+            log.debug { """To schema model for class: "$parameterizedClass" completed.""" }
+        }
     }
 
     private fun getBuilderFor(clazz: Class<*>): SchemaBuilder {
         log.trace { """Get builder for "$clazz".""" }
-        return builders.firstOrNull { it.isSupertypeOf(clazz) }?.also { log.trace { """Get builder for "$clazz" completed. Builder: "$it".""" } }
-                ?: defaultBuilder.also { log.trace { """Get builder for "$clazz" completed. Default builder used: $it""" } }
+        return builders.firstOrNull { it.isSupertypeOf(clazz) }
+            ?.also { log.trace { """Get builder for "$clazz" completed. Builder: "$it".""" } }
+            ?: defaultBuilder.also { log.trace { """Get builder for "$clazz" completed. Default builder used: $it""" } }
     }
 
     private fun returnOrRegisterAndReturnRef(model: SchemaModel, parameterizedClass: ParameterizedClass): SchemaModel {

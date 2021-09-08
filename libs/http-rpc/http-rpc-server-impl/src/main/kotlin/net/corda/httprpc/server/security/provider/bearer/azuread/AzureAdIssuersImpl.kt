@@ -16,14 +16,14 @@ internal class AzureAdIssuersImpl(private val settings: AzureAdSettingsProvider)
     init {
         val issuerBaseList = setOf(LOGIN_MICROSOFT_ONLINE_ISSUER, STS_WINDOWS_ISSUER, STS_CHINA_CLOUD_API_ISSUER)
         issuers = issuerBaseList
-                .map { root -> root + settings.getTenantId() + PATH }
-                .toSet()
-                .plus(issuerBaseList
-                        .map { root -> root + settings.getTenantId() + PATH_V2 })
-                .toMutableSet()
+            .map { root -> root + settings.getTenantId() + PATH }
+            .toSet()
+            .plus(issuerBaseList
+                .map { root -> root + settings.getTenantId() + PATH_V2 })
+            .toMutableSet()
     }
 
-    override fun valid(issuer: String?) : Boolean {
+    override fun valid(issuer: String?): Boolean {
         return issuers.contains(issuer)
     }
 

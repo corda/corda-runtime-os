@@ -7,7 +7,8 @@ import net.corda.httprpc.server.apigen.processing.openapi.schema.model.SchemaMod
 internal class SchemaEnumBuilder : SchemaBuilder {
     override val keys: List<Class<*>> = listOf(Enum::class.java)
 
-    override fun build(clazz: Class<*>, parameterizedClassList: List<GenericParameterizedType>): SchemaModel = SchemaEnumModel(
+    override fun build(clazz: Class<*>, parameterizedClassList: List<GenericParameterizedType>): SchemaModel =
+        SchemaEnumModel(
             enum = clazz.enumConstants.map { it.toString() }
-    )
+        )
 }

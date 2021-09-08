@@ -20,31 +20,33 @@ internal class SchemaDurableReturnResultBuilder(private val schemaModelProvider:
         val positionedValueType = parameterizedClassList.single()
 
         return SchemaDurableReturnResultModel(
-                clazz.kotlin.memberProperties.filter { it.visibility == KVisibility.PUBLIC }
-                        .associate {
-                            val endpointParameterParameterizedTypes = it.returnType.arguments.mapNotNull { argument ->
-                                argument.type?.javaType?.toEndpointParameterParameterizedType()
-                            }.run { if (it.name == "positionedValues") toPositionedValuesGenericTypes(positionedValueType) else this }
+            clazz.kotlin.memberProperties.filter { it.visibility == KVisibility.PUBLIC }
+                .associate {
+                    val endpointParameterParameterizedTypes = it.returnType.arguments.mapNotNull { argument ->
+                        argument.type?.javaType?.toEndpointParameterParameterizedType()
+                    }
+                        .run { if (it.name == "positionedValues") toPositionedValuesGenericTypes(positionedValueType) else this }
 
-                            it.name to schemaModelProvider.toSchemaModel(
-                                    ParameterizedClass(
-                                    (it.returnType.classifier as? KClass<*>?)?.java ?: Any::class.java,
-                                    endpointParameterParameterizedTypes,
-                                            it.returnType.isMarkedNullable)
-                            )
-                        }
+                    it.name to schemaModelProvider.toSchemaModel(
+                        ParameterizedClass(
+                            (it.returnType.classifier as? KClass<*>?)?.java ?: Any::class.java,
+                            endpointParameterParameterizedTypes,
+                            it.returnType.isMarkedNullable
+                        )
+                    )
+                }
         )
     }
 
     private fun List<GenericParameterizedType>.toPositionedValuesGenericTypes(positionedValueType: GenericParameterizedType) =
-            this.let { genericParameterizedTypes ->
-                if (genericParameterizedTypes.size == 1 && genericParameterizedTypes.single().nestedParameterizedTypes.size == 1) {
-                    listOf(
-                            GenericParameterizedType(
-                                    genericParameterizedTypes.single().clazz,
-                                    listOf(positionedValueType)
-                            )
+        this.let { genericParameterizedTypes ->
+            if (genericParameterizedTypes.size == 1 && genericParameterizedTypes.single().nestedParameterizedTypes.size == 1) {
+                listOf(
+                    GenericParameterizedType(
+                        genericParameterizedTypes.single().clazz,
+                        listOf(positionedValueType)
                     )
-                } else genericParameterizedTypes
-            }
+                )
+            } else genericParameterizedTypes
+        }
 }

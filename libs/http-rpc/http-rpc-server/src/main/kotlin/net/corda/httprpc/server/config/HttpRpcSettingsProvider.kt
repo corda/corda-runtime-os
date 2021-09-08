@@ -57,5 +57,5 @@ interface HttpRpcSettingsProvider {
      */
     fun getSsoSettings(): SsoSettingsProvider?
 
-    fun maxContentLength() : Int
+    fun maxContentLength(): Int
 }

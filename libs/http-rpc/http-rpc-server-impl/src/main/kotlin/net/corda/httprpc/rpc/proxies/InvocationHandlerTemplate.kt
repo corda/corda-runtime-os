@@ -1,4 +1,4 @@
-package net.corda.ext.api.rpc.proxies
+package net.corda.httprpc.rpc.proxies
 
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.InvocationTargetException
@@ -7,6 +7,7 @@ import java.lang.reflect.Method
 /**
  * Helps writing correct [InvocationHandler]s.
  */
+@Suppress("SpreadOperator")
 interface InvocationHandlerTemplate : InvocationHandler {
     val delegate: Any
 

@@ -8,9 +8,11 @@ import net.corda.v5.httprpc.api.RpcOps
 
 interface HttpRpcServerFactory {
 
-    fun createHttpRpcServer(rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
-                            rpcSecurityManager: RPCSecurityManager,
-                            httpRpcSettings: HttpRpcSettings,
-                            devMode: Boolean,
-                            cordappClassLoader: ClassLoader): HttpRpcServer
+    fun createHttpRpcServer(
+        rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
+        rpcSecurityManager: RPCSecurityManager,
+        httpRpcSettings: HttpRpcSettings,
+        devMode: Boolean,
+        cordappClassLoader: ClassLoader
+    ): HttpRpcServer
 }

@@ -18,17 +18,18 @@ internal class SchemaPairBuilder(private val schemaModelProvider: SchemaModelPro
         // to replace the relevant SchemaObjectModel with a ref.
         // however, all pairs may differ due to their contained types, so we evaluate them all without referencing
         return SchemaPairModel(
-                clazz.kotlin.memberProperties.filter { it.visibility == KVisibility.PUBLIC }
-                        .associate {
-                            val nextValue = if (canDeduceTypesFromParameterizedClassList) iterator.next() else null
-                            it.name to schemaModelProvider.toSchemaModel(
-                                    ParameterizedClass(
-                                    nextValue?.clazz ?: Any::class.java,
-                                    nextValue?.nestedParameterizedTypes ?: emptyList(),
-                                            it.returnType.isMarkedNullable)
+            clazz.kotlin.memberProperties.filter { it.visibility == KVisibility.PUBLIC }
+                .associate {
+                    val nextValue = if (canDeduceTypesFromParameterizedClassList) iterator.next() else null
+                    it.name to schemaModelProvider.toSchemaModel(
+                        ParameterizedClass(
+                            nextValue?.clazz ?: Any::class.java,
+                            nextValue?.nestedParameterizedTypes ?: emptyList(),
+                            it.returnType.isMarkedNullable
+                        )
 
-                            )
-                        }
+                    )
+                }
         )
     }
 }

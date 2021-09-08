@@ -6,8 +6,7 @@ import org.slf4j.MDC
 data class RpcAuthContext(
     val invocation: InvocationContext.Rpc,
     private val authorizer: AuthorizingSubject
-)
-    : AuthorizingSubject by authorizer
+) : AuthorizingSubject by authorizer
 
 
 @JvmField

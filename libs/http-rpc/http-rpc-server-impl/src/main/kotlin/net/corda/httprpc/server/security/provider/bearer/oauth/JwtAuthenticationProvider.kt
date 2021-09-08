@@ -10,11 +10,11 @@ import net.corda.httprpc.server.security.provider.credentials.tokens.BearerToken
 import net.corda.v5.base.util.contextLogger
 import javax.security.auth.login.FailedLoginException
 
-internal open class JwtAuthenticationProvider(private val jwtProcessor: JwtProcessor,
-                                              private val claimExtractor: JwtClaimExtractor,
-                                              protected val rpcSecurityManager: RPCSecurityManager
-)
-    : BearerTokenAuthenticationProvider() {
+internal open class JwtAuthenticationProvider(
+    private val jwtProcessor: JwtProcessor,
+    private val claimExtractor: JwtClaimExtractor,
+    protected val rpcSecurityManager: RPCSecurityManager
+) : BearerTokenAuthenticationProvider() {
 
     companion object {
         private val logger = contextLogger()

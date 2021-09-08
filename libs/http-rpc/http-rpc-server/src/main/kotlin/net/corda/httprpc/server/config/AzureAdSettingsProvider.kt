@@ -7,27 +7,27 @@ interface AzureAdSettingsProvider {
         const val TOKEN_URL = "oauth2/v2.0/token"
     }
 
-    fun getAuthority() : String {
+    fun getAuthority(): String {
         return AUTHORITY_FORMAT.format(getTenantId())
     }
 
-    fun getAuthorizeUrl() : String {
+    fun getAuthorizeUrl(): String {
         return getAuthority() + AUTHORIZE_URL
     }
 
-    fun getTokenUrl() : String {
+    fun getTokenUrl(): String {
         return getAuthority() + TOKEN_URL
     }
 
-    fun getTenantId() : String
+    fun getTenantId(): String
 
-    fun getClientId() : String
+    fun getClientId(): String
 
     fun getPrincipalClaimList(): List<String>
 
-    fun getAppIdUri() : String?
+    fun getAppIdUri(): String?
 
     fun getClientSecret(): String?
 
-    fun getTrustedIssuers() : List<String>?
+    fun getTrustedIssuers(): List<String>?
 }

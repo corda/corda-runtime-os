@@ -3,7 +3,13 @@ package net.corda.httprpc.server.internal
 /**
  * Overrides [io.javalin.core.util.OptionalDependency]
  */
-enum class OptionalDependency(val displayName: String, val testClass: String, val groupId: String, val artifactId: String, val version: String) {
+enum class OptionalDependency(
+    val displayName: String,
+    val testClass: String,
+    val groupId: String,
+    val artifactId: String,
+    val version: String
+) {
     /**
      * Note: [version] must be aligned with [swaggeruiVersion] in Gradle properties
      */

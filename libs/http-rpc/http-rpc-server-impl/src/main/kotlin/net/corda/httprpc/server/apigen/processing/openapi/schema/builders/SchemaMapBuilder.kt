@@ -9,7 +9,9 @@ import net.corda.httprpc.server.apigen.processing.openapi.schema.SchemaModelProv
 internal class SchemaMapBuilder(private val schemaModelProvider: SchemaModelProvider) : SchemaBuilder {
     override val keys: List<Class<*>> = listOf(Map::class.java)
 
-    override fun build(clazz: Class<*>, parameterizedClassList: List<GenericParameterizedType>): SchemaModel = SchemaMapModel(
-            additionalProperties = parameterizedClassList.drop(1).singleOrNull()?.let { schemaModelProvider.toSchemaModel(ParameterizedClass(it.clazz, it.nestedParameterizedTypes)) }
-    )
+    override fun build(clazz: Class<*>, parameterizedClassList: List<GenericParameterizedType>): SchemaModel =
+        SchemaMapModel(
+            additionalProperties = parameterizedClassList.drop(1).singleOrNull()
+                ?.let { schemaModelProvider.toSchemaModel(ParameterizedClass(it.clazz, it.nestedParameterizedTypes)) }
+        )
 }

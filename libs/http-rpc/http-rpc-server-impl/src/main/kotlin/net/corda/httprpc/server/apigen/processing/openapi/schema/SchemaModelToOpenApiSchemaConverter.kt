@@ -16,7 +16,8 @@ import net.corda.httprpc.server.apigen.processing.openapi.schema.model.SchemaRef
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 
-private val log = LoggerFactory.getLogger("net.corda.httprpc.server.apigen.processing.openapi.schema.SchemaModelToOpenApiSchemaConverter.kt")
+private val log =
+    LoggerFactory.getLogger("net.corda.httprpc.server.apigen.processing.openapi.schema.SchemaModelToOpenApiSchemaConverter.kt")
 
 /**
  * [SchemaModelToOpenApiSchemaConverter] is a conversion layer between our [SchemaModel] and swagger's required [Schema].
@@ -49,7 +50,7 @@ object SchemaModelToOpenApiSchemaConverter {
             is SchemaPositionedValueModel -> convertBaseSchemaModel(schemaModel).apply {
                 this.properties(schemaModel.properties.mapValues { convert(it.value) })
             }
-            is SchemaMultiRefObjectModel-> convertBaseSchemaModel(schemaModel).apply {
+            is SchemaMultiRefObjectModel -> convertBaseSchemaModel(schemaModel).apply {
                 this.properties(schemaModel.properties.mapValues { convert(it.value) })
             }
             // extraordinary case, where the object's ref is expected to be found in the overall structure
@@ -72,7 +73,7 @@ object SchemaModelToOpenApiSchemaConverter {
         schemaModel.example?.let { this.example(it) }
     }
 
-    private fun Schema<Any>.setRequiredAndNullable(schemaModel: SchemaModel){
+    private fun Schema<Any>.setRequiredAndNullable(schemaModel: SchemaModel) {
         this.required = if (schemaModel is SchemaModelFieldsHelper) schemaModel.getRequiredFields() else emptyList()
         this.nullable = schemaModel.nullable
     }

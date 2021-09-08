@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.apigen.models
 
 data class ResponseBody(
-        val description: String,
-        val type: Class<*>,
-        val parameterizedTypes: List<GenericParameterizedType> = emptyList()
+    val description: String,
+    val type: Class<*>,
+    val parameterizedTypes: List<GenericParameterizedType> = emptyList()
 )

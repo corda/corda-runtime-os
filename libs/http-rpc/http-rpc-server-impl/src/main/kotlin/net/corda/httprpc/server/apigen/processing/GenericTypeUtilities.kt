@@ -12,7 +12,7 @@ import kotlin.reflect.jvm.jvmErasure
 
 private val log = LoggerFactory.getLogger("net.corda.httprpc.server.apigen.processing.GenericTypeUtilities.kt")
 
-fun KParameter.getParameterizedTypes() : List<GenericParameterizedType> {
+fun KParameter.getParameterizedTypes(): List<GenericParameterizedType> {
     return when (val type = this.type.jvmErasure.java) {
         is ParameterizedType -> type.actualTypeArguments.mapNotNull { it.toEndpointParameterParameterizedType() }
         else -> emptyList()
@@ -24,7 +24,9 @@ fun Type.toEndpointParameterParameterizedType(): GenericParameterizedType? {
     return when (this) {
         is Class<*> -> GenericParameterizedType(this)
         is ParameterizedType -> {
-            GenericParameterizedType(this.rawType as Class<*>, this.actualTypeArguments.mapNotNull { it.toEndpointParameterParameterizedType() })
+            GenericParameterizedType(
+                this.rawType as Class<*>,
+                this.actualTypeArguments.mapNotNull { it.toEndpointParameterParameterizedType() })
         }
         is WildcardType -> {
             this.upperBounds.singleOrNull()?.toEndpointParameterParameterizedType()
@@ -32,7 +34,7 @@ fun Type.toEndpointParameterParameterizedType(): GenericParameterizedType? {
         else -> {
             GenericParameterizedType(Any::class.java)
         }
-    }.also {log.trace { """Map type: "${this.typeName}" to GenericParameterizedType completed.""" }  }
+    }.also { log.trace { """Map type: "${this.typeName}" to GenericParameterizedType completed.""" } }
 }
 
 fun Method.toClassAndParameterizedTypes(): Pair<Class<*>, List<GenericParameterizedType>> {
@@ -41,5 +43,5 @@ fun Method.toClassAndParameterizedTypes(): Pair<Class<*>, List<GenericParameteri
     val clazz = topLevelGenericType?.clazz ?: this.returnType
     val parameterizedTypes = topLevelGenericType?.nestedParameterizedTypes ?: emptyList()
     return (clazz to parameterizedTypes)
-            .also { log.trace { """Map method: "${this.name}" to Class and ParameterizedTypes completed.""" } }
+        .also { log.trace { """Map method: "${this.name}" to Class and ParameterizedTypes completed.""" } }
 }

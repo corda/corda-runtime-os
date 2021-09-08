@@ -22,14 +22,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
 
 @SuppressWarnings("TooGenericExceptionThrown", "TooGenericExceptionCaught", "LongParameterList")
-class HttpRPCServerImpl(
+class HttpRpcServerImpl(
     rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
     rpcSecurityManager: RPCSecurityManager,
     httpRpcSettings: HttpRpcSettings,
     devMode: Boolean,
     cordappClassLoader: ClassLoader
 
-): HttpRpcServer {
+) : HttpRpcServer {
     private companion object {
         private val log = contextLogger()
     }
@@ -45,7 +45,12 @@ class HttpRPCServerImpl(
     private val resources = getResources(rpcOpsImpls)
     private val httpRpcObjectConfigProvider = HttpRpcObjectSettingsProvider(httpRpcSettings, devMode)
     private val httpRpcServerInternal = HttpRpcServerInternal(
-        JavalinRouteProviderImpl(httpRpcSettings.context.basePath, httpRpcSettings.context.version, resources, cordappClassLoader),
+        JavalinRouteProviderImpl(
+            httpRpcSettings.context.basePath,
+            httpRpcSettings.context.version,
+            resources,
+            cordappClassLoader
+        ),
         SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManager)),
         httpRpcObjectConfigProvider,
         OpenApiInfoProvider(resources, httpRpcObjectConfigProvider)
@@ -89,10 +94,13 @@ class HttpRPCServerImpl(
         return resources
     }
 
-    private fun createAuthenticationProviders(settings: HttpRpcSettingsProvider, rpcSecurityManager: RPCSecurityManager): Set<AuthenticationProvider> {
+    private fun createAuthenticationProviders(
+        settings: HttpRpcSettingsProvider,
+        rpcSecurityManager: RPCSecurityManager
+    ): Set<AuthenticationProvider> {
         val result = mutableSetOf<AuthenticationProvider>(UsernamePasswordAuthenticationProvider(rpcSecurityManager))
         val azureAdSettings = settings.getSsoSettings()?.azureAd()
-        if(azureAdSettings != null) {
+        if (azureAdSettings != null) {
             result.add(AzureAdAuthenticationProvider.createDefault(azureAdSettings, rpcSecurityManager))
         }
         return result

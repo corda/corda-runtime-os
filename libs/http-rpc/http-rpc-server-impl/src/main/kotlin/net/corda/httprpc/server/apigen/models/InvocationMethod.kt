@@ -6,6 +6,6 @@ import java.lang.reflect.Method
 
 @Suppress("SpreadOperator")
 data class InvocationMethod(
-        val method: Method,
-        val instance: RpcOps
+    val method: Method,
+    val instance: RpcOps
 )

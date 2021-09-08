@@ -22,7 +22,8 @@ interface MethodInvoker {
     fun invoke(vararg args: Any?): Any?
 }
 
-internal open class DefaultMethodInvoker(private val invocationMethod: InvocationMethod, private val cl: ClassLoader) : MethodInvoker {
+internal open class DefaultMethodInvoker(private val invocationMethod: InvocationMethod, private val cl: ClassLoader) :
+    MethodInvoker {
     private companion object {
         private val log = contextLogger()
     }
@@ -39,7 +40,8 @@ internal open class DefaultMethodInvoker(private val invocationMethod: Invocatio
     }
 }
 
-internal open class DurableStreamsMethodInvoker(private val invocationMethod: InvocationMethod, cl: ClassLoader) : DefaultMethodInvoker(invocationMethod, cl) {
+internal open class DurableStreamsMethodInvoker(private val invocationMethod: InvocationMethod, cl: ClassLoader) :
+    DefaultMethodInvoker(invocationMethod, cl) {
     private companion object {
         private val log = contextLogger()
     }
@@ -50,8 +52,8 @@ internal open class DurableStreamsMethodInvoker(private val invocationMethod: In
         val pollResult = invokeDurableStreamMethod(*args)
 
         return DurableReturnResult(
-                pollResult.positionedValues,
-                pollResult.remainingElementsCountEstimate
+            pollResult.positionedValues,
+            pollResult.remainingElementsCountEstimate
         ).also { log.trace { "Invoke method \"${invocationMethod.method.name}\" with args size: ${args.size} completed." } }
     }
 
@@ -62,14 +64,16 @@ internal open class DurableStreamsMethodInvoker(private val invocationMethod: In
 
         val (durableContexts, methodArgs) = args.partition { it is DurableStreamContext }
         if (durableContexts.size != 1) {
-            val message = """Exactly one of the arguments is expected to be DurableStreamContext, actual: $durableContexts"""
+            val message =
+                """Exactly one of the arguments is expected to be DurableStreamContext, actual: $durableContexts"""
             throw IllegalArgumentException(message)
         }
         val durableStreamContext = durableContexts.single() as DurableStreamContext
 
         val rpcAuthContext = CURRENT_RPC_CONTEXT.get() ?: throw FailedLoginException("Missing authentication context.")
         with(rpcAuthContext) {
-            val rpcContextWithDurableStreamContext = this.copy(invocation = this.invocation.copy(durableStreamContext = durableStreamContext))
+            val rpcContextWithDurableStreamContext =
+                this.copy(invocation = this.invocation.copy(durableStreamContext = durableStreamContext))
             CURRENT_RPC_CONTEXT.set(rpcContextWithDurableStreamContext)
         }
 
@@ -78,11 +82,12 @@ internal open class DurableStreamsMethodInvoker(private val invocationMethod: In
 
         val durableCursorTransferObject = uncheckedCast<Any, Supplier<Cursor.PollResult<Any>>>(returnValue as Any)
         return durableCursorTransferObject.get()
-                .also { log.trace { """Invoke durable streams method "${invocationMethod.method.name}" with args size: ${args.size} completed.""" } }
+            .also { log.trace { """Invoke durable streams method "${invocationMethod.method.name}" with args size: ${args.size} completed.""" } }
     }
 }
 
-internal class FiniteDurableStreamsMethodInvoker(private val invocationMethod: InvocationMethod, cl: ClassLoader) : DurableStreamsMethodInvoker(invocationMethod, cl) {
+internal class FiniteDurableStreamsMethodInvoker(private val invocationMethod: InvocationMethod, cl: ClassLoader) :
+    DurableStreamsMethodInvoker(invocationMethod, cl) {
     private companion object {
         private val log = contextLogger()
     }

@@ -5,4 +5,5 @@ import net.corda.httprpc.server.security.provider.credentials.AuthenticationCred
 /**
  * Represents user credentials for a Basic HTTP Authentication
  */
-internal data class UsernamePasswordAuthenticationCredentials(val username: String, val password: String) : AuthenticationCredentials
+internal data class UsernamePasswordAuthenticationCredentials(val username: String, val password: String) :
+    AuthenticationCredentials

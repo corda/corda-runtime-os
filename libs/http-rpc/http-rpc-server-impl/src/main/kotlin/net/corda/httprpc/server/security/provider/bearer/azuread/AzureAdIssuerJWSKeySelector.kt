@@ -15,8 +15,10 @@ import java.security.Key
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
-internal class AzureAdIssuerJWSKeySelector(private val azureAdIssuers: AzureAdIssuers,
-                                           private val resourceRetriever: ResourceRetriever) : JWTClaimsSetAwareJWSKeySelector<SecurityContext> {
+internal class AzureAdIssuerJWSKeySelector(
+    private val azureAdIssuers: AzureAdIssuers,
+    private val resourceRetriever: ResourceRetriever
+) : JWTClaimsSetAwareJWSKeySelector<SecurityContext> {
     companion object {
         private const val ISS_CLAIM = "iss"
         private const val DEFAULT_REFRESH_TIME_MINUTES = 5L
@@ -27,7 +29,11 @@ internal class AzureAdIssuerJWSKeySelector(private val azureAdIssuers: AzureAdIs
 
     private val keySelectors = ConcurrentHashMap<String, JWSKeySelector<SecurityContext>>()
 
-    override fun selectKeys(header: JWSHeader?, claimsSet: JWTClaimsSet?, context: SecurityContext?): MutableList<out Key> {
+    override fun selectKeys(
+        header: JWSHeader?,
+        claimsSet: JWTClaimsSet?,
+        context: SecurityContext?
+    ): MutableList<out Key> {
         val iss = claimsSet?.getStringClaim(ISS_CLAIM)
         if (iss == null || !azureAdIssuers.valid(iss)) {
             throw BadJOSEException("The issuer $iss is unknown.")
@@ -38,7 +44,11 @@ internal class AzureAdIssuerJWSKeySelector(private val azureAdIssuers: AzureAdIs
             try {
                 val config = AzureAdConfiguration.fromIssuer(issuer, resourceRetriever)
                 val jwksUri = config.jwksUri
-                val jwkSetCache = DefaultJWKSetCache(DEFAULT_JWK_SET_CACHE_LIFESPAN, DEFAULT_REFRESH_TIME_MINUTES, TimeUnit.MILLISECONDS)
+                val jwkSetCache = DefaultJWKSetCache(
+                    DEFAULT_JWK_SET_CACHE_LIFESPAN,
+                    DEFAULT_REFRESH_TIME_MINUTES,
+                    TimeUnit.MILLISECONDS
+                )
                 val keySource = RemoteJWKSet<SecurityContext>(jwksUri.toURL(), resourceRetriever, jwkSetCache)
                 JWSAlgorithmFamilyJWSKeySelector.fromJWKSource(keySource)
             } catch (e: Exception) {

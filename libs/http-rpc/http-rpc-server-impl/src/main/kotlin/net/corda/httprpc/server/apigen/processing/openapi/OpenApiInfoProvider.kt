@@ -21,7 +21,10 @@ import net.corda.v5.base.util.trace
 /**
  * [OpenApiInfoProvider] is responsible for providing OpenAPI related values from the given list of [Resource] and the [HttpRpcSettingsProvider].
  */
-internal class OpenApiInfoProvider(private val resources: List<Resource>, private val configurationsProvider: HttpRpcSettingsProvider) {
+internal class OpenApiInfoProvider(
+    private val resources: List<Resource>,
+    private val configurationsProvider: HttpRpcSettingsProvider
+) {
 
     internal companion object {
         internal fun String.jsonPath() = "$this.json"
@@ -32,23 +35,23 @@ internal class OpenApiInfoProvider(private val resources: List<Resource>, privat
     val pathForOpenApiJson = pathForOpenApiUI.jsonPath()
 
     val swaggerUIRenderer = SwaggerUIRenderer(configurationsProvider)
-    val openApiString: String =  Json.pretty().writeValueAsString(generateOpenApi())
+    val openApiString: String = Json.pretty().writeValueAsString(generateOpenApi())
 
-    private fun generateOpenApi() : OpenAPI {
+    private fun generateOpenApi(): OpenAPI {
         log.trace { "Generate OpenApi for ${resources.size} resources." }
         val basePath = configurationsProvider.getBasePath()
         val apiVersion = configurationsProvider.getApiVersion()
-        return  resources.toOpenAPI(SchemaModelContextHolder()).apply openapi@{
+        return resources.toOpenAPI(SchemaModelContextHolder()).apply openapi@{
             info(createSwaggerInfo())
             addServersItem(Server().url("/$basePath/v${apiVersion}".replace("/+".toRegex(), "/")))
-            components( (components ?: Components()).apply {
+            components((components ?: Components()).apply {
                 addSecuritySchemes(
-                        "basicAuth",
-                        SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("basic")
+                    "basicAuth",
+                    SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("basic")
                 )
                 addSecurityItem(SecurityRequirement().addList("basicAuth"))
                 addAzureAdIfNecessary(this@openapi, this)
-            } )
+            })
         }.also { log.trace { "Generate OpenApi for ${resources.size} resources completed." } }
 
     }
@@ -64,18 +67,23 @@ internal class OpenApiInfoProvider(private val resources: List<Resource>, privat
     private fun addAzureAdIfNecessary(openApi: OpenAPI, components: Components) {
         val azureAd = configurationsProvider.getSsoSettings()?.azureAd()
         if (azureAd != null) {
-            components.addSecuritySchemes("azuread", SecurityScheme()
+            components.addSecuritySchemes(
+                "azuread", SecurityScheme()
                     .type(SecurityScheme.Type.OAUTH2)
-                    .flows(OAuthFlows()
+                    .flows(
+                        OAuthFlows()
                             .authorizationCode(OAuthFlow()
-                                    .authorizationUrl(azureAd.getAuthorizeUrl())
-                                    .tokenUrl(azureAd.getTokenUrl())
-                                    .scopes(Scopes().apply {
-                                        AzureAdAuthenticationProvider.SCOPE.split(' ').forEach { scope ->
-                                            addString(scope, scope)
-                                        }
-                                    })))
-                    .extensions(mapOf("x-tokenName" to "id_token")))
+                                .authorizationUrl(azureAd.getAuthorizeUrl())
+                                .tokenUrl(azureAd.getTokenUrl())
+                                .scopes(Scopes().apply {
+                                    AzureAdAuthenticationProvider.SCOPE.split(' ').forEach { scope ->
+                                        addString(scope, scope)
+                                    }
+                                })
+                            )
+                    )
+                    .extensions(mapOf("x-tokenName" to "id_token"))
+            )
 
 
             openApi.addSecurityItem(SecurityRequirement().addList("azuread", "AzureAd authentication"))

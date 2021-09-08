@@ -13,7 +13,8 @@ import net.corda.httprpc.server.security.provider.scheme.AuthenticationSchemePro
 /**
  * Simple AuthenticationProvider delegating username/password auth to RPCSecurityManager
  */
-internal class UsernamePasswordAuthenticationProvider(private val rpcSecurityManager: RPCSecurityManager) : AuthenticationProvider, AuthenticationSchemeProvider {
+internal class UsernamePasswordAuthenticationProvider(private val rpcSecurityManager: RPCSecurityManager) :
+    AuthenticationProvider, AuthenticationSchemeProvider {
     override val authenticationMethod = AuthenticationScheme.BASIC
 
     override fun supports(credential: AuthenticationCredentials): Boolean {

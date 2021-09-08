@@ -29,20 +29,24 @@ internal interface ParametersTransformer {
  * that can transform the provided [Parameter].
  */
 internal object ParametersTransformerFactory {
-    fun create(name: String, type: GenericParameterizedType): ParametersTransformer = BodyParametersExplicitTransformer(name, type)
+    fun create(name: String, type: GenericParameterizedType): ParametersTransformer =
+        BodyParametersExplicitTransformer(name, type)
 
     fun create(param: KParameter) =
-            param.annotations.singleOrNull { it.isHttpRpcParameterAnnotation() }.let {
-                when (it) {
-                    is HttpRpcPathParameter -> PathParametersTransformer(param, it)
-                    is HttpRpcQueryParameter -> QueryParametersTransformer(param, it)
-                    is HttpRpcRequestBodyParameter -> BodyParametersTransformer(param, it)
-                    else -> BodyParametersTransformer(param, null)
-                }
+        param.annotations.singleOrNull { it.isHttpRpcParameterAnnotation() }.let {
+            when (it) {
+                is HttpRpcPathParameter -> PathParametersTransformer(param, it)
+                is HttpRpcQueryParameter -> QueryParametersTransformer(param, it)
+                is HttpRpcRequestBodyParameter -> BodyParametersTransformer(param, it)
+                else -> BodyParametersTransformer(param, null)
             }
+        }
 }
 
-private class PathParametersTransformer(private val parameter: KParameter, private val annotation: HttpRpcPathParameter): ParametersTransformer {
+private class PathParametersTransformer(
+    private val parameter: KParameter,
+    private val annotation: HttpRpcPathParameter
+) : ParametersTransformer {
     private companion object {
         private val log = contextLogger()
     }
@@ -50,20 +54,23 @@ private class PathParametersTransformer(private val parameter: KParameter, priva
     override fun transform(): EndpointParameter {
         log.trace { "Transform path parameter \"${parameter.name}\"" }
         return EndpointParameter(
-                id = parameter.name!!,
-                name = annotation.name(parameter.name!!),
-                description = annotation.description,
-                required = true,
-                nullable = parameter.type.isMarkedNullable,
-                default = null,
-                classType = parameter.type.jvmErasure.java,
-                parameterizedTypes = parameter.getParameterizedTypes(),
-                type = ParameterType.PATH
+            id = parameter.name!!,
+            name = annotation.name(parameter.name!!),
+            description = annotation.description,
+            required = true,
+            nullable = parameter.type.isMarkedNullable,
+            default = null,
+            classType = parameter.type.jvmErasure.java,
+            parameterizedTypes = parameter.getParameterizedTypes(),
+            type = ParameterType.PATH
         ).also { log.trace { "Transform path parameter \"${parameter.name}\" completed. Result:\n$it" } }
     }
 }
 
-private class QueryParametersTransformer(private val parameter: KParameter, private val annotation: HttpRpcQueryParameter) : ParametersTransformer {
+private class QueryParametersTransformer(
+    private val parameter: KParameter,
+    private val annotation: HttpRpcQueryParameter
+) : ParametersTransformer {
     private companion object {
         private val log = contextLogger()
     }
@@ -71,21 +78,24 @@ private class QueryParametersTransformer(private val parameter: KParameter, priv
     override fun transform(): EndpointParameter {
         log.trace { "Transform query parameter \"${parameter.name}\"" }
         return EndpointParameter(
-                id = parameter.name!!,
-                name = annotation.name(parameter.name!!),
-                description = annotation.description,
-                required = annotation.required,
-                nullable = parameter.type.isMarkedNullable,
-                default = annotation.default.ifBlank { null },
-                classType = parameter.type.jvmErasure.java,
-                parameterizedTypes = parameter.getParameterizedTypes(),
-                type = ParameterType.QUERY
+            id = parameter.name!!,
+            name = annotation.name(parameter.name!!),
+            description = annotation.description,
+            required = annotation.required,
+            nullable = parameter.type.isMarkedNullable,
+            default = annotation.default.ifBlank { null },
+            classType = parameter.type.jvmErasure.java,
+            parameterizedTypes = parameter.getParameterizedTypes(),
+            type = ParameterType.QUERY
         ).also { log.trace { "Transform query parameter \"${parameter.name}\" completed. Result:\n$it" } }
     }
 }
 
 @VisibleForTesting
-internal class BodyParametersTransformer(private val parameter: KParameter, private val annotation: HttpRpcRequestBodyParameter?): ParametersTransformer {
+internal class BodyParametersTransformer(
+    private val parameter: KParameter,
+    private val annotation: HttpRpcRequestBodyParameter?
+) : ParametersTransformer {
     private companion object {
         private val log = contextLogger()
     }
@@ -103,19 +113,20 @@ internal class BodyParametersTransformer(private val parameter: KParameter, priv
 
     private fun transformWithAnnotation(annotation: HttpRpcRequestBodyParameter) =
         EndpointParameter(
-                id = parameter.name!!,
-                name = annotation.name(parameter.name!!),
-                description = annotation.description,
-                required = annotation.required,
-                nullable = parameter.type.isMarkedNullable,
-                default = null,
-                classType = parameter.type.jvmErasure.java,
-                parameterizedTypes = parameter.getParameterizedTypes(),
-                type = ParameterType.BODY
+            id = parameter.name!!,
+            name = annotation.name(parameter.name!!),
+            description = annotation.description,
+            required = annotation.required,
+            nullable = parameter.type.isMarkedNullable,
+            default = null,
+            classType = parameter.type.jvmErasure.java,
+            parameterizedTypes = parameter.getParameterizedTypes(),
+            type = ParameterType.BODY
         )
 }
 
-private class BodyParametersExplicitTransformer(private val name: String, private val type: GenericParameterizedType): ParametersTransformer {
+private class BodyParametersExplicitTransformer(private val name: String, private val type: GenericParameterizedType) :
+    ParametersTransformer {
     private companion object {
         private val log = contextLogger()
     }
@@ -124,14 +135,14 @@ private class BodyParametersExplicitTransformer(private val name: String, privat
         log.trace("Transform explicit body parameter \"${name}\"")
         return with(HttpRpcRequestBodyParameter::class.createInstance()) {
             EndpointParameter(
-                    id = this@BodyParametersExplicitTransformer.name,
-                    name = this@BodyParametersExplicitTransformer.name,
-                    description = this.description,
-                    required = this.required,
-                    default = null,
-                    classType = type.clazz,
-                    parameterizedTypes = type.nestedParameterizedTypes,
-                    type = ParameterType.BODY
+                id = this@BodyParametersExplicitTransformer.name,
+                name = this@BodyParametersExplicitTransformer.name,
+                description = this.description,
+                required = this.required,
+                default = null,
+                classType = type.clazz,
+                parameterizedTypes = type.nestedParameterizedTypes,
+                type = ParameterType.BODY
             )
         }.also { log.trace("Transform explicit body parameter \"$name\", result $it completed.") }
     }

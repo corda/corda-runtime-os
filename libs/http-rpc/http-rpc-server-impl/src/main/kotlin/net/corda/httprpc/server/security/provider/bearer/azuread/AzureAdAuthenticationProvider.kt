@@ -10,13 +10,16 @@ import net.corda.httprpc.server.security.provider.scheme.AuthenticationScheme
 import net.corda.httprpc.server.security.provider.scheme.AuthenticationSchemeProvider
 import net.corda.httprpc.server.security.provider.scheme.AuthenticationSchemeProvider.Companion.REALM_KEY
 
-internal class AzureAdAuthenticationProvider(private val settings: AzureAdSettingsProvider,
-                                             jwtProcessor: JwtProcessor,
-                                             rpcSecurityManager: RPCSecurityManager
+internal class AzureAdAuthenticationProvider(
+    private val settings: AzureAdSettingsProvider,
+    jwtProcessor: JwtProcessor,
+    rpcSecurityManager: RPCSecurityManager
 ) :
-        JwtAuthenticationProvider(jwtProcessor,
-                PriorityListJwtClaimExtractor(settings.getPrincipalClaimList()),
-                rpcSecurityManager), AuthenticationSchemeProvider {
+    JwtAuthenticationProvider(
+        jwtProcessor,
+        PriorityListJwtClaimExtractor(settings.getPrincipalClaimList()),
+        rpcSecurityManager
+    ), AuthenticationSchemeProvider {
     companion object {
         const val SCOPE_KEY = "scope"
         const val CLIENT_ID_KEY = "client_id"
@@ -25,16 +28,20 @@ internal class AzureAdAuthenticationProvider(private val settings: AzureAdSettin
         private const val JWT_READ_TIMEOUT_MS = 5000
         private const val JWT_SIZE_LIMIT = 512000
 
-        fun createDefault(settings: AzureAdSettingsProvider, rpcSecurityManager: RPCSecurityManager): AzureAdAuthenticationProvider {
+        fun createDefault(
+            settings: AzureAdSettingsProvider,
+            rpcSecurityManager: RPCSecurityManager
+        ): AzureAdAuthenticationProvider {
             val issuers = AzureAdIssuersImpl(settings).apply {
                 val additionalIssuers = settings.getTrustedIssuers()
-                if(additionalIssuers?.isNotEmpty() == true) {
+                if (additionalIssuers?.isNotEmpty() == true) {
                     additionalIssuers.forEach { issuer ->
                         this.addTrustedIssuer(issuer)
                     }
                 }
             }
-            val resourceRetriever = DefaultResourceRetriever(JWT_CONNECT_TIMEOUT_MS, JWT_READ_TIMEOUT_MS, JWT_SIZE_LIMIT)
+            val resourceRetriever =
+                DefaultResourceRetriever(JWT_CONNECT_TIMEOUT_MS, JWT_READ_TIMEOUT_MS, JWT_SIZE_LIMIT)
             val keySelector = AzureAdIssuerJWSKeySelector(issuers, resourceRetriever)
             val processor = AzureAdJwtProcessorImpl(settings, issuers, keySelector)
 
@@ -45,8 +52,10 @@ internal class AzureAdAuthenticationProvider(private val settings: AzureAdSettin
     override val authenticationMethod: AuthenticationScheme = AuthenticationScheme.BEARER
 
     override fun provideParameters(): Map<String, String> {
-        return mapOf(REALM_KEY to settings.getAuthority(),
-                     SCOPE_KEY to SCOPE,
-                     CLIENT_ID_KEY to settings.getClientId())
+        return mapOf(
+            REALM_KEY to settings.getAuthority(),
+            SCOPE_KEY to SCOPE,
+            CLIENT_ID_KEY to settings.getClientId()
+        )
     }
 }

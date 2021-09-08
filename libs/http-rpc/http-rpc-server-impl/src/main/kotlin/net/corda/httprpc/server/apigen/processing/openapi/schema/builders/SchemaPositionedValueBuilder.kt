@@ -18,20 +18,21 @@ internal class SchemaPositionedValueBuilder(private val schemaModelProvider: Sch
 
     override fun build(clazz: Class<*>, parameterizedClassList: List<GenericParameterizedType>): SchemaModel {
         return SchemaPositionedValueModel(
-                clazz.kotlin.memberProperties.filter { it.visibility == KVisibility.PUBLIC }
-                        .associate {
-                            if (it.name == "value" && parameterizedClassList.size == 1)
-                                it.getPositionedValueObject(parameterizedClassList.single())
-                            else it.name to schemaModelProvider.toSchemaModel(
-                                    ParameterizedClass(
-                                    (it.returnType.classifier as? KClass<*>?)?.java ?: Any::class.java,
-                                    it.returnType.arguments.mapNotNull { argument ->
-                                        argument.type?.javaType?.toEndpointParameterParameterizedType()
-                                    },
-                                            it.returnType.isMarkedNullable)
+            clazz.kotlin.memberProperties.filter { it.visibility == KVisibility.PUBLIC }
+                .associate {
+                    if (it.name == "value" && parameterizedClassList.size == 1)
+                        it.getPositionedValueObject(parameterizedClassList.single())
+                    else it.name to schemaModelProvider.toSchemaModel(
+                        ParameterizedClass(
+                            (it.returnType.classifier as? KClass<*>?)?.java ?: Any::class.java,
+                            it.returnType.arguments.mapNotNull { argument ->
+                                argument.type?.javaType?.toEndpointParameterParameterizedType()
+                            },
+                            it.returnType.isMarkedNullable
+                        )
 
-                            )
-                        }
+                    )
+                }
         )
     }
 

@@ -20,7 +20,8 @@ internal class DefaultCredentialResolver : CredentialResolver {
         return when {
             authorization.startsWith("bearer", true) -> {
                 log.trace { "Get bearer token auth credentials." }
-                val match = TOKEN_PATTERN.matchEntire(authorization) ?: throw FailedLoginException("Malformed Bearer token.")
+                val match =
+                    TOKEN_PATTERN.matchEntire(authorization) ?: throw FailedLoginException("Malformed Bearer token.")
                 BearerTokenAuthenticationCredentials(match.groups["token"]!!.value)
             }
             context.basicAuthCredentialsExist() -> {

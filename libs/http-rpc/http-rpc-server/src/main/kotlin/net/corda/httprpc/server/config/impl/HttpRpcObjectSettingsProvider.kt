@@ -7,9 +7,9 @@ import net.corda.v5.base.util.contextLogger
 import java.nio.file.Path
 
 class HttpRpcObjectSettingsProvider(
-        private val httpRpcSettings: HttpRpcSettings,
-        private val devMode: Boolean
-): HttpRpcSettingsProvider {
+    private val httpRpcSettings: HttpRpcSettings,
+    private val devMode: Boolean
+) : HttpRpcSettingsProvider {
     private companion object {
         private val log = contextLogger()
     }
