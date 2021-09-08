@@ -1,31 +1,24 @@
 package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
+import net.corda.kryoserialization.TestClass.Companion.TEST_INT
+import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
+import net.corda.kryoserialization.resolver.CordaClassResolver
+import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.serialization.CheckpointInternalCustomSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import java.util.concurrent.Executors
 
-class OtherTester(
-    val someInt: Int,
-    val someString: String
-)
-
 internal class KryoCheckpointSerializerTest {
-
-    companion object {
-        const val someInt = 1
-        const val someString = "this is a string"
-    }
 
     @Test
     fun `serialization of a simple object back a forth`() {
         val serializer = createCheckpointSerializer(
             mapOf(TestClass::class.java to TestClass.Serializer())
         )
-        val tester = TestClass(someInt, someString)
+        val tester = TestClass(TEST_INT, TEST_STRING)
 
         val bytes = serializer.serialize(tester)
         val tested = serializer.deserialize(bytes, TestClass::class.java)
@@ -44,7 +37,7 @@ internal class KryoCheckpointSerializerTest {
         // serialize in another thread
         executor.submit {
             val serializer = createCheckpointSerializer(serializers)
-            val tester = TestClass(someInt, someString)
+            val tester = TestClass(TEST_INT, TEST_STRING)
             serializedBytes = serializer.serialize(tester)
         }.get()
 
@@ -52,14 +45,14 @@ internal class KryoCheckpointSerializerTest {
         val serializer = createCheckpointSerializer(serializers)
         val tested = serializer.deserialize(serializedBytes!!, TestClass::class.java)
 
-        assertThat(tested.someInt).isEqualTo(someInt)
-        assertThat(tested.someString).isEqualTo(someString)
+        assertThat(tested.someInt).isEqualTo(TEST_INT)
+        assertThat(tested.someString).isEqualTo(TEST_STRING)
     }
 
     @Test
     fun `serialization of a simple object using the kryo default serialization`() {
         val serializer = createCheckpointSerializer()
-        val tester = TestClass(someInt, someString)
+        val tester = TestClass(TEST_INT, TEST_STRING)
 
         val bytes = serializer.serialize(tester)
         val tested = serializer.deserialize(bytes, TestClass::class.java)
@@ -71,15 +64,13 @@ internal class KryoCheckpointSerializerTest {
     private fun createCheckpointSerializer(
         serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>> = emptyMap()
     ): KryoCheckpointSerializer {
-        val checkpointContext: CheckpointSerializationContext = mock()
-        whenever(checkpointContext.classInfoService).thenReturn(mock())
-        whenever(checkpointContext.sandboxGroup).thenReturn(mock())
-
         return KryoCheckpointSerializer(
-            Kryo(),
-            serializers,
-            mock(),
-            checkpointContext
+            DefaultKryoCustomizer.customize(
+                Kryo(),
+                serializers,
+                CordaClassResolver(mock(), mock(), mock()),
+                ClassSerializer(mock(), mock(), mock())
+            )
         )
     }
 }

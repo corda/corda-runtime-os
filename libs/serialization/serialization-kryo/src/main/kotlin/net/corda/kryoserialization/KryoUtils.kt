@@ -1,11 +1,7 @@
 package net.corda.kryoserialization
 
-import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.Registration
-import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
-import kotlin.reflect.KClass
 
 /**
  * Serialization utilities, using the Kryo framework with a custom serializer for immutable data classes and a dead
@@ -24,19 +20,6 @@ fun Output.writeBytesWithLength(byteArray: ByteArray) {
 fun Input.readBytesWithLength(): ByteArray {
     val size = this.readInt(true)
     return this.readBytes(size)
-}
-
-inline fun <T : Any> Kryo.register(
-        type: KClass<T>,
-        crossinline read: (Kryo, Input) -> T,
-        crossinline write: (Kryo, Output, T) -> Unit): Registration {
-    return register(
-            type.java,
-            object : Serializer<T>() {
-                override fun read(kryo: Kryo, input: Input, clazz: Class<T>): T = read(kryo, input)
-                override fun write(kryo: Kryo, output: Output, obj: T) = write(kryo, output, obj)
-            }
-    )
 }
 
 val kryoMagic = CordaSerializationMagic("corda".toByteArray() + byteArrayOf(0, 0))

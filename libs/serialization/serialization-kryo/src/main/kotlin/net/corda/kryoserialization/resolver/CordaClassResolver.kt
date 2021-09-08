@@ -19,11 +19,6 @@ class CordaClassResolver(
     hashingService: BasicHashingService
 ) : SandboxClassResolver(classInfoService, sandboxGroup, hashingService) {
 
-    /** Returns the registration for the specified class, or null if the class is not registered.  */
-    override fun getRegistration(type: Class<*>): Registration? {
-        return super.getRegistration(type)
-    }
-
     override fun registerImplicit(type: Class<*>): Registration {
         val objectInstance = type.kotlinObjectInstance
 

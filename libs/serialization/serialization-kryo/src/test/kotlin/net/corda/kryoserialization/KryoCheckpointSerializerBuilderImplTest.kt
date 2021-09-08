@@ -1,5 +1,7 @@
 package net.corda.kryoserialization
 
+import net.corda.kryoserialization.TestClass.Companion.TEST_INT
+import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.CheckpointSerializerBuilder
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -9,11 +11,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
 internal class KryoCheckpointSerializerBuilderImplTest {
-
-    companion object {
-        const val TEST_INT = 1
-        const val TEST_STRING = "test"
-    }
 
     @Test
     fun `builder builds a serializer correctly`() {

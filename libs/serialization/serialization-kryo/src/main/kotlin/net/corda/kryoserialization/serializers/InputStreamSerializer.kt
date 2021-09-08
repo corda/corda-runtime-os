@@ -7,8 +7,6 @@ import com.esotericsoftware.kryo.io.Output
 import net.corda.kryoserialization.readBytesWithLength
 import java.io.InputStream
 
-// This is a temporary inefficient serializer for sending InputStreams through RPC. This may be done much more
-// efficiently using Artemis's large message feature.
 object InputStreamSerializer : Serializer<InputStream>() {
     override fun write(kryo: Kryo, output: Output, stream: InputStream) {
         val buffer = ByteArray(4096)

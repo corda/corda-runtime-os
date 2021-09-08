@@ -15,7 +15,7 @@ import net.corda.v5.crypto.BasicHashingService
 import net.corda.v5.crypto.SecureHash
 import java.util.*
 
-internal class ClassSerializer(
+class ClassSerializer(
     private val classInfoService: ClassInfoService,
     private val sandboxGroup: SandboxGroup,
     private val hashingService: BasicHashingService

@@ -8,6 +8,11 @@ internal class TestClass(
     val someInt: Int,
     val someString: String
 ) {
+    companion object {
+        const val TEST_INT = 1
+        const val TEST_STRING = "test"
+    }
+
     internal class Serializer : CheckpointInternalCustomSerializer<TestClass> {
         override fun write(output: CheckpointOutput, obj: TestClass) {
             output.writeInt(obj.someInt)
