@@ -27,8 +27,8 @@ class StateAndEventConsumerImplTest {
         val consumer = StateAndEventConsumerImpl(config, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
         consumer.close()
 
-        verify(eventConsumer, times(1)).close()
-        verify(stateConsumer, times(1)).close()
+        verify(eventConsumer, times(1)).close(any())
+        verify(stateConsumer, times(1)).close(any())
     }
 
 
