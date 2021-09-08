@@ -154,41 +154,32 @@ internal class SandboxServiceImpl @Activate constructor(
         }
         installService.verifyCpkGroup(cpks)
 
-        // We track the bundles that are being created, so that we can start them all at once at the end.
+        // We track the bundles that are being created, so that we can start them all at once at the end if needed.
         val bundles = mutableSetOf<Bundle>()
 
-        // We track which sandbox was created for which CPK identifier, so that we can pass this information during
-        // the construction of the `SandboxGroup`.
-        val cpkSandboxMapping = mutableMapOf<Cpk.Identifier, CpkSandboxImpl>()
-
-        cpks.forEach { cpk ->
+        val newSandboxes = cpks.map { cpk ->
             val sandboxId = UUID.randomUUID()
 
             val cordappBundle = installBundle(cpk.mainJar.toUri(), sandboxId)
             val libraryBundles = cpk.libraries.mapTo(LinkedHashSet()) { libraryJar ->
                 installBundle(libraryJar.toUri(), sandboxId)
             }
+            bundles.addAll(libraryBundles)
+            bundles.add(cordappBundle)
+
             val sandbox = CpkSandboxImpl(bundleUtils, sandboxId, cpk, cordappBundle, libraryBundles)
             sandboxes[sandboxId] = sandbox
 
-            // Every sandbox requires visibility of the platform sandbox.
-            sandbox.grantVisibility(platformSandbox)
+            sandbox
+        }
 
+        newSandboxes.forEach { sandbox ->
             // The "platform" sandbox contains the OSGi framework itself,
             // and so it must be allowed to "see" every sandbox too.
             platformSandbox.grantVisibility(sandbox)
 
-            bundles.addAll(libraryBundles)
-            bundles.add(cordappBundle)
-
-            cpkSandboxMapping[cpk.id] = sandbox
-        }
-
-        val sandboxes = cpkSandboxMapping.values
-
-        // Each sandbox requires visibility of the sandboxes of the other CPKs.
-        sandboxes.forEach { sandbox ->
-            sandboxes.forEach { otherSandbox ->
+            // Each sandbox requires visibility of the sandboxes of the other CPKs and of the platform sandbox.
+            (newSandboxes + platformSandbox).forEach { otherSandbox ->
                 sandbox.grantVisibility(otherSandbox)
             }
         }
@@ -201,12 +192,11 @@ internal class SandboxServiceImpl @Activate constructor(
 
         val sandboxGroup = SandboxGroupImpl(
             bundleUtils,
-            cpkSandboxMapping,
+            newSandboxes.associateBy { sandbox -> sandbox.cpk.id },
             platformSandbox
         )
 
-        // We update the mapping from sandbox IDs to the sandbox group that the sandbox is part of.
-        sandboxes.forEach { sandbox ->
+        newSandboxes.forEach { sandbox ->
             sandboxGroups[sandbox.id] = sandboxGroup
         }
 
