@@ -28,18 +28,20 @@ object SnappyEncodingWhitelist : EncodingWhitelist {
     }
 }
 
-data class SerializationContextImpl @JvmOverloads constructor(override val preferredSerializationVersion: SerializationMagic,
-                                                              override val deserializationClassLoader: ClassLoader = SerializationDefaults.javaClass.classLoader,
-                                                              override val whitelist: ClassWhitelist,
-                                                              override val properties: Map<Any, Any>,
-                                                              override val objectReferencesEnabled: Boolean,
-                                                              override val useCase: SerializationContext.UseCase,
-                                                              override val encoding: SerializationEncoding?,
-                                                              override val encodingWhitelist: EncodingWhitelist = SnappyEncodingWhitelist,
-                                                              override val preventDataLoss: Boolean = false,
-                                                              override val customSerializers: Set<SerializationCustomSerializer<*, *>>? = null,
-                                                              override val classInfoService: Any? = null,
-                                                              override val sandboxGroup: Any? = null) : SerializationContext {
+data class SerializationContextImpl @JvmOverloads constructor(
+    override val preferredSerializationVersion: SerializationMagic,
+    override val deserializationClassLoader: ClassLoader = SerializationDefaults.javaClass.classLoader,
+    override val whitelist: ClassWhitelist,
+    override val properties: Map<Any, Any>,
+    override val objectReferencesEnabled: Boolean,
+    override val useCase: SerializationContext.UseCase,
+    override val encoding: SerializationEncoding?,
+    override val encodingWhitelist: EncodingWhitelist = SnappyEncodingWhitelist,
+    override val preventDataLoss: Boolean = false,
+    override val customSerializers: Set<SerializationCustomSerializer<*, *>>? = null,
+    override val classInfoService: Any? = null,
+    override val sandboxGroup: Any? = null
+) : SerializationContext {
 
     override fun withClassInfoService(classInfoService: Any): SerializationContext = copy(classInfoService = classInfoService)
     override fun withClassLoader(classLoader: ClassLoader): SerializationContext {
@@ -59,9 +61,11 @@ data class SerializationContextImpl @JvmOverloads constructor(override val prefe
     override fun withPreventDataLoss(): SerializationContext = copy(preventDataLoss = true)
 
     override fun withWhitelisted(clazz: Class<*>): SerializationContext {
-        return copy(whitelist = object : ClassWhitelist {
-            override fun hasListed(type: Class<*>): Boolean = whitelist.hasListed(type) || type.name == clazz.name
-        })
+        return copy(
+            whitelist = object : ClassWhitelist {
+                override fun hasListed(type: Class<*>): Boolean = whitelist.hasListed(type) || type.name == clazz.name
+            }
+        )
     }
 
     override fun withCustomSerializers(serializers: Set<SerializationCustomSerializer<*, *>>): SerializationContextImpl {
@@ -74,8 +78,8 @@ data class SerializationContextImpl @JvmOverloads constructor(override val prefe
 }
 
 open class SerializationFactoryImpl(
-        // TODO: This is read-mostly. Probably a faster implementation to be found.
-        private val schemes: MutableMap<Pair<CordaSerializationMagic, SerializationContext.UseCase>, SerializationScheme>
+    // TODO: This is read-mostly. Probably a faster implementation to be found.
+    private val schemes: MutableMap<Pair<CordaSerializationMagic, SerializationContext.UseCase>, SerializationScheme>
 ) : SerializationFactory() {
     constructor() : this(ConcurrentHashMap())
 
@@ -99,12 +103,20 @@ open class SerializationFactoryImpl(
         val magic = CordaSerializationMagic(byteSequence.slice(start = 0, end = magicSize).copyBytes())
         val lookupKey = magic to target
         // ConcurrentHashMap.get() is lock free, but computeIfAbsent is not, even if the key is in the map already.
-        return (schemes[lookupKey] ?: schemes.computeIfAbsent(lookupKey) {
-            registeredSchemes.filter { it.canDeserializeVersion(magic, target) }.forEach { return@computeIfAbsent it } // XXX: Not single?
-            logger.warn("Cannot find serialization scheme for: [$lookupKey, " +
-                    "${if (magic == amqpMagic) "AMQP" else "UNKNOWN MAGIC"}] registeredSchemes are: $registeredSchemes")
-            throw UnsupportedOperationException("Serialization scheme $lookupKey not supported.")
-        }) to magic
+        return (
+            schemes[lookupKey] ?: schemes.computeIfAbsent(lookupKey) {
+                registeredSchemes.filter {
+                    it.canDeserializeVersion(magic, target)
+                }.forEach {
+                    return@computeIfAbsent it
+                } // XXX: Not single?
+                logger.warn(
+                    "Cannot find serialization scheme for: [$lookupKey, " +
+                        "${if (magic == amqpMagic) "AMQP" else "UNKNOWN MAGIC"}] registeredSchemes are: $registeredSchemes"
+                )
+                throw UnsupportedOperationException("Serialization scheme $lookupKey not supported.")
+            }
+            ) to magic
     }
 
     @Throws(NotSerializableException::class)
@@ -113,7 +125,11 @@ open class SerializationFactoryImpl(
     }
 
     @Throws(NotSerializableException::class)
-    override fun <T : Any> deserializeWithCompatibleContext(byteSequence: ByteSequence, clazz: Class<T>, context: SerializationContext): ObjectWithCompatibleContext<T> {
+    override fun <T : Any> deserializeWithCompatibleContext(
+        byteSequence: ByteSequence,
+        clazz: Class<T>,
+        context: SerializationContext
+    ): ObjectWithCompatibleContext<T> {
         return asCurrent {
             withCurrentContext(context) {
                 val (scheme, magic) = schemeFor(byteSequence, context.useCase)

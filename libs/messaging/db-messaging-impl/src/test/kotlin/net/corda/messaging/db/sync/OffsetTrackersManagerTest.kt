@@ -4,7 +4,6 @@ import net.corda.messaging.db.persistence.DBAccessProvider
 import net.corda.v5.base.util.millis
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`

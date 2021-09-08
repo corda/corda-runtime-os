@@ -159,7 +159,12 @@ internal class AvroSchemaRegistryImplTest {
         val registry = AvroSchemaRegistryImpl()
         registry.initialiseSchemas(setOf(AvroEnvelope::class.java, EvolvedMessage::class.java))
         val previousSchema = Schema.Parser()
-            .parse("{\"type\":\"record\",\"name\":\"EvolvedMessage\",\"namespace\":\"net.corda.data.test\",\"fields\":[{\"name\":\"flags\",\"type\":\"int\"}]}")
+            .parse(
+                "{\"type\":\"record\"," +
+                    "\"name\":\"EvolvedMessage\"," +
+                    "\"namespace\":\"net.corda.data.test\"," +
+                    "\"fields\":[{\"name\":\"flags\",\"type\":\"int\"}]}"
+            )
         // "Here's one I made earlier"  (pre-evolved message)
         // val evolvedMessage = EvolvedMessage(5)
         // {"flags": 5}
@@ -181,10 +186,23 @@ internal class AvroSchemaRegistryImplTest {
         // "Here's one I made earlier"  (pre-evolved message)
         // val evolvedMessage = EvolvedMessage(5, "evolution is cool", "no really, it is!")
         // {"flags": 5, "extra_field": "evolution is cool", "yet_another_field": "no really, it is!"}
-        val evolvedMessage = "636F726461010000B1E17FA3827B5ED83904370292A687E387295C6BDAFCA4DF99AA2F2CBBAF141C004A0A2265766F6C7574696F6E20697320636F6F6C226E6F207265616C6C792C20697420697321"
+        val evolvedMessage = "636F726461010000B1E17FA3827B5ED83904370292A687E387295C6BDAFCA4DF99AA2F2CBBAF141C004A0A2265" +
+            "766F6C7574696F6E20697320636F6F6C226E6F207265616C6C792C20697420697321"
 
         val evolvedSchema = Schema.Parser()
-            .parse("{\"type\":\"record\",\"name\":\"EvolvedMessage\",\"namespace\":\"net.corda.data.test\",\"fields\":[{\"name\":\"flags\",\"type\":\"int\"},{\"name\":\"extra_field\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"default\":\"new_string\"},{\"name\":\"yet_another_field\",\"type\":{\"type\":\"string\",\"avro.java.string\":\"String\"},\"default\":\"yes... another string!\"}]}")
+            .parse(
+                "{\"type\":\"record\"," +
+                    "\"name\":\"EvolvedMessage\"," +
+                    "\"namespace\":\"net.corda.data.test\"," +
+                    "\"fields\":[{\"name\":\"flags\",\"type\":\"int\"}," +
+                    "{\"name\":\"extra_field\"," +
+                    "\"type\":{\"type\":\"string\"," +
+                    "\"avro.java.string\":\"String\"}," +
+                    "\"default\":\"new_string\"}," +
+                    "{\"name\":\"yet_another_field\"," +
+                    "\"type\":{\"type\":\"string\"," +
+                    "\"avro.java.string\":\"String\"},\"default\":\"yes... another string!\"}]}"
+            )
 
         registry.addSchemaOnly(evolvedSchema)
 
@@ -206,7 +224,7 @@ internal class AvroSchemaRegistryImplTest {
 
         val reusable = if (reuse) SecureHash("", ByteBuffer.wrap("1".toByteArray())) else null
         // Loop the serialization/deserialization to check for leaks
-        repeat (1_000_000) {
+        repeat(1_000_000) {
             val encoded = registry.serialize(secureHash)
 
             val encodedString = encoded.array().toHexString()
@@ -223,7 +241,12 @@ internal class AvroSchemaRegistryImplTest {
 
         companion object {
             val mySchema: Schema = Schema.Parser()
-                .parse("{\"type\":\"record\",\"name\":\"NonAvroMessage\",\"namespace\":\"net.corda.data.test\",\"fields\":[{\"name\":\"something\",\"type\":\"int\"}]}")
+                .parse(
+                    "{\"type\":\"record\"," +
+                        "\"name\":\"NonAvroMessage\"," +
+                        "\"namespace\":\"net.corda.data.test\"," +
+                        "\"fields\":[{\"name\":\"something\",\"type\":\"int\"}]}"
+                )
         }
 
         override fun getSchema(): Schema = mySchema

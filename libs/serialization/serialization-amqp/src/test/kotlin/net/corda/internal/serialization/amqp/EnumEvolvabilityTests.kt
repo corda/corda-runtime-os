@@ -1,10 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.serialization.SerializedBytes
-import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefault
-import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefaults
-import net.corda.v5.serialization.annotations.CordaSerializationTransformRename
-import net.corda.v5.serialization.annotations.CordaSerializationTransformRenames
 import net.corda.internal.serialization.NotSerializableDetailedException
 import net.corda.internal.serialization.amqp.testutils.ProjectStructure.projectRootDir
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
@@ -12,6 +7,11 @@ import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvel
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
+import net.corda.v5.serialization.SerializedBytes
+import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefault
+import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefaults
+import net.corda.v5.serialization.annotations.CordaSerializationTransformRename
+import net.corda.v5.serialization.annotations.CordaSerializationTransformRenames
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -26,7 +26,8 @@ import kotlin.test.assertTrue
 class EnumEvolvabilityTests {
     @Suppress("UNUSED")
     val localPath: URI = projectRootDir.toUri().resolve(
-            "serialization-internal/src/test/resources/net/corda/internal/serialization/amqp")
+        "serialization-internal/src/test/resources/net/corda/internal/serialization/amqp"
+    )
 
     companion object {
         const val VERBOSE = false
@@ -47,8 +48,9 @@ class EnumEvolvabilityTests {
     }
 
     @CordaSerializationTransformEnumDefaults(
-            CordaSerializationTransformEnumDefault("E", "D"),
-            CordaSerializationTransformEnumDefault("D", "A"))
+        CordaSerializationTransformEnumDefault("E", "D"),
+        CordaSerializationTransformEnumDefault("D", "A")
+    )
     enum class AnnotatedEnumTwice {
         A, B, C, D, E
     }
@@ -59,7 +61,7 @@ class EnumEvolvabilityTests {
     }
 
     @Test
-	fun noAnnotation() {
+    fun noAnnotation() {
         data class C(val n: NotAnnotated)
 
         val sf = testDefaultFactory()
@@ -75,7 +77,7 @@ class EnumEvolvabilityTests {
     }
 
     @Test
-	fun missingDefaults() {
+    fun missingDefaults() {
         data class C(val m: MissingDefaults)
 
         val sf = testDefaultFactory()
@@ -86,7 +88,7 @@ class EnumEvolvabilityTests {
     }
 
     @Test
-	fun missingRenames() {
+    fun missingRenames() {
         data class C(val m: MissingRenames)
 
         val sf = testDefaultFactory()
@@ -94,11 +96,10 @@ class EnumEvolvabilityTests {
 
         assertEquals(2, bAndS.schema.types.size)
         assertEquals(0, bAndS.transformsSchema.types.size)
-
     }
 
     @Test
-	fun defaultAnnotationIsAddedToEnvelope() {
+    fun defaultAnnotationIsAddedToEnvelope() {
         data class C(val annotatedEnum: AnnotatedEnumOnce)
 
         val sf = testDefaultFactory()
@@ -120,7 +121,7 @@ class EnumEvolvabilityTests {
     }
 
     @Test
-	fun doubleDefaultAnnotationIsAddedToEnvelope() {
+    fun doubleDefaultAnnotationIsAddedToEnvelope() {
         data class C(val annotatedEnum: AnnotatedEnumTwice)
 
         val sf = testDefaultFactory()
@@ -144,7 +145,7 @@ class EnumEvolvabilityTests {
     }
 
     @Test
-	fun defaultAnnotationIsAddedToEnvelopeAndDeserialised() {
+    fun defaultAnnotationIsAddedToEnvelopeAndDeserialised() {
         data class C(val annotatedEnum: AnnotatedEnumOnce)
 
         val sf = testDefaultFactory()
@@ -173,7 +174,7 @@ class EnumEvolvabilityTests {
     }
 
     @Test
-	fun doubleDefaultAnnotationIsAddedToEnvelopeAndDeserialised() {
+    fun doubleDefaultAnnotationIsAddedToEnvelopeAndDeserialised() {
         data class C(val annotatedEnum: AnnotatedEnumTwice)
 
         val sf = testDefaultFactory()
@@ -200,7 +201,7 @@ class EnumEvolvabilityTests {
     }
 
     @Test
-	fun renameAnnotationIsAdded() {
+    fun renameAnnotationIsAdded() {
         data class C(val annotatedEnum: RenameEnumOnce)
 
         val sf = testDefaultFactory()
@@ -237,14 +238,15 @@ class EnumEvolvabilityTests {
     }
 
     @CordaSerializationTransformRenames(
-            CordaSerializationTransformRename("E", "C"),
-            CordaSerializationTransformRename("F", "D"))
+        CordaSerializationTransformRename("E", "C"),
+        CordaSerializationTransformRename("F", "D")
+    )
     enum class RenameEnumTwice {
         A, B, E, F
     }
 
     @Test
-	fun doubleRenameAnnotationIsAdded() {
+    fun doubleRenameAnnotationIsAdded() {
         data class C(val annotatedEnum: RenameEnumTwice)
 
         val sf = testDefaultFactory()
@@ -291,7 +293,7 @@ class EnumEvolvabilityTests {
     }
 
     @Test
-	fun bothAnnotationTypes() {
+    fun bothAnnotationTypes() {
         data class C(val annotatedEnum: RenameAndExtendEnum)
 
         val sf = testDefaultFactory()
@@ -321,14 +323,15 @@ class EnumEvolvabilityTests {
     }
 
     @CordaSerializationTransformEnumDefaults(
-            CordaSerializationTransformEnumDefault("D", "A"),
-            CordaSerializationTransformEnumDefault("D", "A"))
+        CordaSerializationTransformEnumDefault("D", "A"),
+        CordaSerializationTransformEnumDefault("D", "A")
+    )
     enum class RepeatedAnnotation {
         A, B, C, D, E
     }
 
     @Test
-	fun repeatedAnnotation() {
+    fun repeatedAnnotation() {
         data class C(val a: RepeatedAnnotation)
 
         val sf = testDefaultFactory()
@@ -344,8 +347,9 @@ class EnumEvolvabilityTests {
     }
 
     @CordaSerializationTransformEnumDefaults(
-            CordaSerializationTransformEnumDefault("D", "A"),
-            CordaSerializationTransformEnumDefault("E", "A"))
+        CordaSerializationTransformEnumDefault("D", "A"),
+        CordaSerializationTransformEnumDefault("E", "A")
+    )
     enum class E2 {
         A, B, C, D, E
     }
@@ -356,7 +360,7 @@ class EnumEvolvabilityTests {
     }
 
     @Test
-	fun multiEnums() {
+    fun multiEnums() {
         data class A(val a: E1, val b: E2)
         data class B(val a: E3, val b: A, val c: E1)
         data class C(val a: B, val b: E2, val c: E3)
@@ -396,7 +400,7 @@ class EnumEvolvabilityTests {
     }
 
     @Test
-	fun testCache() {
+    fun testCache() {
         data class C2(val annotatedEnum: AnnotatedEnumOnce)
         data class C1(val annotatedEnum: AnnotatedEnumOnce)
 
@@ -405,12 +409,13 @@ class EnumEvolvabilityTests {
         val sb1 = TestSerializationOutput(VERBOSE, sf).serializeAndReturnSchema(C1(AnnotatedEnumOnce.D))
         val sb2 = TestSerializationOutput(VERBOSE, sf).serializeAndReturnSchema(C2(AnnotatedEnumOnce.D))
 
-        assertEquals(sb1.transformsSchema.types[AnnotatedEnumOnce::class.java.name],
-                sb2.transformsSchema.types[AnnotatedEnumOnce::class.java.name])
+        assertEquals(
+            sb1.transformsSchema.types[AnnotatedEnumOnce::class.java.name],
+            sb2.transformsSchema.types[AnnotatedEnumOnce::class.java.name]
+        )
     }
 
-
-    //@UnknownTransformAnnotation(10, 20, 30)
+    // @UnknownTransformAnnotation(10, 20, 30)
     enum class WithUnknownTest {
         A, B, C, D
     }
@@ -421,11 +426,11 @@ class EnumEvolvabilityTests {
     // entry in the supportedTransforms list and the UnknownTest enum value in TransformTypes.kt
     // ALSO: remember to re-annotate the enum WithUnkownTest above
     @Test
-	fun testUnknownTransform() {
+    fun testUnknownTransform() {
         val resource = "EnumEvolvabilityTests.testUnknownTransform"
         val sf = testDefaultFactory()
 
-        //File(URI("$localPath/$resource")).writeBytes(
+        // File(URI("$localPath/$resource")).writeBytes(
         //        SerializationOutput(sf).serialize(WrapsUnknown(WithUnknownTest.D)).bytes)
 
         val sb1 = EvolvabilityTests::class.java.getResource(resource).readBytes()
@@ -440,13 +445,13 @@ class EnumEvolvabilityTests {
     // In this test we check that multiple transforms of a property are accepted
     //
     @CordaSerializationTransformRenames(
-            CordaSerializationTransformRename(from = "A", to = "B"),
-            CordaSerializationTransformRename(from = "B", to = "C")
+        CordaSerializationTransformRename(from = "A", to = "B"),
+        CordaSerializationTransformRename(from = "B", to = "C")
     )
     enum class AcceptMultipleRename { C }
 
     @Test
-	fun acceptMultipleRename() {
+    fun acceptMultipleRename() {
         data class C(val e: AcceptMultipleRename)
 
         val sf = testDefaultFactory()
@@ -458,13 +463,13 @@ class EnumEvolvabilityTests {
     // which is not allowed
     //
     @CordaSerializationTransformRenames(
-            CordaSerializationTransformRename(from = "D", to = "C"),
-            CordaSerializationTransformRename(from = "E", to = "C")
+        CordaSerializationTransformRename(from = "D", to = "C"),
+        CordaSerializationTransformRename(from = "E", to = "C")
     )
     enum class RejectMultipleRenameTo { A, B, C }
 
     @Test
-	fun rejectMultipleRenameTo() {
+    fun rejectMultipleRenameTo() {
         data class C(val e: RejectMultipleRenameTo)
 
         val sf = testDefaultFactory()
@@ -481,21 +486,24 @@ class EnumEvolvabilityTests {
     // which is not allowed
     //
     @CordaSerializationTransformRenames(
-            CordaSerializationTransformRename(from = "D", to = "C"),
-            CordaSerializationTransformRename(from = "D", to = "B")
+        CordaSerializationTransformRename(from = "D", to = "C"),
+        CordaSerializationTransformRename(from = "D", to = "B")
     )
     enum class RejectMultipleRenameFrom { A, B, C }
 
     @Test
-	fun rejectMultipleRenameFrom() {
+    fun rejectMultipleRenameFrom() {
         data class C(val e: RejectMultipleRenameFrom)
 
         val sf = testDefaultFactory()
         assertThatThrownBy {
             SerializationOutput(sf).serialize(C(RejectMultipleRenameFrom.A))
         }.isInstanceOf(NotSerializableException::class.java)
-        .hasToString("Unable to serialize/deserialize net.corda.internal.serialization.amqp.EnumEvolvabilityTests\$RejectMultipleRenameFrom: " +
-                "There are multiple transformations from D, which is not allowed")
+            .hasToString(
+                "Unable to serialize/deserialize " +
+                    "net.corda.internal.serialization.amqp.EnumEvolvabilityTests\$RejectMultipleRenameFrom: " +
+                    "There are multiple transformations from D, which is not allowed"
+            )
     }
 
     //
@@ -510,13 +518,13 @@ class EnumEvolvabilityTests {
     // And we're not at 3. However, we ban this rename
     //
     @CordaSerializationTransformRenames(
-            CordaSerializationTransformRename("D", "C"),
-            CordaSerializationTransformRename("C", "D")
+        CordaSerializationTransformRename("D", "C"),
+        CordaSerializationTransformRename("C", "D")
     )
     enum class RejectCyclicRename { A, B, C }
 
     @Test
-	fun rejectCyclicRename() {
+    fun rejectCyclicRename() {
         data class C(val e: RejectCyclicRename)
 
         val sf = testDefaultFactory()
@@ -526,16 +534,16 @@ class EnumEvolvabilityTests {
     }
 
     @CordaSerializationTransformRenames(
-            CordaSerializationTransformRename("G", "C"),
-            CordaSerializationTransformRename("F", "G"),
-            CordaSerializationTransformRename("E", "F"),
-            CordaSerializationTransformRename("D", "E"),
-            CordaSerializationTransformRename("C", "D")
+        CordaSerializationTransformRename("G", "C"),
+        CordaSerializationTransformRename("F", "G"),
+        CordaSerializationTransformRename("E", "F"),
+        CordaSerializationTransformRename("D", "E"),
+        CordaSerializationTransformRename("C", "D")
     )
     enum class RejectCyclicRenameRedux { A, B, C }
 
     @Test
-	fun rejectCyclicRenameRedux() {
+    fun rejectCyclicRenameRedux() {
         data class C(val e: RejectCyclicRenameRedux)
 
         val sf = testDefaultFactory()
@@ -548,7 +556,7 @@ class EnumEvolvabilityTests {
     enum class RejectBadDefault { A, B, C, D }
 
     @Test
-	fun rejectBadDefault() {
+    fun rejectBadDefault() {
         data class C(val e: RejectBadDefault)
 
         val sf = testDefaultFactory()
@@ -561,7 +569,7 @@ class EnumEvolvabilityTests {
     enum class RejectBadDefaultToSelf { A, B, C, D }
 
     @Test
-	fun rejectBadDefaultToSelf() {
+    fun rejectBadDefaultToSelf() {
         data class C(val e: RejectBadDefaultToSelf)
 
         val sf = testDefaultFactory()
