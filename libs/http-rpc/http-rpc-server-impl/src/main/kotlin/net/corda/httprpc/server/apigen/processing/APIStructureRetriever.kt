@@ -12,7 +12,7 @@ import net.corda.httprpc.server.apigen.models.Resource
 import net.corda.httprpc.server.apigen.models.ResponseBody
 import net.corda.httprpc.server.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.apigen.processing.streams.FiniteDurableReturnResult
-import net.corda.internal.base.stream.DurableStreamContext
+import net.corda.httprpc.server.stream.DurableStreamContext
 import net.corda.v5.httprpc.tools.annotations.validation.HttpRpcInterfaceValidator
 import net.corda.v5.base.util.Try
 import net.corda.v5.base.util.debug

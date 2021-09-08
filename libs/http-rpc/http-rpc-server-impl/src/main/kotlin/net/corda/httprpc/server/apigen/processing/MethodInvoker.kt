@@ -7,7 +7,7 @@ import net.corda.httprpc.server.apigen.processing.streams.FiniteDurableReturnRes
 import net.corda.httprpc.server.utils.executeWithThreadContextClassLoader
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.stream.Cursor
-import net.corda.internal.base.stream.DurableStreamContext
+import net.corda.httprpc.server.stream.DurableStreamContext
 import net.corda.v5.base.util.contextLogger
 import java.lang.IllegalArgumentException
 import net.corda.v5.base.util.trace

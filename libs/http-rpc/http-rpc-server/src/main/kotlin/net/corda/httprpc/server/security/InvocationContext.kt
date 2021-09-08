@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.security
 
-import net.corda.internal.base.stream.DurableStreamContext
+import net.corda.httprpc.server.stream.DurableStreamContext
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.base.annotations.CordaSerializable
 import java.security.Principal

@@ -1,4 +1,4 @@
-package net.corda.internal.base.stream
+package net.corda.httprpc.server.stream
 
 import net.corda.v5.base.annotations.CordaSerializable
 
