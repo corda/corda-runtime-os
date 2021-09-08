@@ -23,7 +23,7 @@ class DeserializeMapTests {
     private val sf = testDefaultFactoryNoEvolution()
 
     @Test
-	fun mapTest() {
+    fun mapTest() {
         data class C(val c: Map<String, Int>)
 
         val c = C(mapOf("A" to 1, "B" to 2))
@@ -57,7 +57,7 @@ class DeserializeMapTests {
     }
 
     @Test
-	fun sortedMapTest() {
+    fun sortedMapTest() {
         data class C(val c: SortedMap<String, Int>)
 
         val c = C(sortedMapOf("A" to 1, "B" to 2))
@@ -66,7 +66,7 @@ class DeserializeMapTests {
     }
 
     @Test
-	fun navigableMapTest() {
+    fun navigableMapTest() {
         data class C(val c: NavigableMap<String, Int>)
 
         val c = C(TreeMap(mapOf("A" to 1, "B" to 2)).descendingMap())
@@ -76,7 +76,7 @@ class DeserializeMapTests {
     }
 
     @Test
-	fun dictionaryTest() {
+    fun dictionaryTest() {
         data class C(val c: Dictionary<String, Int>)
 
         val v: Hashtable<String, Int> = Hashtable()
@@ -86,11 +86,13 @@ class DeserializeMapTests {
 
         // expected to throw
         Assertions.assertThatThrownBy { TestSerializationOutput(VERBOSE, sf).serialize(c) }
-                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("Unable to serialise deprecated type class java.util.Dictionary.")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining(
+                "Unable to serialise deprecated type class java.util.Dictionary.")
     }
 
     @Test
-	fun hashtableTest() {
+    fun hashtableTest() {
         data class C(val c: Hashtable<String, Int>)
 
         val v: Hashtable<String, Int> = Hashtable()
@@ -100,32 +102,38 @@ class DeserializeMapTests {
 
         // expected to throw
         Assertions.assertThatThrownBy { TestSerializationOutput(VERBOSE, sf).serialize(c) }
-                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("Unable to serialise deprecated type class java.util.Hashtable. Suggested fix: prefer java.util.map implementations")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining(
+                "Unable to serialise deprecated type class java.util.Hashtable. Suggested fix: prefer java.util.map implementations")
     }
 
     @Test
-	fun hashMapTest() {
+    fun hashMapTest() {
         data class C(val c: HashMap<String, Int>)
 
         val c = C(HashMap(mapOf("A" to 1, "B" to 2)))
 
         // expect this to throw
         Assertions.assertThatThrownBy { TestSerializationOutput(VERBOSE, sf).serialize(c) }
-                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("Map type class java.util.HashMap is unstable under iteration. Suggested fix: use java.util.LinkedHashMap instead.")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining(
+                "Map type class java.util.HashMap is unstable under iteration. Suggested fix: use java.util.LinkedHashMap instead.")
     }
 
     @Test
-	fun weakHashMapTest() {
+    fun weakHashMapTest() {
         data class C(val c: WeakHashMap<String, Int>)
 
         val c = C(WeakHashMap(mapOf("A" to 1, "B" to 2)))
 
         Assertions.assertThatThrownBy { TestSerializationOutput(VERBOSE, sf).serialize(c) }
-                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("Weak references with map types not supported. Suggested fix: use java.util.LinkedHashMap instead.")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining(
+                "Weak references with map types not supported. Suggested fix: use java.util.LinkedHashMap instead.")
     }
 
     @Test
-	fun concreteTreeMapTest() {
+    fun concreteTreeMapTest() {
         data class C(val c: TreeMap<String, Int>)
 
         val c = C(TreeMap(mapOf("A" to 1, "B" to 3)))
@@ -135,7 +143,7 @@ class DeserializeMapTests {
     }
 
     @Test
-	fun concreteLinkedHashMapTest() {
+    fun concreteLinkedHashMapTest() {
         data class C(val c: LinkedHashMap<String, Int>)
 
         val c = C(LinkedHashMap(mapOf("A" to 1, "B" to 2)))

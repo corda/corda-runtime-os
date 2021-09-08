@@ -6,15 +6,15 @@ plugins {
 description "Dependency Injection Impl"
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
 
     implementation "com.google.guava:guava:$guavaVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation 'org.slf4j:slf4j-api'
 
     implementation project(":libs:flows:dependency-injection")
 

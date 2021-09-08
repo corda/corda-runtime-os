@@ -6,20 +6,18 @@ import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolu
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.packaging.Cpk
 import net.corda.sandbox.CpkClassInfo
-import net.corda.sandbox.Sandbox
+import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.SandboxGroup
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.getZeroHash
 import net.corda.v5.crypto.getAllOnesHash
-import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.serialization.SerializedBytes
+import net.corda.v5.crypto.getZeroHash
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.osgi.framework.Version
-import java.io.NotSerializableException
 import java.util.NavigableSet
 import java.util.TreeSet
 import java.util.concurrent.TimeUnit
@@ -32,21 +30,25 @@ class SerializeAndReturnMetadataTest {
 
     private val digestService: DigestService = mock(DigestService::class.java)
 
-    private fun createCpkClassInfo(classBundleName: String = "dummyBundleName",
-                                   classBundleVersion: Version = Version(1, 0, 0),
-                                   cpkHash: SecureHash = digestService.getZeroHash(DigestAlgorithmName.SHA2_256),
-                                   cpkPublicKeyHashes: NavigableSet<SecureHash> = sortedSetOf(
-                                       digestService.getAllOnesHash(DigestAlgorithmName.SHA2_256),
-                                       digestService.getZeroHash(DigestAlgorithmName.SHA2_256)
-                                   ),
-                                   cpkDependencies: Set<SecureHash> = setOf()): CpkClassInfo {
+    private fun createCpkClassInfo(classBundleName: String = "dummyBundleName"): CpkClassInfo {
+        val classBundleVersion = Version(1, 0, 0)
+        val cordappBundleName = "dummyCorDappBundleName"
+        val cordappBundleVersion = Version(1, 0, 0)
+        val cpkFileHash = digestService.getZeroHash(DigestAlgorithmName.SHA2_256)
+        val cpkPublicKeyHashes: NavigableSet<SecureHash> = sortedSetOf(
+            digestService.getAllOnesHash(DigestAlgorithmName.SHA2_256),
+            digestService.getZeroHash(DigestAlgorithmName.SHA2_256)
+        )
+        val cpkDependencies = setOf<SecureHash>()
 
         return CpkClassInfo(
-                classBundleName = classBundleName,
-                classBundleVersion = classBundleVersion,
-                cpkHash = cpkHash,
-                cpkPublicKeyHashes = cpkPublicKeyHashes,
-                cpkDependencies = cpkDependencies
+            classBundleName = classBundleName,
+            classBundleVersion = classBundleVersion,
+            cordappBundleName = cordappBundleName,
+            cordappBundleVersion = cordappBundleVersion,
+            cpkFileHash = cpkFileHash,
+            cpkPublicKeyHashes = cpkPublicKeyHashes,
+            cpkDependencies = cpkDependencies
         )
     }
 
@@ -67,7 +69,7 @@ class SerializeAndReturnMetadataTest {
     }
 
     private fun createSandboxGroup(clazz: Class<*>, cpkIdentifier: Cpk.Identifier): SandboxGroup {
-        val sandbox = mock(Sandbox::class.java).apply {
+        val sandbox = mock(CpkSandbox::class.java).apply {
             `when`(loadClass(clazz::class.java.name)).thenReturn(clazz)
         }
 
@@ -82,16 +84,6 @@ class SerializeAndReturnMetadataTest {
         return classInfoService.apply {
             `when`(getClassInfo(clazz)).thenReturn(cpkClassInfo)
         }
-    }
-
-    @Throws(NotSerializableException::class)
-    private fun <T : Any> SerializationOutput.serialize(obj: T): SerializedBytes<T> {
-        val bundleName = "bundle-${obj::class.java.name}"
-        val klazz = obj::class.java
-        return serialize(obj, testSerializationContext
-                .withClassInfoService(createClassInfoService(klazz, createCpkClassInfo(bundleName)))
-                .withSandboxGroup(createSandboxGroup(klazz, createCpkIdentifier(bundleName)))
-        )
     }
 
     @Test

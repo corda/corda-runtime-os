@@ -4,35 +4,34 @@ plugins {
 }
 
 dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-crypto-api:$cordaVersion"
     implementation "net.corda:corda-crypto-impl:$cordaVersion"
-    implementation "net.corda:corda-class-info:$cordaVersion"
-    implementation "net.corda:corda-packaging:$cordaVersion"
-    implementation "net.corda:corda-sandbox:$cordaVersion"
+    implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-serialization"
-    implementation "net.corda:corda-serialization-encoding:$cordaVersion"
-
-    implementation project(":libs:utilities")
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation "de.javakaffee:kryo-serializers:$kryoSerializerVersion"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
 
+    implementation project(":libs:class-info")
+    implementation project(":libs:sandbox")
     implementation project(":libs:serialization:kryo-custom-serializers")
     implementation project(":libs:serialization:checkpoint-serialization-api")
+    implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
+    implementation project(":libs:utilities")
 
-    testImplementation "org.osgi:osgi.core:$osgiVersion"
+    testImplementation 'org.osgi:osgi.core'
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

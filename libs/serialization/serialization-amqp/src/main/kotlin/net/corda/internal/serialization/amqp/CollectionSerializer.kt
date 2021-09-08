@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.serialization.SerializationContext
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.v5.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
 import java.io.NotSerializableException
@@ -26,13 +26,15 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
 
     companion object {
         // NB: Order matters in this map, the most specific classes should be listed at the end
-        private val supportedTypes: Map<Class<out Collection<*>>, (List<*>) -> Collection<*>> = Collections.unmodifiableMap(linkedMapOf(
+        private val supportedTypes: Map<Class<out Collection<*>>, (List<*>) -> Collection<*>> = Collections.unmodifiableMap(
+            linkedMapOf(
                 Collection::class.java to { list -> Collections.unmodifiableCollection(list) },
                 List::class.java to { list -> Collections.unmodifiableList(list) },
                 Set::class.java to { list -> Collections.unmodifiableSet(LinkedHashSet(list)) },
                 SortedSet::class.java to { list -> Collections.unmodifiableSortedSet(TreeSet(list)) },
                 NavigableSet::class.java to { list -> Collections.unmodifiableNavigableSet(TreeSet(list)) }
-        ))
+            )
+        )
 
         private val supportedTypeIdentifiers = supportedTypes.keys.asSequence().map { TypeIdentifier.forClass(it) }.toSet()
 
@@ -45,43 +47,50 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
                 return reparameterise(declaredTypeInformation)
 
             throw NotSerializableException(
-                    "Cannot derive collection type for declared type: " +
-                            declaredTypeInformation.prettyPrint(false))
+                "Cannot derive collection type for declared type: " +
+                    declaredTypeInformation.prettyPrint(false)
+            )
         }
 
-        fun resolveActual(actualClass: Class<*>, declaredTypeInformation: LocalTypeInformation.ACollection): LocalTypeInformation.ACollection {
+        fun resolveActual(
+            actualClass: Class<*>,
+            declaredTypeInformation: LocalTypeInformation.ACollection
+        ): LocalTypeInformation.ACollection {
             if (declaredTypeInformation.typeIdentifier.erased in supportedTypeIdentifiers)
                 return reparameterise(declaredTypeInformation)
 
             val collectionClass = findMostSuitableCollectionType(actualClass)
             val erasedInformation = LocalTypeInformation.ACollection(
-                    collectionClass,
-                    TypeIdentifier.forClass(collectionClass),
-                    LocalTypeInformation.Unknown)
+                collectionClass,
+                TypeIdentifier.forClass(collectionClass),
+                LocalTypeInformation.Unknown
+            )
 
-            return when(declaredTypeInformation.typeIdentifier) {
+            return when (declaredTypeInformation.typeIdentifier) {
                 is TypeIdentifier.Parameterised -> erasedInformation.withElementType(declaredTypeInformation.elementType)
                 else -> erasedInformation.withElementType(LocalTypeInformation.Unknown)
             }
         }
 
         private fun reparameterise(typeInformation: LocalTypeInformation.ACollection): LocalTypeInformation.ACollection =
-                when(typeInformation.typeIdentifier) {
-                    is TypeIdentifier.Parameterised -> typeInformation
-                    is TypeIdentifier.Erased -> typeInformation.withElementType(LocalTypeInformation.Unknown)
-                    else -> throw NotSerializableException(
-                            "Unexpected type identifier ${typeInformation.typeIdentifier.prettyPrint(false)} " +
-                                    "for collection type ${typeInformation.prettyPrint(false)}")
-                }
+            when (typeInformation.typeIdentifier) {
+                is TypeIdentifier.Parameterised -> typeInformation
+                is TypeIdentifier.Erased -> typeInformation.withElementType(LocalTypeInformation.Unknown)
+                else -> throw NotSerializableException(
+                    "Unexpected type identifier ${typeInformation.typeIdentifier.prettyPrint(false)} " +
+                        "for collection type ${typeInformation.prettyPrint(false)}"
+                )
+            }
 
         private fun findMostSuitableCollectionType(actualClass: Class<*>): Class<out Collection<*>> =
-                supportedTypes.keys.findLast { it.isAssignableFrom(actualClass) }!!
+            supportedTypes.keys.findLast { it.isAssignableFrom(actualClass) }!!
 
         private fun findConcreteType(clazz: Class<*>): (List<*>) -> Collection<*> {
             return supportedTypes[clazz] ?: throw AMQPNotSerializableException(
-                    clazz,
-                    "Unsupported collection type $clazz.",
-                    "Supported Collections are ${supportedTypes.keys.joinToString(",")}")
+                clazz,
+                "Unsupported collection type $clazz.",
+                "Supported Collections are ${supportedTypes.keys.joinToString(",")}"
+            )
         }
     }
 
@@ -92,7 +101,6 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
     private val outboundType = resolveTypeVariables(declaredType.actualTypeArguments[0], null)
     private val inboundType = declaredType.actualTypeArguments[0]
 
-
     override fun writeClassInfo(output: SerializationOutput) = ifThrowsAppend({ declaredType.typeName }) {
         if (output.writeTypeNotations(typeNotation)) {
             output.requireSerializer(outboundType)
@@ -100,12 +108,13 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
     }
 
     override fun writeObject(
-            obj: Any,
-            data: Data,
-            type: Type,
-            output: SerializationOutput,
-            context: SerializationContext,
-            debugIndent: Int) = ifThrowsAppend({ declaredType.typeName }) {
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
+    ) = ifThrowsAppend({ declaredType.typeName }) {
         // Write described
         data.withDescribed(typeNotation.descriptor) {
             withList {
@@ -116,16 +125,18 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
         }
     }
 
-
     override fun readObject(
-            obj: Any,
-            serializationSchemas: SerializationSchemas,
-            metadata: Metadata,
-            input: DeserializationInput,
-            context: SerializationContext): Any = ifThrowsAppend({ declaredType.typeName }) {
+        obj: Any,
+        serializationSchemas: SerializationSchemas,
+        metadata: Metadata,
+        input: DeserializationInput,
+        context: SerializationContext
+    ): Any = ifThrowsAppend({ declaredType.typeName }) {
         // TODO: Can we verify the entries in the list?
-        concreteBuilder((obj as List<*>).map {
-            input.readObjectOrNull(it, serializationSchemas, metadata, inboundType, context)
-        })
+        concreteBuilder(
+            (obj as List<*>).map {
+                input.readObjectOrNull(it, serializationSchemas, metadata, inboundType, context)
+            }
+        )
     }
 }

@@ -73,10 +73,8 @@ allprojects {
     }
 
     configurations {
-        all {
-            [ compileClasspath, testCompileClasspath, runtimeClasspath, testRuntimeClasspath ].forEach { cfg ->
-                configureKotlinForOSGi(cfg)
-            }
+        [ compileClasspath, testCompileClasspath, runtimeClasspath, testRuntimeClasspath ].forEach { cfg ->
+            configureKotlinForOSGi(cfg)
         }
     }
 
@@ -129,8 +127,15 @@ allprojects {
             }
         }
         mavenCentral()
-        //TODO remove this when we can as its only needed for kotlinx-html-jvm
-        jcenter()
+
+        maven {
+            // For Apache ServiceMix.
+            url = 'https://repository.mulesoft.org/nexus/content/repositories/public'
+            content {
+                // The repo contains this artifact but without its jar.
+                excludeGroup 'com.github.detro'
+            }
+        }
     }
 
     sourceSets {
@@ -168,10 +173,6 @@ allprojects {
     }
 
     dependencies {
-        // Exported as OSGi 'system packages extra' at runtime by the `osgi-framework-bootstrap` module.
-        implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
-        implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
-
         // Test utilities
         testImplementation "org.assertj:assertj-core:$assertjVersion"
         testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"

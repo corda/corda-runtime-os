@@ -5,7 +5,10 @@ import net.corda.messaging.api.records.Record
 import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 
-class StubPubSubProcessor(private val latch: CountDownLatch, private val exception: Exception? = null) : PubSubProcessor<String, ByteBuffer> {
+class StubPubSubProcessor(
+    private val latch: CountDownLatch,
+    private val exception: Exception? = null
+) : PubSubProcessor<String, ByteBuffer> {
     override fun onNext(event: Record<String, ByteBuffer>) {
         latch.countDown()
 

@@ -1,15 +1,15 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.base.annotations.SerializableCalculatedProperty
-import net.corda.v5.serialization.SerializedBytes
-import net.corda.v5.serialization.annotations.ConstructorForDeserialization
-import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
 import net.corda.internal.serialization.amqp.custom.InstantSerializer
 import net.corda.internal.serialization.amqp.testutils.ProjectStructure.projectRootDir
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.v5.base.annotations.SerializableCalculatedProperty
+import net.corda.v5.serialization.SerializedBytes
+import net.corda.v5.serialization.annotations.ConstructorForDeserialization
+import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
@@ -29,14 +29,16 @@ import kotlin.test.fail
 //  4. Using the printed path copy that file to the resources directory
 //  5. Comment back out the generation code and uncomment the actual test
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
+@Suppress("VariableNaming")
 class EvolvabilityTests {
     // When regenerating the test files this needs to be set to the file system location of the resource files
     @Suppress("UNUSED")
     var localPath: URI = projectRootDir.toUri().resolve(
-            "serialization-internal/src/test/resources/net/corda/internal/serialization/amqp")
+        "serialization-internal/src/test/resources/net/corda/internal/serialization/amqp"
+    )
 
     @Test
-	fun simpleOrderSwapSameType() {
+    fun simpleOrderSwapSameType() {
         val sf = testDefaultFactory()
         val resource = "EvolvabilityTests.simpleOrderSwapSameType"
 
@@ -59,7 +61,7 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun simpleOrderSwapDifferentType() {
+    fun simpleOrderSwapDifferentType() {
         val sf = testDefaultFactory()
         val A = 1
         val B = "two"
@@ -81,7 +83,7 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun addAdditionalParamNotMandatory() {
+    fun addAdditionalParamNotMandatory() {
         val sf = testDefaultFactory()
         val A = 1
         val resource = "EvolvabilityTests.addAdditionalParamNotMandatory"
@@ -130,7 +132,7 @@ class EvolvabilityTests {
 
     @Suppress("UNUSED_VARIABLE")
     @Test
-	fun removeParameters() {
+    fun removeParameters() {
         val sf = testDefaultFactory()
         val resource = "EvolvabilityTests.removeParameters"
         val A = 1
@@ -154,7 +156,7 @@ class EvolvabilityTests {
 
     @Suppress("UNUSED_VARIABLE")
     @Test
-	fun removeParameterWithCalculatedParameter() {
+    fun removeParameterWithCalculatedParameter() {
         val sf = testDefaultFactory()
         val resource = "EvolvabilityTests.removeParameterWithCalculatedParameter"
 
@@ -164,7 +166,6 @@ class EvolvabilityTests {
         //     val e: String get() = "$b $c"
         // }
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC(1, "hello", "world", 2)).bytes)
-
 
         data class CC(val b: String, val d: Int) {
             @get:SerializableCalculatedProperty
@@ -182,7 +183,7 @@ class EvolvabilityTests {
 
     @Suppress("UNUSED_VARIABLE")
     @Test
-	fun addAndRemoveParameters() {
+    fun addAndRemoveParameters() {
         val sf = testDefaultFactory()
         val A = 1
         val B = "two"
@@ -208,7 +209,7 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun addMandatoryFieldWithAltConstructor() {
+    fun addMandatoryFieldWithAltConstructor() {
         val sf = testDefaultFactory()
         val A = 1
         val resource = "EvolvabilityTests.addMandatoryFieldWithAltConstructor"
@@ -232,7 +233,7 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun addMandatoryFieldWithAltConstructorForceReorder() {
+    fun addMandatoryFieldWithAltConstructorForceReorder() {
         val sf = testDefaultFactory()
         val z = 30
         val y = 20
@@ -257,17 +258,17 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun moreComplexNonNullWithReorder() {
+    fun moreComplexNonNullWithReorder() {
         val resource = "${javaClass.simpleName}.${testName()}"
 
         data class NetworkParametersExample(
-                val minimumPlatformVersion: Int,
-                val notaries: List<String>,
-                val maxMessageSize: Int,
-                val maxTransactionSize: Int,
-                val modifiedTime: Instant,
-                val epoch: Int,
-                val whitelistedContractImplementations: Map<String, List<Int>>
+            val minimumPlatformVersion: Int,
+            val notaries: List<String>,
+            val maxMessageSize: Int,
+            val maxTransactionSize: Int,
+            val modifiedTime: Instant,
+            val epoch: Int,
+            val whitelistedContractImplementations: Map<String, List<Int>>
         )
 
         val factory = testDefaultFactory().apply {
@@ -317,7 +318,7 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun addMandatoryFieldWithAltReorderedConstructor() {
+    fun addMandatoryFieldWithAltReorderedConstructor() {
         val sf = testDefaultFactory()
         val resource = "EvolvabilityTests.addMandatoryFieldWithAltReorderedConstructor"
         val A = 1
@@ -347,7 +348,7 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun addMandatoryFieldWithAltReorderedConstructorAndRemoval() {
+    fun addMandatoryFieldWithAltReorderedConstructorAndRemoval() {
         val sf = testDefaultFactory()
         val resource = "EvolvabilityTests.addMandatoryFieldWithAltReorderedConstructorAndRemoval"
         val A = 1
@@ -378,7 +379,7 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun multiVersion() {
+    fun multiVersion() {
         val sf = testDefaultFactory()
         val resource1 = "EvolvabilityTests.multiVersion.1"
         val resource2 = "EvolvabilityTests.multiVersion.2"
@@ -448,7 +449,7 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun changeSubType() {
+    fun changeSubType() {
         val sf = testDefaultFactory()
         val resource = "EvolvabilityTests.changeSubType"
         val oa = 100
@@ -485,7 +486,7 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun multiVersionWithRemoval() {
+    fun multiVersionWithRemoval() {
         val sf = testDefaultFactory()
 
         val resource1 = "EvolvabilityTests.multiVersionWithRemoval.1"
@@ -566,7 +567,7 @@ class EvolvabilityTests {
 
     @Suppress("UNCHECKED_CAST")
     @Test
-	fun getterSetterEvolver1() {
+    fun getterSetterEvolver1() {
         val resource = "EvolvabilityTests.getterSetterEvolver1"
         val sf = testDefaultFactory()
 
@@ -625,11 +626,12 @@ class EvolvabilityTests {
 
     // See CORDA-2742
     @Test
-	fun evolutionWithPrimitives() {
+    fun evolutionWithPrimitives() {
         val resource = "EvolvabilityTests.evolutionWithPrimitives"
         val sf = testDefaultFactory()
         // Uncomment to recreate
-        // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(ParameterizedContainer(Parameterized(10, setOf(20)))).bytes)
+        // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf)
+        // .serialize(ParameterizedContainer(Parameterized(10, setOf(20)))).bytes)
 
         val url = EvolvabilityTests::class.java.getResource(resource)
 
@@ -640,7 +642,7 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun addMandatoryFieldWithAltConstructorAndMakeExistingIntFieldNullable() {
+    fun addMandatoryFieldWithAltConstructorAndMakeExistingIntFieldNullable() {
         val sf = testDefaultFactory()
         val resource = "EvolvabilityTests.addMandatoryFieldWithAltConstructorAndMakeExistingIntFieldNullable"
 
@@ -651,7 +653,7 @@ class EvolvabilityTests {
         data class CC(val a: Int?, val b: Int) {
             @DeprecatedConstructorForDeserialization(1)
             @Suppress("unused")
-            constructor(a: Int) : this(a,  42)
+            constructor(a: Int) : this(a, 42)
         }
 
         val url = EvolvabilityTests::class.java.getResource(resource) ?: fail("Not found!")
@@ -663,7 +665,7 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun addMandatoryFieldWithAltConstructorAndMakeExistingNullableIntFieldMandatory() {
+    fun addMandatoryFieldWithAltConstructorAndMakeExistingNullableIntFieldMandatory() {
         val sf = testDefaultFactory()
         val resource = "EvolvabilityTests.addMandatoryFieldWithAltConstructorAndMakeExistingNullableIntFieldMandatory"
 
@@ -674,7 +676,7 @@ class EvolvabilityTests {
         data class CC(val a: Int, val b: Int) {
             @DeprecatedConstructorForDeserialization(1)
             @Suppress("unused")
-            constructor(a: Int?) : this(a ?: -1,42)
+            constructor(a: Int?) : this(a ?: -1, 42)
         }
 
         val url = EvolvabilityTests::class.java.getResource(resource) ?: fail("Not found!")
@@ -686,7 +688,7 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun addMandatoryFieldAndRemoveExistingNullableIntField() {
+    fun addMandatoryFieldAndRemoveExistingNullableIntField() {
         val sf = testDefaultFactory()
         val resource = "EvolvabilityTests.addMandatoryFieldAndRemoveExistingNullableIntField"
 
@@ -709,7 +711,7 @@ class EvolvabilityTests {
     }
 
     @Test
-	fun removeExistingNullableIntFieldWithAltConstructor() {
+    fun removeExistingNullableIntFieldWithAltConstructor() {
         val sf = testDefaultFactory()
         val resource = "EvolvabilityTests.removeExistingNullableIntFieldWithAltConstructor"
 

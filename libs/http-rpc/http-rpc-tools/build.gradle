@@ -1,0 +1,26 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Corda HTTP RPC tools'
+
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "net.corda:corda-base"
+    implementation project(':libs:http-rpc:http-rpc')
+
+    compileOnly "org.osgi:osgi.annotation"
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.7
+            }
+        }
+    }
+}

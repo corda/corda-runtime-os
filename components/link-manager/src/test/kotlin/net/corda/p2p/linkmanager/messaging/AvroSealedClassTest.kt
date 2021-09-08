@@ -42,18 +42,25 @@ class AvroSealedClassTest {
         )
 
         assertNull(sessionAndMessage)
-        loggingInterceptor.assertSingleWarning("Received encrypted message for session with SessionId = sessionId which is authentication" +
-            " only. The message was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Received encrypted message for session with SessionId = sessionId which is " +
+                "authentication only. The message was discarded."
+        )
     }
 
     @Test
     fun `Cannot create a SessionAndMessage with an AuthenticatedDataMessage and a AuthenticatedEncryptionSession`() {
-        val authenticatedDataMessage = AvroSealedClasses.DataMessage.Authenticated(Mockito.mock(AuthenticatedDataMessage::class.java))
+        val authenticatedDataMessage = AvroSealedClasses.DataMessage.Authenticated(
+            Mockito.mock(AuthenticatedDataMessage::class.java))
         val authenticatedEncryptionSession = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION).initiatorSession
-        val sessionAndMessage = AvroSealedClasses.SessionAndMessage.create(authenticatedEncryptionSession, SESSION_ID, authenticatedDataMessage)
+        val sessionAndMessage = AvroSealedClasses
+            .SessionAndMessage
+            .create(authenticatedEncryptionSession, SESSION_ID, authenticatedDataMessage)
 
         assertNull(sessionAndMessage)
-        loggingInterceptor.assertSingleWarning("Received unencrypted message for session with SessionId = sessionId which is authentication and" +
-                " encryption. The message was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Received unencrypted message for session with SessionId = sessionId which is " +
+                    "authentication and encryption. The message was discarded."
+        )
     }
 }

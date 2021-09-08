@@ -27,7 +27,6 @@ import net.corda.p2p.crypto.util.verify
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
@@ -55,34 +54,6 @@ class AuthenticationProtocolResponder(private val sessionId: String,
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
         require(ourMaxMessageSize > MIN_PACKET_SIZE) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
-    }
-
-    companion object {
-        @Suppress("LongParameterList")
-        fun fromStep2(sessionId: String,
-                      supportedModes: Set<ProtocolMode>,
-                      maxMessageSize: Int,
-                      initiatorHelloMsg: InitiatorHelloMessage,
-                      responderHelloMsg: ResponderHelloMessage,
-                      privateDHKey: ByteArray,
-                      publicDHKey: ByteArray): AuthenticationProtocolResponder {
-            val protocol = AuthenticationProtocolResponder(sessionId, supportedModes, maxMessageSize)
-            protocol.apply {
-                receiveInitiatorHello(initiatorHelloMsg)
-                myPrivateDHKey = protocol.ephemeralKeyFactory.generatePrivate(PKCS8EncodedKeySpec(privateDHKey))
-                myPublicDHKey = publicDHKey
-
-                sharedDHSecret = keyAgreement.perform(myPrivateDHKey!!, peerPublicDHKey!!)
-                responderHelloMessage = responderHelloMsg
-                selectedMode = responderHelloMsg.selectedMode
-                initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
-                                                      responderHelloMessage!!.toByteBuffer().array()
-
-                step = Step.SENT_MY_DH_KEY
-            }
-
-            return protocol
-        }
     }
 
     var step = Step.INIT
@@ -133,22 +104,6 @@ class AuthenticationProtocolResponder(private val sessionId: String,
         return responderHelloMessage!!
     }
 
-    /**
-     * Caution: this is available in cases where one component needs to perform step 2 of the handshake
-     * and forward the generated DH key downstream to another component that wil complete the protocol from that point on.
-     * This means the private key will be temporarily exposed.
-     *
-     * That downstream component can resume the protocol from that point onwards
-     * creating a new instance of this class using the [fromStep2] method.
-     *
-     * @return a pair containing (in that order) the private and the public DH key.
-     */
-    fun getDHKeyPair(): Pair<ByteArray, ByteArray> {
-        checkState(Step.SENT_MY_DH_KEY)
-
-        return myPrivateDHKey!!.encoded to myPublicDHKey!!
-    }
-
     fun generateHandshakeSecrets() {
         transition(Step.SENT_MY_DH_KEY, Step.GENERATED_HANDSHAKE_SECRETS)
 
@@ -168,7 +123,8 @@ class AuthenticationProtocolResponder(private val sessionId: String,
     @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(
         initiatorHandshakeMessage: InitiatorHandshakeMessage,
-        initiatorPublicKey: PublicKey
+        initiatorPublicKey: PublicKey,
+        initiatorPublicKeyAlgo: KeyAlgorithm
     ): HandshakeIdentityData {
         transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.RECEIVED_HANDSHAKE_MESSAGE)
 
@@ -200,7 +156,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
         // validate signature
         val initiatorHelloToInitiatorPublicKeyHash = initiatorHelloToResponderHelloBytes!! +
                                                               initiatorHandshakePayloadIncomplete.toByteBuffer().array()
-        val signatureWasValid = signature.verify(initiatorPublicKey,
+        val signatureWasValid = getSignature(initiatorPublicKeyAlgo).verify(initiatorPublicKey,
                                     INITIATOR_SIG_PAD.toByteArray(Charsets.UTF_8) +
                                          messageDigest.hash(initiatorHelloToInitiatorPublicKeyHash),
                                          initiatorHandshakePayload.initiatorPartyVerify.array())

@@ -5,6 +5,10 @@ plugins {
     id 'biz.aQute.bnd.builder'
 }
 
+pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
+    throw new StopExecutionException('corda.common-library plugin is incompatible with building CPKs and CPBs')
+}
+
 configurations {
     testArtifacts {
         canBeResolved = false
@@ -16,20 +20,17 @@ configurations {
     integrationTestImplementation.extendsFrom testImplementation
 }
 
-
 dependencies {
-    testImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 
-    integrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
     integrationTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }
 
 tasks.named('jar', Jar) {
-    archiveBaseName = project.name
-    bnd """
+    archiveBaseName = "corda-${project.name}"
+    bnd """\
 Bundle-Name: \${project.description}
 Bundle-SymbolicName: \${project.group}.\${project.name}
 """

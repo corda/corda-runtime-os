@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 
+@Suppress("NestedBlockDepth")
 class PartitionAllocatorTest {
 
     private val numberOfPartitions = 10
@@ -27,10 +28,12 @@ class PartitionAllocatorTest {
     private val listener4 = InMemoryListener(partitions4)
 
     private val dbAccessProvider = mock(DBAccessProvider::class.java).apply {
-        `when`(getTopics()).thenReturn(mapOf(
-            topic1 to numberOfPartitions,
-            topic2 to numberOfPartitions
-        ))
+        `when`(getTopics()).thenReturn(
+            mapOf(
+                topic1 to numberOfPartitions,
+                topic2 to numberOfPartitions
+            )
+        )
     }
 
     private val partitionAllocator = PartitionAllocator(dbAccessProvider)
@@ -77,7 +80,7 @@ class PartitionAllocatorTest {
 
                 // check every allocation contains contiguous numbers
                 listeners.forEach { listener ->
-                    val allocation  = allocations[listener]!!
+                    val allocation = allocations[listener]!!
                     if (allocation.isNotEmpty()) {
                         val min = allocation.minOrNull()!!
                         val max = allocation.maxOrNull()!!
@@ -114,7 +117,7 @@ class PartitionAllocatorTest {
         assertThat(listener2.allocatedPartitions[topic2]!!).isNotEmpty
     }
 
-    class InMemoryListener(val allocatedPartitions: Map<String, MutableSet<Int>>): PartitionAllocationListener {
+    class InMemoryListener(val allocatedPartitions: Map<String, MutableSet<Int>>) : PartitionAllocationListener {
         override fun onPartitionsAssigned(topic: String, partitions: Set<Int>) {
             allocatedPartitions[topic]!!.addAll(partitions)
         }
@@ -122,7 +125,5 @@ class PartitionAllocatorTest {
         override fun onPartitionsUnassigned(topic: String, partitions: Set<Int>) {
             allocatedPartitions[topic]!!.removeAll(partitions)
         }
-
     }
-
 }

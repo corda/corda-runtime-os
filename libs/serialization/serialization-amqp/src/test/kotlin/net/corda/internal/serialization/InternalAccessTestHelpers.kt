@@ -1,10 +1,10 @@
 package net.corda.internal.serialization
 
-import net.corda.v5.serialization.ClassWhitelist
 import net.corda.internal.serialization.amqp.AMQPTypeIdentifierParser
 import net.corda.internal.serialization.amqp.PropertyDescriptor
 import net.corda.internal.serialization.amqp.asClass
 import net.corda.internal.serialization.amqp.propertyDescriptors
+import net.corda.v5.serialization.ClassWhitelist
 import java.lang.reflect.Type
 
 /**
@@ -13,9 +13,11 @@ import java.lang.reflect.Type
 
 const val MAX_TYPE_PARAM_DEPTH = AMQPTypeIdentifierParser.MAX_TYPE_PARAM_DEPTH
 
-fun Class<out Any?>.accessPropertyDescriptors(validateProperties: Boolean = true): Map<String, PropertyDescriptor> = propertyDescriptors(validateProperties)
+fun Class<out Any?>.accessPropertyDescriptors(validateProperties: Boolean = true):
+    Map<String, PropertyDescriptor> = propertyDescriptors(validateProperties)
 fun Type.accessAsClass(): Class<*> = asClass()
-fun <T> ifThrowsAppend(strToAppendFn: () -> String, block: () -> T): T = net.corda.internal.serialization.amqp.ifThrowsAppend(strToAppendFn, block)
+fun <T> ifThrowsAppend(strToAppendFn: () -> String, block: () -> T): T =
+    net.corda.internal.serialization.amqp.ifThrowsAppend(strToAppendFn, block)
 
 object EmptyWhitelist : ClassWhitelist {
     override fun hasListed(type: Class<*>): Boolean = false
