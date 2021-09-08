@@ -38,17 +38,16 @@ internal class SandboxGroupImpl(
     override val sandboxes = sandboxesById.values
 
     override fun getSandbox(cpkIdentifier: Cpk.Identifier) = sandboxesById[cpkIdentifier]
-        ?: throw SandboxException("No sandbox was found in the group that had the CPK identifier $cpkIdentifier.")
 
     override fun loadClassFromCordappBundle(cpkIdentifier: Cpk.Identifier, className: String) =
-        getSandbox(cpkIdentifier).loadClassFromCordappBundle(className)
+        getSandbox(cpkIdentifier)?.loadClassFromCordappBundle(className)
 
-    override fun <T : Any> loadClassFromCordappBundle(className: String, type: Class<T>): Class<out T> {
+    override fun <T : Any> loadClassFromCordappBundle(className: String, type: Class<T>): Class<out T>? {
         val containingSandbox = sandboxes.find { sandbox -> sandbox.cordappBundleContainsClass(className) }
-            ?: throw SandboxException("Class $className could not be not found in sandbox group.")
+        val klass = containingSandbox?.loadClassFromCordappBundle(className)
 
         return try {
-            containingSandbox.loadClassFromCordappBundle(className).asSubclass(type)
+            klass?.asSubclass(type)
         } catch (e: ClassCastException) {
             throw SandboxException(
                 "Class $className was found in sandbox, but was not of the provided type $type."
@@ -96,7 +95,7 @@ internal class SandboxGroupImpl(
         }
     }
 
-    override fun getClass(className: String, classTag: ClassTag): Class<*> {
+    override fun getClass(className: String, classTag: ClassTag): Class<*>? {
         return if (classTag.isPlatformClass) {
             platformSandbox.loadClass(className, classTag.classBundleName)
         } else {

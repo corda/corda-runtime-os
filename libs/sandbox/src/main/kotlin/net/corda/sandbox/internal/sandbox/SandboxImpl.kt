@@ -37,29 +37,17 @@ internal open class SandboxImpl(
         }
     }
 
-    override fun grantVisibility(otherSandboxes: Collection<Sandbox>): Unit =
-        otherSandboxes.forEach { otherSandbox ->
-            if (otherSandbox !== this) {
-                visibleSandboxes.add(otherSandbox)
-            }
-        }
-
     override fun getBundle(bundleName: String) = (publicBundles + privateBundles).find { bundle ->
         bundle.symbolicName == bundleName
     }
 
-    override fun loadClass(className: String, bundleName: String): Class<*> {
-        val bundle = getBundle(bundleName) ?: throw SandboxException(
-            "The sandbox identified by the class tag does not contain a bundle with the " +
-                    "requested symbolic name, $bundleName."
-        )
+    override fun loadClass(className: String, bundleName: String): Class<*>? {
+        val bundle = getBundle(bundleName) ?: return null
 
         return try {
             bundle.loadClass(className)
         } catch (e: ClassNotFoundException) {
-            throw SandboxException(
-                "Class $className could not be loaded from bundle ${bundle.symbolicName} in sandbox $id.", e
-            )
+            return null
         } catch (e: IllegalStateException) {
             throw SandboxException(
                 "The bundle ${bundle.symbolicName} in sandbox $id has been uninstalled.", e

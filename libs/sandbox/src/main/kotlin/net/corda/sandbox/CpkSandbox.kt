@@ -7,9 +7,10 @@ interface CpkSandbox: Sandbox {
     val cpk: Cpk.Expanded
 
     /**
-     * Loads the [Class] with [className] from the sandbox's CorDapp bundle.
+     * Loads the [Class] with [className] from the sandbox's CorDapp bundle. Returns null if the bundle does not
+     * contain the named class.
      *
-     * Throws [SandboxException] if the CorDapp bundle is uninstalled, or the class is not found in the sandbox.
+     * Throws [SandboxException] if the CorDapp bundle is uninstalled.
      */
-    fun loadClassFromCordappBundle(className: String): Class<*>
+    fun loadClassFromCordappBundle(className: String): Class<*>?
 }

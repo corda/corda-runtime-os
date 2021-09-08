@@ -22,17 +22,14 @@ internal interface SandboxInternal : Sandbox {
     /** Grants this sandbox visibility of [otherSandbox]. */
     fun grantVisibility(otherSandbox: Sandbox)
 
-    /** Grants this sandbox visibility of [otherSandboxes]. */
-    fun grantVisibility(otherSandboxes: Collection<Sandbox>)
-
     /** Returns the bundle with symbolic name [bundleName] from sandbox, or null if no bundle has a matching name. */
     fun getBundle(bundleName: String): Bundle?
 
     /**
-     * Loads the class with [className] from the bundle in the sandbox identified by [bundleName].
+     * Loads the class with [className] from the bundle in the sandbox identified by [bundleName]. Returns null if no
+     * bundle has a matching name, or if the bundle does not contain the named class.
      *
-     * Throws [SandboxException] if no matching bundle is found, the bundle is uninstalled, or the class is not found
-     * in the bundle.
+     * Throws [SandboxException] if the bundle is uninstalled.
      */
-    fun loadClass(className: String, bundleName: String): Class<*>
+    fun loadClass(className: String, bundleName: String): Class<*>?
 }

@@ -68,9 +68,9 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     override fun getClassInfo(className: String): ClassInfo {
-        sandboxes.values.filterIsInstance<CpkSandboxImpl>().forEach { sandbox ->
+        for (sandbox in sandboxes.values.filterIsInstance<CpkSandboxImpl>()) {
             try {
-                val klass = sandbox.loadClassFromCordappBundle(className)
+                val klass = sandbox.loadClassFromCordappBundle(className) ?: continue
                 val bundle = bundleUtils.getBundle(klass)
                     ?: throw SandboxException("Class $klass is not loaded from any bundle.")
                 val matchingSandbox = sandboxes.values.find { it.containsBundle(bundle) }
@@ -190,7 +190,11 @@ internal class SandboxServiceImpl @Activate constructor(
         val sandboxes = cpkSandboxMapping.values
 
         // Each sandbox requires visibility of the sandboxes of the other CPKs.
-        sandboxes.forEach { sandbox -> sandbox.grantVisibility(sandboxes) }
+        sandboxes.forEach { sandbox ->
+            sandboxes.forEach { otherSandbox ->
+                sandbox.grantVisibility(otherSandbox)
+            }
+        }
 
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
         // likely dependencies between the CPKs' bundles.
