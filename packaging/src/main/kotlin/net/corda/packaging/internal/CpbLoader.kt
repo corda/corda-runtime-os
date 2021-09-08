@@ -1,9 +1,9 @@
 package net.corda.packaging.internal
 
-import net.corda.v5.crypto.SecureHash
 import net.corda.packaging.Cpb
 import net.corda.packaging.Cpk
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.file.Path
 import java.security.DigestInputStream
@@ -19,6 +19,7 @@ object CpbLoader {
         val archivedCpks = mutableListOf<Cpk>()
         val expandedCpks = mutableListOf<Cpk.Expanded>()
         val md = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
+
         JarInputStream(DigestInputStream(inputStream, md), verifySignature).use { zipInputStream ->
             while(true) {
                 val entry = zipInputStream.nextEntry ?: break
@@ -28,7 +29,7 @@ object CpbLoader {
                         val uncloseableInputStream = UncloseableInputStream(zipInputStream)
                         if(expansionLocation != null) {
                             expandedCpks += Cpk.Expanded.from(uncloseableInputStream, expansionLocation.resolve(entry.name),
-                                    cpkLocation = cpbLocation?.plus("/${entry.name}"),
+                                    cpkLocation = cpbLocation.plus("/${entry.name}"),
                                     verifySignature = verifySignature)
                         } else {
                             archivedCpks += Cpk.Archived.from(uncloseableInputStream,

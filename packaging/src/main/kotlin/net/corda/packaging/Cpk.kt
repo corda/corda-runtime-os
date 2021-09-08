@@ -3,6 +3,7 @@ package net.corda.packaging
 import net.corda.packaging.Cpb.Companion.jarSignatureVerificationEnabledByDefault
 import net.corda.packaging.internal.CpkDependencyResolver
 import net.corda.packaging.internal.CpkLoader
+import net.corda.packaging.internal.hash
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.file.Path
@@ -17,22 +18,20 @@ import java.util.TreeSet
 /** Contains information on a [Cpk]. */
 @Suppress("LongParameterList")
 sealed class Cpk(
-    val type: Type,
-    val cpkHash: SecureHash,
-    val cpkManifest: Manifest,
-    val cordappJarFileName: String,
-    val cordappHash: SecureHash,
-    val cordappCertificates: Set<Certificate>,
-    val cordappManifest: CordappManifest,
-    val libraryDependencies: NavigableMap<String, SecureHash>,
-    val dependencies: NavigableSet<Identifier>
-) {
+        val type : Type,
+        val cpkHash : SecureHash,
+        val cpkManifest: Manifest,
+        val cordappJarFileName: String,
+        val cordappHash: SecureHash,
+        val cordappCertificates: Set<Certificate>,
+        val cordappManifest: CordappManifest,
+        val libraryDependencies: NavigableMap<String, SecureHash>,
+        val dependencies: NavigableSet<Identifier>) {
 
     val id = let {
-        val signers: NavigableSet<SecureHash> =
-            cordappCertificates.mapNotNullTo(TreeSet(Identifier.secureHashComparator)) { certificate ->
-                certificate.publicKey?.encoded?.sha256()
-            }
+        val signers: NavigableSet<SecureHash> = cordappCertificates.mapNotNullTo(TreeSet(Identifier.secureHashComparator)) { certificate ->
+            certificate.publicKey?.encoded?.hash()
+        }
         Identifier(cordappManifest.bundleSymbolicName, cordappManifest.bundleVersion, signers)
     }
 
@@ -40,20 +39,17 @@ sealed class Cpk(
         const val fileExtension = ".cpk"
 
         @JvmStatic
-        fun resolveDependencies(
-            cpks: Iterable<Cpk>,
-            useSignatures: Boolean = true
-        ): NavigableSet<Identifier> {
+        fun resolveDependencies(cpks : Iterable<Cpk>,
+                                useSignatures: Boolean = jarSignatureVerificationEnabledByDefault()) : NavigableSet<Identifier> {
             return CpkDependencyResolver.resolveDependencies(
-                cpks.map { it.id },
-                cpks.associateByTo(TreeMap(), Cpk::id, Cpk::dependencies), useSignatures
-            )
+                    cpks.map { it.id },
+                    cpks.associateByTo(TreeMap(), Cpk::id,  Cpk::dependencies), useSignatures)
         }
     }
 
     @Suppress("LongParameterList")
     class Archived(
-        type: Type,
+        type : Type,
         cpkHash: SecureHash,
         cpkManifest: Manifest,
         cordappJarFileName: String,
@@ -61,18 +57,16 @@ sealed class Cpk(
         cordappCertificates: Set<Certificate>,
         cordappManifest: CordappManifest,
         libraryDependencies: NavigableMap<String, SecureHash>,
-        dependencies: NavigableSet<Identifier>
-    ) : Cpk(
-        type,
-        cpkHash,
-        cpkManifest,
-        cordappJarFileName,
-        cordappHash,
-        cordappCertificates,
-        cordappManifest,
-        libraryDependencies,
-        dependencies
-    ) {
+        dependencies: NavigableSet<Identifier>) : Cpk(
+            type,
+            cpkHash,
+            cpkManifest,
+            cordappJarFileName,
+            cordappHash,
+            cordappCertificates,
+            cordappManifest,
+            libraryDependencies,
+            dependencies) {
         companion object {
             /**
              * Unpacks the CPK resource from [inputStream], and parses it as a [Cpk.Archived].
@@ -84,39 +78,35 @@ sealed class Cpk(
              */
             @JvmStatic
             @JvmOverloads
-            fun from(
-                source: InputStream,
-                cpkLocation: String? = null,
-                verifySignature: Boolean = jarSignatureVerificationEnabledByDefault()
-            ) =
-                CpkLoader.from(source, null, cpkLocation, verifySignature) as Archived
+            fun from(source: InputStream,
+                     cpkLocation : String? = null,
+                     verifySignature : Boolean = jarSignatureVerificationEnabledByDefault()) =
+                    CpkLoader.from(source, null, cpkLocation, verifySignature) as Archived
         }
     }
 
     @Suppress("LongParameterList")
-    class Expanded(
-        val mainJar: Path,
-        val libraries: Set<Path>,
-        type: Type,
-        cpkHash: SecureHash,
-        cpkManifest: Manifest,
-        cordappJarFileName: String,
-        cordappHash: SecureHash,
-        cordappCertificates: Set<Certificate>,
-        cordappManifest: CordappManifest,
-        libraryDependencies: NavigableMap<String, SecureHash>,
-        dependencies: NavigableSet<Identifier>
-    ) : Cpk(
-        type,
-        cpkHash,
-        cpkManifest,
-        cordappJarFileName,
-        cordappHash,
-        cordappCertificates,
-        cordappManifest,
-        libraryDependencies,
-        dependencies
-    ) {
+    class Expanded(val mainJar: Path,
+                   val libraries: Set<Path>,
+                   val cpkFile : Path,
+                   type : Type,
+                   cpkHash: SecureHash,
+                   cpkManifest: Manifest,
+                   cordappJarFileName: String,
+                   cordappHash: SecureHash,
+                   cordappCertificates: Set<Certificate>,
+                   cordappManifest: CordappManifest,
+                   libraryDependencies: NavigableMap<String, SecureHash>,
+                   dependencies: NavigableSet<Identifier>) : Cpk(
+            type,
+            cpkHash,
+            cpkManifest,
+            cordappJarFileName,
+            cordappHash,
+            cordappCertificates,
+            cordappManifest,
+            libraryDependencies,
+            dependencies) {
         companion object {
             /**
              * Unpacks the CPK resource from [inputStream], and parses it as a [Cpk.Expanded].
@@ -129,46 +119,56 @@ sealed class Cpk(
              */
             @JvmStatic
             @JvmOverloads
-            fun from(
-                source: InputStream,
-                expansionLocation: Path,
-                cpkLocation: String? = null,
-                verifySignature: Boolean = jarSignatureVerificationEnabledByDefault()
-            ) =
-                CpkLoader.from(source, expansionLocation, cpkLocation, verifySignature) as Expanded
+            fun from(source: InputStream,
+                     expansionLocation: Path,
+                     cpkLocation : String? = null,
+                     verifySignature : Boolean = jarSignatureVerificationEnabledByDefault()) =
+                    CpkLoader.from(source, expansionLocation, cpkLocation, verifySignature) as Expanded
         }
+
+        fun copy(mainJar: Path = this.mainJar,
+                 libraries: Set<Path> = this.libraries,
+                 cpkFile : Path = this.cpkFile,
+                 type: Type = this.type,
+                 cpkHash: SecureHash = this.cpkHash,
+                 cpkManifest: Manifest = this.cpkManifest,
+                 cordappJarFileName: String = this.cordappJarFileName,
+                 cordappHash: SecureHash = this.cordappHash,
+                 cordappCertificates: Set<Certificate> = this.cordappCertificates,
+                 cordappManifest: CordappManifest = this.cordappManifest,
+                 libraryDependencies: NavigableMap<String, SecureHash> = this.libraryDependencies,
+                 dependencies: NavigableSet<Identifier> = this.dependencies) = Expanded(mainJar, libraries, cpkFile, type, cpkHash,
+                      cpkManifest, cordappJarFileName, cordappHash, cordappCertificates, cordappManifest, libraryDependencies, dependencies)
+
     }
 
     /**
      * Identifies a CPK whose CorDapp JAR has the matching [symbolicName] and [version], and that is signed by the public
      * keys with the hashes [signers].
      */
-    data class Identifier(
-        val symbolicName: String,
-        val version: String,
-        val signers: NavigableSet<SecureHash>
-    ) : Comparable<Identifier> {
+    data class Identifier(val symbolicName: String,
+                          val version: String,
+                          val signers: NavigableSet<SecureHash>) : Comparable<Identifier> {
         companion object {
             val secureHashComparator = Comparator<SecureHash?> { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) }
             private val signersComparator = Comparator<SortedSet<SecureHash>> { s1, s2 ->
                 Arrays.compare(s1.toTypedArray(), s2.toTypedArray(), secureHashComparator)
             }
             private val identifierComparator = Comparator.comparing(Identifier::symbolicName)
-                .thenComparing(Identifier::version, VersionComparator())
-                .thenComparing(Identifier::signers, signersComparator)
+                    .thenComparing(Identifier::version, VersionComparator())
+                    .thenComparing(Identifier::signers, signersComparator)
         }
 
         override fun compareTo(other: Identifier): Int = identifierComparator.compare(this, other)
     }
 
-    enum class Type constructor(private val text: String?) : Comparable<Type> {
+    enum class Type constructor(private val text : String?) : Comparable<Type> {
         CORDA_API("corda-api"), UNKNOWN(null);
 
-        companion object {
+        companion object{
             private val map = values().associateBy(Type::text)
-
             @JvmStatic
-            fun parse(text: String) = map[text.toLowerCase()] ?: UNKNOWN
+            fun parse(text : String) = map[text.toLowerCase()] ?: UNKNOWN
         }
     }
 
@@ -194,7 +194,7 @@ sealed class Cpk(
                 @JvmStatic
                 fun parse(cpkFormatVersion: String): CpkFormatVersion {
                     val matches = CPK_VERSION_PATTERN.matchEntire(cpkFormatVersion)
-                        ?: throw PackagingException("Does not match 'majorVersion.minorVersion': '$cpkFormatVersion'")
+                            ?: throw PackagingException("Does not match 'majorVersion.minorVersion': '$cpkFormatVersion'")
                     return CpkFormatVersion(matches.groupValues[1].toInt(), matches.groupValues[2].toInt())
                 }
             }
@@ -211,7 +211,7 @@ sealed class Cpk(
              */
             @JvmStatic
             fun fromManifest(manifest: java.util.jar.Manifest) = Manifest(
-                cpkFormatVersion = parseFormatVersion(manifest)
+                    cpkFormatVersion = parseFormatVersion(manifest)
             )
 
             /**
@@ -223,7 +223,7 @@ sealed class Cpk(
             @Suppress("ThrowsCount")
             fun parseFormatVersion(manifest: java.util.jar.Manifest): CpkFormatVersion {
                 val formatEntry = manifest.mainAttributes.getValue(CPK_FORMAT)
-                    ?: throw PackagingException("CPK manifest does not specify a `$CPK_FORMAT` attribute.")
+                        ?: throw PackagingException("CPK manifest does not specify a `$CPK_FORMAT` attribute.")
                 return CpkFormatVersion.parse(formatEntry)
             }
         }

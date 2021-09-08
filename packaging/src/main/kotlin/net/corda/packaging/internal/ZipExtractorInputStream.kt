@@ -13,17 +13,20 @@ import java.util.zip.ZipInputStream
 /**
  * Input stream that extract a zip archive in the provided [destination] while reading it
  */
+@Suppress("LongParameterList")
 class ZipExtractorInputStream(source : InputStream,
-                              private val destination : Path) : ZipInputStream(source) {
+                              private val destination : Path,
+                              private val filter: (ZipEntry) -> Boolean = { true }
+                              ) : ZipInputStream(source) {
     private var currentFile : OutputStream? = null
     override fun getNextEntry(): ZipEntry? {
         return super.getNextEntry()?.also { entry ->
             val newFileSystemLocation = destination.resolve(entry.name)
-            if(entry.isDirectory) {
+            if (entry.isDirectory) {
                 Files.createDirectories(newFileSystemLocation)
             } else {
                 Files.createDirectories(newFileSystemLocation.parent)
-                currentFile = Files.newOutputStream(newFileSystemLocation)
+                currentFile = Files.newOutputStream(destination.resolve(entry.name))
             }
         }
     }
@@ -43,36 +46,53 @@ class ZipExtractorInputStream(source : InputStream,
     override fun closeEntry() {
         super.closeEntry()
         currentFile?.close()
+        currentFile = null
     }
 }
 
 /**
  * Input stream that extract a jar archive in the provided [destination] while reading it
  */
+@Suppress("LongParameterList")
 class JarExtractorInputStream(source : InputStream,
                               private val destination : Path,
-                              verify : Boolean, private val sourceLocation : String?) : JarInputStream(source, verify) {
+                              verify : Boolean,
+                              private val sourceLocation : String?) : JarInputStream(source, verify) {
     private var currentFile : OutputStream? = null
 
     init {
         val newFileSystemLocation = destination.resolve(JarFile.MANIFEST_NAME)
         Files.createDirectories(newFileSystemLocation.parent)
-        Files.newOutputStream(newFileSystemLocation).use { outputStream ->
-            (manifest ?: throw PackagingException(
-                    "The source stream ${sourceLocation?.let {"from '$it'"} ?: ""} doesn't represent a valid jar file"))
-                    .write(outputStream)
+        manifest?.let { mf ->
+            Files.newOutputStream(newFileSystemLocation).use(mf::write)
         }
     }
 
+
+
     override fun getNextEntry(): ZipEntry? {
-        return super.getNextEntry()?.also { entry ->
+        val nextEntry : ZipEntry? = super.getNextEntry()
+        checkHasAnyEntry(nextEntry)
+        return nextEntry?.also { entry ->
             val newFileSystemLocation = destination.resolve(entry.name)
-            if(entry.isDirectory) {
+            if (entry.isDirectory) {
                 Files.createDirectories(newFileSystemLocation)
             } else {
                 Files.createDirectories(newFileSystemLocation.parent)
-                currentFile = Files.newOutputStream(newFileSystemLocation)
+                currentFile = Files.newOutputStream(destination.resolve(entry.name))
             }
+        }
+    }
+
+    private var hasAnyEntry : Boolean = false
+    private fun checkHasAnyEntry(nextEntry: ZipEntry?) {
+        if (!hasAnyEntry) {
+            if (nextEntry == null && manifest == null) {
+                throw PackagingException(
+                        "The source stream ${sourceLocation?.let { "from '$it'" } ?: ""} doesn't represent a valid jar file"
+                )
+            }
+            hasAnyEntry = true
         }
     }
 
@@ -91,5 +111,6 @@ class JarExtractorInputStream(source : InputStream,
     override fun closeEntry() {
         super.closeEntry()
         currentFile?.close()
+        currentFile = null
     }
 }

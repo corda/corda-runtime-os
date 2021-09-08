@@ -100,6 +100,7 @@ object CpkLoader {
             val buffer : ByteArray,
             var topLevelJars : Int,
             val fileLocationAppender: (String) -> String,
+            var cpkFile : Path?,
             var cpkType : Cpk.Type,
             val cpkDigest: MessageDigest,
             var cordappFileName: String?,
@@ -110,7 +111,6 @@ object CpkLoader {
             val libraryMap: NavigableMap<String, SecureHash>,
             var cpkDependencies: NavigableSet<Cpk.Identifier>
     ) {
-
         fun validate() {
             when {
                 topLevelJars == 0 -> throw PackagingException(fileLocationAppender("No CorDapp JAR found"))
@@ -128,6 +128,7 @@ object CpkLoader {
                 it.fileName.toString().endsWith(JAR_EXTENSION)
             }.collect(Collectors.toUnmodifiableSet())
             return Cpk.Expanded(
+                    cpkFile = cpkFile!!,
                     type = cpkType,
                     mainJar = expansionLocation.resolve(cordappFileName),
                     libraries = libraries,
@@ -238,6 +239,7 @@ object CpkLoader {
         val ctx = CpkContext(
                 buffer = ByteArray(DEFAULT_BUFFER_SIZE),
                 topLevelJars = 0,
+                cpkFile = expansionLocation?.resolve("source.cpk"),
                 cpkType = Cpk.Type.UNKNOWN,
                 cpkDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name),
                 cordappFileName = null,
@@ -251,14 +253,16 @@ object CpkLoader {
                     { msg: String -> msg }
                 } else {
                     { msg: String -> "$msg in CPK at $cpkLocation" }
-                },
-
+                }
         )
-        val cpkDigestInputStream = DigestInputStream(source, ctx.cpkDigest)
-        if (expansionLocation == null) {
-            JarInputStream(cpkDigestInputStream, verifySignature)
+        val contentFolder = expansionLocation?.resolve("content")
+        var stream2BeFullyConsumed : InputStream = DigestInputStream(source, ctx.cpkDigest)
+        if (contentFolder == null) {
+            JarInputStream(stream2BeFullyConsumed, verifySignature)
         } else {
-            JarExtractorInputStream(cpkDigestInputStream, expansionLocation, verifySignature, cpkLocation)
+            Files.createDirectories(ctx.cpkFile!!.parent)
+            stream2BeFullyConsumed = TeeInputStream(stream2BeFullyConsumed, Files.newOutputStream(ctx.cpkFile!!))
+            JarExtractorInputStream(stream2BeFullyConsumed, contentFolder, verifySignature, cpkLocation)
         }.use { jarInputStream ->
             val jarManifest = jarInputStream.manifest ?: throw PackagingException(ctx.fileLocationAppender("Invalid file format"))
             ctx.cpkManifest = Cpk.Manifest.fromManifest(Manifest(jarManifest))
@@ -275,10 +279,10 @@ object CpkLoader {
                 }
                 jarInputStream.closeEntry()
             }
-            consumeStream(cpkDigestInputStream, ctx.buffer)
+            consumeStream(stream2BeFullyConsumed, ctx.buffer)
         }
         ctx.validate()
-        return expansionLocation?.let(ctx::buildExpanded) ?: ctx.buildArchived()
+        return contentFolder?.let(ctx::buildExpanded) ?: ctx.buildArchived()
     }
 
     /** Returns the [Cpk.Identifier]s for the provided [dependenciesFileContent]. */
