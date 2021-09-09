@@ -156,7 +156,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
             val correlationKey = it.record.key()
             val future = futureMap[correlationKey]
 
-            when(it.record.value().responseStatus) {
+            when(it.record.value().responseStatus!!) {
                 ResponseStatus.OK -> {
                     val responseBytes = it.record.value().payload
                     val byteArrayInputStream = ByteArrayInputStream(responseBytes.array())

@@ -6,7 +6,6 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
