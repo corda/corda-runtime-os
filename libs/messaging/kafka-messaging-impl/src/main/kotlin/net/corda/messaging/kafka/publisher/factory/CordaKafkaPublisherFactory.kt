@@ -3,6 +3,7 @@ package net.corda.messaging.kafka.publisher.factory
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.data.messaging.RPCResponse
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -69,8 +70,8 @@ class CordaKafkaPublisherFactory @Activate constructor(
 
         val publisher = createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)
 
-        val consumerBuilder = CordaKafkaConsumerBuilderImpl<TREQ, TRESP>(avroSchemaRegistry)
+        val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCResponse>(avroSchemaRegistry)
 
-        return CordaKafkaRPCSenderImpl(rpcConfig, publisherConfig, publisher, consumerBuilder)
+        return CordaKafkaRPCSenderImpl(publisherConfig, publisher, consumerBuilder)
     }
 }

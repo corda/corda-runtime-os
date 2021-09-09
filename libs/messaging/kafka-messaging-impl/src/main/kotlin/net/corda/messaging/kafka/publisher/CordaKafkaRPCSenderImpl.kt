@@ -10,7 +10,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
@@ -39,7 +38,6 @@ import kotlin.concurrent.withLock
 
 @Component
 class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
-    private val rpcConfig: RPCConfig<TREQ, TRESP>,
     private val config: Config,
     private val publisher: Publisher,
     private val consumerBuilder: CordaKafkaConsumerBuilderImpl<String, RPCResponse>,
@@ -200,7 +198,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
             ByteBuffer.wrap(reqBytes)
         )
 
-        val record = Record(rpcConfig.requestTopic, uuid, request)
+        val record = Record(topic, uuid, request)
         publisher.publish(listOf(record))
         val future = CompletableFuture<TRESP>()
         futureMap[uuid] = future
