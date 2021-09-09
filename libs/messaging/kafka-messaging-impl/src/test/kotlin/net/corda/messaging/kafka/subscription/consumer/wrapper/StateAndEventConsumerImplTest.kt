@@ -76,7 +76,6 @@ class StateAndEventConsumerImplTest {
         verify(stateAndEventListener, times(1)).onPostCommit(any())
     }
 
-
     @Test
     fun testUpdateStates() {
         val (stateAndEventListener, eventConsumer, stateConsumer, config, mapFactory, partitions) = setupMocks()
@@ -88,7 +87,6 @@ class StateAndEventConsumerImplTest {
         val consumer = StateAndEventConsumerImpl(config, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
 
         consumer.updateStatesAndSynchronizePartitions()
-
 
         verify(stateConsumer, times(1)).assignment()
         verify(stateConsumer, times(1)).poll()
