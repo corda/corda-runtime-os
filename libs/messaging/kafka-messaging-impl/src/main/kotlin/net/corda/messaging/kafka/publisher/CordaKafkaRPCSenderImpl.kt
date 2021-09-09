@@ -3,7 +3,7 @@ package net.corda.messaging.kafka.publisher
 import com.typesafe.config.Config
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
-import net.corda.data.messaging.status
+import net.corda.data.messaging.ResponseStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
@@ -159,7 +159,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
             val future = futureMap[correlationKey]
 
             when(it.record.value().responseStatus) {
-                status.OK -> {
+                ResponseStatus.OK -> {
                     val responseBytes = it.record.value().payload
                     val byteArrayInputStream = ByteArrayInputStream(responseBytes.array())
                     val objectInput: ObjectInput
@@ -171,10 +171,10 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
 
                     future?.complete(response)
                 }
-                status.FAILED -> {
+                ResponseStatus.FAILED -> {
                     TODO("throw rpc specific error")
                 }
-                status.CANCELLED -> {
+                ResponseStatus.CANCELLED -> {
                     TODO("what happens here")
                 }
 
