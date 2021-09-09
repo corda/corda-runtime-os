@@ -9,6 +9,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.test.util.eventually
+import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -142,14 +145,10 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
         publish()
 
         publishedLatch.await()
-        val started = System.currentTimeMillis()
-        while ((System.currentTimeMillis() - started) < 2000) {
+        eventually(2.seconds, 10.millis) {
             val consumeCount = consumed.values.sumOf { it.size }
             val expectedConsumed = numberOfConsumerGroups * published.size
-            if (consumeCount >= expectedConsumed) {
-                break
-            }
-            Thread.sleep(10)
+            assertThat(consumeCount).isGreaterThanOrEqualTo(expectedConsumed)
         }
 
         subscriptions.forEach {

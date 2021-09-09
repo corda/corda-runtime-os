@@ -1,6 +1,6 @@
 package net.corda.messaging.db.sync
 
-import net.corda.messaging.db.util.eventually
+import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
