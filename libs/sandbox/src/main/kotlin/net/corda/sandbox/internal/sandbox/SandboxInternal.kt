@@ -22,6 +22,9 @@ internal interface SandboxInternal : Sandbox {
     /** Grants this sandbox visibility of [otherSandbox]. */
     fun grantVisibility(otherSandbox: Sandbox)
 
+    /** Grants this sandbox visibility of the [otherSandboxes]. */
+    fun grantVisibility(otherSandboxes: List<Sandbox>)
+
     /** Returns the bundle with symbolic name [bundleName] from sandbox, or null if no bundle has a matching name. */
     fun getBundle(bundleName: String): Bundle?
 

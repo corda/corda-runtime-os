@@ -179,9 +179,7 @@ internal class SandboxServiceImpl @Activate constructor(
             platformSandbox.grantVisibility(sandbox)
 
             // Each sandbox requires visibility of the sandboxes of the other CPKs and of the platform sandbox.
-            (newSandboxes + platformSandbox).forEach { otherSandbox ->
-                sandbox.grantVisibility(otherSandbox)
-            }
+            sandbox.grantVisibility(newSandboxes + platformSandbox)
         }
 
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are

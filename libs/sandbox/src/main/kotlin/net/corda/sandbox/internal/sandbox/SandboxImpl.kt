@@ -35,6 +35,10 @@ internal open class SandboxImpl(
         visibleSandboxes.add(otherSandbox)
     }
 
+    override fun grantVisibility(otherSandboxes: List<Sandbox>) {
+        visibleSandboxes.addAll(otherSandboxes)
+    }
+
     override fun getBundle(bundleName: String) = (publicBundles + privateBundles).find { bundle ->
         bundle.symbolicName == bundleName
     }
