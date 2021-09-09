@@ -4,7 +4,6 @@ import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.utilities.BundleUtils
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -40,7 +39,9 @@ class CpkSandboxImplTests {
         }
         val sandbox = CpkSandboxImpl(mockBundleUtils, generateSandboxId(), mock(), cordappBundle, setOf(otherBundle))
 
-        assertNull(sandbox.loadClassFromCordappBundle(Int::class.java.name))
+        assertThrows<SandboxException> {
+            sandbox.loadClassFromCordappBundle(Int::class.java.name)
+        }
     }
 
     @Test

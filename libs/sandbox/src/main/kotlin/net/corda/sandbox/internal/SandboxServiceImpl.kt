@@ -67,14 +67,14 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun getClassInfo(className: String): ClassInfo {
         for (sandbox in sandboxes.values.filterIsInstance<CpkSandboxImpl>()) {
             try {
-                val klass = sandbox.loadClassFromCordappBundle(className) ?: continue
+                val klass = sandbox.loadClassFromCordappBundle(className)
                 val bundle = bundleUtils.getBundle(klass)
                     ?: throw SandboxException("Class $klass is not loaded from any bundle.")
                 val matchingSandbox = sandboxes.values.find { it.containsBundle(bundle) }
                 matchingSandbox?.let { return getClassInfo(klass, matchingSandbox) }
                     ?: logger.trace("Class $className not found in sandbox $sandbox. ")
             } catch (ex: SandboxException) {
-                logger.trace("Class $className not found in sandbox $sandbox. ")
+                continue
             }
         }
         throw SandboxException("Class $className is not contained in any sandbox.")

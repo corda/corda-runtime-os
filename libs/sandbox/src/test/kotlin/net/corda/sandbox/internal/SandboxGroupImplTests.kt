@@ -10,7 +10,6 @@ import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
@@ -118,12 +117,16 @@ class SandboxGroupImplTests {
 
     @Test
     fun `returns null if asked to create static tag for a class outside any bundle`() {
-        assertNull(sandboxGroupImpl.getStaticTag(nonBundleClass))
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.getStaticTag(nonBundleClass)
+        }
     }
 
     @Test
     fun `returns null if asked to create static tag for a class in a bundle not in the sandbox group`() {
-        assertNull(sandboxGroupImpl.getStaticTag(nonSandboxClass))
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.getStaticTag(nonSandboxClass)
+        }
     }
 
     @Test
@@ -138,12 +141,16 @@ class SandboxGroupImplTests {
 
     @Test
     fun `returns null if asked to create evolvable tag for a class outside any bundle`() {
-        assertNull(sandboxGroupImpl.getEvolvableTag(nonBundleClass))
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.getEvolvableTag(nonBundleClass)
+        }
     }
 
     @Test
     fun `returns null if asked to create evolvable tag for a class in a bundle not in the sandbox group`() {
-        assertNull(sandboxGroupImpl.getEvolvableTag(nonSandboxClass))
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.getEvolvableTag(nonSandboxClass)
+        }
     }
 
     @Test
@@ -170,7 +177,9 @@ class SandboxGroupImplTests {
     fun `returns null if asked to return class but cannot find matching sandbox for a static tag`() {
         val invalidCpkFileHash = randomSecureHash()
         val invalidStaticTag = StaticTag(invalidCpkFileHash, false, NON_PLATFORM_BUNDLE_NAME)
-        assertNull(sandboxGroupImpl.getClass(nonPlatformClass.name, invalidStaticTag))
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.getClass(nonPlatformClass.name, invalidStaticTag)
+        }
     }
 
     @Test
@@ -180,21 +189,29 @@ class SandboxGroupImplTests {
             invalidCordappBundleName,
             mockCpk.id.signers,
             false,
-            NON_PLATFORM_BUNDLE_NAME)
-        assertNull(sandboxGroupImpl.getClass(nonPlatformClass.name, invalidCordappBundleNameEvolvableTag))
+            NON_PLATFORM_BUNDLE_NAME
+        )
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.getClass(nonPlatformClass.name, invalidCordappBundleNameEvolvableTag)
+        }
 
         val invalidSigners = TreeSet(setOf(randomSecureHash()))
         val invalidSignersEvolvableTag = EvolvableTag(
             mockNonPlatformSandbox.cordappBundle.symbolicName,
             invalidSigners,
             false,
-            NON_PLATFORM_BUNDLE_NAME)
-        assertNull(sandboxGroupImpl.getClass(nonPlatformClass.name, invalidSignersEvolvableTag))
+            NON_PLATFORM_BUNDLE_NAME
+        )
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.getClass(nonPlatformClass.name, invalidSignersEvolvableTag)
+        }
     }
 
     @Test
     fun `returns null if asked to return class but cannot find class in matching sandbox`() {
-        assertNull(sandboxGroupImpl.getClass(nonSandboxClass.name, nonPlatformStaticTag))
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.getClass(nonSandboxClass.name, nonPlatformStaticTag)
+        }
     }
 
     @Test

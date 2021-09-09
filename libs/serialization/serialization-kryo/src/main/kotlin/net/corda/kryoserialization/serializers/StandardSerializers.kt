@@ -1,7 +1,6 @@
 package net.corda.kryoserialization.serializers
 
 import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.KryoException
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory
 import com.esotericsoftware.kryo.io.Input
@@ -51,7 +50,6 @@ internal class ClassSerializer(
             }
             val cpk = Cpk.Identifier(cpkName, version, signers)
             (sandboxGroup as SandboxGroup).loadClassFromCordappBundle(cpk, input.readString())
-                ?: throw KryoException("Class ${input.readString()} cannot be loaded from CPK $cpk.")
         }
     }
 

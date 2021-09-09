@@ -15,13 +15,18 @@ internal class CpkSandboxImpl(
     privateBundles: Set<Bundle>
 ) : SandboxImpl(bundleUtils, id, setOf(cordappBundle), privateBundles), CpkSandboxInternal {
 
-    override fun loadClassFromCordappBundle(className: String): Class<*>? = try {
+    override fun loadClassFromCordappBundle(className: String): Class<*> = try {
         cordappBundle.loadClass(className)
     } catch (e: ClassNotFoundException) {
-        null
+        throw SandboxException("The class $className cannot be found in bundle $cordappBundle in sandbox $id.", e)
     } catch (e: IllegalStateException) {
         throw SandboxException("The bundle $cordappBundle in sandbox $id has been uninstalled.", e)
     }
 
-    override fun cordappBundleContainsClass(className: String) = loadClassFromCordappBundle(className) != null
+    override fun cordappBundleContainsClass(className: String) = try {
+        loadClassFromCordappBundle(className)
+        true
+    } catch (e: SandboxException) {
+        false
+    }
 }
