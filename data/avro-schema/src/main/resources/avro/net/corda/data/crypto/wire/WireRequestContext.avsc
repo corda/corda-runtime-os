@@ -24,7 +24,10 @@
     },
     {
       "name": "other",
-      "type": "net.corda.data.WireKeyValuePair",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.WireKeyValuePair"
+      },
       "doc": "Any other list of context's key-values"
     }
   ]
