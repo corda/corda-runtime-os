@@ -7,15 +7,11 @@ plugins {
 
 description "Installs extensions into the node's OSGi framework."
 
-configurations {
-    integrationTestRuntimeClasspath {
-        resolutionStrategy.dependencySubstitution {
-            substitute module('io.netty:netty-transport-native-kqueue') using module("io.netty:netty-transport-native-kqueue:$nettyVersion") withoutClassifier()
-        }
-    }
-
-    systemClasspath
-}
+//TODO:  uncomment when cpk tests are added back
+//configurations {
+//    integrationTestRuntimeClasspath
+//    systemClasspath
+//}
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
