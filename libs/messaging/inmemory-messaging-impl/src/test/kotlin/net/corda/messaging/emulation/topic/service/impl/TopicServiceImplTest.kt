@@ -66,6 +66,17 @@ class TopicServiceImplTest {
     }
 
     @Test
+    fun `addRecords will wake up the topic consumers`() {
+        val records = (1..10).map {
+            Record("topic.${it % 2 + 1}", it, it + 3)
+        }
+        impl.addRecords(records)
+
+        verify(topicOne).wakeUpConsumers()
+        verify(topicTwo).wakeUpConsumers()
+    }
+
+    @Test
     fun `addRecordsToPartition will lock the partitions`() {
         val records = (1..10).map {
             Record("topic.${it % 2 + 1}", it, it + 3)
@@ -86,6 +97,17 @@ class TopicServiceImplTest {
         verify(topicOne).addRecordToPartition(Record("topic.1", 4, 7), 12)
         verify(topicTwo).addRecordToPartition(Record("topic.2", 3, 6), 12)
         verify(topicTwo).addRecordToPartition(Record("topic.2", 5, 8), 12)
+    }
+
+    @Test
+    fun `addRecordsToPartition will wake up the consumers`() {
+        val records = (1..10).map {
+            Record("topic.${it % 2 + 1}", it, it + 3)
+        }
+        impl.addRecordsToPartition(records, 12)
+
+        verify(topicOne).wakeUpConsumers()
+        verify(topicTwo).wakeUpConsumers()
     }
 
     @Test

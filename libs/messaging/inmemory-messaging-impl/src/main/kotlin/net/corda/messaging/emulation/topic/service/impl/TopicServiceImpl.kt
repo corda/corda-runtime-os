@@ -26,30 +26,40 @@ class TopicServiceImpl(
     }
 
     override fun addRecords(records: List<Record<*, *>>) {
+        val topicToRecords = records.groupBy { record ->
+            record.topic
+        }.mapKeys {
+            topics.getTopic(it.key)
+        }
+
         topics.getWriteLock(records).write {
-            records.groupBy { record ->
-                record.topic
-            }.mapKeys {
-                topics.getTopic(it.key)
-            }.forEach { (topic, records) ->
+            topicToRecords.forEach { (topic, records) ->
                 records.forEach {
                     topic.addRecord(it)
                 }
             }
         }
+
+        topicToRecords.keys.forEach {
+            it.wakeUpConsumers()
+        }
     }
 
     override fun addRecordsToPartition(records: List<Record<*, *>>, partition: Int) {
+        val topicToRecords = records.groupBy { record ->
+            record.topic
+        }.mapKeys {
+            topics.getTopic(it.key)
+        }
         topics.getWriteLock(records, partition).write {
-            records.groupBy { record ->
-                record.topic
-            }.mapKeys {
-                topics.getTopic(it.key)
-            }.forEach { (topic, records) ->
+            topicToRecords.forEach { (topic, records) ->
                 records.forEach {
                     topic.addRecordToPartition(it, partition)
                 }
             }
+        }
+        topicToRecords.keys.forEach {
+            it.wakeUpConsumers()
         }
     }
 }

@@ -81,11 +81,11 @@ class EventLogSubscriptionTest {
 
     @Test
     fun `topicName return the correct value`() {
-        assertThat(subscription.topicName).isEqualTo("topic")
+        assertThat(subscription.subscriptionConfig.eventTopic).isEqualTo("topic")
     }
 
     @Test
     fun `groupName return the correct value`() {
-        assertThat(subscription.groupName).isEqualTo("group")
+        assertThat(subscription.subscriptionConfig.groupName).isEqualTo("group")
     }
 }

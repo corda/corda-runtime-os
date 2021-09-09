@@ -69,9 +69,6 @@ internal class Topic(
      */
     fun addRecord(record: Record<*, *>) {
         getPartition(record).addRecord(record)
-        consumerGroups.values.forEach {
-            it.wakeUp()
-        }
     }
 
     /**
@@ -81,14 +78,17 @@ internal class Topic(
     fun addRecordToPartition(record: Record<*, *>, partitionId: Int) {
         getPartition(partitionId)
             .addRecord(record)
-        consumerGroups.values.forEach {
-            it.wakeUp()
-        }
     }
 
     fun getLatestOffsets(): Map<Int, Long> {
         return partitions.associate {
             it.partitionId to it.latestOffset() - 1
+        }
+    }
+
+    fun wakeUpConsumers() {
+        consumerGroups.values.forEach {
+            it.wakeUp()
         }
     }
 }

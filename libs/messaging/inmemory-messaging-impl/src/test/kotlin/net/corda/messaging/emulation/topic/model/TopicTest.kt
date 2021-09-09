@@ -14,7 +14,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Duration
-import kotlin.concurrent.write
 
 class TopicTest {
     private val config = TopicConfiguration(5, 10)
@@ -109,25 +108,6 @@ class TopicTest {
     }
 
     @Test
-    fun `addRecord will wake up any group`() {
-        val topic = Topic("topic", config)
-        mockConstruction(ConsumerGroup::class.java).use { group ->
-            val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
-            val consumer = mock<Consumer> {
-                on { groupName } doReturn "group"
-            }
-            topic.createConsumption(consumer, subscriptionConfig)
-            val record = Record("topic", 1004, 3)
-
-            topic.getPartition(record).lock.write {
-                topic.addRecord(record)
-            }
-
-            verify(group.constructed().first()).wakeUp()
-        }
-    }
-
-    @Test
     fun `addRecordToPartition will add record to the correct partition`() {
         mockConstruction(
             Partition::class.java
@@ -176,25 +156,6 @@ class TopicTest {
     }
 
     @Test
-    fun `addRecordToPartition will wake up any group`() {
-        val topic = Topic("topic", config)
-        mockConstruction(ConsumerGroup::class.java).use { group ->
-            val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
-            val consumer = mock<Consumer> {
-                on { groupName } doReturn "group"
-            }
-            topic.createConsumption(consumer, subscriptionConfig)
-            val record = Record("topic", 1004, 3)
-
-            topic.getPartition(1).lock.write {
-                topic.addRecordToPartition(record, 1)
-            }
-
-            verify(group.constructed().first()).wakeUp()
-        }
-    }
-
-    @Test
     fun `getPartition will find the correct partition for record`() {
         val topic = Topic("topic", config)
         val record = Record("topic", 1005, 3)
@@ -235,6 +196,22 @@ class TopicTest {
             val offsets = topic.getLatestOffsets()
 
             assertThat(offsets).isEqualTo(mapOf(10 to 42L))
+        }
+    }
+
+    @Test
+    fun `wakeUpConsumers wakes up all the consumers group`() {
+        val topic = Topic("topic", config)
+        mockConstruction(ConsumerGroup::class.java).use { group ->
+            val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
+            val consumer = mock<Consumer> {
+                on { groupName } doReturn "group"
+            }
+            topic.createConsumption(consumer, subscriptionConfig)
+
+            topic.wakeUpConsumers()
+
+            verify(group.constructed().first()).wakeUp()
         }
     }
 }

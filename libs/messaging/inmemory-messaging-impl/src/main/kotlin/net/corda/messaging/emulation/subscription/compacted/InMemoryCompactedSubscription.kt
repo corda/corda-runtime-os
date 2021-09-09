@@ -86,7 +86,7 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
         startStopLock.withLock {
             if (currentConsumption == null) {
                 val consumer = CompactedConsumer(this)
-                if(waitingForPartitions.isEmpty()) {
+                if (waitingForPartitions.isEmpty()) {
                     processor.onSnapshot(knownValues)
                 }
                 currentConsumption = topicService.subscribe(consumer)
