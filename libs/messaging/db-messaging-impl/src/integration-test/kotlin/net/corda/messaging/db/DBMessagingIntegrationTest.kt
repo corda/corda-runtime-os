@@ -184,9 +184,8 @@ class DBMessagingIntegrationTest {
         val records = (1..10).map { 1 to Record(topic1, "key-$it", "value-$it") }
         publisher.publishToPartition(records).map { it.get() }
 
-        val record = randomAccessSubscription.getRecord(1, 5)
-
         eventually(5.seconds, 5.millis) {
+            val record = randomAccessSubscription.getRecord(1, 5)
             assertThat(record).isNotNull
             assertThat(record!!.topic).isEqualTo(topic1)
             assertThat(record.key).contains("key-5")
