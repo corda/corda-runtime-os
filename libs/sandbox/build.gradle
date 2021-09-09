@@ -20,7 +20,7 @@ dependencies {
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:crypto:crypto-impl")
-    implementation "net.corda:corda-install:$cordaVersion"
+    implementation project(":libs:install")
     implementation 'net.corda:corda-packaging'
     implementation 'net.corda:corda-serialization'
     implementation 'org.slf4j:slf4j-api'

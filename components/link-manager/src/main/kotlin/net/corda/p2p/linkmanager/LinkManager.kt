@@ -84,13 +84,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     )
 
     init {
-        val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC)
+        val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, 1)
         outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             outboundMessageSubscriptionConfig,
             OutboundMessageProcessor(sessionManager, linkManagerHostingMap, linkManagerNetworkMap, inboundAssignmentListener),
             partitionAssignmentListener = null
         )
-        val inboundMessageSubscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC)
+        val inboundMessageSubscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, 1)
         inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             inboundMessageSubscriptionConfig,
             InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
