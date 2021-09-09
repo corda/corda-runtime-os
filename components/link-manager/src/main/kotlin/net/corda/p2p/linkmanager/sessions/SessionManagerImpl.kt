@@ -11,7 +11,6 @@ import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
-import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
@@ -36,7 +35,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerH
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
@@ -318,14 +316,10 @@ open class SessionManagerImpl(
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
-        return when (session.step) {
-            AuthenticationProtocolResponder.Step.SENT_MY_DH_KEY -> makeResponderHandshake(session, message)
-            AuthenticationProtocolResponder.Step.SESSION_ESTABLISHED -> resendResponderHandshake(session, message)
-            else -> {
-                logger.error("Already received a ${message::class.java.simpleName} for ${message.header.sessionId}. The message was" +
-                    " discarded.")
-                null
-            }
+        return if (session.step > AuthenticationProtocolResponder.Step.SENT_MY_DH_KEY) {
+            resendResponderHandshake(session, message)
+        } else {
+            makeResponderHandshake(session, message)
         }
     }
 
@@ -363,7 +357,11 @@ open class SessionManagerImpl(
 
         val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
         if (networkType == null) {
-            logger.couldNotFindNetworkTypeOnReplay(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
+            logger.couldNotFindNetworkTypeOnReplay(
+                message::class.java.simpleName,
+                message.header.sessionId,
+                ourMemberInfo.holdingIdentity.groupId
+            )
             return null
         }
         val response = session.getResponderHandshakeMessage()
