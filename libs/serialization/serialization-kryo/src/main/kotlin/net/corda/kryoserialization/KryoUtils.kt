@@ -21,5 +21,3 @@ fun Input.readBytesWithLength(): ByteArray {
     val size = this.readInt(true)
     return this.readBytes(size)
 }
-
-val kryoMagic = CordaSerializationMagic("corda".toByteArray() + byteArrayOf(0, 0))

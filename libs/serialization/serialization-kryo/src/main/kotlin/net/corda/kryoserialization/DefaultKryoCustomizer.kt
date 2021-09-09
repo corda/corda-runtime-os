@@ -13,9 +13,7 @@ import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.AutoCloseableSerialisationDetector
 import net.corda.kryoserialization.serializers.CertPathSerializer
 import net.corda.kryoserialization.serializers.ClassSerializer
-import net.corda.kryoserialization.serializers.CordaClosureBlacklistSerializer
 import net.corda.kryoserialization.serializers.CordaClosureSerializer
-import net.corda.kryoserialization.serializers.InputStreamSerializer
 import net.corda.kryoserialization.serializers.IteratorSerializer
 import net.corda.kryoserialization.serializers.LazyMappedListSerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapEntrySerializer
@@ -23,6 +21,7 @@ import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
 import net.corda.kryoserialization.serializers.LinkedListItrSerializer
 import net.corda.kryoserialization.serializers.LoggerSerializer
 import net.corda.kryoserialization.serializers.StackTraceSerializer
+import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
 import net.corda.serialization.CheckpointInternalCustomSerializer
 import net.corda.serializers.PrivateKeySerializer
@@ -44,10 +43,6 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import sun.net.www.protocol.jar.JarURLConnection
-import java.io.BufferedInputStream
-import java.io.FileInputStream
-import java.io.InputStream
 import java.lang.reflect.Modifier.isPublic
 import java.security.PrivateKey
 import java.security.PublicKey
@@ -58,7 +53,7 @@ import java.util.*
 class DefaultKryoCustomizer {
 
     companion object {
-        private const val LOGGER_ID = Int.MAX_VALUE;
+        private const val LOGGER_ID = Int.MAX_VALUE
 
         fun customize(
             kryo: Kryo,
@@ -81,6 +76,9 @@ class DefaultKryoCustomizer {
 
                 // Take the safest route here and allow subclasses to have fields named the same as super classes.
                 fieldSerializerConfig.cachedFieldNameStrategy = FieldSerializer.CachedFieldNameStrategy.EXTENDED
+                // For checkpoints we still want all the synthetic fields.  This allows inner classes to reference
+                // their parents after deserialization.
+                fieldSerializerConfig.isIgnoreSyntheticFields = false
 
                 instantiatorStrategy = CustomInstantiatorStrategy()
 
@@ -99,10 +97,6 @@ class DefaultKryoCustomizer {
                     addDefaultSerializer(it, KryoCheckpointSerializerAdapter(PrivateKeySerializer()).adapt())
                 }
 
-                // Required for HashCheckingStream (de)serialization.
-                // Note that return type should be specifically set to InputStream, otherwise it may not work,
-                // i.e. val aStream : InputStream = HashCheckingStream(...).
-                addDefaultSerializer(InputStream::class.java, InputStreamSerializer)
                 addDefaultSerializer(Logger::class.java, LoggerSerializer)
                 addDefaultSerializer(X509Certificate::class.java, X509CertificateSerializer)
 
@@ -120,25 +114,20 @@ class DefaultKryoCustomizer {
                 addDefaultSerializer(Arrays.asList("").javaClass, ArraysAsListSerializer())
                 addDefaultSerializer(LazyMappedList::class.java, LazyMappedListSerializer)
                 UnmodifiableCollectionsSerializer.registerSerializers(this)
-                // InputStream subclasses whitelisting, required for attachments.
-                addDefaultSerializer(BufferedInputStream::class.java, InputStreamSerializer)
-                val jarUrlInputStreamClass = JarURLConnection::class.java.declaredClasses.single {
-                    it.simpleName == "JarURLInputStream"
-                }
-                addDefaultSerializer(jarUrlInputStreamClass, InputStreamSerializer)
+
                 // Exceptions. We don't bother sending the stack traces as the client will fill in its own anyway.
                 addDefaultSerializer(Array<StackTraceElement>::class.java, StackTraceSerializer())
                 addDefaultSerializer(BitSet::class.java, BitSetSerializer())
-                addDefaultSerializer(FileInputStream::class.java, InputStreamSerializer)
                 addDefaultSerializer(CertPath::class.java, CertPathSerializer)
 
                 register(java.lang.invoke.SerializedLambda::class.java)
-                addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureBlacklistSerializer)
+                addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
 
                 addDefaultSerializer(Iterator::class.java) { kryo, type ->
-                    IteratorSerializer(type, CompatibleFieldSerializer<Iterator<*>>(kryo, type).apply {
-                        setIgnoreSyntheticFields(false)
-                    })
+                    IteratorSerializer(type, CompatibleFieldSerializer(kryo, type))
+                }
+                addDefaultSerializer(Throwable::class.java) { kryo, type ->
+                    ThrowableSerializer(kryo, type)
                 }
 
                 //register loggers using an int ID to reduce information saved in kryo
@@ -149,7 +138,6 @@ class DefaultKryoCustomizer {
                 register(LoggerFactory.getLogger(this::class.java)::class.java, LOGGER_ID)
 
                 addDefaultSerializer(AutoCloseable::class.java, AutoCloseableSerialisationDetector)
-                addDefaultSerializer(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
 
                 //Add external serializers
                 for (serializer in serializers) {
