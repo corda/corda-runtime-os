@@ -26,9 +26,10 @@ class StateAndEventConsumerImplTest {
     @Test
     fun testClose() {
         val (stateAndEventListener, eventConsumer, stateConsumer, config, mapFactory, partitions) = setupMocks()
+        val partitionId = partitions.first().partition()
         val partitionState = StateAndEventPartitionState<String, String>(
-            mutableMapOf(partitions.first().partition() to mutableMapOf()),
-            mutableMapOf(partitions.first().partition() to Long.MAX_VALUE)
+            mutableMapOf(partitionId to mutableMapOf()),
+            mutableMapOf(partitionId to Long.MAX_VALUE)
         )
         val consumer = StateAndEventConsumerImpl(config, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
         consumer.close()
@@ -40,15 +41,16 @@ class StateAndEventConsumerImplTest {
     @Test
     fun testGetValue() {
         val (stateAndEventListener, eventConsumer, stateConsumer, config, mapFactory, partitions) = setupMocks()
+        val partitionId = partitions.first().partition()
         val partitionState = StateAndEventPartitionState(
             mutableMapOf(
-                partitions.first().partition() to mutableMapOf(
+                partitionId to mutableMapOf(
                     "key1" to Pair(
                         Long.MIN_VALUE,
                         "value1"
                     )
                 )
-            ), mutableMapOf(partitions.first().partition() to Long.MAX_VALUE)
+            ), mutableMapOf(partitionId to Long.MAX_VALUE)
         )
         val consumer = StateAndEventConsumerImpl(config, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
         val valueKey1 = consumer.getValue("key1")
