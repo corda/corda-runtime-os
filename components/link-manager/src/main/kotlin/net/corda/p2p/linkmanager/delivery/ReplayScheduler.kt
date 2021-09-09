@@ -33,7 +33,7 @@ class ReplayScheduler<M>(
     private val replayFutures = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
     companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java)
+        private val logger = contextLogger()
     }
 
     override val isRunning: Boolean
