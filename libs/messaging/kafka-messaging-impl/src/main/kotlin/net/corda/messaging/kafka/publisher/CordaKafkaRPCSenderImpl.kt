@@ -1,6 +1,8 @@
 package net.corda.messaging.kafka.publisher
 
 import com.typesafe.config.Config
+import net.corda.data.messaging.RPCRequest
+import net.corda.data.messaging.RPCResponse
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
@@ -15,21 +17,27 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.apache.kafka.common.TopicPartition
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
+import java.io.ByteArrayOutputStream
+import java.io.ObjectOutputStream
+import java.nio.ByteBuffer
 import java.time.Duration
+import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
+
 @Component
 class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private val rpcConfig: RPCConfig<TREQ, TRESP>,
     private val config: Config,
     private val publisher: Publisher,
-    private val consumerBuilder: CordaKafkaConsumerBuilderImpl<TREQ, TRESP>,
+    private val consumerBuilder: CordaKafkaConsumerBuilderImpl<String, RPCResponse>,
 ) : RPCSender<TREQ, TRESP>, RPCSubscription<TREQ, TRESP> {
 
     private companion object {
@@ -40,6 +48,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
+    private var partitions: List<TopicPartition> = listOf()
 
     override val isRunning: Boolean
         get() = !stopped
@@ -90,10 +99,10 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                 log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
                 consumerBuilder.createRPCConsumer(
                     config.getConfig(KafkaProperties.KAFKA_CONSUMER),
-                    rpcConfig.requestType,
-                    rpcConfig.responseType
+                    String::class.java,
+                    RPCResponse::class.java
                 ).use {
-                    val partitions = it.getPartitions(
+                    partitions = it.getPartitions(
                         "$topicPrefix$topic.resp",
                         Duration.ofSeconds(consumerThreadStopTimeout)
                     )
@@ -116,7 +125,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<TREQ, TRESP>) {
+    private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<String, RPCResponse>) {
         while (!stopped) {
             val consumerRecords = consumer.poll()
             try {
@@ -137,7 +146,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         }
     }
 
-    private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<TREQ, TRESP>>) {
+    private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCResponse>>) {
         consumerRecords.forEach {
             TODO("process records somehow")
         }
@@ -145,7 +154,23 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
 
     override fun sendRequest(req: TREQ): CompletableFuture<TRESP> {
         val uuid = UUID.randomUUID()
-        val record = Record(rpcConfig.requestTopic, uuid, req)
+
+        val bytesOut = ByteArrayOutputStream()
+        val oos = ObjectOutputStream(bytesOut)
+        oos.writeObject(req)
+        oos.flush()
+        val reqBytes: ByteArray = bytesOut.toByteArray()
+        bytesOut.close()
+        oos.close()
+
+        val request = RPCRequest(
+            uuid.toString(),
+            Instant.now().toEpochMilli(),
+            partitions[0].partition(),
+            ByteBuffer.wrap(reqBytes)
+        )
+
+        val record = Record(rpcConfig.requestTopic, uuid.toString(), request)
         publisher.publish(listOf(record))
         return CompletableFuture<TRESP>()
     }

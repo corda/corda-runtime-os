@@ -3,7 +3,6 @@ package net.corda.messaging.emulation.publisher.factory
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -47,8 +46,7 @@ class CordaPublisherFactory @Activate constructor(
 
     override fun <TREQ : Any, TRESP : Any> createRPCSender(
         rpcConfig: RPCConfig<TREQ, TRESP>,
-        nodeConfig: Config,
-        responderProcessor: RPCResponderProcessor<TREQ, TRESP>
+        nodeConfig: Config
     ): RPCSender<TREQ, TRESP> {
         TODO("Not yet implemented")
     }

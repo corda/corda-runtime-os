@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.data.messaging.RPCRequest
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -14,6 +15,9 @@ import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.debug
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
+import java.io.ByteArrayInputStream
+import java.io.ObjectInput
+import java.io.ObjectInputStream
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
@@ -21,9 +25,8 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 class KafkaRPCSubscription<TREQ : Any, TRESP : Any>(
-    private val rpcConfig: RPCConfig<TREQ, TRESP>,
     private val config: Config,
-    private val consumerBuilder: CordaKafkaConsumerBuilderImpl<TREQ, TRESP>,
+    private val consumerBuilder: CordaKafkaConsumerBuilderImpl<String, RPCRequest>,
     private val responderProcessor: RPCResponderProcessor<TREQ, TRESP>
 ) : RPCSubscription<TREQ, TRESP> {
 
@@ -86,8 +89,8 @@ class KafkaRPCSubscription<TREQ : Any, TRESP : Any>(
                 log.debug { "Creating rpc consumer.  Attempt: $attempts" }
                 consumerBuilder.createRPCConsumer(
                     config.getConfig(KafkaProperties.KAFKA_CONSUMER),
-                    rpcConfig.requestType,
-                    rpcConfig.responseType
+                    String::class.java,
+                    RPCRequest::class.java
                 ).use {
                     partitions = it.getPartitions(
                         topicPrefix + topic,
@@ -112,7 +115,7 @@ class KafkaRPCSubscription<TREQ : Any, TRESP : Any>(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<TREQ, TRESP>) {
+    private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<String, RPCRequest>) {
         while (!stopped) {
             val consumerRecords = consumer.poll()
             try {
@@ -133,13 +136,17 @@ class KafkaRPCSubscription<TREQ : Any, TRESP : Any>(
         }
     }
 
-    private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<TREQ, TRESP>>) {
+    @Suppress("UNCHECKED_CAST")
+    private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCRequest>>) {
         consumerRecords.forEach {
-            responderProcessor.onNext(it.record.key(), CompletableFuture<TRESP>())
-        }
-    }
+            val requestBytes = it.record.value().payload
+            val byteArrayInputStream = ByteArrayInputStream(requestBytes.array())
+            val objectInput: ObjectInput
+            objectInput = ObjectInputStream(byteArrayInputStream)
+            val request = objectInput.readObject() as TREQ
+            byteArrayInputStream.close()
 
-    fun getSubscriptionPartitions(): List<TopicPartition> {
-        return partitions
+            responderProcessor.onNext(request, CompletableFuture<TRESP>())
+        }
     }
 }

@@ -61,8 +61,8 @@ interface ConsumerBuilder<K : Any, V : Any> {
      */
     fun createRPCConsumer(
         consumerConfig: Config,
-        reqClazz: Class<K>,
-        respClazz: Class<V>,
+        kClazz: Class<K>,
+        vClazz: Class<V>,
         onError: (String, ByteArray) -> Unit = {_, _ ->},
     ) : CordaKafkaConsumer<K, V>
 

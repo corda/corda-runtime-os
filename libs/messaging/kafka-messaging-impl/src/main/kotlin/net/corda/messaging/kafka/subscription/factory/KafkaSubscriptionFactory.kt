@@ -3,6 +3,7 @@ package net.corda.messaging.kafka.subscription.factory
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.data.messaging.RPCRequest
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
@@ -242,10 +243,9 @@ class KafkaSubscriptionFactory @Activate constructor(
             clientIdCounter.getAndIncrement(),
             PATTERN_RPC
         )
-        val consumerBuilder = CordaKafkaConsumerBuilderImpl<TREQ, TRESP>(avroSchemaRegistry)
+        val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCRequest>(avroSchemaRegistry)
 
         return KafkaRPCSubscription(
-            rpcConfig,
             config,
             consumerBuilder,
             responderProcessor
