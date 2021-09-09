@@ -26,9 +26,12 @@ import net.corda.p2p.linkmanager.delivery.SessionReplayer.SessionMessageReplay
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkType
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.couldNotFindNetworkTypeOnReplay
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.noSessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInNetworkMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourHashNotInNetworkOnReplay
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourIdNotInNetworkMapWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapOnReplay
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
@@ -124,7 +127,7 @@ open class SessionManagerImpl(
     }
 
     override fun acknowledgeInboundSessionNegotiation(sessionId: String) {
-        if (activeInboundSessions.containsKey(sessionId) && pendingInboundSessions.containsKey(sessionId)) {
+        if (pendingInboundSessions.containsKey(sessionId)) {
             pendingInboundSessions.remove(sessionId)
         }
     }
@@ -266,7 +269,7 @@ open class SessionManagerImpl(
     }
 
     private fun findCachedResponderHello(originalSession: AuthenticationProtocolResponder, sessionId: String): ResponderHelloMessage? {
-        return if (originalSession.step != AuthenticationProtocolResponder.Step.SENT_MY_DH_KEY) {
+        return if (originalSession.step.ordinal >= AuthenticationProtocolResponder.Step.RECEIVED_HANDSHAKE_MESSAGE.ordinal) {
             logger.warn("Already received a ${InitiatorHelloMessage::class.java.simpleName} for ${sessionId}. " +
                     "The message was discarded.")
             null
@@ -309,56 +312,74 @@ open class SessionManagerImpl(
         return createLinkOutMessage(responderHello, peer, networkType)
     }
 
-    private fun getOurIdentityData(
-        session: AuthenticationProtocolResponder,
-        message: InitiatorHandshakeMessage,
-        publicKey: PublicKey,
-        publicKeyAlgorithm: KeyAlgorithm
-    ): HandshakeIdentityData? {
-        return when (session.step) {
-            AuthenticationProtocolResponder.Step.SENT_MY_DH_KEY -> {
-                session.generateHandshakeSecrets()
-                try {
-                    session.validatePeerHandshakeMessage(message, publicKey, publicKeyAlgorithm)
-                } catch (exception: WrongPublicKeyHashException) {
-                    logger.error(exception.message)
-                    null
-                } catch (exception: InvalidHandshakeMessageException) {
-                    logger.validationFailedWarning(
-                        message::class.java.simpleName,
-                        message.header.sessionId,
-                        exception.message
-                    )
-                    null
-                }
-            }
-            AuthenticationProtocolResponder.Step.RECEIVED_HANDSHAKE_MESSAGE,
-            AuthenticationProtocolResponder.Step.SESSION_ESTABLISHED -> {
-                session.getHandshakeIdentityData()
-            }
-            else -> {
-                logger.warn("The AuthenticationProtocol was in an invalid state for ${message.header.sessionId}." +
-                    " The message was discarded.")
-                null
-            }
-        }
-    }
-
-    @Suppress("ComplexMethod")
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
         val session = pendingInboundSessions[message.header.sessionId]
         if (session == null) {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
+        return when (session.step) {
+            AuthenticationProtocolResponder.Step.SENT_MY_DH_KEY -> makeResponderHandshake(session, message)
+            AuthenticationProtocolResponder.Step.SESSION_ESTABLISHED -> resendResponderHandshake(session, message)
+            else -> {
+                logger.error("Already received a ${message::class.java.simpleName} for ${message.header.sessionId}. The message was" +
+                    " discarded.")
+                null
+            }
+        }
+    }
 
+    private fun resendResponderHandshake(
+        session: AuthenticationProtocolResponder,
+        message: InitiatorHandshakeMessage
+    ): LinkOutMessage? {
         val initiatorIdentityData = session.getInitiatorIdentity()
         if (initiatorIdentityData == null) {
             logger.warn("Could not get identity information from session with sessionId ${message.header.sessionId}." +
-                " The ${InitiatorHandshakeMessage::class.java.simpleName} was discarded.")
+                    " The ${InitiatorHandshakeMessage::class.java.simpleName} was discarded.")
+            return null
+        }
+        val peer = networkMap.getMemberInfo(initiatorIdentityData.initiatorPublicKeyHash.array(), initiatorIdentityData.groupId)
+        if (peer == null) {
+            logger.peerHashNotInNetworkMapOnReplay(
+                message::class.java.simpleName,
+                message.header.sessionId,
+                initiatorIdentityData.initiatorPublicKeyHash.array().toBase64()
+            )
+            return null
+        }
+        val ourIdentityData = session.getHandshakeIdentityData()
+
+        //Find the correct Holding Identity to use (using the public key hash).
+        val ourMemberInfo = networkMap.getMemberInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
+        if (ourMemberInfo == null) {
+            logger.ourHashNotInNetworkOnReplay(
+                message::class.java.simpleName,
+                message.header.sessionId,
+                ourIdentityData.responderPublicKeyHash.toBase64()
+            )
             return null
         }
 
+        val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
+        if (networkType == null) {
+            logger.couldNotFindNetworkTypeOnReplay(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
+            return null
+        }
+        val response = session.getResponderHandshakeMessage()
+        return createLinkOutMessage(response, peer, networkType)
+    }
+
+    private fun makeResponderHandshake(
+        session: AuthenticationProtocolResponder,
+        message: InitiatorHandshakeMessage
+    ): LinkOutMessage? {
+        val initiatorIdentityData = session.getInitiatorIdentity()
+        if (initiatorIdentityData == null) {
+            logger.warn("Could not get identity information from session with sessionId ${message.header.sessionId}." +
+                    " The ${InitiatorHandshakeMessage::class.java.simpleName} was discarded.")
+            return null
+        }
         val peer = networkMap.getMemberInfo(initiatorIdentityData.initiatorPublicKeyHash.array(), initiatorIdentityData.groupId)
         if (peer == null) {
             logger.peerHashNotInNetworkMapWarning(
@@ -369,8 +390,20 @@ open class SessionManagerImpl(
             return null
         }
 
-        val ourIdentityData = getOurIdentityData(session, message, peer.publicKey, peer.publicKeyAlgorithm) ?: return null
-
+        session.generateHandshakeSecrets()
+        val ourIdentityData = try {
+            session.validatePeerHandshakeMessage(message, peer.publicKey, peer.publicKeyAlgorithm)
+        } catch (exception: WrongPublicKeyHashException) {
+            logger.error(exception.message)
+            return null
+        } catch (exception: InvalidHandshakeMessageException) {
+            logger.validationFailedWarning(
+                message::class.java.simpleName,
+                message.header.sessionId,
+                exception.message
+            )
+            return null
+        }
         //Find the correct Holding Identity to use (using the public key hash).
         val ourMemberInfo = networkMap.getMemberInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
         if (ourMemberInfo == null) {
@@ -382,29 +415,23 @@ open class SessionManagerImpl(
             return null
         }
 
-        val response = if (session.step == AuthenticationProtocolResponder.Step.RECEIVED_HANDSHAKE_MESSAGE) {
-            try {
-                val ourPublicKey = ourMemberInfo.publicKey
-                val signData = {data: ByteArray -> cryptoService.signData(ourMemberInfo.publicKey, data)}
-                session.generateOurHandshakeMessage(ourPublicKey, signData)
-            } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
-                logger.warn("Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
-                        " The message was discarded.")
-                return null
-            }
-        } else {
-            session.getResponderHandshakeMessage()
-        }
-
         val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
         if (networkType == null) {
             logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
             return null
         }
 
-        if (session.step == AuthenticationProtocolResponder.Step.SENT_HANDSHAKE_MESSAGE) {
-            activeInboundSessions[message.header.sessionId] = session.getSession()
+        val response = try {
+            val ourPublicKey = ourMemberInfo.publicKey
+            val signData = {data: ByteArray -> cryptoService.signData(ourMemberInfo.publicKey, data)}
+            session.generateOurHandshakeMessage(ourPublicKey, signData)
+        } catch (exception: LinkManagerCryptoService.NoPrivateKeyForGroupException) {
+            logger.warn("Received ${message::class.java.simpleName} with sessionId ${message.header.sessionId}. ${exception.message}." +
+                    " The message was discarded.")
+            return null
         }
+
+        activeInboundSessions[message.header.sessionId] = session.getSession()
         /**
          * We remove the session from pendingInboundSessions once we receive a message as before this point the other side (Initiator) might
          * replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.

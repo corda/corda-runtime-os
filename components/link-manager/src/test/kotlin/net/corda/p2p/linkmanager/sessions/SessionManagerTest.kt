@@ -964,6 +964,90 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `Replayed Initiator handshake message does not cause a response if the sender public key hash is not in the network map`() {
+        val sessionId = "SessionId"
+
+        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
+        Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
+        Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
+
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
+            .thenReturn(netMapInbound.getOurMemberInfo())
+
+        //Called first inside processInitiatorHello, then makeResponderHandshake and then resendResponderHandshake
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+            .thenReturn(netMapOutbound.getOurMemberInfo())
+            .thenReturn(netMapOutbound.getOurMemberInfo())
+            .thenReturn(null)
+
+        val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
+        val message = negotiateToInitiatorHandshake(inboundManager, sessionId)
+        val response = inboundManager.processSessionMessage(LinkInMessage(message))
+        assertTrue(response?.payload is ResponderHandshakeMessage)
+        val secondResponse = inboundManager.processSessionMessage(LinkInMessage(message))
+        assertNull(secondResponse)
+
+        val keyHash = hashKeyToBase64(netMapOutbound.getKeyPair().public)
+        loggingInterceptor.assertSingleWarning("The received public key hash ($keyHash) corresponding to one of the senders holding" +
+            " identities is not in the network map. We did not respond to replayed InitiatorHandshakeMessage for sessionId SessionId.")
+    }
+
+    @Test
+    fun `Replayed Initiator handshake message does not cause a response if the receiver public key hash is not in the network map`() {
+        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        val sessionId = "SessionId"
+
+        Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
+        Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
+        Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
+            .thenReturn(netMapInbound.getOurMemberInfo())
+            .thenReturn(null)
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+            .thenReturn(netMapOutbound.getOurMemberInfo())
+
+        val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
+        val message = negotiateToInitiatorHandshake(inboundManager, sessionId)
+        val response = inboundManager.processSessionMessage(LinkInMessage(message))
+        assertTrue(response?.payload is ResponderHandshakeMessage)
+        val secondResponse = inboundManager.processSessionMessage(LinkInMessage(message))
+        assertNull(secondResponse)
+
+        val keyHash = hashKeyToBase64(netMapInbound.getKeyPair().public)
+        loggingInterceptor.assertSingleWarning("The received public key hash ($keyHash) corresponding to one of our holding" +
+            " identities is not in the network map. We did not respond to replayed InitiatorHandshakeMessage for" +
+            " sessionId $sessionId.")
+    }
+
+    @Test
+    fun `Replayed Initiator handshake does not cause a response if our network type is not in the network map`() {
+        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        val sessionId = "SessionId"
+
+        Mockito.`when`(netMap.getNetworkType(any()))
+            .thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
+            .thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
+            .thenReturn(null)
+        Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
+        Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
+            .thenReturn(netMapInbound.getOurMemberInfo())
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+            .thenReturn(netMapOutbound.getOurMemberInfo())
+        val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
+
+        val message = negotiateToInitiatorHandshake(inboundManager, sessionId)
+        val response = inboundManager.processSessionMessage(LinkInMessage(message))
+        assertTrue(response?.payload is ResponderHandshakeMessage)
+        val secondResponse = inboundManager.processSessionMessage(LinkInMessage(message))
+        assertNull(secondResponse)
+
+        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId myGroup. " +
+            "We did not respond to replayed InitiatorHandshakeMessage for sessionId $sessionId.")
+    }
+
+    @Test
     fun `Responder handshake message is dropped if the sender is not in the network map`() {
         val messageReplayer = MockSessionReplayer()
 

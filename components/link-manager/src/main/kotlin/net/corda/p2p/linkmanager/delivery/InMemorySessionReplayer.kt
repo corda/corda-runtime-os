@@ -51,6 +51,7 @@ class InMemorySessionReplayer(
         startStopLock.write {
             if (isRunning) {
                 running = false
+                replayScheduler.stop()
             }
         }
     }

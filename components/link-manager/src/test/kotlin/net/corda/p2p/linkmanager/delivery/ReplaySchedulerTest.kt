@@ -28,21 +28,6 @@ class ReplaySchedulerTest {
         loggingInterceptor.reset()
     }
 
-    class TrackReplayedMessages(numUniqueMessages: Int) {
-        private val latch = CountDownLatch(numUniqueMessages)
-        private val replayedMessageIds = mutableSetOf<String>()
-
-        fun replayMessage(messageId: String) {
-            if (replayedMessageIds.contains(messageId)) return
-            replayedMessageIds += messageId
-            latch.countDown()
-        }
-
-        fun await() {
-            latch.await()
-        }
-    }
-
     @Test
     fun `The ReplayScheduler will not replay before start`() {
         val replayManager = ReplayScheduler(replayPeriod, { _: Any -> } ) { 0 }
@@ -70,33 +55,6 @@ class ReplaySchedulerTest {
 
         tracker.await()
         replayManager.stop()
-    }
-
-    class TwoPhaseTrackReplayedMessages(private val firstNumUniqueMessages: Int, private val secondNumUniqueMessages: Int) {
-        val firstPhaseWaitLatch = CountDownLatch(1)
-        val secondPhaseStartLatch = CountDownLatch(1)
-        val secondPhaseWaitLatch = CountDownLatch(1)
-        val replayedMessageIds = mutableMapOf<String, Int>()
-
-        private var secondPhase = false
-
-        fun replayMessage(messageId: String) {
-            val replays = replayedMessageIds[messageId]
-            if (replays == null) {
-                replayedMessageIds[messageId] = 1
-            } else {
-                replayedMessageIds[messageId] = replays + 1
-            }
-            if (replayedMessageIds.keys.size == firstNumUniqueMessages) {
-                replayedMessageIds.clear()
-                firstPhaseWaitLatch.countDown()
-                secondPhaseStartLatch.await()
-                secondPhase = true
-            }
-            if (secondPhase && replayedMessageIds.keys.size == secondNumUniqueMessages) {
-                secondPhaseWaitLatch.countDown()
-            }
-        }
     }
 
     @Test
@@ -134,6 +92,33 @@ class ReplaySchedulerTest {
         replayManager.stop()
     }
 
+    @Test
+    fun `The ReplayScheduler handles exceptions`() {
+        val throwOnFirstReplay = ThrowExceptionOnFirstReplay()
+        val replayManager = ReplayScheduler(replayPeriod, throwOnFirstReplay::replayMessage) { 0 }
+        replayManager.start()
+        replayManager.addForReplay(0, "", Any())
+        throwOnFirstReplay.await()
+        loggingInterceptor.assertErrorContains(
+            "An exception was thrown when replaying a message. The task will be retired again in ${replayPeriod.toMillis()} ms.")
+        replayManager.stop()
+    }
+
+    class TrackReplayedMessages(numUniqueMessages: Int) {
+        private val latch = CountDownLatch(numUniqueMessages)
+        private val replayedMessageIds = mutableSetOf<String>()
+
+        fun replayMessage(messageId: String) {
+            if (replayedMessageIds.contains(messageId)) return
+            replayedMessageIds += messageId
+            latch.countDown()
+        }
+
+        fun await() {
+            latch.await()
+        }
+    }
+
     class ThrowExceptionOnFirstReplay {
         private val latch = CountDownLatch(2)
         private var shouldThrow = true
@@ -154,15 +139,30 @@ class ReplaySchedulerTest {
         }
     }
 
-    @Test
-    fun `The ReplayScheduler handles exceptions`() {
-        val throwOnFirstReplay = ThrowExceptionOnFirstReplay()
-        val replayManager = ReplayScheduler(replayPeriod, throwOnFirstReplay::replayMessage) { 0 }
-        replayManager.start()
-        replayManager.addForReplay(0, "", Any())
-        throwOnFirstReplay.await()
-        loggingInterceptor.assertErrorContains(
-            "An exception was thrown when replaying a message. The task will be retired again in ${replayPeriod.toMillis()} ms.")
-        replayManager.stop()
+    class TwoPhaseTrackReplayedMessages(private val firstNumUniqueMessages: Int, private val secondNumUniqueMessages: Int) {
+        val firstPhaseWaitLatch = CountDownLatch(1)
+        val secondPhaseStartLatch = CountDownLatch(1)
+        val secondPhaseWaitLatch = CountDownLatch(1)
+        val replayedMessageIds = mutableMapOf<String, Int>()
+
+        private var secondPhase = false
+
+        fun replayMessage(messageId: String) {
+            val replays = replayedMessageIds[messageId]
+            if (replays == null) {
+                replayedMessageIds[messageId] = 1
+            } else {
+                replayedMessageIds[messageId] = replays + 1
+            }
+            if (replayedMessageIds.keys.size == firstNumUniqueMessages) {
+                replayedMessageIds.clear()
+                firstPhaseWaitLatch.countDown()
+                secondPhaseStartLatch.await()
+                secondPhase = true
+            }
+            if (secondPhase && replayedMessageIds.keys.size == secondNumUniqueMessages) {
+                secondPhaseWaitLatch.countDown()
+            }
+        }
     }
 }
