@@ -41,17 +41,17 @@ class EntityManagerFactoryFactoryImpl(
     ): EntityManagerFactory {
         return create(
             persistenceUnitName,
-            entities.map { it.classLoader }.distinct(),
             entities.map { it.canonicalName },
+            entities.map { it.classLoader }.distinct(),
             configuration
         )
     }
 
     // could possibly expose this on the api if there would be a need to pass in custom classloader(s)
-    private fun create(
+    override fun create(
         persistenceUnitName: String,
-        classLoaders: List<ClassLoader>,
         entities: List<String>,
+        classLoaders: List<ClassLoader>,
         configuration: EntityManagerConfiguration
     ): EntityManagerFactory {
         log.info("Creating create for $persistenceUnitName")
