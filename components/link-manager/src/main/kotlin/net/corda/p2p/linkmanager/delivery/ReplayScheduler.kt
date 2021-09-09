@@ -60,7 +60,7 @@ class ReplayScheduler<M>(
     fun addForReplay(originalAttemptTimestamp: Long, uniqueId: String, message: M) {
         startStopLock.read {
             if (!running) {
-                throw MessageAddedForReplayWhenNotStartedException(this::class.java.simpleName)
+                throw IllegalStateException("A message was added for replay before the ReplayScheduler was started.")
             }
             val delay = replayPeriod.toMillis() + originalAttemptTimestamp - currentTimestamp()
             val future = executorService.schedule({ replay(message, uniqueId) }, delay, TimeUnit.MILLISECONDS)

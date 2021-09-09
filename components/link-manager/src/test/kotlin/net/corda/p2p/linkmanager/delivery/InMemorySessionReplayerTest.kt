@@ -315,7 +315,7 @@ class InMemorySessionReplayerTest {
             GROUP_ID
         ).generateInitiatorHello()
         val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap)
-        assertThrows<MessageAddedForReplayWhenNotStartedException> {
+        assertThrows<IllegalStateException> {
             replayer.addMessageForReplay("", SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY))
         }
     }

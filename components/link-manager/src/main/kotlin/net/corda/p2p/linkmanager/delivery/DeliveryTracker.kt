@@ -108,12 +108,12 @@ class DeliveryTracker(
 
         fun replayMessage(message: AuthenticatedMessageAndKey) {
             startStopLock.read {
-                if (running) {
-                    val records = processAuthenticatedMessage(message)
-                    publisher.publish(records)
-                } else {
-                    throw MessageAddedForReplayWhenNotStartedException(this::class.java.simpleName)
+                if (!running) {
+                    throw IllegalStateException("A message was added for replay before the DeliveryTracker was started.")
                 }
+
+                val records = processAuthenticatedMessage(message)
+                publisher.publish(records)
             }
         }
     }

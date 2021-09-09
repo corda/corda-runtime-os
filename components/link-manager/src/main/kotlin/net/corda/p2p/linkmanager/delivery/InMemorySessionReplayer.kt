@@ -58,11 +58,11 @@ class InMemorySessionReplayer(
 
     override fun addMessageForReplay(uniqueId: String, messageReplay: SessionReplayer.SessionMessageReplay) {
         startStopLock.read {
-            if (running) {
-                replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay)
-            } else {
-                throw MessageAddedForReplayWhenNotStartedException(this::class.java.simpleName)
+            if (!running) {
+                throw IllegalStateException("A message was added for replay before the InMemorySessionReplayer was started.")
             }
+
+            replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay)
         }
     }
 
