@@ -118,6 +118,10 @@ allprojects {
         maven {
             url = "$artifactoryContextUrl/corda-dependencies"
         }
+        //Needed to retrieve Javalin OSGi repackaged version that we published
+        maven {
+            url = "$artifactoryContextUrl/corda-dependencies-dev"
+        }
         //needed for C5 binaries
         maven {
             url = "$artifactoryContextUrl/corda-os-maven-unstable"
