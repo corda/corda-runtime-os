@@ -13,10 +13,11 @@ interface StateAndEventConsumer<K : Any, S : Any, E : Any> : AutoCloseable {
     fun getValue(key: K): S?
 
     /**
-     * Update the in memory state map with the latest state values from the message source.
-     * This call will also check to see if the [eventConsumer] and [stateConsumer]
-     * are in sync. If the [stateConsumer] has caught up on all the states for any newly acquired partitions this call will also resume the
-     * these [eventConsumer] partitions which were paused. This will also call the [StateAndEventListener] onPartitionSynced() method.
+     * Update the in memory state map with the latest values from the message source calling poll on the [stateConsumer].
+     * Checks to see if the [eventConsumer] and [stateConsumer] are in sync. They will be in sync when all the states
+     * on the assigned partitions at the point of assignment are read from the message source.
+     * When the consumers are sync, resume the [eventConsumer] partitions which were paused and call the [StateAndEventListener]
+     * to notify the client.
      */
     fun updateStatesAndSynchronizePartitions()
 
