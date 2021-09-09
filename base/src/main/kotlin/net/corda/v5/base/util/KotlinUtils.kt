@@ -123,3 +123,5 @@ private class TransientProperty<out T> internal constructor(private val initiali
 
 @Suppress("UNCHECKED_CAST")
 fun <T, U : T> uncheckedCast(obj: T) = obj as U
+
+fun <T> Class<T>.castIfPossible(obj: Any): T? = if (isInstance(obj)) cast(obj) else null

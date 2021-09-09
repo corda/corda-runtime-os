@@ -23,18 +23,3 @@ dependencies {
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
 }
-
-// Added to facilitate core-tests
-configurations {
-    testArtifacts.extendsFrom testRuntimeClasspath
-}
-
-def testJar = tasks.register('testJar', Jar) {
-    archiveClassifier = "tests"
-    from sourceSets.test.output
-}
-
-// Exposes test classes for other modules
-artifacts {
-    testArtifacts testJar
-}
