@@ -1,4 +1,4 @@
-package net.corda.messaging.db.util
+package net.corda.test.util
 
 import java.time.Duration
 
