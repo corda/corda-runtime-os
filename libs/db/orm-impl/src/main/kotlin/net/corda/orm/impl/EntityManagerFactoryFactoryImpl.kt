@@ -8,6 +8,7 @@ import org.hibernate.cfg.AvailableSettings
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder
+import org.osgi.service.component.annotations.Component
 import javax.persistence.EntityManagerFactory
 import javax.persistence.spi.PersistenceUnitInfo
 
@@ -16,6 +17,7 @@ import javax.persistence.spi.PersistenceUnitInfo
  *
  * @constructor Create [EntityManagerFactoryFactory]
  */
+@Component
 class EntityManagerFactoryFactoryImpl(
     private val entityManagerFactoryBuilderFactory:
         (p: PersistenceUnitInfo) -> EntityManagerFactoryBuilder = { p ->

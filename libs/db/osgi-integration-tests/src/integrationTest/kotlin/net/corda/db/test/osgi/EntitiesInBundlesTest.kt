@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.framework.FrameworkUtil
+import org.osgi.service.component.annotations.Reference
+import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -35,6 +37,9 @@ class EntitiesInBundlesTest {
 
         private val logger: Logger = LoggerFactory.getLogger("TEST")
 
+        @InjectService
+        lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
+
         private val dogBundle = run {
             val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
                 bundle.symbolicName == "net.corda.dogs"
@@ -58,8 +63,6 @@ class EntitiesInBundlesTest {
         private val dogCtor = dogClass.getDeclaredConstructor(UUID::class.java, String::class.java, LocalDate::class.java, String::class.java)
         private val ownerCtor = ownerClass.getDeclaredConstructor(UUID::class.java, String::class.java, Int::class.java)
         private val catCtor = catClass.getDeclaredConstructor(UUID::class.java, String::class.java, String::class.java, ownerClass)
-
-        private val emff: EntityManagerFactoryFactory = EntityManagerFactoryFactoryImpl()
 
         private val dog = dogCtor.newInstance(UUID.randomUUID(), "Faraway", LocalDate.of(2020, 2, 26), "Bob")
         private val owner = ownerCtor.newInstance(UUID.randomUUID(), "Bob", 26)
@@ -87,8 +90,7 @@ class EntitiesInBundlesTest {
         fun setupEntities() {
             logger.info("Create Entities".emphasise())
 
-            // TODO: should EntityManagerFactoryFactory be injected as an OSGi service?
-            val emf = emff.create(
+            val emf = entityManagerFactoryFactory.create(
                 "pets",
                 listOf(catClass, ownerClass, dogClass),
                 dbConfig
@@ -117,7 +119,7 @@ class EntitiesInBundlesTest {
     fun `validate entities are persisted`() {
         logger.info("Load persisted entities".emphasise())
 
-        val emf = emff.create(
+        val emf = entityManagerFactoryFactory.create(
             "pets",
             listOf(catClass, ownerClass, dogClass),
             dbConfig
@@ -141,7 +143,7 @@ class EntitiesInBundlesTest {
          */
         logger.info("Query cross-bundle entities".emphasise())
 
-        val emf = emff.create(
+        val emf = entityManagerFactoryFactory.create(
             "pets",
             listOf(catClass, ownerClass, dogClass),
             dbConfig

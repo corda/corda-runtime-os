@@ -34,6 +34,9 @@ implementation of `PersistenceUnitInfo` so to avoid the need of any XML configur
 
 ### OSGi
 
+
+`EntityManagerFactoryFactory` is an OSGi service, hence can be injected (see osgi integration test)
+
 When used in an OSGi context, the following bundles are required 
 (see `test.bndrun` in the `osgi-integration-tests` module):
 
