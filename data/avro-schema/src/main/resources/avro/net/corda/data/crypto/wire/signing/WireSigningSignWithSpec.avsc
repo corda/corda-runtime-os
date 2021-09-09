@@ -1,8 +1,8 @@
 {
   "type": "record",
-  "name": "WireSigningSign",
+  "name": "WireSigningSignWithSpec",
   "namespace": "net.corda.data.crypto.wire.signing",
-  "doc": "Internal over-the-wire request to sign using public key and default signature spec",
+  "doc": "Internal over-the-wire request to sign using public key and signature scheme override",
   "fields": [
     {
       "name": "publicKey",
@@ -11,6 +11,11 @@
         "bytes"
       ],
       "doc": "It's used to look up the matching private key information and sign the data"
+    },
+    {
+      "name": "signatureSpec",
+      "type": "net.corda.data.crypto.wire.WireSignatureSpec",
+      "doc": "Overrides the default signature scheme, otherwise the default scheme is used"
     },
     {
       "name": "bytes",

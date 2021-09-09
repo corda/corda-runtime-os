@@ -1,13 +1,18 @@
 {
   "type": "record",
-  "name": "WireFreshKeysSign",
+  "name": "WireFreshKeysSignWithSpec",
   "namespace": "net.corda.data.crypto.wire.freshkeys",
-  "doc": "Internal over-the-wire request to sign using default signature scheme",
+  "doc": "Internal over-the-wire request to sign using signature spec override",
   "fields": [
     {
       "name": "publicKey",
       "type": "bytes",
       "doc": "It's used to look up the matching private key information and sign the data"
+    },
+    {
+      "name": "signatureSpec",
+      "type": "net.corda.data.crypto.wire.WireSignatureSpec",
+      "doc": "Overrides the default signature scheme"
     },
     {
       "name": "bytes",

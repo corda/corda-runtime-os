@@ -1,14 +1,14 @@
 {
   "type": "record",
-  "name": "WireSigningSign",
+  "name": "WireSigningSignWithAlias",
   "namespace": "net.corda.data.crypto.wire.signing",
-  "doc": "Internal over-the-wire request to sign using public key and default signature spec",
+  "doc": "Internal over-the-wire request to sign using alias and default signature scheme",
   "fields": [
     {
-      "name": "publicKey",
+      "name": "alias",
       "type": [
         "null",
-        "bytes"
+        "string"
       ],
       "doc": "It's used to look up the matching private key information and sign the data"
     },

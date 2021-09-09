@@ -9,8 +9,7 @@
       "type": [
         "null",
         {
-          "type": "string",
-          "logicalType": "uuid"
+          "type": "string"
         }
       ],
       "doc": "If provided then the key will be associated with that id"
