@@ -13,9 +13,9 @@ interface StateAndEventConsumer<K : Any, S : Any, E : Any> : AutoCloseable {
     fun getValue(key: K): S?
 
     /**
-     * Update the in memory state map with the latest values from the message source calling poll on the [stateConsumer].
-     * Checks to see if the [eventConsumer] and [stateConsumer] are in sync. They will be in sync when all the states
-     * on the assigned partitions at the point of assignment are read from the message source.
+     * Update the in memory state map with the latest values from kafka, calls poll on the [stateConsumer].
+     * Checks to see if the [eventConsumer] and [stateConsumer] are in sync.
+     * They will be in sync when all the states on the assigned partitions (at the point of assignment) are read from kafka.
      * When the consumers are sync, resume the [eventConsumer] partitions which were paused and call the [StateAndEventListener]
      * to notify the client.
      */
