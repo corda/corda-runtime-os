@@ -7,14 +7,17 @@ plugins {
 description 'Corda Ledger'
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
-    // Concluded this is the one acceptable dependency in addition to kotlin.
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
-    implementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
+    api platform(project(':corda-api'))
+
+    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api 'javax.persistence:javax.persistence-api'
+    api 'org.slf4j:slf4j-api'
+
+    compileOnly 'org.osgi:osgi.annotation'
+    // We only need Hibernate for its annotations.
+    compileOnly("org.hibernate:hibernate-osgi:$hibernateVersion") {
         exclude group: 'org.osgi'
     }
-    api "javax.persistence:javax.persistence-api:$javaxPersistenceApiVersion"
 
     implementation project(":crypto")
     implementation project(":serialization")
@@ -24,7 +27,4 @@ dependencies {
     testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
-
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
 }

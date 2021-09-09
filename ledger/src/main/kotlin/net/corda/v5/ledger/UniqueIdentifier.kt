@@ -2,7 +2,7 @@ package net.corda.v5.ledger
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.VisibleForTesting
-import java.util.*
+import java.util.UUID
 
 /**
  * This class provides a truly unique identifier of a trade, state, or other business object, bound to any existing

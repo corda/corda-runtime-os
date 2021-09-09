@@ -4,7 +4,7 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.util.exactAdd
 import java.math.BigDecimal
 import java.math.RoundingMode
-import java.util.*
+import java.util.Currency
 
 /**
  * This interface is used by [Amount] to determine the conversion ratio from

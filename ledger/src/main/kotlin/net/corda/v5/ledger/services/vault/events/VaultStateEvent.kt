@@ -1,10 +1,10 @@
 package net.corda.v5.ledger.services.vault.events
 
+import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.ledger.contracts.ContractState
 import net.corda.v5.ledger.contracts.StateAndRef
 import net.corda.v5.ledger.services.vault.VaultEventType
 import java.time.Instant
-import net.corda.v5.base.annotations.DoNotImplement
 
 /**
  * [VaultStateEvent] contains information about state changes to the vault.

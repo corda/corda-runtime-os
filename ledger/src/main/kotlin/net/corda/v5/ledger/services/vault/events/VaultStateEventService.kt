@@ -2,12 +2,12 @@ package net.corda.v5.ledger.services.vault.events
 
 import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.application.services.CordaService
+import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.stream.DurableCursor
 import net.corda.v5.base.stream.CursorException
 import net.corda.v5.ledger.contracts.ContractState
 import java.util.function.BiConsumer
-import net.corda.v5.base.annotations.DoNotImplement
 
 /**
  * [VaultStateEventService] allows [CordaService]s to subscribe to vault state events triggered by the recording of [ContractState]s to the

@@ -12,6 +12,7 @@ dependencies {
         api project(':crypto')
         api project(':data:avro-schema')
         api project(':data:topic-schema')
+        api project(':ledger')
         api project(':packaging')
         api project(':persistence')
         api project(':serialization')
