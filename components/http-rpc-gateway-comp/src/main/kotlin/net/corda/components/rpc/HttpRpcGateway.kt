@@ -37,7 +37,7 @@ class HttpRpcGateway(
     get() = receivedSnapshot
 
     fun start(bootstrapConfig: Config) {
-        log.info("Starting with bootstrapped config")
+        log.info("Starting with bootstrap config")
         this.bootstrapConfig = bootstrapConfig
         this.start()
     }
