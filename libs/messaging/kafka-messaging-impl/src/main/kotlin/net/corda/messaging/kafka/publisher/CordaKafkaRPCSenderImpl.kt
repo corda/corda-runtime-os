@@ -3,6 +3,7 @@ package net.corda.messaging.kafka.publisher
 import com.typesafe.config.Config
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
+import net.corda.data.messaging.status
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
@@ -18,9 +19,13 @@ import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.apache.kafka.common.TopicPartition
+import org.jboss.util.collection.WeakValueHashMap
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.ObjectInput
+import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.nio.ByteBuffer
 import java.time.Duration
@@ -49,6 +54,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
     private var partitions: List<TopicPartition> = listOf()
+    private val futureMap: WeakValueHashMap<String, CompletableFuture<TRESP>> = WeakValueHashMap()
 
     override val isRunning: Boolean
         get() = !stopped
@@ -146,33 +152,59 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCResponse>>) {
         consumerRecords.forEach {
-            TODO("process records somehow")
+            val correlationKey = it.record.key()
+            val future = futureMap[correlationKey]
+
+            when(it.record.value().responseStatus) {
+                status.OK -> {
+                    val responseBytes = it.record.value().payload
+                    val byteArrayInputStream = ByteArrayInputStream(responseBytes.array())
+                    val objectInput: ObjectInput
+                    objectInput = ObjectInputStream(byteArrayInputStream)
+                    val response = objectInput.readObject() as TRESP
+                    byteArrayInputStream.close()
+
+                    log.info("Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}")
+
+                    future?.complete(response)
+                }
+                status.FAILED -> {
+                    TODO("throw rpc specific error")
+                }
+                status.CANCELLED -> {
+                    TODO("what happens here")
+                }
+
+            }
         }
     }
 
     override fun sendRequest(req: TREQ): CompletableFuture<TRESP> {
-        val uuid = UUID.randomUUID()
+        val uuid = UUID.randomUUID().toString()
 
         val bytesOut = ByteArrayOutputStream()
-        val oos = ObjectOutputStream(bytesOut)
-        oos.writeObject(req)
-        oos.flush()
+        val objectStream = ObjectOutputStream(bytesOut)
+        objectStream.writeObject(req)
+        objectStream.flush()
         val reqBytes: ByteArray = bytesOut.toByteArray()
         bytesOut.close()
-        oos.close()
+        objectStream.close()
 
         val request = RPCRequest(
-            uuid.toString(),
+            uuid,
             Instant.now().toEpochMilli(),
             partitions[0].partition(),
             ByteBuffer.wrap(reqBytes)
         )
 
-        val record = Record(rpcConfig.requestTopic, uuid.toString(), request)
+        val record = Record(rpcConfig.requestTopic, uuid, request)
         publisher.publish(listOf(record))
-        return CompletableFuture<TRESP>()
-    }
+        val future = CompletableFuture<TRESP>()
+        futureMap[uuid] = future
 
+        return future
+    }
 }
