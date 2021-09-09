@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager.delivery
 
 import net.corda.lifecycle.Lifecycle
-import org.slf4j.LoggerFactory
+import net.corda.v5.base.util.contextLogger
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
@@ -79,11 +79,10 @@ class ReplayScheduler<M>(
         try {
             replayMessage(message)
         } catch (exception: Exception) {
-            logger.error("An exception was thrown when replaying a message. The task will be retired again in " +
+            logger.error("An exception was thrown when replaying a message. The task will be retried again in " +
                 "${replayPeriod.toMillis()} ms.\nException:",
                 exception
             )
-            reschedule(message, uniqueId)
         }
         reschedule(message, uniqueId)
     }

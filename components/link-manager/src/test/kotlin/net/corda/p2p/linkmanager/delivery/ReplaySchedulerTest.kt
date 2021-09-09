@@ -100,7 +100,7 @@ class ReplaySchedulerTest {
         replayManager.addForReplay(0, "", Any())
         throwOnFirstReplay.await()
         loggingInterceptor.assertErrorContains(
-            "An exception was thrown when replaying a message. The task will be retired again in ${replayPeriod.toMillis()} ms.")
+            "An exception was thrown when replaying a message. The task will be retried again in ${replayPeriod.toMillis()} ms.")
         replayManager.stop()
     }
 
