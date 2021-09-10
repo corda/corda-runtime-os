@@ -15,8 +15,8 @@ import net.corda.messaging.db.publisher.DBPublisher
 import net.corda.messaging.db.subscription.DBDurableSubscription
 import net.corda.messaging.db.sync.OffsetTrackersManager
 import net.corda.messaging.db.util.DbUtils
-import net.corda.messaging.db.util.eventually
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.minutes
