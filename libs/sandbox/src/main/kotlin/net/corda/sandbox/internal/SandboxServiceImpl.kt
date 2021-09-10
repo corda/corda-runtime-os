@@ -11,6 +11,7 @@ import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
+import net.corda.sandbox.internal.classtag.ClassTagFactoryImpl
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxImpl
@@ -191,7 +192,8 @@ internal class SandboxServiceImpl @Activate constructor(
         val sandboxGroup = SandboxGroupImpl(
             bundleUtils,
             newSandboxes.associateBy { sandbox -> sandbox.cpk.id },
-            platformSandbox
+            platformSandbox,
+            ClassTagFactoryImpl()
         )
 
         newSandboxes.forEach { sandbox ->

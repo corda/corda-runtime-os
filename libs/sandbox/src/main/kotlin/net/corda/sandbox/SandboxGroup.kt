@@ -41,26 +41,26 @@ interface SandboxGroup {
     fun cordappClassCount(className: String): Int
 
     /**
-     * Returns the [StaticTag] for a given [klass].
+     * Returns the serialised static tag for a given [klass].
      *
      * Throws [SandboxException] if the class is not loaded from any bundle, or is contained in a bundle that is not
      * contained in any sandbox in the group or in the platform sandbox.
      */
-    fun getStaticTag(klass: Class<*>): StaticTag
+    fun getStaticTag(klass: Class<*>): String
 
     /**
-     * Returns the [EvolvableTag] for a given [klass].
+     * Returns the serialised evolvable tag for a given [klass].
      *
      * Throws [SandboxException] if the class is not loaded from any bundle, or is contained in a bundle that is not
      * contained in any sandbox in the group or in the platform sandbox.
      */
-    fun getEvolvableTag(klass: Class<*>): EvolvableTag
+    fun getEvolvableTag(klass: Class<*>): String
 
     /**
-     * Returns the [Class] identified by the [className] and the [classTag].
+     * Returns the [Class] identified by the [className] and the [serialisedClassTag].
      *
      * Throws [SandboxException] if there is no sandbox matching the tag, if the class is not contained in the matching
-     * sandbox or in the platform sandbox, or if the [ClassTag] implementation is not recognised.
+     * sandbox or in the platform sandbox, or if the class tag cannot be parsed.
      */
-    fun getClass(className: String, classTag: ClassTag): Class<*>
+    fun getClass(className: String, serialisedClassTag: String): Class<*>
 }

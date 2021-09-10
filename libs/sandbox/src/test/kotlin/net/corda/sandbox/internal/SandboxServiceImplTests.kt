@@ -25,7 +25,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
-import org.osgi.framework.Version
 import java.net.URI
 import java.nio.file.Paths
 import java.util.Collections
@@ -44,24 +43,18 @@ class SandboxServiceImplTests {
     companion object {
         private const val hashAlgorithm = "SHA-256"
         private const val hashLength = 32
-        private val APPLICATION_VERSION = Version.parseVersion("5.0")
-        private val FRAMEWORK_VERSION = Version.parseVersion("1.9")
-        private val SCR_VERSION = Version.parseVersion("2.1.24")
-        private val SLF4J_VERSION = Version.parseVersion("1.7.30")
-        private val SECRET_VERSION = Version.parseVersion("9.9.99")
-
-        fun createMockBundle(bsn: String, bundleVersion: Version): Bundle = mock<Bundle>().apply {
-            whenever(symbolicName).thenReturn(bsn)
-            whenever(version).thenReturn(bundleVersion)
-            whenever(toString()).thenReturn("Mock Bundle for $bsn:$bundleVersion")
-        }
+        private const val APPLICATION_VERSION = "5.0"
+        private const val FRAMEWORK_VERSION = "1.9"
+        private const val SCR_VERSION = "2.1.24"
+        private const val SLF4J_VERSION = "1.7.30"
+        private const val SECRET_VERSION = "9.9.99"
     }
 
-    private val frameworkBundle = createMockBundle("org.apache.felix.framework", FRAMEWORK_VERSION)
-    private val scrBundle = createMockBundle("org.apache.felix.scr", SCR_VERSION)
-    private val applicationBundle = createMockBundle("net.corda.application", APPLICATION_VERSION)
-    private val slf4jBundle = createMockBundle("slf4j.api", SLF4J_VERSION)
-    private val secretBundle = createMockBundle("secret.service", SECRET_VERSION)
+    private val frameworkBundle = mockBundle("org.apache.felix.framework", FRAMEWORK_VERSION)
+    private val scrBundle = mockBundle("org.apache.felix.scr", SCR_VERSION)
+    private val applicationBundle = mockBundle("net.corda.application", APPLICATION_VERSION)
+    private val slf4jBundle = mockBundle("slf4j.api", SLF4J_VERSION)
+    private val secretBundle = mockBundle("secret.service", SECRET_VERSION)
 
     private val cpkDataOne = createDummyCpkData(
         cordappClasses = setOf(String::class.java),
@@ -111,18 +104,14 @@ class SandboxServiceImplTests {
             }
         )
 
-        val cordappBundle = mock<Bundle>().apply {
-            whenever(symbolicName).thenReturn(Random.nextInt().toString())
-            whenever(version).thenReturn(Version("0.0"))
+        val cordappBundle = mockBundle(Random.nextInt().toString(), "0.0").apply {
             whenever(loadClass(any())).then { answer ->
                 val className = answer.arguments.single()
                 cordappClasses.find { klass -> klass.name == className } ?: throw ClassNotFoundException()
             }
         }
 
-        val libraryBundle = mock<Bundle>().apply {
-            whenever(symbolicName).thenReturn(Random.nextInt().toString())
-            whenever(version).thenReturn(Version("0.0"))
+        val libraryBundle = mockBundle(Random.nextInt().toString(), "0.0").apply {
             whenever(loadClass(libraryClass.name)).thenReturn(libraryClass)
         }
 

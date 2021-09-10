@@ -1,16 +1,14 @@
 package net.corda.sandbox.internal
 
 import net.corda.packaging.Cpk
-import net.corda.sandbox.ClassTag
-import net.corda.sandbox.EvolvableTag
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandbox.StaticTag
+import net.corda.sandbox.internal.classtag.ClassTagFactory
+import net.corda.sandbox.internal.classtag.EvolvableTag
+import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
-import net.corda.v5.crypto.SecureHash
-import java.util.Collections
 
 /**
  * An implementation of the [SandboxGroup] interface.
@@ -22,18 +20,9 @@ import java.util.Collections
 internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils,
     private val sandboxesById: Map<Cpk.Identifier, CpkSandboxInternal>,
-    private val platformSandbox: SandboxInternal
+    private val platformSandbox: SandboxInternal,
+    private val classTagFactory: ClassTagFactory
 ) : SandboxGroup {
-
-    companion object {
-        // Used as placeholders when generating class tags for platform classes. However, it is not safe to use these
-        // to determine whether a given tag corresponds to a platform bundle. The `ClassTag.isPlatformClass` property
-        // should be used instead.
-        private const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "PLATFORM_BUNDLE"
-        private val PLACEHOLDER_CPK_FILE_HASH = SecureHash.create("SHA-256:0000000000000000")
-        private val PLACEHOLDER_CPK_PUBLIC_KEY_HASHES = Collections.emptyNavigableSet<SecureHash>()
-    }
-
     override val sandboxes = sandboxesById.values
 
     override fun getSandbox(cpkIdentifier: Cpk.Identifier) = sandboxesById[cpkIdentifier]
@@ -60,11 +49,13 @@ internal class SandboxGroupImpl(
         sandbox.cordappBundleContainsClass(className)
     }
 
-    override fun getStaticTag(klass: Class<*>) = getClassTag(klass, isStaticTag = true) as StaticTag
+    override fun  getStaticTag(klass: Class<*>) = getClassTag(klass, isStaticTag = true)
 
-    override fun getEvolvableTag(klass: Class<*>) = getClassTag(klass, isStaticTag = false) as EvolvableTag
+    override fun getEvolvableTag(klass: Class<*>) = getClassTag(klass, isStaticTag = false)
 
-    override fun getClass(className: String, classTag: ClassTag): Class<*> {
+    override fun getClass(className: String, serialisedClassTag: String): Class<*> {
+        val classTag = classTagFactory.deserialise(serialisedClassTag)
+
         val sandbox = if (classTag.isPlatformClass) {
             platformSandbox
         } else {
@@ -74,7 +65,6 @@ internal class SandboxGroupImpl(
                     sandbox.cpk.id.signers == classTag.cpkPublicKeyHashes
                             && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
                 }
-                else -> throw SandboxException("Unrecognised class tag type ${classTag::class.java.name}.")
             }
         } ?: throw SandboxException(
             "Class tag $className did not match any sandbox in the sandbox group or the " +
@@ -87,44 +77,25 @@ internal class SandboxGroupImpl(
     }
 
     /**
-     * Returns the [ClassTag] for a given [klass].
+     * Returns the serialised `ClassTag` for a given [klass].
      *
-     * If [isStaticTag] is true, a [StaticTag] is returned. Otherwise, an [EvolvableTag] is returned.
+     * If [isStaticTag] is true, a serialised [StaticTag] is returned. Otherwise, a serialised [EvolvableTag] is
+     * returned.
      *
      * Throws [SandboxException] if the class is not contained in any bundle, or is contained in a bundle that is not
      * contained in any sandbox in the group or in the platform sandbox.
      */
-    private fun getClassTag(klass: Class<*>, isStaticTag: Boolean): ClassTag {
-        val bundle = bundleUtils.getBundle(klass) ?: throw SandboxException(
-            "Class ${klass.name} was not loaded from any bundle."
-        )
+    private fun getClassTag(klass: Class<*>, isStaticTag: Boolean): String {
+        val bundle = bundleUtils.getBundle(klass)
+            ?: throw SandboxException("Class ${klass.name} was not loaded from any bundle.")
 
-        if (platformSandbox.containsBundle(bundle)) {
-            return if (isStaticTag) {
-                StaticTag(PLACEHOLDER_CPK_FILE_HASH, isPlatformClass = true, bundle.symbolicName)
-            } else {
-                EvolvableTag(
-                    PLACEHOLDER_CORDAPP_BUNDLE_NAME,
-                    PLACEHOLDER_CPK_PUBLIC_KEY_HASHES,
-                    isPlatformClass = true,
-                    bundle.symbolicName
-                )
-            }
-        }
-
-        val sandbox = sandboxes.find { sandbox -> sandbox.containsBundle(bundle) } ?: throw SandboxException(
-            "Bundle ${bundle.symbolicName} was not found in the sandbox group or in the platform sandbox."
-        )
-
-        return if (isStaticTag) {
-            StaticTag(sandbox.cpk.cpkHash, isPlatformClass = false, bundle.symbolicName)
-        } else {
-            EvolvableTag(
-                sandbox.cordappBundle.symbolicName,
-                sandbox.cpk.id.signers,
-                isPlatformClass = false,
-                bundle.symbolicName
+        val sandbox = (sandboxes + platformSandbox).find { sandbox -> sandbox.containsBundle(bundle) }
+            ?: throw SandboxException(
+                "Bundle ${bundle.symbolicName} was not found in the sandbox group or in the platform sandbox."
             )
-        }
+
+        val isPlatformBundle = platformSandbox.containsBundle(bundle)
+
+        return classTagFactory.createSerialised(isStaticTag, isPlatformBundle, bundle, sandbox)
     }
 }

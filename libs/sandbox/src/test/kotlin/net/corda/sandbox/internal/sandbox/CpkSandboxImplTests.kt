@@ -13,10 +13,10 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
-import java.util.UUID
+import java.util.UUID.randomUUID
 
 class CpkSandboxImplTests {
-    private fun generateSandboxId() = UUID.randomUUID()
+    private fun generateSandboxId() = randomUUID()
     private val mockBundleUtils = BundleUtils(mock(BundleContext::class.java))
 
     @Test

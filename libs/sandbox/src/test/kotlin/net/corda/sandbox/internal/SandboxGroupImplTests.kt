@@ -1,10 +1,11 @@
 package net.corda.sandbox.internal
 
-import net.corda.packaging.Cpk
-import net.corda.sandbox.ClassTag
-import net.corda.sandbox.EvolvableTag
+import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
-import net.corda.sandbox.StaticTag
+import net.corda.sandbox.internal.classtag.ClassTag
+import net.corda.sandbox.internal.classtag.ClassTagFactory
+import net.corda.sandbox.internal.classtag.EvolvableTag
+import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
@@ -15,8 +16,16 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
-import java.util.Collections
-import java.util.TreeSet
+import java.util.NavigableSet
+
+// Various dummy serialised class tags.
+private const val NON_PLATFORM_STATIC_TAG = "serialised_static_non_platform_class"
+private const val PLATFORM_STATIC_TAG = "serialised_static_platform_class"
+private const val BAD_CPK_FILE_HASH_STATIC_TAG = "serialised_static_bad_cpk_file_hash"
+private const val NON_PLATFORM_EVOLVABLE_TAG = "serialised_evolvable_non_platform_class"
+private const val PLATFORM_EVOLVABLE_TAG = "serialised_evolvable_platform_class"
+private const val BAD_CORDAPP_BUNDLE_NAME_EVOLVABLE_TAG = "serialised_evolvable_bad_cordapp_bundle_name"
+private const val BAD_SIGNERS_EVOLVABLE_TAG = "serialised_evolvable_bad_signers"
 
 /**
  * Tests of [SandboxGroupImpl].
@@ -24,32 +33,17 @@ import java.util.TreeSet
  * There are no tests of the sandbox-retrieval and class-loading functionality, since this is likely to be deprecated.
  */
 class SandboxGroupImplTests {
-    companion object {
-        private const val NON_PLATFORM_BUNDLE_NAME = "bundle_symbolic_name"
-        private const val PLATFORM_BUNDLE_NAME = "platform_bundle_symbolic_name"
-        private const val CORDAPP_BUNDLE_NAME = "cordapp_bundle_symbolic_name"
-        private const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "PLATFORM_BUNDLE"
-        private val PLACEHOLDER_CPK_FILE_HASH = SecureHash.create("SHA-256:0000000000000000")
-        private val PLACEHOLDER_CPK_PUBLIC_KEY_HASHES = Collections.emptyNavigableSet<SecureHash>()
-    }
-
     private val nonPlatformClass = String::class.java
     private val platformClass = Int::class.java
     private val nonBundleClass = Boolean::class.java
     private val nonSandboxClass = Float::class.java
 
-    private val mockNonPlatformBundle = mock<Bundle>().apply {
-        whenever(symbolicName).thenReturn(NON_PLATFORM_BUNDLE_NAME)
-    }
-    private val mockPlatformBundle = mock<Bundle>().apply {
-        whenever(symbolicName).thenReturn(PLATFORM_BUNDLE_NAME)
-    }
+    private val mockNonPlatformBundle = mockBundle(NON_PLATFORM_BUNDLE_NAME)
+    private val mockPlatformBundle = mockBundle(PLATFORM_BUNDLE_NAME)
     private val mockNonSandboxBundle = mock<Bundle>()
-    private val mockCordappBundle = mock<Bundle>().apply {
-        whenever(symbolicName).thenReturn(CORDAPP_BUNDLE_NAME)
-    }
+    private val mockCordappBundle = mockBundle(CORDAPP_BUNDLE_NAME)
 
-    private val mockCpk = createMockCpk()
+    private val mockCpk = mockCpk()
 
     private val mockNonPlatformSandbox = mock<CpkSandboxInternal>().apply {
         whenever(cpk).thenReturn(mockCpk)
@@ -69,50 +63,20 @@ class SandboxGroupImplTests {
     }
 
     private val sandboxesById = mapOf(mockCpk.id to mockNonPlatformSandbox)
-    private val sandboxGroupImpl = SandboxGroupImpl(mockBundleUtils, sandboxesById, mockPlatformSandbox)
-
-    private val nonPlatformStaticTag = StaticTag(mockCpk.cpkHash, false, NON_PLATFORM_BUNDLE_NAME)
-    private val platformStaticTag = StaticTag(PLACEHOLDER_CPK_FILE_HASH, true, PLATFORM_BUNDLE_NAME)
-
-    private val nonPlatformEvolvableTag = EvolvableTag(
-        mockNonPlatformSandbox.cordappBundle.symbolicName,
-        mockCpk.id.signers,
-        false,
-        NON_PLATFORM_BUNDLE_NAME)
-    private val platformEvolvableTag = EvolvableTag(
-        PLACEHOLDER_CORDAPP_BUNDLE_NAME,
-        PLACEHOLDER_CPK_PUBLIC_KEY_HASHES,
-        true,
-        PLATFORM_BUNDLE_NAME)
-
-    /** Generates a random [SecureHash]. */
-    private fun randomSecureHash(): SecureHash {
-        val allowedChars = '0'..'9'
-        val hash = (1..16).map { allowedChars.random() }.joinToString("")
-        return SecureHash.create("SHA-256:$hash")
-    }
-
-    /** Generates a mock [Cpk.Expanded]. */
-    private fun createMockCpk(): Cpk.Expanded {
-        val mockCpkSigners = TreeSet(setOf(randomSecureHash()))
-        val mockCpkIdentifier = mock<Cpk.Identifier>().apply {
-            whenever(signers).thenReturn(mockCpkSigners)
-        }
-        val mockCpkFileHash = randomSecureHash()
-        return mock<Cpk.Expanded>().apply {
-            whenever(id).thenReturn(mockCpkIdentifier)
-            whenever(cpkHash).thenReturn(mockCpkFileHash)
-        }
-    }
+    private val classTagFactory = DummyClassTagFactory(mockCpk.cpkHash, mockCpk.id.signers)
+    private val sandboxGroupImpl =
+        SandboxGroupImpl(mockBundleUtils, sandboxesById, mockPlatformSandbox, classTagFactory)
 
     @Test
     fun `creates valid static tag for a non-platform class`() {
-        assertEquals(nonPlatformStaticTag, sandboxGroupImpl.getStaticTag(nonPlatformClass))
+        val expectedTag = "true;false;$mockNonPlatformBundle;$mockNonPlatformSandbox"
+        assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(nonPlatformClass))
     }
 
     @Test
     fun `creates valid static tag for a platform class`() {
-        assertEquals(platformStaticTag, sandboxGroupImpl.getStaticTag(platformClass))
+        val expectedTag = "true;true;$mockPlatformBundle;$mockPlatformSandbox"
+        assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(platformClass))
     }
 
     @Test
@@ -131,23 +95,25 @@ class SandboxGroupImplTests {
 
     @Test
     fun `creates valid evolvable tag for a non-platform class`() {
-        assertEquals(nonPlatformEvolvableTag, sandboxGroupImpl.getEvolvableTag(nonPlatformClass))
+        val expectedTag = "false;false;$mockNonPlatformBundle;$mockNonPlatformSandbox"
+        assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(nonPlatformClass))
     }
 
     @Test
     fun `creates valid evolvable tag for a platform class`() {
-        assertEquals(platformEvolvableTag, sandboxGroupImpl.getEvolvableTag(platformClass))
+        val expectedTag = "false;true;$mockPlatformBundle;$mockPlatformSandbox"
+        assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(platformClass))
     }
 
     @Test
-    fun `returns null if asked to create evolvable tag for a class outside any bundle`() {
+    fun `throws if asked to create evolvable tag for a class outside any bundle`() {
         assertThrows<SandboxException> {
             sandboxGroupImpl.getEvolvableTag(nonBundleClass)
         }
     }
 
     @Test
-    fun `returns null if asked to create evolvable tag for a class in a bundle not in the sandbox group`() {
+    fun `throws if asked to create evolvable tag for a class in a bundle not in the sandbox group`() {
         assertThrows<SandboxException> {
             sandboxGroupImpl.getEvolvableTag(nonSandboxClass)
         }
@@ -155,73 +121,116 @@ class SandboxGroupImplTests {
 
     @Test
     fun `returns non-platform class identified by a static tag`() {
-        assertEquals(nonPlatformClass, sandboxGroupImpl.getClass(nonPlatformClass.name, nonPlatformStaticTag))
+        assertEquals(nonPlatformClass, sandboxGroupImpl.getClass(nonPlatformClass.name, NON_PLATFORM_STATIC_TAG))
     }
 
     @Test
     fun `returns platform class identified by a static tag`() {
-        assertEquals(platformClass, sandboxGroupImpl.getClass(platformClass.name, platformStaticTag))
+        assertEquals(platformClass, sandboxGroupImpl.getClass(platformClass.name, PLATFORM_STATIC_TAG))
     }
 
     @Test
     fun `returns non-platform class identified by an evolvable tag`() {
-        assertEquals(nonPlatformClass, sandboxGroupImpl.getClass(nonPlatformClass.name, nonPlatformEvolvableTag))
+        assertEquals(nonPlatformClass, sandboxGroupImpl.getClass(nonPlatformClass.name, NON_PLATFORM_EVOLVABLE_TAG))
     }
 
     @Test
     fun `returns platform class identified by an evolvable tag`() {
-        assertEquals(platformClass, sandboxGroupImpl.getClass(platformClass.name, platformEvolvableTag))
+        assertEquals(platformClass, sandboxGroupImpl.getClass(platformClass.name, PLATFORM_EVOLVABLE_TAG))
     }
 
     @Test
-    fun `returns null if asked to return class but cannot find matching sandbox for a static tag`() {
-        val invalidCpkFileHash = randomSecureHash()
-        val invalidStaticTag = StaticTag(invalidCpkFileHash, false, NON_PLATFORM_BUNDLE_NAME)
+    fun `throws if asked to return class but cannot find matching sandbox for a static tag`() {
         assertThrows<SandboxException> {
-            sandboxGroupImpl.getClass(nonPlatformClass.name, invalidStaticTag)
-        }
-    }
-
-    @Test
-    fun `returns null if asked to return class but cannot find matching sandbox for an evolvable tag`() {
-        val invalidCordappBundleName = "invalid_cordapp_bundle_name"
-        val invalidCordappBundleNameEvolvableTag = EvolvableTag(
-            invalidCordappBundleName,
-            mockCpk.id.signers,
-            false,
-            NON_PLATFORM_BUNDLE_NAME
-        )
-        assertThrows<SandboxException> {
-            sandboxGroupImpl.getClass(nonPlatformClass.name, invalidCordappBundleNameEvolvableTag)
-        }
-
-        val invalidSigners = TreeSet(setOf(randomSecureHash()))
-        val invalidSignersEvolvableTag = EvolvableTag(
-            mockNonPlatformSandbox.cordappBundle.symbolicName,
-            invalidSigners,
-            false,
-            NON_PLATFORM_BUNDLE_NAME
-        )
-        assertThrows<SandboxException> {
-            sandboxGroupImpl.getClass(nonPlatformClass.name, invalidSignersEvolvableTag)
+            sandboxGroupImpl.getClass(nonPlatformClass.name, BAD_CPK_FILE_HASH_STATIC_TAG)
         }
     }
 
     @Test
-    fun `returns null if asked to return class but cannot find class in matching sandbox`() {
+    fun `throws if asked to return class but cannot find matching sandbox for an evolvable tag`() {
         assertThrows<SandboxException> {
-            sandboxGroupImpl.getClass(nonSandboxClass.name, nonPlatformStaticTag)
+            sandboxGroupImpl.getClass(nonPlatformClass.name, BAD_CORDAPP_BUNDLE_NAME_EVOLVABLE_TAG)
+        }
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.getClass(nonPlatformClass.name, BAD_SIGNERS_EVOLVABLE_TAG)
         }
     }
 
     @Test
-    fun `throws if asked to return class identified by an unrecognised tag type`() {
-        val unrecognisedClassTag = object : ClassTag {
-            override val isPlatformClass: Boolean = false
-            override val classBundleName: String = ""
-        }
+    fun `throws if asked to return class but cannot find class in matching sandbox`() {
         assertThrows<SandboxException> {
-            sandboxGroupImpl.getClass(platformClass.name, unrecognisedClassTag)
+            sandboxGroupImpl.getClass(nonSandboxClass.name, NON_PLATFORM_STATIC_TAG)
+        }
+    }
+}
+
+/** A dummy [StaticTag] implementation. */
+private class StaticTagImpl(isPlatformClass: Boolean, classBundleName: String, cpkHash: SecureHash) :
+    StaticTag(1, isPlatformClass, classBundleName, cpkHash) {
+    override fun serialise() = ""
+}
+
+/** A dummy [EvolvableTag] implementation. */
+private class EvolvableTagImpl(
+    isPlatformClass: Boolean,
+    classBundleName: String,
+    cordappBundleName: String,
+    cpkSigners: NavigableSet<SecureHash>
+) :
+    EvolvableTag(1, isPlatformClass, classBundleName, cordappBundleName, cpkSigners) {
+    override fun serialise() = ""
+}
+
+/** A dummy [ClassTagFactory] implementation that returns */
+private class DummyClassTagFactory(cpkHash: SecureHash, cpkSigners: NavigableSet<SecureHash>) : ClassTagFactory {
+    private val nonPlatformStaticTag =
+        StaticTagImpl(false, NON_PLATFORM_BUNDLE_NAME, cpkHash)
+
+    private val platformStaticTag =
+        StaticTagImpl(true, PLATFORM_BUNDLE_NAME, ClassTagV1.PLACEHOLDER_CPK_FILE_HASH)
+
+    private val invalidCpkFileHashStaticTag =
+        StaticTagImpl(false, NON_PLATFORM_BUNDLE_NAME, randomSecureHash())
+
+
+    private val nonPlatformEvolvableTag =
+        EvolvableTagImpl(false, NON_PLATFORM_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, cpkSigners)
+
+    private val platformEvolvableTag =
+        EvolvableTagImpl(true,
+        PLATFORM_BUNDLE_NAME,
+        ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME,
+        ClassTagV1.PLACEHOLDER_CPK_PUBLIC_KEY_HASHES
+    )
+
+    private val invalidCordappBundleNameEvolvableTag =
+        EvolvableTagImpl(
+        false,
+        NON_PLATFORM_BUNDLE_NAME,
+        "invalid_cordapp_bundle_name",
+        cpkSigners
+    )
+
+    private val invalidSignersEvolvableTag =
+        EvolvableTagImpl(false, NON_PLATFORM_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, randomSigners())
+
+    override fun createSerialised(
+        isStaticClassTag: Boolean,
+        isPlatformBundle: Boolean,
+        bundle: Bundle,
+        sandbox: Sandbox
+    ) = "$isStaticClassTag;$isPlatformBundle;$bundle;$sandbox"
+
+    override fun deserialise(serialisedClassTag: String): ClassTag {
+        return when (serialisedClassTag) {
+            NON_PLATFORM_STATIC_TAG -> nonPlatformStaticTag
+            PLATFORM_STATIC_TAG -> platformStaticTag
+            BAD_CPK_FILE_HASH_STATIC_TAG -> invalidCpkFileHashStaticTag
+            NON_PLATFORM_EVOLVABLE_TAG -> nonPlatformEvolvableTag
+            PLATFORM_EVOLVABLE_TAG -> platformEvolvableTag
+            BAD_CORDAPP_BUNDLE_NAME_EVOLVABLE_TAG -> invalidCordappBundleNameEvolvableTag
+            BAD_SIGNERS_EVOLVABLE_TAG -> invalidSignersEvolvableTag
+            else -> throw IllegalArgumentException("Could not deserialise tag.")
         }
     }
 }
