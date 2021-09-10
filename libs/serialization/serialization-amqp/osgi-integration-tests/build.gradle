@@ -19,7 +19,7 @@ configurations {
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:class-info")
-    implementation "net.corda:corda-install:$cordaVersion"
+    implementation project(":libs:install")
     implementation "net.corda:corda-packaging"
     implementation project(":libs:sandbox")
     implementation "net.corda:corda-serialization"
