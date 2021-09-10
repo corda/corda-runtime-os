@@ -13,8 +13,8 @@ import net.corda.messaging.db.persistence.FetchWindow
 import net.corda.messaging.db.persistence.RecordDbEntry
 import net.corda.messaging.db.persistence.TransactionResult
 import net.corda.messaging.db.sync.OffsetTrackersManager
-import net.corda.messaging.db.util.eventually
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
@@ -32,6 +32,7 @@ import org.mockito.kotlin.anyOrNull
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 import java.sql.SQLTransientException
+import java.util.Collections
 import java.util.concurrent.atomic.AtomicLong
 
 class DBEventLogSubscriptionTest {
@@ -45,7 +46,7 @@ class DBEventLogSubscriptionTest {
         it to (1..topicPartitions).map { it to mutableListOf<RecordDbEntry>() }.toMap()
     }.toMap()
     private val dbCommittedOffsets = listOf(topic1, topic2)
-        .map { it to (1..topicPartitions).map { it to mutableListOf<Long>() }.toMap() }.toMap()
+        .map { it to (1..topicPartitions).map { it to Collections.synchronizedList<Long>(mutableListOf()) }.toMap() }.toMap()
 
     private val offsetsPerTopicPartition = listOf(topic1, topic2).map {
         it to (1..topicPartitions).map { it to AtomicLong(1) }.toMap()
@@ -196,7 +197,9 @@ class DBEventLogSubscriptionTest {
 
         eventually(1.seconds, 5.millis) {
             assertThat(processedRecords.size).isEqualTo(2)
-            assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
+            synchronized(dbCommittedOffsets[topic1]!![1]!!) {
+                assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
+            }
             assertThat(dbRecords[topic2]!![2]!!).containsExactlyElementsOf(
                 listOf(
                     RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
@@ -228,7 +231,9 @@ class DBEventLogSubscriptionTest {
 
         eventually(1.seconds, 5.millis) {
             assertThat(processedRecords.size).isEqualTo(2)
-            assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
+            synchronized(dbCommittedOffsets[topic1]!![1]!!) {
+                assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
+            }
             assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(
                 listOf(
                     RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
@@ -258,13 +263,13 @@ class DBEventLogSubscriptionTest {
 
         eventually(1.seconds, 5.millis) {
             assertThat(processedRecords.size).isEqualTo(2)
-            assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
-            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(
-                listOf(
-                    RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), null),
-                    RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), null)
-                )
-            )
+            synchronized(dbCommittedOffsets[topic1]!![1]!!) {
+                assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
+            }
+            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(listOf(
+                RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), null),
+                RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), null)
+            ))
             assertThat(releasedOffsetsPerTopicPartition[topic2]!![2]).containsExactlyElementsOf(listOf(1, 2))
         }
 
@@ -288,7 +293,9 @@ class DBEventLogSubscriptionTest {
 
         eventually(1.seconds, 5.millis) {
             assertThat(processedRecords.size).isEqualTo(expectedRecordsToProcess)
-            assertThat(dbCommittedOffsets[topic1]!![1]).containsExactly(2)
+            synchronized(dbCommittedOffsets[topic1]!![1]!!) {
+                assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
+            }
             assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(
                 listOf(
                     RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
@@ -318,7 +325,9 @@ class DBEventLogSubscriptionTest {
 
         eventually(1.seconds, 5.millis) {
             assertThat(processedRecords.size).isEqualTo(expectedRecordsToProcess)
-            assertThat(dbCommittedOffsets[topic1]!![1]).containsExactly(2)
+            synchronized(dbCommittedOffsets[topic1]!![1]!!) {
+                assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
+            }
             assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(
                 listOf(
                     RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
@@ -348,7 +357,9 @@ class DBEventLogSubscriptionTest {
 
         eventually(1.seconds, 5.millis) {
             assertThat(processedRecords.size).isEqualTo(expectedRecordsToProcess)
-            assertThat(dbCommittedOffsets[topic1]!![1]).containsExactly(2)
+            synchronized(dbCommittedOffsets[topic1]!![1]!!) {
+                assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
+            }
             assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(
                 listOf(
                     RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),

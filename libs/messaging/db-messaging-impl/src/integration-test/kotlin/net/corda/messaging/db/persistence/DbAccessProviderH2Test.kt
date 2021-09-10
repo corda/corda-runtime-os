@@ -3,7 +3,7 @@ package net.corda.messaging.db.persistence
 import net.corda.messaging.db.util.DbUtils.Companion.createOffsetsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicRecordsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicsTableStmt
-import net.corda.messaging.db.util.deleteRecursively
+import net.corda.utilities.deleteRecursively
 import org.h2.tools.Server
 import java.nio.file.Files
 import java.nio.file.Path
