@@ -70,7 +70,6 @@ tasks.named('test', Test) {
 
     doFirst {
         systemProperties([
-            'java.io.tmpdir' : buildDir.absolutePath,
             'net.corda.dev.cert' : certificateProvider.get(),
             'net.corda.packaging.test.workflow.libs' : configurations.workflowLibs.collect { it.toURI() }.join(' '),
             'net.corda.flows.cpk' : configurations.flowsCPK.singleFile.toURI(),

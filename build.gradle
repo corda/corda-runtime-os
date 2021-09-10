@@ -197,6 +197,11 @@ subprojects {
         // Added to support junit5 tests
         tasks.withType(Test).configureEach {
             useJUnitPlatform()
+
+            doFirst {
+                // Create all temporary files within the build directory.
+                systemProperty 'java.io.tmpdir', buildDir.absolutePath
+            }
         }
 
         tasks.register('compileAll') { task ->
