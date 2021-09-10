@@ -44,31 +44,27 @@ class HttpRpcGateway(
 
     override fun start() {
         log.info("Starting from lifecycle event")
-        if(bootstrapConfig != null) {
-            configReadService = readServiceFactory.createReadService(bootstrapConfig!!)
-            val lister = ConfigListener { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
-                if (!receivedSnapshot) {
-                    if (changedKeys.contains(MESSAGING_CONFIG)) {
-                        log.info("Config snapshot received")
-                        receivedSnapshot = true
-                        lifeCycleCoordinator.postEvent(ConfigReceivedEvent(currentConfigurationSnapshot))
-                    }
-                } else {
-                    log.info("Config update received")
-                    if (changedKeys.contains(MESSAGING_CONFIG)) {
-                        log.info("Config update contains kafka config")
-                        lifeCycleCoordinator.postEvent(MessagingConfigUpdateEvent(currentConfigurationSnapshot))
-                    }
-                }
-
-            }
-            sub = configReadService!!.registerCallback(lister)
-            configReadService!!.start()
-        } else {
+        if (bootstrapConfig == null) {
             val message = "Use the other start method available and pass in the bootstrap configuration"
             log.error(message)
             throw CordaRuntimeException(message)
         }
+        configReadService = readServiceFactory.createReadService(bootstrapConfig!!)
+        val listener = ConfigListener { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
+            if (changedKeys.contains(MESSAGING_CONFIG)) {
+                if (receivedSnapshot) {
+                    log.info("Config update received")
+                    log.info("Config update contains kafka config")
+                    lifeCycleCoordinator.postEvent(MessagingConfigUpdateEvent(currentConfigurationSnapshot))
+                } else {
+                    receivedSnapshot = true
+                    log.info("Config snapshot received")
+                    lifeCycleCoordinator.postEvent(ConfigReceivedEvent(currentConfigurationSnapshot))
+                }
+            }
+        }
+        sub = configReadService!!.registerCallback(listener)
+        configReadService!!.start()
     }
 
     override fun stop() {
