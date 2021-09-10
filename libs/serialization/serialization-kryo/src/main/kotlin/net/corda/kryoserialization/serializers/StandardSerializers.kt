@@ -14,7 +14,7 @@ import net.corda.kryoserialization.writeBytesWithLength
 import net.corda.packaging.Cpk
 import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.base.internal.uncheckedCast
+import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.BasicHashingService
 import net.corda.v5.crypto.SecureHash

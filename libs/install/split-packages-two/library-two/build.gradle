@@ -1,0 +1,12 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'biz.aQute.bnd.builder'
+}
+
+group 'com.example.split'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+}
