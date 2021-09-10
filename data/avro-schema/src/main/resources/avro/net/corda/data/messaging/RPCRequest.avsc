@@ -1,0 +1,33 @@
+{
+  "type": "record",
+  "name": "RPCRequest",
+  "namespace": "net.corda.data.messaging",
+  "doc": "Request envelope for RPC message pattern",
+  "fields": [
+    {
+      "name": "correlationKey",
+      "type": "string",
+      "doc": "Unique identifier"
+    },
+    {
+      "name": "sendTime",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Time ([Instant]) in milliseconds of the request"
+    },
+    {
+      "name": "replyTopic",
+      "type": "string",
+      "doc": "The topic the response needs to be posted on"
+    },
+    {
+      "name": "replyPartition",
+      "type": "int",
+      "doc": "The partition we expect the response to be on"
+    },
+    {
+      "name": "payload",
+      "type": "bytes"
+    }
+  ]
+}
