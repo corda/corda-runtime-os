@@ -6,6 +6,8 @@ import java.security.InvalidKeyException
 import java.security.PublicKey
 import java.security.SignatureException
 
+// TODO2 - move the function to SignatureVerificationService
+// that would be breaking changes
 interface SignatureVerificationServiceInternal : SignatureVerificationService {
     /**
      * Verifies a digital signature by identifying the signature scheme used from the input public key's type.

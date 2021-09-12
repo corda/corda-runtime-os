@@ -9,29 +9,25 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 
 class MockCryptoLibraryFactory(
-    val mocks: CryptoMocks,
+    private val mocks: CryptoMocks
 ) : CryptoLibraryFactory {
-    override fun getFreshKeySigningService(
-        passphrase: String,
-        defaultSchemeCodeName: String,
-        freshKeysDefaultSchemeCodeName: String
-    ): FreshKeySigningService = mocks.freshKeySigningService(defaultSchemeCodeName)
-
-    override fun getSigningService(
-        category: String,
-        passphrase: String,
-        defaultSchemeCodeName: String
-    ): SigningService = mocks.signingService(defaultSchemeCodeName)
-
     override fun getSignatureVerificationService(): SignatureVerificationService =
-        mocks.signatureVerificationService()
+        mocks.factories.cipherSuite.getSignatureVerificationService()
 
     override fun getKeyEncodingService(): KeyEncodingService =
-        mocks.schemeMetadata()
+        mocks.factories.cipherSuite.getSchemeMap()
 
     override fun getCipherSchemeMetadata(): CipherSchemeMetadata =
-        mocks.schemeMetadata()
+        mocks.factories.cipherSuite.getSchemeMap()
 
     override fun getDigestService(): DigestService =
-        mocks.digestService()
+        mocks.factories.cipherSuite.getDigestService()
+
+    override fun getFreshKeySigningService(): FreshKeySigningService {
+        TODO("Not yet implemented")
+    }
+
+    override fun getSigningService(category: String): SigningService {
+        TODO("Not yet implemented")
+    }
 }

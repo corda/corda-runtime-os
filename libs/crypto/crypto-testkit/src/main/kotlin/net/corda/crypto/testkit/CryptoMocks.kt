@@ -1,60 +1,54 @@
 package net.corda.crypto.testkit
 
+import com.typesafe.config.ConfigFactory
 import net.corda.cipher.suite.impl.CipherSchemeMetadataProviderImpl
-import net.corda.cipher.suite.impl.DefaultCachedKey
-import net.corda.cipher.suite.impl.DefaultCryptoPersistentKey
-import net.corda.cipher.suite.impl.DigestServiceProviderImpl
-import net.corda.cipher.suite.impl.dev.InMemorySigningServicePersistentCache
-import net.corda.cipher.suite.impl.dev.InMemorySimplePersistentCache
+import net.corda.components.crypto.config.CryptoCacheConfig
+import net.corda.components.crypto.services.persistence.DefaultCryptoCachedKeyInfo
+import net.corda.components.crypto.services.persistence.DefaultCryptoPersistentKeyInfo
+import net.corda.components.crypto.services.persistence.SigningPersistentKeyInfo
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.DigestScheme
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.crypto.DigestService
-import java.util.UUID
 
 class CryptoMocks(
-    val sandboxId: String = UUID.randomUUID().toString(),
-    val defaultSignatureSchemeCodeName: String = EDDSA_ED25519_CODE_NAME,
-    val defaultFreshKeySignatureSchemeCodeName: String = EDDSA_ED25519_CODE_NAME,
-    private val schemeMetadataImpl: CipherSchemeMetadata? = null
+    schemeMetadataOverride: CipherSchemeMetadata? = null
 ) {
-    private val schemeMetadata: MockCipherSchemeMetadata by lazy {
-        MockCipherSchemeMetadata(this, schemeMetadataImpl ?: CipherSchemeMetadataProviderImpl().getInstance())
+    private val persistentCacheFactory: MockPersistentCacheFactory = MockPersistentCacheFactory()
+
+    val schemeMetadata: CipherSchemeMetadata = schemeMetadataOverride ?: CipherSchemeMetadataProviderImpl().getInstance()
+
+    val signingPersistentKeyCache: MockPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo> =
+        persistentCacheFactory.createSigningPersistentCache(
+            CryptoCacheConfig(ConfigFactory.empty())
+        ) as MockPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
+
+    val defaultPersistentKeyCache: MockPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo> =
+        persistentCacheFactory.createDefaultCryptoPersistentCache(
+            CryptoCacheConfig(ConfigFactory.empty())
+        ) as MockPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
+
+    val factories = Factories(this)
+
+    fun factories(
+        defaultSignatureSchemeCodeName: String,
+        defaultFreshKeySignatureSchemeCodeName: String) =
+        Factories(this, defaultSignatureSchemeCodeName, defaultFreshKeySignatureSchemeCodeName)
+
+    class Factories(
+        mocks: CryptoMocks,
+        defaultSignatureSchemeCodeName: String = ECDSA_SECP256R1_CODE_NAME,
+        defaultFreshKeySignatureSchemeCodeName: String = ECDSA_SECP256R1_CODE_NAME,
+    ) {
+        val defaultSignatureScheme: SignatureScheme =
+            mocks.schemeMetadata.findSignatureScheme(defaultSignatureSchemeCodeName)
+
+        val defaultFreshKeySignatureScheme: SignatureScheme =
+            mocks.schemeMetadata.findSignatureScheme(defaultFreshKeySignatureSchemeCodeName)
+
+        val cipherSuite = MockCipherSuiteFactory(mocks)
+
+        val cryptoServices = MockCryptoFactory(mocks, defaultSignatureScheme, defaultFreshKeySignatureScheme)
+
+        val cryptoClients = MockCryptoLibraryFactory(mocks)
     }
-
-    val signingPersistentKeyCache: InMemorySigningServicePersistentCache = InMemorySigningServicePersistentCache()
-    val signingKeyCache: MockSigningKeyCache = MockSigningKeyCache(this, signingPersistentKeyCache)
-    val defaultPersistentKeyCache: InMemorySimplePersistentCache<DefaultCachedKey, DefaultCryptoPersistentKey> =
-        InMemorySimplePersistentCache()
-    val basicKeyCache: MockDefaultKeyCache = MockDefaultKeyCache(this, defaultPersistentKeyCache)
-    val schemes: Array<SignatureScheme> get() = schemeMetadata.schemes
-    val digests: Array<DigestScheme> get() = schemeMetadata.digests
-
-    val defaultSignatureScheme: SignatureScheme = schemeMetadata.findSignatureScheme(defaultSignatureSchemeCodeName)
-    val defaultFreshKeySignatureScheme: SignatureScheme = schemeMetadata.findSignatureScheme(defaultFreshKeySignatureSchemeCodeName)
-
-    fun cryptoLibraryFactory(): MockCryptoLibraryFactory = MockCryptoLibraryFactory(this)
-
-    fun cipherSuiteFactory(): MockCipherSuiteFactory = MockCipherSuiteFactory(this)
-
-    fun signingService(defaultSchemeCodeName: String? = null): MockSigningService = MockSigningService(
-        mocks = this,
-        defaultSignatureSchemeCodeName = defaultSchemeCodeName ?: defaultSignatureSchemeCodeName
-    )
-
-    fun freshKeySigningService(
-        freshKeysDefaultSchemeCodeName: String? = null
-    ): MockFreshKeySigningService = MockFreshKeySigningService(
-        mocks = this,
-        defaultFreshKeySignatureSchemeCodeName = freshKeysDefaultSchemeCodeName ?: defaultFreshKeySignatureSchemeCodeName
-    )
-
-    fun signatureVerificationService(): MockSignatureVerificationService = MockSignatureVerificationService(this)
-
-    fun schemeMetadata(): MockCipherSchemeMetadata = schemeMetadata
-
-    fun cryptoService(): MockCryptoService = MockCryptoService(this, basicKeyCache)
-
-    fun digestService(): DigestService = DigestServiceProviderImpl().getInstance(cipherSuiteFactory())
 }

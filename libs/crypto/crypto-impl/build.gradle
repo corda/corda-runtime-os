@@ -8,10 +8,12 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:avro-schema"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
     implementation project(":libs:crypto:crypto-internal")
     implementation project(":libs:utilities")
+    implementation project(":libs:messaging:messaging")
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
@@ -25,9 +27,6 @@ dependencies {
         exclude group: 'org.osgi'
     }
     implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "javax.xml.bind:jaxb-api:$jaxbVersion"
@@ -37,7 +36,7 @@ dependencies {
     testImplementation "com.h2database:h2:$h2Version"
 
     testImplementation project(":libs:crypto:crypto-testkit")
-    integrationTestImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }
 
 description 'Crypto Implementation'

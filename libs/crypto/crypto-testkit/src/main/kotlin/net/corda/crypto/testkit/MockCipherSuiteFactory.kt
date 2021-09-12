@@ -1,5 +1,7 @@
 package net.corda.crypto.testkit
 
+import net.corda.cipher.suite.impl.DigestServiceProviderImpl
+import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoService
@@ -8,13 +10,26 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 
 class MockCipherSuiteFactory(
-    val mocks: CryptoMocks
+    private val mocks: CryptoMocks
 ) : CipherSuiteFactory {
-    override fun getSchemeMap(): CipherSchemeMetadata = mocks.schemeMetadata()
+    private val _signatureVerificationService: SignatureVerificationService by lazy {
+        SignatureVerificationServiceImpl(mocks.schemeMetadata, getDigestService())
+    }
 
-    override fun getCryptoService(info: CryptoServiceConfigInfo): CryptoService = mocks.cryptoService()
+    private val _digestService: DigestService by lazy {
+        DigestServiceProviderImpl().getInstance(mocks.factories.cipherSuite)
+    }
 
-    override fun getSignatureVerificationService(): SignatureVerificationService = mocks.signatureVerificationService()
+    override fun getSchemeMap(): CipherSchemeMetadata =
+        mocks.schemeMetadata
 
-    override fun getDigestService(): DigestService = mocks.digestService()
+    override fun getCryptoService(info: CryptoServiceConfigInfo): CryptoService {
+        throw NotImplementedError()
+    }
+
+    override fun getSignatureVerificationService(): SignatureVerificationService =
+        _signatureVerificationService
+
+    override fun getDigestService(): DigestService =
+        _digestService
 }
