@@ -25,7 +25,6 @@ import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -86,7 +85,7 @@ class CryptoFactoryImpl @Activate constructor(
                     cache = getSigningKeyCache(memberId, libraryConfig!!.mngCache),
                     cryptoService = ledgerCryptoService,
                     freshKeysCryptoService = freshKeysCryptoService,
-                    defaultFreshKeySignatureSchemeCodeName = ECDSA_SECP256R1_CODE_NAME, //TODO2: freshKeysConfig.defaultSignatureScheme,
+                    defaultFreshKeySignatureSchemeCodeName = freshKeysConfig.defaultSignatureScheme,
                     schemeMetadata = cipherSchemeMetadata
                 )
             }
@@ -106,7 +105,7 @@ class CryptoFactoryImpl @Activate constructor(
                 return SigningServiceImpl(
                     cache = getSigningKeyCache(memberId, libraryConfig!!.mngCache),
                     cryptoService = cryptoService,
-                    defaultSignatureSchemeCodeName = ECDSA_SECP256R1_CODE_NAME, //TODO2: config.defaultSignatureScheme,
+                    defaultSignatureSchemeCodeName = config.defaultSignatureScheme,
                     schemeMetadata = cipherSchemeMetadata
                 )
             }

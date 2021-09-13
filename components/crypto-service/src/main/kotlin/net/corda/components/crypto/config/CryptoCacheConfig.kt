@@ -22,5 +22,4 @@ class CryptoCacheConfig(private val raw: Config) {
         } else {
             ConfigFactory.empty()
         }
-
 }

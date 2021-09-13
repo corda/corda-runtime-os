@@ -1,4 +1,4 @@
-package net.corda.components.crypto.config
+package net.corda.components.crypto.services
 
 class DefaultCryptoServiceConfig(
     val passphrase: String?,

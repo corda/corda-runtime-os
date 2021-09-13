@@ -4,7 +4,6 @@ import net.corda.components.crypto.CryptoServiceLifecycleEventHandler
 import net.corda.components.crypto.CryptoLifecycleComponent
 import net.corda.components.crypto.config.CryptoConfigEvent
 import net.corda.components.crypto.config.CryptoLibraryConfig
-import net.corda.components.crypto.config.DefaultCryptoServiceConfig
 import net.corda.components.crypto.services.persistence.DefaultCryptoKeyCache
 import net.corda.components.crypto.services.persistence.DefaultCryptoKeyCacheImpl
 import net.corda.components.crypto.services.persistence.PersistentCacheFactory

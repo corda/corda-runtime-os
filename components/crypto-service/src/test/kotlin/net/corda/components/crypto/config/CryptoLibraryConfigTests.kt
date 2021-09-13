@@ -2,8 +2,10 @@ package net.corda.components.crypto.config
 
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
+import net.corda.crypto.CryptoCategories
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Duration
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -34,10 +36,34 @@ class CryptoLibraryConfigTests {
                 )
             ),
             "default" to mapOf(
-                "p1" to "v1"
+                "default" to mapOf(
+                    "serviceName" to "default",
+                    "timeout" to "1",
+                    "defaultSignatureScheme" to "CORDA.EDDSA.ED25519",
+                    "serviceConfig" to mapOf(
+                        "passphrase" to "pwdD",
+                        "salt" to "saltD"
+                    )
+                )
             ),
             "member123" to mapOf(
-                "p2" to "v2"
+                "default" to mapOf(
+                    "serviceName" to "default",
+                    "timeout" to "3",
+                    "defaultSignatureScheme" to "CORDA.ECDSA.SECP256K1",
+                    "serviceConfig" to mapOf(
+                        "passphrase" to "pwd123",
+                        "salt" to "salt123"
+                    )
+                ),
+                "LEDGER" to mapOf(
+                    "serviceName" to "UTIMACO",
+                    "timeout" to "2",
+                    "defaultSignatureScheme" to "CORDA.ECDSA.SECP256R1",
+                    "serviceConfig" to mapOf(
+                        "password" to "pwd"
+                    )
+                )
             )
         ))
         val config = CryptoLibraryConfig(raw)
@@ -51,6 +77,18 @@ class CryptoLibraryConfigTests {
         assertEquals(120, config.mngCache.expireAfterAccessMins)
         assertEquals(50, config.mngCache.maximumSize)
         assertEquals("mngPersistenceUrl", config.mngCache.persistenceConfig.getString("url"))
+        val member = config.getMember("member123")
+        val default = member.default
+        assertEquals("default", default.serviceName)
+        assertEquals(Duration.ofSeconds(3), default.timeout)
+        assertEquals("CORDA.ECDSA.SECP256K1", default.defaultSignatureScheme)
+        assertEquals("pwd123", default.serviceConfig["passphrase"])
+        assertEquals("salt123", default.serviceConfig["salt"])
+        val ledger = member.getCategory(CryptoCategories.LEDGER)
+        assertEquals("UTIMACO", ledger.serviceName)
+        assertEquals(Duration.ofSeconds(2), ledger.timeout)
+        assertEquals("CORDA.ECDSA.SECP256R1", ledger.defaultSignatureScheme)
+        assertEquals("pwd", ledger.serviceConfig["password"])
     }
 
     @Test
@@ -95,10 +133,40 @@ class CryptoLibraryConfigTests {
     }
 
     @Test
-    fun `Should fail if the member id path is not supplied`() {
+    fun `Should fail if neither the member id nor 'default' path is not supplied`() {
         val config = CryptoLibraryConfig(ConfigFactory.empty())
         assertThrows<ConfigException.Missing> {
             config.getMember(UUID.randomUUID().toString())
         }
+    }
+
+    @Test
+    fun `Should return default member config if the member id path is not supplied`() {
+        val config = CryptoLibraryConfig(ConfigFactory.parseMap(mapOf(
+            "default" to mapOf(
+                "default" to mapOf(
+                    "serviceName" to "default",
+                    "timeout" to "1",
+                    "defaultSignatureScheme" to "CORDA.EDDSA.ED25519",
+                    "serviceConfig" to mapOf(
+                        "passphrase" to "pwdD",
+                        "salt" to "saltD"
+                    )
+                )
+            )
+        )))
+        val member = config.getMember("123")
+        val default = member.default
+        assertEquals("default", default.serviceName)
+        assertEquals(Duration.ofSeconds(1), default.timeout)
+        assertEquals("CORDA.EDDSA.ED25519", default.defaultSignatureScheme)
+        assertEquals("pwdD", default.serviceConfig["passphrase"])
+        assertEquals("saltD", default.serviceConfig["salt"])
+        val ledger = member.getCategory(CryptoCategories.LEDGER)
+        assertEquals("default", ledger.serviceName)
+        assertEquals(Duration.ofSeconds(1), ledger.timeout)
+        assertEquals("CORDA.EDDSA.ED25519", ledger.defaultSignatureScheme)
+        assertEquals("pwdD", ledger.serviceConfig["passphrase"])
+        assertEquals("saltD", ledger.serviceConfig["salt"])
     }
 }

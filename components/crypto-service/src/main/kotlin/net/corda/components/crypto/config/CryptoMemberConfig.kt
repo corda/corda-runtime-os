@@ -2,6 +2,7 @@ package net.corda.components.crypto.config
 
 import com.typesafe.config.Config
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
+import java.time.Duration
 
 /**
  * Defines a member configuration.
@@ -10,18 +11,34 @@ import net.corda.v5.cipher.suite.config.CryptoServiceConfig
  */
 class CryptoMemberConfig(private val raw: Config) {
     companion object {
-        const val DEFAULT_KEY = "default"
+        const val DEFAULT_CATEGORY_KEY = "default"
     }
 
-    val default: CryptoServiceConfig get() = getCategory(DEFAULT_KEY)
+    val default: CryptoServiceConfig get() = getCategory(DEFAULT_CATEGORY_KEY)
 
-    fun getCategory(category: String): CryptoServiceConfig  {
-        val raw = raw.getConfig(category)
+    fun getCategory(category: String): CryptoServiceConfig {
+        val raw = if (raw.hasPath(category)) {
+            raw.getConfig(category)
+        } else {
+            raw.getConfig(DEFAULT_CATEGORY_KEY)
+        }
         return CryptoServiceConfig(
-            serviceName = raw.getString(CryptoServiceConfig::serviceName.name),
-            timeout = raw.getDuration(CryptoServiceConfig::timeout.name),
-            //defaultSignatureScheme = raw.getString(CryptoServiceConfig::defaultSignatureScheme.name), // TODO2
-            serviceConfig = raw.getConfig(CryptoServiceConfig::serviceConfig.name).root().unwrapped()
+            serviceName = if (raw.hasPath(CryptoServiceConfig::serviceName.name)) {
+                raw.getString(CryptoServiceConfig::serviceName.name)
+            } else {
+                CryptoServiceConfig.DEFAULT_SERVICE_NAME
+            },
+            timeout = if (raw.hasPath(CryptoServiceConfig::timeout.name)) {
+                Duration.ofSeconds(raw.getLong(CryptoServiceConfig::timeout.name))
+            } else {
+                Duration.ofSeconds(5)
+            },
+            defaultSignatureScheme = raw.getString(CryptoServiceConfig::defaultSignatureScheme.name),
+            serviceConfig = if (raw.hasPath(CryptoServiceConfig::serviceConfig.name)) {
+                raw.getConfig(CryptoServiceConfig::serviceConfig.name).root().unwrapped()
+            } else {
+                emptyMap()
+            }
         )
     }
 }

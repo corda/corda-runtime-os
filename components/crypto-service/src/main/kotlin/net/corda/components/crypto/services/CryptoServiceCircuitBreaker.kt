@@ -1,6 +1,7 @@
 package net.corda.components.crypto.services
 
 import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.WrappedKeyPair
 import net.corda.v5.cipher.suite.WrappedPrivateKey
@@ -11,22 +12,32 @@ import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
 import java.security.PublicKey
 import java.time.Duration
+import java.util.UUID
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeoutException
 
 class CryptoServiceCircuitBreaker(private val cryptoService: CryptoService, private val timeout: Duration) : CryptoService, AutoCloseable {
-
-    private val executor = Executors.newCachedThreadPool()
+    companion object {
+        private val logger = contextLogger()
+        private val executor = Executors.newCachedThreadPool()
+    }
 
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     private fun <T> executeWithTimeOut(func: () -> T): T {
+        val num = UUID.randomUUID()
         try {
-            return executor.submit(func).getOrThrow(timeout)
+            logger.info("Submitting crypto task for execution (num={})...", num)
+            val result = executor.submit(func).getOrThrow(timeout)
+            logger.debug("Crypto task completed on time (num={})...", num)
+            return result
         } catch (e: TimeoutException) {
+            logger.error("Crypto task timeout (num=$num)", e)
             throw CryptoServiceTimeoutException(timeout)
         } catch (e: CryptoServiceLibraryException) {
+            logger.error("Crypto task failed (num=$num)", e)
             throw e
         } catch (e: Throwable) {
+            logger.error("Crypto task failed (num=$num)", e)
             throw CryptoServiceException("CryptoService operation failed", e)
         }
     }
