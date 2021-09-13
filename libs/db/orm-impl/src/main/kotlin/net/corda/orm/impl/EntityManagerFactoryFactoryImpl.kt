@@ -17,7 +17,7 @@ import javax.persistence.spi.PersistenceUnitInfo
  *
  * @constructor Create [EntityManagerFactoryFactory]
  */
-@Component
+@Component(service = [EntityManagerFactoryFactory::class])
 class EntityManagerFactoryFactoryImpl(
     private val entityManagerFactoryBuilderFactory:
         (p: PersistenceUnitInfo) -> EntityManagerFactoryBuilder = { p ->
