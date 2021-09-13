@@ -5,8 +5,8 @@ package net.corda.v5.persistence
  * also list the classes that may be used in the generated object graph in order to configure the ORM tool.
  *
  * @param schemaFamily A class to fully qualify the name of a schema family (i.e. excludes version)
- * @param version The version number of this instance within the family.
- * @param mappedTypes The JPA entity classes that the ORM layer needs to be configure with for this schema.
+ * @property version The version number of this instance within the family.
+ * @property mappedTypes The JPA entity classes that the ORM layer needs to be configure with for this schema.
  */
 open class MappedSchema(
     schemaFamily: Class<*>,

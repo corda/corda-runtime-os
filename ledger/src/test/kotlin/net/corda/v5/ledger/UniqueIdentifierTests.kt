@@ -1,7 +1,7 @@
 package net.corda.v5.ledger
 
 import org.junit.jupiter.api.Test
-import java.util.*
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 

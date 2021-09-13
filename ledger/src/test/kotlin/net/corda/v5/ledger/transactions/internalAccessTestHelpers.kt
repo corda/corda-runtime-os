@@ -1,9 +1,8 @@
-package net.corda.coretests.internal
+package net.corda.v5.ledger.transactions
 
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.contracts.Contract
 import net.corda.v5.ledger.contracts.TransactionVerificationException
-import net.corda.v5.ledger.transactions.WireTransaction
 
 /**
  * A set of functions in core:test that allows testing of core internal classes in the core-tests project.

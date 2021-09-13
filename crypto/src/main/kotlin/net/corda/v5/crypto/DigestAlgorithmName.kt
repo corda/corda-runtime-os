@@ -5,7 +5,7 @@ import net.corda.v5.base.annotations.CordaSerializable
 /**
  * The digest algorithm name. This class is to be used in Corda hashing API.
  *
- * @param name The name of the digest algorithm to be used for the instance.
+ * @property name The name of the digest algorithm to be used for the instance.
  */
 @CordaSerializable
 data class DigestAlgorithmName(val name: String) {

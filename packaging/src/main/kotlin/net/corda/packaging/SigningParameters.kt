@@ -12,9 +12,9 @@ import java.util.zip.ZipFile
 
 /**
  * Parameters for signing a jar file:
- * [keyStore] the keystore containing the private key
- * [keyAlias] alias name of the private key inside [keyStore]
- * [keyPassword] password (if any) for the private key inside the [keyStore]
+ * @property keyStore the keystore containing the private key
+ * @property keyAlias alias name of the private key inside [keyStore]
+ * @property keyPassword password (if any) for the private key inside the [keyStore]
  */
 class SigningParameters(
         val keyStore: KeyStore,

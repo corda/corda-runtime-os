@@ -1,6 +1,6 @@
 package net.corda.v5.base.util
 
-import java.util.*
+import java.util.UUID
 
 class UuidGenerator {
 

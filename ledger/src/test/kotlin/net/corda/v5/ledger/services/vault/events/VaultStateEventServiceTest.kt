@@ -1,8 +1,8 @@
 package net.corda.v5.ledger.services.vault.events
 
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import net.corda.v5.base.stream.DurableCursor
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.contracts.ContractState

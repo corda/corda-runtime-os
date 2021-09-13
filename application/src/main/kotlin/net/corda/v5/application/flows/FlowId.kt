@@ -1,7 +1,7 @@
 package net.corda.v5.application.flows
 
 import net.corda.v5.base.annotations.CordaSerializable
-import java.util.*
+import java.util.UUID
 
 /**
  * A unique identifier for a single top level flow instance, valid across node restarts. Note that a single run always

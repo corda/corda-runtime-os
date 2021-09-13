@@ -376,9 +376,9 @@ class CpkTests {
 
     @Test
     fun `corda-api dependencies are not included in in cpk dependencies`() {
-        Assertions.assertTrue(workflowCpk.dependencies.filter {
+        Assertions.assertTrue(workflowCpk.dependencies.none {
             it == flowsCpk.id
-        }.isEmpty())
+        })
     }
 }
 

@@ -11,7 +11,7 @@ import net.corda.v5.base.annotations.Suspendable
 @DoNotImplement
 interface FlowMessaging : CordaFlowInjectable {
     /**
-     * Creates a communication session with [destination]. Subsequently you may send/receive using this session object. How the messaging
+     * Creates a communication session with [destination]. Subsequently, you may send/receive using this session object. How the messaging
      * is routed depends on the [Destination] type, including whether this call does any initial communication.
      */
     @Suspendable

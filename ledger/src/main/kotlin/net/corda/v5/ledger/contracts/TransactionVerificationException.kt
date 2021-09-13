@@ -14,7 +14,7 @@ import net.corda.v5.ledger.services.AttachmentId
  * The node asked a remote peer for the transaction identified by [hash] because it is a dependency of a transaction
  * being resolved, but the remote peer would not provide it.
  *
- * @property hash Merkle root of the transaction being resolved, see [net.corda.core.transactions.WireTransaction.id]
+ * @property hash Merkle root of the transaction being resolved, see [WireTransaction.id][net.corda.v5.ledger.transactions.WireTransaction.id]
  */
 open class TransactionResolutionException(val hash: SecureHash, message: String) : FlowException(message) {
 

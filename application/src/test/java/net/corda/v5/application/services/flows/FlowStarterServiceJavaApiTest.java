@@ -11,14 +11,16 @@ import static org.mockito.Mockito.when;
 public class FlowStarterServiceJavaApiTest {
 
     private final FlowStarterService flowStarterService = mock(FlowStarterService.class);
-    private final FlowHandle flowHandle = mock(FlowHandle.class);
-    private final Flow flow = mock(Flow.class);
+    @SuppressWarnings("unchecked")
+    private final FlowHandle<? super Object> flowHandle = mock(FlowHandle.class);
+    @SuppressWarnings("unchecked")
+    private final Flow<Object> flow = mock(Flow.class);
 
     @Test
     public void startFlow() {
         when(flowStarterService.startFlow(flow)).thenReturn(flowHandle);
 
-        FlowHandle result = flowStarterService.startFlow(flow);
+        FlowHandle<?> result = flowStarterService.startFlow(flow);
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(flowHandle);

@@ -99,7 +99,7 @@ subprojects {
             // Test libraries -> keep consistent across modules
             testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
             testImplementation "org.mockito:mockito-core:$mockitoVersion"
-            testImplementation("com.nhaarman:mockito-kotlin:$mockitoKotlinVersion") {
+            testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
                 // Excluding mockito-core and adding it implicitly above. This is done to allow the use of the latest version of mockito.
                 exclude group: 'mockito-core'
             }

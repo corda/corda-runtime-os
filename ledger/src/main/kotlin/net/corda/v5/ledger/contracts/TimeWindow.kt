@@ -12,8 +12,9 @@ import java.time.Instant
  * tolerance around it. This is what [TimeWindow] represents. Time windows can be open-ended (i.e. specify only one of
  * [fromTime] and [untilTime]) or they can be fully bounded.
  *
- * [WireTransaction] has an optional time-window property, which if specified, restricts the validity of the transaction
- * to that time-interval as the Consensus Service will not sign it if it's received outside of this window.
+ * [WireTransaction][net.corda.v5.ledger.transactions.WireTransaction] has an optional time-window property, which if
+ * specified, restricts the validity of the transaction to that time-interval as the Consensus Service will not sign
+ * it if it's received outside this window.
  */
 @CordaSerializable
 interface TimeWindow {

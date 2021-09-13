@@ -3,12 +3,11 @@ package net.corda.v5.cipher.suite.schemes
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
-import java.security.Signature
 
 /**
  * This class is used to define a digital signature scheme.
- * @param signatureName a signature-scheme name as required to create [Signature] objects (e.g. "SHA256withECDSA")
- * @param customDigestName a digest algorithm name, set to non null value if the hash should be precalculated before passing
+ * @property signatureName a signature-scheme name as required to create [Signature][java.security.Signature] objects (e.g. "SHA256withECDSA")
+ * @property customDigestName a digest algorithm name, set to non null value if the hash should be precalculated before passing
  * to the provider (e.g. "SHA512"), note that the signatureName should not contain the digest (e.g. "NONEwithECDSA").
  *
  * When used for signing the [signatureName] must match the corresponding [SignatureScheme], e.g. you cannot use "SHA256withECDSA" with "RSA" keys.

@@ -5,9 +5,9 @@ package net.corda.v5.base.types
 import net.corda.v5.base.annotations.CordaSerializable
 import java.io.ByteArrayInputStream
 import java.io.OutputStream
-import java.lang.Math.max
-import java.lang.Math.min
 import java.nio.ByteBuffer
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * An abstraction of a byte array, with offset and size that does no copying of bytes unless asked to.

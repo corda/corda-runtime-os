@@ -14,7 +14,7 @@ import java.time.Duration
 @DoNotImplement
 interface FlowEngine : CordaFlowInjectable {
     /**
-     * Returns a wrapped [java.util.UUID] object that identifies this flow or it's top level instance (i.e. subflows have the same
+     * Returns a wrapped [UUID][java.util.UUID] object that identifies this flow or it's top level instance (i.e. subflows have the same
      * identifier as their parents).
      */
     val flowId: FlowId

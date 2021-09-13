@@ -27,10 +27,10 @@ import java.util.function.Predicate
  * if she is unable to read some of the "optional" component types. We stress that practically, a new type of
  * [WireTransaction] should only be considered compatible if and only if the following rules apply:
  * <p><ul>
- * <li>Component-type ordering is fixed (eg. inputs, then outputs, then commands etc, see [ComponentGroupEnum] for the actual ordering).
+ * <li>Component-type ordering is fixed (eg. inputs, then outputs, then commands etc, see [ComponentGroupEnum][net.corda.v5.ledger.contracts.ComponentGroupEnum] for the actual ordering).
  * <li>Removing a component-type that existed in older wire transaction types is not allowed, because it will affect the Merkle tree structure.
  * <li>Changing the order of existing component types is also not allowed, for the same reason.
- * <li>New component types must be added at the end of the list of [ComponentGroup] and update the [ComponentGroupEnum] with the new type. After a component is added, its ordinal must never change.
+ * <li>New component types must be added at the end of the list of [ComponentGroup] and update the [ComponentGroupEnum][net.corda.v5.ledger.contracts.ComponentGroupEnum] with the new type. After a component is added, its ordinal must never change.
  * <li>A new component type should always be an "optional value", in the sense that lack of its visibility does not change the transaction and contract logic and details. An example of "optional" components could be a transaction summary or some statistics.
  * </ul></p>
  */

@@ -9,11 +9,11 @@ typealias ContractClassName = String
 
 /**
  * Implemented by a program that implements business logic on the shared ledger. All participants run this code for
- * every [net.corda.core.transactions.LedgerTransaction] they see on the network, for every input and output state. All
+ * every [LedgerTransaction][net.corda.v5.ledger.transactions.LedgerTransaction] they see on the network, for every input and output state. All
  * contracts must accept the transaction for it to be accepted: failure of any aborts the entire thing. The time is taken
  * from a trusted time-window attached to the transaction itself i.e. it is NOT necessarily the current time.
  *
- * TODO: Contract serialization is likely to change, so the annotation is likely temporary.
+ * TODO Contract serialization is likely to change, so the annotation is likely temporary.
  */
 @CordaSerializable
 interface Contract {

@@ -22,7 +22,7 @@ class VersionComparatorFuzzerTests {
         private fun randomAlpha(): String = randomChars(Random.nextInt(1, 10), alphaPool)
 
         private fun randomChars(length: Int, charPool: List<Char>): String = (1..length)
-            .map { kotlin.random.Random.nextInt(0, charPool.size) }
+            .map { Random.nextInt(0, charPool.size) }
             .map(charPool::get)
             .joinToString("")
 

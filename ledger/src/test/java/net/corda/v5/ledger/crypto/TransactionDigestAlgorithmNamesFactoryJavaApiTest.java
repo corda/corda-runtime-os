@@ -9,11 +9,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.nhaarman.mockito_kotlin.MockitoKt.eq;
 import static net.corda.v5.crypto.DigestAlgorithmName.SHA2_256;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.kotlin.MatchersKt.eq;
 
 public class TransactionDigestAlgorithmNamesFactoryJavaApiTest {
 

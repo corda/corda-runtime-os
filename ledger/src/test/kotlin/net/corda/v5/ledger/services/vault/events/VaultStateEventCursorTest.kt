@@ -1,7 +1,7 @@
 package net.corda.v5.ledger.services.vault.events
 
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.whenever
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import net.corda.v5.application.identity.AbstractParty
 import net.corda.v5.base.stream.Cursor.PollResult
 import net.corda.v5.base.stream.Cursor.PollResult.PositionedValue
@@ -57,7 +57,7 @@ class VaultStateEventCursorTest {
     @Suppress("UNCHECKED_CAST", "NestedBlockDepth")
     private fun run() {
         while (!Thread.currentThread().isInterrupted) {
-            val result = cursor.poll(50, 5.minutes);
+            val result = cursor.poll(50, 5.minutes)
             if (!result.isEmpty) {
                 for (positionedValue in result.positionedValues) {
                     log.info("Processing value: ${positionedValue.value} at position: ${positionedValue.position}")

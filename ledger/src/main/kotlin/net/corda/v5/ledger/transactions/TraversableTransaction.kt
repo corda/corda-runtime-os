@@ -23,19 +23,20 @@ interface TraversableTransaction : CoreTransaction {
     /** Hashes of the ZIP/JAR files that are needed to interpret the contents of this wire transaction. */
     val attachments: List<SecureHash>
 
-    /** Ordered list of ([CommandData], [PublicKey]) pairs that instruct the contracts what to do. */
+    /** Ordered list of ([CommandData][net.corda.v5.ledger.contracts.CommandData], [PublicKey][java.security.PublicKey])
+     * pairs that instruct the contracts what to do. */
     val commands: List<Command<*>>
 
     val timeWindow: TimeWindow?
 
     /**
      * Returns a list of all the component groups that are present in the transaction, excluding the privacySalt,
-     * in the following order (which is the same with the order in [ComponentGroupEnum]:
+     * in the following order (which is the same with the order in [ComponentGroupEnum][net.corda.v5.ledger.contracts.ComponentGroupEnum]:
      * - list of each input that is present
      * - list of each output that is present
      * - list of each command that is present
      * - list of each attachment that is present
-     * - The notary [Party], if present (list with one element)
+     * - The notary [Party][net.corda.v5.application.identity.Party], if present (list with one element)
      * - The time-window of the transaction, if present (list with one element)
      * - list of each reference input that is present
      * - network parameters hash if present

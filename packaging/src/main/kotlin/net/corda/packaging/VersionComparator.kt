@@ -1,5 +1,7 @@
 package net.corda.packaging
 
+import kotlin.math.min
+
 class VersionComparator : Comparator<String?> {
     data class Parts(val epoch: String, val version: String, val release: String, val hasRelease: Boolean)
 
@@ -125,8 +127,8 @@ class VersionComparator : Comparator<String?> {
                 if (rc != 0) return rc
 
                 // shrink the remaining string to process
-                remaining1 = remaining1.substring(Math.min(endIdx1, remaining1.length))
-                remaining2 = remaining2.substring(Math.min(endIdx2, remaining2.length))
+                remaining1 = remaining1.substring(min(endIdx1, remaining1.length))
+                remaining2 = remaining2.substring(min(endIdx2, remaining2.length))
             }
 
             // this catches the case where all numeric and alpha segments have

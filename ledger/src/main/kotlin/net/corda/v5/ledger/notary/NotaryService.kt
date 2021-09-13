@@ -37,7 +37,7 @@ abstract class NotaryService : SingletonSerializeAsToken {
     abstract fun stop()
 
     /**
-     * Produces a notary service flow which has the corresponding sends and receives as [NotaryClientFlow].
+     * Produces a notary service flow which has the corresponding sends and receives as [NotaryClientFlow][net.corda.systemflows.NotaryClientFlow].
      * @param otherPartySession client [Party] making the request
      */
     abstract fun createServiceFlow(otherPartySession: FlowSession): Flow<Void?>

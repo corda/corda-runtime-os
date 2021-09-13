@@ -9,7 +9,7 @@ import net.corda.v5.base.annotations.Suspendable
 interface FlowAuditor : CordaFlowInjectable {
     /**
      * Flows can call this method to ensure that the active FlowInitiator is authorised for a particular action.
-     * This provides fine grained control over application level permissions, when RPC control over starting the flow is insufficient,
+     * This provides fine-grained control over application level permissions, when RPC control over starting the flow is insufficient,
      * or the permission is runtime dependent upon the choices made inside long lived flow code.
      * For example some users may have restricted limits on how much cash they can transfer, or whether they can change certain fields.
      * An audit event is always recorded whenever this method is used.

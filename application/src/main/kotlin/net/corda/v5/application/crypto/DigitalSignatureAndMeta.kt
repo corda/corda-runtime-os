@@ -4,7 +4,6 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.PartialMerkleTree
 import java.security.PublicKey
-import java.util.Arrays
 
 /**
  * A wrapper over the signature output accompanied by signer's public key and signature metadata.
@@ -33,7 +32,7 @@ class DigitalSignatureAndMeta(
         if (this === other) return true
         if (other !is DigitalSignatureAndMeta) return false
 
-        return (Arrays.equals(bytes, other.bytes)
+        return (bytes.contentEquals(other.bytes)
                 && by == other.by
                 && signatureMetadata == other.signatureMetadata)
     }

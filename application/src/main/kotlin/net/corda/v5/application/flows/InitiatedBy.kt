@@ -5,7 +5,7 @@ import kotlin.reflect.KClass
 
 /**
  * This annotation is required by any [FlowLogic] that is designed to be initiated by a counterparty flow. The class must
- * have at least a constructor which takes in a single [net.corda.core.identity.Party] parameter which represents the
+ * have at least a constructor which takes in a single [net.corda.v5.application.identity.Party] parameter which represents the
  * initiating counterparty. The [FlowLogic] that does the initiating is specified by the [value] property and itself must be annotated
  * with [InitiatingFlow].
  *

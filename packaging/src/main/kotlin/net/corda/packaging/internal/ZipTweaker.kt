@@ -124,7 +124,7 @@ open class ZipTweaker {
                     Files.move(destination, jarFile, StandardCopyOption.REPLACE_EXISTING)
                 }
             } catch (e: Throwable) {
-                destination.takeIf(Files::exists).let(Files::delete)
+                destination.takeIf(Files::exists)?.let(Files::delete)
                 throw e
             }
         }

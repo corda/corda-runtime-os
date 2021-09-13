@@ -93,7 +93,7 @@ data class StateRef(val txhash: SecureHash, val index: Int) {
 /** A StateAndRef is simply a (state, ref) pair. For instance, a vault (which holds available assets) contains these. */
 @CordaSerializable
 data class StateAndRef<out T : ContractState>(val state: TransactionState<T>, val ref: StateRef) {
-    /** For adding [StateAndRef]s as references to a [TransactionBuilder]. */
+    /** For adding [StateAndRef]s as references to a [TransactionBuilder][net.corda.v5.ledger.transactions.TransactionBuilder]. */
     fun referenced() = ReferencedStateAndRef(this)
 }
 

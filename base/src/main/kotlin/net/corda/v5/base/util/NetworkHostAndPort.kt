@@ -6,8 +6,8 @@ import java.net.URISyntaxException
 
 /**
  * Tuple of host and port. Use [NetworkHostAndPort.parse] on untrusted data.
- * @param host a hostname or IP address. IPv6 addresses must not be enclosed in square brackets.
- * @param port a valid port number.
+ * @property host a hostname or IP address. IPv6 addresses must not be enclosed in square brackets.
+ * @property port a valid port number.
  */
 @CordaSerializable
 data class NetworkHostAndPort(val host: String, val port: Int) {
