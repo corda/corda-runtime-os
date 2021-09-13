@@ -8,7 +8,12 @@ import java.lang.reflect.Field
 import java.util.*
 
 /**
- * Also, add a [ListIterator] serializer to avoid more linked list issues.
+ * The [ListIterator] has a problem with the default Quasar/Kryo serialisation
+ * in that serialising an iterator over a sufficiently large
+ * data set can lead to a stack overflow (because the object map is traversed recursively).
+ *
+ * We've added our own custom serializer in order to ensure that only the key/value are recorded.
+ * The rest of the list isn't required at this scope.
 */
 internal object LinkedListItrSerializer : Serializer<ListIterator<Any>>() {
     // Create a dummy list so that we can get the ListItr from it
@@ -16,7 +21,9 @@ internal object LinkedListItrSerializer : Serializer<ListIterator<Any>>() {
     private val DUMMY_LIST = LinkedList<Long>(listOf(1))
     fun getListItr(): Any  = DUMMY_LIST.listIterator()
 
-    private val outerListField: Field = getListItr()::class.java.getDeclaredField("this$0").apply { isAccessible = true }
+    private val outerListField: Field = getListItr()::class.java.getDeclaredField("this$0").apply {
+        isAccessible = true
+    }
 
     override fun write(kryo: Kryo, output: Output, obj: ListIterator<Any>) {
         kryo.writeClassAndObject(output, outerListField.get(obj))
