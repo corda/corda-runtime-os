@@ -9,12 +9,6 @@ plugins {
 description 'Corda AMQP serialization library'
 
 configurations {
-    all {
-        resolutionStrategy.dependencySubstitution {
-            substitute module("antlr:antlr") using module("antlr:antlr.osgi:$antlrVersion")
-            substitute module("org.dom4j:dom4j") using module("org.apache.servicemix.bundles:org.apache.servicemix.bundles.dom4j:$dom4jOsgiVersion")
-        }
-    }
     cpks {
         canBeConsumed = false
         transitive = false
