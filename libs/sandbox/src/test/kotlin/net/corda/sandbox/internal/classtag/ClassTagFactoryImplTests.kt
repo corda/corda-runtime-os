@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import org.osgi.framework.Bundle
 
 class ClassTagFactoryImplTests {
     private val classTagFactory = ClassTagFactoryImpl()
@@ -119,6 +120,18 @@ class ClassTagFactoryImplTests {
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME, classTag.cordappBundleName)
         assertEquals(ClassTagV1.PLACEHOLDER_CPK_PUBLIC_KEY_HASHES, classTag.cpkPublicKeyHashes)
+    }
+
+    @Test
+    fun `throws if asked to create a class tag for a bundle with no symbolic name`() {
+        assertThrows<SandboxException> {
+            classTagFactory.createSerialised(
+                isStaticClassTag = false,
+                isPlatformBundle = true,
+                mock(),
+                mockSandbox
+            )
+        }
     }
 
     @Test

@@ -256,10 +256,15 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `throws if a CPK's CorDapp bundle cannot be installed`() {
+    fun `throws if a CPK bundle cannot be installed`() {
         val mockBundleUtils = mock<BundleUtils>().apply {
             whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenAnswer { throw BundleException("") }
-            whenever(installAsBundle(anyString(), eq(cpkOne.libraries.single().toUri()))).thenReturn(mock())
+            whenever(
+                installAsBundle(
+                    anyString(),
+                    eq(cpkOne.libraries.single().toUri())
+                )
+            ).thenAnswer { throw BundleException("") }
         }
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
 
@@ -269,12 +274,17 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `throws if a CPK's library bundles cannot be installed`() {
+    fun `throws if a CPK bundle does not have a symbolic name`() {
+        val mockBundleWithoutSymbolicName = mock<Bundle>()
+
         val mockBundleUtils = mock<BundleUtils>().apply {
-            whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(mock())
-            whenever(installAsBundle(anyString(), eq(cpkOne.libraries.single().toUri()))).thenAnswer {
-                throw BundleException("")
-            }
+            whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(mockBundleWithoutSymbolicName)
+            whenever(
+                installAsBundle(
+                    anyString(),
+                    eq(cpkOne.libraries.single().toUri())
+                )
+            ).thenReturn(mockBundleWithoutSymbolicName)
         }
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
 
