@@ -6,7 +6,7 @@ import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryo.serializers.FieldSerializer
-import net.corda.v5.base.internal.uncheckedCast
+import net.corda.v5.base.util.uncheckedCast
 import java.util.*
 
 /**
