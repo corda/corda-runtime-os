@@ -29,7 +29,7 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
 
     private val lock = ReentrantLock()
     private val eventSubscription: EventSubscription<K, S, E> = EventSubscription(this)
-    private val stateSubscription: StateSubscription<K, S> = StateSubscription(this)
+    internal val stateSubscription: StateSubscription<K, S> = StateSubscription(this)
 
     override val isRunning: Boolean
         get() = lock.withLock {

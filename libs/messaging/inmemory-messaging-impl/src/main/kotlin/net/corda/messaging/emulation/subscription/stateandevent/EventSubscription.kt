@@ -16,7 +16,7 @@ internal class EventSubscription<K : Any, S : Any, E : Any>(
 
     override fun start() {
         if (eventsConsumption == null) {
-            val consumer = EventConsumer<K, E>(this)
+            val consumer = EventConsumer(this)
             eventsConsumption = subscription.topicService.subscribe(consumer)
         }
     }

@@ -56,6 +56,22 @@ internal class Topic(
             ?: throw IllegalStateException("Could not find partition id $partitionId, only know of ${partitions.map { it.partitionId }}!")
     }
 
+    fun assignPartition(consumer: Consumer, partitionsIds: Collection<Int>) {
+        val partitions = partitionsIds.map {
+            getPartition(it)
+        }
+        val group = consumerGroups[consumer.groupName] ?: throw IllegalStateException("Group ${consumer.groupName} had not subscribe")
+        group.assignPartition(consumer, partitions)
+    }
+
+    fun unAssignPartition(consumer: Consumer, partitionsIds: Collection<Int>) {
+        val partitions = partitionsIds.map {
+            getPartition(it)
+        }
+        val group = consumerGroups[consumer.groupName] ?: throw IllegalStateException("Group ${consumer.groupName} had not subscribe")
+        group.unAssignPartition(consumer, partitions)
+    }
+
     /**
      * Unsubscribe the [consumer] to this [topicName]
      */

@@ -44,7 +44,7 @@ class StatesConsumerTest {
 
     @Test
     fun `partitionStrategy is correct`() {
-        assertThat(consumer.partitionStrategy).isEqualTo(PartitionStrategy.DIVIDE_PARTITIONS)
+        assertThat(consumer.partitionStrategy).isEqualTo(PartitionStrategy.MANUAL)
     }
 
     @Test
@@ -59,10 +59,5 @@ class StatesConsumerTest {
         consumer.handleRecords(records)
 
         verify(stateSubscription).gotStates(records)
-    }
-
-    @Test
-    fun `hashCode is the same as the subscription`() {
-        assertThat(consumer.hashCode()).isEqualTo(subscription.hashCode())
     }
 }

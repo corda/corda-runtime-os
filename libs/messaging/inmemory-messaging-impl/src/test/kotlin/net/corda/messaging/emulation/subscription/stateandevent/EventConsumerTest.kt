@@ -1,12 +1,12 @@
 package net.corda.messaging.emulation.subscription.stateandevent
 
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.CommitStrategy
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.model.PartitionStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
+import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
@@ -14,9 +14,16 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 
 class EventConsumerTest {
+    private val stateConsumer = mock<StatesConsumer<String, String>>()
+    private val stateSubscription = mock<StateSubscription<String, String>> {
+        on { consumer } doReturn stateConsumer
+    }
+    private val topicService = mock<TopicService>()
     private val subscriptionConfig = SubscriptionConfig("group", "topic")
     private val subscription = mock<InMemoryStateAndEventSubscription<String, String, String>> {
         on { subscriptionConfig } doReturn subscriptionConfig
+        on { stateSubscription } doReturn stateSubscription
+        on { topicService } doReturn topicService
     }
     private val eventsSubscription = mock<EventSubscription<String, String, String>> {
         on { subscription } doReturn subscription
@@ -49,8 +56,17 @@ class EventConsumerTest {
     }
 
     @Test
-    fun `partitionAssignmentListener is correct`() {
-        assertThat(consumer.partitionAssignmentListener as PartitionAssignmentListener?).isNull()
+    fun `partitionAssignmentListener assign the correct partitions to the state consumer`() {
+        consumer.partitionAssignmentListener.onPartitionsAssigned(listOf("topic" to 1, "topic" to 5))
+
+        verify(topicService).manualAssignPartitions(stateConsumer, listOf(1, 5))
+    }
+
+    @Test
+    fun `partitionAssignmentListener un assign the correct partitions to the state consumer`() {
+        consumer.partitionAssignmentListener.onPartitionsUnassigned(listOf("topic" to 2, "topic" to 4))
+
+        verify(topicService).manualUnAssignPartitions(stateConsumer, listOf(2, 4))
     }
 
     @Test
@@ -60,10 +76,5 @@ class EventConsumerTest {
         consumer.handleRecords(records)
 
         verify(eventsSubscription).processEvents(records)
-    }
-
-    @Test
-    fun `hashCode is the same as the subscription`() {
-        assertThat(consumer.hashCode()).isEqualTo(subscription.hashCode())
     }
 }

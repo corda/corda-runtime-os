@@ -2,6 +2,7 @@ package net.corda.messaging.emulation.topic.service.impl
 
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.properties.InMemoryConfiguration
+import net.corda.messaging.emulation.topic.model.Consumer
 import net.corda.messaging.emulation.topic.model.ConsumptionThread
 import net.corda.messaging.emulation.topic.model.Topic
 import net.corda.messaging.emulation.topic.model.Topics
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -117,5 +119,25 @@ class TopicServiceImplTest {
         val offsets = impl.getLatestOffsets("topic.1")
 
         assertThat(offsets).isEqualTo(mapOf(1 to 3L))
+    }
+
+    @Test
+    fun `manualAssignPartitions assign partitions to the correct topic`() {
+        val consumer = mock<Consumer> {
+            on { topicName } doReturn "topic.1"
+        }
+        impl.manualAssignPartitions(consumer, listOf(1, 2, 3))
+
+        verify(topicOne).assignPartition(consumer, listOf(1, 2, 3))
+    }
+
+    @Test
+    fun `manualUnAssignPartitions un assign partitions to the correct topic`() {
+        val consumer = mock<Consumer> {
+            on { topicName } doReturn "topic.1"
+        }
+        impl.manualUnAssignPartitions(consumer, listOf(1, 2, 3))
+
+        verify(topicOne).unAssignPartition(consumer, listOf(1, 2, 3))
     }
 }

@@ -454,6 +454,30 @@ class ConsumerGroupTest {
     }
 
     @Test
+    fun `adding manual subscription will not send any event`() {
+        val consumers = (1..4).map {
+            mock<Consumer> {
+                on { commitStrategy } doReturn CommitStrategy.NO_COMMIT
+                on { partitionStrategy } doReturn PartitionStrategy.MANUAL
+                on { offsetStrategy } doReturn OffsetStrategy.EARLIEST
+                on { partitionAssignmentListener } doReturn listener
+                on { topicName } doReturn "topic"
+            }
+        }
+        val group = ConsumerGroup(
+            partitions,
+            subscriptionConfig,
+            consumers[0],
+            lock,
+        )
+        consumers.forEach {
+            group.createConsumption(it)
+        }
+
+        verify(listener, never()).onPartitionsAssigned(any())
+    }
+
+    @Test
     fun `repartitionShare will signal the lock`() {
         val consumers = (1..4).map {
             mock<Consumer> {
@@ -521,6 +545,183 @@ class ConsumerGroupTest {
         consumption.close()
 
         verify(listener).onPartitionsUnassigned(any())
+    }
+
+    @Test
+    fun `assignPartition with non manual partition strategy will throw an exception`() {
+        val consumer = mock<Consumer> {
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
+            on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
+            on { offsetStrategy } doReturn OffsetStrategy.LATEST
+        }
+        val partitions = (1..30).map { createPartition(it + 4) }
+        val group = ConsumerGroup(
+            partitions,
+            SubscriptionConfiguration(0, Duration.ofMillis(12)),
+            consumer,
+            lock,
+        )
+        group.createConsumption(consumer)
+
+        assertThrows<IllegalStateException> {
+            group.assignPartition(consumer, partitions.take(4))
+        }
+    }
+
+    @Test
+    fun `assignPartition with un known partition will throw an exception`() {
+        val consumer = mock<Consumer> {
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
+            on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
+            on { offsetStrategy } doReturn OffsetStrategy.LATEST
+        }
+        val partitions = (1..30).map { createPartition(it + 4) }
+        val group = ConsumerGroup(
+            partitions,
+            SubscriptionConfiguration(0, Duration.ofMillis(12)),
+            firstConsumer,
+            lock,
+        )
+        group.createConsumption(firstConsumer)
+
+        assertThrows<IllegalStateException> {
+            group.assignPartition(consumer, partitions.take(4))
+        }
+    }
+
+    @Test
+    fun `assignPartition with valid data will assign the partitions`() {
+        val consumer = mock<Consumer> {
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
+            on { partitionStrategy } doReturn PartitionStrategy.MANUAL
+            on { offsetStrategy } doReturn OffsetStrategy.LATEST
+            on { partitionAssignmentListener } doReturn listener
+            on { topicName } doReturn "topic"
+        }
+        val partitions = (1..30).map { createPartition(it + 4) }
+        val group = ConsumerGroup(
+            partitions,
+            SubscriptionConfiguration(0, Duration.ofMillis(12)),
+            consumer,
+            lock,
+        )
+        group.createConsumption(consumer)
+
+        group.assignPartition(consumer, partitions.take(3))
+
+        assertThat(capturePartitions.firstValue).containsExactly("topic" to 5, "topic" to 6, "topic" to 7)
+    }
+
+    @Test
+    fun `assignPartition with wake up the consumers`() {
+        val consumer = mock<Consumer> {
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
+            on { partitionStrategy } doReturn PartitionStrategy.MANUAL
+            on { offsetStrategy } doReturn OffsetStrategy.LATEST
+            on { partitionAssignmentListener } doReturn listener
+            on { topicName } doReturn "topic"
+        }
+        val partitions = (1..30).map { createPartition(it + 4) }
+        val group = ConsumerGroup(
+            partitions,
+            SubscriptionConfiguration(0, Duration.ofMillis(12)),
+            consumer,
+            lock,
+        )
+        group.createConsumption(consumer)
+
+        group.assignPartition(consumer, partitions.take(3))
+
+        verify(sleeper).signalAll()
+    }
+
+
+    @Test
+    fun `unAssignPartition with non manual partition strategy will throw an exception`() {
+        val consumer = mock<Consumer> {
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
+            on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
+            on { offsetStrategy } doReturn OffsetStrategy.LATEST
+        }
+        val partitions = (1..30).map { createPartition(it + 4) }
+        val group = ConsumerGroup(
+            partitions,
+            SubscriptionConfiguration(0, Duration.ofMillis(12)),
+            consumer,
+            lock,
+        )
+        group.createConsumption(consumer)
+
+        assertThrows<IllegalStateException> {
+            group.unAssignPartition(consumer, partitions.take(4))
+        }
+    }
+
+    @Test
+    fun `unAssignPartition with un known partition will throw an exception`() {
+        val consumer = mock<Consumer> {
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
+            on { partitionStrategy } doReturn PartitionStrategy.DIVIDE_PARTITIONS
+            on { offsetStrategy } doReturn OffsetStrategy.LATEST
+        }
+        val partitions = (1..30).map { createPartition(it + 4) }
+        val group = ConsumerGroup(
+            partitions,
+            SubscriptionConfiguration(0, Duration.ofMillis(12)),
+            firstConsumer,
+            lock,
+        )
+        group.createConsumption(firstConsumer)
+
+        assertThrows<IllegalStateException> {
+            group.unAssignPartition(consumer, partitions.take(4))
+        }
+    }
+
+    @Test
+    fun `unAssignPartition with valid data will remove the partitions`() {
+        val consumer = mock<Consumer> {
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
+            on { partitionStrategy } doReturn PartitionStrategy.MANUAL
+            on { offsetStrategy } doReturn OffsetStrategy.LATEST
+            on { partitionAssignmentListener } doReturn listener
+            on { topicName } doReturn "topic"
+        }
+        val partitions = (1..30).map { createPartition(it + 4) }
+        val group = ConsumerGroup(
+            partitions,
+            SubscriptionConfiguration(0, Duration.ofMillis(12)),
+            consumer,
+            lock,
+        )
+        group.createConsumption(consumer)
+
+        group.unAssignPartition(consumer, partitions.take(3))
+
+        assertThat(captureUnpartitions.firstValue).containsExactly("topic" to 5, "topic" to 6, "topic" to 7)
+    }
+
+    @Test
+    fun `unAssignPartition with wake up the consumers`() {
+        val consumer = mock<Consumer> {
+            on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
+            on { partitionStrategy } doReturn PartitionStrategy.MANUAL
+            on { offsetStrategy } doReturn OffsetStrategy.LATEST
+            on { partitionAssignmentListener } doReturn listener
+            on { topicName } doReturn "topic"
+        }
+        val partitions = (1..30).map { createPartition(it + 4) }
+        val group = ConsumerGroup(
+            partitions,
+            SubscriptionConfiguration(0, Duration.ofMillis(12)),
+            consumer,
+            lock,
+        )
+        group.createConsumption(consumer)
+
+        group.unAssignPartition(consumer, partitions.take(3))
+
+        verify(sleeper).signalAll()
     }
 
     private fun createPartition(id: Int): Partition {

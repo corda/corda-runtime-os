@@ -9,6 +9,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -212,6 +213,62 @@ class TopicTest {
             topic.wakeUpConsumers()
 
             verify(group.constructed().first()).wakeUp()
+        }
+    }
+
+    @Test
+    fun `assignPartition will assign the partitions`() {
+        val topic = Topic("topic", config)
+        mockConstruction(ConsumerGroup::class.java).use { group ->
+            val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
+            val consumer = mock<Consumer> {
+                on { groupName } doReturn "group"
+            }
+            topic.createConsumption(consumer, subscriptionConfig)
+
+            topic.assignPartition(consumer, listOf(1, 2, 3))
+
+            verify(group.constructed().first()).assignPartition(eq(consumer), any())
+        }
+    }
+
+    @Test
+    fun `assignPartition will throw an exceptionfor invalid consumer`() {
+        val topic = Topic("topic", config)
+        val consumer = mock<Consumer> {
+            on { groupName } doReturn "group"
+        }
+
+        assertThrows<java.lang.IllegalStateException> {
+            topic.assignPartition(consumer, listOf(1, 2, 3))
+        }
+    }
+
+    @Test
+    fun `unAssignPartition will assign the partitions`() {
+        val topic = Topic("topic", config)
+        mockConstruction(ConsumerGroup::class.java).use { group ->
+            val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
+            val consumer = mock<Consumer> {
+                on { groupName } doReturn "group"
+            }
+            topic.createConsumption(consumer, subscriptionConfig)
+
+            topic.unAssignPartition(consumer, listOf(1, 2, 3))
+
+            verify(group.constructed().first()).unAssignPartition(eq(consumer), any())
+        }
+    }
+
+    @Test
+    fun `unAssignPartition will throw an exceptionfor invalid consumer`() {
+        val topic = Topic("topic", config)
+        val consumer = mock<Consumer> {
+            on { groupName } doReturn "group"
+        }
+
+        assertThrows<java.lang.IllegalStateException> {
+            topic.unAssignPartition(consumer, listOf(1, 2, 3))
         }
     }
 }

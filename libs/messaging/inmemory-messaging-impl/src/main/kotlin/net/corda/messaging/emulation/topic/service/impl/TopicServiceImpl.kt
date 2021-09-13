@@ -21,6 +21,14 @@ class TopicServiceImpl(
             }
     }
 
+    override fun manualAssignPartitions(consumer: Consumer, partitionsIds: Collection<Int>) {
+        topics.getTopic(consumer.topicName).assignPartition(consumer, partitionsIds)
+    }
+
+    override fun manualUnAssignPartitions(consumer: Consumer, partitionsIds: Collection<Int>) {
+        topics.getTopic(consumer.topicName).unAssignPartition(consumer, partitionsIds)
+    }
+
     override fun getLatestOffsets(topicName: String): Map<Int, Long> {
         return topics.getLatestOffsets(topicName)
     }

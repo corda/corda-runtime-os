@@ -14,14 +14,9 @@ internal class StatesConsumer<K : Any, S : Any>(
     override val topicName = subscription.subscription.stateSubscriptionConfig.eventTopic
     override val offsetStrategy = OffsetStrategy.EARLIEST
     override val commitStrategy = CommitStrategy.NO_COMMIT
-    override val partitionStrategy = PartitionStrategy.DIVIDE_PARTITIONS
+    override val partitionStrategy = PartitionStrategy.MANUAL
     override val partitionAssignmentListener = subscription
     override fun handleRecords(records: Collection<RecordMetadata>) {
         subscription.gotStates(records)
-    }
-
-    // Use the same hash code for bosh consumers to promise similar partitions
-    override fun hashCode(): Int {
-        return subscription.subscription.hashCode()
     }
 }

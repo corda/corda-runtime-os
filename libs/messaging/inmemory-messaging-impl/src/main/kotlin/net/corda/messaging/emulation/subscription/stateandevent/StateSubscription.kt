@@ -12,6 +12,7 @@ internal class StateSubscription<K : Any, S : Any>(
 
     private data class State<S : Any>(val state: S?)
 
+    internal val consumer = StatesConsumer(this)
     private var stateConsumption: Consumption? = null
     override val isRunning: Boolean
         get() =
@@ -19,7 +20,6 @@ internal class StateSubscription<K : Any, S : Any>(
 
     override fun start() {
         if (stateConsumption == null) {
-            val consumer = StatesConsumer(this)
             stateConsumption = subscription.topicService.subscribe(consumer)
         }
     }
