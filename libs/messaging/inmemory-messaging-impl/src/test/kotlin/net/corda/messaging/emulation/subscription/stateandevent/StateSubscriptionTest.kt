@@ -120,18 +120,6 @@ class StateSubscriptionTest {
     }
 
     @Test
-    fun `gotStates will update listener when ready`() {
-        stateSubscription.onPartitionsAssigned(listOf("topic" to 5))
-        val records = listOf(
-            RecordMetadata(1, Record("topic", "key1", "value2"), 5),
-        )
-
-        stateSubscription.gotStates(records)
-
-        verify(stateListener).onPostCommit(emptyMap())
-    }
-
-    @Test
     fun `gotStates will report synch for empty partition`() {
         stateSubscription.onPartitionsAssigned(listOf("topic" to 5))
 
@@ -181,8 +169,18 @@ class StateSubscriptionTest {
         stateSubscription.setValue("key3", "value3", 4)
         stateSubscription.setValue("key4", "value4", 5)
         stateSubscription.setValue("key6", "value6", 6)
+        stateSubscription.setValue("key7", "value7", 4)
 
-        stateSubscription.gotStates(emptyList())
+        stateSubscription.gotStates(
+            listOf(
+                RecordMetadata(1L, Record("topic", "key1", null), 4),
+                RecordMetadata(1L, Record("topic", "key2", null), 4),
+                RecordMetadata(1L, Record("topic", "key3", null), 4),
+                RecordMetadata(1L, Record("topic", "key4", null), 5),
+                RecordMetadata(1L, Record("topic", 4, null), 5),
+                RecordMetadata(1L, Record("topic", "key44", null), 5),
+            )
+        )
 
         verify(stateListener).onPostCommit(
             mapOf(
@@ -192,6 +190,25 @@ class StateSubscriptionTest {
                 "key4" to "value4",
             )
         )
+    }
+
+    @Test
+    fun `onPostCommit not called for irrelevant data`() {
+        stateSubscription.onPartitionsAssigned(listOf("topic" to 4, "topic" to 5))
+        stateSubscription.setValue("key1", "value1", 4)
+        stateSubscription.setValue("key2", null, 4)
+        stateSubscription.setValue("key3", "value3", 4)
+        stateSubscription.setValue("key4", "value4", 5)
+        stateSubscription.setValue("key6", "value6", 6)
+        stateSubscription.setValue("key7", "value7", 4)
+
+        stateSubscription.gotStates(
+            listOf(
+                RecordMetadata(1L, Record("topic", "key44", null), 5),
+            )
+        )
+
+        verify(stateListener, never()).onPostCommit(any())
     }
 
     @Test
