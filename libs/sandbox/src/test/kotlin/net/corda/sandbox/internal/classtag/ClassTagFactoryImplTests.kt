@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import org.osgi.framework.Bundle
 
 class ClassTagFactoryImplTests {
     private val classTagFactory = ClassTagFactoryImpl()
