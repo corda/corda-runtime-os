@@ -13,8 +13,9 @@ import org.osgi.service.component.annotations.Activate
 
 class CryptoLibraryFactoryImpl @Activate constructor(
     private val memberId: String,
+    private val requestingComponent: String,
     private val cipherSuiteFactory: CipherSuiteFactory,
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
 ) : CryptoLibraryFactory {
     override fun getSignatureVerificationService(): SignatureVerificationService =
         cipherSuiteFactory.getSignatureVerificationService()

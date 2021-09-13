@@ -2,7 +2,7 @@ package net.corda.crypto.testkit
 
 import com.typesafe.config.ConfigFactory
 import net.corda.cipher.suite.impl.CipherSchemeMetadataProviderImpl
-import net.corda.components.crypto.config.CryptoCacheConfig
+import net.corda.cipher.suite.impl.config.CryptoCacheConfig
 import net.corda.components.crypto.services.persistence.DefaultCryptoCachedKeyInfo
 import net.corda.components.crypto.services.persistence.DefaultCryptoPersistentKeyInfo
 import net.corda.components.crypto.services.persistence.SigningPersistentKeyInfo

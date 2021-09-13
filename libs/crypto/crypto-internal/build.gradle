@@ -10,6 +10,7 @@ dependencies {
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
     implementation project(":libs:utilities")
+    implementation project(":libs:lifecycle:lifecycle")
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 

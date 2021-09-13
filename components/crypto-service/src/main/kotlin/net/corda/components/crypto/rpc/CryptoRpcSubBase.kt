@@ -1,9 +1,9 @@
 package net.corda.components.crypto.rpc
 
-import net.corda.components.crypto.CryptoServiceLifecycleEventHandler
-import net.corda.components.crypto.CryptoLifecycleComponent
-import net.corda.components.crypto.config.CryptoConfigEvent
-import net.corda.components.crypto.config.CryptoLibraryConfig
+import net.corda.cipher.suite.impl.lifecycle.CryptoServiceLifecycleEventHandler
+import net.corda.cipher.suite.impl.lifecycle.CryptoLifecycleComponent
+import net.corda.cipher.suite.impl.config.CryptoConfigEvent
+import net.corda.cipher.suite.impl.config.CryptoLibraryConfig
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.subscription.RPCSubscription

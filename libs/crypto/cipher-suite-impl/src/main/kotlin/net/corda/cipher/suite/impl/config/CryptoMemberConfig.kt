@@ -1,4 +1,4 @@
-package net.corda.components.crypto.config
+package net.corda.cipher.suite.impl.config
 
 import com.typesafe.config.Config
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig

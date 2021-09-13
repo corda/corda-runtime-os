@@ -1,4 +1,4 @@
-package net.corda.components.crypto
+package net.corda.cipher.suite.impl.lifecycle
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleEvent
@@ -32,4 +32,20 @@ abstract class CryptoLifecycleComponent(
     }
 
     protected abstract fun handleLifecycleEvent(event: LifecycleEvent)
+}
+
+@Suppress("TooGenericExceptionCaught")
+fun AutoCloseable.closeGracefully() {
+    try {
+        close()
+    } catch (e: Throwable) {
+        // intentional
+    }
+}
+
+fun MutableMap<*, *>.clearCache() {
+    forEach {
+        (it.value as? AutoCloseable)?.closeGracefully()
+    }
+    clear()
 }

@@ -2,8 +2,8 @@ package net.corda.components.crypto.services.persistence
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import net.corda.components.crypto.closeGracefully
-import net.corda.components.crypto.config.CryptoCacheConfig
+import net.corda.cipher.suite.impl.config.CryptoCacheConfig
+import net.corda.cipher.suite.impl.lifecycle.closeGracefully
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig

@@ -1,12 +1,11 @@
-package net.corda.components.crypto
+package net.corda.crypto.impl
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.cipher.suite.impl.config.ConfigReader
 import net.corda.cipher.suite.impl.config.CryptoConfigReceivedEvent
 import net.corda.cipher.suite.impl.lifecycle.CryptoServiceLifecycleEventHandler
-import net.corda.components.crypto.rpc.CryptoRpcSub
-import net.corda.components.crypto.services.DefaultCryptoServiceProvider
+import net.corda.crypto.CryptoLibraryFactoryProvider
 import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -22,7 +21,7 @@ import org.osgi.service.component.annotations.Reference
 
 @Suppress("LongParameterList")
 @Component(immediate = true)
-class CryptoCoordinator @Activate constructor(
+class CryptoLibraryCoordinator @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CryptoServiceLifecycleEventHandler::class)
@@ -31,12 +30,8 @@ class CryptoCoordinator @Activate constructor(
     private var configReadServiceFactory: ConfigReadServiceFactory,
     @Reference(service = CipherSuiteFactory::class)
     private val cipherSuiteFactory: CipherSuiteFactory,
-    @Reference(service = CryptoFactory::class)
-    private val cryptoFactory: CryptoFactory,
-    @Reference(service = DefaultCryptoServiceProvider::class)
-    private val defaultCryptoServiceProvider: DefaultCryptoServiceProvider,
-    @Reference(service = CryptoRpcSub::class)
-    private val rpcSubs: List<CryptoRpcSub>
+    @Reference(service = CryptoLibraryFactoryProvider::class)
+    private val cryptoFactoryProvider: CryptoLibraryFactoryProvider
 ) : Lifecycle {
     companion object {
         private val logger = contextLogger()
@@ -57,10 +52,8 @@ class CryptoCoordinator @Activate constructor(
                     configReader!!.start(getBootstrapConfig())
                 }
                 is CryptoConfigReceivedEvent -> {
-                    defaultCryptoServiceProvider.start()
-                    (cipherSuiteFactory as? Lifecycle)?.start() // TODO2 - add Lifecycle to the base of the CipherSuiteFactory
-                    cryptoFactory.start()
-                    rpcSubs.forEach { it.start() }
+                    (cipherSuiteFactory as? Lifecycle)?.start()
+                    (cryptoFactoryProvider as? Lifecycle)?.start()
                     logger.info("Received config, started subscriptions")
                 }
                 is StopEvent -> {
@@ -73,8 +66,9 @@ class CryptoCoordinator @Activate constructor(
     override fun start() {
         logger.info("Starting coordinator.")
         lifeCycleCoordinator =
-            lifecycleCoordinatorFactory.createCoordinator<CryptoCoordinator>(cryptoServiceLifecycleEventHandler)
+            lifecycleCoordinatorFactory.createCoordinator<CryptoLibraryCoordinator>(cryptoServiceLifecycleEventHandler)
         configReader = ConfigReader(lifeCycleCoordinator!!, configReadServiceFactory)
+
         logger.info("Starting life cycle coordinator")
         lifeCycleCoordinator!!.start()
         logger.info("Coordinator started.")

@@ -1,4 +1,4 @@
-package net.corda.components.crypto
+package net.corda.cipher.suite.impl.lifecycle
 
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent

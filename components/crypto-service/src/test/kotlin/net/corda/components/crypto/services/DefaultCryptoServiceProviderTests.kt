@@ -1,8 +1,8 @@
 package net.corda.components.crypto.services
 
 import com.typesafe.config.ConfigFactory
-import net.corda.components.crypto.config.CryptoConfigReceivedEvent
-import net.corda.components.crypto.config.CryptoLibraryConfig
+import net.corda.cipher.suite.impl.config.CryptoConfigReceivedEvent
+import net.corda.cipher.suite.impl.config.CryptoLibraryConfig
 import net.corda.crypto.CryptoCategories
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.crypto.testkit.MockPersistentCacheFactory

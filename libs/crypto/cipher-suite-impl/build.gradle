@@ -12,10 +12,11 @@ dependencies {
     implementation "net.corda:corda-cipher-suite"
     implementation project(":libs:crypto:crypto-internal")
     implementation project(":libs:utilities")
-
+    implementation project(':libs:configuration:configuration-read')
+    implementation project(":libs:lifecycle:lifecycle")
     implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.slf4j:slf4j-api"
 
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"

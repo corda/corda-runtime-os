@@ -1,7 +1,7 @@
 package net.corda.components.crypto.services.persistence
 
 import com.typesafe.config.ConfigFactory
-import net.corda.components.crypto.config.CryptoCacheConfig
+import net.corda.cipher.suite.impl.config.CryptoCacheConfig
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory

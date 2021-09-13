@@ -1,4 +1,4 @@
-package net.corda.components.crypto.config
+package net.corda.cipher.suite.impl.config
 
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
@@ -34,6 +34,11 @@ class CryptoLibraryConfigTests {
                 "persistenceConfig" to mapOf(
                     "url" to "mngPersistenceUrl"
                 )
+            ),
+            "cipherSuite" to mapOf(
+                "schemeMetadataProvider" to "customSchemeMetadataProvider",
+                "signatureVerificationProvider" to "customSignatureVerificationProvider",
+                "digestProvider" to "customDigestProvider",
             ),
             "default" to mapOf(
                 "default" to mapOf(
@@ -77,6 +82,9 @@ class CryptoLibraryConfigTests {
         assertEquals(120, config.mngCache.expireAfterAccessMins)
         assertEquals(50, config.mngCache.maximumSize)
         assertEquals("mngPersistenceUrl", config.mngCache.persistenceConfig.getString("url"))
+        assertEquals("customSchemeMetadataProvider", config.cipherSuite.schemeMetadataProvider)
+        assertEquals("customSignatureVerificationProvider", config.cipherSuite.signatureVerificationProvider)
+        assertEquals("customDigestProvider", config.cipherSuite.digestProvider)
         val member = config.getMember("member123")
         val default = member.default
         assertEquals("default", default.serviceName)
@@ -89,6 +97,14 @@ class CryptoLibraryConfigTests {
         assertEquals(Duration.ofSeconds(2), ledger.timeout)
         assertEquals("CORDA.ECDSA.SECP256R1", ledger.defaultSignatureScheme)
         assertEquals("pwd", ledger.serviceConfig["password"])
+    }
+
+    @Test
+    fun `Should return object with default values if 'cipherSuite' is not specified`() {
+        val config = CryptoLibraryConfig(ConfigFactory.empty())
+        assertEquals("default", config.cipherSuite.schemeMetadataProvider)
+        assertEquals("default", config.cipherSuite.signatureVerificationProvider)
+        assertEquals("default", config.cipherSuite.digestProvider)
     }
 
     @Test
@@ -107,6 +123,13 @@ class CryptoLibraryConfigTests {
         assertEquals(100, config.maximumSize)
         assertTrue(config.persistenceConfig.isEmpty)
     }
+
+    @Test
+    fun `CipherSuiteConfig should return default values if the value is not provided`() {
+        val config = CipherSuiteConfig(ConfigFactory.empty())
+        assertEquals("default", config.schemeMetadataProvider)
+        assertEquals("default", config.signatureVerificationProvider)
+        assertEquals("default", config.digestProvider)    }
 
     @Test
     fun `Should fail if the 'rpc' path is not supplied`() {

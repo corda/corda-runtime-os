@@ -6,9 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.components.crypto.services.CryptoServiceCircuitBreaker
-import net.corda.components.crypto.config.CryptoCacheConfig
-import net.corda.components.crypto.config.CryptoConfigEvent
-import net.corda.components.crypto.config.CryptoLibraryConfig
+import net.corda.cipher.suite.impl.config.CryptoCacheConfig
+import net.corda.cipher.suite.impl.config.CryptoConfigEvent
+import net.corda.cipher.suite.impl.config.CryptoLibraryConfig
+import net.corda.cipher.suite.impl.lifecycle.CryptoLifecycleComponent
+import net.corda.cipher.suite.impl.lifecycle.CryptoServiceLifecycleEventHandler
+import net.corda.cipher.suite.impl.lifecycle.clearCache
 import net.corda.components.crypto.services.FreshKeySigningServiceImpl
 import net.corda.components.crypto.services.SigningServiceImpl
 import net.corda.components.crypto.services.persistence.PersistentCacheFactory
@@ -34,7 +37,7 @@ import kotlin.concurrent.withLock
 @Component(service = [CryptoFactory::class])
 class CryptoFactoryImpl @Activate constructor(
     @Reference(service = CryptoServiceLifecycleEventHandler::class)
-    private val cryptoServiceLifecycleEventHandler: CryptoServiceLifecycleEventHandler,
+    val cryptoServiceLifecycleEventHandler: CryptoServiceLifecycleEventHandler,
     @Reference(service = PersistentCacheFactory::class)
     private val persistenceFactory: PersistentCacheFactory,
     @Reference(service = CipherSuiteFactory::class)
@@ -116,7 +119,7 @@ class CryptoFactoryImpl @Activate constructor(
 
     private fun getServiceConfig(memberId: String, category: String): CryptoServiceConfig {
         if (!isConfigured) {
-            throw IllegalStateException("The factory haven't been started.")
+            throw IllegalStateException("The factory is not configured.")
         }
         return libraryConfig!!.getMember(memberId).getCategory(category)
     }

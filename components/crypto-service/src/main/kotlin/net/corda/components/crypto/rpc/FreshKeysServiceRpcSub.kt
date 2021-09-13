@@ -1,8 +1,8 @@
 package net.corda.components.crypto.rpc
 
 import net.corda.components.crypto.CryptoFactory
-import net.corda.components.crypto.CryptoServiceLifecycleEventHandler
-import net.corda.components.crypto.config.CryptoLibraryConfig
+import net.corda.cipher.suite.impl.lifecycle.CryptoServiceLifecycleEventHandler
+import net.corda.cipher.suite.impl.config.CryptoLibraryConfig
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
 import net.corda.messaging.api.subscription.RPCSubscription
