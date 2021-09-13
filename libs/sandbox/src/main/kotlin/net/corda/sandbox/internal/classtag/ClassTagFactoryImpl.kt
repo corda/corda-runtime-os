@@ -17,13 +17,16 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
         bundle: Bundle,
         sandbox: Sandbox
     ): String {
+        val bundleSymbolicName = bundle.symbolicName ?: throw SandboxException(
+            "Bundle at ${bundle.location} does not have a symbolic name, preventing serialisation.")
+
         if (isPlatformBundle) {
             return if (isStaticClassTag) {
-                StaticTagImplV1(isPlatformClass = true, bundle.symbolicName, ClassTagV1.PLACEHOLDER_CPK_FILE_HASH)
+                StaticTagImplV1(isPlatformClass = true, bundleSymbolicName, ClassTagV1.PLACEHOLDER_CPK_FILE_HASH)
             } else {
                 EvolvableTagImplV1(
                     isPlatformClass = true,
-                    bundle.symbolicName,
+                    bundleSymbolicName,
                     ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME,
                     ClassTagV1.PLACEHOLDER_CPK_PUBLIC_KEY_HASHES
                 )
@@ -35,11 +38,11 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
                 "sandbox. A valid class tag cannot be constructed.")
 
         return if (isStaticClassTag) {
-            StaticTagImplV1(isPlatformClass = false, bundle.symbolicName, sandbox.cpk.cpkHash)
+            StaticTagImplV1(isPlatformClass = false, bundleSymbolicName, sandbox.cpk.cpkHash)
         } else {
             EvolvableTagImplV1(
                 isPlatformClass = false,
-                bundle.symbolicName,
+                bundleSymbolicName,
                 sandbox.cordappBundle.symbolicName,
                 sandbox.cpk.id.signers
             )

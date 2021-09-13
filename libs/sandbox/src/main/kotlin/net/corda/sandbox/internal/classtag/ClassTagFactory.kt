@@ -5,7 +5,12 @@ import org.osgi.framework.Bundle
 
 /** Creates, serialises and deserialises [ClassTag] objects. */
 internal interface ClassTagFactory {
-    /** Creates and serialises a [ClassTag]. */
+    /**
+     * Creates and serialises a [ClassTag].
+     *
+     * Throws `SandboxException` if the [bundle] does not have a symbolic name, or [sandbox] is neither the platform
+     * sandbox nor a CPK sandbox.
+     */
     fun createSerialised(
         isStaticClassTag: Boolean,
         isPlatformBundle: Boolean,
@@ -13,6 +18,10 @@ internal interface ClassTagFactory {
         sandbox: Sandbox
     ): String
 
-    /** Deserialises a [ClassTag]. */
+    /**
+     * Deserialises a [ClassTag].
+     *
+     * Throws `SandboxException` if the [serialisedClassTag] cannot be deserialised.
+     */
     fun deserialise(serialisedClassTag: String): ClassTag
 }

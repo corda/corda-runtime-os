@@ -82,8 +82,9 @@ internal class SandboxGroupImpl(
      * If [isStaticTag] is true, a serialised [StaticTag] is returned. Otherwise, a serialised [EvolvableTag] is
      * returned.
      *
-     * Throws [SandboxException] if the class is not contained in any bundle, or is contained in a bundle that is not
-     * contained in any sandbox in the group or in the platform sandbox.
+     * Throws [SandboxException] if the class is not contained in any bundle, the class is contained in a bundle that
+     * is not contained in any sandbox in the group or in the platform sandbox, or the class is contained in a bundle
+     * that does not have a symbolic name.
      */
     private fun getClassTag(klass: Class<*>, isStaticTag: Boolean): String {
         val bundle = bundleUtils.getBundle(klass)
