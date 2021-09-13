@@ -3,6 +3,8 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
+description 'Corda Kryo serialization library'
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
