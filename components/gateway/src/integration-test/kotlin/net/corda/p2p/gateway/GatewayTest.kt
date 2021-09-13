@@ -3,6 +3,7 @@ package net.corda.p2p.gateway
 import com.typesafe.config.ConfigFactory
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.EventLogRecord
@@ -48,6 +49,8 @@ class GatewayTest : TestBase() {
     }
 
     private val sessionId = "session-1"
+
+    private val coodrinator = LifecycleCoordinatorFactoryImpl()
 
     private class Node(private val name: String) {
         private val topicService = TopicServiceImpl()
@@ -99,7 +102,8 @@ class GatewayTest : TestBase() {
         Gateway(
             GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),
             alice.subscriptionFactory,
-            alice.publisherFactory
+            alice.publisherFactory,
+            coodrinator,
         ).use {
             it.start()
             val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null)
@@ -145,7 +149,8 @@ class GatewayTest : TestBase() {
         Gateway(
             GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),
             alice.subscriptionFactory,
-            alice.publisherFactory
+            alice.publisherFactory,
+            coodrinator,
         ).use {
             it.start()
             val responseReceived = CountDownLatch(clientNumber)
@@ -233,7 +238,8 @@ class GatewayTest : TestBase() {
         Gateway(
             GatewayConfiguration(gatewayAddress.first, gatewayAddress.second, aliceSslConfig),
             alice.subscriptionFactory,
-            alice.publisherFactory
+            alice.publisherFactory,
+            coodrinator,
         ).use {
             startTime = Instant.now().toEpochMilli()
             it.start()
@@ -314,7 +320,8 @@ class GatewayTest : TestBase() {
             Gateway(
                 GatewayConfiguration(aliceGatewayAddress.host, aliceGatewayAddress.port, chipSslConfig),
                 alice.subscriptionFactory,
-                alice.publisherFactory
+                alice.publisherFactory,
+                coodrinator
             ).also {
                 it.start()
             }
@@ -326,7 +333,8 @@ class GatewayTest : TestBase() {
             Gateway(
                 GatewayConfiguration(bobGatewayAddress.host, bobGatewayAddress.port, daleSslConfig),
                 bob.subscriptionFactory,
-                bob.publisherFactory
+                bob.publisherFactory,
+                coodrinator
             ).also {
                 it.start()
             }.use {

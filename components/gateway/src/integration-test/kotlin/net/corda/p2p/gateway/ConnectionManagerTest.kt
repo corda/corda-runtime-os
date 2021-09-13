@@ -23,7 +23,7 @@ class ConnectionManagerTest : TestBase() {
     @Test
     @Timeout(30)
     fun `acquire connection`() {
-        val manager = ConnectionManager(aliceSslConfig, ConnectionConfiguration())
+        val manager = ConnectionManager(aliceSslConfig)
         manager.start()
         val (host, port) = serverAddress.let { Pair(it.host, it.port) }
         HttpServer(host, port, aliceSslConfig).use { server ->
@@ -52,7 +52,7 @@ class ConnectionManagerTest : TestBase() {
     @Test
     @Timeout(30)
     fun `reuse connection`() {
-        val manager = ConnectionManager(aliceSslConfig,  ConnectionConfiguration())
+        val manager = ConnectionManager(aliceSslConfig)
         manager.start()
         val requestReceived = CountDownLatch(2)
         HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->

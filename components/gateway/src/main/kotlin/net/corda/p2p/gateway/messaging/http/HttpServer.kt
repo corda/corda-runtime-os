@@ -3,7 +3,6 @@ package net.corda.p2p.gateway.messaging.http
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelInitializer
-import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
@@ -12,6 +11,7 @@ import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.timeout.IdleStateHandler
 import net.corda.lifecycle.Lifecycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.v5.base.util.contextLogger
 import org.slf4j.LoggerFactory
 import java.lang.IllegalStateException
 import java.net.BindException
@@ -37,12 +37,14 @@ import kotlin.concurrent.withLock
  * @param port port number used when binding the server
  * @param sslConfig the configuration to be used for the one-way TLS handshake
  */
-class HttpServer(private val host: String,
-                 private val port: Int,
-                 private val sslConfig: SslConfiguration) : Lifecycle, HttpEventListener {
+class HttpServer(
+    private val host: String,
+    private val port: Int,
+    private val sslConfig: SslConfiguration
+) : Lifecycle, HttpEventListener {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(HttpServer::class.java)
+        private val logger = contextLogger()
 
         /**
          * Default number of thread to use for the worker group
@@ -56,14 +58,42 @@ class HttpServer(private val host: String,
     }
 
     private val lock = ReentrantLock()
-    private var bossGroup: EventLoopGroup? = null
-    private var workerGroup: EventLoopGroup? = null
-    private var serverChannel: Channel? = null
+
+    private fun startServer(): AutoCloseable {
+        logger.info("Starting HTTP Server")
+        val bossGroup = NioEventLoopGroup(1)
+        val workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS)
+
+        val server = ServerBootstrap()
+        server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
+            .childHandler(ServerChannelInitializer(this))
+        logger.info("Trying to bind to $host:$port")
+        val channelFuture = server.bind(host, port).sync()
+        logger.info("Listening on port $port")
+        val serverChannel = channelFuture.channel()
+
+        serverChannel.closeFuture().addListener {
+            println("QQQ on close!")
+        }
+
+        return AutoCloseable {
+            println("QQQ! 3")
+            serverChannel.close()
+            println("QQQ! 4")
+
+            workerGroup.shutdownGracefully()
+            workerGroup.terminationFuture().sync()
+
+            bossGroup.shutdownGracefully()
+            bossGroup.terminationFuture().sync()
+        }
+    }
+
+    private var serverChannel: AutoCloseable? = null
     private val clientChannels = ConcurrentHashMap<SocketAddress, Channel>()
 
-    private var started = false
     override val isRunning: Boolean
-        get() = started
+        get() = (serverChannel != null)
 
     private val eventListeners = CopyOnWriteArrayList<HttpEventListener>()
 
@@ -72,18 +102,8 @@ class HttpServer(private val host: String,
      */
     override fun start() {
         lock.withLock {
-            logger.info("Starting HTTP Server")
-            bossGroup = NioEventLoopGroup(1)
-            workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS)
-
-            val server = ServerBootstrap()
-            server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
-                .childHandler(ServerChannelInitializer(this))
-            logger.info("Trying to bind to $host:$port")
-            val channelFuture = server.bind(host, port).sync()
-            logger.info("Listening on port $port")
-            serverChannel = channelFuture.channel()
-            started = true
+            serverChannel?.close()
+            serverChannel = startServer()
         }
     }
 
@@ -92,18 +112,8 @@ class HttpServer(private val host: String,
             try {
                 logger.info("Stopping HTTP server")
                 serverChannel?.close()
-                serverChannel = null
-
-                workerGroup?.shutdownGracefully()
-                workerGroup?.terminationFuture()?.sync()
-
-                bossGroup?.shutdownGracefully()
-                bossGroup?.terminationFuture()?.sync()
-
-                workerGroup = null
-                bossGroup = null
             } finally {
-                started = false
+                serverChannel = null
                 logger.info("HTTP server stopped")
             }
         }

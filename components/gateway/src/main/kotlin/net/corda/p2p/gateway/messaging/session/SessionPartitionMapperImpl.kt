@@ -1,6 +1,5 @@
 package net.corda.p2p.gateway.messaging.session
 
-import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -14,7 +13,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-class SessionPartitionMapperImpl(subscriptionFactory: SubscriptionFactory): SessionPartitionMapper {
+class SessionPartitionMapperImpl(subscriptionFactory: SubscriptionFactory) : SessionPartitionMapper {
 
     companion object {
         private val logger = contextLogger()
@@ -25,8 +24,7 @@ class SessionPartitionMapperImpl(subscriptionFactory: SubscriptionFactory): Sess
 
     private var sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
-        SessionPartitionProcessor(sessionPartitionsMapping),
-        ConfigFactory.empty()
+        SessionPartitionProcessor(sessionPartitionsMapping)
     )
 
     private val startStopLock = ReentrantReadWriteLock()
@@ -66,7 +64,7 @@ class SessionPartitionMapperImpl(subscriptionFactory: SubscriptionFactory): Sess
         }
     }
 
-    private class SessionPartitionProcessor(private val sessionPartitionMapping: ConcurrentHashMap<String, List<Int>>):
+    private class SessionPartitionProcessor(private val sessionPartitionMapping: ConcurrentHashMap<String, List<Int>>) :
         CompactedProcessor<String, SessionPartitions> {
         override val keyClass: Class<String>
             get() = String::class.java
@@ -88,6 +86,5 @@ class SessionPartitionMapperImpl(subscriptionFactory: SubscriptionFactory): Sess
                 sessionPartitionMapping[newRecord.key] = newRecord.value!!.partitions
             }
         }
-
     }
 }

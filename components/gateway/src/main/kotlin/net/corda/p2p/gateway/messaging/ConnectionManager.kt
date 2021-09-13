@@ -3,6 +3,7 @@ package net.corda.p2p.gateway.messaging
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.lifecycle.Lifecycle
+import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import org.slf4j.LoggerFactory
@@ -11,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
-import net.corda.p2p.gateway.messaging.http.DestinationInfo
 
 /**
  * The [ConnectionManager] is responsible for creating an HTTP connection and caching it. If a connection to the requested
@@ -22,8 +22,9 @@ import net.corda.p2p.gateway.messaging.http.DestinationInfo
  * or to drop a request for one.
  *
  */
-class ConnectionManager(private val sslConfiguration: SslConfiguration,
-                        val config: ConnectionConfiguration) : Lifecycle {
+class ConnectionManager(
+    private val sslConfiguration: SslConfiguration,
+) : Lifecycle {
 
     companion object {
         private val logger = LoggerFactory.getLogger(ConnectionManager::class.java)

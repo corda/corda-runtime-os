@@ -2,11 +2,11 @@ package net.corda.p2p.gateway
 
 import com.typesafe.config.ConfigFactory
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpServer
@@ -31,11 +31,14 @@ import kotlin.concurrent.withLock
  * to the internal messaging system.
  *
  */
-class Gateway(config: GatewayConfiguration,
-              @Reference(service = SubscriptionFactory::class)
-              subscriptionFactory: SubscriptionFactory,
-              @Reference(service = PublisherFactory::class)
-              publisherFactory: PublisherFactory
+class Gateway(
+    config: GatewayConfiguration,
+    @Reference(service = SubscriptionFactory::class)
+    subscriptionFactory: SubscriptionFactory,
+    @Reference(service = PublisherFactory::class)
+    publisherFactory: PublisherFactory,
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : Lifecycle {
 
     companion object {
@@ -45,12 +48,18 @@ class Gateway(config: GatewayConfiguration,
     }
 
     private val closeActions = mutableListOf<() -> Unit>()
+    private val dominoCoordinator = DominoCoordinator(lifecycleCoordinatorFactory)
     private val httpServer = HttpServer(config.hostAddress, config.hostPort, config.sslConfig)
-    private val connectionManager = ConnectionManager(config.sslConfig, config.connectionConfig)
-    private var p2pMessageSubscription: Subscription<String, LinkOutMessage>
+    private val connectionManager = ConnectionManager(config.sslConfig)
     private val sessionPartitionMapper = SessionPartitionMapperImpl(subscriptionFactory)
     private val inboundMessageProcessor = InboundMessageHandler(httpServer, publisherFactory, sessionPartitionMapper)
     private val outboundMessageProcessor = OutboundMessageHandler(connectionManager, publisherFactory)
+    private var p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
+        SubscriptionConfig(CONSUMER_GROUP_ID, LINK_OUT_TOPIC),
+        outboundMessageProcessor,
+        ConfigFactory.empty(),
+        null
+    )
 
     private val lock = ReentrantLock()
 
@@ -60,14 +69,6 @@ class Gateway(config: GatewayConfiguration,
     override val isRunning: Boolean
         get() = started
 
-    init {
-        val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, LINK_OUT_TOPIC)
-        p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
-            outboundMessageProcessor,
-            ConfigFactory.empty(),
-            null)
-    }
-
     override fun start() {
         lock.withLock {
             if (started) {
@@ -75,7 +76,11 @@ class Gateway(config: GatewayConfiguration,
                 return
             }
             logger.info("Starting Gateway service")
-            started = true
+            dominoCoordinator.start()
+            closeActions.add {
+                dominoCoordinator.stop()
+            }
+
             connectionManager.start()
             closeActions += { connectionManager.close() }
             httpServer.start()
@@ -88,6 +93,7 @@ class Gateway(config: GatewayConfiguration,
             closeActions += { outboundMessageProcessor.close() }
             p2pMessageSubscription.start()
             closeActions += { p2pMessageSubscription.close() }
+            started = true
             logger.info("Gateway started")
         }
     }
