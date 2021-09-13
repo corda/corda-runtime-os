@@ -126,11 +126,15 @@ class SandboxServiceImplTests {
      *
      * [startedBundles] and [uninstalledBundles] are mutated to contain the list of bundles that have been started/
      * uninstalled so far.
+     *
+     * @param cpkDatas The [CpkData]s that the sandbox service's [InstallService] is aware of
+     * @param startedBundles A list that is mutated to contain the list of bundles that have been started so far
+     * @param uninstalledBundles A list that is mutated to contain the list of bundles that have been uninstalled so far
      */
     private fun createSandboxService(
         cpkDatas: Set<CpkData> = setOf(cpkDataOne, cpkDataTwo),
-        startedBundles: MutableList<Bundle>? = null,
-        uninstalledBundles: MutableList<Bundle>? = null
+        startedBundles: MutableList<Bundle> = mutableListOf(),
+        uninstalledBundles: MutableList<Bundle> = mutableListOf()
     ): SandboxServiceInternal {
         val cpks = cpkDatas.mapTo(LinkedHashSet(), CpkData::cpk)
         val bundles = cpkDatas.flatMap { cpkData -> listOf(cpkData.cordappBundle, cpkData.libraryBundle) }
@@ -169,12 +173,8 @@ class SandboxServiceImplTests {
             )
 
             bundles.forEach { bundle ->
-                if (startedBundles != null) {
-                    whenever(startBundle(bundle)).then { startedBundles.add(bundle) }
-                }
-                if (uninstalledBundles != null) {
-                    whenever(startBundle(bundle)).then { uninstalledBundles.add(bundle) }
-                }
+                whenever(startBundle(bundle)).then { startedBundles.add(bundle) }
+                whenever(bundle.uninstall()).then { uninstalledBundles.add(bundle) }
             }
         }
 
