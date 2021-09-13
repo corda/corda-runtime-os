@@ -224,7 +224,7 @@ logger.quiet("Old Corda dependencies version spec: {}", cordaVersion)
 
 subprojects {
     buildscript {
-        configurations.classpath {
+        configurations.all {
             // FORCE Gradle to use latest dynamic versions.
             resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
         }
