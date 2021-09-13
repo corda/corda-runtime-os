@@ -25,6 +25,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
+import org.osgi.framework.BundleException
 import java.net.URI
 import java.nio.file.Paths
 import java.util.Collections
@@ -45,63 +46,55 @@ class SandboxServiceImplTests {
         private const val hashLength = 32
         private const val APPLICATION_VERSION = "5.0"
         private const val FRAMEWORK_VERSION = "1.9"
-        private const val SCR_VERSION = "2.1.24"
-        private const val SLF4J_VERSION = "1.7.30"
         private const val SECRET_VERSION = "9.9.99"
     }
 
-    private val frameworkBundle = mockBundle("org.apache.felix.framework", FRAMEWORK_VERSION)
-    private val scrBundle = mockBundle("org.apache.felix.scr", SCR_VERSION)
     private val applicationBundle = mockBundle("net.corda.application", APPLICATION_VERSION)
-    private val slf4jBundle = mockBundle("slf4j.api", SLF4J_VERSION)
+    private val frameworkBundle = mockBundle("org.apache.felix.framework", FRAMEWORK_VERSION)
     private val secretBundle = mockBundle("secret.service", SECRET_VERSION)
 
-    private val cpkDataOne = createDummyCpkData(
-        cordappClasses = setOf(String::class.java),
-        libraryClass = Boolean::class.java
-    )
-    private val cpkOne = cpkDataOne.cpk
+    private val cpkAndBundlesOne = createDummyCpkAndBundles(String::class.java, Boolean::class.java)
+    private val cpkOne = cpkAndBundlesOne.cpk
 
-    private val cpkDataTwo = createDummyCpkData(
-        cordappClasses = setOf(List::class.java),
-        libraryClass = Set::class.java
-    )
-    private val cpkTwo = cpkDataTwo.cpk
+    private val cpkAndBundlesTwo = createDummyCpkAndBundles(List::class.java, Set::class.java)
+    private val cpkTwo = cpkAndBundlesTwo.cpk
+
+    private val mockInstallService = createMockInstallService(setOf(cpkOne))
+    private val sandboxService = createSandboxService()
 
     /**
-     * Creates a dummy [CpkData], using mocks and random values where possible.
+     * Creates a dummy [CpkAndBundles], using mocks and random values where possible.
      *
-     * @param cordappClasses The classes contained in the CPK's CorDapp bundle
+     * @param cordappClass The class contained in the CPK's CorDapp bundle
      * @param libraryClass The class contained in the CPK's library bundle
      * @param cpkDependencies The [Cpk.Identifier]s of the CPK's dependencies
      */
-    private fun createDummyCpkData(
-        cordappClasses: Collection<Class<*>>,
+    private fun createDummyCpkAndBundles(
+        cordappClass: Class<*>,
         libraryClass: Class<*>,
         cpkDependencies: NavigableSet<Cpk.Identifier> = Collections.emptyNavigableSet()
-    ): CpkData {
+    ): CpkAndBundles {
         val cordappBundleName = Random.nextInt().toString()
         val cordappBundleVersion = "0.0"
 
-        val cordappManifest = mock<CordappManifest>().apply {
+        val mockCordappManifest = mock<CordappManifest>().apply {
             whenever(bundleSymbolicName).thenReturn(cordappBundleName)
             whenever(bundleVersion).thenReturn(cordappBundleVersion)
         }
 
-        val mainJar = Paths.get("${Random.nextInt()}.jar")
-        val libraries = setOf(Paths.get("${Random.nextInt()}.jar"))
-        val cpk = Cpk.Expanded(
+        val cpkMainJar = Paths.get("${Random.nextInt()}.jar")
+        val mockCpk = Cpk.Expanded(
             type = Cpk.Type.UNKNOWN,
             cpkHash = SecureHash(hashAlgorithm, Random.nextBytes(hashLength)),
             cpkManifest = Cpk.Manifest(Cpk.Manifest.CpkFormatVersion(0, 0)),
-            mainJar = mainJar,
-            cordappJarFileName = mainJar.fileName.toString(),
+            mainJar = cpkMainJar,
+            cordappJarFileName = cpkMainJar.fileName.toString(),
             cordappHash = SecureHash(hashAlgorithm, Random.nextBytes(hashLength)),
             cordappCertificates = emptySet(),
             libraries = setOf(Paths.get("${Random.nextInt()}.jar")),
-            cordappManifest = cordappManifest,
+            cordappManifest = mockCordappManifest,
             dependencies = cpkDependencies,
-            libraryDependencies = libraries.associateTo(TreeMap()) {
+            libraryDependencies = setOf(Paths.get("${Random.nextInt()}.jar")).associateTo(TreeMap()) {
                 it.fileName.toString() to SecureHash(hashAlgorithm, Random.nextBytes(hashLength))
             },
             cpkFile = Paths.get(".")
@@ -110,7 +103,7 @@ class SandboxServiceImplTests {
         val cordappBundle = mockBundle(cordappBundleName, cordappBundleVersion).apply {
             whenever(loadClass(any())).then { answer ->
                 val className = answer.arguments.single()
-                cordappClasses.find { klass -> klass.name == className } ?: throw ClassNotFoundException()
+                if (className == cordappClass.name) cordappClass else throw ClassNotFoundException()
             }
         }
 
@@ -118,65 +111,25 @@ class SandboxServiceImplTests {
             whenever(loadClass(libraryClass.name)).thenReturn(libraryClass)
         }
 
-        return CpkData(cpk, cordappBundle, libraryBundle, cordappClasses, libraryClass)
+        return CpkAndBundles(mockCpk, cordappBundle, libraryBundle, cordappClass, libraryClass)
     }
 
     /**
      * Creates a [SandboxServiceImpl].
      *
-     * [startedBundles] and [uninstalledBundles] are mutated to contain the list of bundles that have been started/
-     * uninstalled so far.
-     *
-     * @param cpkDatas The [CpkData]s that the sandbox service's [InstallService] is aware of
+     * @param cpksAndBundles The [CpkAndBundles]s that the sandbox service's [InstallService] is aware of
      * @param startedBundles A list that is mutated to contain the list of bundles that have been started so far
      * @param uninstalledBundles A list that is mutated to contain the list of bundles that have been uninstalled so far
      */
     private fun createSandboxService(
-        cpkDatas: Set<CpkData> = setOf(cpkDataOne, cpkDataTwo),
+        cpksAndBundles: Set<CpkAndBundles> = setOf(cpkAndBundlesOne, cpkAndBundlesTwo),
         startedBundles: MutableList<Bundle> = mutableListOf(),
         uninstalledBundles: MutableList<Bundle> = mutableListOf()
     ): SandboxServiceInternal {
-        val cpks = cpkDatas.mapTo(LinkedHashSet(), CpkData::cpk)
-        val bundles = cpkDatas.flatMap { cpkData -> listOf(cpkData.cordappBundle, cpkData.libraryBundle) }
+        val cpks = cpksAndBundles.mapTo(LinkedHashSet(), CpkAndBundles::cpk)
 
         val mockInstallService = createMockInstallService(cpks)
-
-        val mockBundleUtils = mock<BundleUtils>().apply {
-            cpkDatas.forEach { cpkData ->
-                whenever(
-                    installAsBundle(
-                        anyString(),
-                        eq(cpkData.cpk.mainJar.toUri())
-                    )
-                ).thenReturn(cpkData.cordappBundle)
-                whenever(
-                    installAsBundle(
-                        anyString(),
-                        eq(cpkData.cpk.libraries.single().toUri())
-                    )
-                ).thenReturn(cpkData.libraryBundle)
-
-                cpkData.cordappClasses.forEach { cordappClass ->
-                    whenever(getBundle(cordappClass)).thenReturn(cpkData.cordappBundle)
-                }
-                whenever(getBundle(cpkData.libraryClass)).thenReturn(cpkData.libraryBundle)
-            }
-
-            whenever(allBundles).thenReturn(
-                listOf(
-                    applicationBundle,
-                    frameworkBundle,
-                    scrBundle,
-                    secretBundle,
-                    slf4jBundle
-                )
-            )
-
-            bundles.forEach { bundle ->
-                whenever(startBundle(bundle)).then { startedBundles.add(bundle) }
-                whenever(bundle.uninstall()).then { uninstalledBundles.add(bundle) }
-            }
-        }
+        val mockBundleUtils = createMockBundleUtils(cpksAndBundles, startedBundles, uninstalledBundles)
 
         return SandboxServiceImpl(mockInstallService, mockBundleUtils)
     }
@@ -189,33 +142,66 @@ class SandboxServiceImplTests {
         }
     }
 
+    /** Creates a mock [BundleUtils] that tracks which bundles have been started and uninstalled so far. */
+    private fun createMockBundleUtils(cpksAndBundles: Collection<CpkAndBundles>,
+                                      startedBundles: MutableList<Bundle> = mutableListOf(),
+                                      uninstalledBundles: MutableList<Bundle> = mutableListOf()
+    ) = mock<BundleUtils>().apply {
+        cpksAndBundles.forEach { cpkAndBundles ->
+            whenever(
+                installAsBundle(
+                    anyString(),
+                    eq(cpkAndBundles.cpk.mainJar.toUri())
+                )
+            ).thenReturn(cpkAndBundles.cordappBundle)
+            whenever(
+                installAsBundle(
+                    anyString(),
+                    eq(cpkAndBundles.cpk.libraries.single().toUri())
+                )
+            ).thenReturn(cpkAndBundles.libraryBundle)
+
+            whenever(getBundle(cpkAndBundles.cordappClass)).thenReturn(cpkAndBundles.cordappBundle)
+            whenever(getBundle(cpkAndBundles.libraryClass)).thenReturn(cpkAndBundles.libraryBundle)
+        }
+
+        whenever(allBundles).thenReturn(
+            listOf(
+                applicationBundle,
+                frameworkBundle,
+                secretBundle
+            )
+        )
+
+        val bundles =
+            cpksAndBundles.flatMap { cpkAndBundles -> listOf(cpkAndBundles.cordappBundle, cpkAndBundles.libraryBundle) }
+        bundles.forEach { bundle ->
+            whenever(startBundle(bundle)).then { startedBundles.add(bundle) }
+            whenever(bundle.uninstall()).then { uninstalledBundles.add(bundle) }
+        }
+    }
+
     @Test
     fun `can create sandboxes by CPK hash and retrieve them`() {
-        val cpkDatas = setOf(cpkDataOne, cpkDataTwo)
-        val cpkHashes = cpkDatas.map { cpkData -> cpkData.cpk.cpkHash }
-        val sandboxService = createSandboxService(cpkDatas)
+        val cpksAndBundles = setOf(cpkAndBundlesOne, cpkAndBundlesTwo)
+        val cpkHashes = cpksAndBundles.map { cpkAndBundles -> cpkAndBundles.cpk.cpkHash }
 
         val sandboxGroup = sandboxService.createSandboxes(cpkHashes)
         val sandboxes = sandboxGroup.sandboxes
         assertEquals(2, sandboxes.size)
 
-        val sandboxesFromSandboxGroup = cpkDatas.map { cpkData -> sandboxGroup.getSandbox(cpkData.cpk.id) }
+        val sandboxesFromSandboxGroup =
+            cpksAndBundles.map { cpkAndBundles -> sandboxGroup.getSandbox(cpkAndBundles.cpk.id) }
         assertEquals(sandboxes.toSet(), sandboxesFromSandboxGroup.toSet())
     }
 
     @Test
     fun `sandboxes created together have visibility of each other`() {
-        val sandboxService = createSandboxService(setOf(cpkDataOne, cpkDataTwo))
-
-        val sandboxes = sandboxService.createSandboxes(listOf(cpkOne.cpkHash, cpkTwo.cpkHash)).sandboxes
+        val sandboxes = sandboxService.createSandboxes(listOf(cpkOne.cpkHash, cpkTwo.cpkHash)).sandboxes.toList()
         assertEquals(2, sandboxes.size)
 
-        val sandboxList = sandboxes.toList()
-        val sandboxOne = sandboxList[0]
-        val sandboxTwo = sandboxList[1]
-
-        assertTrue((sandboxOne as SandboxInternal).hasVisibility(sandboxTwo))
-        assertTrue((sandboxTwo as SandboxInternal).hasVisibility(sandboxOne))
+        assertTrue((sandboxes[0] as SandboxInternal).hasVisibility(sandboxes[1]))
+        assertTrue((sandboxes[1] as SandboxInternal).hasVisibility(sandboxes[0]))
     }
 
     @Test
@@ -237,7 +223,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `can retrieve a sandbox based on its bundles`() {
+    fun `can retrieve a bundle's sandbox`() {
         val startedBundles = mutableListOf<Bundle>()
         val sandboxService = createSandboxService(startedBundles = startedBundles)
 
@@ -248,9 +234,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `a sandbox correctly lists the CPK it is created from`() {
-        val sandboxService = createSandboxService()
-
+    fun `a sandbox correctly indicates which CPK it is created from`() {
         val sandbox = sandboxService.createSandboxes(listOf(cpkOne.cpkHash)).sandboxes.single()
 
         assertEquals(cpkOne, sandbox.cpk)
@@ -258,7 +242,6 @@ class SandboxServiceImplTests {
 
     @Test
     fun `does not complain if asked to create a sandbox for an empty list of CPK hashes`() {
-        val sandboxService = createSandboxService()
         assertDoesNotThrow {
             sandboxService.createSandboxes(emptyList())
         }
@@ -273,10 +256,9 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `throws if a sandbox's CorDapp bundle cannot be installed`() {
-        val mockInstallService = createMockInstallService(setOf(cpkOne))
+    fun `throws if a CPK's CorDapp bundle cannot be installed`() {
         val mockBundleUtils = mock<BundleUtils>().apply {
-            whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenAnswer { throw SandboxException("") }
+            whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenAnswer { throw BundleException("") }
             whenever(installAsBundle(anyString(), eq(cpkOne.libraries.single().toUri()))).thenReturn(mock())
         }
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
@@ -287,16 +269,12 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `throws if one of a sandbox's other bundles cannot be installed`() {
-        val mockInstallService = createMockInstallService(setOf(cpkOne))
+    fun `throws if a CPK's library bundles cannot be installed`() {
         val mockBundleUtils = mock<BundleUtils>().apply {
             whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(mock())
-            whenever(
-                installAsBundle(
-                    anyString(),
-                    eq(cpkOne.libraries.single().toUri())
-                )
-            ).thenAnswer { throw SandboxException("") }
+            whenever(installAsBundle(anyString(), eq(cpkOne.libraries.single().toUri()))).thenAnswer {
+                throw BundleException("")
+            }
         }
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
 
@@ -306,15 +284,14 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `throws if a CorDapp bundle cannot be started when creating a sandbox`() {
+    fun `throws if a CPK's CorDapp bundle cannot be started`() {
         val cordappBundle = mock<Bundle>()
         val libraryBundle = mock<Bundle>()
 
-        val mockInstallService = createMockInstallService(setOf(cpkOne))
         val mockBundleUtils = mock<BundleUtils>().apply {
             whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(cordappBundle)
             whenever(installAsBundle(anyString(), eq(cpkOne.libraries.single().toUri()))).thenReturn(libraryBundle)
-            whenever(startBundle(cordappBundle)).thenAnswer { throw SandboxException("") }
+            whenever(startBundle(cordappBundle)).thenAnswer { throw BundleException("") }
         }
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
 
@@ -324,15 +301,14 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `throws if a library bundle cannot be started when creating a sandbox`() {
+    fun `throws if a CPK's library bundles cannot be started`() {
         val cordappBundle = mock<Bundle>()
         val libraryBundle = mock<Bundle>()
 
-        val mockInstallService = createMockInstallService(setOf(cpkOne))
         val mockBundleUtils = mock<BundleUtils>().apply {
             whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(cordappBundle)
             whenever(installAsBundle(anyString(), eq(cpkOne.libraries.single().toUri()))).thenReturn(libraryBundle)
-            whenever(startBundle(libraryBundle)).thenAnswer { throw SandboxException("") }
+            whenever(startBundle(libraryBundle)).thenAnswer { throw BundleException("") }
         }
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
 
@@ -351,21 +327,23 @@ class SandboxServiceImplTests {
     @Test
     fun `returns the CPK info for a CorDapp class installed in one of the sandboxes`() {
         val cordappClass = Int::class.java
-        val libraryClass = List::class.java
 
-        // We create a dependency on `cpk`.
+        // We make the CPK we are retrieving have a dependency on `cpkOne`, so we can check the `CpkClassInfo` fields
+        // related to dependencies.
         val cpkDependency = Cpk.Identifier(
             cpkOne.cordappManifest.bundleSymbolicName,
             cpkOne.cordappManifest.bundleVersion,
             cpkOne.id.signers
         )
         val cpkWithDependenciesData =
-            createDummyCpkData(setOf(cordappClass), libraryClass, sequenceOf(cpkDependency).toCollection(TreeSet()))
+            createDummyCpkAndBundles(cordappClass, List::class.java, sequenceOf(cpkDependency).toCollection(TreeSet()))
 
-        val sandboxService = createSandboxService(setOf(cpkDataOne, cpkWithDependenciesData))
+        val sandboxService = createSandboxService(setOf(cpkWithDependenciesData, cpkAndBundlesOne))
         sandboxService.createSandboxes(listOf(cpkWithDependenciesData.cpk.cpkHash))
 
         val classInfo = sandboxService.getClassInfo(cordappClass)
+        val classInfoByName = sandboxService.getClassInfo(cordappClass.name)
+        assertEquals(classInfo, classInfoByName)
 
         val expectedClassInfo = CpkClassInfo(
             cpkWithDependenciesData.cordappBundle.symbolicName,
@@ -382,24 +360,25 @@ class SandboxServiceImplTests {
 
     @Test
     fun `returns the CPK info for a library class installed in one of the sandboxes`() {
-        val cordappClass = Int::class.java
         val libraryClass = List::class.java
 
-        // We create a dependency on `cpk`.
+        // We make the CPK we are retrieving have a dependency on `cpkOne`, so we can check the `CpkClassInfo` fields
+        // related to dependencies.
         val cpkDependency = Cpk.Identifier(
             cpkOne.cordappManifest.bundleSymbolicName,
             cpkOne.cordappManifest.bundleVersion,
             cpkOne.id.signers
         )
         val cpkWithDependenciesData =
-            createDummyCpkData(setOf(cordappClass), libraryClass, sequenceOf(cpkDependency).toCollection(TreeSet()))
+            createDummyCpkAndBundles(Int::class.java, libraryClass, sequenceOf(cpkDependency).toCollection(TreeSet()))
 
-        val sandboxService = createSandboxService(setOf(cpkDataOne, cpkWithDependenciesData))
+        val sandboxService = createSandboxService(setOf(cpkWithDependenciesData, cpkAndBundlesOne))
         sandboxService.createSandboxes(listOf(cpkWithDependenciesData.cpk.cpkHash))
 
-        val cpkClassInfo = sandboxService.getClassInfo(cpkWithDependenciesData.libraryClass)
+        // Note that we cannot retrieve the class info for a library bundle by class name.
+        val classInfo = sandboxService.getClassInfo(libraryClass)
 
-        val expectedCpkClassInfo = CpkClassInfo(
+        val expectedClassInfo = CpkClassInfo(
             cpkWithDependenciesData.libraryBundle.symbolicName,
             cpkWithDependenciesData.libraryBundle.version,
             cpkWithDependenciesData.cordappBundle.symbolicName,
@@ -409,16 +388,14 @@ class SandboxServiceImplTests {
             setOf(cpkOne.cpkHash)
         )
 
-        assertEquals(expectedCpkClassInfo, cpkClassInfo)
+        assertEquals(expectedClassInfo, classInfo)
     }
 
     @Test
     fun `throws if asked to retrieve CPK info for a class not in any sandbox`() {
-        val unknownClass = Iterable::class.java
-
-        val sandboxService = createSandboxService()
         sandboxService.createSandboxes(listOf(cpkOne.cpkHash))
 
+        val unknownClass = Iterable::class.java
         assertThrows<SandboxException> {
             sandboxService.getClassInfo(unknownClass)
         }
@@ -427,14 +404,13 @@ class SandboxServiceImplTests {
     @Test
     fun `throws if asked to retrieve CPK info for a class and a dependency cannot be resolved`() {
         val cordappClass = Int::class.java
-        val libraryClass = List::class.java
 
         val badCpkDependency = Cpk.Identifier("unknown", "", Collections.emptyNavigableSet())
-        val cpkDataWithBadDependency =
-            createDummyCpkData(setOf(cordappClass), libraryClass, sequenceOf(badCpkDependency).toCollection(TreeSet()))
+        val cpkAndBundlesWithBadDependency =
+            createDummyCpkAndBundles(cordappClass, List::class.java, sequenceOf(badCpkDependency).toCollection(TreeSet()))
 
-        val sandboxService = createSandboxService(setOf(cpkDataWithBadDependency))
-        sandboxService.createSandboxes(listOf(cpkDataWithBadDependency.cpk.cpkHash))
+        val sandboxService = createSandboxService(setOf(cpkAndBundlesWithBadDependency))
+        sandboxService.createSandboxes(listOf(cpkAndBundlesWithBadDependency.cpk.cpkHash))
 
         assertThrows<SandboxException> {
             sandboxService.getClassInfo(cordappClass)
@@ -442,63 +418,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `returns CPK info for a CorDapp class name installed in one of the sandboxes the associated class's sandbox has visibility of`() {
-        val cordappClasses = listOf(Int::class.java, Float::class.java)
-        val libraryClass = List::class.java
-
-        // We create a dependency on `cpk`.
-        val cpkDependency = Cpk.Identifier(
-            cpkOne.cordappManifest.bundleSymbolicName,
-            cpkOne.cordappManifest.bundleVersion,
-            cpkOne.id.signers
-        )
-        val cpkWithDependenciesData =
-            createDummyCpkData(cordappClasses, libraryClass, sequenceOf(cpkDependency).toCollection(TreeSet()))
-
-        val sandboxService = createSandboxService(setOf(cpkDataOne, cpkWithDependenciesData))
-        sandboxService.createSandboxes(listOf(cpkWithDependenciesData.cpk.cpkHash))
-
-        val classInfo = sandboxService.getClassInfo(cordappClasses[0].canonicalName)
-
-        val expectedClassInfo = CpkClassInfo(
-            cpkWithDependenciesData.cordappBundle.symbolicName,
-            cpkWithDependenciesData.cordappBundle.version,
-            cpkWithDependenciesData.cordappBundle.symbolicName,
-            cpkWithDependenciesData.cordappBundle.version,
-            cpkWithDependenciesData.cpk.cpkHash,
-            cpkWithDependenciesData.cpk.id.signers,
-            setOf(cpkOne.cpkHash)
-        )
-
-        assertEquals(expectedClassInfo, classInfo as CpkClassInfo)
-    }
-
-    @Test
-    fun `throws if asked to retrieve CPK info for a CorDapp class name where the associated class is not installed in a sandbox`() {
-        val sandboxService = createSandboxService()
-        sandboxService.createSandboxes(listOf(cpkOne.cpkHash))
-
-        assertThrows<SandboxException> {
-            sandboxService.getClassInfo(Float::class.java.name)
-        }
-    }
-
-    @Test
-    @Suppress("MaxLineLength")
-    fun `throws if asked to retrieve CPK info for a CorDapp class name which is not installed in one of the sandboxes the associated class's sandbox has visibility of`() {
-        val unknownClassName = Iterable::class.java.name
-
-        val sandboxService = createSandboxService()
-        sandboxService.createSandboxes(listOf(cpkOne.cpkHash))
-
-        assertThrows<SandboxException> {
-            sandboxService.getClassInfo(unknownClassName)
-        }
-    }
-
-    @Test
     fun `two unsandboxed bundles have visibility of one another`() {
-        val sandboxService = createSandboxService()
         assertTrue(sandboxService.hasVisibility(mock(), mock()))
     }
 
@@ -605,10 +525,6 @@ class SandboxServiceImplTests {
             assertTrue(sandboxService.hasVisibility(applicationBundle, bundle))
             assertTrue(sandboxService.hasVisibility(bundle, frameworkBundle))
             assertTrue(sandboxService.hasVisibility(frameworkBundle, bundle))
-            assertTrue(sandboxService.hasVisibility(bundle, scrBundle))
-            assertTrue(sandboxService.hasVisibility(scrBundle, bundle))
-            assertTrue(sandboxService.hasVisibility(bundle, slf4jBundle))
-            assertTrue(sandboxService.hasVisibility(slf4jBundle, bundle))
 
             // The non-public bundles in the platform sandbox should not be visible.
             assertFalse(sandboxService.hasVisibility(bundle, secretBundle))
@@ -617,45 +533,34 @@ class SandboxServiceImplTests {
 
     @Test
     fun `can retrieve calling sandbox`() {
-        val mockInstallService = createMockInstallService(setOf(cpkOne))
-
         val mockBundle = mockBundle()
-        val mockBundleUtils = mock<BundleUtils>().apply {
+        // `getBundle` is called during stack-walking to identify the current frame's bundle. Here, we ensure that
+        // the stack-walking code returns our mock bundle.
+        val mockBundleUtils = createMockBundleUtils(setOf(cpkAndBundlesOne)).apply {
             whenever(getBundle(any())).thenReturn(mockBundle)
-            whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(mockBundle)
-            cpkOne.libraries.forEach { library ->
-                whenever(installAsBundle(anyString(), eq(library.toUri()))).thenReturn(mockBundle)
-            }
         }
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
-        val sandbox = sandboxService.createSandboxes(setOf(cpkDataOne.cpk.cpkHash)).sandboxes.single()
+        val sandbox = sandboxService.createSandboxes(setOf(cpkAndBundlesOne.cpk.cpkHash)).sandboxes.single()
 
-        // We return a location matching the created sandbox.
-        val validSandboxLocation = SandboxLocation(sandbox.id, URI("testUri"))
-        whenever(mockBundle.location).thenReturn(validSandboxLocation.toString())
+        // We can only set the mock bundle's location after we know the sandbox ID.
+        val sandboxLocation = SandboxLocation(sandbox.id, URI("testUri"))
+        whenever(mockBundle.location).thenReturn(sandboxLocation.toString())
 
         assertEquals(sandbox, sandboxService.getCallingSandbox())
     }
 
     @Test
     fun `can retrieve calling sandbox group`() {
-        val mockInstallService = createMockInstallService(setOf(cpkOne))
-
         val mockBundle = mockBundle()
-        val mockBundleUtils = mock<BundleUtils>().apply {
+        val mockBundleUtils = createMockBundleUtils(setOf(cpkAndBundlesOne)).apply {
             whenever(getBundle(any())).thenReturn(mockBundle)
-            whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(mockBundle)
-            cpkOne.libraries.forEach { library ->
-                whenever(installAsBundle(anyString(), eq(library.toUri()))).thenReturn(mockBundle)
-            }
         }
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
-        val sandboxGroup = sandboxService.createSandboxes(setOf(cpkDataOne.cpk.cpkHash))
+        val sandboxGroup = sandboxService.createSandboxes(setOf(cpkAndBundlesOne.cpk.cpkHash))
         val sandbox = sandboxGroup.sandboxes.single()
 
-        // We return a location matching the created sandbox.
         val validSandboxLocation = SandboxLocation(sandbox.id, URI("testUri"))
         whenever(mockBundle.location).thenReturn(validSandboxLocation.toString())
 
@@ -664,21 +569,14 @@ class SandboxServiceImplTests {
 
     @Test
     fun `can retrieve calling sandbox's CPK identifier`() {
-        val mockInstallService = createMockInstallService(setOf(cpkOne))
-
         val mockBundle = mockBundle()
-        val mockBundleUtils = mock<BundleUtils>().apply {
+        val mockBundleUtils = createMockBundleUtils(setOf(cpkAndBundlesOne)).apply {
             whenever(getBundle(any())).thenReturn(mockBundle)
-            whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(mockBundle)
-            cpkOne.libraries.forEach { library ->
-                whenever(installAsBundle(anyString(), eq(library.toUri()))).thenReturn(mockBundle)
-            }
         }
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
-        val sandbox = sandboxService.createSandboxes(setOf(cpkDataOne.cpk.cpkHash)).sandboxes.single()
+        val sandbox = sandboxService.createSandboxes(setOf(cpkAndBundlesOne.cpk.cpkHash)).sandboxes.single()
 
-        // We return a location matching the created sandbox.
         val validSandboxLocation = SandboxLocation(sandbox.id, URI("testUri"))
         whenever(mockBundle.location).thenReturn(validSandboxLocation.toString())
 
@@ -687,19 +585,13 @@ class SandboxServiceImplTests {
 
     @Test
     fun `retrieving calling sandbox returns null if there is no sandbox bundle on the stack`() {
-        val mockInstallService = createMockInstallService(setOf(cpkOne))
-
         val mockBundle = mockBundle()
-        val mockBundleUtils = mock<BundleUtils>().apply {
+        val mockBundleUtils = createMockBundleUtils(setOf(cpkAndBundlesOne)).apply {
             whenever(getBundle(any())).thenReturn(mockBundle)
-            whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(mockBundle)
-            cpkOne.libraries.forEach { library ->
-                whenever(installAsBundle(anyString(), eq(library.toUri()))).thenReturn(mockBundle)
-            }
         }
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
-        sandboxService.createSandboxes(setOf(cpkDataOne.cpk.cpkHash))
+        sandboxService.createSandboxes(setOf(cpkAndBundlesOne.cpk.cpkHash))
 
         // We return a non-sandbox location (i.e. one missing the 'sandbox/' prefix).
         val nonSandboxLocation = ""
@@ -711,14 +603,13 @@ class SandboxServiceImplTests {
     @Test
     fun `retrieving calling sandbox throws if no sandbox can be found with the given ID`() {
         val mockBundle = mockBundle()
-        val mockBundleUtils = mock<BundleUtils>().apply {
+        val mockBundleUtils = createMockBundleUtils(setOf(cpkAndBundlesOne)).apply {
             whenever(getBundle(any())).thenReturn(mockBundle)
-            whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(mockBundle)
         }
 
         val sandboxService = SandboxServiceImpl(mock(), mockBundleUtils)
 
-        // We return a location that does not correspond to any real sandbox.
+        // We return a sandbox location that does not correspond to any actual sandbox.
         val invalidSandboxLocation = SandboxLocation(randomUUID(), URI("testUri"))
         whenever(mockBundle.location).thenReturn(invalidSandboxLocation.toString())
 
@@ -729,10 +620,10 @@ class SandboxServiceImplTests {
 }
 
 /** For testing, associates a [Cpk] with its corresponding bundles, and the classes within those. */
-private data class CpkData(
+private data class CpkAndBundles(
     val cpk: Cpk.Expanded,
     val cordappBundle: Bundle,
     val libraryBundle: Bundle,
-    val cordappClasses: Collection<Class<*>>,
+    val cordappClass: Class<*>,
     val libraryClass: Class<*>
 )
