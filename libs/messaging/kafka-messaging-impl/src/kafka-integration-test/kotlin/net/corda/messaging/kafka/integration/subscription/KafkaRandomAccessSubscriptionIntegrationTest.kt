@@ -13,7 +13,6 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.integration.IntegrationTestProperties
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
@@ -21,7 +20,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class)
-@Disabled
 class KafkaRandomAccessSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig

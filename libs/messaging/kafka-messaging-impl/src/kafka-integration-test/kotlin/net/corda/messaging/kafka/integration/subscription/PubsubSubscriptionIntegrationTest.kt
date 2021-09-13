@@ -14,7 +14,6 @@ import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion
 import net.corda.messaging.kafka.integration.getRecords
 import net.corda.messaging.kafka.integration.processors.TestPubsubProcessor
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
@@ -24,7 +23,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class)
-@Disabled
 class PubsubSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig

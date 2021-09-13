@@ -14,7 +14,6 @@ import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
 import net.corda.v5.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
@@ -23,7 +22,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class)
-@Disabled
 class PublisherIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
