@@ -24,7 +24,7 @@ fun randomSecureHash(): SecureHash {
 fun randomSigners() = TreeSet(setOf(randomSecureHash()))
 
 /** Generates a mock [Bundle] with the given [bundleSymbolicName] and [bundleVersion]. */
-fun mockBundle(bundleSymbolicName: String? = Random.nextInt().toString(), bundleVersion: String? = "0.0") =
+fun mockBundle(bundleSymbolicName: String = Random.nextInt().toString(), bundleVersion: String = "0.0") =
     mock<Bundle>().apply {
         whenever(symbolicName).thenReturn(bundleSymbolicName)
         whenever(version).thenReturn(Version.parseVersion(bundleVersion))

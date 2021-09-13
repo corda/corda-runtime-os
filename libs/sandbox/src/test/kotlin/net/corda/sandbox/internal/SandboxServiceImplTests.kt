@@ -80,9 +80,12 @@ class SandboxServiceImplTests {
         libraryClass: Class<*>,
         cpkDependencies: NavigableSet<Cpk.Identifier> = Collections.emptyNavigableSet()
     ): CpkData {
+        val cordappBundleName = Random.nextInt().toString()
+        val cordappBundleVersion = "0.0"
+
         val cordappManifest = mock<CordappManifest>().apply {
-            whenever(bundleSymbolicName).thenReturn(Random.nextInt().toString())
-            whenever(bundleVersion).thenReturn(Random.nextInt().toString())
+            whenever(bundleSymbolicName).thenReturn(cordappBundleName)
+            whenever(bundleVersion).thenReturn(cordappBundleVersion)
         }
 
         val mainJar = Paths.get("${Random.nextInt()}.jar")
@@ -104,7 +107,7 @@ class SandboxServiceImplTests {
             cpkFile = Paths.get(".")
         )
 
-        val cordappBundle = mockBundle().apply {
+        val cordappBundle = mockBundle(cordappBundleName, cordappBundleVersion).apply {
             whenever(loadClass(any())).then { answer ->
                 val className = answer.arguments.single()
                 cordappClasses.find { klass -> klass.name == className } ?: throw ClassNotFoundException()
