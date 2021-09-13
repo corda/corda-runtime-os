@@ -3,7 +3,6 @@ package net.corda.sandbox.internal.classtag
 import net.corda.v5.crypto.SecureHash
 import java.util.NavigableSet
 
-// TODO - CORE-2582 - Handle the case of null bundle names.
 /**
  * Identifies a sandboxed class during serialisation and deserialisation.
  *
