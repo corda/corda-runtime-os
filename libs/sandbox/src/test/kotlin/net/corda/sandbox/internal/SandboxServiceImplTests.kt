@@ -37,7 +37,7 @@ import kotlin.random.Random
 /**
  * Tests of [SandboxServiceImpl].
  *
- * Does not test whether the platform sandbox are set up correctly.
+ * Does not test whether the platform sandbox is set up correctly.
  */
 class SandboxServiceImplTests {
     companion object {
@@ -80,7 +80,6 @@ class SandboxServiceImplTests {
         libraryClass: Class<*>,
         cpkDependencies: NavigableSet<Cpk.Identifier> = Collections.emptyNavigableSet()
     ): CpkData {
-
         val cordappManifest = mock<CordappManifest>().apply {
             whenever(bundleSymbolicName).thenReturn(Random.nextInt().toString())
             whenever(bundleVersion).thenReturn(Random.nextInt().toString())
@@ -105,14 +104,14 @@ class SandboxServiceImplTests {
             cpkFile = Paths.get(".")
         )
 
-        val cordappBundle = mockBundle(Random.nextInt().toString(), "0.0").apply {
+        val cordappBundle = mockBundle().apply {
             whenever(loadClass(any())).then { answer ->
                 val className = answer.arguments.single()
                 cordappClasses.find { klass -> klass.name == className } ?: throw ClassNotFoundException()
             }
         }
 
-        val libraryBundle = mockBundle(Random.nextInt().toString(), "0.0").apply {
+        val libraryBundle = mockBundle().apply {
             whenever(loadClass(libraryClass.name)).thenReturn(libraryClass)
         }
 
@@ -617,10 +616,13 @@ class SandboxServiceImplTests {
     fun `can retrieve calling sandbox`() {
         val mockInstallService = createMockInstallService(setOf(cpkOne))
 
-        val mockBundle = mock<Bundle>()
+        val mockBundle = mockBundle()
         val mockBundleUtils = mock<BundleUtils>().apply {
             whenever(getBundle(any())).thenReturn(mockBundle)
             whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(mockBundle)
+            cpkOne.libraries.forEach { library ->
+                whenever(installAsBundle(anyString(), eq(library.toUri()))).thenReturn(mockBundle)
+            }
         }
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
@@ -637,10 +639,13 @@ class SandboxServiceImplTests {
     fun `can retrieve calling sandbox group`() {
         val mockInstallService = createMockInstallService(setOf(cpkOne))
 
-        val mockBundle = mock<Bundle>()
+        val mockBundle = mockBundle()
         val mockBundleUtils = mock<BundleUtils>().apply {
             whenever(getBundle(any())).thenReturn(mockBundle)
             whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(mockBundle)
+            cpkOne.libraries.forEach { library ->
+                whenever(installAsBundle(anyString(), eq(library.toUri()))).thenReturn(mockBundle)
+            }
         }
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
@@ -658,10 +663,13 @@ class SandboxServiceImplTests {
     fun `can retrieve calling sandbox's CPK identifier`() {
         val mockInstallService = createMockInstallService(setOf(cpkOne))
 
-        val mockBundle = mock<Bundle>()
+        val mockBundle = mockBundle()
         val mockBundleUtils = mock<BundleUtils>().apply {
             whenever(getBundle(any())).thenReturn(mockBundle)
             whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(mockBundle)
+            cpkOne.libraries.forEach { library ->
+                whenever(installAsBundle(anyString(), eq(library.toUri()))).thenReturn(mockBundle)
+            }
         }
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
@@ -678,10 +686,13 @@ class SandboxServiceImplTests {
     fun `retrieving calling sandbox returns null if there is no sandbox bundle on the stack`() {
         val mockInstallService = createMockInstallService(setOf(cpkOne))
 
-        val mockBundle = mock<Bundle>()
+        val mockBundle = mockBundle()
         val mockBundleUtils = mock<BundleUtils>().apply {
             whenever(getBundle(any())).thenReturn(mockBundle)
             whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(mockBundle)
+            cpkOne.libraries.forEach { library ->
+                whenever(installAsBundle(anyString(), eq(library.toUri()))).thenReturn(mockBundle)
+            }
         }
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
@@ -696,7 +707,7 @@ class SandboxServiceImplTests {
 
     @Test
     fun `retrieving calling sandbox throws if no sandbox can be found with the given ID`() {
-        val mockBundle = mock<Bundle>()
+        val mockBundle = mockBundle()
         val mockBundleUtils = mock<BundleUtils>().apply {
             whenever(getBundle(any())).thenReturn(mockBundle)
             whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(mockBundle)

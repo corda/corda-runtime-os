@@ -7,6 +7,7 @@ import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.Version
 import java.util.TreeSet
+import kotlin.random.Random
 
 const val NON_PLATFORM_BUNDLE_NAME = "non_platform_bundle_symbolic_name"
 const val PLATFORM_BUNDLE_NAME = "platform_bundle_symbolic_name"
@@ -23,10 +24,11 @@ fun randomSecureHash(): SecureHash {
 fun randomSigners() = TreeSet(setOf(randomSecureHash()))
 
 /** Generates a mock [Bundle] with the given [bundleSymbolicName] and [bundleVersion]. */
-fun mockBundle(bundleSymbolicName: String? = null, bundleVersion: String? = null) = mock<Bundle>().apply {
-    whenever(symbolicName).thenReturn(bundleSymbolicName)
-    whenever(version).thenReturn(Version.parseVersion(bundleVersion))
-}
+fun mockBundle(bundleSymbolicName: String? = Random.nextInt().toString(), bundleVersion: String? = "0.0") =
+    mock<Bundle>().apply {
+        whenever(symbolicName).thenReturn(bundleSymbolicName)
+        whenever(version).thenReturn(Version.parseVersion(bundleVersion))
+    }
 
 /** Generates a mock [Cpk.Expanded]. */
 fun mockCpk(): Cpk.Expanded {
