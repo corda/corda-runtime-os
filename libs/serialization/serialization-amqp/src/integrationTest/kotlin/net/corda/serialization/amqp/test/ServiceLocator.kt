@@ -1,4 +1,4 @@
-package net.corda.serialization.amqp.osgi
+package net.corda.serialization.amqp.test
 
 import net.corda.classinfo.ClassInfoService
 import net.corda.install.InstallService

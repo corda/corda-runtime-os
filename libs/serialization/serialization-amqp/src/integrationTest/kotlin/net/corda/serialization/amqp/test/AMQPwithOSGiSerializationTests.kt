@@ -1,4 +1,4 @@
-package net.corda.serialization.amqp.osgi
+package net.corda.serialization.amqp.test
 
 import net.corda.classinfo.ClassInfoService
 import net.corda.install.InstallService
@@ -144,13 +144,13 @@ class AMQPwithOSGiSerializationTests {
         // Serialise our object
         val cashClass = sandboxGroup.loadClass(
                 cpkIdentifier = installService.getCpb(cpb.identifier)!!.cpks.find {
-                    it.id.symbolicName == "net.corda.test-serializable-1" }!!.id,
+                    it.id.symbolicName == "net.corda.serializable-cpk-one" }!!.id,
                 className = "net.corda.bundle1.Cash")
         val cashInstance = cashClass.getConstructor(Int::class.java).newInstance(100)
 
         val obligationClass = sandboxGroup.loadClass(
                 cpkIdentifier = installService.getCpb(cpb.identifier)!!.cpks.find {
-                    it.id.symbolicName == "net.corda.test-serializable-3" }!!.id,
+                    it.id.symbolicName == "net.corda.serializable-cpk-three" }!!.id,
                 className = "net.corda.bundle3.Obligation")
 
         val obligationInstance = obligationClass.getConstructor(
@@ -161,13 +161,13 @@ class AMQPwithOSGiSerializationTests {
 
         val documentClass = sandboxGroup.loadClass(
                 cpkIdentifier = installService.getCpb(cpb.identifier)!!.cpks.find {
-                    it.id.symbolicName == "net.corda.test-serializable-2" }!!.id,
+                    it.id.symbolicName == "net.corda.serializable-cpk-two" }!!.id,
                 className = "net.corda.bundle2.Document")
         val documentInstance = documentClass.getConstructor(String::class.java).newInstance(content)
 
         val transferClass = sandboxGroup.loadClass(
                 cpkIdentifier = installService.getCpb(cpb.identifier)!!.cpks.find {
-                    it.id.symbolicName == "net.corda.test-serializable-4" }!!.id,
+                    it.id.symbolicName == "net.corda.serializable-cpk-four" }!!.id,
                 className = "net.corda.bundle4.Transfer")
 
         val transferInstance = transferClass.getConstructor(
