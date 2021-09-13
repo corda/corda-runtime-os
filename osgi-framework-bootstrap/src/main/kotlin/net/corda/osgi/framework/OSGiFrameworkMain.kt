@@ -40,9 +40,10 @@ class OSGiFrameworkMain {
         const val FRAMEWORK_STORAGE_PREFIX = "osgi-cache"
 
         /**
-         * Wait for stop of the OSGi framework, without timeout.
+         * Time to wait for the OSGi framework to stop (20s)
          */
-        private const val NO_TIMEOUT = 0L
+        private const val STOP_TIMEOUT = 20000L
+
 
         /**
          * Location of the list of bundles to install in the [OSGiFrameworkWrap] instance.
@@ -90,7 +91,6 @@ class OSGiFrameworkMain {
             val logger = contextLogger()
             try {
                 val frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX)
-                frameworkStorageDir.toFile().deleteOnExit()
                 val osgiFrameworkWrap = OSGiFrameworkWrap(
                     OSGiFrameworkWrap.getFrameworkFrom(
                         FRAMEWORK_FACTORY_FQN,
@@ -103,23 +103,21 @@ class OSGiFrameworkMain {
                         override fun run() {
                             if (OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
                                 osgiFrameworkWrap.stop()
+                                osgiFrameworkWrap.waitForStop(STOP_TIMEOUT)
                             }
+                            Files.walk(frameworkStorageDir)
+                                .sorted(Comparator.reverseOrder())
+                                .forEach(Files::delete)
                         }
                     })
                     osgiFrameworkWrap
                         .start()
                         .install(SYSTEM_BUNDLES)
                         .activate()
-                        .startApplication(NO_TIMEOUT, args)
-                        .waitForStop(NO_TIMEOUT)
+                        .startApplication(args)
+                        .waitForStop(STOP_TIMEOUT)
                 } catch (e: Exception) {
                     logger.error("Error: ${e.message}!", e)
-                } finally {
-                    // If osgiFrameworkWrap stopped because SIGINT/CTRL+C,
-                    // this avoids to call stop twice and log warning.
-                    if (OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
-                        osgiFrameworkWrap.stop()
-                    }
                 }
             } catch (e: IllegalArgumentException) {
                 logger.error("Error: ${e.message}!", e)
@@ -129,7 +127,5 @@ class OSGiFrameworkMain {
                 logger.error("Error: ${e.message}!", e)
             }
         }
-
     } //~ companion object
-
 }

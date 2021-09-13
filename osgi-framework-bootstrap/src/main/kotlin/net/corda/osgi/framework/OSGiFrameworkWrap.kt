@@ -8,14 +8,12 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants
 import org.osgi.framework.FrameworkEvent
-import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceReference
 import org.osgi.framework.launch.Framework
 import org.osgi.framework.launch.FrameworkFactory
 import java.io.IOException
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 
 /**
  * `OSGiFrameworkWrap` provides an API to bootstrap an OSGI framework and OSGi bundles in the classpath.
@@ -217,7 +215,7 @@ class OSGiFrameworkWrap(
     /**
      * Map of the descriptors of bundles installed.
      */
-    private val bundleDescriptorMap = ConcurrentHashMap<Long, OSGiBundleDescriptor>()
+    private val bundleDescriptorMap = ConcurrentHashMap<Long, Bundle>()
 
     /**
      * Activate (start) the bundles installed with [install].
@@ -237,15 +235,15 @@ class OSGiFrameworkWrap(
         BundleException::class
     )
     fun activate(): OSGiFrameworkWrap {
-        bundleDescriptorMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
-            if (isFragment(bundleDescriptor.bundle)) {
+        bundleDescriptorMap.values.forEach { bundle: Bundle ->
+            if (isFragment(bundle)) {
                 logger.info(
-                    "OSGi bundle ${bundleDescriptor.bundle.location}" +
-                            " ID = ${bundleDescriptor.bundle.bundleId} ${bundleDescriptor.bundle.symbolicName ?: "\b"}" +
-                            " ${bundleDescriptor.bundle.version} ${bundleStateMap[bundleDescriptor.bundle.state]} fragment."
+                    "OSGi bundle ${bundle.location}" +
+                            " ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"}" +
+                            " ${bundle.version} ${bundleStateMap[bundle.state]} fragment."
                 )
             } else {
-                bundleDescriptor.bundle.start()
+                bundle.start()
             }
         }
         return this
@@ -327,7 +325,7 @@ class OSGiFrameworkWrap(
                 val bundleContext = framework.bundleContext
                     ?: throw IllegalStateException("OSGi framework not active yet.")
                 val bundle = bundleContext.installBundle(resource, inputStream)
-                bundleDescriptorMap[bundle.bundleId] = OSGiBundleDescriptor(bundle)
+                bundleDescriptorMap[bundle.bundleId] = bundle
                 logger.debug("OSGi bundle $resource installed.")
             } else {
                 throw IOException("OSGi bundle at $resource not found")
@@ -408,13 +406,12 @@ class OSGiFrameworkWrap(
             framework.bundleContext.addBundleListener { bundleEvent ->
                 val bundle = bundleEvent.bundle
                 if (isActive(bundle.state)) {
-                    bundleDescriptorMap[bundle.bundleId]?.active?.countDown()
+                    logger.info(
+                        "OSGi bundle ${bundle.location}" +
+                                " ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"}" +
+                                " ${bundle.version} ${bundleStateMap[bundle.state]}."
+                    )
                 }
-                logger.info(
-                    "OSGi bundle ${bundle.location}" +
-                            " ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"}" +
-                            " ${bundle.version} ${bundleStateMap[bundle.state]}."
-                )
             }
             framework.bundleContext.registerService(
                 Shutdown::class.java.name,
@@ -473,20 +470,7 @@ class OSGiFrameworkWrap(
         NoSuchMethodException::class,
         SecurityException::class
     )
-    fun startApplication(
-        timeout: Long,
-        args: Array<String>,
-    ): OSGiFrameworkWrap {
-        bundleDescriptorMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
-            if (!bundleDescriptor.active.await(timeout, TimeUnit.MILLISECONDS)) {
-                logger.warn(
-                    "OSGi bundle ${bundleDescriptor.bundle.location}" +
-                            " ID = ${bundleDescriptor.bundle.bundleId} ${bundleDescriptor.bundle.symbolicName ?: "\b"}" +
-                            " ${bundleDescriptor.bundle.version} ${bundleStateMap[bundleDescriptor.bundle.state]}" +
-                            " activation time-out after $timeout ms."
-                )
-            }
-        }
+    fun startApplication(args: Array<String>): OSGiFrameworkWrap {
         val applicationServiceReference: ServiceReference<Application>? =
             framework.bundleContext.getServiceReference(Application::class.java)
         if (applicationServiceReference != null) {
@@ -536,15 +520,7 @@ class OSGiFrameworkWrap(
             val applicationServiceReference: ServiceReference<Application>? =
                 framework.bundleContext.getServiceReference(Application::class.java)
             if (applicationServiceReference != null) {
-                val applicationService: Application? = framework.bundleContext.getService(applicationServiceReference)
-                if (applicationService != null) {
-                    val bundle = FrameworkUtil.getBundle(applicationService::class.java)
-                    val bundleDescriptor = bundleDescriptorMap[bundle.bundleId]
-                    if (bundleDescriptor!!.shutdown.count > 0L) {
-                        bundleDescriptor.shutdown.countDown()
-                        applicationService.shutdown()
-                    }
-                }
+                framework.bundleContext.getService(applicationServiceReference)?.shutdown()
             } else {
                 logger.warn("${Application::class.java} service unregistered before to shutdown the application.")
             }
