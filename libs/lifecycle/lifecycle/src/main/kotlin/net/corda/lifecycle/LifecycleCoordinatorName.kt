@@ -4,7 +4,8 @@ package net.corda.lifecycle
  * Identifier for a lifecycle coordinator.
  *
  * This identifier is used to show which component a particular coordinator is for. This is used when looking up other
- * components to register against when implementing domino logic. It is also the key by which coordinator statuses are
+ * components to
+ * register against when implementing domino logic. It is also the key by which coordinator statuses are
  * recorded in the registry.
  *
  * Note that creating two coordinators with equal names is considered an error. Where multiple components of the same
