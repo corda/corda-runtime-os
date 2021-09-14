@@ -12,7 +12,7 @@
     {
       "name": "response",
       "type": [
-        "null",
+        "net.corda.data.crypto.wire.WireNoContentValue",
         "net.corda.data.crypto.wire.WirePublicKey",
         "net.corda.data.crypto.wire.WireSignature",
         "net.corda.data.crypto.wire.WireSignatureWithKey",
