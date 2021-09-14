@@ -163,7 +163,7 @@ open class SandboxClassResolver(
             val cpkIdentifier = readCpkIdentifier(input)
 
             type = try {
-                sandboxGroup.loadClass(cpkIdentifier, className)
+                sandboxGroup.loadClassFromCordappBundle(cpkIdentifier, className)
             }   catch (ex: SandboxException) {
                 Class.forName(className, false, kryo.classLoader)
             } catch (ex: ClassNotFoundException) {

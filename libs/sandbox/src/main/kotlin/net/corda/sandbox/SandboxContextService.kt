@@ -1,28 +1,11 @@
 package net.corda.sandbox
 
 import net.corda.packaging.Cpk
-import net.corda.v5.crypto.SecureHash
 
 /**
- * OSGi service interface for managing sandboxes.
+ * OSGi service interface for retrieving context on the current sandbox.
  */
-interface SandboxService {
-    /**
-     * Creates a new [SandboxGroup] containing a sandbox for each of the CPKs identified by the [cpkFileHashes].
-     * Duplicate [cpkFileHashes] are discarded (i.e. if two hashes are identical, only one sandbox will be created).
-     *
-     * A [SandboxException] is thrown if the sandbox creation fails.
-     */
-    fun createSandboxes(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
-
-    /**
-     * Creates a new [SandboxGroup] containing a sandbox for each of the CPKs identified by the [cpkFileHashes].
-     * Duplicate [cpkFileHashes] are discarded (i.e. if two hashes are identical, only one sandbox will be created).
-     *
-     * A [SandboxException] is thrown if the sandbox creation fails.
-     */
-    fun createSandboxesWithoutStarting(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
-
+interface SandboxContextService {
     /**
      * Returns the [ClassInfo] for the given [klass].
      *
