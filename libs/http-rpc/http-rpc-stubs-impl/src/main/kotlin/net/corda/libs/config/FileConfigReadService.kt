@@ -6,6 +6,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReadService
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import java.io.IOException
 import java.util.Collections
@@ -64,6 +65,7 @@ class FileConfigReadService : ConfigReadService {
     private fun parseConfigFile(): Config {
 
         val fileRes = FileConfigReadService::class.java.getResource("/$configFile")
+                ?: throw CordaRuntimeException("File $configFile not found in resources.")
 
         return try {
             val parseOptions = ConfigParseOptions.defaults().setAllowMissing(false)
