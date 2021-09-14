@@ -15,7 +15,7 @@ import org.mockito.kotlin.whenever
 class EventLogSubscriptionTest {
     private val consumption = mock<Consumption>()
     private val topic = mock<TopicService> {
-        on { subscribe(any()) } doReturn consumption
+        on { createConsumption(any()) } doReturn consumption
     }
     private val config = SubscriptionConfig(eventTopic = "topic", groupName = "group")
     private val subscription = EventLogSubscription<String, SubscriptionConfig>(
@@ -29,7 +29,7 @@ class EventLogSubscriptionTest {
     fun `start will subscribe a consumer`() {
         subscription.start()
 
-        verify(topic).subscribe(any())
+        verify(topic).createConsumption(any())
     }
 
     @Test
@@ -37,7 +37,7 @@ class EventLogSubscriptionTest {
         subscription.start()
         subscription.start()
 
-        verify(topic, times(1)).subscribe(any())
+        verify(topic, times(1)).createConsumption(any())
     }
 
     @Test

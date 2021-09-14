@@ -14,7 +14,7 @@ class TopicServiceImpl(
     private val topics: Topics = Topics(config)
 ) : TopicService {
 
-    override fun subscribe(consumer: Consumer): Consumption {
+    override fun createConsumption(consumer: Consumer): Consumption {
         return topics.createConsumption(consumer)
             .also {
                 it.start()

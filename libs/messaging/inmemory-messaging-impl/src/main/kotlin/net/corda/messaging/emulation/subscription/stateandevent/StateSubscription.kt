@@ -27,7 +27,7 @@ internal class StateSubscription<K : Any, S : Any>(
 
     override fun start() {
         if (stateConsumption == null) {
-            stateConsumption = subscription.topicService.subscribe(consumer)
+            stateConsumption = subscription.topicService.createConsumption(consumer)
         }
     }
 

@@ -26,7 +26,7 @@ class StateSubscriptionTest {
         on { isRunning } doReturn true
     }
     private val topicService = mock<TopicService> {
-        on { subscribe(any()) } doReturn runningConsumption
+        on { createConsumption(any()) } doReturn runningConsumption
         on { getLatestOffsets("topic1") } doReturn mapOf(1 to 3L, 3 to 4L)
     }
     private val stateListener = mock<StateAndEventListener<String, String>>()
@@ -51,7 +51,7 @@ class StateSubscriptionTest {
     fun `start will create a new consumption`() {
         stateSubscription.start()
 
-        verify(topicService).subscribe(isA<StatesConsumer<String, String>>())
+        verify(topicService).createConsumption(isA<StatesConsumer<String, String>>())
     }
 
     @Test
@@ -59,7 +59,7 @@ class StateSubscriptionTest {
         stateSubscription.start()
         stateSubscription.start()
 
-        verify(topicService, times(1)).subscribe(isA<StatesConsumer<String, String>>())
+        verify(topicService, times(1)).createConsumption(isA<StatesConsumer<String, String>>())
     }
 
     @Test

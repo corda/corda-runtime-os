@@ -51,7 +51,7 @@ class PubSubSubscription<K : Any, V : Any>(
         lock.withLock {
             if (currentConsumer == null) {
                 val consumer = PubSubConsumer(this)
-                currentConsumer = topicService.subscribe(consumer)
+                currentConsumer = topicService.createConsumption(consumer)
             }
         }
     }

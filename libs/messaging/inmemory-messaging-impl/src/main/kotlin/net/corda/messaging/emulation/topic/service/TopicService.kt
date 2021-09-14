@@ -25,7 +25,7 @@ interface TopicService {
      * If the topic does not exist it is created.
      * To unsubscribe, close the returned lifecycle
      */
-    fun subscribe(consumer: Consumer): Consumption
+    fun createConsumption(consumer: Consumer): Consumption
 
     /**
      * Get the latest added offsets of a specific [topicName].

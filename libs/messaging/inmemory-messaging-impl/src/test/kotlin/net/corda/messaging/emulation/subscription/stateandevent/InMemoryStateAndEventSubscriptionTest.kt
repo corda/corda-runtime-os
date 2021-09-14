@@ -21,8 +21,8 @@ class InMemoryStateAndEventSubscriptionTest {
         on { isRunning } doReturn true
     }
     private val topicService = mock<TopicService> {
-        on { subscribe(isA<EventConsumer<String, String>>()) } doReturn eventsConsumption
-        on { subscribe(isA<StatesConsumer<String, String>>()) } doReturn statesConsumption
+        on { createConsumption(isA<EventConsumer<String, String>>()) } doReturn eventsConsumption
+        on { createConsumption(isA<StatesConsumer<String, String>>()) } doReturn statesConsumption
     }
 
     private val subscription = InMemoryStateAndEventSubscription<String, String, String>(
@@ -47,14 +47,14 @@ class InMemoryStateAndEventSubscriptionTest {
     fun `start will start  event consumer`() {
         subscription.start()
 
-        verify(topicService).subscribe(isA<EventConsumer<String, String>>())
+        verify(topicService).createConsumption(isA<EventConsumer<String, String>>())
     }
 
     @Test
     fun `start will start  state consumer`() {
         subscription.start()
 
-        verify(topicService).subscribe(isA<StatesConsumer<String, String>>())
+        verify(topicService).createConsumption(isA<StatesConsumer<String, String>>())
     }
 
     @Test
@@ -100,7 +100,7 @@ class InMemoryStateAndEventSubscriptionTest {
 
     @Test
     fun `setValue will update the value`() {
-        whenever(topicService.subscribe(isA<StatesConsumer<String, String>>())).doAnswer {
+        whenever(topicService.createConsumption(isA<StatesConsumer<String, String>>())).doAnswer {
             (it.arguments[0] as? Consumer)?.partitionAssignmentListener?.onPartitionsAssigned(listOf("topic" to 1))
             statesConsumption
         }

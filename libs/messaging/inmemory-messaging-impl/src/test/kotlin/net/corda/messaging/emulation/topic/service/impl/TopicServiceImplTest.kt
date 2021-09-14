@@ -37,8 +37,8 @@ class TopicServiceImplTest {
     private val impl = TopicServiceImpl(config, topics)
 
     @Test
-    fun `subscribe will start the thread`() {
-        impl.subscribe(mock())
+    fun `createConsumption will start the thread`() {
+        impl.createConsumption(mock())
 
         verify(thread).start()
     }

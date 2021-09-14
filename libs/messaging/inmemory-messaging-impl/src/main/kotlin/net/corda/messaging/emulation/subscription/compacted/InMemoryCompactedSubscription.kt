@@ -89,7 +89,7 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
                 if (waitingForPartitions.isEmpty()) {
                     processor.onSnapshot(knownValues)
                 }
-                currentConsumption = topicService.subscribe(consumer)
+                currentConsumption = topicService.createConsumption(consumer)
             }
         }
     }

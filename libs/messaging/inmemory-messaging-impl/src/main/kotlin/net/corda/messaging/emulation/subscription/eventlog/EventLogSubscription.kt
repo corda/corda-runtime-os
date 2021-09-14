@@ -47,7 +47,7 @@ class EventLogSubscription<K : Any, V : Any>(
         lock.withLock {
             if (currentConsumer == null) {
                 val consumer = EventLogConsumer(this)
-                currentConsumer = topicService.subscribe(consumer)
+                currentConsumer = topicService.createConsumption(consumer)
             }
         }
     }

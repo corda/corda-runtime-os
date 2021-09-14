@@ -28,7 +28,7 @@ class PubSubSubscriptionTest {
     private val executor = mock<ExecutorService>()
     private val consumeLifeCycle = mock<Consumption>()
     private val topicService = mock<TopicService> {
-        on { subscribe(any()) } doReturn consumeLifeCycle
+        on { createConsumption(any()) } doReturn consumeLifeCycle
     }
 
     private val pubSubSubscription = PubSubSubscription(config, processor, executor, topicService)
@@ -58,7 +58,7 @@ class PubSubSubscriptionTest {
     fun `start will subscribe a consumer`() {
         pubSubSubscription.start()
 
-        verify(topicService).subscribe(any())
+        verify(topicService).createConsumption(any())
     }
 
     @Test
@@ -66,7 +66,7 @@ class PubSubSubscriptionTest {
         pubSubSubscription.start()
         pubSubSubscription.start()
 
-        verify(topicService, times(1)).subscribe(any())
+        verify(topicService, times(1)).createConsumption(any())
     }
 
     @Test

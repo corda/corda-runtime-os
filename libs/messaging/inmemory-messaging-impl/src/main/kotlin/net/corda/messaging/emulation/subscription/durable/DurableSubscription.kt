@@ -35,7 +35,7 @@ internal class DurableSubscription<K : Any, V : Any>(
         lock.withLock {
             if (currentConsumer == null) {
                 val consumer = DurableConsumer(this)
-                currentConsumer = topicService.subscribe(consumer)
+                currentConsumer = topicService.createConsumption(consumer)
             }
         }
     }

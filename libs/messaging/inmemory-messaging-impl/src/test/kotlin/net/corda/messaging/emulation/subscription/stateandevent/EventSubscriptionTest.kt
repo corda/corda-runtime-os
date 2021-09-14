@@ -21,7 +21,7 @@ class EventSubscriptionTest {
         on { isRunning } doReturn true
     }
     private val topicService = mock<TopicService> {
-        on { subscribe(any()) } doReturn runningConsumption
+        on { createConsumption(any()) } doReturn runningConsumption
     }
     private val response = mutableListOf<Record<*, *>>()
     private var newState: String? = null
@@ -48,7 +48,7 @@ class EventSubscriptionTest {
     fun `start will create a new consumption`() {
         eventsSubscription.start()
 
-        verify(topicService).subscribe(isA<EventConsumer<String, String>>())
+        verify(topicService).createConsumption(isA<EventConsumer<String, String>>())
     }
 
     @Test
@@ -56,7 +56,7 @@ class EventSubscriptionTest {
         eventsSubscription.start()
         eventsSubscription.start()
 
-        verify(topicService, times(1)).subscribe(isA<EventConsumer<String, String>>())
+        verify(topicService, times(1)).createConsumption(isA<EventConsumer<String, String>>())
     }
 
     @Test
