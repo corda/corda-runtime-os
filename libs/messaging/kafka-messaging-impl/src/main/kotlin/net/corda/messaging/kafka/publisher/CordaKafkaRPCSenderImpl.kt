@@ -177,6 +177,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun sendRequest(req: TREQ): CompletableFuture<TRESP> {
         val uuid = UUID.randomUUID().toString()
         val reqBytes = serializer.serialize(topic, req)

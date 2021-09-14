@@ -137,7 +137,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
+    @Suppress("TooGenericExceptionCaught")
     private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCRequest>>) {
         consumerRecords.forEach {
             val rpcRequest = it.record.value()
