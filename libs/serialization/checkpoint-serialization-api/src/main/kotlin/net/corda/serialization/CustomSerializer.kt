@@ -12,8 +12,6 @@ interface CheckpointInternalCustomSerializer<OBJ> {
 interface CheckpointInput {
     fun readClassAndObject(): Any
     fun readBytesWithLength(): ByteArray
-    fun isSerializeAsToken(): Boolean
-    fun getSingleton(name: String): Any?
     fun readString(): String
     fun readInt(): Int
     fun readBytes(size: Int): ByteArray
@@ -25,6 +23,5 @@ interface CheckpointOutput {
     fun writeBytesWithLength(encoded: ByteArray)
     fun writeString(string: String?)
     fun writeInt(int: Int)
-    fun isSerializeAsToken(): Boolean
     fun writeTo(sequence: ByteSequence)
 }

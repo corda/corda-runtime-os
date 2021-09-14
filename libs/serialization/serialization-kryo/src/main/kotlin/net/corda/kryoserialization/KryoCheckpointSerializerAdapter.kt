@@ -28,10 +28,6 @@ class KryoCheckpointSerializerAdapter<OBJ>(val checkpointSerializer : Checkpoint
             output.writeInt(int)
         }
 
-        override fun isSerializeAsToken(): Boolean {
-            return (kryo.serializationContext() != null)
-        }
-
         override fun writeTo(sequence: ByteSequence) {
             sequence.writeTo(output)
         }
@@ -44,14 +40,6 @@ class KryoCheckpointSerializerAdapter<OBJ>(val checkpointSerializer : Checkpoint
 
         override fun readBytesWithLength(): ByteArray {
             return input.readBytesWithLength()
-        }
-
-        override fun isSerializeAsToken(): Boolean {
-            return (kryo.serializationContext() != null)
-        }
-
-        override fun getSingleton(name: String): Any? {
-            return kryo.serializationContext()?.fromIdentifier(name)
         }
 
         override fun readString(): String {

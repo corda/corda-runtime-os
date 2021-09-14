@@ -1,4 +1,4 @@
-package net.corda.kryoserialization.osgi
+package net.corda.kryoserialization.resolver
 
 import com.esotericsoftware.kryo.KryoException
 import com.esotericsoftware.kryo.Registration
@@ -21,8 +21,8 @@ import net.corda.v5.crypto.SecureHash
 import java.util.TreeSet
 
 open class SandboxClassResolver(
-    val classInfoService: Any?,
-    val sandboxGroup: Any?,
+    private val classInfoService: ClassInfoService,
+    private val sandboxGroup: SandboxGroup,
     private val hashingService: BasicHashingService
 ) : DefaultClassResolver() {
 
@@ -48,7 +48,7 @@ open class SandboxClassResolver(
     @Suppress("TooGenericExceptionCaught")
     private fun getCpkFromClass(klass: Class<*>): Cpk.Identifier? {
         val classInfo = try {
-            (classInfoService as ClassInfoService).getClassInfo(klass)
+            classInfoService.getClassInfo(klass)
         } catch (ex: ClassInfoException) {
             logger.trace { "Class ${klass.name} not found in sandbox. Possibly a platform class. ${ex.message}" }
             null
@@ -163,7 +163,7 @@ open class SandboxClassResolver(
             val cpkIdentifier = readCpkIdentifier(input)
 
             type = try {
-                (sandboxGroup as SandboxGroup).loadClassFromCordappBundle(cpkIdentifier, className)
+                sandboxGroup.loadClassFromCordappBundle(cpkIdentifier, className)
             }   catch (ex: SandboxException) {
                 Class.forName(className, false, kryo.classLoader)
             } catch (ex: ClassNotFoundException) {
