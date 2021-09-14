@@ -10,11 +10,11 @@ import org.mockito.kotlin.verify
 
 class FileConfigReadServiceTest {
 
-    private val listenerMock: ConfigListener = mock()
     @Test
     fun `starting the service will update listeners with the config` () {
         val service = FileConfigReadService()
 
+        val listenerMock: ConfigListener = mock()
         service.registerCallback(listenerMock)
         service.start()
 
