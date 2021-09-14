@@ -550,7 +550,10 @@ class SessionManagerTest {
         assertTrue(responderHandshakeMessage?.payload is ResponderHandshakeMessage)
 
         //Duplicate InitiatorHandshakeMessage
-        assertSame(responderHandshakeMessage?.payload, inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))!!.payload)
+        assertSame(
+            responderHandshakeMessage?.payload,
+            inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))!!.payload
+        )
 
         inboundManager.acknowledgeInboundSessionNegotiation(sessionId)
         assertNull(inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage)))
@@ -562,7 +565,13 @@ class SessionManagerTest {
         val sessionId = "FakeSession"
         val inboundManager = sessionManager(INBOUND_PARTY)
 
-        val protocolInitiator = AuthenticationProtocolInitiator(sessionId, setOf(mode), MAX_MESSAGE_SIZE, netMapOutbound.getKeyPair().public, GROUP_ID)
+        val protocolInitiator = AuthenticationProtocolInitiator(
+            sessionId,
+            setOf(mode),
+            MAX_MESSAGE_SIZE,
+            netMapOutbound.getKeyPair().public,
+            GROUP_ID
+        )
         val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
         val responderHelloMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
         assertTrue(responderHelloMessage!!.payload is ResponderHelloMessage)

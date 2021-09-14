@@ -61,7 +61,7 @@ class DeliveryTrackerTest {
         var list: MutableList<Record<*, *>> = Collections.synchronizedList(mutableListOf<Record<*, *>>())
 
         override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-            throw RuntimeException("publishToPartition should never be called in this test.")
+            fail("publishToPartition should never be called in this test.")
         }
 
         override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
@@ -76,7 +76,7 @@ class DeliveryTrackerTest {
         override fun close() {}
     }
 
-    class MockStateAndEventSubscription<K : Any, S: Any, E: Any>(): StateAndEventSubscription<K, S, E> {
+    class MockStateAndEventSubscription<K : Any, S: Any, E: Any>: StateAndEventSubscription<K, S, E> {
         @Volatile
         override var isRunning = false
 

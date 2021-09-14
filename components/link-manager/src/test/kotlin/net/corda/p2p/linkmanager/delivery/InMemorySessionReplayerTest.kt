@@ -66,7 +66,7 @@ class InMemorySessionReplayerTest {
         private var invocations = 0
 
         override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-            throw RuntimeException("publishToPartition should never be called in this test.")
+            throw fail("publishToPartition should never be called in this test.")
         }
 
         override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
@@ -80,7 +80,7 @@ class InMemorySessionReplayerTest {
         }
 
         override fun close() {
-            throw RuntimeException("close should never be called in this test.")
+            throw fail("close should never be called in this test.")
         }
     }
 
@@ -139,7 +139,7 @@ class InMemorySessionReplayerTest {
         private var invocations = 0
 
         override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-            throw RuntimeException("publishToPartition should never be called in this test.")
+            throw fail("publishToPartition should never be called in this test.")
         }
 
         override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
@@ -157,7 +157,7 @@ class InMemorySessionReplayerTest {
         }
 
         override fun close() {
-            throw RuntimeException("close should never be called in this test.")
+            throw fail("close should never be called in this test.")
         }
     }
 
