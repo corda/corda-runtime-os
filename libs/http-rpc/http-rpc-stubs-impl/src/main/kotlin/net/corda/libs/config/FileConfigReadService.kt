@@ -63,7 +63,7 @@ class FileConfigReadService : ConfigReadService {
 
     private fun parseConfigFile(): Config {
 
-        val fileRes = FileConfigReadService::class.java.getResource(configFile)
+        val fileRes = FileConfigReadService::class.java.getResource("/$configFile")
 
         return try {
             val parseOptions = ConfigParseOptions.defaults().setAllowMissing(false)
