@@ -10,7 +10,8 @@ class X509CertificateTest {
     @Test
     fun certificate() {
         val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509")
-        val certificate: X509Certificate = certificateFactory.generateCertificate(ByteArrayInputStream(TestCertificate.r3comCert.toByteArray())) as X509Certificate
+        val inputStream = ByteArrayInputStream(TestCertificate.r3comCert.toByteArray())
+        val certificate: X509Certificate = certificateFactory.generateCertificate(inputStream) as X509Certificate
 
         serializeDeserializeAssert(certificate)
     }
