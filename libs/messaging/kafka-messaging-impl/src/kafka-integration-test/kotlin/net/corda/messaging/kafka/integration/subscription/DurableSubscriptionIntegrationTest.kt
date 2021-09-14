@@ -17,8 +17,8 @@ import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DURABLE_TO
 import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getRecords
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
-import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MESSAGING_KAFKA
+import net.corda.messaging.kafka.properties.ConfigProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -79,7 +79,7 @@ class DurableSubscriptionIntegrationTest {
         )
 
         val triggerRebalanceQuicklyConfig = kafkaConfig
-            .withValue("$MESSAGING_KAFKA.${KafkaProperties.CONSUMER_MAX_POLL_INTERVAL}", ConfigValueFactory.fromAnyRef(1000))
+            .withValue("$MESSAGING_KAFKA.${ConfigProperties.CONSUMER_MAX_POLL_INTERVAL}", ConfigValueFactory.fromAnyRef(1000))
         //long delay to not allow sub to to try rejoin group after rebalance
         val durableSub2 = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1, 2),

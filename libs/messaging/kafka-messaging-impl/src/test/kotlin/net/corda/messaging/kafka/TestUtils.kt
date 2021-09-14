@@ -3,10 +3,10 @@ package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CLIENT_ID_COUNTER
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.GROUP
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.INSTANCE_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CLIENT_ID_COUNTER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.GROUP
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.INSTANCE_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 
 const val TOPIC_PREFIX = "test"
 

@@ -2,9 +2,12 @@ package net.corda.messaging.kafka.subscription.consumer.wrapper.impl
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER_CLOSE_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_GROUP_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.Topic
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -13,7 +16,6 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPart
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import org.apache.kafka.clients.CommonClientConfigs.GROUP_ID_CONFIG
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
 import java.time.Clock
@@ -29,20 +31,12 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val stateAndEventListener: StateAndEventListener<K, S>?,
 ) : StateAndEventConsumer<K, S, E> {
 
-    companion object {
-        private const val STATE_CONSUMER = "stateConsumer"
-        private const val EVENT_CONSUMER = "eventConsumer"
-        private const val STATE_TOPIC_NAME = "$STATE_CONSUMER.$TOPIC_NAME"
-        private const val EVENT_GROUP_ID = "$EVENT_CONSUMER.${GROUP_ID_CONFIG}"
-        private val EVENT_CONSUMER_CLOSE_TIMEOUT = KafkaProperties.CONSUMER_CLOSE_TIMEOUT.replace("consumer", "eventConsumer")
-    }
-
     private val log = LoggerFactory.getLogger(
         "${config.getString(EVENT_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
     )
 
     private val consumerCloseTimeout = Duration.ofMillis(config.getLong(EVENT_CONSUMER_CLOSE_TIMEOUT))
-    private val topicPrefix = config.getString(KafkaProperties.TOPIC_PREFIX)
+    private val topicPrefix = config.getString(ConfigProperties.TOPIC_PREFIX)
     private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
     private val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
 

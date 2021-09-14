@@ -4,16 +4,22 @@ import com.typesafe.config.Config
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
-import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.properties.ConfigProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_CONSUMER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.Topic
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
-import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
-import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.consumer.listener.StateAndEventRebalanceListener
+import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
+import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.StateAndEventConsumerImpl
+import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
@@ -27,19 +33,10 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
     private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
 ) : StateAndEventBuilder<K, S, E> {
 
-    //todo what should this logger be - "${config.getString(EVENT_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}" ?
     private val log = LoggerFactory.getLogger(this::class.java)
 
-    companion object {
-        private const val STATE_CONSUMER = "stateConsumer"
-        private const val EVENT_CONSUMER = "eventConsumer"
-        private const val STATE_TOPIC_NAME = "$STATE_CONSUMER.${KafkaProperties.TOPIC_NAME}"
-        private val EVENT_CONSUMER_THREAD_STOP_TIMEOUT =
-            KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT.replace("consumer", "eventConsumer")
-    }
-
     override fun createProducer(config: Config): CordaKafkaProducer =
-        producerBuilder.createProducer(config.getConfig(KafkaProperties.KAFKA_PRODUCER))
+        producerBuilder.createProducer(config.getConfig(ConfigProperties.KAFKA_PRODUCER))
 
     override fun createStateEventConsumerAndRebalanceListener(
         config: Config,
@@ -72,8 +69,8 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
         stateConsumer: CordaKafkaConsumer<K, S>,
         eventConsumer: CordaKafkaConsumer<K, E>
     ) {
-        val topicPrefix = config.getString(KafkaProperties.TOPIC_PREFIX)
-        val eventTopic = Topic(topicPrefix, config.getString(KafkaProperties.TOPIC_NAME))
+        val topicPrefix = config.getString(TOPIC_PREFIX)
+        val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
         val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
         val consumerThreadStopTimeout = config.getLong(EVENT_CONSUMER_THREAD_STOP_TIMEOUT)
         val statePartitions = stateConsumer.getPartitions(stateTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
