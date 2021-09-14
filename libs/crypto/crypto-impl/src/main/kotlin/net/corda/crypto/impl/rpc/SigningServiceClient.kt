@@ -47,142 +47,91 @@ class SigningServiceClient(
 ) : SigningService {
     companion object {
         const val CATEGORY = "category"
-        private val GENERIC_EXCEPTION_MESSAGE = "Crypto operation failed"
         private val logger: Logger = contextLogger()
     }
 
     override val supportedSchemes: Array<SignatureScheme>
         get() {
-            try {
-                val request = createRequest(
-                    WireSigningGetSupportedSchemes()
-                )
-                val response = request.executeWithTimeoutRetry(WireSignatureSchemes::class.java)
-                return response!!.codes.map {
-                    schemeMetadata.findSignatureScheme(it)
-                }.toTypedArray()
-            } catch (e: CryptoServiceLibraryException) {
-                logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-                throw e
-            } catch (e: Throwable) {
-                logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-                throw CryptoServiceException(GENERIC_EXCEPTION_MESSAGE, e)
-            }
+            val request = createRequest(
+                WireSigningGetSupportedSchemes()
+            )
+            val response = request.executeWithTimeoutRetry(WireSignatureSchemes::class.java)
+            return response!!.codes.map {
+                schemeMetadata.findSignatureScheme(it)
+            }.toTypedArray()
         }
 
-    override fun findPublicKey(alias: String): PublicKey? =
-        try {
-            val request = createRequest(
-                WireSigningFindPublicKey(alias)
-            )
-            val response = request.executeWithTimeoutRetry(WirePublicKey::class.java, allowNoContentValue = true)
-            if (response != null) {
-                schemeMetadata.decodePublicKey(response.key.array())
-            } else {
-                null
-            }
-        } catch (e: CryptoServiceLibraryException) {
-            logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-            throw e
-        } catch (e: Throwable) {
-            logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-            throw CryptoServiceException(GENERIC_EXCEPTION_MESSAGE, e)
+    override fun findPublicKey(alias: String): PublicKey? {
+        val request = createRequest(
+            WireSigningFindPublicKey(alias)
+        )
+        val response = request.executeWithTimeoutRetry(WirePublicKey::class.java, allowNoContentValue = true)
+        return if (response != null) {
+            schemeMetadata.decodePublicKey(response.key.array())
+        } else {
+            null
         }
+    }
 
-    override fun generateKeyPair(alias: String): PublicKey =
-        try {
-            val request = createRequest(
-                WireSigningGenerateKeyPair(alias)
-            )
-            val response = request.executeWithTimeoutRetry(WirePublicKey::class.java)
-            schemeMetadata.decodePublicKey(response!!.key.array())
-        } catch (e: CryptoServiceLibraryException) {
-            logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-            throw e
-        } catch (e: Throwable) {
-            logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-            throw CryptoServiceException(GENERIC_EXCEPTION_MESSAGE, e)
-        }
+    override fun generateKeyPair(alias: String): PublicKey {
+        val request = createRequest(
+            WireSigningGenerateKeyPair(alias)
+        )
+        val response = request.executeWithTimeoutRetry(WirePublicKey::class.java)
+        return schemeMetadata.decodePublicKey(response!!.key.array())
+    }
 
-    override fun sign(publicKey: PublicKey, data: ByteArray): DigitalSignature.WithKey =
-        try {
-            val request = createRequest(
-                WireSigningSign(
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    ByteBuffer.wrap(data)
-                )
+    override fun sign(publicKey: PublicKey, data: ByteArray): DigitalSignature.WithKey {
+        val request = createRequest(
+            WireSigningSign(
+                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
+                ByteBuffer.wrap(data)
             )
-            val response = request.executeWithTimeoutRetry(WireSignatureWithKey::class.java)
-            DigitalSignature.WithKey(
-                by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
-                bytes = response.bytes.array()
-            )
-        } catch (e: CryptoServiceLibraryException) {
-            logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-            throw e
-        } catch (e: Throwable) {
-            logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-            throw CryptoServiceException(GENERIC_EXCEPTION_MESSAGE, e)
-        }
+        )
+        val response = request.executeWithTimeoutRetry(WireSignatureWithKey::class.java)
+        return DigitalSignature.WithKey(
+            by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
+            bytes = response.bytes.array()
+        )
+    }
 
-    override fun sign(publicKey: PublicKey, signatureSpec: SignatureSpec, data: ByteArray): DigitalSignature.WithKey =
-        try {
-            val request = createRequest(
-                WireSigningSignWithSpec(
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    WireSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
-                    ByteBuffer.wrap(data)
-                )
+    override fun sign(publicKey: PublicKey, signatureSpec: SignatureSpec, data: ByteArray): DigitalSignature.WithKey {
+        val request = createRequest(
+            WireSigningSignWithSpec(
+                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
+                WireSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
+                ByteBuffer.wrap(data)
             )
-            val response = request.executeWithTimeoutRetry(WireSignatureWithKey::class.java)
-            DigitalSignature.WithKey(
-                by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
-                bytes = response.bytes.array()
-            )
-        } catch (e: CryptoServiceLibraryException) {
-            logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-            throw e
-        } catch (e: Throwable) {
-            logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-            throw CryptoServiceException(GENERIC_EXCEPTION_MESSAGE, e)
-        }
+        )
+        val response = request.executeWithTimeoutRetry(WireSignatureWithKey::class.java)
+        return DigitalSignature.WithKey(
+            by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
+            bytes = response.bytes.array()
+        )
+    }
 
-    override fun sign(alias: String, data: ByteArray): ByteArray =
-        try {
-            val request = createRequest(
-                WireSigningSignWithAlias(
-                    alias,
-                    ByteBuffer.wrap(data)
-                )
+    override fun sign(alias: String, data: ByteArray): ByteArray {
+        val request = createRequest(
+            WireSigningSignWithAlias(
+                alias,
+                ByteBuffer.wrap(data)
             )
-            val response = request.executeWithTimeoutRetry(WireSignature::class.java)
-            response!!.bytes.array()
-        } catch (e: CryptoServiceLibraryException) {
-            logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-            throw e
-        } catch (e: Throwable) {
-            logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-            throw CryptoServiceException(GENERIC_EXCEPTION_MESSAGE, e)
-        }
+        )
+        val response = request.executeWithTimeoutRetry(WireSignature::class.java)
+        return response!!.bytes.array()
+    }
 
-    override fun sign(alias: String, signatureSpec: SignatureSpec, data: ByteArray): ByteArray =
-        try {
-            val request = createRequest(
-                WireSigningSignWithAliasSpec(
-                    alias,
-                    WireSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
-                    ByteBuffer.wrap(data)
-                )
+    override fun sign(alias: String, signatureSpec: SignatureSpec, data: ByteArray): ByteArray {
+        val request = createRequest(
+            WireSigningSignWithAliasSpec(
+                alias,
+                WireSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
+                ByteBuffer.wrap(data)
             )
-            val response = request.executeWithTimeoutRetry(WireSignature::class.java)
-            response!!.bytes.array()
-        } catch (e: CryptoServiceLibraryException) {
-            logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-            throw e
-        } catch (e: Throwable) {
-            logger.error(GENERIC_EXCEPTION_MESSAGE, e)
-            throw CryptoServiceException(GENERIC_EXCEPTION_MESSAGE, e)
-        }
+        )
+        val response = request.executeWithTimeoutRetry(WireSignature::class.java)
+        return response!!.bytes.array()
+    }
 
     private fun createRequest(request: Any): WireSigningRequest = WireSigningRequest(
         createWireRequestContext(),

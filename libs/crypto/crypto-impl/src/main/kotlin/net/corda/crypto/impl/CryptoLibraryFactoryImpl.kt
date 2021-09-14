@@ -3,6 +3,7 @@ package net.corda.crypto.impl
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.SigningService
+import net.corda.crypto.impl.rpc.FreshKeySigningServiceClient
 import net.corda.crypto.impl.rpc.SigningServiceClient
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
@@ -41,9 +42,14 @@ class CryptoLibraryFactoryImpl @Activate constructor(
     override fun getDigestService(): DigestService =
         cipherSuiteFactory.getDigestService()
 
-    override fun getFreshKeySigningService(): FreshKeySigningService {
-        TODO("Not yet implemented")
-    }
+    override fun getFreshKeySigningService(): FreshKeySigningService = FreshKeySigningServiceClient(
+        memberId = memberId,
+        requestingComponent = requestingComponent,
+        clientTimeout = clientTimeout,
+        clientRetries = clientRetries,
+        schemeMetadata = schemeMetadata,
+        sender = freshKeysServiceSender
+    )
 
     override fun getSigningService(category: String): SigningService = SigningServiceClient(
         memberId = memberId,
