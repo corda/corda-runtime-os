@@ -127,7 +127,7 @@ private def addSystemPackagesExtra(
     jdkExtraPackages.each { export -> systemBundleExtraSet.add(export) }
 }
 
-Provider<DefaultTask> createSystemBundlesFile = tasks.register("createSystemPackageFile") {
+Provider<DefaultTask> createSystemBundlesFile = tasks.register("createSystemBundleFile") {
     inputs.files(jarTask)
     inputs.files(configurations.bundles)
     File systemBundlesFile = new File(temporaryDir, "system_bundles")
