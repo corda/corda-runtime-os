@@ -43,7 +43,7 @@ class SslCertReadServiceStubImpl(private val createDirectory: () -> Path) : SslC
         }
     }
 
-    override fun createKeyStore(): KeyStoreInfo {
+    override fun getOrCreateKeyStore(): KeyStoreInfo {
         if (keyStoreInfo == null) {
             val tempDirectoryPath = createDirectory()
             KeyStore.getInstance(KeyStore.getDefaultType()).run {
@@ -59,7 +59,9 @@ class SslCertReadServiceStubImpl(private val createDirectory: () -> Path) : SslC
     }
 
     private fun KeyStore.store(tempDirectoryPath: Path) {
-        FileOutputStream(Path.of(tempDirectoryPath.toString(), KEYSTORE_NAME).toString()).use { outputStream ->
+        val keyStorePath = Path.of(tempDirectoryPath.toString(), KEYSTORE_NAME).toString()
+        require(!File(keyStorePath).exists()) { "The keystore already exists and should not be recreated" }
+        FileOutputStream(keyStorePath).use { outputStream ->
             store(outputStream, PASSWORD_CHAR_ARRAY)
         }
     }

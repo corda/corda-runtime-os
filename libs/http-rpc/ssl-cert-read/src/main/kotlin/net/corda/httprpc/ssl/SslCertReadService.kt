@@ -5,7 +5,7 @@ import java.nio.file.Path
 
 interface SslCertReadService : Lifecycle {
 
-    fun createKeyStore(): KeyStoreInfo
+    fun getOrCreateKeyStore(): KeyStoreInfo
 }
 
 data class KeyStoreInfo(val path: Path, val password: String)
