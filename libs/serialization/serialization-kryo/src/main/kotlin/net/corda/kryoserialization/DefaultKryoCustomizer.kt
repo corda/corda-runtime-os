@@ -20,6 +20,7 @@ import net.corda.kryoserialization.serializers.LinkedHashMapEntrySerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
 import net.corda.kryoserialization.serializers.LinkedListItrSerializer
 import net.corda.kryoserialization.serializers.LoggerSerializer
+import net.corda.kryoserialization.serializers.SingletonSerializeAsTokenSerializer
 import net.corda.kryoserialization.serializers.StackTraceSerializer
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
@@ -28,6 +29,7 @@ import net.corda.serializers.PrivateKeySerializer
 import net.corda.serializers.PublicKeySerializer
 import net.corda.utilities.LazyMappedList
 import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.bouncycastle.jcajce.interfaces.EdDSAPrivateKey
 import org.bouncycastle.jcajce.interfaces.EdDSAPublicKey
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey
@@ -55,11 +57,12 @@ class DefaultKryoCustomizer {
     companion object {
         private const val LOGGER_ID = Int.MAX_VALUE
 
-        fun customize(
+        internal fun customize(
             kryo: Kryo,
             serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>>,
             classResolver: CordaClassResolver,
             classSerializer: ClassSerializer,
+            singletonSerializeAsTokenSerializer: SingletonSerializeAsTokenSerializer,
             ): Kryo {
             return kryo.apply {
 
@@ -99,11 +102,7 @@ class DefaultKryoCustomizer {
 
                 addDefaultSerializer(Logger::class.java, LoggerSerializer)
                 addDefaultSerializer(X509Certificate::class.java, X509CertificateSerializer)
-
-                // WARNING: reordering the registrations here will cause a change in the serialized form, since classes
-                // with custom serializers get written as registration ids. This will break backwards-compatibility.
-                // Please add any new registrations to the end.
-
+                addDefaultSerializer(SingletonSerializeAsToken::class.java, singletonSerializeAsTokenSerializer)
                 addDefaultSerializer(Class::class.java, classSerializer)
                 addDefaultSerializer(
                     LinkedHashMapIteratorSerializer.getIterator()::class.java.superclass,

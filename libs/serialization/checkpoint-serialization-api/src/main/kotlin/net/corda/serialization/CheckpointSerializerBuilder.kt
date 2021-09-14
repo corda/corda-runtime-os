@@ -1,6 +1,7 @@
 package net.corda.serialization
 
 import net.corda.sandbox.SandboxGroup
+import net.corda.v5.serialization.SingletonSerializeAsToken
 
 /**
  * This builder will be the entry point to creating a [CheckpointSerializer].
@@ -24,14 +25,28 @@ interface CheckpointSerializerBuilder {
      * @param clazz the class which will be serialized using the given [serializer]
      * @param serializer the serializer implemented to serialize [clazz]
      */
-    fun addSerializer(clazz: Class<*>, serializer: CheckpointInternalCustomSerializer<*>): CheckpointSerializerBuilder
+    fun addSerializer(
+        clazz: Class<*>,
+        serializer: CheckpointInternalCustomSerializer<*>
+    ): CheckpointSerializerBuilder
 
     /**
      * Used to add a custom serializer for a set of classes to the [CheckpointSerializer]
      * @param classes the list of classes which will be serialized using the given [serializer]
      * @param serializer the serializer implemented to serialize each class in [classes]
      */
-    fun addSerializerForClasses(classes: List<Class<*>>, serializer: CheckpointInternalCustomSerializer<*>): CheckpointSerializerBuilder
+    fun addSerializerForClasses(
+        classes: List<Class<*>>,
+        serializer: CheckpointInternalCustomSerializer<*>
+    ): CheckpointSerializerBuilder
+
+    /**
+     * Used to add any [SingletonSerializeAsToken] interfaces to the serializer.  Only one instance per
+     * class should be used (i.e. these should be Singleton classes).
+     *
+     * @param instances any [SingletonSerializeAsToken] instances to be added for serialization.
+     */
+    fun addSingletonSerializableInstances(instances: List<SingletonSerializeAsToken>): CheckpointSerializerBuilder
 
     /**
      * Builds and returns the configured [CheckpointSerializer]

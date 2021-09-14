@@ -5,12 +5,14 @@ import co.paralleluniverse.io.serialization.kryo.KryoSerializer
 import net.corda.classinfo.ClassInfoService
 import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.ClassSerializer
+import net.corda.kryoserialization.serializers.SingletonSerializeAsTokenSerializer
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.CheckpointInternalCustomSerializer
 import net.corda.serialization.CheckpointSerializerBuilder
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.BasicHashingService
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -29,6 +31,7 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
     }
 
     private val serializers: MutableMap<Class<*>, CheckpointInternalCustomSerializer<*>> = mutableMapOf()
+    private val singletonInstances: MutableMap<String, SingletonSerializeAsToken> = mutableMapOf()
     private var sandboxGroup: SandboxGroup? = null
 
     private val kryoFromQuasar = (Fiber.getFiberSerializer(false) as KryoSerializer).kryo
@@ -62,6 +65,13 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
         return this
     }
 
+    override fun addSingletonSerializableInstances(
+        instances: List<SingletonSerializeAsToken>
+    ): CheckpointSerializerBuilder {
+        singletonInstances.putAll(instances.associateBy { it.tokenName })
+        return this
+    }
+
     override fun build(): KryoCheckpointSerializer {
         // The exception doesn't quite match what we're checking, but this will only exist here if
         // newCheckpointSerializer was called.
@@ -81,17 +91,21 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
             hashingService
         )
 
+        val singletonSerializeAsTokenSerializer = SingletonSerializeAsTokenSerializer(singletonInstances)
+
         val kryo = DefaultKryoCustomizer.customize(
             kryoFromQuasar,
             serializers,
             classResolver,
-            classSerializer
+            classSerializer,
+            singletonSerializeAsTokenSerializer
         )
 
         return KryoCheckpointSerializer(kryo).also {
             // Clear the builder state
             this.sandboxGroup = null
             serializers.clear()
+            singletonInstances.clear()
         }
     }
 }
