@@ -38,7 +38,7 @@ class ClassSerializer(
                 numberOfSigners--
             }
             val cpk = Cpk.Identifier(cpkName, version, signers)
-            sandboxGroup.loadClass(cpk, input.readString())
+            sandboxGroup.loadClassFromCordappBundle(cpk, input.readString())
         }
     }
 
