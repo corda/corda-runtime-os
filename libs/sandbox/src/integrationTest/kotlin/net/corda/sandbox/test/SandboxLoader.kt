@@ -6,6 +6,7 @@ import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -114,6 +115,14 @@ class SandboxLoader @Activate constructor(
         assertDistinctDuplicates(library1, library2)
         assertDistinctDuplicates(library1, library3)
         assertDistinctDuplicates(library2, library3)
+    }
+
+    /** Runs the flow with [className] in sandbox group [group] and casts the return value to [T]. */
+    internal fun <T: Any> runFlow(className: String, group: SandboxGroup): T {
+        val workflowClass = group.loadClassFromCordappBundle(className, Flow::class.java)
+        @Suppress("unchecked_cast")
+        return getServiceFor(Flow::class.java, workflowClass).call() as? T
+            ?: fail("Workflow did not return the correct type.")
     }
 
     private fun loadCPK(resourceName: String): Cpk {

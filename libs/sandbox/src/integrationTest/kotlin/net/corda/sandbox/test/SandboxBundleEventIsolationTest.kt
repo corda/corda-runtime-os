@@ -1,12 +1,10 @@
 package net.corda.sandbox.test
 
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.application.flows.Flow
 import org.assertj.core.api.AbstractListAssert
 import org.assertj.core.api.ObjectAssert
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.fail
 import org.osgi.framework.BundleEvent
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -20,13 +18,6 @@ class SandboxBundleEventIsolationTest {
 
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
-
-        private fun runFlow(className: String, group: SandboxGroup): List<BundleEvent> {
-            val workflowClass = group.loadClassFromCordappBundle(className, Flow::class.java)
-            @Suppress("unchecked_cast")
-            return sandboxLoader.getServiceFor(Flow::class.java, workflowClass).call() as? List<BundleEvent>
-                ?: fail("Workflow does not return a List")
-        }
 
         fun assertThat(events: List<BundleEvent>) = BundleEventListAssertions(events)
 
@@ -49,7 +40,7 @@ class SandboxBundleEventIsolationTest {
     fun testBundleEventsForCPK1() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
-        val bundleEvents = runFlow(BUNDLE_EVENT1_FLOW_CLASS, thisGroup).onEach(::println)
+        val bundleEvents = sandboxLoader.runFlow<List<BundleEvent>>(BUNDLE_EVENT1_FLOW_CLASS, thisGroup).onEach(::println)
         assertThat(bundleEvents)
             .noneForSandboxGroup(otherGroup)
             .isNotEmpty
@@ -59,7 +50,7 @@ class SandboxBundleEventIsolationTest {
     fun testBundleEventsForCPK2() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
-        val bundleEvents = runFlow(BUNDLE_EVENT2_FLOW_CLASS, thisGroup).onEach(::println)
+        val bundleEvents = sandboxLoader.runFlow<List<BundleEvent>>(BUNDLE_EVENT2_FLOW_CLASS, thisGroup).onEach(::println)
         assertThat(bundleEvents)
             .noneForSandboxGroup(otherGroup)
             .isNotEmpty
@@ -69,7 +60,7 @@ class SandboxBundleEventIsolationTest {
     fun testBundleEventsForCPK3() {
         val thisGroup = sandboxLoader.group2
         val otherGroup = sandboxLoader.group1
-        val bundleEvents = runFlow(BUNDLE_EVENT3_FLOW_CLASS, thisGroup).onEach(::println)
+        val bundleEvents = sandboxLoader.runFlow<List<BundleEvent>>(BUNDLE_EVENT3_FLOW_CLASS, thisGroup).onEach(::println)
         assertThat(bundleEvents)
             .noneForSandboxGroup(otherGroup)
             .isNotEmpty
