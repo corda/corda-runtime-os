@@ -10,19 +10,22 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_GROUP_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
+import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
+import net.corda.messaging.kafka.types.Topic
 import net.corda.messaging.kafka.utils.getEventsByBatch
 import net.corda.messaging.kafka.utils.render
 import net.corda.messaging.kafka.utils.tryGetFutureResult
@@ -41,12 +44,6 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
-class Topic(val prefix: String, val suffix: String) {
-    val topic
-        get() = prefix + suffix
-}
-
-@Suppress("LongParameterList")
 class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val config: Config,
     private val builder: StateAndEventBuilder<K, S, E>,
@@ -55,15 +52,6 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventSubscription<K, S, E> {
-
-    companion object {
-        private const val STATE_CONSUMER = "stateConsumer"
-        private const val EVENT_CONSUMER = "eventConsumer"
-        private const val STATE_TOPIC_NAME = "$STATE_CONSUMER.$TOPIC_NAME"
-        private const val EVENT_GROUP_ID = "$EVENT_CONSUMER.$GROUP_ID_CONFIG"
-        private val EVENT_CONSUMER_THREAD_STOP_TIMEOUT = CONSUMER_THREAD_STOP_TIMEOUT.replace("consumer", "eventConsumer")
-        private val EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES = CONSUMER_POLL_AND_PROCESS_RETRIES.replace("consumer", "eventConsumer")
-    }
 
     private val log = LoggerFactory.getLogger(
         "${config.getString(EVENT_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"

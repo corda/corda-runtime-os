@@ -2,9 +2,12 @@ package net.corda.messaging.kafka.subscription.consumer.wrapper.impl
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER_CLOSE_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_GROUP_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.Topic
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
@@ -30,11 +33,6 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 ) : StateAndEventConsumer<K, S, E> {
 
     companion object {
-        private const val STATE_CONSUMER = "stateConsumer"
-        private const val EVENT_CONSUMER = "eventConsumer"
-        private const val STATE_TOPIC_NAME = "$STATE_CONSUMER.$TOPIC_NAME"
-        private const val EVENT_GROUP_ID = "$EVENT_CONSUMER.${GROUP_ID_CONFIG}"
-        private val EVENT_CONSUMER_CLOSE_TIMEOUT = KafkaProperties.CONSUMER_CLOSE_TIMEOUT.replace("consumer", "eventConsumer")
         //short timeout for poll of paused partitions when waiting for processor to finish
         private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
         private const val MIN_THREADS = 1

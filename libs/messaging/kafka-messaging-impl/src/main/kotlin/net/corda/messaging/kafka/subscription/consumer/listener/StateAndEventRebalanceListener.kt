@@ -2,16 +2,17 @@ package net.corda.messaging.kafka.subscription.consumer.listener
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.subscription.Topic
+import net.corda.messaging.kafka.properties.ConfigProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_GROUP_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
+import net.corda.messaging.kafka.types.Topic
 import net.corda.v5.base.util.debug
-import org.apache.kafka.clients.CommonClientConfigs.GROUP_ID_CONFIG
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
@@ -24,18 +25,11 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
 ) : ConsumerRebalanceListener {
 
-    companion object {
-        private const val STATE_CONSUMER = "stateConsumer"
-        private const val EVENT_CONSUMER = "eventConsumer"
-        private const val STATE_TOPIC_NAME = "$STATE_CONSUMER.$TOPIC_NAME"
-        private const val EVENT_GROUP_ID = "$EVENT_CONSUMER.${GROUP_ID_CONFIG}"
-    }
-
     private val log = LoggerFactory.getLogger(
         "${config.getString(EVENT_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
     )
 
-    private val topicPrefix = config.getString(KafkaProperties.TOPIC_PREFIX)
+    private val topicPrefix = config.getString(ConfigProperties.TOPIC_PREFIX)
     private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
     private val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
     private val listenerTimeout = config.getLong(KafkaProperties.LISTENER_TIMEOUT)

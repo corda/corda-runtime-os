@@ -36,6 +36,8 @@ import net.corda.messaging.kafka.integration.processors.TestStateEventProcessorS
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_MAX_POLL_INTERVAL
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MESSAGING_KAFKA
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_MAX_POLL_INTERVAL
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
