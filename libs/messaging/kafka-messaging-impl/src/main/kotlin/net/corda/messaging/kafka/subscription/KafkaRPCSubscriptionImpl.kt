@@ -6,27 +6,28 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
+import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.debug
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
-import java.io.ByteArrayInputStream
-import java.io.ObjectInput
-import java.io.ObjectInputStream
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
-class KafkaRPCSubscription<TREQ : Any, TRESP : Any>(
+
+class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
+    private val rpcConfig: RPCConfig<TREQ, TRESP>,
     private val config: Config,
-    private val consumerBuilder: CordaKafkaConsumerBuilderImpl<String, RPCRequest>,
-    private val responderProcessor: RPCResponderProcessor<TREQ, TRESP>
+    private val consumerBuilder: ConsumerBuilder<String, RPCRequest>,
+    private val responderProcessor: RPCResponderProcessor<TREQ, TRESP>,
+    private val deserializer: CordaAvroDeserializer<TREQ>
 ) : RPCSubscription<TREQ, TRESP> {
 
     private val log = LoggerFactory.getLogger(
@@ -48,7 +49,7 @@ class KafkaRPCSubscription<TREQ : Any, TRESP : Any>(
     var partitions: List<TopicPartition> = listOf()
 
     override val isRunning: Boolean
-        get() = stopped
+        get() = !stopped
 
     override fun start() {
         log.debug { "Starting subscription with config:\n${config.render()}" }
@@ -139,13 +140,8 @@ class KafkaRPCSubscription<TREQ : Any, TRESP : Any>(
     private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCRequest>>) {
         consumerRecords.forEach {
             val requestBytes = it.record.value().payload
-            val byteArrayInputStream = ByteArrayInputStream(requestBytes.array())
-            val objectInput: ObjectInput
-            objectInput = ObjectInputStream(byteArrayInputStream)
-            val request = objectInput.readObject() as TREQ
-            byteArrayInputStream.close()
-
-            responderProcessor.onNext(request, CompletableFuture<TRESP>())
+            val request = deserializer.deserialize(rpcConfig.requestTopic, requestBytes.array())
+            responderProcessor.onNext(request!!, CompletableFuture<TRESP>())
         }
     }
 }

@@ -31,11 +31,12 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RA
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RPC
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_STATEANDEVENT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
+import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.KafkaCompactedSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaEventLogSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
-import net.corda.messaging.kafka.subscription.KafkaRPCSubscription
+import net.corda.messaging.kafka.subscription.KafkaRPCSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaRandomAccessSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaStateAndEventSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
@@ -129,7 +130,9 @@ class KafkaSubscriptionFactory @Activate constructor(
         )
         val mapFactory = object : SubscriptionMapFactory<K, V> {
             override fun createMap(): MutableMap<K, V> = ConcurrentHashMap<K, V>()
-            override fun destroyMap(map: MutableMap<K, V>) { map.clear() }
+            override fun destroyMap(map: MutableMap<K, V>) {
+                map.clear()
+            }
         }
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
 
@@ -245,10 +248,14 @@ class KafkaSubscriptionFactory @Activate constructor(
         )
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCRequest>(avroSchemaRegistry)
 
-        return KafkaRPCSubscription(
+        val cordaAvroDeserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.requestType)
+
+        return KafkaRPCSubscriptionImpl(
+            rpcConfig,
             config,
             consumerBuilder,
-            responderProcessor
+            responderProcessor,
+            cordaAvroDeserializer
         )
     }
 }

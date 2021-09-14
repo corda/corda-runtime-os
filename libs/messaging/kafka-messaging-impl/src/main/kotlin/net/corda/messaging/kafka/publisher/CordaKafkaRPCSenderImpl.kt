@@ -11,6 +11,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -21,11 +22,6 @@ import org.apache.kafka.common.TopicPartition
 import org.jboss.util.collection.WeakValueHashMap
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.ObjectInput
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
@@ -41,6 +37,8 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private val config: Config,
     private val publisher: Publisher,
     private val consumerBuilder: CordaKafkaConsumerBuilderImpl<String, RPCResponse>,
+    private val serializer: CordaAvroSerializer<TREQ>,
+    private val deserializer: CordaAvroDeserializer<TRESP>
 ) : RPCSender<TREQ, TRESP>, RPCSubscription<TREQ, TRESP> {
 
     private companion object {
@@ -152,19 +150,14 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
 
     @Suppress("UNCHECKED_CAST")
     private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCResponse>>) {
-        consumerRecords.forEach {
+        consumerRecords.forEach { it ->
             val correlationKey = it.record.key()
             val future = futureMap[correlationKey]
 
-            when(it.record.value().responseStatus!!) {
+            when (it.record.value().responseStatus!!) {
                 ResponseStatus.OK -> {
                     val responseBytes = it.record.value().payload
-                    val byteArrayInputStream = ByteArrayInputStream(responseBytes.array())
-                    val objectInput: ObjectInput
-                    objectInput = ObjectInputStream(byteArrayInputStream)
-                    val response = objectInput.readObject() as TRESP
-                    byteArrayInputStream.close()
-
+                    val response = deserializer.deserialize("$topic.resp", responseBytes.array())
                     log.info("Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}")
 
                     future?.complete(response)
@@ -173,7 +166,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                     TODO("throw rpc specific error")
                 }
                 ResponseStatus.CANCELLED -> {
-                    TODO("what happens here")
+                    future?.cancel(true)
                 }
 
             }
@@ -182,18 +175,12 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
 
     override fun sendRequest(req: TREQ): CompletableFuture<TRESP> {
         val uuid = UUID.randomUUID().toString()
-
-        val bytesOut = ByteArrayOutputStream()
-        val objectStream = ObjectOutputStream(bytesOut)
-        objectStream.writeObject(req)
-        objectStream.flush()
-        val reqBytes: ByteArray = bytesOut.toByteArray()
-        bytesOut.close()
-        objectStream.close()
+        val reqBytes = serializer.serialize(topic, req)
 
         val request = RPCRequest(
             uuid,
             Instant.now().toEpochMilli(),
+            "$topic.resp",
             partitions[0].partition(),
             ByteBuffer.wrap(reqBytes)
         )
