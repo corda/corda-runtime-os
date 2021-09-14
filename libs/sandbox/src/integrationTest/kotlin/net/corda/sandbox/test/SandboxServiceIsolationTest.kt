@@ -2,12 +2,10 @@ package net.corda.sandbox.test
 
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.test.SandboxLoader.Companion.QUERY_CLASS
-import net.corda.v5.application.flows.Flow
 import org.assertj.core.api.AbstractListAssert
 import org.assertj.core.api.ObjectAssert
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.fail
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.resolver.Resolver
 import org.osgi.test.common.annotation.InjectService
@@ -22,13 +20,6 @@ class SandboxServiceIsolationTest {
 
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
-
-        private fun runFlow(className: String, group: SandboxGroup): List<Class<out Any>> {
-            val workflowClass = group.loadClass(className, Flow::class.java)
-            @Suppress("unchecked_cast")
-            return sandboxLoader.getServiceFor(Flow::class.java, workflowClass).call() as? List<Class<out Any>>
-                ?: fail("Workflow does not return a List")
-        }
 
         fun assertThat(classes: List<Class<out Any>>) = ServiceClassListAssertions(classes)
 
@@ -60,18 +51,18 @@ class SandboxServiceIsolationTest {
         val otherGroup = sandboxLoader.group2
         val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.id)
         val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.id)
-        val serviceClasses = runFlow(SERVICES1_FLOW_CLASS, thisGroup).onEach(::println)
+        val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES1_FLOW_CLASS, thisGroup).onEach(::println)
 
         // CPK1 should be able to see its own services, and any
         // services inside CPK2's "main" jar, but nothing from CPK3.
         assertThat(serviceClasses)
             .hasNoServiceFromGroup(otherGroup)
-            .hasNoService(sandbox2.loadClass(QUERY_CLASS))
-            .hasService(sandbox1.loadClass(QUERY_CLASS))
+            .hasNoService(sandbox2.loadClassFromCordappBundle(QUERY_CLASS))
+            .hasService(sandbox1.loadClassFromCordappBundle(QUERY_CLASS))
             .hasService(ServiceComponentRuntime::class.java)
             .hasService(Resolver::class.java)
-            .hasService(sandbox1.loadClass(SERVICES1_FLOW_CLASS))
-            .hasService(sandbox2.loadClass(SERVICES2_FLOW_CLASS))
+            .hasService(sandbox1.loadClassFromCordappBundle(SERVICES1_FLOW_CLASS))
+            .hasService(sandbox2.loadClassFromCordappBundle(SERVICES2_FLOW_CLASS))
     }
 
     @Test
@@ -80,18 +71,18 @@ class SandboxServiceIsolationTest {
         val otherGroup = sandboxLoader.group2
         val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.id)
         val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.id)
-        val serviceClasses = runFlow(SERVICES2_FLOW_CLASS, thisGroup).onEach(::println)
+        val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES2_FLOW_CLASS, thisGroup).onEach(::println)
 
         // CPK2 should be able to see its own services, and any
         // services inside CPK1's "main" jar, but nothing from CPK3.
         assertThat(serviceClasses)
             .hasNoServiceFromGroup(otherGroup)
-            .hasNoService(sandbox1.loadClass(QUERY_CLASS))
-            .hasService(sandbox2.loadClass(QUERY_CLASS))
+            .hasNoService(sandbox1.loadClassFromCordappBundle(QUERY_CLASS))
+            .hasService(sandbox2.loadClassFromCordappBundle(QUERY_CLASS))
             .hasService(ServiceComponentRuntime::class.java)
             .hasService(Resolver::class.java)
-            .hasService(sandbox1.loadClass(SERVICES1_FLOW_CLASS))
-            .hasService(sandbox2.loadClass(SERVICES2_FLOW_CLASS))
+            .hasService(sandbox1.loadClassFromCordappBundle(SERVICES1_FLOW_CLASS))
+            .hasService(sandbox2.loadClassFromCordappBundle(SERVICES2_FLOW_CLASS))
     }
 
     @Test
@@ -99,15 +90,15 @@ class SandboxServiceIsolationTest {
         val thisGroup = sandboxLoader.group2
         val otherGroup = sandboxLoader.group1
         val sandbox3 = thisGroup.getSandbox(sandboxLoader.cpk3.id)
-        val serviceClasses = runFlow(SERVICES3_FLOW_CLASS, thisGroup).onEach(::println)
+        val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES3_FLOW_CLASS, thisGroup).onEach(::println)
 
         // CPK3 should be able to see its own services, but
         // no service belonging to either CPK1 or CPK2.
         assertThat(serviceClasses)
             .hasNoServiceFromGroup(otherGroup)
-            .hasService(sandbox3.loadClass(QUERY_CLASS))
+            .hasService(sandbox3.loadClassFromCordappBundle(QUERY_CLASS))
             .hasService(ServiceComponentRuntime::class.java)
             .hasService(Resolver::class.java)
-            .hasService(sandbox3.loadClass(SERVICES3_FLOW_CLASS))
+            .hasService(sandbox3.loadClassFromCordappBundle(SERVICES3_FLOW_CLASS))
     }
 }

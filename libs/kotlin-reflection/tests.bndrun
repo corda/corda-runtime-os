@@ -39,7 +39,7 @@ java: ${project.javaExecutable}
 	kotlin-reflection-test-example;version='[5.0.0,5.0.1)',\
 	kotlin-reflection-tests;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-reflection;version='[5.0.0,5.0.1)',\
-	org.jetbrains.kotlin.osgi-bundle;version='[1.4.21,1.4.22)',\
+	org.jetbrains.kotlin.osgi-bundle;version='[1.4.32,1.4.33)',\
 	org.opentest4j;version='[1.2.0,1.2.1)',\
 	slf4j.api;version='[1.7.32,1.7.33)',\
 	slf4j.simple;version='[1.7.32,1.7.33)'

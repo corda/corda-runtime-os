@@ -1,6 +1,5 @@
 package net.corda.sandbox.internal.utilities
 
-import net.corda.sandbox.SandboxService
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
@@ -12,7 +11,7 @@ import java.security.AccessController.doPrivileged
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 
-/** Handles bundle operations for the [SandboxService]. */
+/** Handles bundle operations for the `SandboxCreationService` and the `SandboxContextService`. */
 @Component(service = [BundleUtils::class])
 internal class BundleUtils @Activate constructor(private val bundleContext: BundleContext) {
     /**
