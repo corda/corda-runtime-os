@@ -2,16 +2,16 @@ package net.corda.p2p.gateway.messaging
 
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
-import net.corda.lifecycle.Lifecycle
+import net.corda.p2p.gateway.domino.CloseableMap
+import net.corda.p2p.gateway.domino.CloseableNioEventLoopGroup
+import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
+import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 /**
  * The [ConnectionManager] is responsible for creating an HTTP connection and caching it. If a connection to the requested
@@ -23,8 +23,9 @@ import kotlin.concurrent.withLock
  *
  */
 class ConnectionManager(
+    dominoCoordinatorFactory: DominoCoordinatorFactory,
     private val sslConfiguration: SslConfiguration,
-) : Lifecycle {
+) : DominoTile(dominoCoordinatorFactory) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(ConnectionManager::class.java)
@@ -33,45 +34,20 @@ class ConnectionManager(
         private const val NUM_CLIENT_NETTY_THREADS = 2
     }
 
-    private val lock = ReentrantLock()
     private val clientPool = ConcurrentHashMap<URI, HttpClient>()
     private var writeGroup: EventLoopGroup? = null
     private var nettyGroup: EventLoopGroup? = null
 
-    private val eventListeners = CopyOnWriteArrayList<HttpEventListener>()
+    private val eventListeners = ConcurrentHashMap.newKeySet<HttpEventListener>()
 
-    private var started = false
-    override val isRunning: Boolean
-        get() = started
+    override fun prepareResources() {
+        logger.info("Starting connection manager")
 
-    override fun start() {
-        lock.withLock {
-            logger.info("Starting connection manager")
-            writeGroup = NioEventLoopGroup(NUM_CLIENT_WRITE_THREADS)
-            nettyGroup = NioEventLoopGroup(NUM_CLIENT_NETTY_THREADS)
-            started = true
-        }
-    }
-
-    override fun stop() {
-        lock.withLock {
-            try {
-                logger.info("Stopping connection manager")
-
-                clientPool.entries.forEach { it.value.stop() }
-                clientPool.clear()
-
-                writeGroup?.shutdownGracefully()
-                nettyGroup?.shutdownGracefully()
-                writeGroup?.terminationFuture()?.sync()
-                nettyGroup?.terminationFuture()?.sync()
-                writeGroup = null
-                nettyGroup = null
-            } finally {
-                started = false
-                logger.info("Connection manager stopped")
-            }
-        }
+        writeGroup = NioEventLoopGroup(NUM_CLIENT_WRITE_THREADS)
+        keepResource(CloseableNioEventLoopGroup(writeGroup!!))
+        nettyGroup = NioEventLoopGroup(NUM_CLIENT_NETTY_THREADS)
+        keepResource(CloseableNioEventLoopGroup(nettyGroup!!))
+        keepResource(CloseableMap(clientPool))
     }
 
     fun addListener(eventListener: HttpEventListener) {
@@ -91,6 +67,7 @@ class ConnectionManager(
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
         return clientPool.computeIfAbsent(destinationInfo.uri) {
             val client = HttpClient(destinationInfo, sslConfiguration, writeGroup!!, nettyGroup!!)
+            keepResource(client)
             eventListeners.forEach { client.addListener(it) }
             client.start()
             client

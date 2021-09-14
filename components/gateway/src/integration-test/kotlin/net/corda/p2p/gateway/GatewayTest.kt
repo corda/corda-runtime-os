@@ -20,6 +20,7 @@ import net.corda.p2p.SessionPartitions
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
+import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
@@ -215,7 +216,11 @@ class GatewayTest : TestBase() {
         }.map { serverUrl ->
             URI.create(serverUrl)
         }.map { serverUri ->
-            HttpServer(serverUri.host, serverUri.port, chipSslConfig).also {
+            HttpServer(
+                DominoCoordinatorFactory(coodrinator, "${serverUri.host}:${serverUri.port}"),
+                serverUri.host,
+                serverUri.port,
+                chipSslConfig).also {
                 it.addListener(object : HttpEventListener {
                     override fun onMessage(message: HttpMessage) {
                         val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))

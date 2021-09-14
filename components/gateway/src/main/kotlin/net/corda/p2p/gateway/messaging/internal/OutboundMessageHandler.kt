@@ -44,9 +44,11 @@ class OutboundMessageHandler(private val connectionPool: ConnectionManager,
 
     override fun start() {
         logger.info("Starting P2P message sender")
+        println("QQQ starting OutboundMessageHandler")
         p2pInPublisher = publisherFactory.createPublisher(PublisherConfig(PUBLISHER_ID), ConfigFactory.empty())
         connectionPool.addListener(this)
         started = true
+        println("QQQ started OutboundMessageHandler")
     }
 
     override fun stop() {

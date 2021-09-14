@@ -9,18 +9,18 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.timeout.IdleStateHandler
-import net.corda.lifecycle.Lifecycle
+import net.corda.p2p.gateway.domino.CloseableChannel
+import net.corda.p2p.gateway.domino.CloseableMap
+import net.corda.p2p.gateway.domino.CloseableNioEventLoopGroup
+import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
+import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.v5.base.util.contextLogger
-import org.slf4j.LoggerFactory
 import java.lang.IllegalStateException
-import java.net.BindException
 import java.net.SocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.KeyManagerFactory
-import kotlin.concurrent.withLock
 
 /**
  * The [HttpServer] is responsible for opening a socket listener on the configured port in order to receive and handle
@@ -38,10 +38,14 @@ import kotlin.concurrent.withLock
  * @param sslConfig the configuration to be used for the one-way TLS handshake
  */
 class HttpServer(
+    dominoCoordinatorFactory: DominoCoordinatorFactory,
     private val host: String,
     private val port: Int,
     private val sslConfig: SslConfiguration
-) : Lifecycle, HttpEventListener {
+) : DominoTile(
+    dominoCoordinatorFactory
+),
+    HttpEventListener {
 
     companion object {
         private val logger = contextLogger()
@@ -57,12 +61,12 @@ class HttpServer(
         private const val SERVER_IDLE_TIME_SECONDS = 5
     }
 
-    private val lock = ReentrantLock()
-
-    private fun startServer(): AutoCloseable {
+    override fun prepareResources() {
         logger.info("Starting HTTP Server")
         val bossGroup = NioEventLoopGroup(1)
+        keepResource(CloseableNioEventLoopGroup(bossGroup))
         val workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS)
+        keepResource(CloseableNioEventLoopGroup(workerGroup))
 
         val server = ServerBootstrap()
         server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
@@ -73,51 +77,17 @@ class HttpServer(
         val serverChannel = channelFuture.channel()
 
         serverChannel.closeFuture().addListener {
-            println("QQQ on close!")
-        }
-
-        return AutoCloseable {
-            println("QQQ! 3")
-            serverChannel.close()
-            println("QQQ! 4")
-
-            workerGroup.shutdownGracefully()
-            workerGroup.terminationFuture().sync()
-
-            bossGroup.shutdownGracefully()
-            bossGroup.terminationFuture().sync()
-        }
-    }
-
-    private var serverChannel: AutoCloseable? = null
-    private val clientChannels = ConcurrentHashMap<SocketAddress, Channel>()
-
-    override val isRunning: Boolean
-        get() = (serverChannel != null)
-
-    private val eventListeners = CopyOnWriteArrayList<HttpEventListener>()
-
-    /**
-     * @throws BindException if the server cannot bind to the address provided in the constructor
-     */
-    override fun start() {
-        lock.withLock {
-            serverChannel?.close()
-            serverChannel = startServer()
-        }
-    }
-
-    override fun stop() {
-        lock.withLock {
-            try {
-                logger.info("Stopping HTTP server")
-                serverChannel?.close()
-            } finally {
-                serverChannel = null
-                logger.info("HTTP server stopped")
+            if (isRunning) {
+                close()
             }
         }
+        keepResource(CloseableChannel(serverChannel))
+        keepResource(CloseableMap(clientChannels))
     }
+
+    private val clientChannels = ConcurrentHashMap<SocketAddress, Channel>()
+
+    private val eventListeners = CopyOnWriteArrayList<HttpEventListener>()
 
     /**
      * Adds an [HttpEventListener] which upstream services can provide to receive updates on important events.

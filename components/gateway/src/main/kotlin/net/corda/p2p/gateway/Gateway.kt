@@ -1,12 +1,12 @@
 package net.corda.p2p.gateway
 
 import com.typesafe.config.ConfigFactory
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
+import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpServer
@@ -16,9 +16,6 @@ import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.lang.Exception
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 /**
  * The Gateway is a light component which facilitates the sending and receiving of P2P messages.
@@ -39,7 +36,12 @@ class Gateway(
     publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-) : Lifecycle {
+) : DominoTile(
+    DominoCoordinatorFactory(
+        lifecycleCoordinatorFactory,
+        "${config.hostAddress}:${config.hostPort}"
+    )
+) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(Gateway::class.java)
@@ -47,10 +49,13 @@ class Gateway(
         const val PUBLISHER_ID = "gateway"
     }
 
-    private val closeActions = mutableListOf<() -> Unit>()
-    private val dominoCoordinator = DominoCoordinator(lifecycleCoordinatorFactory)
-    private val httpServer = HttpServer(config.hostAddress, config.hostPort, config.sslConfig)
-    private val connectionManager = ConnectionManager(config.sslConfig)
+    private val httpServer = HttpServer(
+        coordinatorFactory,
+        config.hostAddress,
+        config.hostPort,
+        config.sslConfig
+    )
+    private val connectionManager = ConnectionManager(coordinatorFactory, config.sslConfig)
     private val sessionPartitionMapper = SessionPartitionMapperImpl(subscriptionFactory)
     private val inboundMessageProcessor = InboundMessageHandler(httpServer, publisherFactory, sessionPartitionMapper)
     private val outboundMessageProcessor = OutboundMessageHandler(connectionManager, publisherFactory)
@@ -61,59 +66,14 @@ class Gateway(
         null
     )
 
-    private val lock = ReentrantLock()
-
-    @Volatile
-    private var started = false
-
-    override val isRunning: Boolean
-        get() = started
-
-    override fun start() {
-        lock.withLock {
-            if (started) {
-                logger.info("Already started")
-                return
-            }
-            logger.info("Starting Gateway service")
-            dominoCoordinator.start()
-            closeActions.add {
-                dominoCoordinator.stop()
-            }
-
-            connectionManager.start()
-            closeActions += { connectionManager.close() }
-            httpServer.start()
-            closeActions += { httpServer.close() }
-            sessionPartitionMapper.start()
-            closeActions += { sessionPartitionMapper.close() }
-            inboundMessageProcessor.start()
-            closeActions += { inboundMessageProcessor.close() }
-            outboundMessageProcessor.start()
-            closeActions += { outboundMessageProcessor.close() }
-            p2pMessageSubscription.start()
-            closeActions += { p2pMessageSubscription.close() }
-            started = true
-            logger.info("Gateway started")
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    override fun stop() {
-        lock.withLock {
-            logger.info("Shutting down")
-            started = false
-            for (closeAction in closeActions.reversed()) {
-                try {
-                    closeAction()
-                } catch (e: InterruptedException) {
-                    logger.warn("InterruptedException was thrown during shutdown, ignoring.")
-                } catch (e: Exception) {
-                    logger.warn("Exception thrown during shutdown.", e)
-                }
-            }
-
-            logger.info("Shutdown complete")
-        }
+    override fun prepareResources() {
+        logger.info("Starting Gateway service")
+        keepResource(connectionManager)
+        keepResource(httpServer)
+        keepResource(sessionPartitionMapper)
+        keepResource(inboundMessageProcessor)
+        keepResource(outboundMessageProcessor)
+        keepResource(p2pMessageSubscription)
+        logger.info("Gateway started")
     }
 }

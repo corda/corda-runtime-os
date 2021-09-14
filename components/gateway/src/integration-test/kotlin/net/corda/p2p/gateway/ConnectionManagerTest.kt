@@ -1,7 +1,8 @@
 package net.corda.p2p.gateway
 
 import io.netty.handler.codec.http.HttpResponseStatus
-import net.corda.p2p.gateway.messaging.ConnectionConfiguration
+import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
@@ -19,14 +20,16 @@ class ConnectionManagerTest : TestBase() {
 
     private val serverAddress = URI.create("http://localhost:10000")
     private val destination = DestinationInfo(serverAddress, aliceSNI[0], null)
+    private val coodrinator = DominoCoordinatorFactory(LifecycleCoordinatorFactoryImpl(), "localhost:10000")
+
 
     @Test
     @Timeout(30)
     fun `acquire connection`() {
-        val manager = ConnectionManager(aliceSslConfig)
+        val manager = ConnectionManager(coodrinator, aliceSslConfig)
         manager.start()
         val (host, port) = serverAddress.let { Pair(it.host, it.port) }
-        HttpServer(host, port, aliceSslConfig).use { server ->
+        HttpServer(coodrinator, host, port, aliceSslConfig).use { server ->
             server.addListener(object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
                     assertEquals(clientMessageContent, String(message.payload))
@@ -52,10 +55,10 @@ class ConnectionManagerTest : TestBase() {
     @Test
     @Timeout(30)
     fun `reuse connection`() {
-        val manager = ConnectionManager(aliceSslConfig)
+        val manager = ConnectionManager(coodrinator, aliceSslConfig)
         manager.start()
         val requestReceived = CountDownLatch(2)
-        HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
+        HttpServer(coodrinator, serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
             val remotePeers = mutableListOf<SocketAddress>()
             server.addListener(object : HttpEventListener {
                 override fun onOpen(event: HttpConnectionEvent) {
