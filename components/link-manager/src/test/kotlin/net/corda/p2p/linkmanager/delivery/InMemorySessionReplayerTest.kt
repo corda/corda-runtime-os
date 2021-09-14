@@ -2,9 +2,11 @@ package net.corda.p2p.linkmanager.delivery
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.fail
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import java.security.KeyPairGenerator
@@ -88,6 +91,13 @@ class InMemorySessionReplayerTest {
         val publisherFactory = object : PublisherFactory {
             override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
                 return publisher
+            }
+
+            override fun <TREQ : Any, TRESP : Any> createRPCSender(
+                rpcConfig: RPCConfig<TREQ, TRESP>,
+                nodeConfig: Config
+            ): RPCSender<TREQ, TRESP> {
+                fail("createRPCSender should not be used in this test.")
             }
         }
         val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, netMap)
@@ -160,6 +170,13 @@ class InMemorySessionReplayerTest {
             override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
                 return publisher
             }
+
+            override fun <TREQ : Any, TRESP : Any> createRPCSender(
+                rpcConfig: RPCConfig<TREQ, TRESP>,
+                nodeConfig: Config
+            ): RPCSender<TREQ, TRESP> {
+                fail("createRPCSender should not be used in this test.")
+            }
         }
         val replayer = InMemorySessionReplayer(Duration.ofMillis(50), publisherFactory, netMap)
         val firstId = UUID.randomUUID().toString()
@@ -226,6 +243,13 @@ class InMemorySessionReplayerTest {
             override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
                 return publisher
             }
+
+            override fun <TREQ : Any, TRESP : Any> createRPCSender(
+                rpcConfig: RPCConfig<TREQ, TRESP>,
+                nodeConfig: Config
+            ): RPCSender<TREQ, TRESP> {
+                fail("createRPCSender should not be used in this test.")
+            }
         }
 
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
@@ -266,6 +290,13 @@ class InMemorySessionReplayerTest {
             override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
                 return publisher
             }
+
+            override fun <TREQ : Any, TRESP : Any> createRPCSender(
+                rpcConfig: RPCConfig<TREQ, TRESP>,
+                nodeConfig: Config
+            ): RPCSender<TREQ, TRESP> {
+                fail("createRPCSender should not be used in this test.")
+            }
         }
 
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
@@ -304,6 +335,13 @@ class InMemorySessionReplayerTest {
         val publisherFactory = object : PublisherFactory {
             override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
                 return publisher
+            }
+
+            override fun <TREQ : Any, TRESP : Any> createRPCSender(
+                rpcConfig: RPCConfig<TREQ, TRESP>,
+                nodeConfig: Config
+            ): RPCSender<TREQ, TRESP> {
+                fail("createRPCSender should not be used in this test.")
             }
         }
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
