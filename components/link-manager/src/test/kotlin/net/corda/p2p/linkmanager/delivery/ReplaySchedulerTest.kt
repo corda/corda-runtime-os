@@ -2,12 +2,14 @@ package net.corda.p2p.linkmanager.delivery
 
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.Duration
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 
 class ReplaySchedulerTest {
@@ -61,7 +63,7 @@ class ReplaySchedulerTest {
     fun `The ReplayScheduler doesn't replay removed messages`() {
         val messages = 8
 
-        val tracker = TwoPhaseTrackReplayedMessages(messages, 4)
+        val tracker = TrackReplayedMessages(messages)
 
         val replayManager = ReplayScheduler(replayPeriod, tracker::replayMessage) { 0 }
         replayManager.start()
@@ -79,56 +81,53 @@ class ReplaySchedulerTest {
             )
         }
 
-        tracker.firstPhaseWaitLatch.await()
+        tracker.await()
         //Acknowledge all even messages
         for (id in messageIdsToRemove) {
             replayManager.removeFromReplay(id)
         }
-        tracker.secondPhaseStartLatch.countDown()
 
-        tracker.secondPhaseWaitLatch.await()
-        Assertions.assertArrayEquals(messageIdsToNotRemove.toTypedArray(), tracker.replayedMessageIds.keys.toTypedArray())
+        //Wait some time to until the even messages should have stopped replaying
+        Thread.sleep(2 * messages * replayPeriod.toMillis())
+        val removedMessages = mutableMapOf<String, Int>()
+        for (id in messageIdsToRemove) {
+            removedMessages[id] = tracker.numberOfReplays[id]!!
+        }
 
-        replayManager.stop()
+        //Wait again and check the number of replays for each stopped message is the same
+        Thread.sleep(2 * messages * replayPeriod.toMillis())
+        for (id in messageIdsToRemove) {
+            assertEquals(removedMessages[id], tracker.numberOfReplays[id]!!)
+        }
     }
 
     @Test
     fun `The ReplayScheduler handles exceptions`() {
-        val throwOnFirstReplay = ThrowExceptionOnFirstReplay()
-        val replayManager = ReplayScheduler(replayPeriod, throwOnFirstReplay::replayMessage) { 0 }
+        val message = "message"
+        val tracker = TrackReplayedMessages(2, 1)
+        val replayManager = ReplayScheduler(replayPeriod, tracker::replayMessage) { 0 }
         replayManager.start()
-        replayManager.addForReplay(0, "", Any())
-        throwOnFirstReplay.await()
+        replayManager.addForReplay(0, "", message)
+        tracker.await()
         loggingInterceptor.assertErrorContains(
             "An exception was thrown when replaying a message. The task will be retried again in ${replayPeriod.toMillis()} ms.")
         replayManager.stop()
+        assertTrue(tracker.numberOfReplays[message]!! >= 1)
     }
 
-    class TrackReplayedMessages(numUniqueMessages: Int) {
-        private val latch = CountDownLatch(numUniqueMessages)
-        private val replayedMessageIds = mutableSetOf<String>()
+    class TrackReplayedMessages(numReplayedMessages: Int, private val totalNumberOfExceptions: Int = 0) {
+        private val latch = CountDownLatch(numReplayedMessages)
+        val numberOfReplays = ConcurrentHashMap<String, Int>()
+        private var numberOfExceptions = 0
 
-        fun replayMessage(messageId: String) {
-            if (replayedMessageIds.contains(messageId)) return
-            replayedMessageIds += messageId
+        fun replayMessage(message: String) {
             latch.countDown()
-        }
-
-        fun await() {
-            latch.await()
-        }
-    }
-
-    class ThrowExceptionOnFirstReplay {
-        private val latch = CountDownLatch(2)
-        private var shouldThrow = true
-
-        @Suppress("UNUSED_PARAMETER")
-        fun replayMessage(arg: Any) {
-            latch.countDown()
-            if (shouldThrow) {
-                shouldThrow = false
+            if (numberOfExceptions < totalNumberOfExceptions) {
+                numberOfExceptions++
                 throw MyException()
+            }
+            numberOfReplays.compute(message) { _, numberOfReplays ->
+                (numberOfReplays ?: 0) + 1
             }
         }
 
@@ -136,33 +135,6 @@ class ReplaySchedulerTest {
 
         fun await() {
             latch.await()
-        }
-    }
-
-    class TwoPhaseTrackReplayedMessages(private val firstNumUniqueMessages: Int, private val secondNumUniqueMessages: Int) {
-        val firstPhaseWaitLatch = CountDownLatch(1)
-        val secondPhaseStartLatch = CountDownLatch(1)
-        val secondPhaseWaitLatch = CountDownLatch(1)
-        val replayedMessageIds = mutableMapOf<String, Int>()
-
-        private var secondPhase = false
-
-        fun replayMessage(messageId: String) {
-            val replays = replayedMessageIds[messageId]
-            if (replays == null) {
-                replayedMessageIds[messageId] = 1
-            } else {
-                replayedMessageIds[messageId] = replays + 1
-            }
-            if (replayedMessageIds.keys.size == firstNumUniqueMessages) {
-                replayedMessageIds.clear()
-                firstPhaseWaitLatch.countDown()
-                secondPhaseStartLatch.await()
-                secondPhase = true
-            }
-            if (secondPhase && replayedMessageIds.keys.size == secondNumUniqueMessages) {
-                secondPhaseWaitLatch.countDown()
-            }
         }
     }
 }
