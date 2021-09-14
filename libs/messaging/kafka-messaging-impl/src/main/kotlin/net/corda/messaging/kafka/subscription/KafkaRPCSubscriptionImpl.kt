@@ -10,7 +10,6 @@ import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
@@ -28,7 +27,6 @@ import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
 class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
-    private val rpcConfig: RPCConfig<TREQ, TRESP>,
     private val config: Config,
     private val publisher: Publisher,
     private val consumerBuilder: ConsumerBuilder<String, RPCRequest>,
@@ -144,7 +142,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
         consumerRecords.forEach {
             val rpcRequest = it.record.value()
             val requestBytes = rpcRequest.payload
-            val request = deserializer.deserialize(rpcConfig.requestTopic, requestBytes.array())
+            val request = deserializer.deserialize(topic, requestBytes.array())
             val future = CompletableFuture<TRESP>()
             future.thenAccept { response ->
                 var record: Record<String, RPCResponse>? = null

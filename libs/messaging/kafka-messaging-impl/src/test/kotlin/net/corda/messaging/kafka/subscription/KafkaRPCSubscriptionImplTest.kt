@@ -42,13 +42,6 @@ class KafkaRPCSubscriptionImplTest {
     }
 
     private val config: Config = createStandardTestConfig().getConfig(KafkaProperties.PATTERN_COMPACTED)
-    private val rpcConfig = RPCConfig(
-        "group",
-        "client",
-        KafkaProperties.TOPIC,
-        HoldingIdentity::class.java,
-        HoldingIdentity::class.java
-    )
 
     private val dummyRequest = HoldingIdentity(
         "identity",
@@ -94,7 +87,6 @@ class KafkaRPCSubscriptionImplTest {
         }.whenever(kafkaConsumer).getPartitions(any(), any())
 
         val subscription = KafkaRPCSubscriptionImpl(
-            rpcConfig,
             config,
             mock(),
             consumerBuilder,

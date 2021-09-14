@@ -257,7 +257,6 @@ class KafkaSubscriptionFactory @Activate constructor(
         val publisher = publisherFactory.createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)
 
         return KafkaRPCSubscriptionImpl(
-            rpcConfig,
             config,
             publisher,
             consumerBuilder,
