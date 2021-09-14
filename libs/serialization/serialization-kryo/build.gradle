@@ -20,6 +20,7 @@ dependencies {
     implementation "net.corda:corda-serialization"
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
+    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation "de.javakaffee:kryo-serializers:$kryoSerializerVersion"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
