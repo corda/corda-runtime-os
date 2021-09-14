@@ -7,7 +7,6 @@ import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -27,13 +26,7 @@ class FreshKeysServiceRpcSub @Activate constructor(
     ): RPCSubscription<WireFreshKeysRequest, WireFreshKeysResponse> {
         val processor = FreshKeysServiceRpcProcessor(cryptoFactory)
         return subscriptionFactory.createRPCSubscription(
-            RPCConfig(
-                groupName = libraryConfig.rpc.groupName,
-                clientName = libraryConfig.rpc.clientName,
-                requestTopic = libraryConfig.rpc.signingRequestTopic,
-                requestType = WireFreshKeysRequest::class.java,
-                responseType = WireFreshKeysResponse::class.java
-            ),
+            rpcConfig = libraryConfig.rpc.freshKeysRpcConfig,
             responderProcessor = processor
         )
     }

@@ -3,6 +3,10 @@ package net.corda.cipher.suite.impl.config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.CryptoCategories
+import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
+import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
+import net.corda.data.crypto.wire.signing.WireSigningRequest
+import net.corda.data.crypto.wire.signing.WireSigningResponse
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.Duration
@@ -13,69 +17,74 @@ import kotlin.test.assertTrue
 class CryptoLibraryConfigTests {
     @Test
     fun `Should be able to use all helper properties`() {
-        val raw = ConfigFactory.parseMap(mapOf<String, Any>(
-            "rpc" to mapOf(
-                "groupName" to "rpcGroupName",
-                "clientName" to "rpcClientName",
-                "signingRequestTopic" to "rpcSigningRequestTopic",
-                "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic"
-
-            ),
-            "keyCache" to mapOf(
-                "expireAfterAccessMins" to "90",
-                "maximumSize" to "25",
-                "persistenceConfig" to mapOf(
-                    "url" to "keyPersistenceUrl"
-                )
-            ),
-            "mngCache" to mapOf(
-                "expireAfterAccessMins" to "120",
-                "maximumSize" to "50",
-                "persistenceConfig" to mapOf(
-                    "url" to "mngPersistenceUrl"
-                )
-            ),
-            "cipherSuite" to mapOf(
-                "schemeMetadataProvider" to "customSchemeMetadataProvider",
-                "signatureVerificationProvider" to "customSignatureVerificationProvider",
-                "digestProvider" to "customDigestProvider",
-            ),
-            "default" to mapOf(
-                "default" to mapOf(
-                    "serviceName" to "default",
-                    "timeout" to "1",
-                    "defaultSignatureScheme" to "CORDA.EDDSA.ED25519",
-                    "serviceConfig" to mapOf(
-                        "passphrase" to "pwdD",
-                        "salt" to "saltD"
-                    )
-                )
-            ),
-            "member123" to mapOf(
-                "default" to mapOf(
-                    "serviceName" to "default",
-                    "timeout" to "3",
-                    "defaultSignatureScheme" to "CORDA.ECDSA.SECP256K1",
-                    "serviceConfig" to mapOf(
-                        "passphrase" to "pwd123",
-                        "salt" to "salt123"
+        val raw = ConfigFactory.parseMap(
+            mapOf<String, Any>(
+                "rpc" to mapOf(
+                    "groupName" to "rpcGroupName",
+                    "clientName" to "rpcClientName",
+                    "signingRequestTopic" to "rpcSigningRequestTopic",
+                    "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic",
+                    "clientTimeout" to "11",
+                    "clientRetries" to "77"
+                ),
+                "keyCache" to mapOf(
+                    "expireAfterAccessMins" to "90",
+                    "maximumSize" to "25",
+                    "persistenceConfig" to mapOf(
+                        "url" to "keyPersistenceUrl"
                     )
                 ),
-                "LEDGER" to mapOf(
-                    "serviceName" to "UTIMACO",
-                    "timeout" to "2",
-                    "defaultSignatureScheme" to "CORDA.ECDSA.SECP256R1",
-                    "serviceConfig" to mapOf(
-                        "password" to "pwd"
+                "mngCache" to mapOf(
+                    "expireAfterAccessMins" to "120",
+                    "maximumSize" to "50",
+                    "persistenceConfig" to mapOf(
+                        "url" to "mngPersistenceUrl"
+                    )
+                ),
+                "cipherSuite" to mapOf(
+                    "schemeMetadataProvider" to "customSchemeMetadataProvider",
+                    "signatureVerificationProvider" to "customSignatureVerificationProvider",
+                    "digestProvider" to "customDigestProvider",
+                ),
+                "default" to mapOf(
+                    "default" to mapOf(
+                        "serviceName" to "default",
+                        "timeout" to "1",
+                        "defaultSignatureScheme" to "CORDA.EDDSA.ED25519",
+                        "serviceConfig" to mapOf(
+                            "passphrase" to "pwdD",
+                            "salt" to "saltD"
+                        )
+                    )
+                ),
+                "member123" to mapOf(
+                    "default" to mapOf(
+                        "serviceName" to "default",
+                        "timeout" to "3",
+                        "defaultSignatureScheme" to "CORDA.ECDSA.SECP256K1",
+                        "serviceConfig" to mapOf(
+                            "passphrase" to "pwd123",
+                            "salt" to "salt123"
+                        )
+                    ),
+                    "LEDGER" to mapOf(
+                        "serviceName" to "UTIMACO",
+                        "timeout" to "2",
+                        "defaultSignatureScheme" to "CORDA.ECDSA.SECP256R1",
+                        "serviceConfig" to mapOf(
+                            "password" to "pwd"
+                        )
                     )
                 )
             )
-        ))
+        )
         val config = CryptoLibraryConfig(raw)
         assertEquals("rpcGroupName", config.rpc.groupName)
         assertEquals("rpcClientName", config.rpc.clientName)
         assertEquals("rpcSigningRequestTopic", config.rpc.signingRequestTopic)
         assertEquals("rpcFreshKeysRequestTopic", config.rpc.freshKeysRequestTopic)
+        assertEquals(11, config.rpc.clientTimeout)
+        assertEquals(77, config.rpc.clientRetries)
         assertEquals(90, config.keyCache.expireAfterAccessMins)
         assertEquals(25, config.keyCache.maximumSize)
         assertEquals("keyPersistenceUrl", config.keyCache.persistenceConfig.getString("url"))
@@ -114,6 +123,48 @@ class CryptoLibraryConfigTests {
         assertEquals("crypto.rpc", config.clientName)
         assertEquals("crypto.rpc.signing", config.signingRequestTopic)
         assertEquals("crypto.rpc.freshKeys", config.freshKeysRequestTopic)
+        assertEquals(15, config.clientTimeout)
+        assertEquals(1, config.clientRetries)
+    }
+
+    @Test
+    fun `CryptoRpcConfig should create RPC config for signing service`() {
+        val raw = ConfigFactory.parseMap(
+            mapOf(
+                "groupName" to "rpcGroupName",
+                "clientName" to "rpcClientName",
+                "signingRequestTopic" to "rpcSigningRequestTopic",
+                "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic"
+
+            )
+        )
+        val config = CryptoRpcConfig(raw)
+        val rpc = config.signingRpcConfig
+        assertEquals("rpcGroupName", rpc.groupName)
+        assertEquals("rpcClientName", rpc.clientName)
+        assertEquals("rpcSigningRequestTopic", rpc.requestTopic)
+        assertEquals(WireSigningRequest::class.java, rpc.requestType)
+        assertEquals(WireSigningResponse::class.java, rpc.responseType)
+    }
+
+    @Test
+    fun `CryptoRpcConfig should create RPC config for fresh keys service`() {
+        val raw = ConfigFactory.parseMap(
+            mapOf(
+                "groupName" to "rpcGroupName",
+                "clientName" to "rpcClientName",
+                "signingRequestTopic" to "rpcSigningRequestTopic",
+                "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic"
+
+            )
+        )
+        val config = CryptoRpcConfig(raw)
+        val rpc = config.freshKeysRpcConfig
+        assertEquals("rpcGroupName", rpc.groupName)
+        assertEquals("rpcClientName", rpc.clientName)
+        assertEquals("rpcFreshKeysRequestTopic", rpc.requestTopic)
+        assertEquals(WireFreshKeysRequest::class.java, rpc.requestType)
+        assertEquals(WireFreshKeysResponse::class.java, rpc.responseType)
     }
 
     @Test
@@ -129,7 +180,8 @@ class CryptoLibraryConfigTests {
         val config = CipherSuiteConfig(ConfigFactory.empty())
         assertEquals("default", config.schemeMetadataProvider)
         assertEquals("default", config.signatureVerificationProvider)
-        assertEquals("default", config.digestProvider)    }
+        assertEquals("default", config.digestProvider)
+    }
 
     @Test
     fun `Should fail if the 'rpc' path is not supplied`() {
@@ -165,19 +217,23 @@ class CryptoLibraryConfigTests {
 
     @Test
     fun `Should return default member config if the member id path is not supplied`() {
-        val config = CryptoLibraryConfig(ConfigFactory.parseMap(mapOf(
-            "default" to mapOf(
-                "default" to mapOf(
-                    "serviceName" to "default",
-                    "timeout" to "1",
-                    "defaultSignatureScheme" to "CORDA.EDDSA.ED25519",
-                    "serviceConfig" to mapOf(
-                        "passphrase" to "pwdD",
-                        "salt" to "saltD"
+        val config = CryptoLibraryConfig(
+            ConfigFactory.parseMap(
+                mapOf(
+                    "default" to mapOf(
+                        "default" to mapOf(
+                            "serviceName" to "default",
+                            "timeout" to "1",
+                            "defaultSignatureScheme" to "CORDA.EDDSA.ED25519",
+                            "serviceConfig" to mapOf(
+                                "passphrase" to "pwdD",
+                                "salt" to "saltD"
+                            )
+                        )
                     )
                 )
             )
-        )))
+        )
         val member = config.getMember("123")
         val default = member.default
         assertEquals("default", default.serviceName)

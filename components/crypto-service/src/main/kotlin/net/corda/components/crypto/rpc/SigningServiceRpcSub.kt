@@ -7,7 +7,6 @@ import net.corda.data.crypto.wire.signing.WireSigningRequest
 import net.corda.data.crypto.wire.signing.WireSigningResponse
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -27,13 +26,7 @@ class SigningServiceRpcSub @Activate constructor(
     ): RPCSubscription<WireSigningRequest, WireSigningResponse> {
         val processor = SigningServiceRpcProcessor(cryptoFactory)
         return subscriptionFactory.createRPCSubscription(
-            RPCConfig(
-                groupName = libraryConfig.rpc.groupName,
-                clientName = libraryConfig.rpc.clientName,
-                requestTopic = libraryConfig.rpc.signingRequestTopic,
-                requestType = WireSigningRequest::class.java,
-                responseType = WireSigningResponse::class.java
-            ),
+            rpcConfig = libraryConfig.rpc.signingRpcConfig,
             responderProcessor = processor
         )
     }

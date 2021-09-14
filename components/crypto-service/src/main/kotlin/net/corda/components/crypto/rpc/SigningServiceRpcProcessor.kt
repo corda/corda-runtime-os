@@ -2,6 +2,7 @@ package net.corda.components.crypto.rpc
 
 import net.corda.components.crypto.CryptoFactory
 import net.corda.crypto.SigningService
+import net.corda.data.crypto.wire.WireNoContentValue
 import net.corda.data.crypto.wire.WirePublicKey
 import net.corda.data.crypto.wire.WireRequestContext
 import net.corda.data.crypto.wire.WireResponseContext
@@ -113,7 +114,7 @@ class SigningServiceRpcProcessor(
             return if (publicKey != null) {
                 WirePublicKey(ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(publicKey)))
             } else {
-                null
+                WireNoContentValue()
             }
         }
     }

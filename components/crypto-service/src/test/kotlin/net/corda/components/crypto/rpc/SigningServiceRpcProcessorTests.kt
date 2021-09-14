@@ -5,6 +5,7 @@ import net.corda.crypto.CryptoCategories
 import net.corda.crypto.SignatureVerificationServiceInternal
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.data.WireKeyValuePair
+import net.corda.data.crypto.wire.WireNoContentValue
 import net.corda.data.crypto.wire.WirePublicKey
 import net.corda.data.crypto.wire.WireRequestContext
 import net.corda.data.crypto.wire.WireResponseContext
@@ -44,7 +45,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SigningServiceRpcProcessorTests {
@@ -140,7 +140,7 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
-    fun `Should return null for unknown key alias`() {
+    fun `Should return WireNoContentValue for unknown key alias`() {
         val alias = UUID.randomUUID().toString()
         val context = getWireRequestContext()
         val future = CompletableFuture<WireSigningResponse>()
@@ -153,7 +153,8 @@ class SigningServiceRpcProcessorTests {
         )
         val result = future.get()
         assertEquivalent(context, result.context)
-        assertNull(result.response)
+        assertNotNull(result.response)
+        assertThat(result.response, instanceOf(WireNoContentValue::class.java))
     }
 
     @Test

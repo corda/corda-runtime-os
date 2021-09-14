@@ -1,6 +1,11 @@
 package net.corda.cipher.suite.impl.config
 
 import com.typesafe.config.Config
+import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
+import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
+import net.corda.data.crypto.wire.signing.WireSigningRequest
+import net.corda.data.crypto.wire.signing.WireSigningResponse
+import net.corda.messaging.api.subscription.factory.config.RPCConfig
 
 class CryptoRpcConfig(private val raw: Config) {
     val groupName: String
@@ -30,4 +35,34 @@ class CryptoRpcConfig(private val raw: Config) {
         } else {
             "crypto.rpc.freshKeys"
         }
+
+    val clientTimeout: Long
+        get() = if (raw.hasPath(this::clientTimeout.name)) {
+            raw.getLong(this::clientTimeout.name)
+        } else {
+            15
+        }
+
+    val clientRetries: Long
+        get() = if (raw.hasPath(this::clientRetries.name)) {
+            raw.getLong(this::clientRetries.name)
+        } else {
+            1
+        }
+
+    val signingRpcConfig get() = RPCConfig(
+        groupName = groupName,
+        clientName = clientName,
+        requestTopic = signingRequestTopic,
+        requestType = WireSigningRequest::class.java,
+        responseType = WireSigningResponse::class.java
+    )
+
+    val freshKeysRpcConfig get() = RPCConfig(
+        groupName = groupName,
+        clientName = clientName,
+        requestTopic = freshKeysRequestTopic,
+        requestType = WireFreshKeysRequest::class.java,
+        responseType = WireFreshKeysResponse::class.java
+    )
 }
