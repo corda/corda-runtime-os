@@ -52,23 +52,6 @@ internal class StateSubscription<K : Any, S : Any>(
             }
         }
 
-        fun getStates(records: Collection<RecordMetadata>): Collection<Pair<K, S?>> {
-            return records.mapNotNull {
-                val castRecord =
-                    it.castToType(subscription.processor.keyClass, subscription.processor.stateValueClass)
-                if (castRecord != null) {
-                    val state = knownValues[castRecord.key]
-                    if (state != null) {
-                        castRecord.key to state.state
-                    } else {
-                        null
-                    }
-                } else {
-                    null
-                }
-            }
-        }
-
         fun applyNewData(records: Collection<RecordMetadata>) {
             records.onEach {
                 val castRecord = it.castToType(subscription.processor.keyClass, subscription.processor.stateValueClass)
@@ -108,24 +91,14 @@ internal class StateSubscription<K : Any, S : Any>(
     private val knowPartitions = ConcurrentHashMap<Int, PartitionData>()
 
     fun gotStates(records: Collection<RecordMetadata>) {
-        val states = records.groupBy {
+        records.groupBy {
             it.partition
         }.map { (partitionId, records) ->
             knowPartitions[partitionId] to records
         }.filter { (partition, _) ->
-            partition != null
-        }
-            .flatMap { (partition, records) ->
-                if (partition!!.ready) {
-                    partition.getStates(records)
-                } else {
-                    partition.applyNewData(records)
-                    emptyList()
-                }
-            }.toMap()
-
-        if ((subscription.stateAndEventListener != null) && (states.isNotEmpty())) {
-            subscription.stateAndEventListener.onPostCommit(states)
+            partition?.ready == false
+        }.onEach { (partition, records) ->
+            partition?.applyNewData(records)
         }
     }
 

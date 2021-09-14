@@ -47,6 +47,7 @@ internal class EventSubscription<K : Any, S : Any, E : Any>(
                     ) +
                         response.responseEvents
                 )
+                subscription.stateAndEventListener?.onPostCommit(mapOf(event.key to response.updatedState))
             }
         }
     }

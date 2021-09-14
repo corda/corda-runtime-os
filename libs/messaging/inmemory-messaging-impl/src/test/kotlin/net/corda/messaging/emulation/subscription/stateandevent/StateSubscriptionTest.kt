@@ -166,37 +166,6 @@ class StateSubscriptionTest {
     }
 
     @Test
-    fun `onPostCommit called with the correct values`() {
-        stateSubscription.onPartitionsAssigned(listOf("topic" to 4, "topic" to 5))
-        stateSubscription.setValue("key1", "value1", 4)
-        stateSubscription.setValue("key2", null, 4)
-        stateSubscription.setValue("key3", "value3", 4)
-        stateSubscription.setValue("key4", "value4", 5)
-        stateSubscription.setValue("key6", "value6", 6)
-        stateSubscription.setValue("key7", "value7", 4)
-
-        stateSubscription.gotStates(
-            listOf(
-                RecordMetadata(1L, Record("topic", "key1", null), 4),
-                RecordMetadata(1L, Record("topic", "key2", null), 4),
-                RecordMetadata(1L, Record("topic", "key3", null), 4),
-                RecordMetadata(1L, Record("topic", "key4", null), 5),
-                RecordMetadata(1L, Record("topic", 4, null), 5),
-                RecordMetadata(1L, Record("topic", "key44", null), 5),
-            )
-        )
-
-        verify(stateListener).onPostCommit(
-            mapOf(
-                "key1" to "value1",
-                "key2" to null,
-                "key3" to "value3",
-                "key4" to "value4",
-            )
-        )
-    }
-
-    @Test
     fun `onPostCommit not called for irrelevant data`() {
         stateSubscription.onPartitionsAssigned(listOf("topic" to 4, "topic" to 5))
         stateSubscription.setValue("key1", "value1", 4)

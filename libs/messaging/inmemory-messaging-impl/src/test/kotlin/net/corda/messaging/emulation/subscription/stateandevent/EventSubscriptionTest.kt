@@ -3,6 +3,7 @@ package net.corda.messaging.emulation.subscription.stateandevent
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -157,5 +158,19 @@ class EventSubscriptionTest {
         eventsSubscription.processEvents(records)
 
         verify(subscription.stateSubscription).waitForReady()
+    }
+
+    @Test
+    fun `processEvents will send post commit notification`() {
+        val listener = mock<StateAndEventListener<String, String>>()
+        whenever(subscription.stateAndEventListener).doReturn(listener)
+        newState = "hi"
+        val records = listOf(
+            RecordMetadata(2L, Record("topic", "key2", "event2"), 1),
+        )
+
+        eventsSubscription.processEvents(records)
+
+        verify(listener).onPostCommit(mapOf("key2" to "hi"))
     }
 }
