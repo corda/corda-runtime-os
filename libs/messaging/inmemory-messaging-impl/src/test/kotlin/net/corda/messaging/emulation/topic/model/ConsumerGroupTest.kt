@@ -613,7 +613,7 @@ class ConsumerGroupTest {
     }
 
     @Test
-    fun `assignPartition with wake up the consumers`() {
+    fun `assignPartition will wake up the consumers`() {
         val consumer = mock<Consumer> {
             on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
             on { partitionStrategy } doReturn PartitionStrategy.MANUAL
@@ -634,7 +634,6 @@ class ConsumerGroupTest {
 
         verify(sleeper).signalAll()
     }
-
 
     @Test
     fun `unAssignPartition with non manual partition strategy will throw an exception`() {
@@ -702,7 +701,7 @@ class ConsumerGroupTest {
     }
 
     @Test
-    fun `unAssignPartition with wake up the consumers`() {
+    fun `unAssignPartition will wake up the consumers`() {
         val consumer = mock<Consumer> {
             on { commitStrategy } doReturn CommitStrategy.COMMIT_AFTER_PROCESSING
             on { partitionStrategy } doReturn PartitionStrategy.MANUAL
