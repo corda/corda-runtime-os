@@ -2,6 +2,7 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
 }
+
 description 'Corda HTTP RPC Stub Implementations'
 
 dependencies {
@@ -11,5 +12,20 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:http-rpc:ssl-cert-read")
+    implementation project(':libs:configuration:configuration-read')
+    implementation project(":libs:http-rpc:http-rpc-server")
+    implementation project(":libs:lifecycle:lifecycle")
+
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.7
+            }
+        }
+    }
 }
