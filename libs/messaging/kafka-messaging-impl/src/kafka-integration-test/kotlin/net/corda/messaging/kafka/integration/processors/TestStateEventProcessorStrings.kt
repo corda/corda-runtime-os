@@ -10,7 +10,8 @@ class TestStateEventProcessorStrings(
     private val onNextLatch: CountDownLatch,
     private val updateState: Boolean,
     private var throwExceptionOnFirst: Boolean = false,
-    private val outputTopic: String? = null
+    private val outputTopic: String? = null,
+    private var delayProcessorOnFirst: Long? = null
 ) :
     StateAndEventProcessor<String,
             String,
@@ -24,6 +25,11 @@ class TestStateEventProcessorStrings(
 
     override fun onNext(state: String?, event: Record<String, String>): Response<String> {
         onNextLatch.countDown()
+
+        if (delayProcessorOnFirst != null) {
+            Thread.sleep(delayProcessorOnFirst!!)
+            delayProcessorOnFirst = null
+        }
 
         if (throwExceptionOnFirst) {
             throwExceptionOnFirst = false

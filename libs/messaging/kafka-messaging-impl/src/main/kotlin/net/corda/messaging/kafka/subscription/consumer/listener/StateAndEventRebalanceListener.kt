@@ -7,6 +7,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_T
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.Topic
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
+import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.v5.base.util.debug
@@ -15,12 +16,10 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
 
-@Suppress("LongParameterList")
 class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
     private val config: Config,
     private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
-    private val eventConsumer: CordaKafkaConsumer<K, E>,
-    private val stateConsumer: CordaKafkaConsumer<K, S>,
+    private val stateAndEventConsumer: StateAndEventConsumer<K, S, E>,
     private val partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
 ) : ConsumerRebalanceListener {
@@ -39,9 +38,13 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
     private val topicPrefix = config.getString(KafkaProperties.TOPIC_PREFIX)
     private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
     private val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
+    private val listenerTimeout = config.getLong(KafkaProperties.LISTENER_TIMEOUT)
 
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = partitionState.partitionsToSync
+
+    private val eventConsumer: CordaKafkaConsumer<K, E> = stateAndEventConsumer.eventConsumer
+    private val stateConsumer: CordaKafkaConsumer<K, S> = stateAndEventConsumer.stateConsumer
 
     /**
      *  This rebalance is called for the event consumer, though most of the work is to ensure the state consumer
@@ -80,7 +83,14 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
             partitionsToSync.remove(partitionId)
 
             currentStates[partitionId]?.let { partitionStates ->
-                stateAndEventListener?.onPartitionLost(getStatesForPartition(partitionId))
+                stateAndEventListener?.let { listener ->
+                    stateAndEventConsumer.waitForFunctionToFinish(
+                        { listener.onPartitionLost(getStatesForPartition(partitionId)) },
+                        listenerTimeout,
+                        "StateAndEventListener timed out for onPartitionLost operation on partition $topicPartition"
+                    )
+                }
+
                 mapFactory.destroyMap(partitionStates)
             }
         }

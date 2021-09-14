@@ -27,7 +27,6 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
     private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
 ) : StateAndEventBuilder<K, S, E> {
 
-    //todo what should this logger be - "${config.getString(EVENT_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}" ?
     private val log = LoggerFactory.getLogger(this::class.java)
 
     companion object {
@@ -54,16 +53,15 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
 
         val partitionState = StateAndEventPartitionState(mutableMapOf<Int, MutableMap<K, Pair<Long, S>>>(), mutableMapOf())
 
+        val stateAndEventConsumer =
+            StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
         val rebalanceListener = StateAndEventRebalanceListener(
             config,
             mapFactory,
-            eventConsumer,
-            stateConsumer,
+            stateAndEventConsumer,
             partitionState,
             stateAndEventListener
         )
-        val stateAndEventConsumer =
-            StateAndEventConsumerImpl(config, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
         return Pair(stateAndEventConsumer, rebalanceListener)
     }
 

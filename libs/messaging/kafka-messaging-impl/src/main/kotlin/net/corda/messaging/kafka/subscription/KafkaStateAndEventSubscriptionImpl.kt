@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -8,6 +9,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
+import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
@@ -15,6 +17,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_C
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -22,11 +25,16 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.utils.getEventsByBatch
 import net.corda.messaging.kafka.utils.render
+import net.corda.messaging.kafka.utils.tryGetFutureResult
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.clients.CommonClientConfigs.GROUP_ID_CONFIG
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
@@ -38,10 +46,12 @@ class Topic(val prefix: String, val suffix: String) {
         get() = prefix + suffix
 }
 
+@Suppress("LongParameterList")
 class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val config: Config,
     private val builder: StateAndEventBuilder<K, S, E>,
     private val processor: StateAndEventProcessor<K, S, E>,
+    private val avroSchemaRegistry: AvroSchemaRegistry,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventSubscription<K, S, E> {
@@ -68,6 +78,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
 
+    private val cordaAvroSerializer = CordaAvroSerializer<Any>(avroSchemaRegistry)
+
     private val topicPrefix = config.getString(TOPIC_PREFIX)
     private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
     private val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
@@ -76,6 +88,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val consumerThreadStopTimeout = config.getLong(EVENT_CONSUMER_THREAD_STOP_TIMEOUT)
     private val producerCloseTimeout = Duration.ofMillis(config.getLong(PRODUCER_CLOSE_TIMEOUT))
     private val consumerPollAndProcessMaxRetries = config.getLong(EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES)
+    private val processorTimeout = config.getLong(KafkaProperties.CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"))
+    private val deadLetterQueueSuffix = config.getString(KafkaProperties.DEAD_LETTER_QUEUE_SUFFIX)
 
     /**
      * Is the subscription running.
@@ -133,7 +147,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 eventConsumer.subscribeToTopic(rebalanceListener)
 
                 while (!stopped) {
-                    stateAndEventConsumer.updateStatesAndSynchronizePartitions()
+                    stateAndEventConsumer.pollAndUpdateStates(true)
                     processEvents()
                 }
             } catch (ex: Exception) {
@@ -167,7 +181,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun processEvents() {
         var attempts = 0
         var pollAndProcessSuccessful = false
-        while (!pollAndProcessSuccessful) {
+        while (!pollAndProcessSuccessful && !stopped) {
             try {
                 for (batch in getEventsByBatch(eventConsumer.poll())) {
                     tryProcessBatchOfEvents(batch)
@@ -196,6 +210,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         log.trace { "Processing events(size: ${events.size})" }
         for (event in events) {
+            stateAndEventConsumer.resetPollInterval()
             processEvent(event, outputRecords, updatedStates)
         }
 
@@ -205,7 +220,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         producer.tryCommitTransaction()
         log.trace { "Processing of events(size: ${events.size}) complete" }
 
-        stateAndEventConsumer.onProcessorStateUpdated(updatedStates, clock)
+        stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
     }
 
     private fun processEvent(
@@ -215,13 +230,36 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     ) {
         log.trace { "Processing event: $event" }
         val key = event.record.key()
+        val state = stateAndEventConsumer.getInMemoryStateValue(key)
         val partitionId = event.record.partition()
-        val thisEventUpdates = processor.onNext(stateAndEventConsumer.getValue(key), event.asRecord())
-        outputRecords.addAll(thisEventUpdates.responseEvents)
-        val updatedState = thisEventUpdates.updatedState
-        outputRecords.add(Record(stateTopic.suffix, key, updatedState))
-        updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
-        log.trace { "Completed event: $event" }
+        val thisEventUpdates = getUpdatesForEvent(state, event)
+
+        if (thisEventUpdates == null) {
+            log.error("Sending event: $event, and state: $state to dead letter queue. Processor failed to complete.")
+            outputRecords.add(generateDeadLetterRecord(event.record, state))
+            outputRecords.add(Record(stateTopic.suffix, key, null))
+            updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
+        } else {
+            outputRecords.addAll(thisEventUpdates.responseEvents)
+            val updatedState = thisEventUpdates.updatedState
+            outputRecords.add(Record(stateTopic.suffix, key, updatedState))
+            updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
+            log.trace { "Completed event: $event" }
+        }
+    }
+
+    private fun getUpdatesForEvent(state: S?, event: ConsumerRecordAndMeta<K, E>): StateAndEventProcessor.Response<S>? {
+        val future = stateAndEventConsumer.waitForFunctionToFinish({ processor.onNext(state, event.asRecord()) }, processorTimeout,
+            "Failed to finish within the time limit for state: $state and event: $event")
+        return uncheckedCast(tryGetFutureResult(future))
+    }
+
+    private fun generateDeadLetterRecord(event: ConsumerRecord<K, E>, state: S?): Record<*, *> {
+        val stateBytes = if (state != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(stateTopic.topic, state)) else null
+        val eventBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(eventTopic.topic, event.value()))
+        return Record(eventTopic.topic + deadLetterQueueSuffix, event.key(),
+            StateAndEventDeadLetterRecord(clock.instant(), stateBytes, eventBytes)
+        )
     }
 
     /**

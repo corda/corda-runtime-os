@@ -9,7 +9,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.integration.IntegrationTestProperties
-import net.corda.messaging.kafka.integration.getRecords
+import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.processors.TestEventLogProcessor
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -52,7 +52,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
     fun `asynch publish records and then start durable subscription`() {
         publisherConfig = PublisherConfig(CLIENT_ID + TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        val futures = publisher.publish(getRecords(TOPIC1, 5, 2))
+        val futures = publisher.publish(getDemoRecords(TOPIC1, 5, 2))
         Assertions.assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
         publisher.close()
@@ -75,7 +75,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
     fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
         publisherConfig = PublisherConfig(CLIENT_ID + TOPIC2, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        val futures = publisher.publish(getRecords(TOPIC2, 5, 2))
+        val futures = publisher.publish(getDemoRecords(TOPIC2, 5, 2))
         Assertions.assertThat(futures.size).isEqualTo(1)
         futures[0].get()
 
@@ -99,7 +99,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
         eventLogSub1.stop()
         eventLogSub2.stop()
 
-        publisher.publish(getRecords(TOPIC2, 10, 2)).forEach { it.get() }
+        publisher.publish(getDemoRecords(TOPIC2, 10, 2)).forEach { it.get() }
 
         eventLogSub1.start()
         eventLogSub2.start()

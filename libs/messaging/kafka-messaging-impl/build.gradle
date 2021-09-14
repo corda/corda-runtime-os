@@ -40,10 +40,10 @@ dependencies {
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation project(":libs:lifecycle:lifecycle")
+    implementation "net.corda:avro-schema"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "net.corda:avro-schema"
 
     testRuntimeOnly 'org.osgi:osgi.core'
 

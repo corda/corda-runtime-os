@@ -6,6 +6,7 @@ import org.apache.kafka.clients.producer.ProducerConfig
 class KafkaProperties {
     companion object {
         const val TOPIC = "topic"
+        const val DEAD_LETTER_QUEUE_SUFFIX = "topic.deadLetterQueueSuffix"
         const val GROUP = "group"
         const val INSTANCE_ID = "instanceId"
         const val CLIENT_ID_COUNTER = "clientIdCounter"
@@ -30,6 +31,7 @@ class KafkaProperties {
         const val PRODUCER_CLOSE_TIMEOUT = "producer.$CLOSE_TIMEOUT"
         const val CONSUMER_CLOSE_TIMEOUT = "consumer.$CLOSE_TIMEOUT"
         const val CONSUMER_THREAD_STOP_TIMEOUT = "consumer.thread.stop.timeout"
+        const val CONSUMER_PROCESSOR_TIMEOUT = "consumer.processor.timeout"
         const val CONSUMER_POLL_AND_PROCESS_RETRIES = "consumer.processor.retries"
         const val POLL_TIMEOUT = "poll.timeout"
         const val CONSUMER_POLL_TIMEOUT = "consumer.poll.timeout"
@@ -39,6 +41,7 @@ class KafkaProperties {
         const val COMMIT_OFFSET_MAX_RETRIES = "commit.retries"
 
         const val GROUP_INSTANCE_ID = CommonClientConfigs.GROUP_INSTANCE_ID_CONFIG
+        const val LISTENER_TIMEOUT = "listener.timeout"
         const val PRODUCER_CLIENT_ID = "producer.${CommonClientConfigs.CLIENT_ID_CONFIG}"
         const val CONSUMER_GROUP_ID = "consumer.${CommonClientConfigs.GROUP_ID_CONFIG}"
         const val CONSUMER_MAX_POLL_INTERVAL = "consumer.${CommonClientConfigs.MAX_POLL_INTERVAL_MS_CONFIG}"
