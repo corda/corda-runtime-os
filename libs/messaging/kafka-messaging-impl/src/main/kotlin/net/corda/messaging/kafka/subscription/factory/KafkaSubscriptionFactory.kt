@@ -29,7 +29,7 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_DU
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_EVENTLOG
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBSUB
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RANDOMACCESS
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RPC
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RPC_RESPONDER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_STATEANDEVENT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
@@ -247,7 +247,7 @@ class KafkaSubscriptionFactory @Activate constructor(
             rpcConfiguration,
             nodeConfig,
             clientIdCounter.getAndIncrement(),
-            PATTERN_RPC
+            PATTERN_RPC_RESPONDER
         )
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCRequest>(avroSchemaRegistry)
 

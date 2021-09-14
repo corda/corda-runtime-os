@@ -13,6 +13,7 @@ import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBLISHER
+import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RPC_SENDER
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.publisher.CordaKafkaPublisherImpl
 import net.corda.messaging.kafka.publisher.CordaKafkaRPCSenderImpl
@@ -67,7 +68,7 @@ class CordaKafkaPublisherFactory @Activate constructor(
             publisherConfiguration,
             nodeConfig,
             clientIdCounter.getAndIncrement(),
-            PATTERN_PUBLISHER
+            PATTERN_RPC_SENDER
         )
 
         val publisher = createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)

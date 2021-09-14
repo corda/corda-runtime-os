@@ -144,10 +144,29 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
             val requestBytes = rpcRequest.payload
             val request = deserializer.deserialize(topic, requestBytes.array())
             val future = CompletableFuture<TRESP>()
-            future.thenAccept { response ->
-                var record: Record<String, RPCResponse>? = null
+
+            future.whenComplete { response, error ->
+                val record: Record<String, RPCResponse>?
                 when {
-                    future.isDone -> {
+                    //TODOs: convert error string to actual error object
+                    //the order of these is important due to how the futures api is
+                    future.isCancelled -> {
+                        record = buildRecord(
+                            rpcRequest.replyTopic,
+                            rpcRequest.correlationKey,
+                            ResponseStatus.CANCELLED,
+                            error.message.toString().encodeToByteArray()
+                        )
+                    }
+                    future.isCompletedExceptionally -> {
+                        record = buildRecord(
+                            rpcRequest.replyTopic,
+                            rpcRequest.correlationKey,
+                            ResponseStatus.FAILED,
+                            error.message.toString().encodeToByteArray()
+                        )
+                    }
+                    else -> {
                         val serializedResponse = serializer.serialize(rpcRequest.replyTopic, response)
                         record = buildRecord(
                             rpcRequest.replyTopic,
@@ -156,24 +175,15 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                             serializedResponse!!
                         )
                     }
-                    future.isCompletedExceptionally -> {
-                        record = buildRecord(
-                            rpcRequest.replyTopic,
-                            rpcRequest.correlationKey,
-                            ResponseStatus.FAILED,
-                            response.toString().encodeToByteArray()
-                        )
-                    }
-                    future.isCancelled -> {
-                        record = buildRecord(
-                            rpcRequest.replyTopic,
-                            rpcRequest.correlationKey,
-                            ResponseStatus.CANCELLED,
-                            response.toString().encodeToByteArray()
-                        )
-                    }
                 }
-                publisher.publishToPartition(listOf(Pair(rpcRequest.replyPartition, record!!)))
+
+                try {
+                    publisher.publishToPartition(listOf(Pair(rpcRequest.replyPartition, record)))
+                } catch (ex: Exception) {
+                    //intentionally swallowed
+                    log.warn("Error publishing response", ex)
+                }
+
             }
             responderProcessor.onNext(request!!, future)
         }

@@ -58,7 +58,8 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private val topicPrefix = config.getString(KafkaProperties.TOPIC_PREFIX)
     private val groupName = config.getString(KafkaProperties.CONSUMER_GROUP_ID)
     private val topic = config.getString(KafkaProperties.TOPIC_NAME)
-    private var partitionListener = RPCConsumerRebalanceListener("$topicPrefix$topic.resp", "RPC Response listener")
+    private val responseTopic = config.getString(KafkaProperties.RESPONSE_TOPIC)
+    private var partitionListener = RPCConsumerRebalanceListener("$topicPrefix$responseTopic", "RPC Response listener")
 
     private val errorMsg = "Failed to read records from group $groupName, topic $topic"
 
@@ -105,7 +106,8 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                     RPCResponse::class.java
                 ).use {
                     it.subscribe(
-                        listOf("$topicPrefix$topic.resp"),
+                        listOf("$topicPrefix$responseTopic"),
+
                         partitionListener
                     )
                     pollAndProcessRecords(it)
@@ -156,14 +158,14 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                 when (it.record.value().responseStatus!!) {
                     ResponseStatus.OK -> {
                         val responseBytes = it.record.value().payload
-                        val response = deserializer.deserialize("$topic.resp", responseBytes.array())
+                        val response = deserializer.deserialize("$responseTopic", responseBytes.array())
                         log.info("Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}")
 
                         future.complete(response)
                     }
                     ResponseStatus.FAILED -> {
                         val responseBytes = it.record.value().payload
-                        val response = errorDeserializer.deserialize("$topic.resp", responseBytes.array())
+                        val response = errorDeserializer.deserialize("$responseTopic", responseBytes.array())
                         future.completeExceptionally(CordaMessageAPIFatalException(response))
                     }
                     ResponseStatus.CANCELLED -> {
@@ -181,20 +183,23 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         val future = CompletableFuture<TRESP>()
 
         if (partitionListener.partitions.size == 0) {
-            future.cancel(true)
+            future.completeExceptionally(CordaMessageAPIFatalException("No partitions. Couldn't send"))
         } else {
             val request = RPCRequest(
                 uuid,
                 Instant.now().toEpochMilli(),
-                "$topic.resp",
+                "$topicPrefix$responseTopic",
                 partitionListener.partitions[0].partition(),
                 ByteBuffer.wrap(reqBytes)
             )
 
             val record = Record(topic, uuid, request)
-            publisher.publish(listOf(record))
-
             futureMap[uuid] = future
+            try {
+                publisher.publish(listOf(record))
+            } catch (ex: Exception) {
+                future.completeExceptionally(CordaMessageAPIFatalException("Failed to publish", ex))
+            }
         }
 
         return future

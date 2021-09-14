@@ -5,6 +5,7 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 
+//TODOs: Error any futures affected by repartitioning
 class RPCConsumerRebalanceListener(
     private val topic: String,
     private val groupName: String
