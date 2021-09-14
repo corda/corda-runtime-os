@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -220,20 +222,22 @@ class TopicTest {
     fun `assignPartition will assign the partitions`() {
         val topic = Topic("topic", config)
         mockConstruction(ConsumerGroup::class.java).use { group ->
+            val partitions = argumentCaptor<Collection<Partition>>()
             val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
             val consumer = mock<Consumer> {
                 on { groupName } doReturn "group"
             }
             topic.createConsumption(consumer, subscriptionConfig)
+            doNothing().whenever(group.constructed().first()).assignPartition(eq(consumer), partitions.capture())
 
             topic.assignPartition(consumer, listOf(1, 2, 3))
 
-            verify(group.constructed().first()).assignPartition(eq(consumer), any())
+            assertThat(partitions.firstValue.map { it.partitionId }).containsExactlyInAnyOrder(1, 2, 3)
         }
     }
 
     @Test
-    fun `assignPartition will throw an exceptionfor invalid consumer`() {
+    fun `assignPartition will throw an exception for consumer with an unknown group`() {
         val topic = Topic("topic", config)
         val consumer = mock<Consumer> {
             on { groupName } doReturn "group"
@@ -245,23 +249,25 @@ class TopicTest {
     }
 
     @Test
-    fun `unAssignPartition will assign the partitions`() {
+    fun `unAssignPartition will un assign the partitions`() {
         val topic = Topic("topic", config)
         mockConstruction(ConsumerGroup::class.java).use { group ->
+            val partitions = argumentCaptor<Collection<Partition>>()
             val subscriptionConfig = SubscriptionConfiguration(10, Duration.ofSeconds(1))
             val consumer = mock<Consumer> {
                 on { groupName } doReturn "group"
             }
             topic.createConsumption(consumer, subscriptionConfig)
+            doNothing().whenever(group.constructed().first()).unAssignPartition(eq(consumer), partitions.capture())
 
             topic.unAssignPartition(consumer, listOf(1, 2, 3))
 
-            verify(group.constructed().first()).unAssignPartition(eq(consumer), any())
+            assertThat(partitions.firstValue.map { it.partitionId }).containsExactlyInAnyOrder(1, 2, 3)
         }
     }
 
     @Test
-    fun `unAssignPartition will throw an exceptionfor invalid consumer`() {
+    fun `unAssignPartition will throw an exception for consumer with an unknown group`() {
         val topic = Topic("topic", config)
         val consumer = mock<Consumer> {
             on { groupName } doReturn "group"

@@ -73,7 +73,7 @@ internal class ConsumerGroup(
 
     fun unAssignPartition(consumer: Consumer, partitions: Collection<Partition>) {
         if (partitionStrategy != PartitionStrategy.MANUAL) {
-            throw IllegalStateException("Can not manually unassign partitions to this type of consumer")
+            throw IllegalStateException("Can not manually un assign partitions to this type of consumer")
         }
         lock.write {
             val loop = consumers[consumer] ?: throw IllegalStateException("No such consumer")
