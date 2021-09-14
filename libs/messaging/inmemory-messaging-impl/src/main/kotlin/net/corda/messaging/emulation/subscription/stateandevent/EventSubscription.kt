@@ -27,6 +27,7 @@ internal class EventSubscription<K : Any, S : Any, E : Any>(
     }
 
     internal fun processEvents(records: Collection<RecordMetadata>) {
+        subscription.stateSubscription.waitForReady()
         records.forEach { eventMetaData ->
             val event = eventMetaData.castToType(
                 subscription.processor.keyClass,

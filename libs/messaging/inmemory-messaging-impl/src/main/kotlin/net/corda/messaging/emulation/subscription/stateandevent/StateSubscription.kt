@@ -5,12 +5,19 @@ import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 internal class StateSubscription<K : Any, S : Any>(
     internal val subscription: InMemoryStateAndEventSubscription<K, S, *>,
+    private val waitForReadyLock: Lock = ReentrantLock()
 ) : Lifecycle, PartitionAssignmentListener {
 
     private data class State<S : Any>(val state: S?)
+
+    private val readyNotifier = waitForReadyLock.newCondition()
 
     internal val consumer = StatesConsumer(this)
     private var stateConsumption: Consumption? = null
@@ -84,6 +91,9 @@ internal class StateSubscription<K : Any, S : Any>(
                 createReportMap()
             )
             ready = true
+            waitForReadyLock.withLock {
+                readyNotifier.signalAll()
+            }
         }
         fun createReportMap(): Map<K, S> {
             return knownValues
@@ -144,5 +154,16 @@ internal class StateSubscription<K : Any, S : Any>(
 
     fun setValue(key: K, updatedState: S?, partition: Int) {
         knowPartitions[partition]?.knownValues?.put(key, State(updatedState))
+    }
+
+    fun waitForReady() {
+        while (isRunning) {
+            if (knowPartitions.values.all { it.ready }) {
+                return
+            }
+            waitForReadyLock.withLock {
+                readyNotifier.await(10, TimeUnit.SECONDS)
+            }
+        }
     }
 }

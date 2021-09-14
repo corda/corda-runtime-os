@@ -21,7 +21,7 @@ interface TopicService {
     fun addRecordsToPartition(records: List<Record<*, *>>, partition: Int)
 
     /**
-     * Subscribe to with the given [consumer].
+     * Create a consumption for a given [consumer].
      * If the topic does not exist it is created.
      * To unsubscribe, close the returned lifecycle
      */

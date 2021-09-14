@@ -10,12 +10,16 @@ import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
+import java.util.concurrent.locks.Condition
+import java.util.concurrent.locks.Lock
 
 class StateSubscriptionTest {
     private val runningConsumption = mock<Consumption> {
@@ -245,5 +249,41 @@ class StateSubscriptionTest {
         stateSubscription.setValue("key6", "value6", 6)
 
         assertThat(stateSubscription.getValue("key2")).isNull()
+    }
+
+    @Test
+    fun `waitForReady will return if subscription is not running`() {
+        stateSubscription.waitForReady()
+    }
+
+    @Test
+    fun `waitForReady will return if all partitions are ready`() {
+        stateSubscription.start()
+        stateSubscription.onPartitionsAssigned(listOf("topic" to 4, "topic" to 5))
+
+        stateSubscription.waitForReady()
+    }
+
+    @Test
+    fun `waitForReady will return only when all partitions are ready`() {
+        val condition = mock<Condition>()
+        val lock = mock<Lock> {
+            on { newCondition() } doReturn condition
+        }
+        val stateSubscription = StateSubscription(subscription, lock)
+        doAnswer {
+            stateSubscription.gotStates(
+                listOf(
+                    RecordMetadata(4L, Record("topic", "key1", null), 3),
+                )
+            )
+            false
+        }.whenever(condition).await(any(), any())
+        stateSubscription.start()
+        stateSubscription.onPartitionsAssigned(listOf("topic" to 3, "topic" to 5))
+
+        stateSubscription.waitForReady()
+
+        verify(condition, times(1)).await(any(), any())
     }
 }

@@ -60,7 +60,7 @@ internal class Topic(
         val partitions = partitionsIds.map {
             getPartition(it)
         }
-        val group = consumerGroups[consumer.groupName] ?: throw IllegalStateException("Group ${consumer.groupName} had not subscribe")
+        val group = consumerGroups[consumer.groupName] ?: throw IllegalStateException("Group ${consumer.groupName} had not subscribed")
         group.assignPartition(consumer, partitions)
     }
 
@@ -68,7 +68,7 @@ internal class Topic(
         val partitions = partitionsIds.map {
             getPartition(it)
         }
-        val group = consumerGroups[consumer.groupName] ?: throw IllegalStateException("Group ${consumer.groupName} had not subscribe")
+        val group = consumerGroups[consumer.groupName] ?: throw IllegalStateException("Group ${consumer.groupName} had not subscribed")
         group.unAssignPartition(consumer, partitions)
     }
 

@@ -30,6 +30,7 @@ class EventSubscriptionTest {
         on { topicService } doReturn topicService
         on { subscriptionConfig } doReturn SubscriptionConfig("group", "topic")
         on { stateSubscriptionConfig } doReturn SubscriptionConfig("group1", "topic1")
+        on { stateSubscription } doReturn mock()
         on { processor } doReturn object : StateAndEventProcessor<String, String, String> {
             override fun onNext(state: String?, event: Record<String, String>): StateAndEventProcessor.Response<String> {
                 received.add(state to event)
@@ -145,5 +146,16 @@ class EventSubscriptionTest {
                 Record("topic2", "key", "event"),
             )
         )
+    }
+
+    @Test
+    fun `processEvents will wait for events before process them`() {
+        val records = listOf(
+            RecordMetadata(2L, Record("topic", "key2", "event2"), 1),
+        )
+
+        eventsSubscription.processEvents(records)
+
+        verify(subscription.stateSubscription).waitForReady()
     }
 }
