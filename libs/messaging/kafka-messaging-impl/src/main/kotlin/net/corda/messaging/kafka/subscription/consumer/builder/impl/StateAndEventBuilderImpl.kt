@@ -11,7 +11,6 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_CON
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
-import net.corda.messaging.kafka.subscription.Topic
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.StateAndEventRebalanceListener
@@ -20,6 +19,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventCons
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.StateAndEventConsumerImpl
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
+import net.corda.messaging.kafka.types.Topic
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener

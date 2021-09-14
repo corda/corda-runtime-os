@@ -22,6 +22,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAnd
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
+import net.corda.messaging.kafka.types.Topic
 import net.corda.messaging.kafka.utils.getEventsByBatch
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.debug
@@ -33,11 +34,6 @@ import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
-
-class Topic(val prefix: String, val suffix: String) {
-    val topic
-        get() = prefix + suffix
-}
 
 class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val config: Config,
