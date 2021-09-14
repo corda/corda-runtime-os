@@ -66,8 +66,8 @@ class ReplayScheduler<M>(
     }
 
     fun removeFromReplay(uniqueId: String) {
-        replayFutures[uniqueId]?.cancel(false)
-        replayFutures.remove(uniqueId)
+        val removedFuture = replayFutures.remove(uniqueId)
+        removedFuture?.cancel(false)
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -84,13 +84,8 @@ class ReplayScheduler<M>(
     }
 
     private fun reschedule(message: M, uniqueId: String) {
-        replayFutures.computeIfPresent(uniqueId) {
-                _, future ->
-            return@computeIfPresent if (!future.isCancelled) {
-                executorService.schedule({ replay(message, uniqueId) }, replayPeriod.toMillis(), TimeUnit.MILLISECONDS)
-            } else {
-               future
-            }
+        replayFutures.computeIfPresent(uniqueId) { _, _ ->
+            return@computeIfPresent executorService.schedule({ replay(message, uniqueId) }, replayPeriod.toMillis(), TimeUnit.MILLISECONDS)
         }
     }
 }
