@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
-
+@Suppress("LongParameterList")
 @Component
 class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private val config: Config,
@@ -180,7 +180,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         val reqBytes = serializer.serialize(topic, req)
         val future = CompletableFuture<TRESP>()
 
-        if(partitionListener.partitions.size == 0) {
+        if (partitionListener.partitions.size == 0) {
             future.cancel(true)
         } else {
             val request = RPCRequest(

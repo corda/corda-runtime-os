@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
-
+@Suppress("LongParameterList")
 class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
     private val rpcConfig: RPCConfig<TREQ, TRESP>,
     private val config: Config,
