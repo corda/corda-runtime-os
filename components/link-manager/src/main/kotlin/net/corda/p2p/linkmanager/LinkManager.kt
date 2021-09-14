@@ -345,7 +345,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     class PendingSessionMessageQueuesImpl(publisherFactory: PublisherFactory): PendingSessionMessageQueues {
         private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
-        private val config = PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, null)
+        private val config = PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, 1)
         private val publisher = publisherFactory.createPublisher(config)
 
         /**

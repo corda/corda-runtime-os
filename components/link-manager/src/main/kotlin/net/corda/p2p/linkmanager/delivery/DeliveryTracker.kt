@@ -40,7 +40,7 @@ class DeliveryTracker(
     private val messageTracker = MessageTracker(replayScheduler)
 
     private val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
-        SubscriptionConfig("message-tracker-group", Schema.P2P_OUT_MARKERS),
+        SubscriptionConfig("message-tracker-group", Schema.P2P_OUT_MARKERS, 1),
         processor = messageTracker.processor,
         stateAndEventListener = messageTracker.listener
     )
@@ -79,7 +79,7 @@ class DeliveryTracker(
             const val MESSAGE_REPLAYER_CLIENT_ID = "message-replayer-client"
         }
 
-        private val config = PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, null)
+        private val config = PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, 1)
         private val publisher = publisherFactory.createPublisher(config)
 
         @Volatile

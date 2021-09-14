@@ -9,10 +9,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
-import kotlin.concurrent.withLock
 import kotlin.concurrent.write
 
 /**
@@ -27,7 +25,6 @@ class ReplayScheduler<M>(
     @Volatile
     private var running = false
     private val startStopLock = ReentrantReadWriteLock()
-    private val replayLock = ReentrantLock()
 
     private lateinit var executorService: ScheduledExecutorService
     private val replayFutures = ConcurrentHashMap<String, ScheduledFuture<*>>()
@@ -69,9 +66,8 @@ class ReplayScheduler<M>(
     }
 
     fun removeFromReplay(uniqueId: String) {
-        replayLock.withLock {
-            replayFutures[uniqueId]?.cancel(false)
-        }
+        replayFutures[uniqueId]?.cancel(false)
+        replayFutures.remove(uniqueId)
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -88,10 +84,12 @@ class ReplayScheduler<M>(
     }
 
     private fun reschedule(message: M, uniqueId: String) {
-        replayLock.withLock {
-            if (replayFutures[uniqueId]?.isCancelled == false) {
-                val future = executorService.schedule({ replay(message, uniqueId) }, replayPeriod.toMillis(), TimeUnit.MILLISECONDS)
-                replayFutures[uniqueId] = future
+        replayFutures.computeIfPresent(uniqueId) {
+                _, future ->
+            return@computeIfPresent if (!future.isCancelled) {
+                executorService.schedule({ replay(message, uniqueId) }, replayPeriod.toMillis(), TimeUnit.MILLISECONDS)
+            } else {
+               future
             }
         }
     }

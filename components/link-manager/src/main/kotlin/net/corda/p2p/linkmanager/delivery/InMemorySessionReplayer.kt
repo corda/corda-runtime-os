@@ -30,7 +30,7 @@ class InMemorySessionReplayer(
     @Volatile
     private var running = false
     private val startStopLock = ReentrantReadWriteLock()
-    private val config = PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, null)
+    private val config = PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, 1)
     private val publisher = publisherFactory.createPublisher(config)
     private val replayScheduler = ReplayScheduler(sessionMessageReplayPeriod, ::replayMessage)
 
