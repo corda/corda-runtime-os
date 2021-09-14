@@ -11,6 +11,7 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.RPCSubscription
@@ -31,6 +32,8 @@ import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RA
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RPC
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_STATEANDEVENT
 import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
+import net.corda.messaging.kafka.publisher.CordaAvroSerializer
+import net.corda.messaging.kafka.publisher.factory.CordaKafkaPublisherFactory
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.KafkaCompactedSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
@@ -248,13 +251,18 @@ class KafkaSubscriptionFactory @Activate constructor(
         )
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCRequest>(avroSchemaRegistry)
 
+        val cordaAvroSerializer = CordaAvroSerializer<TRESP>(avroSchemaRegistry)
         val cordaAvroDeserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.requestType)
+        val publisherFactory = CordaKafkaPublisherFactory(avroSchemaRegistry)
+        val publisher = publisherFactory.createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)
 
         return KafkaRPCSubscriptionImpl(
             rpcConfig,
             config,
+            publisher,
             consumerBuilder,
             responderProcessor,
+            cordaAvroSerializer,
             cordaAvroDeserializer
         )
     }

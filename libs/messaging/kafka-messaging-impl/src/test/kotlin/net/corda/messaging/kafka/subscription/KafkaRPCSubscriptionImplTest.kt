@@ -1,12 +1,13 @@
 package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
-import net.corda.data.crypto.SecureHash
 import net.corda.data.messaging.RPCRequest
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.KafkaRPCSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
@@ -96,8 +97,10 @@ class KafkaRPCSubscriptionImplTest {
         val subscription = KafkaRPCSubscriptionImpl(
             rpcConfig,
             config,
+            mock(),
             consumerBuilder,
             processor,
+            CordaAvroSerializer(schemaRegistry),
             deserializer
         )
         subscription.start()
@@ -105,7 +108,7 @@ class KafkaRPCSubscriptionImplTest {
             Thread.sleep(10)
         }
 
-        verify(kafkaConsumer, times(1)).assign(listOf(TopicPartition(KafkaProperties.TOPIC, 0)))
+        verify(kafkaConsumer, times(1)).subscribe(listOf("topic"))
         Assertions.assertThat(processor.incomingRecords.size).isEqualTo(1)
     }
 

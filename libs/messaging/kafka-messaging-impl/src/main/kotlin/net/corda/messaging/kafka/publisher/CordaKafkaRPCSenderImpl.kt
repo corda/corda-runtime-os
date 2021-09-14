@@ -13,17 +13,16 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.kafka.properties.KafkaProperties
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
+import net.corda.messaging.kafka.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import org.apache.kafka.common.TopicPartition
 import org.jboss.util.collection.WeakValueHashMap
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import java.nio.ByteBuffer
-import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -38,7 +37,8 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private val publisher: Publisher,
     private val consumerBuilder: CordaKafkaConsumerBuilderImpl<String, RPCResponse>,
     private val serializer: CordaAvroSerializer<TREQ>,
-    private val deserializer: CordaAvroDeserializer<TRESP>
+    private val deserializer: CordaAvroDeserializer<TRESP>,
+    private val errorDeserializer: CordaAvroDeserializer<String>
 ) : RPCSender<TREQ, TRESP>, RPCSubscription<TREQ, TRESP> {
 
     private companion object {
@@ -49,7 +49,6 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private var partitions: List<TopicPartition> = listOf()
     private val futureMap: WeakValueHashMap<String, CompletableFuture<TRESP>> = WeakValueHashMap()
 
     override val isRunning: Boolean
@@ -59,6 +58,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private val topicPrefix = config.getString(KafkaProperties.TOPIC_PREFIX)
     private val groupName = config.getString(KafkaProperties.CONSUMER_GROUP_ID)
     private val topic = config.getString(KafkaProperties.TOPIC_NAME)
+    private var partitionListener = RPCConsumerRebalanceListener("$topicPrefix$topic.resp", "RPC Response listener")
 
     private val errorMsg = "Failed to read records from group $groupName, topic $topic"
 
@@ -104,11 +104,10 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                     String::class.java,
                     RPCResponse::class.java
                 ).use {
-                    partitions = it.getPartitions(
-                        "$topicPrefix$topic.resp",
-                        Duration.ofSeconds(consumerThreadStopTimeout)
+                    it.subscribe(
+                        listOf("$topicPrefix$topic.resp"),
+                        partitionListener
                     )
-                    it.assign(partitions)
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
@@ -148,27 +147,30 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCResponse>>) {
-        consumerRecords.forEach { it ->
+        consumerRecords.forEach {
             val correlationKey = it.record.key()
             val future = futureMap[correlationKey]
 
-            when (it.record.value().responseStatus!!) {
-                ResponseStatus.OK -> {
-                    val responseBytes = it.record.value().payload
-                    val response = deserializer.deserialize("$topic.resp", responseBytes.array())
-                    log.info("Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}")
+            if (future != null) {
+                when (it.record.value().responseStatus!!) {
+                    ResponseStatus.OK -> {
+                        val responseBytes = it.record.value().payload
+                        val response = deserializer.deserialize("$topic.resp", responseBytes.array())
+                        log.info("Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}")
 
-                    future?.complete(response)
-                }
-                ResponseStatus.FAILED -> {
-                    TODO("throw rpc specific error")
-                }
-                ResponseStatus.CANCELLED -> {
-                    future?.cancel(true)
-                }
+                        future.complete(response)
+                    }
+                    ResponseStatus.FAILED -> {
+                        val responseBytes = it.record.value().payload
+                        val response = errorDeserializer.deserialize("$topic.resp", responseBytes.array())
+                        future.completeExceptionally(CordaMessageAPIFatalException(response))
+                    }
+                    ResponseStatus.CANCELLED -> {
+                        future.cancel(true)
+                    }
 
+                }
             }
         }
     }
@@ -176,19 +178,24 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     override fun sendRequest(req: TREQ): CompletableFuture<TRESP> {
         val uuid = UUID.randomUUID().toString()
         val reqBytes = serializer.serialize(topic, req)
-
-        val request = RPCRequest(
-            uuid,
-            Instant.now().toEpochMilli(),
-            "$topic.resp",
-            partitions[0].partition(),
-            ByteBuffer.wrap(reqBytes)
-        )
-
-        val record = Record(topic, uuid, request)
-        publisher.publish(listOf(record))
         val future = CompletableFuture<TRESP>()
-        futureMap[uuid] = future
+
+        if(partitionListener.partitions.size == 0) {
+            future.cancel(true)
+        } else {
+            val request = RPCRequest(
+                uuid,
+                Instant.now().toEpochMilli(),
+                "$topic.resp",
+                partitionListener.partitions[0].partition(),
+                ByteBuffer.wrap(reqBytes)
+            )
+
+            val record = Record(topic, uuid, request)
+            publisher.publish(listOf(record))
+
+            futureMap[uuid] = future
+        }
 
         return future
     }

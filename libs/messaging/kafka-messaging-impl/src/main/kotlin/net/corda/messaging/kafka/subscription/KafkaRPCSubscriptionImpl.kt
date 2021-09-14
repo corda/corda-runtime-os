@@ -2,20 +2,25 @@ package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
 import net.corda.data.messaging.RPCRequest
+import net.corda.data.messaging.RPCResponse
+import net.corda.data.messaging.ResponseStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.debug
-import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
-import java.time.Duration
+import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
@@ -25,8 +30,10 @@ import kotlin.concurrent.withLock
 class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
     private val rpcConfig: RPCConfig<TREQ, TRESP>,
     private val config: Config,
+    private val publisher: Publisher,
     private val consumerBuilder: ConsumerBuilder<String, RPCRequest>,
     private val responderProcessor: RPCResponderProcessor<TREQ, TRESP>,
+    private val serializer: CordaAvroSerializer<TRESP>,
     private val deserializer: CordaAvroDeserializer<TREQ>
 ) : RPCSubscription<TREQ, TRESP> {
 
@@ -45,8 +52,6 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-
-    var partitions: List<TopicPartition> = listOf()
 
     override val isRunning: Boolean
         get() = !stopped
@@ -92,11 +97,9 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                     String::class.java,
                     RPCRequest::class.java
                 ).use {
-                    partitions = it.getPartitions(
-                        topicPrefix + topic,
-                        Duration.ofSeconds(consumerThreadStopTimeout)
+                    it.subscribe(
+                        listOf("$topicPrefix$topic")
                     )
-                    it.assign(partitions)
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
@@ -139,9 +142,60 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
     @Suppress("UNCHECKED_CAST")
     private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCRequest>>) {
         consumerRecords.forEach {
-            val requestBytes = it.record.value().payload
+            val rpcRequest = it.record.value()
+            val requestBytes = rpcRequest.payload
             val request = deserializer.deserialize(rpcConfig.requestTopic, requestBytes.array())
-            responderProcessor.onNext(request!!, CompletableFuture<TRESP>())
+            val future = CompletableFuture<TRESP>()
+            future.thenAccept { response ->
+                var record: Record<String, RPCResponse>? = null
+                when {
+                    future.isDone -> {
+                        val serializedResponse = serializer.serialize(rpcRequest.replyTopic, response)
+                        record = buildRecord(
+                            rpcRequest.replyTopic,
+                            rpcRequest.correlationKey,
+                            ResponseStatus.OK,
+                            serializedResponse!!
+                        )
+                    }
+                    future.isCompletedExceptionally -> {
+                        record = buildRecord(
+                            rpcRequest.replyTopic,
+                            rpcRequest.correlationKey,
+                            ResponseStatus.FAILED,
+                            response.toString().encodeToByteArray()
+                        )
+                    }
+                    future.isCancelled -> {
+                        record = buildRecord(
+                            rpcRequest.replyTopic,
+                            rpcRequest.correlationKey,
+                            ResponseStatus.CANCELLED,
+                            response.toString().encodeToByteArray()
+                        )
+                    }
+                }
+                publisher.publishToPartition(listOf(Pair(rpcRequest.replyPartition, record!!)))
+            }
+            responderProcessor.onNext(request!!, future)
         }
+    }
+
+    private fun buildRecord(
+        topic: String,
+        key: String,
+        status: ResponseStatus,
+        payload: ByteArray
+    ): Record<String, RPCResponse> {
+        return Record(
+            topic,
+            key,
+            RPCResponse(
+                key,
+                Instant.now().toEpochMilli(),
+                status,
+                ByteBuffer.wrap(payload)
+            )
+        )
     }
 }
