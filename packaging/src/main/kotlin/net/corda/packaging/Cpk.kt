@@ -7,6 +7,7 @@ import net.corda.packaging.internal.hash
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.file.Path
+import java.security.MessageDigest
 import java.security.cert.Certificate
 import java.util.Arrays
 import java.util.NavigableMap
@@ -35,8 +36,17 @@ sealed class Cpk(
         Identifier(cordappManifest.bundleSymbolicName, cordappManifest.bundleVersion, signers)
     }
 
+    val shortId = let {
+        val signerBytes = id.signers.joinToString("").toByteArray()
+        val digest = MessageDigest.getInstance(hashAlgorithm)
+        val signerSummaryHash = SecureHash(digest.algorithm, digest.digest(signerBytes))
+
+        ShortIdentifier(id.symbolicName, id.version, signerSummaryHash)
+    }
+
     companion object {
         const val fileExtension = ".cpk"
+        private const val hashAlgorithm = "SHA-256"
 
         @JvmStatic
         fun resolveDependencies(cpks : Iterable<Cpk>,
@@ -161,6 +171,13 @@ sealed class Cpk(
 
         override fun compareTo(other: Identifier): Int = identifierComparator.compare(this, other)
     }
+
+    /**
+     * A shorter version of [Identifier], used when the individual signer hashes are not relevant.
+     *
+     * [signerSummaryHash] is a summary hash of the hashes of the public keys that signed the CPK.
+     */
+    data class ShortIdentifier(val symbolicName: String, val version: String, val signerSummaryHash: SecureHash)
 
     enum class Type constructor(private val text : String?) : Comparable<Type> {
         CORDA_API("corda-api"), UNKNOWN(null);
