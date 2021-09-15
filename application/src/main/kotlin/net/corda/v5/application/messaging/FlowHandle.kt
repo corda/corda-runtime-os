@@ -26,11 +26,3 @@ interface FlowHandle<A> : AutoCloseable {
      */
     override fun close()
 }
-
-interface FlowHandleWithClientId<A> : FlowHandle<A> {
-
-    /**
-     * The [clientId] with which the client has started the flow.
-     */
-    val clientId: String
-}
