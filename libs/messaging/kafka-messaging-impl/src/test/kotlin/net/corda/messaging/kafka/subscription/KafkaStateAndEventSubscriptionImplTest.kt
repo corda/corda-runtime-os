@@ -14,6 +14,8 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
+import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.stubs.StubStateAndEventProcessor
+import net.corda.messaging.kafka.utils.getStateAndEventConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -39,6 +41,7 @@ class KafkaStateAndEventSubscriptionImplTest {
 
     private val config: Config = createStandardTestConfig().getConfig(PATTERN_STATEANDEVENT)
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
+    private val stateAndEventConfig = getStateAndEventConfig(config)
 
     data class Mocks(
         val builder: StateAndEventBuilder<String, String, String>,
@@ -106,7 +109,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
 
         val subscription = KafkaStateAndEventSubscriptionImpl(
-            config,
+            stateAndEventConfig,
             builder,
             mock(),
             avroSchemaRegistry
@@ -132,7 +135,7 @@ class KafkaStateAndEventSubscriptionImplTest {
     fun `state and event subscription no retries`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(5)
         val subscription = KafkaStateAndEventSubscriptionImpl(
-            config,
+            stateAndEventConfig,
             builder,
             mock(),
             avroSchemaRegistry
@@ -178,7 +181,7 @@ class KafkaStateAndEventSubscriptionImplTest {
             }
         }.whenever(eventConsumer).poll()
         val subscription = KafkaStateAndEventSubscriptionImpl(
-            config,
+            stateAndEventConfig,
             builder,
             mock(),
             avroSchemaRegistry
@@ -222,7 +225,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         }.whenever(eventConsumer).poll()
 
         val subscription = KafkaStateAndEventSubscriptionImpl(
-            config,
+            stateAndEventConfig,
             builder,
             mock(),
             avroSchemaRegistry

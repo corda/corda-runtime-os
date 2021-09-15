@@ -34,6 +34,7 @@ import net.corda.messaging.kafka.subscription.KafkaStateAndEventSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.StateAndEventBuilderImpl
 import net.corda.messaging.kafka.utils.ConfigUtils.Companion.resolveSubscriptionConfiguration
+import net.corda.messaging.kafka.utils.getStateAndEventConfig
 import net.corda.messaging.kafka.utils.toConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
@@ -148,6 +149,9 @@ class KafkaSubscriptionFactory @Activate constructor(
             clientIdCounter.getAndIncrement(),
             PATTERN_STATEANDEVENT
         )
+
+        val stateAndEventConfig = getStateAndEventConfig(config)
+
         val producerBuilder = KafkaProducerBuilderImpl(avroSchemaRegistry)
         val eventConsumerBuilder = CordaKafkaConsumerBuilderImpl<K, E>(avroSchemaRegistry)
         val stateConsumerBuilder = CordaKafkaConsumerBuilderImpl<K, S>(avroSchemaRegistry)
@@ -165,7 +169,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         )
 
         return KafkaStateAndEventSubscriptionImpl(
-            config,
+            stateAndEventConfig,
             stateAndEventBuilder,
             processor,
             avroSchemaRegistry,

@@ -1,16 +1,8 @@
 package net.corda.messaging.kafka.subscription.consumer.builder.impl
 
-import com.typesafe.config.Config
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
-import net.corda.messaging.kafka.properties.ConfigProperties
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_CONSUMER
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.StateAndEventRebalanceListener
@@ -19,6 +11,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventCons
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.StateAndEventConsumerImpl
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
+import net.corda.messaging.kafka.types.StateAndEventConfig
 import net.corda.messaging.kafka.types.Topic
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
@@ -35,18 +28,18 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
 
     private val log = LoggerFactory.getLogger(this::class.java)
 
-    override fun createProducer(config: Config): CordaKafkaProducer =
-        producerBuilder.createProducer(config.getConfig(ConfigProperties.KAFKA_PRODUCER))
+    override fun createProducer(config: StateAndEventConfig): CordaKafkaProducer =
+        producerBuilder.createProducer(config.producerConfig)
 
     override fun createStateEventConsumerAndRebalanceListener(
-        config: Config,
+        config: StateAndEventConfig,
         kClazz: Class<K>,
         sClazz: Class<S>,
         eClazz: Class<E>,
         stateAndEventListener: StateAndEventListener<K, S>?
     ): Pair<StateAndEventConsumer<K, S, E>, ConsumerRebalanceListener> {
-        val stateConsumer = stateConsumerBuilder.createCompactedConsumer(config.getConfig(STATE_CONSUMER), kClazz, sClazz)
-        val eventConsumer = eventConsumerBuilder.createDurableConsumer(config.getConfig(EVENT_CONSUMER), kClazz, eClazz)
+        val stateConsumer = stateConsumerBuilder.createCompactedConsumer(config.stateConsumerConfig, kClazz, sClazz)
+        val eventConsumer = eventConsumerBuilder.createDurableConsumer(config.eventConsumerConfig, kClazz, eClazz)
         validateConsumers(config, stateConsumer, eventConsumer)
 
         val partitionState = StateAndEventPartitionState(mutableMapOf<Int, MutableMap<K, Pair<Long, S>>>(), mutableMapOf())
@@ -64,14 +57,14 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun validateConsumers(
-        config: Config,
+        config: StateAndEventConfig,
         stateConsumer: CordaKafkaConsumer<K, S>,
         eventConsumer: CordaKafkaConsumer<K, E>
     ) {
-        val topicPrefix = config.getString(TOPIC_PREFIX)
-        val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
-        val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
-        val consumerThreadStopTimeout = config.getLong(EVENT_CONSUMER_THREAD_STOP_TIMEOUT)
+        val topicPrefix = config.topicPrefix
+        val eventTopic = Topic(topicPrefix, config.eventTopic)
+        val stateTopic = Topic(topicPrefix, config.stateTopic)
+        val consumerThreadStopTimeout = config.consumerThreadStopTimeout
         val statePartitions = stateConsumer.getPartitions(stateTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
         val eventPartitions = eventConsumer.getPartitions(eventTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
         if (statePartitions.size != eventPartitions.size) {

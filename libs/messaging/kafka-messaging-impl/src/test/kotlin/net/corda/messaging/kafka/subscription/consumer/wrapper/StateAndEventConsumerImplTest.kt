@@ -1,9 +1,10 @@
 package net.corda.messaging.kafka.subscription.consumer.wrapper
 
-import com.typesafe.config.Config
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.StateAndEventConsumerImpl
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
+import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.getTestStateAndEventConfig
+import net.corda.messaging.kafka.types.StateAndEventConfig
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
@@ -129,7 +130,6 @@ class StateAndEventConsumerImplTest {
             ConsumerRecord(TOPIC, 0, 0, "key", "state5")
         )
 
-        doAnswer { "string" }.whenever(config).getString(any())
         doAnswer { topicPartitions }.whenever(stateConsumer).assignment()
         doAnswer { listOf(state) }.whenever(stateConsumer).poll()
         doAnswer { Long.MAX_VALUE }.whenever(stateConsumer).position(any())
@@ -141,7 +141,7 @@ class StateAndEventConsumerImplTest {
         val stateAndEventListener: StateAndEventListener<String, String>,
         val eventConsumer: CordaKafkaConsumer<String, String>,
         val stateConsumer: CordaKafkaConsumer<String, String>,
-        val config: Config,
+        val config: StateAndEventConfig,
         val partitions: Set<TopicPartition>
     )
 }

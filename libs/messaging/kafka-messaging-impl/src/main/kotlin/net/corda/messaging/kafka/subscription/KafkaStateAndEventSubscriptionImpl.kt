@@ -26,6 +26,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAnd
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
+import net.corda.messaging.kafka.types.StateAndEventConfig
 import net.corda.messaging.kafka.types.Topic
 import net.corda.messaging.kafka.utils.getEventsByBatch
 import net.corda.messaging.kafka.utils.render
@@ -39,13 +40,12 @@ import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
-import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
-    private val config: Config,
+    private val config: StateAndEventConfig,
     private val builder: StateAndEventBuilder<K, S, E>,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val avroSchemaRegistry: AvroSchemaRegistry,
@@ -53,9 +53,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventSubscription<K, S, E> {
 
-    private val log = LoggerFactory.getLogger(
-        "${config.getString(EVENT_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
-    )
+    private val log = LoggerFactory.getLogger(config.loggerName)
 
     private lateinit var producer: CordaKafkaProducer
     private lateinit var stateAndEventConsumer: StateAndEventConsumer<K, S, E>
@@ -68,14 +66,14 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private val cordaAvroSerializer = CordaAvroSerializer<Any>(avroSchemaRegistry)
 
-    private val topicPrefix = config.getString(TOPIC_PREFIX)
-    private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
-    private val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
-    private val groupName = config.getString(EVENT_GROUP_ID)
-    private val producerClientId: String = config.getString(PRODUCER_CLIENT_ID)
-    private val consumerThreadStopTimeout = config.getLong(EVENT_CONSUMER_THREAD_STOP_TIMEOUT)
-    private val producerCloseTimeout = Duration.ofMillis(config.getLong(PRODUCER_CLOSE_TIMEOUT))
-    private val consumerPollAndProcessMaxRetries = config.getLong(EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES)
+    private val topicPrefix = config.topicPrefix
+    private val eventTopic = Topic(topicPrefix, config.eventTopic)
+    private val stateTopic = Topic(topicPrefix, config.stateTopic)
+    private val groupName = config.eventGroupName
+    private val producerClientId: String = config.producerClientId
+    private val consumerThreadStopTimeout = config.consumerThreadStopTimeout
+    private val producerCloseTimeout = config.producerCloseTimeout
+    private val consumerPollAndProcessMaxRetries = config.consumerPollAndProcessMaxRetries
     private val processorTimeout = config.getLong(CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"))
     private val deadLetterQueueSuffix = config.getString(DEAD_LETTER_QUEUE_SUFFIX)
 
@@ -88,7 +86,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
 
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config.render()}" }
+        log.debug { "Starting subscription with config:\n${config}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false

@@ -7,12 +7,17 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.ConfigProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.GROUP
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.INSTANCE_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_PRODUCER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
+import net.corda.messaging.kafka.types.StateAndEventConfig
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import java.net.URL
+import java.time.Duration
 import java.util.*
 
 
@@ -133,4 +138,37 @@ fun PublisherConfig.toConfig(): Config {
         config = config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId))
     }
     return config
+}
+
+
+fun getStateAndEventConfig(config: Config): StateAndEventConfig {
+    val topicPrefix = config.getString(ConfigProperties.TOPIC_PREFIX)
+    val eventTopic = "$topicPrefix${config.getString(ConfigProperties.TOPIC_NAME)}"
+    val stateTopic = "$topicPrefix${config.getString(ConfigProperties.STATE_TOPIC_NAME)}"
+    val eventGroupID = config.getString(ConfigProperties.EVENT_GROUP_ID)
+    val loggerName = "$eventGroupID.${config.getString(ConfigProperties.PRODUCER_TRANSACTIONAL_ID)}"
+    val producerClientId: String = config.getString(ConfigProperties.PRODUCER_CLIENT_ID)
+    val consumerThreadStopTimeout = config.getLong(ConfigProperties.EVENT_CONSUMER_THREAD_STOP_TIMEOUT)
+    val consumerCloseTimeout = Duration.ofMillis(config.getLong(ConfigProperties.EVENT_CONSUMER_CLOSE_TIMEOUT))
+    val producerCloseTimeout = Duration.ofMillis(config.getLong(ConfigProperties.PRODUCER_CLOSE_TIMEOUT))
+    val consumerPollAndProcessMaxRetries = config.getLong(ConfigProperties.EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES)
+    val eventConsumerConfig = config.getConfig(EVENT_CONSUMER)
+    val stateConsumerConfig = config.getConfig(STATE_CONSUMER)
+    val producerConfig = config.getConfig(KAFKA_PRODUCER)
+
+    return StateAndEventConfig(
+        topicPrefix,
+        eventTopic,
+        stateTopic,
+        eventGroupID,
+        loggerName,
+        producerClientId,
+        consumerThreadStopTimeout,
+        consumerCloseTimeout,
+        producerCloseTimeout,
+        consumerPollAndProcessMaxRetries,
+        stateConsumerConfig,
+        eventConsumerConfig,
+        producerConfig
+    )
 }
