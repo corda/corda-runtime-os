@@ -33,6 +33,10 @@ fun getTestStateAndEventConfig(): StateAndEventConfig {
         Duration.ofMillis(1000),
         Duration.ofMillis(1000),
         3,
+        5000,
+        5000,
+        5000,
+        ".DLQ",
         ConfigFactory.empty(),
         ConfigFactory.empty(),
         ConfigFactory.empty()
