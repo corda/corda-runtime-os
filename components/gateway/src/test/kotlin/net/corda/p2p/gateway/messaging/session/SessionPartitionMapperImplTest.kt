@@ -1,5 +1,7 @@
 package net.corda.p2p.gateway.messaging.session
 
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -11,13 +13,18 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.lang.IllegalStateException
 
 class SessionPartitionMapperImplTest {
 
     private var processor: CompactedProcessor<String, SessionPartitions>? = null
-    private val coordinatorFactory = mock<DominoCoordinatorFactory>()
+    private val coordinator = mock<LifecycleCoordinator>()
+    private val coordinatorFactory = mock<DominoCoordinatorFactory> {
+        on { createFor(any()) } doReturn coordinator
+    }
 
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), any<CompactedProcessor<String, SessionPartitions>>(), any()) } doAnswer {
@@ -29,6 +36,7 @@ class SessionPartitionMapperImplTest {
 
     @Test
     fun `session partition mapping is calculated successfully`() {
+        doReturn(LifecycleStatus.UP).whenever(coordinator).status
         val partitionsMapping = mapOf(
             "1" to SessionPartitions(listOf(1, 2)),
             "2" to SessionPartitions(listOf(3, 4))
@@ -56,11 +64,11 @@ class SessionPartitionMapperImplTest {
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)
 
-        sessionPartitionMapper.start()
+        doReturn(LifecycleStatus.UP).whenever(coordinator).status
 
         assertThat(sessionPartitionMapper.getPartitions(sessionId)).isNull()
 
-        sessionPartitionMapper.stop()
+        doReturn(LifecycleStatus.DOWN).whenever(coordinator).status
 
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)
