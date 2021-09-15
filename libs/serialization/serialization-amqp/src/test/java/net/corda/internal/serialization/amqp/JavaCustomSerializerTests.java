@@ -16,7 +16,7 @@ import static net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt.te
 public class JavaCustomSerializerTests {
 
     /**
-     * This is the class that will Proxy instances of Example within the serializer
+     * This is the class that will Proxy instances of ClassThatNeedsCustomSerializer within the serializer
      */
     public static class ExampleProxy {
         /**
