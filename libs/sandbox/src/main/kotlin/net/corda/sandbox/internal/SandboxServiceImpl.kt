@@ -7,9 +7,11 @@ import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.NonCpkClassInfo
 import net.corda.sandbox.Sandbox
+import net.corda.sandbox.SandboxContextService
+import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandbox.SandboxService
+import net.corda.sandbox.internal.classtag.ClassTagFactoryImpl
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxImpl
@@ -24,17 +26,14 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.net.URI
-import java.util.Collections
-import java.util.NavigableMap
-import java.util.TreeMap
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
 
 /**
- * An implementation of the [SandboxService] OSGi service interface.
+ * An implementation of the [SandboxCreationService] and [SandboxContextService] OSGi service interfaces.
  */
-@Component(service = [SandboxService::class, SandboxServiceInternal::class])
+@Component(service = [SandboxCreationService::class, SandboxContextService::class, SandboxServiceInternal::class])
 @Suppress("TooManyFunctions")
 internal class SandboxServiceImpl @Activate constructor(
     @Reference
@@ -67,16 +66,16 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     override fun getClassInfo(className: String): ClassInfo {
-        sandboxes.values.filterIsInstance<CpkSandboxImpl>().forEach { sandbox ->
+        for (sandbox in sandboxes.values.filterIsInstance<CpkSandboxImpl>()) {
             try {
-                val klass = sandbox.loadClass(className)
+                val klass = sandbox.loadClassFromCordappBundle(className)
                 val bundle = bundleUtils.getBundle(klass)
                     ?: throw SandboxException("Class $klass is not loaded from any bundle.")
                 val matchingSandbox = sandboxes.values.find { it.containsBundle(bundle) }
                 matchingSandbox?.let { return getClassInfo(klass, matchingSandbox) }
                     ?: logger.trace("Class $className not found in sandbox $sandbox. ")
             } catch (ex: SandboxException) {
-                logger.trace("Class $className not found in sandbox $sandbox. ")
+                continue
             }
         }
         throw SandboxException("Class $className is not contained in any sandbox.")
@@ -156,40 +155,33 @@ internal class SandboxServiceImpl @Activate constructor(
         }
         installService.verifyCpkGroup(cpks)
 
-        // We track the bundles that are being created, so that we can start them all at once at the end.
+        // We track the bundles that are being created, so that we can start them all at once at the end if needed.
         val bundles = mutableSetOf<Bundle>()
 
-        // We track which sandbox was created for which CPK identifier, so that we can pass this information during
-        // the construction of the `SandboxGroup`.
-        val cpkSandboxMapping: NavigableMap<Cpk.Identifier, CpkSandboxImpl> = TreeMap()
-
-        cpks.forEach { cpk ->
+        val newSandboxes = cpks.map { cpk ->
             val sandboxId = UUID.randomUUID()
 
             val cordappBundle = installBundle(cpk.mainJar.toUri(), sandboxId)
             val libraryBundles = cpk.libraries.mapTo(LinkedHashSet()) { libraryJar ->
                 installBundle(libraryJar.toUri(), sandboxId)
             }
+            bundles.addAll(libraryBundles)
+            bundles.add(cordappBundle)
+
             val sandbox = CpkSandboxImpl(bundleUtils, sandboxId, cpk, cordappBundle, libraryBundles)
             sandboxes[sandboxId] = sandbox
 
-            // Every sandbox requires visibility of the platform sandbox.
-            sandbox.grantVisibility(platformSandbox)
+            sandbox
+        }
 
+        newSandboxes.forEach { sandbox ->
             // The "platform" sandbox contains the OSGi framework itself,
             // and so it must be allowed to "see" every sandbox too.
             platformSandbox.grantVisibility(sandbox)
 
-            bundles.addAll(libraryBundles)
-            bundles.add(cordappBundle)
-
-            cpkSandboxMapping[cpk.id] = sandbox
+            // Each sandbox requires visibility of the sandboxes of the other CPKs and of the platform sandbox.
+            sandbox.grantVisibility(newSandboxes + platformSandbox)
         }
-
-        val sandboxes = cpkSandboxMapping.values
-
-        // Each sandbox requires visibility of the sandboxes of the other CPKs.
-        sandboxes.forEach { sandbox -> sandbox.grantVisibility(sandboxes) }
 
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
         // likely dependencies between the CPKs' bundles.
@@ -197,10 +189,14 @@ internal class SandboxServiceImpl @Activate constructor(
             startBundles(bundles)
         }
 
-        val sandboxGroup = SandboxGroupImpl(Collections.unmodifiableNavigableMap(cpkSandboxMapping))
+        val sandboxGroup = SandboxGroupImpl(
+            bundleUtils,
+            newSandboxes.associateBy { sandbox -> sandbox.cpk.id },
+            platformSandbox,
+            ClassTagFactoryImpl()
+        )
 
-        // We update the mapping from sandbox IDs to the sandbox group that the sandbox is part of.
-        sandboxes.forEach { sandbox ->
+        newSandboxes.forEach { sandbox ->
             sandboxGroups[sandbox.id] = sandboxGroup
         }
 
@@ -228,15 +224,23 @@ internal class SandboxServiceImpl @Activate constructor(
      *
      * The bundle's location is a unique value generated by the combination of the JAR's location and the sandbox ID.
      *
-     * A [SandboxException] is thrown if a bundle fails to install.
+     * A [SandboxException] is thrown if a bundle fails to install, or does not have a symbolic name.
      */
     private fun installBundle(jarLocation: URI, sandboxId: UUID): Bundle {
         val sandboxedBundleLocation = SandboxLocation(sandboxId, jarLocation)
-        return try {
+
+        val bundle = try {
             bundleUtils.installAsBundle(sandboxedBundleLocation.toString(), jarLocation)
         } catch (e: BundleException) {
             throw SandboxException("Could not install $jarLocation as a bundle in sandbox $sandboxId.", e)
         }
+
+        if (bundle.symbolicName == null)
+            throw SandboxException(
+                "Bundle at $jarLocation could not be installed as it does not have a symbolic name, preventing " +
+                        "serialisation.")
+
+        return bundle
     }
 
     /**
