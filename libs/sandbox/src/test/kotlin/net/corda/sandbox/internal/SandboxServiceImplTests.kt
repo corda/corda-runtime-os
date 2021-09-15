@@ -10,6 +10,7 @@ import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
+import net.corda.sandbox.internal.utilities.calculateCpkSignerSummaryHash
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -336,19 +337,21 @@ class SandboxServiceImplTests {
 
     @Test
     fun `returns the CPK info for a CorDapp class installed in one of the sandboxes`() {
-        val cordappClass = Int::class.java
+        val cordappClass = Float::class.java
 
-        // We make the CPK we are retrieving have a dependency on `cpkOne`, so we can check the `CpkClassInfo` fields
-        // related to dependencies.
-        val cpkDependency = Cpk.Identifier(
-            cpkOne.cordappManifest.bundleSymbolicName,
-            cpkOne.cordappManifest.bundleVersion,
-            cpkOne.id.signers
-        )
+        // We make the CPK we are retrieving have a dependency on `cpkOne` and `cpkTwo`, so we can check the
+        // `CpkClassInfo` fields related to dependencies.
+        val cpkDependencies = setOf(cpkOne, cpkTwo).map { cpk ->
+            Cpk.Identifier(
+                cpk.cordappManifest.bundleSymbolicName,
+                cpk.cordappManifest.bundleVersion,
+                cpk.id.signers
+            )
+        }.toCollection(TreeSet())
         val cpkWithDependenciesData =
-            createDummyCpkAndBundles(cordappClass, List::class.java, sequenceOf(cpkDependency).toCollection(TreeSet()))
+            createDummyCpkAndBundles(cordappClass, List::class.java, cpkDependencies)
 
-        val sandboxService = createSandboxService(setOf(cpkWithDependenciesData, cpkAndBundlesOne))
+        val sandboxService = createSandboxService(setOf(cpkWithDependenciesData, cpkAndBundlesOne, cpkAndBundlesTwo))
         sandboxService.createSandboxes(listOf(cpkWithDependenciesData.cpk.cpkHash))
 
         val classInfo = sandboxService.getClassInfo(cordappClass)
@@ -361,8 +364,8 @@ class SandboxServiceImplTests {
             cpkWithDependenciesData.cordappBundle.symbolicName,
             cpkWithDependenciesData.cordappBundle.version,
             cpkWithDependenciesData.cpk.cpkHash,
-            cpkWithDependenciesData.cpk.id.signers,
-            setOf(cpkOne.cpkHash)
+            calculateCpkSignerSummaryHash(cpkWithDependenciesData.cpk),
+            setOf(cpkOne.cpkHash, cpkTwo.cpkHash)
         )
 
         assertEquals(expectedClassInfo, classInfo as CpkClassInfo)
@@ -370,19 +373,21 @@ class SandboxServiceImplTests {
 
     @Test
     fun `returns the CPK info for a library class installed in one of the sandboxes`() {
-        val libraryClass = List::class.java
+        val libraryClass = Float::class.java
 
-        // We make the CPK we are retrieving have a dependency on `cpkOne`, so we can check the `CpkClassInfo` fields
-        // related to dependencies.
-        val cpkDependency = Cpk.Identifier(
-            cpkOne.cordappManifest.bundleSymbolicName,
-            cpkOne.cordappManifest.bundleVersion,
-            cpkOne.id.signers
-        )
+        // We make the CPK we are retrieving have a dependency on `cpkOne` and `cpkTwo`, so we can check the
+        // `CpkClassInfo` fields related to dependencies.
+        val cpkDependencies = setOf(cpkOne, cpkTwo).map { cpk ->
+            Cpk.Identifier(
+                cpk.cordappManifest.bundleSymbolicName,
+                cpk.cordappManifest.bundleVersion,
+                cpk.id.signers
+            )
+        }.toCollection(TreeSet())
         val cpkWithDependenciesData =
-            createDummyCpkAndBundles(Int::class.java, libraryClass, sequenceOf(cpkDependency).toCollection(TreeSet()))
+            createDummyCpkAndBundles(Int::class.java, libraryClass, cpkDependencies)
 
-        val sandboxService = createSandboxService(setOf(cpkWithDependenciesData, cpkAndBundlesOne))
+        val sandboxService = createSandboxService(setOf(cpkWithDependenciesData, cpkAndBundlesOne, cpkAndBundlesTwo))
         sandboxService.createSandboxes(listOf(cpkWithDependenciesData.cpk.cpkHash))
 
         // Note that we cannot retrieve the class info for a library bundle by class name.
@@ -394,8 +399,8 @@ class SandboxServiceImplTests {
             cpkWithDependenciesData.cordappBundle.symbolicName,
             cpkWithDependenciesData.cordappBundle.version,
             cpkWithDependenciesData.cpk.cpkHash,
-            cpkWithDependenciesData.cpk.id.signers,
-            setOf(cpkOne.cpkHash)
+            calculateCpkSignerSummaryHash(cpkWithDependenciesData.cpk),
+            setOf(cpkOne.cpkHash, cpkTwo.cpkHash)
         )
 
         assertEquals(expectedClassInfo, classInfo)

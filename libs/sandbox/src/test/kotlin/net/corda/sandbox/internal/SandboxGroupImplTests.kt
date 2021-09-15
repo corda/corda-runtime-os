@@ -1,5 +1,6 @@
 package net.corda.sandbox.internal
 
+import net.corda.packaging.Cpk
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.classtag.ClassTag
@@ -9,6 +10,7 @@ import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
+import net.corda.sandbox.internal.utilities.calculateCpkSignerSummaryHash
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -16,7 +18,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
-import java.util.NavigableSet
 
 // Various dummy serialised class tags.
 private const val NON_PLATFORM_STATIC_TAG = "serialised_static_non_platform_class"
@@ -63,7 +64,7 @@ class SandboxGroupImplTests {
     }
 
     private val sandboxesById = mapOf(mockCpk.id to mockNonPlatformSandbox)
-    private val classTagFactory = DummyClassTagFactory(mockCpk.cpkHash, mockCpk.id.signers)
+    private val classTagFactory = DummyClassTagFactory(mockCpk)
     private val sandboxGroupImpl =
         SandboxGroupImpl(mockBundleUtils, sandboxesById, mockPlatformSandbox, classTagFactory)
 
@@ -175,32 +176,34 @@ private class EvolvableTagImpl(
     isPlatformClass: Boolean,
     classBundleName: String,
     cordappBundleName: String,
-    cpkSigners: NavigableSet<SecureHash>
+    cpkSignerSummaryHash: SecureHash
 ) :
-    EvolvableTag(1, isPlatformClass, classBundleName, cordappBundleName, cpkSigners) {
+    EvolvableTag(1, isPlatformClass, classBundleName, cordappBundleName, cpkSignerSummaryHash) {
     override fun serialise() = ""
 }
 
-/** A dummy [ClassTagFactory] implementation that returns */
-private class DummyClassTagFactory(cpkHash: SecureHash, cpkSigners: NavigableSet<SecureHash>) : ClassTagFactory {
+/** A dummy [ClassTagFactory] implementation that returns pre-defined tags. */
+private class DummyClassTagFactory(cpk: Cpk.Expanded) : ClassTagFactory {
+    private val cpkSignerSummaryHash = calculateCpkSignerSummaryHash(cpk)
+
     private val nonPlatformStaticTag =
-        StaticTagImpl(false, NON_PLATFORM_BUNDLE_NAME, cpkHash)
+        StaticTagImpl(false, NON_PLATFORM_BUNDLE_NAME, cpk.cpkHash)
 
     private val platformStaticTag =
-        StaticTagImpl(true, PLATFORM_BUNDLE_NAME, ClassTagV1.PLACEHOLDER_CPK_FILE_HASH)
+        StaticTagImpl(true, PLATFORM_BUNDLE_NAME, ClassTagV1.PLACEHOLDER_HASH)
 
     private val invalidCpkFileHashStaticTag =
         StaticTagImpl(false, NON_PLATFORM_BUNDLE_NAME, randomSecureHash())
 
 
     private val nonPlatformEvolvableTag =
-        EvolvableTagImpl(false, NON_PLATFORM_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, cpkSigners)
+        EvolvableTagImpl(false, NON_PLATFORM_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, cpkSignerSummaryHash)
 
     private val platformEvolvableTag =
         EvolvableTagImpl(true,
         PLATFORM_BUNDLE_NAME,
         ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME,
-        ClassTagV1.PLACEHOLDER_CPK_PUBLIC_KEY_HASHES
+        ClassTagV1.PLACEHOLDER_HASH
     )
 
     private val invalidCordappBundleNameEvolvableTag =
@@ -208,11 +211,11 @@ private class DummyClassTagFactory(cpkHash: SecureHash, cpkSigners: NavigableSet
         false,
         NON_PLATFORM_BUNDLE_NAME,
         "invalid_cordapp_bundle_name",
-        cpkSigners
+            cpkSignerSummaryHash
     )
 
     private val invalidSignersEvolvableTag =
-        EvolvableTagImpl(false, NON_PLATFORM_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, randomSigners())
+        EvolvableTagImpl(false, NON_PLATFORM_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, randomSecureHash())
 
     override fun createSerialised(
         isStaticClassTag: Boolean,

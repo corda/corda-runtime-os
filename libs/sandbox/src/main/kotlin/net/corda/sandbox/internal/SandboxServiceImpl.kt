@@ -17,6 +17,7 @@ import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
+import net.corda.sandbox.internal.utilities.calculateCpkSignerSummaryHash
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -282,7 +283,7 @@ internal class SandboxServiceImpl @Activate constructor(
             sandbox.cordappBundle.symbolicName,
             sandbox.cordappBundle.version,
             cpk.cpkHash,
-            cpk.id.signers,
+            calculateCpkSignerSummaryHash(cpk),
             cpkDependencyHashes
         )
     }

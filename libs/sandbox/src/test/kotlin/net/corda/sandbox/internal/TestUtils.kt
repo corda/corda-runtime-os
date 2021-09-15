@@ -20,9 +20,6 @@ fun randomSecureHash(): SecureHash {
     return SecureHash.create("SHA-256:$hash")
 }
 
-/** Generates a random set of CPK signers. */
-fun randomSigners() = TreeSet(setOf(randomSecureHash()))
-
 /** Generates a mock [Bundle] with the given [bundleSymbolicName] and [bundleVersion]. */
 fun mockBundle(bundleSymbolicName: String = Random.nextInt().toString(), bundleVersion: String = "0.0") =
     mock<Bundle>().apply {
@@ -32,7 +29,7 @@ fun mockBundle(bundleSymbolicName: String = Random.nextInt().toString(), bundleV
 
 /** Generates a mock [Cpk.Expanded]. */
 fun mockCpk(): Cpk.Expanded {
-    val mockCpkSigners = randomSigners()
+    val mockCpkSigners = TreeSet(setOf(randomSecureHash()))
     val mockCpkIdentifier = mock<Cpk.Identifier>().apply {
         whenever(signers).thenReturn(mockCpkSigners)
     }

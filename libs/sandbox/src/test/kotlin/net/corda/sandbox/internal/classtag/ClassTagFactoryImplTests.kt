@@ -8,6 +8,7 @@ import net.corda.sandbox.internal.NON_PLATFORM_BUNDLE_NAME
 import net.corda.sandbox.internal.mockBundle
 import net.corda.sandbox.internal.mockCpk
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
+import net.corda.sandbox.internal.utilities.calculateCpkSignerSummaryHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -82,7 +83,7 @@ class ClassTagFactoryImplTests {
         assertEquals(1, classTag.version)
         assertTrue(classTag.isPlatformClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
-        assertEquals(ClassTagV1.PLACEHOLDER_CPK_FILE_HASH, classTag.cpkFileHash)
+        assertEquals(ClassTagV1.PLACEHOLDER_HASH, classTag.cpkFileHash)
     }
 
     @Test
@@ -100,7 +101,7 @@ class ClassTagFactoryImplTests {
         assertFalse(classTag.isPlatformClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(mockSandbox.cordappBundle.symbolicName, classTag.cordappBundleName)
-        assertEquals(mockCpk.id.signers, classTag.cpkPublicKeyHashes)
+        assertEquals(calculateCpkSignerSummaryHash(mockCpk), classTag.cpkSignerSummaryHash)
     }
 
     @Test
@@ -118,7 +119,7 @@ class ClassTagFactoryImplTests {
         assertTrue(classTag.isPlatformClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME, classTag.cordappBundleName)
-        assertEquals(ClassTagV1.PLACEHOLDER_CPK_PUBLIC_KEY_HASHES, classTag.cpkPublicKeyHashes)
+        assertEquals(ClassTagV1.PLACEHOLDER_HASH, classTag.cpkSignerSummaryHash)
     }
 
     @Test

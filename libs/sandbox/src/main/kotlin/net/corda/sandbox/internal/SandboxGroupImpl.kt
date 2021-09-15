@@ -9,6 +9,7 @@ import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
+import net.corda.sandbox.internal.utilities.calculateCpkSignerSummaryHash
 
 /**
  * An implementation of the [SandboxGroup] interface.
@@ -62,7 +63,8 @@ internal class SandboxGroupImpl(
             when (classTag) {
                 is StaticTag -> sandboxes.find { sandbox -> sandbox.cpk.cpkHash == classTag.cpkFileHash }
                 is EvolvableTag -> sandboxes.find { sandbox ->
-                    sandbox.cpk.id.signers == classTag.cpkPublicKeyHashes
+                    val cpkSignerSummaryHash = calculateCpkSignerSummaryHash(sandbox.cpk)
+                    cpkSignerSummaryHash == classTag.cpkSignerSummaryHash
                             && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
                 }
             }
