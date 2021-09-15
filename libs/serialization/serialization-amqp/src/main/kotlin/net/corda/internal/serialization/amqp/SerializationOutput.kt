@@ -1,24 +1,22 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.classinfo.ClassInfoException
-import net.corda.v5.base.util.contextLogger
-import net.corda.v5.serialization.SerializationContext
-import net.corda.v5.serialization.SerializedBytes
 import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SectionId
 import net.corda.internal.serialization.byteArrayOutput
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.sandbox.CpkClassInfo
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
-import net.corda.v5.crypto.SecureHash
+import net.corda.v5.serialization.SerializationContext
+import net.corda.v5.serialization.SerializedBytes
 import org.apache.qpid.proton.codec.Data
 import java.io.NotSerializableException
 import java.io.OutputStream
 import java.lang.reflect.Type
 import java.lang.reflect.WildcardType
 import java.util.IdentityHashMap
-import kotlin.collections.LinkedHashSet
 
 data class BytesAndSchemas<T : Any>(
         val obj: SerializedBytes<T>,
@@ -147,7 +145,7 @@ open class SerializationOutput constructor(
                     classInfo.classBundleVersion.toString(),
                     classInfo.cordappBundleName,
                     classInfo.cordappBundleVersion.toString(),
-                    classInfo.cpkPublicKeyHashes.map(SecureHash::toString)
+                    classInfo.cpkSignerSummaryHash.toString()
                 )
                 metadata.putValue(key, value)
             }

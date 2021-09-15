@@ -18,7 +18,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.BasicHashingService
 import net.corda.v5.crypto.SecureHash
-import java.util.TreeSet
 
 open class SandboxClassResolver(
     private val classInfoService: ClassInfoService,
@@ -30,7 +29,7 @@ open class SandboxClassResolver(
         val logger = contextLogger()
     }
 
-    private var cpkToId: IdentityObjectIntMap<Cpk.Identifier>? = null
+    private var cpkToId: IdentityObjectIntMap<Cpk.ShortIdentifier>? = null
 
     private var idToCpk: IntMap<Cpk.Identifier>? = null
 
@@ -46,7 +45,7 @@ open class SandboxClassResolver(
      * @return The [Cpk.Identifier] associated with [klass] if it is a CPK class info, or null otherwise.
      */
     @Suppress("TooGenericExceptionCaught")
-    private fun getCpkFromClass(klass: Class<*>): Cpk.Identifier? {
+    private fun getCpkFromClass(klass: Class<*>): Cpk.ShortIdentifier? {
         val classInfo = try {
             classInfoService.getClassInfo(klass)
         } catch (ex: ClassInfoException) {
@@ -58,10 +57,10 @@ open class SandboxClassResolver(
         } ?: return null
 
         return when (classInfo) {
-            is CpkClassInfo -> Cpk.Identifier(
-                    classInfo.classBundleName,
-                    classInfo.classBundleVersion.toString(),
-                    TreeSet(classInfo.cpkPublicKeyHashes)
+            is CpkClassInfo -> Cpk.ShortIdentifier(
+                classInfo.classBundleName,
+                classInfo.classBundleVersion.toString(),
+                classInfo.cpkSignerSummaryHash
             )
             is NonCpkClassInfo -> null
         }
@@ -72,7 +71,7 @@ open class SandboxClassResolver(
      * CPKs to ids and Class names to ids.
      */
     private fun checkAndInitWriteStructures() {
-        if (cpkToId == null) cpkToId = IdentityObjectIntMap<Cpk.Identifier>()
+        if (cpkToId == null) cpkToId = IdentityObjectIntMap<Cpk.ShortIdentifier>()
         if (classToNameId == null) classToNameId = IdentityObjectIntMap<Class<*>>()
     }
 
@@ -120,13 +119,10 @@ open class SandboxClassResolver(
         }
     }
 
-    private fun writeCpkIdentifier(output: Output, identifier: Cpk.Identifier) {
+    private fun writeCpkIdentifier(output: Output, identifier: Cpk.ShortIdentifier) {
         output.writeString(identifier.symbolicName)
         output.writeString(identifier.version)
-        output.writeString(identifier.signers.size.toString())
-        identifier.signers.forEach {
-            output.writeString(it.toString())
-        }
+        output.writeString(identifier.signerSummaryHash.toString())
     }
 
     private fun checkAndInitReadStructures() {
@@ -175,16 +171,11 @@ open class SandboxClassResolver(
         return kryo.getRegistration(type)
     }
 
-    private fun readCpkIdentifier(input: Input): Cpk.Identifier {
+    private fun readCpkIdentifier(input: Input): Cpk.ShortIdentifier {
         val symbolicName = input.readString()
         val version = input.readString()
-        var numberOfSigners = Integer.parseInt(input.readString())
-        val signers = TreeSet<SecureHash>()
-        while (numberOfSigners > 0) {
-            signers.add(hashingService.create(input.readString()))
-            numberOfSigners--
-        }
-        return Cpk.Identifier(symbolicName, version, signers)
+        val signerSummaryHash = SecureHash.create(input.readString())
+        return Cpk.ShortIdentifier(symbolicName, version, signerSummaryHash)
     }
 
     override fun reset() {

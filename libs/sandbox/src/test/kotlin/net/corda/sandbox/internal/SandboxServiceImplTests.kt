@@ -10,7 +10,6 @@ import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
-import net.corda.sandbox.internal.utilities.calculateCpkSignerSummaryHash
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -192,7 +191,7 @@ class SandboxServiceImplTests {
         assertEquals(2, sandboxes.size)
 
         val sandboxesFromSandboxGroup =
-            cpksAndBundles.map { cpkAndBundles -> sandboxGroup.getSandbox(cpkAndBundles.cpk.id) }
+            cpksAndBundles.map { cpkAndBundles -> sandboxGroup.getSandbox(cpkAndBundles.cpk.shortId) }
         assertEquals(sandboxes.toSet(), sandboxesFromSandboxGroup.toSet())
     }
 
@@ -364,7 +363,7 @@ class SandboxServiceImplTests {
             cpkWithDependenciesData.cordappBundle.symbolicName,
             cpkWithDependenciesData.cordappBundle.version,
             cpkWithDependenciesData.cpk.cpkHash,
-            calculateCpkSignerSummaryHash(cpkWithDependenciesData.cpk),
+            cpkWithDependenciesData.cpk.shortId.signerSummaryHash,
             setOf(cpkOne.cpkHash, cpkTwo.cpkHash)
         )
 
@@ -399,7 +398,7 @@ class SandboxServiceImplTests {
             cpkWithDependenciesData.cordappBundle.symbolicName,
             cpkWithDependenciesData.cordappBundle.version,
             cpkWithDependenciesData.cpk.cpkHash,
-            calculateCpkSignerSummaryHash(cpkWithDependenciesData.cpk),
+            cpkWithDependenciesData.cpk.shortId.signerSummaryHash,
             setOf(cpkOne.cpkHash, cpkTwo.cpkHash)
         )
 
@@ -595,7 +594,7 @@ class SandboxServiceImplTests {
         val validSandboxLocation = SandboxLocation(sandbox.id, URI("testUri"))
         whenever(mockBundle.location).thenReturn(validSandboxLocation.toString())
 
-        assertEquals(sandbox.cpk.id, sandboxService.getCallingCpk())
+        assertEquals(sandbox.cpk.shortId, sandboxService.getCallingCpk())
     }
 
     @Test

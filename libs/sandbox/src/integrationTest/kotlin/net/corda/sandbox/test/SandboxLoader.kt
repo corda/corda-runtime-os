@@ -93,9 +93,9 @@ class SandboxLoader @Activate constructor(
         group2 = createSandboxGroupFor(cpk3)
         assertThat(group2.sandboxes).hasSize(1)
 
-        val sandbox1 = group1.getSandbox(cpk1.id)
-        val sandbox2 = group1.getSandbox(cpk2.id)
-        val sandbox3 = group2.getSandbox(cpk3.id)
+        val sandbox1 = group1.getSandbox(cpk1.shortId)
+        val sandbox2 = group1.getSandbox(cpk2.shortId)
+        val sandbox3 = group2.getSandbox(cpk3.shortId)
 
         // Verify sandbox1 and sandbox2 can see each other.
         assertMutuallyVisible(sandbox1, sandbox2)

@@ -6,6 +6,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.Version
+import java.security.MessageDigest
 import java.util.TreeSet
 import kotlin.random.Random
 
@@ -29,13 +30,19 @@ fun mockBundle(bundleSymbolicName: String = Random.nextInt().toString(), bundleV
 
 /** Generates a mock [Cpk.Expanded]. */
 fun mockCpk(): Cpk.Expanded {
-    val mockCpkSigners = TreeSet(setOf(randomSecureHash()))
-    val mockCpkIdentifier = mock<Cpk.Identifier>().apply {
-        whenever(signers).thenReturn(mockCpkSigners)
-    }
+    val mockSigners = TreeSet(setOf(randomSecureHash()))
+    val dummyCpkIdentifier = Cpk.Identifier("", "", mockSigners)
+
+    // TODO - Avoid this if possible.
+    val cpkSignerBytes = mockSigners.joinToString("").toByteArray()
+    val digest = MessageDigest.getInstance(HASH_ALGORITHM)
+    digest.update(cpkSignerBytes)
+
+    val dummyShortIdentifier = Cpk.ShortIdentifier("", "", SecureHash(digest.algorithm, digest.digest()))
     val mockCpkFileHash = randomSecureHash()
     return mock<Cpk.Expanded>().apply {
-        whenever(id).thenReturn(mockCpkIdentifier)
+        whenever(id).thenReturn(dummyCpkIdentifier)
+        whenever(shortId).thenReturn(dummyShortIdentifier)
         whenever(cpkHash).thenReturn(mockCpkFileHash)
     }
 }

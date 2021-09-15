@@ -10,7 +10,6 @@ import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
-import net.corda.sandbox.internal.utilities.calculateCpkSignerSummaryHash
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -63,7 +62,7 @@ class SandboxGroupImplTests {
         whenever(getBundle(nonSandboxClass)).thenReturn(mockNonSandboxBundle)
     }
 
-    private val sandboxesById = mapOf(mockCpk.id to mockNonPlatformSandbox)
+    private val sandboxesById = mapOf(mockCpk.shortId to mockNonPlatformSandbox)
     private val classTagFactory = DummyClassTagFactory(mockCpk)
     private val sandboxGroupImpl =
         SandboxGroupImpl(mockBundleUtils, sandboxesById, mockPlatformSandbox, classTagFactory)
@@ -184,8 +183,6 @@ private class EvolvableTagImpl(
 
 /** A dummy [ClassTagFactory] implementation that returns pre-defined tags. */
 private class DummyClassTagFactory(cpk: Cpk.Expanded) : ClassTagFactory {
-    private val cpkSignerSummaryHash = calculateCpkSignerSummaryHash(cpk)
-
     private val nonPlatformStaticTag =
         StaticTagImpl(false, NON_PLATFORM_BUNDLE_NAME, cpk.cpkHash)
 
@@ -195,9 +192,8 @@ private class DummyClassTagFactory(cpk: Cpk.Expanded) : ClassTagFactory {
     private val invalidCpkFileHashStaticTag =
         StaticTagImpl(false, NON_PLATFORM_BUNDLE_NAME, randomSecureHash())
 
-
     private val nonPlatformEvolvableTag =
-        EvolvableTagImpl(false, NON_PLATFORM_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, cpkSignerSummaryHash)
+        EvolvableTagImpl(false, NON_PLATFORM_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, cpk.shortId.signerSummaryHash)
 
     private val platformEvolvableTag =
         EvolvableTagImpl(true,
@@ -208,11 +204,11 @@ private class DummyClassTagFactory(cpk: Cpk.Expanded) : ClassTagFactory {
 
     private val invalidCordappBundleNameEvolvableTag =
         EvolvableTagImpl(
-        false,
-        NON_PLATFORM_BUNDLE_NAME,
-        "invalid_cordapp_bundle_name",
-            cpkSignerSummaryHash
-    )
+            false,
+            NON_PLATFORM_BUNDLE_NAME,
+            "invalid_cordapp_bundle_name",
+            cpk.shortId.signerSummaryHash
+        )
 
     private val invalidSignersEvolvableTag =
         EvolvableTagImpl(false, NON_PLATFORM_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, randomSecureHash())

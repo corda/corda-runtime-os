@@ -17,7 +17,6 @@ import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
-import net.corda.sandbox.internal.utilities.calculateCpkSignerSummaryHash
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -132,10 +131,10 @@ internal class SandboxServiceImpl @Activate constructor(
         )
     }
 
-    override fun getCallingCpk(): Cpk.Identifier? {
+    override fun getCallingCpk(): Cpk.ShortIdentifier? {
         val callingSandbox = getCallingSandbox()
         return if (callingSandbox is CpkSandbox) {
-            callingSandbox.cpk.id
+            callingSandbox.cpk.shortId
         } else {
             null
         }
@@ -192,7 +191,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
         val sandboxGroup = SandboxGroupImpl(
             bundleUtils,
-            newSandboxes.associateBy { sandbox -> sandbox.cpk.id },
+            newSandboxes.associateBy { sandbox -> sandbox.cpk.shortId },
             platformSandbox,
             ClassTagFactoryImpl()
         )
@@ -283,7 +282,7 @@ internal class SandboxServiceImpl @Activate constructor(
             sandbox.cordappBundle.symbolicName,
             sandbox.cordappBundle.version,
             cpk.cpkHash,
-            calculateCpkSignerSummaryHash(cpk),
+            cpk.shortId.signerSummaryHash,
             cpkDependencyHashes
         )
     }

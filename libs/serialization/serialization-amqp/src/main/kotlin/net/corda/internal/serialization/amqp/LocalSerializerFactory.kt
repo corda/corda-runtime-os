@@ -21,7 +21,6 @@ import org.apache.qpid.proton.amqp.Symbol
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.util.Optional
-import java.util.TreeSet
 import java.util.function.Function
 import java.util.function.Predicate
 import javax.annotation.concurrent.ThreadSafe
@@ -149,10 +148,10 @@ class DefaultLocalSerializerFactory(
         return typesByName.getOrPut(typeName) {
             val localType = try {
                 val classInfoParts = metadata.getValue(typeName) as List<*>
-                val classInfo = Cpk.Identifier(
-                        classInfoParts[0] as String,
-                        classInfoParts[1] as String,
-                        TreeSet((classInfoParts[4] as List<*>).map { SecureHash.create(it as String) }.toList())
+                val classInfo = Cpk.ShortIdentifier(
+                    classInfoParts[0] as String,
+                    classInfoParts[1] as String,
+                    SecureHash.create(classInfoParts[4] as String)
                 )
                 (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(classInfo, typeName)
             } catch (_: SandboxException) {

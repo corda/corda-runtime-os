@@ -7,7 +7,6 @@ import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
 import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
-import net.corda.sandbox.internal.utilities.calculateCpkSignerSummaryHash
 import org.osgi.framework.Bundle
 
 /** An implementation of [ClassTagFactory]. */
@@ -45,7 +44,7 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
                 isPlatformClass = false,
                 bundleSymbolicName,
                 sandbox.cordappBundle.symbolicName,
-                calculateCpkSignerSummaryHash(sandbox.cpk)
+                sandbox.cpk.shortId.signerSummaryHash
             )
         }.serialise()
     }

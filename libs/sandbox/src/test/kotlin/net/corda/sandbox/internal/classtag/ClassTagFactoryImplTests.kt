@@ -8,7 +8,6 @@ import net.corda.sandbox.internal.NON_PLATFORM_BUNDLE_NAME
 import net.corda.sandbox.internal.mockBundle
 import net.corda.sandbox.internal.mockCpk
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
-import net.corda.sandbox.internal.utilities.calculateCpkSignerSummaryHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -101,7 +100,7 @@ class ClassTagFactoryImplTests {
         assertFalse(classTag.isPlatformClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(mockSandbox.cordappBundle.symbolicName, classTag.cordappBundleName)
-        assertEquals(calculateCpkSignerSummaryHash(mockCpk), classTag.cpkSignerSummaryHash)
+        assertEquals(mockCpk.shortId.signerSummaryHash, classTag.cpkSignerSummaryHash)
     }
 
     @Test

@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Timeout
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.osgi.framework.Version
-import java.util.NavigableSet
 import java.util.TreeSet
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertTrue
@@ -35,10 +34,7 @@ class SerializeAndReturnMetadataTest {
         val cordappBundleName = "dummyCorDappBundleName"
         val cordappBundleVersion = Version(1, 0, 0)
         val cpkFileHash = digestService.getZeroHash(DigestAlgorithmName.SHA2_256)
-        val cpkPublicKeyHashes: NavigableSet<SecureHash> = sortedSetOf(
-            digestService.getAllOnesHash(DigestAlgorithmName.SHA2_256),
-            digestService.getZeroHash(DigestAlgorithmName.SHA2_256)
-        )
+        val cpkSignerSummaryHash = digestService.getZeroHash(DigestAlgorithmName.SHA2_256)
         val cpkDependencies = setOf<SecureHash>()
 
         return CpkClassInfo(
@@ -47,7 +43,7 @@ class SerializeAndReturnMetadataTest {
             cordappBundleName = cordappBundleName,
             cordappBundleVersion = cordappBundleVersion,
             cpkFileHash = cpkFileHash,
-            cpkPublicKeyHashes = cpkPublicKeyHashes,
+            cpkSignerSummaryHash = cpkSignerSummaryHash,
             cpkDependencies = cpkDependencies
         )
     }
@@ -68,7 +64,7 @@ class SerializeAndReturnMetadataTest {
         )
     }
 
-    private fun createSandboxGroup(clazz: Class<*>, cpkIdentifier: Cpk.Identifier): SandboxGroup {
+    private fun createSandboxGroup(clazz: Class<*>, cpkIdentifier: Cpk.ShortIdentifier): SandboxGroup {
         val sandbox = mock(CpkSandbox::class.java).apply {
             `when`(loadClassFromCordappBundle(clazz::class.java.name)).thenReturn(clazz)
         }
