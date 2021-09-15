@@ -23,7 +23,7 @@ class FileConfigReadService : ConfigurationReadService {
     private val configFile = "http-rpc-gateway.conf"
 
     @Volatile
-    private var stopped = false
+    private var stopped = true
 
     private val lock = ReentrantLock()
 
@@ -34,7 +34,9 @@ class FileConfigReadService : ConfigurationReadService {
     override fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable {
         val sub = ConfigListenerSubscription(this)
         configUpdates[sub] = configHandler
-        configUpdates.forEach { it.value.onNewConfiguration(setOf(configFile), mapOf(configFile to config)) }
+        if (isRunning) {
+            configHandler.onNewConfiguration(setOf(configFile), mapOf(configFile to config))
+        }
         return sub
     }
 
@@ -49,6 +51,7 @@ class FileConfigReadService : ConfigurationReadService {
 
     override fun start() {
         lock.withLock {
+            configUpdates.forEach { it.value.onNewConfiguration(setOf(configFile), mapOf(configFile to config)) }
             stopped = false
         }
     }
