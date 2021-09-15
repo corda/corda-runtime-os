@@ -12,6 +12,7 @@ class RPCSecurityManagerStubImplTest {
     @Test
     fun testSunnyDay() {
         val instance = RPCSecurityManagerFactoryStubImpl().createRPCSecurityManager()
+
         "foo".let {
             val subject = instance.buildSubject(it)
             assertThat(subject.principal).isEqualTo(it)
@@ -27,7 +28,9 @@ class RPCSecurityManagerStubImplTest {
 
     @Test
     fun testRainyDay() {
+
         val instance = RPCSecurityManagerFactoryStubImpl().createRPCSecurityManager()
+
         "foo".let {
             Assertions.assertThatThrownBy { instance.authenticate(it, Password(it)) }
                 .isInstanceOf(FailedLoginException::class.java)
