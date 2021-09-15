@@ -15,9 +15,11 @@ class FileConfigReadServiceTest {
         val service = FileConfigReadService()
 
         val listenerMock: ConfigListener = mock()
-        service.registerCallback(listenerMock)
-        service.start()
-
+        service.use {
+            service.registerCallback(listenerMock)
+            service.start()
+            service.stop()
+        }
         verify(listenerMock, times(1)).onUpdate(eq(setOf("node.conf")), argThat { get("node.conf")!!.hasPath("httpRpcSettings") })
     }
 }
