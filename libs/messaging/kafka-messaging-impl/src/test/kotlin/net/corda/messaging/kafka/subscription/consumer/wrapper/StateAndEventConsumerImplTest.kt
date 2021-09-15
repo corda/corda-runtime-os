@@ -76,7 +76,10 @@ class StateAndEventConsumerImplTest {
         val consumer =
             StateAndEventConsumerImpl(stateAndEventConfig, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
 
-        consumer.updateInMemoryStatePostCommit(mutableMapOf(partitionId to mutableMapOf("key1" to null, "key2" to "value2")), Clock.systemUTC())
+        consumer.updateInMemoryStatePostCommit(
+            mutableMapOf(partitionId to mutableMapOf("key1" to null, "key2" to "value2")),
+            Clock.systemUTC()
+        )
 
         val currentStates = partitionState.currentStates
         assertThat(currentStates[partitionId]?.get("key1")).isNull()
