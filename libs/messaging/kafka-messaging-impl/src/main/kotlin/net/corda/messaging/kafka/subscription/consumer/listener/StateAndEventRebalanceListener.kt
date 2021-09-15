@@ -31,7 +31,7 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
     private val topicPrefix = config.topicPrefix
     private val eventTopic = Topic(topicPrefix, config.eventTopic)
     private val stateTopic = Topic(topicPrefix, config.stateTopic)
-    private val listenerTimeout = config.getLong(ConfigProperties.LISTENER_TIMEOUT)
+    private val listenerTimeout = config.listenerTimeout
 
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = partitionState.partitionsToSync

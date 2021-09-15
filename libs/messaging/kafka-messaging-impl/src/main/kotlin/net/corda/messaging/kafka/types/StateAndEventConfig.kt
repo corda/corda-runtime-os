@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.types
 
 import com.typesafe.config.Config
+import net.corda.messaging.kafka.properties.ConfigProperties
 import java.time.Duration
 
 data class StateAndEventConfig(
@@ -14,6 +15,10 @@ data class StateAndEventConfig(
     val consumerCloseTimeout: Duration,
     val producerCloseTimeout: Duration,
     val consumerPollAndProcessMaxRetries: Long,
+    val maxPollInterval: Long,
+    val listenerTimeout: Long,
+    val processorTimeout: Long,
+    val deadLetterQueueSuffix: String,
     val stateConsumerConfig: Config,
     val eventConsumerConfig: Config,
     val producerConfig: Config

@@ -14,7 +14,6 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
-import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.stubs.StubStateAndEventProcessor
 import net.corda.messaging.kafka.utils.getStateAndEventConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
@@ -267,7 +266,7 @@ class KafkaStateAndEventSubscriptionImplTest {
             CompletableFuture.completedFuture(null)
         }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
 
-        val shortWaitProcessorConfig = config
+        val shortWaitProcessorConfig = getStateAndEventConfig(config
             .withValue(
                 CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"),
                 ConfigValueFactory.fromAnyRef(10000)
@@ -275,7 +274,7 @@ class KafkaStateAndEventSubscriptionImplTest {
             .withValue(
                 CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"),
                 ConfigValueFactory.fromAnyRef(100)
-            )
+            ))
 
         val subscription = KafkaStateAndEventSubscriptionImpl(
             shortWaitProcessorConfig,

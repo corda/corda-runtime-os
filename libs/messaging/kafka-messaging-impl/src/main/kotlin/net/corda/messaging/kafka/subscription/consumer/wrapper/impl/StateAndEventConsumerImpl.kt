@@ -13,7 +13,6 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAnd
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
-import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.types.StateAndEventConfig
 import net.corda.messaging.kafka.types.Topic
 import net.corda.messaging.kafka.utils.tryGetFutureResult
@@ -29,7 +28,6 @@ import java.util.concurrent.Executors
 
 class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val config: StateAndEventConfig,
-    private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
     override val eventConsumer: CordaKafkaConsumer<K, E>,
     override val stateConsumer: CordaKafkaConsumer<K, S>,
     private val partitionState: StateAndEventPartitionState<K, S>,
@@ -54,9 +52,9 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private val consumerCloseTimeout = config.consumerCloseTimeout
     private val topicPrefix = config.topicPrefix
-    private val maxPollInterval = config.getLong(CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"))
+    private val maxPollInterval = config.maxPollInterval
     private val initialProcessorTimeout = maxPollInterval / 4
-    private val listenerTimeout = config.getLong(LISTENER_TIMEOUT)
+    private val listenerTimeout = config.listenerTimeout
 
     private val eventTopic = Topic(topicPrefix, config.eventTopic)
     private val stateTopic = Topic(topicPrefix, config.stateTopic)

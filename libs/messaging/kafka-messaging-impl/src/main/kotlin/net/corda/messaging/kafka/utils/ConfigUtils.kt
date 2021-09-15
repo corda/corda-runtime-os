@@ -152,6 +152,10 @@ fun getStateAndEventConfig(config: Config): StateAndEventConfig {
     val consumerCloseTimeout = Duration.ofMillis(config.getLong(ConfigProperties.EVENT_CONSUMER_CLOSE_TIMEOUT))
     val producerCloseTimeout = Duration.ofMillis(config.getLong(ConfigProperties.PRODUCER_CLOSE_TIMEOUT))
     val consumerPollAndProcessMaxRetries = config.getLong(ConfigProperties.EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES)
+    val maxPollInterval = config.getLong(ConfigProperties.CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"))
+    val listenerTimeout = config.getLong(ConfigProperties.LISTENER_TIMEOUT)
+    val processorTimeout = config.getLong(ConfigProperties.CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"))
+    val deadLetterQueueSuffix = config.getString(ConfigProperties.DEAD_LETTER_QUEUE_SUFFIX)
     val eventConsumerConfig = config.getConfig(EVENT_CONSUMER)
     val stateConsumerConfig = config.getConfig(STATE_CONSUMER)
     val producerConfig = config.getConfig(KAFKA_PRODUCER)
@@ -167,6 +171,10 @@ fun getStateAndEventConfig(config: Config): StateAndEventConfig {
         consumerCloseTimeout,
         producerCloseTimeout,
         consumerPollAndProcessMaxRetries,
+        maxPollInterval,
+        listenerTimeout,
+        processorTimeout,
+        deadLetterQueueSuffix,
         stateConsumerConfig,
         eventConsumerConfig,
         producerConfig

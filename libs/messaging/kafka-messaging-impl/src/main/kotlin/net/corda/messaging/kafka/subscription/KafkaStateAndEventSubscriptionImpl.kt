@@ -74,8 +74,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val consumerThreadStopTimeout = config.consumerThreadStopTimeout
     private val producerCloseTimeout = config.producerCloseTimeout
     private val consumerPollAndProcessMaxRetries = config.consumerPollAndProcessMaxRetries
-    private val processorTimeout = config.getLong(CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"))
-    private val deadLetterQueueSuffix = config.getString(DEAD_LETTER_QUEUE_SUFFIX)
+    private val processorTimeout = config.processorTimeout
+    private val deadLetterQueueSuffix = config.deadLetterQueueSuffix
 
     /**
      * Is the subscription running.

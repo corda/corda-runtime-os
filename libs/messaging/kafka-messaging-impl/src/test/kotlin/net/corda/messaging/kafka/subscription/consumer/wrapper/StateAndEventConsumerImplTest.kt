@@ -123,7 +123,7 @@ class StateAndEventConsumerImplTest {
         val stateConsumer: CordaKafkaConsumer<String, String> = mock()
 
         val topicPartitions = setOf(TopicPartition(TOPIC, 0))
-        val config = mock<Config>()
+        val config = getTestStateAndEventConfig()
 
         val state = ConsumerRecordAndMeta<String, String>(
             TOPIC_PREFIX,
