@@ -1,15 +1,6 @@
 package net.corda.messaging.kafka.subscription.consumer.wrapper.impl
 
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_MAX_POLL_INTERVAL
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER_CLOSE_TIMEOUT
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_GROUP_ID
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.LISTENER_TIMEOUT
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState

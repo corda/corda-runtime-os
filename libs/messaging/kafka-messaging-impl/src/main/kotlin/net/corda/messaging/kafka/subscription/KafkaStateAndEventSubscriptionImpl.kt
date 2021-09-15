@@ -1,6 +1,5 @@
 package net.corda.messaging.kafka.subscription
 
-import com.typesafe.config.Config
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -9,18 +8,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_PROCESSOR_TIMEOUT
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.DEAD_LETTER_QUEUE_SUFFIX
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_GROUP_ID
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_CLIENT_ID
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_CLOSE_TIMEOUT
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -29,7 +17,6 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.types.StateAndEventConfig
 import net.corda.messaging.kafka.types.Topic
 import net.corda.messaging.kafka.utils.getEventsByBatch
-import net.corda.messaging.kafka.utils.render
 import net.corda.messaging.kafka.utils.tryGetFutureResult
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.debug
@@ -44,6 +31,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
+@Suppress("LongParameterList")
 class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val config: StateAndEventConfig,
     private val builder: StateAndEventBuilder<K, S, E>,

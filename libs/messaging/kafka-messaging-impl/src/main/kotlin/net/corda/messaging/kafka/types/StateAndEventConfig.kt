@@ -1,7 +1,6 @@
 package net.corda.messaging.kafka.types
 
 import com.typesafe.config.Config
-import net.corda.messaging.kafka.properties.ConfigProperties
 import java.time.Duration
 
 data class StateAndEventConfig(
