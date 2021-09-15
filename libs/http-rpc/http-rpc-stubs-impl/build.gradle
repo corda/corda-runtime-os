@@ -18,6 +18,7 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+    implementation 'org.slf4j:slf4j-api'
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
