@@ -29,21 +29,21 @@ class SslCertReadServiceStubImplTest {
     @Test
     fun `creates a keystore in tmp directory`() {
         service.getOrCreateKeyStore()
-        assertTrue(File(Path.of(tempDirectoryPath.toString(), "ssl-keystore.jks").toUri()).exists())
+        assertTrue(File(Path.of(tempDirectoryPath.toString(), SslCertReadServiceStubImpl.KEYSTORE_NAME).toUri()).exists())
     }
 
     @Test
     fun `create returns path and password of keystore`() {
         val keyStoreInfo = service.getOrCreateKeyStore()
-        assertEquals(Path.of(tempDirectoryPath.toString(), "ssl-keystore.jks"), keyStoreInfo.path)
-        assertEquals("Corda", keyStoreInfo.password)
+        assertEquals(Path.of(tempDirectoryPath.toString(), SslCertReadServiceStubImpl.KEYSTORE_NAME), keyStoreInfo.path)
+        assertEquals(SslCertReadServiceStubImpl.PASSWORD, keyStoreInfo.password)
     }
 
     @Test
     fun `deletes keystore when stopped`() {
         service.getOrCreateKeyStore()
-        assertTrue(File(Path.of(tempDirectoryPath.toString(), "ssl-keystore.jks").toUri()).exists())
+        assertTrue(File(Path.of(tempDirectoryPath.toString(), SslCertReadServiceStubImpl.KEYSTORE_NAME).toUri()).exists())
         service.stop()
-        assertFalse(File(Path.of(tempDirectoryPath.toString(), "ssl-keystore.jks").toUri()).exists())
+        assertFalse(File(Path.of(tempDirectoryPath.toString(), SslCertReadServiceStubImpl.KEYSTORE_NAME).toUri()).exists())
     }
 }
