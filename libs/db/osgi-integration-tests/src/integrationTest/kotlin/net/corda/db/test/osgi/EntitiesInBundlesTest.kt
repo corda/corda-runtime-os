@@ -2,22 +2,24 @@ package net.corda.db.test.osgi
 
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerFactoryFactory
-import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.InMemoryEntityManagerConfiguration
 import net.corda.orm.impl.PostgresEntityManagerConfiguration
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotSame
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.framework.FrameworkUtil
-import org.osgi.service.component.annotations.Reference
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.LocalDate
 import java.util.UUID
+import javax.persistence.EntityManagerFactory
 import kotlin.math.ceil
 
 /**
@@ -39,6 +41,8 @@ class EntitiesInBundlesTest {
 
         @InjectService
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
+
+        lateinit var emf: EntityManagerFactory
 
         private val dogBundle = run {
             val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
@@ -64,9 +68,12 @@ class EntitiesInBundlesTest {
         private val ownerCtor = ownerClass.getDeclaredConstructor(UUID::class.java, String::class.java, Int::class.java)
         private val catCtor = catClass.getDeclaredConstructor(UUID::class.java, String::class.java, String::class.java, ownerClass)
 
-        private val dog = dogCtor.newInstance(UUID.randomUUID(), "Faraway", LocalDate.of(2020, 2, 26), "Bob")
-        private val owner = ownerCtor.newInstance(UUID.randomUUID(), "Bob", 26)
-        private val cat = catCtor.newInstance(UUID.randomUUID(), "Stray", "Tabby", owner)
+        private val dogId = UUID.randomUUID()
+        private val dog = dogCtor.newInstance(dogId, "Faraway", LocalDate.of(2020, 2, 26), "Bob")
+        private val ownerId = UUID.randomUUID()
+        private val owner = ownerCtor.newInstance(ownerId, "Bob", 26)
+        private val catId = UUID.randomUUID()
+        private val cat = catCtor.newInstance(catId, "Stray", "Tabby", owner)
 
         private val dbConfig = run {
             if (null != System.getProperty("postgresPort").toIntOrNull()) {
@@ -85,22 +92,34 @@ class EntitiesInBundlesTest {
             }
         }
 
+        @Suppress("unused")
         @JvmStatic
         @BeforeAll
         fun setupEntities() {
             logger.info("Create Entities".emphasise())
 
-            val emf = entityManagerFactoryFactory.create(
+            emf = entityManagerFactoryFactory.create(
                 "pets",
                 listOf(catClass, ownerClass, dogClass),
                 dbConfig
             )
             val em = emf.createEntityManager()
-            em.transaction.begin()
-            em.persist(dog)
-            em.persist(owner)
-            em.persist(cat)
-            em.transaction.commit()
+            try {
+                em.transaction.begin()
+                em.persist(dog)
+                em.persist(owner)
+                em.persist(cat)
+                em.transaction.commit()
+            } finally {
+                em.close()
+            }
+        }
+
+        @Suppress("unused")
+        @AfterAll
+        @JvmStatic
+        fun done() {
+            emf.close()
         }
     }
 
@@ -119,19 +138,29 @@ class EntitiesInBundlesTest {
     fun `validate entities are persisted`() {
         logger.info("Load persisted entities".emphasise())
 
-        val emf = entityManagerFactoryFactory.create(
-            "pets",
-            listOf(catClass, ownerClass, dogClass),
-            dbConfig
-        )
         val em = emf.createEntityManager()
+        try {
+            assertThat(
+                em.createQuery("from Cat", catClass).resultList
+            ).contains(cat)
+            assertThat(
+                em.createQuery("from Dog", dogClass).resultList
+            ).contains(dog)
+        } finally {
+            em.close()
+        }
+    }
 
-        assertThat(
-            em.createQuery("from Cat", catClass).resultList
-        ).contains(cat)
-        assertThat(
-            em.createQuery("from Dog", dogClass).resultList
-        ).contains(dog)
+    @Test
+    fun `check we can create lazy proxies`() {
+        val em = emf.createEntityManager()
+        try {
+            val lazyCat = em.getReference(catClass, catId)
+            assertNotSame(catClass, lazyCat::class.java)
+            assertEquals(cat, lazyCat)
+        } finally {
+            em.close()
+        }
     }
 
     @Test
@@ -143,21 +172,19 @@ class EntitiesInBundlesTest {
          */
         logger.info("Query cross-bundle entities".emphasise())
 
-        val emf = entityManagerFactoryFactory.create(
-            "pets",
-            listOf(catClass, ownerClass, dogClass),
-            dbConfig
-        )
         val em = emf.createEntityManager()
-
-        // finding an owner in the cats bundle based on a string value from the Dog class in the dogs bundle
-        //  note: not a realistic real world query!
-        val queryResults = em
-            .createQuery("select o.age from Owner as o where o.name in (select d.owner from Dog as d where d.name = :dog)")
-            .setParameter("dog", "Faraway")
-            .resultList
-        logger.info("Age(s) of owners with the same name as \"Faraway's\" (dog) owner: $queryResults".emphasise())
-        assertThat(queryResults).contains(26)
+        try {
+            // finding an owner in the cats bundle based on a string value from the Dog class in the dogs bundle
+            //  note: not a realistic real world query!
+            val queryResults = em
+                .createQuery("select o.age from Owner as o where o.name in (select d.owner from Dog as d where d.name = :dog)")
+                .setParameter("dog", "Faraway")
+                .resultList
+            logger.info("Age(s) of owners with the same name as \"Faraway's\" (dog) owner: $queryResults".emphasise())
+            assertThat(queryResults).contains(26)
+        } finally {
+            em.close()
+        }
     }
 }
 

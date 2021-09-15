@@ -280,7 +280,7 @@ sealed class TypeIdentifier {
                     TreeSet((classInfoParts[4] as List<*>).map { SecureHash.create(it as String) }.toList())
             )
             try {
-                (context.sandboxGroup as? SandboxGroup)?.loadClass(classInfo, name) as Class<*>
+                (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(classInfo, name) as Class<*>
             } catch (ex: SandboxException) {
                 throw ClassNotFoundException("Unable to load CPK type $name", ex)
             }
