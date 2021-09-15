@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.security.provider.bearer
 
-import net.corda.httprpc.server.security.AuthorizingSubject
+import net.corda.httprpc.security.read.AuthorizingSubject
 import net.corda.httprpc.server.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.security.provider.credentials.AuthenticationCredentials
 import net.corda.httprpc.server.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials

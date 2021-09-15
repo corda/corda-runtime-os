@@ -1,6 +1,7 @@
 package net.corda.httprpc.server.security
 
 
+import net.corda.httprpc.security.read.AuthorizingSubject
 import org.slf4j.MDC
 
 data class RpcAuthContext(

@@ -11,8 +11,8 @@ import io.javalin.http.HttpResponseException
 import io.javalin.http.UnauthorizedResponse
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
+import net.corda.httprpc.security.read.AuthorizingSubject
 import net.corda.v5.application.flows.BadRpcStartFlowRequestException
-import net.corda.httprpc.server.security.AuthorizingSubject
 import net.corda.httprpc.server.apigen.processing.RouteInfo
 import net.corda.httprpc.server.apigen.processing.RouteProvider
 import net.corda.httprpc.server.apigen.processing.openapi.OpenApiInfoProvider

@@ -1,5 +1,6 @@
 package net.corda.httprpc.server.security
 
+import net.corda.httprpc.security.read.AuthServiceId
 import net.corda.httprpc.server.stream.DurableStreamContext
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.base.annotations.CordaSerializable
@@ -86,9 +87,3 @@ data class Actor(val id: Id, val serviceId: AuthServiceId, val owningLegalIdenti
     @CordaSerializable
     data class Id(val value: String)
 }
-
-/**
- * Authentication / Authorisation Service ID.
- */
-@CordaSerializable
-data class AuthServiceId(val value: String)
