@@ -1,4 +1,4 @@
-package net.corda.httprpc.server.security
+package net.corda.httprpc.security.read
 
 import java.util.*
 

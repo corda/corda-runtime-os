@@ -1,11 +1,12 @@
-package net.corda.httprpc.server.security
+package net.corda.httprpc.security.read
 
+import net.corda.lifecycle.Lifecycle
 import javax.security.auth.login.FailedLoginException
 
 /**
  * Manage security of RPC users, providing logic for user authentication and authorization.
  */
-interface RPCSecurityManager : AutoCloseable {
+interface RPCSecurityManager : Lifecycle {
     /**
      * An identifier associated to this security service
      */
@@ -24,6 +25,11 @@ interface RPCSecurityManager : AutoCloseable {
      */
     fun buildSubject(principal: String): AuthorizingSubject
 }
+
+/**
+ * Authentication / Authorisation Service ID.
+ */
+data class AuthServiceId(val value: String)
 
 /**
  * Non-throwing version of authenticate, returning null instead of throwing in case of authentication failure
