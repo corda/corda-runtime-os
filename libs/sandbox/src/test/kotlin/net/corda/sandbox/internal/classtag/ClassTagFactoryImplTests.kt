@@ -82,7 +82,7 @@ class ClassTagFactoryImplTests {
         assertEquals(1, classTag.version)
         assertTrue(classTag.isPlatformClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
-        assertEquals(ClassTagV1.PLACEHOLDER_HASH, classTag.cpkFileHash)
+        // We do not check the class tag's CPK file hash, since a placeholder is used for platform classes.
     }
 
     @Test
@@ -117,8 +117,8 @@ class ClassTagFactoryImplTests {
         assertEquals(1, classTag.version)
         assertTrue(classTag.isPlatformClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
-        assertEquals(ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME, classTag.cordappBundleName)
-        assertEquals(ClassTagV1.PLACEHOLDER_HASH, classTag.cpkSignerSummaryHash)
+        // We do not check the class tag's CorDapp bundle name or signer summary hash, since placeholders are used for
+        // platform classes.
     }
 
     @Test

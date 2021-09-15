@@ -183,11 +183,15 @@ private class EvolvableTagImpl(
 
 /** A dummy [ClassTagFactory] implementation that returns pre-defined tags. */
 private class DummyClassTagFactory(cpk: Cpk.Expanded) : ClassTagFactory {
+    // Used for platform classes, where the CorDapp bundle name, CPK file hash and CPK signer summary hash are ignored.
+    val dummyCordappBundleName = "dummyCordappBundleName"
+    val dummyHash = SecureHash.create("SHA-256:0000000000000000")
+
     private val nonPlatformStaticTag =
         StaticTagImpl(false, NON_PLATFORM_BUNDLE_NAME, cpk.cpkHash)
 
     private val platformStaticTag =
-        StaticTagImpl(true, PLATFORM_BUNDLE_NAME, ClassTagV1.PLACEHOLDER_HASH)
+        StaticTagImpl(true, PLATFORM_BUNDLE_NAME, dummyHash)
 
     private val invalidCpkFileHashStaticTag =
         StaticTagImpl(false, NON_PLATFORM_BUNDLE_NAME, randomSecureHash())
@@ -196,11 +200,12 @@ private class DummyClassTagFactory(cpk: Cpk.Expanded) : ClassTagFactory {
         EvolvableTagImpl(false, NON_PLATFORM_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, cpk.shortId.signerSummaryHash)
 
     private val platformEvolvableTag =
-        EvolvableTagImpl(true,
-        PLATFORM_BUNDLE_NAME,
-        ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME,
-        ClassTagV1.PLACEHOLDER_HASH
-    )
+        EvolvableTagImpl(
+            true,
+            PLATFORM_BUNDLE_NAME,
+            dummyCordappBundleName,
+            dummyHash
+        )
 
     private val invalidCordappBundleNameEvolvableTag =
         EvolvableTagImpl(
