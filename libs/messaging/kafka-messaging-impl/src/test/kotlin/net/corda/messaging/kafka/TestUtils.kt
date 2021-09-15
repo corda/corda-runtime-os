@@ -23,7 +23,7 @@ fun createStandardTestConfig(): Config = ConfigFactory.parseResourcesAnySyntax("
 
 fun getTestStateAndEventConfig(): StateAndEventConfig {
     return StateAndEventConfig(
-        TOPIC_PREFIX,
+        "test",
         "eventTopic",
         "stateTopic",
         "eventGroupName",
