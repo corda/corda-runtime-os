@@ -18,9 +18,25 @@ class FileConfigReadService : ConfigurationReadService {
 
     private companion object {
         private val log = contextLogger()
-    }
+        private const val configFile = "http-rpc-gateway.conf"
+        private fun parseConfigFile(): Config {
 
-    private val configFile = "http-rpc-gateway.conf"
+            val fileRes = FileConfigReadService::class.java.getResource("/$configFile")
+                    ?: throw CordaRuntimeException("File $configFile not found in resources.")
+
+            return try {
+                val parseOptions = ConfigParseOptions.defaults().setAllowMissing(false)
+                ConfigFactory.parseURL(fileRes, parseOptions).resolve()
+            } catch (e: ConfigException) {
+
+                log.error(e.message, e)
+                ConfigFactory.empty()
+            } catch (ioe: IOException) {
+                log.error(ioe.message, ioe)
+                ConfigFactory.empty()
+            }
+        }
+    }
 
     @Volatile
     private var stopped = true
@@ -67,24 +83,6 @@ class FileConfigReadService : ConfigurationReadService {
 
     private fun unregisterCallback(sub: ConfigListenerSubscription) {
         configUpdates.remove(sub)
-    }
-
-    private fun parseConfigFile(): Config {
-
-        val fileRes = FileConfigReadService::class.java.getResource("/$configFile")
-                ?: throw CordaRuntimeException("File $configFile not found in resources.")
-
-        return try {
-            val parseOptions = ConfigParseOptions.defaults().setAllowMissing(false)
-            ConfigFactory.parseURL(fileRes, parseOptions).resolve()
-        } catch (e: ConfigException) {
-
-            log.error(e.message, e)
-            ConfigFactory.empty()
-        } catch (ioe: IOException) {
-            log.error(ioe.message, ioe)
-            ConfigFactory.empty()
-        }
     }
 
     private class ConfigListenerSubscription(private val configReadService: FileConfigReadService) : AutoCloseable {
