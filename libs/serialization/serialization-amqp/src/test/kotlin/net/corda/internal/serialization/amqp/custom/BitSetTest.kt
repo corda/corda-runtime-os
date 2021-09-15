@@ -15,7 +15,8 @@ class BitSetTest {
     }
     @Test
     fun oneFalse() {
-        serializeDeserializeAssert(one)
+        val instance = BitSet(one)
+        serializeDeserializeAssert(instance)
     }
     @Test
     fun oneTrue() {
