@@ -115,7 +115,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             Duration.ofSeconds(config.messageReplayPeriodSecs),
             publisherFactory,
             subscriptionFactory
-        ) { outboundMessageProcessor.processAuthenticatedMessage(it, false) }
+        ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
     }
 
     override fun start() {
@@ -198,9 +198,15 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             }
         }
 
+        /**
+         * processed an AuthenticatedMessage returning a list of records to be persisted.
+         *
+         * [isReplay] - If the message is being replayed we don't persist a [LinkManagerSentMarker] as there is already
+         * a marker for this message. If the process is restarted we reread the original marker.
+         */
         fun processAuthenticatedMessage(
             messageAndKey: AuthenticatedMessageAndKey,
-            addMarkers: Boolean = true
+            isReplay: Boolean = false
         ): List<Record<String, *>> {
             val isHostedLocally = linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toHoldingIdentity())
             return if (isHostedLocally) {
@@ -211,7 +217,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     is SessionState.SessionEstablished -> recordsForSessionEstablished(state, messageAndKey)
                     is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> emptyList()
                 }
-            } + if (addMarkers) recordsForMarkers(messageAndKey, isHostedLocally) else emptyList()
+            } + if (!isReplay) recordsForMarkers(messageAndKey, isHostedLocally) else emptyList()
         }
 
         private fun recordsForNewSession(state: SessionState.NewSessionNeeded): List<Record<String, *>> {
@@ -298,7 +304,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     extractPayload(sessionDirection.session, sessionId, message, AuthenticatedMessageAndKey::fromByteBuffer)?.let {
                         messages.add(Record(Schema.P2P_IN_TOPIC, it.key, AppMessage(it.message)))
                         makeAckMessageForFlowMessage(it.message, sessionDirection.session)?.let { ack -> messages.add(ack) }
-                        sessionManager.acknowledgeInboundSessionNegotiation(sessionId)
+                        sessionManager.inboundSessionEstablished(sessionId)
                     }
                 }
                 is SessionDirection.Outbound -> {

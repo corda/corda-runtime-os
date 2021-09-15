@@ -85,7 +85,7 @@ class ReplayScheduler<M>(
 
     private fun reschedule(message: M, uniqueId: String) {
         replayFutures.computeIfPresent(uniqueId) { _, _ ->
-            return@computeIfPresent executorService.schedule({ replay(message, uniqueId) }, replayPeriod.toMillis(), TimeUnit.MILLISECONDS)
+            executorService.schedule({ replay(message, uniqueId) }, replayPeriod.toMillis(), TimeUnit.MILLISECONDS)
         }
     }
 }

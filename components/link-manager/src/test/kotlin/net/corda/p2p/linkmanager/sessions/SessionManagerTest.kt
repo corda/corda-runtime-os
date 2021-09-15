@@ -350,7 +350,8 @@ class SessionManagerTest {
     @Test
     fun `A session can be negotiated by a SessionManager and a message can be sent (in AUTHENTICATION_ONLY mode)`() {
         val queues = MockSessionMessageQueues()
-        val outboundSessionManager = sessionManager(OUTBOUND_PARTY, queues)
+        val messageReplayer = MockSessionReplayer()
+        val outboundSessionManager = sessionManager(OUTBOUND_PARTY, queues, messageReplayer = messageReplayer)
         val responderSession = negotiateOutboundSession(wrappedMessage, outboundSessionManager)
 
         assertTrue(responderSession is AuthenticatedSession)
@@ -367,6 +368,7 @@ class SessionManagerTest {
 
         assertNotNull(responderMessage)
         assertEquals(wrappedMessage.message.payload, responderMessage!!.message.payload)
+        assertEquals(0, messageReplayer.messagesForReplay.size)
     }
 
     @Test
@@ -555,7 +557,7 @@ class SessionManagerTest {
             inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))!!.payload
         )
 
-        inboundManager.acknowledgeInboundSessionNegotiation(sessionId)
+        inboundManager.inboundSessionEstablished(sessionId)
         assertNull(inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage)))
     }
 
@@ -834,7 +836,7 @@ class SessionManagerTest {
         loggingInterceptor.assertSingleWarning(
             "Received InitiatorHelloMessage with sessionId SessionId. The received public key hash" +
                 " (${initiatorHelloMessage.source.initiatorPublicKeyHash.array().toBase64()}) " +
-                "corresponding to one of the senders holding " +
+                "corresponding to one of the sender's holding " +
                 "identities is not in the network map. The message was discarded."
         )
     }
@@ -887,7 +889,7 @@ class SessionManagerTest {
         val keyHash = hashKeyToBase64(netMapOutbound.getKeyPair().public)
         loggingInterceptor.assertSingleWarning(
             "Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId $sessionId." +
-                " The received public key hash ($keyHash) corresponding to one of the senders holding " +
+                " The received public key hash ($keyHash) corresponding to one of the sender's holding " +
                 "identities is not in the network map." +
                 " The message was discarded."
         )
@@ -998,7 +1000,7 @@ class SessionManagerTest {
         assertNull(secondResponse)
 
         val keyHash = hashKeyToBase64(netMapOutbound.getKeyPair().public)
-        loggingInterceptor.assertSingleWarning("The received public key hash ($keyHash) corresponding to one of the senders holding" +
+        loggingInterceptor.assertSingleWarning("The received public key hash ($keyHash) corresponding to one of the sender's holding" +
             " identities is not in the network map. We did not respond to replayed InitiatorHandshakeMessage for sessionId SessionId.")
     }
 

@@ -42,7 +42,6 @@ class InMemorySessionReplayerTest {
         lateinit var loggingInterceptor: LoggingInterceptor
 
         private val KEY_PAIR = KeyPairGenerator.getInstance("EC", BouncyCastleProvider()).genKeyPair()
-        private val replayPeriod = Duration.ofMillis(2)
 
         @BeforeAll
         @JvmStatic
@@ -85,7 +84,7 @@ class InMemorySessionReplayerTest {
     }
 
     @Test
-    fun `InMemorySessionReplayer replays added session message repeatidly`() {
+    fun `InMemorySessionReplacer replays added session message repeatedly`() {
         val totalReplays = 5
         val publisher = SinglePhaseTestListBasedPublisher(totalReplays)
         val publisherFactory = object : PublisherFactory {

@@ -123,10 +123,8 @@ open class SessionManagerImpl(
         }
     }
 
-    override fun acknowledgeInboundSessionNegotiation(sessionId: String) {
-        if (pendingInboundSessions.containsKey(sessionId)) {
-            pendingInboundSessions.remove(sessionId)
-        }
+    override fun inboundSessionEstablished(sessionId: String) {
+        pendingInboundSessions.remove(sessionId)
     }
 
     private fun getSessionInitMessage(sessionKey: SessionKey): Pair<String, LinkOutMessage>? {
@@ -158,7 +156,7 @@ open class SessionManagerImpl(
 
         val sessionInitPayload = session.generateInitiatorHello()
         sessionReplayer.addMessageForReplay(
-            sessionId,
+            sessionId + "_" + sessionInitPayload::class.java.simpleName,
             SessionMessageReplay(sessionInitPayload, sessionKey.responderId)
         )
 
@@ -182,18 +180,14 @@ open class SessionManagerImpl(
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
-        /*The Step at this point must be either SENT_MY_DH_KEY (first time we Received a ResponderHelloMessage) or
-          GENERATED_HANDSHAKE_SECRETS we have received a ResponderHelloMessage already and this is a replay. In the
-          second case it is likely we couldn't respond with an InitiatorHandshake message because the needed information
-          was not in the networkMap.
-        */
-        if (session.step == AuthenticationProtocolInitiator.Step.SENT_MY_DH_KEY) {
-            session.receiveResponderHello(message)
-            session.generateHandshakeSecrets()
-        } else if (session.step != AuthenticationProtocolInitiator.Step.GENERATED_HANDSHAKE_SECRETS) {
+
+        if (session.step >= AuthenticationProtocolInitiator.Step.SENT_HANDSHAKE_MESSAGE) {
             logger.warn("Already received a ${ResponderHelloMessage::class.java.simpleName} for ${message.header.sessionId}. " +
                 "The message was discarded.")
             return null
+        } else if (session.step == AuthenticationProtocolInitiator.Step.SENT_MY_DH_KEY) {
+            session.receiveResponderHello(message)
+            session.generateHandshakeSecrets()
         }
 
         val ourMemberInfo = networkMap.getMemberInfo(sessionInfo.ourId)
@@ -219,9 +213,9 @@ open class SessionManagerImpl(
                 " was discarded.")
             return null
         }
-        sessionReplayer.removeMessageFromReplay(message.header.sessionId)
+        sessionReplayer.removeMessageFromReplay(message.header.sessionId + "_" + InitiatorHelloMessage::class.java.simpleName)
         sessionReplayer.addMessageForReplay(
-            message.header.sessionId,
+            message.header.sessionId + "_" + payload::class.java.simpleName,
             SessionMessageReplay(payload, sessionInfo.responderId)
         )
 
@@ -255,7 +249,7 @@ open class SessionManagerImpl(
             return null
         }
         val authenticatedSession = session.getSession()
-        sessionReplayer.removeMessageFromReplay(message.header.sessionId)
+        sessionReplayer.removeMessageFromReplay(message.header.sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName)
         sessionNegotiationLock.withLock {
             activeOutboundSessions[sessionInfo] = authenticatedSession
             activeOutboundSessionsById[message.header.sessionId] = authenticatedSession
@@ -315,7 +309,9 @@ open class SessionManagerImpl(
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
-        return if (session.step > AuthenticationProtocolResponder.Step.SENT_MY_DH_KEY) {
+        /** If the peers HoldingIdentity is not in the NetworkMap we want to call [makeResponderHandshake] when we receive
+        the next duplicate InitiatorHandshakeMessage.*/
+        return if (session.step >= AuthenticationProtocolResponder.Step.RECEIVED_HANDSHAKE_MESSAGE) {
             resendResponderHandshake(session, message)
         } else {
             makeResponderHandshake(session, message)

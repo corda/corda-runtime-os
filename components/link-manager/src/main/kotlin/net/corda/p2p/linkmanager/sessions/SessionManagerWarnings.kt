@@ -27,11 +27,11 @@ class SessionManagerWarnings {
 
         internal fun Logger.peerHashNotInNetworkMapWarning(messageName: String, sessionId: String, hash: String) {
             this.warn("Received $messageName with sessionId ${sessionId}. The received public key hash ($hash) corresponding" +
-                    " to one of the senders holding identities is not in the network map. The message was discarded.")
+                    " to one of the sender's holding identities is not in the network map. The message was discarded.")
         }
 
         internal fun Logger.peerHashNotInNetworkMapOnReplay(messageName: String, sessionId: String, hash: String) {
-            this.warn("The received public key hash ($hash) corresponding to one of the senders holding identities is not" +
+            this.warn("The received public key hash ($hash) corresponding to one of the sender's holding identities is not" +
                 " in the network map. We did not respond to replayed $messageName for sessionId $sessionId.")
         }
 
