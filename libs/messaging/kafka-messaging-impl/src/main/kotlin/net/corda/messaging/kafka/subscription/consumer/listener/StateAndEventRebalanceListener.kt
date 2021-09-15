@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_GROUP_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.LISTENER_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
@@ -32,7 +33,7 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
     private val topicPrefix = config.getString(ConfigProperties.TOPIC_PREFIX)
     private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
     private val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
-    private val listenerTimeout = config.getLong(KafkaProperties.LISTENER_TIMEOUT)
+    private val listenerTimeout = config.getLong(LISTENER_TIMEOUT)
 
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = partitionState.partitionsToSync

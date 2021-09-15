@@ -33,10 +33,8 @@ import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessorStrings
 import net.corda.messaging.kafka.integration.processors.TestStateEventProcessor
 import net.corda.messaging.kafka.integration.processors.TestStateEventProcessorStrings
-import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_MAX_POLL_INTERVAL
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MESSAGING_KAFKA
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_MAX_POLL_INTERVAL
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_PROCESSOR_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -211,7 +209,7 @@ class StateAndEventSubscriptionIntegrationTest {
         )
 
         val longWaitProcessorConfig = kafkaConfig
-            .withValue("$MESSAGING_KAFKA.${KafkaProperties.CONSUMER_PROCESSOR_TIMEOUT}", ConfigValueFactory.fromAnyRef(30000))
+            .withValue("$MESSAGING_KAFKA.${CONSUMER_PROCESSOR_TIMEOUT}", ConfigValueFactory.fromAnyRef(30000))
         val onNextLatch2 = CountDownLatch(1)
 
         //fail slowly on first record. allow time for subscription to be stopped to force rebalance

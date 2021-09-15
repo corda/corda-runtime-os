@@ -2,20 +2,21 @@ package net.corda.messaging.kafka.subscription.consumer.wrapper.impl
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.kafka.properties.ConfigProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_MAX_POLL_INTERVAL
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER_CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_GROUP_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.LISTENER_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.subscription.Topic
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
+import net.corda.messaging.kafka.types.Topic
 import net.corda.messaging.kafka.utils.tryGetFutureResult
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import org.apache.kafka.clients.CommonClientConfigs.GROUP_ID_CONFIG
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
@@ -50,10 +51,10 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     )
 
     private val consumerCloseTimeout = Duration.ofMillis(config.getLong(EVENT_CONSUMER_CLOSE_TIMEOUT))
-    private val topicPrefix = config.getString(KafkaProperties.TOPIC_PREFIX)
-    private val maxPollInterval = config.getLong(KafkaProperties.CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"))
+    private val topicPrefix = config.getString(TOPIC_PREFIX)
+    private val maxPollInterval = config.getLong(CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"))
     private val initialProcessorTimeout = maxPollInterval / 4
-    private val listenerTimeout = config.getLong(KafkaProperties.LISTENER_TIMEOUT)
+    private val listenerTimeout = config.getLong(LISTENER_TIMEOUT)
 
     private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
     private val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))

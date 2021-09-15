@@ -9,17 +9,18 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
-import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_PROCESSOR_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.DEAD_LETTER_QUEUE_SUFFIX
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_GROUP_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_CLIENT_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_CLOSE_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -33,7 +34,6 @@ import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
-import org.apache.kafka.clients.CommonClientConfigs.GROUP_ID_CONFIG
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.LoggerFactory
@@ -76,8 +76,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val consumerThreadStopTimeout = config.getLong(EVENT_CONSUMER_THREAD_STOP_TIMEOUT)
     private val producerCloseTimeout = Duration.ofMillis(config.getLong(PRODUCER_CLOSE_TIMEOUT))
     private val consumerPollAndProcessMaxRetries = config.getLong(EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES)
-    private val processorTimeout = config.getLong(KafkaProperties.CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"))
-    private val deadLetterQueueSuffix = config.getString(KafkaProperties.DEAD_LETTER_QUEUE_SUFFIX)
+    private val processorTimeout = config.getLong(CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"))
+    private val deadLetterQueueSuffix = config.getString(DEAD_LETTER_QUEUE_SUFFIX)
 
     /**
      * Is the subscription running.

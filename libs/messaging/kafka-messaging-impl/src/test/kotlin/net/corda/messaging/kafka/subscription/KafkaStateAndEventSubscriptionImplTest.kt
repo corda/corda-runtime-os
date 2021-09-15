@@ -5,8 +5,8 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
-import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_STATEANDEVENT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_MAX_POLL_INTERVAL
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_PROCESSOR_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_STATEANDEVENT
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
@@ -266,11 +266,11 @@ class KafkaStateAndEventSubscriptionImplTest {
 
         val shortWaitProcessorConfig = config
             .withValue(
-                KafkaProperties.CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"),
+                CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"),
                 ConfigValueFactory.fromAnyRef(10000)
             )
             .withValue(
-                KafkaProperties.CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"),
+                CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"),
                 ConfigValueFactory.fromAnyRef(100)
             )
 
