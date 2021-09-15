@@ -4,40 +4,42 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
-import net.corda.libs.configuration.read.ConfigListener
-import net.corda.libs.configuration.read.ConfigReadService
+import net.corda.configuration.read.ConfigurationHandler
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import java.io.IOException
 import java.util.Collections
+
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class FileConfigReadService : ConfigReadService {
+class FileConfigReadService : ConfigurationReadService {
 
     private companion object {
         private val log = contextLogger()
     }
 
-    private val configFile = "node.conf"
+    private val configFile = "http-rpc-gateway.conf"
 
     @Volatile
     private var stopped = false
 
     private val lock = ReentrantLock()
 
-    lateinit var config: Config
+    private val config = parseConfigFile()
 
-    private val configUpdates = Collections.synchronizedMap(mutableMapOf<ConfigListenerSubscription, ConfigListener>())
+    private val configUpdates = Collections.synchronizedMap(mutableMapOf<ConfigListenerSubscription, ConfigurationHandler>())
 
-    override fun registerCallback(configListener: ConfigListener): AutoCloseable {
+    override fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable {
         val sub = ConfigListenerSubscription(this)
-        configUpdates[sub] = configListener
+        configUpdates[sub] = configHandler
+        configUpdates.forEach { it.value.onNewConfiguration(setOf(configFile), mapOf(configFile to config)) }
         return sub
     }
 
-    private fun unregisterCallback(sub: ConfigListenerSubscription) {
-        configUpdates.remove(sub)
+    override fun bootstrapConfig(config: Config) {
+
     }
 
     override val isRunning: Boolean
@@ -47,8 +49,6 @@ class FileConfigReadService : ConfigReadService {
 
     override fun start() {
         lock.withLock {
-            config = parseConfigFile()
-            configUpdates.forEach { it.value.onUpdate(setOf(configFile), mapOf(configFile to config)) }
             stopped = false
         }
     }
@@ -60,6 +60,10 @@ class FileConfigReadService : ConfigReadService {
                 stopped = true
             }
         }
+    }
+
+    private fun unregisterCallback(sub: ConfigListenerSubscription) {
+        configUpdates.remove(sub)
     }
 
     private fun parseConfigFile(): Config {

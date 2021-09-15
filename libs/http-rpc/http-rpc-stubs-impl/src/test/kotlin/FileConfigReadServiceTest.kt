@@ -1,6 +1,6 @@
 package net.corda.libs.config
 
-import net.corda.libs.configuration.read.ConfigListener
+import net.corda.configuration.read.ConfigurationHandler
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
@@ -14,12 +14,10 @@ class FileConfigReadServiceTest {
     fun `starting the service will update listeners with the config` () {
         val service = FileConfigReadService()
 
-        val listenerMock: ConfigListener = mock()
+        val configHandlerMock: ConfigurationHandler = mock()
         service.use {
-            service.registerCallback(listenerMock)
-            service.start()
-            service.stop()
+            it.registerForUpdates(configHandlerMock)
         }
-        verify(listenerMock, times(1)).onUpdate(eq(setOf("node.conf")), argThat { get("node.conf")!!.hasPath("httpRpcSettings") })
+        verify(configHandlerMock, times(1)).onNewConfiguration(eq(setOf("http-rpc-gateway.conf")), argThat { get("http-rpc-gateway.conf")!!.hasPath("httpRpcSettings") })
     }
 }
