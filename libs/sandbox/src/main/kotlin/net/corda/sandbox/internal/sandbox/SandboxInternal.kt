@@ -1,6 +1,7 @@
 package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.Sandbox
+import net.corda.sandbox.SandboxException
 import org.osgi.framework.Bundle
 
 /** Extends [Sandbox] with internal methods. */
@@ -21,6 +22,17 @@ internal interface SandboxInternal : Sandbox {
     /** Grants this sandbox visibility of [otherSandbox]. */
     fun grantVisibility(otherSandbox: Sandbox)
 
-    /** Grants this sandbox visibility of [otherSandboxes]. */
-    fun grantVisibility(otherSandboxes: Collection<Sandbox>)
+    /** Grants this sandbox visibility of the [otherSandboxes]. */
+    fun grantVisibility(otherSandboxes: List<Sandbox>)
+
+    /** Returns the bundle with symbolic name [bundleName] from sandbox, or null if no bundle has a matching name. */
+    fun getBundle(bundleName: String): Bundle?
+
+    /**
+     * Loads the class with [className] from the bundle in the sandbox identified by [bundleName]. Returns null if no
+     * bundle has a matching name, or if the bundle does not contain the named class.
+     *
+     * Throws [SandboxException] if the bundle is uninstalled.
+     */
+    fun loadClass(className: String, bundleName: String): Class<*>?
 }
