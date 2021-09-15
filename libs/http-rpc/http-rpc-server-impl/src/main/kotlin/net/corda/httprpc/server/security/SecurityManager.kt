@@ -1,6 +1,7 @@
 package net.corda.httprpc.server.security
 
 import net.corda.httprpc.rpc.proxies.RpcAuthHelper
+import net.corda.httprpc.security.read.AuthorizingSubject
 import net.corda.httprpc.server.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.security.provider.credentials.AuthenticationCredentials
 import net.corda.httprpc.server.security.provider.scheme.AuthenticationSchemeProvider

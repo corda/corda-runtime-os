@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.security.provider
 
-import net.corda.httprpc.server.security.AuthorizingSubject
+import net.corda.httprpc.security.read.AuthorizingSubject
 import net.corda.httprpc.server.security.provider.credentials.AuthenticationCredentials
 
 /**
