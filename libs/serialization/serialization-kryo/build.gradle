@@ -3,6 +3,8 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
+description 'Corda Kryo serialization library'
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
@@ -18,6 +20,7 @@ dependencies {
     implementation "net.corda:corda-serialization"
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
+    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation "de.javakaffee:kryo-serializers:$kryoSerializerVersion"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'

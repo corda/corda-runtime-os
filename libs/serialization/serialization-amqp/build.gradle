@@ -1,10 +1,19 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
-    id 'biz.aQute.bnd.builder'
+    id 'corda.osgi-test-conventions'
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
 }
 
 description 'Corda AMQP serialization library'
+
+configurations {
+    cpks {
+        canBeConsumed = false
+        transitive = false
+    }
+}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -17,13 +26,15 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
+
+    implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-serialization"
     implementation project(":libs:class-info")
-    implementation "net.corda:corda-packaging"
-    implementation project(":libs:sandbox")
-    implementation project(":libs:utilities")
+    implementation project(":libs:install")
     implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
+    implementation project(":libs:sandbox")
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
+    implementation project(":libs:utilities")
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "com.google.guava:guava:$guavaVersion"
@@ -36,7 +47,22 @@ dependencies {
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation 'org.osgi:osgi.core'
+    testRuntimeOnly 'org.osgi:osgi.core'
+
+    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-one', configuration: 'cordaCPK')
+    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-two', configuration: 'cordaCPK')
+    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-three', configuration: 'cordaCPK')
+    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-four', configuration: 'cordaCPK')
+
+    integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    integrationTestImplementation "net.corda:corda-application"
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+}
+
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from configurations.cpks
 }
 
 tasks.named('jar', Jar) {
@@ -48,4 +74,8 @@ Import-Package:\
    sun.net.www.protocol.jar;resolution:=optional,\
    *
 """
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
 }

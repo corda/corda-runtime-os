@@ -154,7 +154,7 @@ class DefaultLocalSerializerFactory(
                         classInfoParts[1] as String,
                         TreeSet((classInfoParts[4] as List<*>).map { SecureHash.create(it as String) }.toList())
                 )
-                (context.sandboxGroup as? SandboxGroup)?.loadClass(classInfo, typeName)
+                (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(classInfo, typeName)
             } catch (_: SandboxException) {
                 logger.trace { "Failed to load class $typeName from any sandboxes" }
                 null

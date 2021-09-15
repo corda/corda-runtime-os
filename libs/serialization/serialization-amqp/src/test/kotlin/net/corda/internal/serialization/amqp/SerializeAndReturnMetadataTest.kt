@@ -70,7 +70,7 @@ class SerializeAndReturnMetadataTest {
 
     private fun createSandboxGroup(clazz: Class<*>, cpkIdentifier: Cpk.Identifier): SandboxGroup {
         val sandbox = mock(CpkSandbox::class.java).apply {
-            `when`(loadClass(clazz::class.java.name)).thenReturn(clazz)
+            `when`(loadClassFromCordappBundle(clazz::class.java.name)).thenReturn(clazz)
         }
 
         return mock(SandboxGroup::class.java).apply {
