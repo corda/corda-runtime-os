@@ -22,7 +22,7 @@ class EnumSetSerializer(
 
     private fun elementType(set: EnumSet<*>): Class<*> {
         return if (set.isEmpty()) {
-            EnumSet.complementOf(set).first().javaClass
+            EnumSet.complementOf(uncheckedCast<EnumSet<*>, EnumSet<MapSerializer.EnumJustUsedForCasting>>(set)).first().javaClass
         } else {
             set.first().javaClass
         }
