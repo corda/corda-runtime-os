@@ -198,7 +198,7 @@ class GatewayTest : TestBase() {
     @Test
     @Timeout(60)
     fun `gateway to multiple servers`() {
-        val messageCount = 10000
+        val messageCount = 100
         val serversCount = 4
 
         // We first produce some messages which will be consumed by the Gateway.
@@ -265,7 +265,7 @@ class GatewayTest : TestBase() {
     fun `gateway to gateway - dual stream`() {
         val aliceGatewayAddress = URI.create("http://www.chip.net:10003")
         val bobGatewayAddress = URI.create("http://www.dale.net:10004")
-        val messageCount = 10000
+        val messageCount = 100
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
         bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
         // Produce messages for each Gateway
@@ -322,8 +322,7 @@ class GatewayTest : TestBase() {
         aliceSubscription.start()
 
         val startTime = Instant.now().toEpochMilli()
-        val barrier = CountDownLatch(1)
-        // Start the gateways
+        // Start the gateways and let them run until all messages have been processed
         val t1 = thread {
             Gateway(
                 GatewayConfiguration(aliceGatewayAddress.host, aliceGatewayAddress.port, chipSslConfig),
@@ -333,10 +332,9 @@ class GatewayTest : TestBase() {
             ).also {
                 it.start()
                 it.waitForReady()
+            }.use {
+                receivedLatch.await()
             }
-                .use {
-                    barrier.await()
-                }
         }
         val t2 = thread {
             Gateway(
@@ -348,12 +346,11 @@ class GatewayTest : TestBase() {
                 it.start()
                 it.waitForReady()
             }.use {
-                barrier.await()
+                receivedLatch.await()
             }
         }
 
         receivedLatch.await()
-        barrier.countDown()
         val endTime = Instant.now().toEpochMilli()
         logger.info("Done processing ${messageCount * 2} in ${endTime - startTime} milliseconds.")
 

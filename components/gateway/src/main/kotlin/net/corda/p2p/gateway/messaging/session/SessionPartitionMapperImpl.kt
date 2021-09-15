@@ -8,19 +8,15 @@ import net.corda.p2p.SessionPartitions
 import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
-import net.corda.v5.base.util.contextLogger
 import java.lang.IllegalStateException
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 
 class SessionPartitionMapperImpl(
     coordinatorFactory: DominoCoordinatorFactory,
-    subscriptionFactory: SubscriptionFactory) : SessionPartitionMapper, DominoTile(coordinatorFactory) {
+    subscriptionFactory: SubscriptionFactory
+) : SessionPartitionMapper, DominoTile(coordinatorFactory) {
 
     companion object {
-        private val logger = contextLogger()
         const val CONSUMER_GROUP_ID = "session_partitions_mapper"
     }
 

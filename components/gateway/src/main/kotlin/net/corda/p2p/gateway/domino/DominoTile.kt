@@ -106,6 +106,7 @@ abstract class DominoTile(
         startNextResource()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun handleStopEvent() {
         toStart.clear()
         createdResources
