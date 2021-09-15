@@ -23,10 +23,14 @@ class FileConfigReadServiceTest {
             verify(configHandler1, never()).onNewConfiguration(any(), any())
 
             it.start()
-            verify(configHandler1, times(1)).onNewConfiguration(eq(setOf("http-rpc-gateway.conf")), argThat { get("http-rpc-gateway.conf")!!.hasPath("httpRpcSettings") })
+            verify(configHandler1, times(1))
+                    .onNewConfiguration(eq(setOf("http-rpc-gateway.conf")),
+                            argThat { get("http-rpc-gateway.conf")!!.hasPath("httpRpcSettings") })
 
             it.registerForUpdates(configHandler2)
-            verify(configHandler2, times(1)).onNewConfiguration(eq(setOf("http-rpc-gateway.conf")), argThat { get("http-rpc-gateway.conf")!!.hasPath("httpRpcSettings") })
+            verify(configHandler2, times(1))
+                    .onNewConfiguration(eq(setOf("http-rpc-gateway.conf")),
+                            argThat { get("http-rpc-gateway.conf")!!.hasPath("httpRpcSettings") })
         }
 
     }
