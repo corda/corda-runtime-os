@@ -1,0 +1,35 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Database ORM Implementation'
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    compileOnly "org.osgi:osgi.annotation"
+    implementation "org.slf4j:slf4j-api"
+    api "javax.persistence:javax.persistence-api"
+
+    implementation "org.hibernate:hibernate-core:$hibernateVersion"
+    implementation "org.hibernate:hibernate-osgi:$hibernateVersion"
+    implementation "com.zaxxer:HikariCP:$hikariCpVersion"
+
+    implementation project(":libs:db:orm")
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+}
+
+// TODO: integrationTest/integration-test inconsistency
+tasks.register('integrationTest', Test) {
+    description = "Runs integration tests."
+    group = "verification"
+
+    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
+    classpath = project.sourceSets["integrationTest"].runtimeClasspath
+}

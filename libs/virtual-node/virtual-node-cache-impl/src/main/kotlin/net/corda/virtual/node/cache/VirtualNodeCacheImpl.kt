@@ -3,8 +3,8 @@ package net.corda.virtual.node.cache
 import net.corda.data.identity.HoldingIdentity
 import net.corda.install.InstallService
 import net.corda.packaging.Cpb
+import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandbox.SandboxService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -17,8 +17,8 @@ import java.util.concurrent.ConcurrentHashMap
 class VirtualNodeCacheImpl @Activate constructor(
     @Reference(service = InstallService::class)
     private val installService: InstallService,
-    @Reference(service = SandboxService::class)
-    private val sandboxService: SandboxService,
+    @Reference(service = SandboxCreationService::class)
+    private val sandboxCreationService: SandboxCreationService,
 ) : VirtualNodeCache {
 
     private val cache = ConcurrentHashMap<HoldingIdentity, SandboxGroup>()
@@ -52,7 +52,7 @@ class VirtualNodeCacheImpl @Activate constructor(
                 ?: throw CordaRuntimeException("Flow not available in cordapp")
             val cpb = installService.getCpb(cpbIdentifier)
                 ?: throw CordaRuntimeException("Could not get cpb from its identifier $cpbIdentifier")
-            sandboxService.createSandboxes(cpb.cpks.map { it.cpkHash })
+            sandboxCreationService.createSandboxes(cpb.cpks.map { it.cpkHash })
         }
     }
 }
