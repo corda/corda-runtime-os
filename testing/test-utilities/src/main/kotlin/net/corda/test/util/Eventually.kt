@@ -35,5 +35,5 @@ fun <R> eventually(
         times++
     }
 
-    throw AssertionError("Test failed with \"${lastFailure?.message}\" after $duration; attempted $times times")
+    throw AssertionError("Test failed with \"${lastFailure?.message}\" after $duration; attempted $times times", lastFailure)
 }
