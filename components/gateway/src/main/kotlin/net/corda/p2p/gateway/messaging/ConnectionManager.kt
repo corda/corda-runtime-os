@@ -44,10 +44,12 @@ class ConnectionManager(
         logger.info("Starting connection manager")
 
         writeGroup = NioEventLoopGroup(NUM_CLIENT_WRITE_THREADS)
-        keepResource(CloseableNioEventLoopGroup(writeGroup!!))
+        keepResources(CloseableNioEventLoopGroup(writeGroup!!))
         nettyGroup = NioEventLoopGroup(NUM_CLIENT_NETTY_THREADS)
-        keepResource(CloseableNioEventLoopGroup(nettyGroup!!))
-        keepResource(CloseableMap(clientPool))
+        keepResources(
+            CloseableNioEventLoopGroup(nettyGroup!!),
+            CloseableMap(clientPool)
+        )
     }
 
     fun addListener(eventListener: HttpEventListener) {
@@ -67,7 +69,7 @@ class ConnectionManager(
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
         return clientPool.computeIfAbsent(destinationInfo.uri) {
             val client = HttpClient(destinationInfo, sslConfiguration, writeGroup!!, nettyGroup!!)
-            keepResource(client)
+            keepResources(client)
             eventListeners.forEach { client.addListener(it) }
             client.start()
             client

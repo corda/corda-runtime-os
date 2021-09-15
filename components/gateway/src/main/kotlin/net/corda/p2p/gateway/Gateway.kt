@@ -56,9 +56,16 @@ class Gateway(
         config.sslConfig
     )
     private val connectionManager = ConnectionManager(coordinatorFactory, config.sslConfig)
-    private val sessionPartitionMapper = SessionPartitionMapperImpl(subscriptionFactory)
-    private val inboundMessageProcessor = InboundMessageHandler(httpServer, publisherFactory, sessionPartitionMapper)
-    private val outboundMessageProcessor = OutboundMessageHandler(connectionManager, publisherFactory)
+    private val sessionPartitionMapper = SessionPartitionMapperImpl(coordinatorFactory, subscriptionFactory)
+    private val inboundMessageProcessor = InboundMessageHandler(
+        coordinatorFactory,
+        httpServer,
+        publisherFactory,
+        sessionPartitionMapper
+    )
+    private val outboundMessageProcessor = OutboundMessageHandler(
+        coordinatorFactory, connectionManager, publisherFactory
+    )
     private var p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, LINK_OUT_TOPIC),
         outboundMessageProcessor,
@@ -68,12 +75,14 @@ class Gateway(
 
     override fun prepareResources() {
         logger.info("Starting Gateway service")
-        keepResource(connectionManager)
-        keepResource(httpServer)
-        keepResource(sessionPartitionMapper)
-        keepResource(inboundMessageProcessor)
-        keepResource(outboundMessageProcessor)
-        keepResource(p2pMessageSubscription)
+        keepResources(
+            connectionManager,
+            httpServer,
+            sessionPartitionMapper,
+            inboundMessageProcessor,
+            outboundMessageProcessor,
+            p2pMessageSubscription
+        )
         logger.info("Gateway started")
     }
 }

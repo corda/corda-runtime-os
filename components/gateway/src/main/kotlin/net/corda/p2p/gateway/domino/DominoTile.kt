@@ -12,6 +12,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.atomic.AtomicReference
 
 abstract class DominoTile(
     internal val coordinatorFactory: DominoCoordinatorFactory,
@@ -24,18 +25,23 @@ abstract class DominoTile(
     }
 
     private val createdResources = ConcurrentLinkedDeque<AutoCloseable>()
+    private val toStart = ConcurrentLinkedDeque<Lifecycle>()
 
-    private val statusChangeLock = CompletableFuture<LifecycleStatus>()
+    private val readyFuture = AtomicReference<CompletableFuture<Unit>>(null)
 
-    private fun updateStatus(newStatus: LifecycleStatus) {
-        coordinator.updateStatus(newStatus)
-        statusChangeLock.complete(newStatus)
+    fun waitForReady() {
+        val future = readyFuture.get()
+            ?: throw DominoException("Can not get ready future before starting the tile")
+        future.join()
     }
 
     abstract fun prepareResources()
 
-    fun keepResource(resource: AutoCloseable) {
-        createdResources.addFirst(resource)
+    fun keepResources(firstResource: AutoCloseable, vararg other: AutoCloseable) {
+        createdResources.addFirst(firstResource)
+        other.forEach {
+            createdResources.addFirst(it)
+        }
     }
 
     override val isRunning
@@ -43,50 +49,65 @@ abstract class DominoTile(
 
     override fun start() {
         logger.info("Starting ${coordinator.name}")
-        coordinator.start()
-
-        if (statusChangeLock.get() != LifecycleStatus.UP) {
-            throw DominoException("Can not start ${coordinator.name}")
+        readyFuture.updateAndGet {
+            it ?: CompletableFuture()
         }
-        logger.info("${coordinator.name} started")
+        coordinator.start()
     }
 
     override fun stop() {
         logger.info("Stopping ${coordinator.name}")
+        readyFuture.set(null)
         coordinator.stop()
     }
 
     fun gotError(error: Throwable) {
         coordinator.postEvent(ErrorEvent(error))
+        readyFuture.get()?.completeExceptionally(error)
     }
 
     private fun handleErrorEvent(event: ErrorEvent) {
-        logger.warn("Got error", event.cause)
-        updateStatus(LifecycleStatus.ERROR)
+        logger.warn("Got error for ${coordinator.name}", event.cause)
+        coordinator.updateStatus(LifecycleStatus.ERROR)
         stop()
     }
-    private fun handleStartEvent() {
-        prepareResources()
-        createdResources
-            .reversed()
-            .filterIsInstance<Lifecycle>()
-            .forEach {
-                it.start()
-            }
 
-        val otherCoordinators = createdResources
-            .filterIsInstance<DominoTile>()
-            .map { it.coordinator }
-            .toSet()
-        if (otherCoordinators.isEmpty()) {
-            updateStatus(LifecycleStatus.UP)
+    private fun startNextResource() {
+        val resource = toStart.pollFirst()
+        if (resource == null) {
+            coordinator.updateStatus(LifecycleStatus.UP)
+            readyFuture.get()?.complete(Unit)
         } else {
-            val handler = coordinator.followStatusChanges(otherCoordinators)
-            createdResources.add(handler)
+            resource.start()
+            if (resource is DominoTile) {
+                keepResources(
+                    coordinator.followStatusChanges(
+                        setOf(resource.coordinator)
+                    )
+                )
+            }
+            if (resource.isRunning) {
+                startNextResource()
+            }
         }
     }
 
+    private fun handleStartEvent() {
+        prepareResources()
+
+        toStart.clear()
+
+        createdResources
+            .filterIsInstance<Lifecycle>()
+            .forEach {
+                toStart.addFirst(it)
+            }
+
+        startNextResource()
+    }
+
     private fun handleStopEvent() {
+        toStart.clear()
         createdResources
             .forEach {
                 try {
@@ -99,7 +120,7 @@ abstract class DominoTile(
                     logger.warn("Can not close $it", e)
                 }
             }
-        updateStatus(LifecycleStatus.DOWN)
+        coordinator.updateStatus(LifecycleStatus.DOWN)
         createdResources.clear()
     }
 
@@ -107,13 +128,7 @@ abstract class DominoTile(
         if (newStatus != LifecycleStatus.UP) {
             stop()
         } else {
-            if (createdResources.isNotEmpty()) {
-                if (createdResources.filterIsInstance<Lifecycle>()
-                    .all { it.isRunning }
-                ) {
-                    updateStatus(LifecycleStatus.UP)
-                }
-            }
+            startNextResource()
         }
     }
 

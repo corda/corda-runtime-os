@@ -64,9 +64,9 @@ class HttpServer(
     override fun prepareResources() {
         logger.info("Starting HTTP Server")
         val bossGroup = NioEventLoopGroup(1)
-        keepResource(CloseableNioEventLoopGroup(bossGroup))
+        keepResources(CloseableNioEventLoopGroup(bossGroup))
         val workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS)
-        keepResource(CloseableNioEventLoopGroup(workerGroup))
+        keepResources(CloseableNioEventLoopGroup(workerGroup))
 
         val server = ServerBootstrap()
         server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
@@ -81,8 +81,10 @@ class HttpServer(
                 close()
             }
         }
-        keepResource(CloseableChannel(serverChannel))
-        keepResource(CloseableMap(clientChannels))
+        keepResources(
+            CloseableChannel(serverChannel),
+            CloseableMap(clientChannels)
+        )
     }
 
     private val clientChannels = ConcurrentHashMap<SocketAddress, Channel>()

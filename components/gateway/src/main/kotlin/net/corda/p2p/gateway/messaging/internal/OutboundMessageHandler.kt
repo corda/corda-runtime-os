@@ -11,52 +11,48 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
+import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
+import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
+import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.ConnectionManager
-import net.corda.p2p.gateway.messaging.http.HttpMessage
+import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
+import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
+import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.net.URI
 import java.nio.ByteBuffer
-import net.corda.p2p.NetworkType
-import net.corda.p2p.gateway.messaging.http.DestinationInfo
-import org.bouncycastle.asn1.x500.X500Name
 
 /**
  * This is an implementation of an [EventLogProcessor] used to consume messages from a P2P message subscription. The received
  * events are processed and fed into the HTTP pipeline. No records will be produced by this processor as a result.
  */
-class OutboundMessageHandler(private val connectionPool: ConnectionManager,
-                             private val publisherFactory: PublisherFactory
-) : EventLogProcessor<String, LinkOutMessage>, Lifecycle, HttpEventListener {
+class OutboundMessageHandler(
+    coordinatorFactory: DominoCoordinatorFactory,
+    private val connectionPool: ConnectionManager,
+    private val publisherFactory: PublisherFactory
+) : EventLogProcessor<String, LinkOutMessage>,
+    Lifecycle,
+    HttpEventListener,
+    DominoTile(coordinatorFactory) {
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
     }
 
     private var p2pInPublisher: Publisher? = null
 
-    private var started = false
-    override val isRunning: Boolean
-        get() = started
-
-    override fun start() {
+    override fun prepareResources() {
         logger.info("Starting P2P message sender")
-        println("QQQ starting OutboundMessageHandler")
-        p2pInPublisher = publisherFactory.createPublisher(PublisherConfig(PUBLISHER_ID), ConfigFactory.empty())
+        val publisher = publisherFactory.createPublisher(PublisherConfig(PUBLISHER_ID), ConfigFactory.empty())
+        keepResources(publisher)
         connectionPool.addListener(this)
-        started = true
-        println("QQQ started OutboundMessageHandler")
-    }
-
-    override fun stop() {
-        logger.info("Stopping P2P message sender")
-        started = false
-        connectionPool.removeListener(this)
-        p2pInPublisher?.close()
-        p2pInPublisher = null
+        keepResources({
+            connectionPool.removeListener(this)
+        })
     }
 
     @Suppress("NestedBlockDepth")

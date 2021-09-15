@@ -4,6 +4,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.SessionPartitions
+import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -16,6 +17,7 @@ import java.lang.IllegalStateException
 class SessionPartitionMapperImplTest {
 
     private var processor: CompactedProcessor<String, SessionPartitions>? = null
+    private val coordinatorFactory = mock<DominoCoordinatorFactory>()
 
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), any<CompactedProcessor<String, SessionPartitions>>(), any()) } doAnswer {
@@ -32,7 +34,7 @@ class SessionPartitionMapperImplTest {
             "2" to SessionPartitions(listOf(3, 4))
         )
 
-        val sessionPartitionMapper = SessionPartitionMapperImpl(subscriptionFactory)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(coordinatorFactory, subscriptionFactory)
         sessionPartitionMapper.start()
 
         processor!!.onSnapshot(partitionsMapping)
@@ -49,7 +51,7 @@ class SessionPartitionMapperImplTest {
     @Test
     fun `getPartitions cannot be invoked, when component is not running`() {
         val sessionId = "test-session-id"
-        val sessionPartitionMapper = SessionPartitionMapperImpl(subscriptionFactory)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(coordinatorFactory, subscriptionFactory)
 
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)

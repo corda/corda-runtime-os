@@ -107,6 +107,7 @@ class GatewayTest : TestBase() {
             coodrinator,
         ).use {
             it.start()
+            it.waitForReady()
             val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null)
             HttpClient(serverInfo, bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
                 val responseReceived = CountDownLatch(1)
@@ -154,6 +155,7 @@ class GatewayTest : TestBase() {
             coodrinator,
         ).use {
             it.start()
+            it.waitForReady()
             val responseReceived = CountDownLatch(clientNumber)
             repeat(clientNumber) { index ->
                 val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null)
@@ -248,6 +250,7 @@ class GatewayTest : TestBase() {
         ).use {
             startTime = Instant.now().toEpochMilli()
             it.start()
+            it.waitForReady()
             // Wait until all messages have been delivered
             deliveryLatch.await(1, TimeUnit.MINUTES)
             endTime = Instant.now().toEpochMilli()
@@ -329,6 +332,7 @@ class GatewayTest : TestBase() {
                 coodrinator
             ).also {
                 it.start()
+                it.waitForReady()
             }
                 .use {
                     barrier.await()
@@ -342,6 +346,7 @@ class GatewayTest : TestBase() {
                 coodrinator
             ).also {
                 it.start()
+                it.waitForReady()
             }.use {
                 barrier.await()
             }
