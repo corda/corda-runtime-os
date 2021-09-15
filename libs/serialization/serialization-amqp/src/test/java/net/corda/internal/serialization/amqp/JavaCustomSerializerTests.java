@@ -1,42 +1,22 @@
 package net.corda.internal.serialization.amqp;
 
-import net.corda.v5.serialization.SerializationCustomSerializer;
-import net.corda.internal.serialization.amqp.CorDappCustomSerializer;
-import net.corda.internal.serialization.amqp.SerializationOutput;
-import net.corda.internal.serialization.amqp.SerializerFactory;
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.v5.serialization.SerializationCustomSerializer;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.io.NotSerializableException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt.testDefaultFactory;
 
-@Timeout(value = 30, unit = TimeUnit.SECONDS)
+@Timeout(value = 30)
 public class JavaCustomSerializerTests {
-    /**
-     * The class lacks a public constructor that takes parameters it can associate
-     * with its properties and is thus not serializable by the CORDA serialization
-     * framework.
-     */
-    static class Example {
-        private Integer a;
-        private Integer b;
-
-        Integer getA() { return  a; }
-        Integer getB() { return  b; }
-
-        public Example(List<Integer> l) {
-            this.a = l.get(0);
-            this.b = l.get(1);
-        }
-    }
 
     /**
-     * This is the class that will Proxy instances of Example within the serializer
+     * This is the class that will Proxy instances of ClassThatNeedsCustomSerializer within the serializer
      */
     public static class ExampleProxy {
         /**
@@ -66,14 +46,14 @@ public class JavaCustomSerializerTests {
      * Finally this is the custom serializer that will automatically loaded into the serialization
      * framework when the CorDapp Jar is scanned at runtime.
      */
-    public static class ExampleSerializer implements SerializationCustomSerializer<Example, ExampleProxy> {
+    public static class ExampleSerializer implements SerializationCustomSerializer<ClassThatNeedsCustomSerializer, ExampleProxy> {
 
         /**
          *  Given an instance of the Example class, create an instance of the proxying object ExampleProxy.
          *
-         *  Essentially convert Example -> ExampleProxy
+         *  Essentially convert ClassThatNeedsCustomSerializer -> ExampleProxy
          */
-        public ExampleProxy toProxy(Example obj) {
+        public ExampleProxy toProxy(ClassThatNeedsCustomSerializer obj) {
             return new ExampleProxy(obj.getA(), obj.getB());
         }
 
@@ -84,11 +64,11 @@ public class JavaCustomSerializerTests {
          *  Essentially convert ExampleProxy -> Example
          *
          */
-        public Example fromProxy(ExampleProxy proxy) {
+        public ClassThatNeedsCustomSerializer fromProxy(ExampleProxy proxy) {
             List<Integer> l = new ArrayList<Integer>(2);
             l.add(proxy.getProxiedA());
             l.add(proxy.getProxiedB());
-            return new Example(l);
+            return new ClassThatNeedsCustomSerializer(l);
         }
 
     }
@@ -101,11 +81,16 @@ public class JavaCustomSerializerTests {
         List<Integer> l = new ArrayList<Integer>(2);
         l.add(10);
         l.add(20);
-        Example e = new Example(l);
+        ClassThatNeedsCustomSerializer e = new ClassThatNeedsCustomSerializer(l);
 
         CorDappCustomSerializer ccs = new CorDappCustomSerializer(new ExampleSerializer(), factory);
         factory.registerExternal(ccs);
 
-        ser.serialize(e, TestSerializationContext.testSerializationContext);
+        var serializedBytes = ser.serialize(e, TestSerializationContext.testSerializationContext);
+        var deserialize = new DeserializationInput(factory).deserialize(serializedBytes, ClassThatNeedsCustomSerializer.class, TestSerializationContext.testSerializationContext);
+
+        Assertions.assertEquals(10, deserialize.getA());
+        Assertions.assertEquals(20, deserialize.getB());
+
     }
 }
