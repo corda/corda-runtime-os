@@ -6,7 +6,6 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.manager.FlowManager
 import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.StartEvent
@@ -33,11 +32,11 @@ class FlowExecutor(
         private const val INSTANCE_ID_KEY = "instance-id"
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor>(::eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
 
     private var messagingSubscription: StateAndEventSubscription<FlowKey, Checkpoint, FlowEvent>? = null
 
-    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+    private fun eventHandler(event: LifecycleEvent) {
         when (event) {
             is StartEvent -> {
                 logger.debug { "Starting the flow executor" }

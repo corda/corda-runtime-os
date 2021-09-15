@@ -8,7 +8,7 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.flow.manager.FlowManager
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.sandbox.cache.FlowMetadata
+import net.corda.virtual.node.cache.FlowMetadata
 
 class FlowMessageProcessor(
     private val flowManager: FlowManager

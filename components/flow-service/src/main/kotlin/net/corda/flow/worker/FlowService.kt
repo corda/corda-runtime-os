@@ -21,6 +21,11 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+/**
+ * This component is a sketch of how the flow service might be structured using the configuration service and the flow
+ * libraries to put together a component that reacts to config changes. It should be read as not a finished component,
+ * but rather a suggestion of how to put together the pieces to create components.
+ */
 @Component(service = [FlowService::class])
 class FlowService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -81,6 +86,7 @@ class FlowService @Activate constructor(
         }
     }
 
+    @Suppress("TooGenericExceptionThrown")
     private fun onConfigChange(keys: Set<String>, config: Map<String, Config>) {
         if (MESSAGING_KEY in keys) {
             val newConfig = config[MESSAGING_KEY] ?: throw Exception("Configuration missing from map")
