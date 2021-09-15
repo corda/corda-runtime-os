@@ -2,7 +2,7 @@ package net.corda.internal.serialization.amqp.custom
 
 import net.corda.internal.serialization.amqp.EnumEvolveTests
 import net.corda.internal.serialization.amqp.EvolvabilityTests
-import net.corda.internal.serialization.amqp.custom.ReusableSerialiseDeserializeAssert.Companion.serializeDeserialize
+import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.serializeDeserialize
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream

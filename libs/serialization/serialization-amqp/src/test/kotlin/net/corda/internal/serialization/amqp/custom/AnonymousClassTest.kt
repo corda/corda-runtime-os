@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.amqp.custom
 
 import net.corda.internal.serialization.amqp.CorDappCustomSerializer
-import net.corda.internal.serialization.amqp.custom.ReusableSerialiseDeserializeAssert.Companion.serializeDeserializeAssert
+import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.serializeDeserializeAssert
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.v5.serialization.MissingSerializerException
