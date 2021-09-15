@@ -15,6 +15,7 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.p2p.schema.Schema
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -209,14 +210,10 @@ class InMemorySessionReplayerTest {
 
         publisher.testWaitLatch.await()
         assertEquals(initialReplays, publisher.list.size)
+        assertThat(publisher.list).extracting<String> { it.topic }.containsOnly(Schema.LINK_OUT_TOPIC)
+        assertThat(publisher.list.filter { (it.value as? LinkOutMessage)?.payload == helloMessage } ).hasSize(initialReplays / 2)
+        assertThat(publisher.list.filter { (it.value as? LinkOutMessage)?.payload == secondHelloMessage } ).hasSize(initialReplays / 2)
 
-        for (i in 0 until publisher.list.size) {
-            val record = publisher.list[i]
-            assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
-            assertTrue(record.value is LinkOutMessage)
-            if (i % 2 == 0) assertSame(helloMessage, (record.value as LinkOutMessage).payload)
-            else assertSame(secondHelloMessage, (record.value as LinkOutMessage).payload)
-        }
         replayer.removeMessageFromReplay(firstId)
         publisher.publisherWaitLatch.countDown()
         publisher.testWaitLatch1.await()
