@@ -35,7 +35,7 @@ public class JavaCustomSerializerMapProxyTests {
     }
 
     @Test
-    @Disabled("Will fix in a future PR")
+    @Disabled("Will fix in CORE-2685")
     public void serializeExample() throws NotSerializableException {
         SerializerFactory factory = testDefaultFactory();
         SerializationOutput ser = new SerializationOutput(factory);

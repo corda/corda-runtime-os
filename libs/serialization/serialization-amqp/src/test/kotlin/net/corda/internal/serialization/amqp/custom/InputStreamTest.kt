@@ -13,7 +13,7 @@ import kotlin.test.assertNotNull
 
 class InputStreamTest {
     @Test
-    @Disabled("Will fix in a future PR")
+    @Disabled("Will fix in CORE-2683")
     fun empty() {
         ByteArrayInputStream.nullInputStream().use {
             val deserializedInputStream = serializeDeserialize(it)

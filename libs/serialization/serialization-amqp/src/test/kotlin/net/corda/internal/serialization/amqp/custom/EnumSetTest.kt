@@ -14,7 +14,7 @@ class EnumSetTest {
     }
 
     @Test
-    @Disabled("Will fix in a future PR")
+    @Disabled("Will fix in CORE-2684")
     fun empty() {
         serializeDeserializeAssert(EnumSet.noneOf(Abc::class.java))
     }
