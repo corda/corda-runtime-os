@@ -4,7 +4,7 @@ import net.corda.internal.serialization.amqp.custom.ReusableSerialiseDeserialize
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import java.util.*
+import java.util.Currency
 import kotlin.test.assertTrue
 
 class CurrencyTest {
