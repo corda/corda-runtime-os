@@ -1,9 +1,11 @@
 package net.corda.messaging.kafka.subscription.consumer.wrapper
 
+import com.typesafe.config.Config
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.StateAndEventConsumerImpl
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
-import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.getTestStateAndEventConfig
+import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.messaging.kafka.types.StateAndEventConfig
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
@@ -21,17 +23,20 @@ class StateAndEventConsumerImplTest {
 
     private companion object {
         const val TOPIC = "topic"
+        private val config: Config = createStandardTestConfig().getConfig(ConfigProperties.PATTERN_STATEANDEVENT)
+        private val stateAndEventConfig = StateAndEventConfig.getStateAndEventConfig(config)
     }
 
     @Test
     fun testClose() {
-        val (stateAndEventListener, eventConsumer, stateConsumer, config, partitions) = setupMocks()
+        val (stateAndEventListener, eventConsumer, stateConsumer, mapFactory, partitions) = setupMocks()
         val partitionId = partitions.first().partition()
         val partitionState = StateAndEventPartitionState<String, String>(
             mutableMapOf(partitionId to mutableMapOf()),
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
-        val consumer = StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val consumer =
+            StateAndEventConsumerImpl(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
         consumer.close()
 
         verify(eventConsumer, times(1)).close(any())
@@ -40,7 +45,7 @@ class StateAndEventConsumerImplTest {
 
     @Test
     fun testGetValue() {
-        val (stateAndEventListener, eventConsumer, stateConsumer, config, partitions) = setupMocks()
+        val (stateAndEventListener, eventConsumer, stateConsumer, mapFactory, partitions) = setupMocks()
         val partitionId = partitions.first().partition()
         val partitionState = StateAndEventPartitionState(
             mutableMapOf(
@@ -52,27 +57,26 @@ class StateAndEventConsumerImplTest {
                 )
             ), mutableMapOf(partitionId to Long.MAX_VALUE)
         )
-        val consumer = StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
-        val valueKey1 = consumer.getInMemoryStateValue("key1")
+        val consumer =
+            StateAndEventConsumerImpl(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val valueKey1 = consumer.getValue("key1")
         assertThat(valueKey1).isEqualTo("value1")
-        val valueKey2 = consumer.getInMemoryStateValue("key2")
+        val valueKey2 = consumer.getValue("key2")
         assertThat(valueKey2).isNull()
     }
 
     @Test
     fun testOnProcessorStateUpdated() {
-        val (stateAndEventListener, eventConsumer, stateConsumer, config, partitions) = setupMocks()
+        val (stateAndEventListener, eventConsumer, stateConsumer, mapFactory, partitions) = setupMocks()
         val partitionId = partitions.first().partition()
         val partitionState = StateAndEventPartitionState(
             mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1"))),
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
-        val consumer = StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val consumer =
+            StateAndEventConsumerImpl(v, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
 
-        consumer.updateInMemoryStatePostCommit(
-            mutableMapOf(partitionId to mutableMapOf("key1" to null, "key2" to "value2")),
-            Clock.systemUTC()
-        )
+        consumer.onProcessorStateUpdated(mutableMapOf(partitionId to mutableMapOf("key1" to null, "key2" to "value2")), Clock.systemUTC())
 
         val currentStates = partitionState.currentStates
         assertThat(currentStates[partitionId]?.get("key1")).isNull()
@@ -83,15 +87,16 @@ class StateAndEventConsumerImplTest {
 
     @Test
     fun testUpdateStates() {
-        val (stateAndEventListener, eventConsumer, stateConsumer, config, partitions) = setupMocks()
+        val (stateAndEventListener, eventConsumer, stateConsumer, mapFactory, partitions) = setupMocks()
         val partitionId = partitions.first().partition()
         val partitionState = StateAndEventPartitionState(
             mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1"))),
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
-        val consumer = StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val consumer =
+            StateAndEventConsumerImpl(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
 
-        consumer.pollAndUpdateStates(true)
+        consumer.updateStatesAndSynchronizePartitions()
 
         verify(stateConsumer, times(1)).assignment()
         verify(stateConsumer, times(1)).poll()
@@ -101,13 +106,13 @@ class StateAndEventConsumerImplTest {
 
     @Test
     fun testUpdateStatesNoSync() {
-        val (stateAndEventListener, eventConsumer, stateConsumer, config, partitions) = setupMocks()
+        val (stateAndEventListener, eventConsumer, stateConsumer, mapFactory, partitions) = setupMocks()
         val partitionId = partitions.first().partition()
         val partitionState = StateAndEventPartitionState(
             mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1"))),
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
-        val consumer = StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val consumer = StateAndEventConsumerImpl(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
 
         consumer.pollAndUpdateStates(false)
 

@@ -33,8 +33,8 @@ import net.corda.messaging.kafka.subscription.KafkaRandomAccessSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaStateAndEventSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.StateAndEventBuilderImpl
+import net.corda.messaging.kafka.types.StateAndEventConfig.Companion.getStateAndEventConfig
 import net.corda.messaging.kafka.utils.ConfigUtils.Companion.resolveSubscriptionConfiguration
-import net.corda.messaging.kafka.utils.getStateAndEventConfig
 import net.corda.messaging.kafka.utils.toConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate

@@ -1,11 +1,12 @@
 package net.corda.messaging.kafka.subscription.consumer.listener
 
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
-import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.getTestStateAndEventConfig
+import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.messaging.kafka.types.StateAndEventConfig
 import org.apache.kafka.common.TopicPartition
 import org.junit.jupiter.api.Test
@@ -20,6 +21,8 @@ class StateAndEventRebalanceListenerTest {
 
     private companion object {
         const val TOPIC = "topic"
+        private val config: Config = createStandardTestConfig().getConfig(ConfigProperties.PATTERN_STATEANDEVENT)
+        private val stateAndEventConfig = StateAndEventConfig.getStateAndEventConfig(config)
     }
 
     @Test
@@ -67,7 +70,6 @@ class StateAndEventRebalanceListenerTest {
         val stateConsumer: CordaKafkaConsumer<String, String> = mock()
 
         val topicPartitions = setOf(TopicPartition(TOPIC, 0))
-        val config = getTestStateAndEventConfig()
         val mapFactory = mock<SubscriptionMapFactory<String, Pair<Long, String>>>()
 
         doAnswer { topicPartitions }.whenever(stateConsumer).assignment()
