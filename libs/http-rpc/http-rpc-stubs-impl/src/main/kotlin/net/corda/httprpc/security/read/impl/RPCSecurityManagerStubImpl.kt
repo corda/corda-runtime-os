@@ -1,14 +1,10 @@
 package net.corda.httprpc.security.read.impl
 
-<<<<<<< HEAD
 import net.corda.httprpc.security.read.AdminSubject
 import net.corda.httprpc.security.read.AuthServiceId
 import net.corda.httprpc.security.read.AuthorizingSubject
 import net.corda.httprpc.security.read.Password
 import net.corda.httprpc.security.read.RPCSecurityManager
-=======
-import net.corda.httprpc.security.read.*
->>>>>>> 80f86005 (CORE-2630: Stub implementation of `RPCSecurityManager`)
 import org.apache.commons.lang3.StringUtils
 import javax.security.auth.login.FailedLoginException
 
