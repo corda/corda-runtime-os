@@ -1,0 +1,20 @@
+package net.corda.messaging.kafka.types
+
+import com.typesafe.config.Config
+import java.time.Duration
+
+data class StateAndEventConfig(
+    val topicPrefix : String,
+    val eventTopic: String,
+    val stateTopic: String,
+    val eventGroupName: String,
+    val loggerName: String,
+    val producerClientId: String,
+    val consumerThreadStopTimeout: Long,
+    val consumerCloseTimeout: Duration,
+    val producerCloseTimeout: Duration,
+    val consumerPollAndProcessMaxRetries: Long,
+    val stateConsumerConfig: Config,
+    val eventConsumerConfig: Config,
+    val producerConfig: Config
+)

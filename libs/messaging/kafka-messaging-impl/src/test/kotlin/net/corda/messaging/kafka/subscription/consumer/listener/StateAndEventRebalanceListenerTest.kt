@@ -1,10 +1,11 @@
 package net.corda.messaging.kafka.subscription.consumer.listener
 
-import com.typesafe.config.Config
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
+import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.getTestStateAndEventConfig
+import net.corda.messaging.kafka.types.StateAndEventConfig
 import org.apache.kafka.common.TopicPartition
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -61,10 +62,9 @@ class StateAndEventRebalanceListenerTest {
         val stateConsumer: CordaKafkaConsumer<String, String> = mock()
 
         val topicPartitions = setOf(TopicPartition(TOPIC, 0))
-        val config = mock<Config>()
+        val config = getTestStateAndEventConfig()
         val mapFactory = mock<SubscriptionMapFactory<String, Pair<Long, String>>>()
 
-        doAnswer { "string" }.whenever(config).getString(any())
         doAnswer { topicPartitions }.whenever(stateConsumer).assignment()
 
         return Mocks(listener, eventConsumer, stateConsumer, config, mapFactory, topicPartitions)
@@ -74,7 +74,7 @@ class StateAndEventRebalanceListenerTest {
         val stateAndEventListener: StateAndEventListener<String, String>,
         val eventConsumer: CordaKafkaConsumer<String, String>,
         val stateConsumer: CordaKafkaConsumer<String, String>,
-        val config: Config,
+        val config: StateAndEventConfig,
         val mapFactory: SubscriptionMapFactory<String, Pair<Long, String>>,
         val partitions: Set<TopicPartition>
     )

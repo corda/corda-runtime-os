@@ -1,15 +1,10 @@
 package net.corda.messaging.kafka.subscription.consumer.listener
 
-import com.typesafe.config.Config
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.kafka.properties.ConfigProperties
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.EVENT_GROUP_ID
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
+import net.corda.messaging.kafka.types.StateAndEventConfig
 import net.corda.messaging.kafka.types.Topic
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
@@ -18,7 +13,7 @@ import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
 class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
-    private val config: Config,
+    private val config: StateAndEventConfig,
     private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
     private val eventConsumer: CordaKafkaConsumer<K, E>,
     private val stateConsumer: CordaKafkaConsumer<K, S>,
@@ -26,13 +21,11 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
 ) : ConsumerRebalanceListener {
 
-    private val log = LoggerFactory.getLogger(
-        "${config.getString(EVENT_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
-    )
+    private val log = LoggerFactory.getLogger(config.loggerName)
 
-    private val topicPrefix = config.getString(ConfigProperties.TOPIC_PREFIX)
-    private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
-    private val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
+    private val topicPrefix = config.topicPrefix
+    private val eventTopic = Topic(topicPrefix, config.eventTopic)
+    private val stateTopic = Topic(topicPrefix, config.stateTopic)
 
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = partitionState.partitionsToSync

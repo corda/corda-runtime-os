@@ -7,6 +7,8 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CLIENT_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.GROUP
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.INSTANCE_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
+import net.corda.messaging.kafka.types.StateAndEventConfig
+import java.time.Duration
 
 const val TOPIC_PREFIX = "test"
 
@@ -19,3 +21,20 @@ fun createStandardTestConfig(): Config = ConfigFactory.parseResourcesAnySyntax("
     .withFallback(ConfigFactory.parseResourcesAnySyntax("messaging-defaults.conf"))
     .resolve()
 
+fun getTestStateAndEventConfig(): StateAndEventConfig {
+    return StateAndEventConfig(
+        TOPIC_PREFIX,
+        "eventTopic",
+        "stateTopic",
+        "eventGroupName",
+        "loggerName",
+        "producerClientId",
+        1000,
+        Duration.ofMillis(1000),
+        Duration.ofMillis(1000),
+        3,
+        ConfigFactory.empty(),
+        ConfigFactory.empty(),
+        ConfigFactory.empty()
+    )
+}

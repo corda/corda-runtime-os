@@ -1,10 +1,11 @@
 package net.corda.messaging.kafka.subscription.consumer.wrapper
 
-import com.typesafe.config.Config
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.StateAndEventConsumerImpl
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
+import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.getTestStateAndEventConfig
+import net.corda.messaging.kafka.types.StateAndEventConfig
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
@@ -102,7 +103,7 @@ class StateAndEventConsumerImplTest {
         val stateConsumer: CordaKafkaConsumer<String, String> = mock()
 
         val topicPartitions = setOf(TopicPartition(TOPIC, 0))
-        val config = mock<Config>()
+        val config = getTestStateAndEventConfig()
         val mapFactory = mock<SubscriptionMapFactory<String, Pair<Long, String>>>()
 
         val state = ConsumerRecordAndMeta<String, String>(
@@ -110,7 +111,6 @@ class StateAndEventConsumerImplTest {
             ConsumerRecord(TOPIC, 0, 0, "key", "state5")
         )
 
-        doAnswer { "string" }.whenever(config).getString(any())
         doAnswer { topicPartitions }.whenever(stateConsumer).assignment()
         doAnswer { listOf(state) }.whenever(stateConsumer).poll()
         doAnswer { Long.MAX_VALUE }.whenever(stateConsumer).position(any())
@@ -122,7 +122,7 @@ class StateAndEventConsumerImplTest {
         val stateAndEventListener: StateAndEventListener<String, String>,
         val eventConsumer: CordaKafkaConsumer<String, String>,
         val stateConsumer: CordaKafkaConsumer<String, String>,
-        val config: Config,
+        val config: StateAndEventConfig,
         val mapFactory: SubscriptionMapFactory<String, Pair<Long, String>>,
         val partitions: Set<TopicPartition>
     )

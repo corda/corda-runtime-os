@@ -11,6 +11,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventCons
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.stubs.StubStateAndEventProcessor
+import net.corda.messaging.kafka.utils.getStateAndEventConfig
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
@@ -38,6 +39,7 @@ class KafkaStateAndEventSubscriptionImplTest {
     }
 
     private val config: Config = createStandardTestConfig().getConfig(PATTERN_STATEANDEVENT)
+    private val stateAndEventConfig = getStateAndEventConfig(config)
 
     data class Mocks(
         val builder: StateAndEventBuilder<String, String, ByteBuffer>,
@@ -92,7 +94,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         val (builder, producer, stateAndEventConsumer) = setupMocks(iterations.toLong(), latch)
         val processor = StubStateAndEventProcessor(latch, CordaMessageAPIIntermittentException("Test exception"))
         val subscription = KafkaStateAndEventSubscriptionImpl(
-            config,
+            stateAndEventConfig,
             builder,
             processor
         )
@@ -131,7 +133,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         val (builder, producer, stateAndEventConsumer) = setupMocks(iterations.toLong(), latch)
         val processor = StubStateAndEventProcessor(latch)
         val subscription = KafkaStateAndEventSubscriptionImpl(
-            config,
+            stateAndEventConfig,
             builder,
             processor
         )
@@ -190,7 +192,7 @@ class KafkaStateAndEventSubscriptionImplTest {
 
         val processor = StubStateAndEventProcessor(latch)
         val subscription = KafkaStateAndEventSubscriptionImpl(
-            config,
+            stateAndEventConfig,
             builder,
             processor
         )
@@ -236,7 +238,7 @@ class KafkaStateAndEventSubscriptionImplTest {
 
         val processor = StubStateAndEventProcessor(latch)
         val subscription = KafkaStateAndEventSubscriptionImpl(
-            config,
+            stateAndEventConfig,
             builder,
             processor
         )
