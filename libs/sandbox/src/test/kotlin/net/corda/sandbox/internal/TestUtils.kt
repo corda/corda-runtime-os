@@ -17,8 +17,9 @@ const val CORDAPP_BUNDLE_NAME = "cordapp_bundle_symbolic_name"
 /** Generates a random [SecureHash]. */
 fun randomSecureHash(): SecureHash {
     val allowedChars = '0'..'9'
-    val hash = (1..16).map { allowedChars.random() }.joinToString("")
-    return SecureHash.create("SHA-256:$hash")
+    val randomBytes = (1..16).map { allowedChars.random() }.joinToString("").toByteArray()
+    val digest = MessageDigest.getInstance(HASH_ALGORITHM)
+    return SecureHash(digest.algorithm, digest.digest(randomBytes))
 }
 
 /** Generates a mock [Bundle] with the given [bundleSymbolicName] and [bundleVersion]. */
@@ -33,12 +34,11 @@ fun mockCpk(): Cpk.Expanded {
     val mockSigners = TreeSet(setOf(randomSecureHash()))
     val dummyCpkIdentifier = Cpk.Identifier("", "", mockSigners)
 
-    // TODO - Avoid this if possible.
-    val cpkSignerBytes = mockSigners.joinToString("").toByteArray()
+    val signerSummaryBytes = mockSigners.joinToString("").toByteArray()
     val digest = MessageDigest.getInstance(HASH_ALGORITHM)
-    digest.update(cpkSignerBytes)
+    val signerSummaryHash = SecureHash(digest.algorithm, digest.digest(signerSummaryBytes))
 
-    val dummyShortIdentifier = Cpk.ShortIdentifier("", "", SecureHash(digest.algorithm, digest.digest()))
+    val dummyShortIdentifier = Cpk.ShortIdentifier("", "", signerSummaryHash)
     val mockCpkFileHash = randomSecureHash()
     return mock<Cpk.Expanded>().apply {
         whenever(id).thenReturn(dummyCpkIdentifier)

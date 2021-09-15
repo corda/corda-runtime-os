@@ -3,6 +3,7 @@
 package net.corda.sandbox.internal
 
 import net.corda.v5.crypto.SecureHash
+import java.security.MessageDigest
 import java.util.Collections.unmodifiableList
 
 // The symbolic names of the bundles that should be public in the platform sandbox.
@@ -46,7 +47,10 @@ internal object ClassTagV1 {
 
     // Used as placeholders when generating class tags for platform classes.
     internal const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "PLATFORM_BUNDLE"
-    internal val PLACEHOLDER_HASH = SecureHash.create("SHA-256:0000000000000000")
+    internal val PLACEHOLDER_HASH = let {
+        val digest = MessageDigest.getInstance(HASH_ALGORITHM)
+        SecureHash(digest.algorithm, digest.digest("placeholder_hash".toByteArray()))
+    }
 }
 
 internal const val HASH_ALGORITHM = "SHA-256"
