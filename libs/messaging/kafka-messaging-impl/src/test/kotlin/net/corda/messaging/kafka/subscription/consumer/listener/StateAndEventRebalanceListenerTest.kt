@@ -34,7 +34,14 @@ class StateAndEventRebalanceListenerTest {
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
         val rebalanceListener =
-            StateAndEventRebalanceListener(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+            StateAndEventRebalanceListener(
+                stateAndEventConfig,
+                mapFactory,
+                eventConsumer,
+                stateConsumer,
+                partitionState,
+                stateAndEventListener
+            )
         rebalanceListener.onPartitionsRevoked(partitions)
 
         verify(stateConsumer, times(1)).assignment()
@@ -52,8 +59,10 @@ class StateAndEventRebalanceListenerTest {
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
         val rebalanceListener =
-            StateAndEventRebalanceListener(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState,
-                stateAndEventListener)
+            StateAndEventRebalanceListener(
+                stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState,
+                stateAndEventListener
+            )
         rebalanceListener.onPartitionsAssigned(partitions)
 
         verify(stateConsumer, times(1)).seekToBeginning(any())

@@ -36,7 +36,8 @@ class StateAndEventConsumerImplTest {
             mutableMapOf(partitionId to mutableMapOf()),
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
-        val consumer = StateAndEventConsumerImpl(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val consumer =
+            StateAndEventConsumerImpl(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
         consumer.close()
 
         verify(eventConsumer, times(1)).close(any())
@@ -57,7 +58,8 @@ class StateAndEventConsumerImplTest {
                 )
             ), mutableMapOf(partitionId to Long.MAX_VALUE)
         )
-        val consumer = StateAndEventConsumerImpl(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val consumer =
+            StateAndEventConsumerImpl(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
         val valueKey1 = consumer.getValue("key1")
         assertThat(valueKey1).isEqualTo("value1")
         val valueKey2 = consumer.getValue("key2")
@@ -72,7 +74,8 @@ class StateAndEventConsumerImplTest {
             mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1"))),
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
-        val consumer = StateAndEventConsumerImpl(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val consumer =
+            StateAndEventConsumerImpl(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
 
         consumer.onProcessorStateUpdated(mutableMapOf(partitionId to mutableMapOf("key1" to null, "key2" to "value2")), Clock.systemUTC())
 
@@ -91,7 +94,8 @@ class StateAndEventConsumerImplTest {
             mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1"))),
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
-        val consumer = StateAndEventConsumerImpl(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val consumer =
+            StateAndEventConsumerImpl(stateAndEventConfig, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
 
         consumer.updateStatesAndSynchronizePartitions()
 
