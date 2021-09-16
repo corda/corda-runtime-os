@@ -12,8 +12,8 @@ import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBSUB
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_PUBSUB
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.CordaKafkaConsumerImpl
 import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecords

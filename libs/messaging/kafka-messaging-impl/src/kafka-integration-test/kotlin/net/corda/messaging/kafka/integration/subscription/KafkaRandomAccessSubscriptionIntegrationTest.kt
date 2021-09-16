@@ -48,7 +48,7 @@ class KafkaRandomAccessSubscriptionIntegrationTest {
     @Test
     fun `random access subscription can successfully retrieve records at specific partition and offset`() {
         val partition = 4
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val randomAccessSub = subscriptionFactory.createRandomAccessSubscription(
             SubscriptionConfig("group-1", TOPIC, 1),

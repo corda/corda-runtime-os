@@ -11,6 +11,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.getRecords
 import net.corda.messaging.kafka.integration.processors.TestPubsubProcessor
 import org.junit.jupiter.api.BeforeEach
@@ -59,7 +60,7 @@ class PubsubSubscriptionIntegrationTest {
         )
         pubsubSub.start()
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + PUBSUB_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
 
         while (latch.count > 0) {
