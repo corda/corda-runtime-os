@@ -143,7 +143,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                 }
             }
 
-            for (offsets in snapshotEnds.toMap()) {
+            for (offsets in snapshotEnds) {
                 val partition = offsets.key
                 if (consumer.position(partition) >= offsets.value) {
                     snapshotEnds.remove(partition)
