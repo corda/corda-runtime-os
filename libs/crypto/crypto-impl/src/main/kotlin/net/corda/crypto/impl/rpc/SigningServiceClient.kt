@@ -180,7 +180,7 @@ class SigningServiceClient(
                 retry--
                 if (retry < 0) {
                     logger.error("Timeout executing ${request::class.java.name} for member ${context.memberId}", e)
-                    throw CryptoServiceTimeoutException(clientTimeout)
+                    throw CryptoServiceTimeoutException(clientTimeout, e)
                 } else {
                     logger.error(
                         "Timeout executing ${request::class.java.name} for member ${context.memberId}, " +

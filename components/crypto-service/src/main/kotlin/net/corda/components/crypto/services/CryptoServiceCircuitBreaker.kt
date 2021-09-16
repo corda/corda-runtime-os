@@ -32,7 +32,7 @@ class CryptoServiceCircuitBreaker(private val cryptoService: CryptoService, priv
             return result
         } catch (e: TimeoutException) {
             logger.error("Crypto task timeout (num=$num)", e)
-            throw CryptoServiceTimeoutException(timeout)
+            throw CryptoServiceTimeoutException(timeout, e)
         } catch (e: CryptoServiceLibraryException) {
             logger.error("Crypto task failed (num=$num)", e)
             throw e
