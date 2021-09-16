@@ -12,13 +12,15 @@ internal fun createCheckpointSerializer(
     serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>> = emptyMap(),
     singletonInstances: List<SingletonSerializeAsToken> = emptyList()
 ): KryoCheckpointSerializer {
+    val singletonSerializer = SingletonSerializeAsTokenSerializer(singletonInstances.associateBy { it.tokenName })
+    val adaptedSerializers = serializers.mapValues { KryoCheckpointSerializerAdapter(it.value).adapt() } +
+            mapOf(SingletonSerializeAsToken::class.java to singletonSerializer)
     return KryoCheckpointSerializer(
         DefaultKryoCustomizer.customize(
             Kryo(),
-            serializers,
+            adaptedSerializers,
             CordaClassResolver(mock(), mock(), mock()),
             ClassSerializer(mock(), mock(), mock()),
-            SingletonSerializeAsTokenSerializer(singletonInstances.associateBy { it.tokenName })
         )
     )
 }

@@ -14,6 +14,7 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 internal class SingletonSerializeAsTokenSerializer(
     private val serializableInstances: Map<String, SingletonSerializeAsToken>,
 ) : Serializer<SingletonSerializeAsToken>() {
+    @Suppress("unused")
     override fun write(kryo: Kryo, output: Output, obj: SingletonSerializeAsToken) {
         if (!serializableInstances.contains(obj.tokenName)) {
             throw CordaRuntimeException("No instance of type ${obj.tokenName} found in ${this::class.java.simpleName}.")

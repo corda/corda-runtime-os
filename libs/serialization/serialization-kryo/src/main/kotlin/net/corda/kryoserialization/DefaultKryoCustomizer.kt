@@ -3,6 +3,7 @@
 package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.serializers.ClosureSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
 import com.esotericsoftware.kryo.serializers.FieldSerializer
@@ -20,16 +21,13 @@ import net.corda.kryoserialization.serializers.LinkedHashMapEntrySerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
 import net.corda.kryoserialization.serializers.LinkedListItrSerializer
 import net.corda.kryoserialization.serializers.LoggerSerializer
-import net.corda.kryoserialization.serializers.SingletonSerializeAsTokenSerializer
 import net.corda.kryoserialization.serializers.StackTraceSerializer
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
-import net.corda.serialization.CheckpointInternalCustomSerializer
 import net.corda.serializers.PrivateKeySerializer
 import net.corda.serializers.PublicKeySerializer
 import net.corda.utilities.LazyMappedList
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.bouncycastle.jcajce.interfaces.EdDSAPrivateKey
 import org.bouncycastle.jcajce.interfaces.EdDSAPublicKey
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey
@@ -59,10 +57,9 @@ class DefaultKryoCustomizer {
 
         internal fun customize(
             kryo: Kryo,
-            serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>>,
+            serializers: Map<Class<*>, Serializer<*>>,
             classResolver: CordaClassResolver,
             classSerializer: ClassSerializer,
-            singletonSerializeAsTokenSerializer: SingletonSerializeAsTokenSerializer,
             ): Kryo {
             return kryo.apply {
 
@@ -102,7 +99,6 @@ class DefaultKryoCustomizer {
 
                 addDefaultSerializer(Logger::class.java, LoggerSerializer)
                 addDefaultSerializer(X509Certificate::class.java, X509CertificateSerializer)
-                addDefaultSerializer(SingletonSerializeAsToken::class.java, singletonSerializeAsTokenSerializer)
                 addDefaultSerializer(Class::class.java, classSerializer)
                 addDefaultSerializer(
                     LinkedHashMapIteratorSerializer.getIterator()::class.java.superclass,
@@ -139,8 +135,8 @@ class DefaultKryoCustomizer {
                 addDefaultSerializer(AutoCloseable::class.java, AutoCloseableSerialisationDetector)
 
                 //Add external serializers
-                for (serializer in serializers) {
-                    addDefaultSerializer(serializer.key, KryoCheckpointSerializerAdapter(serializer.value).adapt())
+                for ((clazz, serializer) in serializers) {
+                    addDefaultSerializer(clazz, serializer)
                 }
             }
         }

@@ -46,7 +46,7 @@ interface CheckpointSerializerBuilder {
      *
      * @param instances any [SingletonSerializeAsToken] instances to be added for serialization.
      */
-    fun addSingletonSerializableInstances(instances: List<SingletonSerializeAsToken>): CheckpointSerializerBuilder
+    fun addSingletonSerializableInstances(instances: Set<SingletonSerializeAsToken>): CheckpointSerializerBuilder
 
     /**
      * Builds and returns the configured [CheckpointSerializer]
