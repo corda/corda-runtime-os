@@ -2,8 +2,8 @@ package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscri
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RANDOMACCESS
+import net.corda.messaging.kafka.properties.ConfigProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_RANDOMACCESS
 import net.corda.messaging.kafka.subscription.KafkaRandomAccessSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
@@ -31,7 +31,7 @@ class KafkaRandomAccessSubscriptionImplTest {
     val topicPartitions = (1..partitions).map { TopicPartition(topic, it) }
 
     private val config = createStandardTestConfig().getConfig(PATTERN_RANDOMACCESS)
-        .withValue(KafkaProperties.TOPIC_NAME, ConfigValueFactory.fromAnyRef(topic))
+        .withValue(ConfigProperties.TOPIC_NAME, ConfigValueFactory.fromAnyRef(topic))
     private val consumer: CordaKafkaConsumer<String, String> = mock()
     @Suppress("UNCHECKED_CAST")
     private val consumerBuilder: ConsumerBuilder<String, String> = mock()

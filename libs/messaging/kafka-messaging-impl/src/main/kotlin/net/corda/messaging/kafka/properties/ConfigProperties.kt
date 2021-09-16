@@ -3,7 +3,7 @@ package net.corda.messaging.kafka.properties
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.ProducerConfig
 
-class KafkaProperties {
+class ConfigProperties {
     companion object {
         const val TOPIC = "topic"
         const val GROUP = "group"
@@ -15,6 +15,8 @@ class KafkaProperties {
 
         const val KAFKA_PRODUCER = "producer"
         const val KAFKA_CONSUMER = "consumer"
+        const val STATE_CONSUMER = "stateConsumer"
+        const val EVENT_CONSUMER = "eventConsumer"
 
         const val MESSAGING_KAFKA = "messaging.kafka"
 
@@ -43,5 +45,12 @@ class KafkaProperties {
         const val CONSUMER_GROUP_ID = "consumer.${CommonClientConfigs.GROUP_ID_CONFIG}"
         const val CONSUMER_MAX_POLL_INTERVAL = "consumer.${CommonClientConfigs.MAX_POLL_INTERVAL_MS_CONFIG}"
         const val PRODUCER_TRANSACTIONAL_ID = "producer.${ProducerConfig.TRANSACTIONAL_ID_CONFIG}"
+
+        const val STATE_TOPIC_NAME = "$STATE_CONSUMER.${TOPIC_NAME}"
+
+        const val EVENT_GROUP_ID = "$EVENT_CONSUMER.${CommonClientConfigs.GROUP_ID_CONFIG}"
+        val EVENT_CONSUMER_THREAD_STOP_TIMEOUT = CONSUMER_THREAD_STOP_TIMEOUT.replace("consumer", "eventConsumer")
+        val EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES = CONSUMER_POLL_AND_PROCESS_RETRIES.replace("consumer", "eventConsumer")
+        val EVENT_CONSUMER_CLOSE_TIMEOUT = CONSUMER_CLOSE_TIMEOUT.replace("consumer", "eventConsumer")
     }
 }

@@ -5,8 +5,8 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_COMPACTED
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_COMPACTED
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
