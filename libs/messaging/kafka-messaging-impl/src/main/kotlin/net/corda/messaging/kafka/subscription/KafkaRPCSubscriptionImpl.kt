@@ -10,7 +10,11 @@ import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
@@ -36,13 +40,13 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
 ) : RPCSubscription<TREQ, TRESP> {
 
     private val log = LoggerFactory.getLogger(
-        config.getString(KafkaProperties.CONSUMER_GROUP_ID)
+        config.getString(CONSUMER_GROUP_ID)
     )
 
-    private val consumerThreadStopTimeout = config.getLong(KafkaProperties.CONSUMER_THREAD_STOP_TIMEOUT)
-    private val topicPrefix = config.getString(KafkaProperties.TOPIC_PREFIX)
-    private val groupName = config.getString(KafkaProperties.CONSUMER_GROUP_ID)
-    private val topic = config.getString(KafkaProperties.TOPIC_NAME)
+    private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
+    private val topicPrefix = config.getString(TOPIC_PREFIX)
+    private val groupName = config.getString(CONSUMER_GROUP_ID)
+    private val topic = config.getString(TOPIC_NAME)
 
     private val errorMsg = "Failed to read records from group $groupName, topic $topic"
 
@@ -91,7 +95,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
             try {
                 log.debug { "Creating rpc consumer.  Attempt: $attempts" }
                 consumerBuilder.createRPCConsumer(
-                    config.getConfig(KafkaProperties.KAFKA_CONSUMER),
+                    config.getConfig(KAFKA_CONSUMER),
                     String::class.java,
                     RPCRequest::class.java
                 ).use {

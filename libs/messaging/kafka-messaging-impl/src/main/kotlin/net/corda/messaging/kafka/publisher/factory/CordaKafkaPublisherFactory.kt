@@ -10,10 +10,11 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
-import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBLISHER
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_RPC_SENDER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.GROUP
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_PRODUCER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_PUBLISHER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_RPC_SENDER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.publisher.CordaKafkaPublisherImpl
 import net.corda.messaging.kafka.publisher.CordaKafkaRPCSenderImpl
@@ -60,8 +61,8 @@ class CordaKafkaPublisherFactory @Activate constructor(
     ): RPCSender<TREQ, TRESP> {
 
         val publisherConfiguration = ConfigFactory.empty()
-            .withValue(KafkaProperties.GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
-            .withValue(KafkaProperties.TOPIC, ConfigValueFactory.fromAnyRef(rpcConfig.requestTopic))
+            .withValue(GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
+            .withValue(TOPIC, ConfigValueFactory.fromAnyRef(rpcConfig.requestTopic))
             .withValue("clientName", ConfigValueFactory.fromAnyRef(rpcConfig.clientName))
 
         val publisherConfig = resolvePublisherConfiguration(

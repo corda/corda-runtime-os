@@ -4,7 +4,8 @@ import com.typesafe.config.Config
 import net.corda.data.messaging.RPCRequest
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.kafka.properties.KafkaProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_RPC_RESPONDER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.KafkaRPCSubscriptionImpl
@@ -40,7 +41,7 @@ class KafkaRPCSubscriptionImplTest {
         private const val TEST_TIMEOUT_SECONDS = 2L
     }
 
-    private val config: Config = createStandardTestConfig().getConfig(KafkaProperties.PATTERN_COMPACTED)
+    private val config: Config = createStandardTestConfig().getConfig(PATTERN_RPC_RESPONDER)
 
     private val dummyRequest = HoldingIdentity(
         "identity",
@@ -50,14 +51,14 @@ class KafkaRPCSubscriptionImplTest {
         ConsumerRecordAndMeta(
             TOPIC_PREFIX,
             ConsumerRecord(
-                KafkaProperties.TOPIC,
+                TOPIC,
                 0,
                 0,
                 "0",
                 RPCRequest(
                     "0",
                     Instant.now().toEpochMilli(),
-                    KafkaProperties.TOPIC + ".resp",
+                    "$TOPIC.resp",
                     0,
                     dummyRequest.toByteBuffer()
                 )
@@ -82,7 +83,7 @@ class KafkaRPCSubscriptionImplTest {
         }.whenever(kafkaConsumer).poll()
 
         doAnswer {
-            listOf(TopicPartition(KafkaProperties.TOPIC, 0))
+            listOf(TopicPartition(TOPIC, 0))
         }.whenever(kafkaConsumer).getPartitions(any(), any())
 
         val subscription = KafkaRPCSubscriptionImpl(
@@ -108,8 +109,8 @@ class KafkaRPCSubscriptionImplTest {
         doReturn(kafkaConsumer).whenever(consumerBuilder).createRPCConsumer(any(), any(), any(), any())
         doReturn(
             mutableMapOf(
-                TopicPartition(KafkaProperties.TOPIC, 0) to 0L,
-                TopicPartition(KafkaProperties.TOPIC, 1) to 0L
+                TopicPartition(TOPIC, 0) to 0L,
+                TopicPartition(TOPIC, 1) to 0L
             )
         ).whenever(kafkaConsumer)
             .beginningOffsets(any())
