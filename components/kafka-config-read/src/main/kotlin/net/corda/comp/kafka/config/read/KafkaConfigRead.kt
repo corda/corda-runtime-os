@@ -2,8 +2,8 @@ package net.corda.comp.kafka.config.read
 
 import com.typesafe.config.Config
 import net.corda.libs.configuration.read.ConfigListener
-import net.corda.libs.configuration.read.ConfigReadService
-import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
+import net.corda.libs.configuration.read.ConfigReader
+import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -19,8 +19,8 @@ import org.slf4j.Logger
 
 @Component(immediate = true, service = [KafkaConfigRead::class])
 class KafkaConfigRead @Activate constructor(
-    @Reference(service = ConfigReadServiceFactory::class)
-    private val readServiceFactory: ConfigReadServiceFactory
+    @Reference(service = ConfigReaderFactory::class)
+    private val readServiceFactory: ConfigReaderFactory
 ) : Lifecycle {
 
     private companion object {
@@ -29,7 +29,7 @@ class KafkaConfigRead @Activate constructor(
 
     private var receivedSnapshot = false
 
-    private var configReadService: ConfigReadService? = null
+    private var configReader: ConfigReader? = null
     private var sub: AutoCloseable? = null
     private var bootstrapConfig: Config? = null
 
@@ -43,7 +43,7 @@ class KafkaConfigRead @Activate constructor(
 
     override fun start() {
         if(bootstrapConfig != null){
-            configReadService = readServiceFactory.createReadService(bootstrapConfig!!)
+            configReader = readServiceFactory.createReader(bootstrapConfig!!)
             val lister = ConfigListener { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
                 logger.info("----------New configuration has been posted----------")
                 for (key in changedKeys) {
@@ -52,8 +52,8 @@ class KafkaConfigRead @Activate constructor(
 
                 receivedSnapshot = true
             }
-            sub = configReadService!!.registerCallback(lister)
-            configReadService!!.start()
+            sub = configReader!!.registerCallback(lister)
+            configReader!!.start()
         } else {
             throw CordaRuntimeException("Use the other start method available and pass in the bootstrap configuration")
         }

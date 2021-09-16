@@ -2,8 +2,8 @@ package net.corda.components.examples.config.reader
 
 import com.typesafe.config.Config
 import net.corda.libs.configuration.read.ConfigListener
-import net.corda.libs.configuration.read.ConfigReadService
-import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
+import net.corda.libs.configuration.read.ConfigReader
+import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
@@ -18,8 +18,8 @@ class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, C
 
 class ConfigReader(
     private val lifeCycleCoordinator: LifecycleCoordinator,
-    @Reference(service = ConfigReadServiceFactory::class)
-private val readServiceFactory: ConfigReadServiceFactory
+    @Reference(service = ConfigReaderFactory::class)
+private val readServiceFactory: ConfigReaderFactory
 ) : Lifecycle {
 
     companion object {
@@ -29,7 +29,7 @@ private val readServiceFactory: ConfigReadServiceFactory
 
     private var receivedSnapshot = false
 
-    private var configReadService: ConfigReadService? = null
+    private var configReader: ConfigReader? = null
     private var sub: AutoCloseable? = null
     private var bootstrapConfig: Config? = null
 
@@ -43,7 +43,7 @@ private val readServiceFactory: ConfigReadServiceFactory
 
     override fun start() {
         if(bootstrapConfig != null){
-            configReadService = readServiceFactory.createReadService(bootstrapConfig!!)
+            configReader = readServiceFactory.createReader(bootstrapConfig!!)
             val lister = ConfigListener { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
                 if (!receivedSnapshot) {
                     if (changedKeys.contains(MESSAGING_CONFIG)) {
@@ -60,8 +60,8 @@ private val readServiceFactory: ConfigReadServiceFactory
                 }
 
             }
-            sub = configReadService!!.registerCallback(lister)
-            configReadService!!.start()
+            sub = configReader!!.registerCallback(lister)
+            configReader!!.start()
         } else {
             val message = "Use the other start method available and pass in the bootstrap configuration"
             log.error(message)
