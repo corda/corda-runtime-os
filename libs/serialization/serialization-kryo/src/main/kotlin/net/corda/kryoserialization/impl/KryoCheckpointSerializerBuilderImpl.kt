@@ -53,19 +53,18 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
     override fun addSerializer(
         clazz: Class<*>,
         serializer: CheckpointInternalCustomSerializer<*>
-    ): CheckpointSerializerBuilder {
-        if (PublicKey::class.java.isAssignableFrom(clazz)) {
-            throw CordaRuntimeException("Custom serializers for public keys are not allowed")
-        }
-        serializers += mapOf(clazz to KryoCheckpointSerializerAdapter(serializer).adapt())
-        return this
-    }
+    ): CheckpointSerializerBuilder = addSerializerForClasses(listOf(clazz), serializer)
 
     override fun addSerializerForClasses(
         classes: List<Class<*>>,
         serializer: CheckpointInternalCustomSerializer<*>
     ): CheckpointSerializerBuilder {
-        serializers += classes.associateWith { KryoCheckpointSerializerAdapter(serializer).adapt() }
+        for (clazz in classes) {
+            if (PublicKey::class.java.isAssignableFrom(clazz)) {
+                throw CordaRuntimeException("Custom serializers for public keys are not allowed")
+            }
+            serializers[clazz] = KryoCheckpointSerializerAdapter(serializer).adapt()
+        }
         return this
     }
 

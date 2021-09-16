@@ -135,7 +135,7 @@ class DefaultKryoCustomizer {
                 addDefaultSerializer(AutoCloseable::class.java, AutoCloseableSerialisationDetector)
 
                 //Add external serializers
-                for ((clazz, serializer) in serializers) {
+                for ((clazz, serializer) in serializers.toSortedMap(compareBy { it.name })) {
                     addDefaultSerializer(clazz, serializer)
                 }
             }
@@ -150,7 +150,7 @@ class DefaultKryoCustomizer {
         private val defaultStrategy = Kryo.DefaultInstantiatorStrategy(fallbackStrategy)
 
         override fun <T> newInstantiatorOf(type: Class<T>): ObjectInstantiator<T> {
-            // However this doesn't work for non-public classes in the java. namespace
+            // However, this doesn't work for non-public classes in the java. namespace
             val strat =
                 if (type.name.startsWith("java.") && !isPublic(type.modifiers)) fallbackStrategy else defaultStrategy
             return strat.newInstantiatorOf(type)
