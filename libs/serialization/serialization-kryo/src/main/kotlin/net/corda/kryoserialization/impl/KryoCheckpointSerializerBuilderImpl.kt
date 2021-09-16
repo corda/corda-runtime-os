@@ -3,7 +3,6 @@ package net.corda.kryoserialization.impl
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.io.serialization.kryo.KryoSerializer
 import com.esotericsoftware.kryo.Serializer
-import net.corda.classinfo.ClassInfoService
 import net.corda.kryoserialization.DefaultKryoCustomizer
 import net.corda.kryoserialization.KryoCheckpointSerializer
 import net.corda.kryoserialization.KryoCheckpointSerializerAdapter
@@ -15,20 +14,13 @@ import net.corda.serialization.CheckpointInternalCustomSerializer
 import net.corda.serialization.CheckpointSerializerBuilder
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.crypto.BasicHashingService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import java.security.PublicKey
 
 @Component(immediate = true, service = [CheckpointSerializerBuilder::class])
-class KryoCheckpointSerializerBuilderImpl @Activate constructor(
-    @Reference
-    private val classInfoService: ClassInfoService,
-    @Reference
-    private val hashingService: BasicHashingService
-) : CheckpointSerializerBuilder {
+class KryoCheckpointSerializerBuilderImpl @Activate constructor() : CheckpointSerializerBuilder {
 
     companion object {
         val log = contextLogger()
@@ -82,17 +74,8 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
             throw CordaRuntimeException("Cannot build a Checkpoint Serializer without first calling " +
                     "`newCheckpointSerializer`.")
 
-        val classResolver = CordaClassResolver(
-            classInfoService,
-            sandboxGroup,
-            hashingService
-        )
-
-        val classSerializer = ClassSerializer(
-            classInfoService,
-            sandboxGroup,
-            hashingService
-        )
+        val classResolver = CordaClassResolver(sandboxGroup)
+        val classSerializer = ClassSerializer(sandboxGroup)
 
         val singletonSerializeAsTokenSerializer = SingletonSerializeAsTokenSerializer(singletonInstances.toMap())
 

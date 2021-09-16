@@ -56,5 +56,4 @@ internal class KryoCheckpointSerializerTest {
         assertThat(tested.someInt).isEqualTo(tester.someInt)
         assertThat(tested.someString).isEqualTo(tester.someString)
     }
-
 }
