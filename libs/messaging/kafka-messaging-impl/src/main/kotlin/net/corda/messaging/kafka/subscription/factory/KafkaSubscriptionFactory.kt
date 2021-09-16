@@ -44,6 +44,7 @@ import net.corda.messaging.kafka.subscription.KafkaRandomAccessSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaStateAndEventSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.StateAndEventBuilderImpl
+import net.corda.messaging.kafka.types.StateAndEventConfig.Companion.getStateAndEventConfig
 import net.corda.messaging.kafka.utils.ConfigUtils.Companion.resolveSubscriptionConfiguration
 import net.corda.messaging.kafka.utils.toConfig
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -161,24 +162,27 @@ class KafkaSubscriptionFactory @Activate constructor(
             clientIdCounter.getAndIncrement(),
             PATTERN_STATEANDEVENT
         )
+
+        val stateAndEventConfig = getStateAndEventConfig(config)
+
         val producerBuilder = KafkaProducerBuilderImpl(avroSchemaRegistry)
         val eventConsumerBuilder = CordaKafkaConsumerBuilderImpl<K, E>(avroSchemaRegistry)
         val stateConsumerBuilder = CordaKafkaConsumerBuilderImpl<K, S>(avroSchemaRegistry)
-
-        val stateAndEventBuilder = StateAndEventBuilderImpl(
-            stateConsumerBuilder,
-            eventConsumerBuilder,
-            producerBuilder,
-        )
 
         val mapFactory = object : SubscriptionMapFactory<K, Pair<Long, S>> {
             override fun createMap(): MutableMap<K, Pair<Long, S>> = ConcurrentHashMap()
             override fun destroyMap(map: MutableMap<K, Pair<Long, S>>) = map.clear()
         }
 
+        val stateAndEventBuilder = StateAndEventBuilderImpl(
+            stateConsumerBuilder,
+            eventConsumerBuilder,
+            producerBuilder,
+            mapFactory
+        )
+
         return KafkaStateAndEventSubscriptionImpl(
-            config,
-            mapFactory,
+            stateAndEventConfig,
             stateAndEventBuilder,
             processor,
             stateAndEventListener

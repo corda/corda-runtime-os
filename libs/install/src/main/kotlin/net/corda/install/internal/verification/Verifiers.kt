@@ -1,10 +1,12 @@
 package net.corda.install.internal.verification
 
+import aQute.bnd.header.OSGiHeader
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.install.CpkVerificationException
 import net.corda.install.internal.CONFIG_ADMIN_BLACKLISTED_KEYS
 import net.corda.install.internal.CONFIG_ADMIN_PLATFORM_VERSION
 import net.corda.install.internal.SUPPORTED_CPK_FORMATS
+import net.corda.packaging.CordappManifest
 import net.corda.packaging.CordappManifest.Companion.DEFAULT_MIN_PLATFORM_VERSION
 import net.corda.packaging.Cpk
 import net.corda.packaging.DependencyResolutionException
@@ -12,6 +14,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.create
 import net.corda.v5.crypto.sha256Bytes
+import org.osgi.framework.Constants
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -252,3 +255,33 @@ private fun detectDuplicates(cpks: Iterable<Cpk>, errorMessage: String, transfor
     val formattedErrorMessage = errorMessage.format(duplicate, offendingCpkUris)
     throw CpkVerificationException(formattedErrorMessage)
 }
+
+/**
+ * No split packages verifier - Checks that no two CPKs in a group export the same package.
+ */
+@Component
+internal class NoSplitPackagesVerifier : GroupCpkVerifier {
+    override fun verify(cpks: Iterable<Cpk>) {
+        val cpkExports = cpks.associate { cpk ->
+            cpk.id to cpk.cordappManifest.exportPackages
+        }
+
+        // Check that every package name is associated with
+        // exactly one CPK Identifier.
+        val packageNames = mutableMapOf<String, Cpk.Identifier>()
+        cpkExports.entries.forEach { cpk ->
+            cpk.value.forEach { packageName ->
+                packageNames.put(packageName, cpk.key)?.also { cpkId ->
+                    throw CpkVerificationException(
+                        "Package '$packageName' exported by CPK ${cpk.key} is already exported by CPK $cpkId")
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Parse the set of exported packages names from the OSGi 'Export-Package' header.
+ */
+private val CordappManifest.exportPackages: Set<String>
+    get() = attributes[Constants.EXPORT_PACKAGE]?.let(OSGiHeader::parseHeader)?.keys ?: emptySet()

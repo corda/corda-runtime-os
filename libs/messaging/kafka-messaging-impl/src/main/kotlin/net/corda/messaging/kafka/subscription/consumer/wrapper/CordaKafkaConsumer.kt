@@ -4,6 +4,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import org.apache.kafka.clients.consumer.Consumer
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.TopicPartition
@@ -50,11 +51,12 @@ interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable, Consumer<K, V> {
     fun commitSyncOffsets(event: ConsumerRecord<K, V>, metaData: String? = null)
 
     /**
-     * Subscribe this consumer to the topic.
+     * Subscribe this consumer to the topic. Attach the rebalance [listener] to the [Consumer].
+     * If [listener] is null the default listener created via the [ConsumerBuilder] is used.
      * If a recoverable error occurs retry. If max retries is exceeded or a fatal error occurs then throw a [CordaMessageAPIFatalException]
      * @throws CordaMessageAPIFatalException for fatal errors.
      */
-    fun subscribeToTopic()
+    fun subscribeToTopic(listener: ConsumerRebalanceListener? = null)
 
     /**
      * Similar to [KafkaConsumer.partitionsFor] but returning a [TopicPartition].

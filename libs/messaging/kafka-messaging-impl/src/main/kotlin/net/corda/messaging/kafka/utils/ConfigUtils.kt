@@ -6,10 +6,10 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.GROUP
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.INSTANCE_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC
+import net.corda.messaging.kafka.properties.ConfigProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.GROUP
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.INSTANCE_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import java.net.URL
@@ -30,7 +30,7 @@ class ConfigUtils {
         ): Config {
             val config = enforced
                 .withFallback(subscriptionConfiguration)
-                .withValue(KafkaProperties.CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
+                .withValue(ConfigProperties.CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
                 .withFallback(nodeConfig)
                 .withFallback(defaults)
                 .resolve()
@@ -38,7 +38,7 @@ class ConfigUtils {
 
             return if (!subscriptionConfiguration.hasPath(INSTANCE_ID)) {
                 // No instance id - remove the transactional Id as we don't want to do transactions
-                config.withoutPath(KafkaProperties.PRODUCER_TRANSACTIONAL_ID)
+                config.withoutPath(ConfigProperties.PRODUCER_TRANSACTIONAL_ID)
             } else {
                 config
             }
@@ -52,7 +52,7 @@ class ConfigUtils {
         ): Config {
             return enforced
                 .withFallback(subscriptionConfiguration)
-                .withValue(KafkaProperties.CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
+                .withValue(ConfigProperties.CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
                 .withFallback(nodeConfig)
                 .withFallback(defaults)
                 .resolve()

@@ -2,16 +2,27 @@ import aQute.bnd.gradle.Resolve
 
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
-    id 'biz.aQute.bnd.builder'
+    id 'corda.common-library'
 }
 
-description "Installs extensions into the node's OSGi framework."
+description "Corda CorDapp Installer"
 
-//TODO:  uncomment when cpk tests are added back
-//configurations {
-//    integrationTestRuntimeClasspath
-//    systemClasspath
-//}
+ext {
+    cordaDevPreviewVersion = '5.0.0-DevPreview--beta-1631256347020'
+}
+
+configurations {
+    all {
+        resolutionStrategy.dependencySubstitution {
+            substitute module("antlr:antlr") using module("antlr:antlr.osgi:$antlrVersion")
+            substitute module("org.dom4j:dom4j") using module("org.apache.servicemix.bundles:org.apache.servicemix.bundles.dom4j:$dom4jOsgiVersion")
+        }
+    }
+    cpks {
+        canBeConsumed = false
+        transitive = false
+    }
+}
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -30,6 +41,7 @@ dependencies {
     compileOnly "org.osgi:osgi.core"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    compileOnly "biz.aQute.bnd:biz.aQute.bndlib:$bndVersion"
 
     testImplementation project(":libs:crypto:crypto-testkit")
     testImplementation project(":libs:crypto:crypto-impl")
@@ -40,63 +52,61 @@ dependencies {
         exclude group: 'mockito-core'
     }
     testImplementation "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
-    testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
-    // TODO:  uncomment if we re-enable tests that use cpks
-//    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
-//    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
-//    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
-//    integrationTestRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-//    integrationTestRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-//    integrationTestRuntimeOnly "org.apache.activemq:artemis-server-osgi:$artemisVersion"
-//    integrationTestRuntimeOnly "com.sun.mail:javax.mail:$javaxMailVersion"
-//    integrationTestRuntimeOnly "javax.xml.bind:jaxb-api:$jaxbVersion"
-//    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    integrationTestRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    integrationTestRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
 
-//    systemClasspath "com.esotericsoftware:reflectasm:$reflectAsmVersion"
+    cpks project(path: 'split-packages-one', configuration: 'cordaCPK')
+    cpks project(path: 'split-packages-two', configuration: 'cordaCPK')
+    cpks "net.corda:corda-smoketest-linearstate-flow-contracts:$cordaDevPreviewVersion:cordapp@cpk"
+    cpks "net.corda:corda-smoketest-linearstate-sample-workflows:$cordaDevPreviewVersion:cordapp@cpk"
+    cpks "net.corda:corda-flows:$cordaDevPreviewVersion:cordapp@cpk"
 }
 
 tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-install'
     bnd """\
-Bundle-Name: Corda Install
-Bundle-SymbolicName: \${project.group}.install
+-conditionalpackage: aQute.*
 """
 }
 
-// TODO:  uncomment this if/when we re-enable tests
-// you'll probably have to copy over https://github.com/corda/corda5/blob/release/os/5.0/install/tests.bndrun
-//
-//def resolve = tasks.register('resolve', Resolve) {
-//    dependsOn jar
-//    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files, configurations.systemClasspath.files)
-//    bndrun = file('tests.bndrun')
-//    //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
-//    System.setProperty("bnd.home.dir", "$rootDir/bnd")
-//}
-//
-//tasks.named('integrationTest', Test) {
-//    enabled = false
-//}
+def resolve = tasks.register('resolve', Resolve) {
+    dependsOn jar
+    bundles = files(
+        sourceSets.integrationTest.runtimeClasspath,
+        configurations.archives.artifacts.files
+    )
+    bndrun = file('tests.bndrun')
+    //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
+    System.setProperty("bnd.home.dir", "$rootDir/bnd")
+}
 
-//tasks.named('check') {
-//    dependsOn resolve
-//}
-//
-// TODO:  if this is re-enabled use the 'add these as resources' gradle from sandbox instead
-//
-//tasks.named("test", Test) { testTask ->
-//    [
-//            'contract': ':libs:install:testing:fungiblestate-sample:fungiblestate-contracts',
-//            'workflow': ':libs:install:testing:fungiblestate-sample:fungiblestate-workflows'
-////            'flows'   : ':libs:flows'
-//    ].each { String key, String projectPath ->
-//        Project project = project(projectPath)
-//        Provider<AbstractArchiveTask> cpkTask = project.tasks.named('cpk', AbstractArchiveTask)
-//        inputs.files(cpkTask)
-//        testTask.systemProperties([
-//                ("test.cpk." + key): cpkTask.get().outputs.files.singleFile,
-//        ])
-//    }
-//}
+tasks.named('check') {
+    dependsOn resolve
+}
+
+tasks.named('test', Test) {
+    inputs.files configurations.cpks
+    classpath += files(tasks.named('jar', Jar))
+
+    doFirst {
+        configurations.cpks.forEach { cpk ->
+            String key
+            if (cpk.name.contains('contracts')) {
+                key = 'contract'
+            } else if (cpk.name.contains('workflows')) {
+                key = 'workflow'
+            } else if (cpk.name.contains('split-packages-one')) {
+                key = 'split1'
+            } else if (cpk.name.contains('split-packages-two')) {
+                key = 'split2'
+            } else {
+                key = 'flows'
+            }
+            systemProperty "test.cpk.$key", cpk
+        }
+    }
+}

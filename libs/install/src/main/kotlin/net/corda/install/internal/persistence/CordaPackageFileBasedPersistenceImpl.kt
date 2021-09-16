@@ -19,7 +19,9 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.Collections.unmodifiableSet
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
 
 /**
  * An implementation of [CordaPackagePersistence].
@@ -38,18 +40,18 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
 
     /** Represents a group of CPKs, keyed in various ways. */
     private data class StoredArchives(
-            val cpbsById: ConcurrentHashMap<Cpb.Identifier, Cpb.Expanded> = ConcurrentHashMap(),
-            val cpksById: ConcurrentHashMap<Cpk.Identifier, Cpk.Expanded> = ConcurrentHashMap(),
-            val cpksByHash: ConcurrentHashMap<SecureHash, Cpk.Expanded> = ConcurrentHashMap())
+            val cpbsById: ConcurrentMap<Cpb.Identifier, Cpb.Expanded> = ConcurrentHashMap(),
+            val cpksById: ConcurrentMap<Cpk.Identifier, Cpk.Expanded> = ConcurrentHashMap(),
+            val cpksByHash: ConcurrentMap<SecureHash, Cpk.Expanded> = ConcurrentHashMap())
 
     // These fields are lazy because they can't be calculated until `configAdmin` has been initialised.
-    private val storedArchives: StoredArchives by lazy { readCpksFromDisk() }
-    private val cpkDirectory: Path by lazy { getCpkDirectoryInternal() }
-    private val expansionDirectory by lazy { getExpansionDirectoryInternal() }
+    private val storedArchives: StoredArchives by lazy(::readCpksFromDisk)
+    private val cpkDirectory: Path by lazy(::getCpkDirectoryInternal)
+    private val expansionDirectory by lazy(::getExpansionDirectoryInternal)
 
     override fun get(cpbIdentifier: Cpb.Identifier) = storedArchives.cpbsById[cpbIdentifier]
 
-    override fun getCpbIdentifiers() = storedArchives.cpbsById.keys().toList().toSet()
+    override fun getCpbIdentifiers(): Set<Cpb.Identifier> = unmodifiableSet(storedArchives.cpbsById.keys)
 
     override fun getCpk(id : Cpk.Identifier) : Cpk.Expanded? =
             storedArchives.cpksById[id]
@@ -136,7 +138,7 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
     }
 
     /**
-     * Creates [Cpk]s from the CPK files stored on disk and returns a [StoredCpks] object.
+     * Creates [Cpk]s from the CPK files stored on disk and returns a [StoredArchives] object.
      *
      * Skips verification, as this was already performed when the CPKs were originally installed/fetched.
      *
