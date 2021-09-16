@@ -16,7 +16,7 @@ import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_TOPIC1_TEMPLATE
 import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getRecords
-import net.corda.messaging.kafka.integration.processors.TestCompactedProcessor
+import net.corda.messaging.kafka.integration.processors.TestRPCResponderProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -68,7 +68,7 @@ class CompactedSubscriptionIntegrationTest {
         val snapshotLatch = CountDownLatch(1)
         val compactedSub = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig("$COMPACTED_TOPIC1-group", COMPACTED_TOPIC1, 1),
-            TestCompactedProcessor(snapshotLatch, onNextLatch),
+            TestRPCResponderProcessor(snapshotLatch, onNextLatch),
             kafkaConfig
         )
         compactedSub.start()
