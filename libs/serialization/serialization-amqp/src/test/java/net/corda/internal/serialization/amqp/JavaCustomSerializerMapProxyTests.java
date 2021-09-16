@@ -3,7 +3,6 @@ package net.corda.internal.serialization.amqp;
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import net.corda.v5.serialization.SerializationCustomSerializer;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -35,7 +34,6 @@ public class JavaCustomSerializerMapProxyTests {
     }
 
     @Test
-    @Disabled("Will fix in CORE-2685")
     public void serializeExample() throws NotSerializableException {
         SerializerFactory factory = testDefaultFactory();
         SerializationOutput ser = new SerializationOutput(factory);
