@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import com.google.common.reflect.TypeToken
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
@@ -42,9 +41,10 @@ const val PROXY_TYPE = 1
  * @param factory a [SerializerFactory] belonging to the context this serializer is being instantiated
  * for
  */
-class CorDappCustomSerializer(
+class CorDappCustomSerializer @JvmOverloads constructor(
         private val serializer: SerializationCustomSerializer<*, *>,
-        factory: SerializerFactory
+        factory: SerializerFactory,
+        private val withInheritance: Boolean = false
 ) : AMQPSerializer<Any>, SerializerFor {
     override val revealSubclassesInSchema: Boolean get() = false
 
@@ -95,7 +95,7 @@ class CorDappCustomSerializer(
      * not support base class serializers for derivedtypes
      */
     override fun isSerializerFor(clazz: Class<*>) =
-        TypeToken.of(type.asClass()) == TypeToken.of(clazz)
+        if (withInheritance) type.asClass().isAssignableFrom(clazz) else type.asClass() == clazz
 
     override fun toString(): String = "${this::class.java}(${serializer::class.java})"
 }
