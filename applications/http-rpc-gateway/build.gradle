@@ -3,6 +3,8 @@ plugins {
     id 'corda.common-app'
 }
 
+description 'HTTP RPC Gateway Application'
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
@@ -15,15 +17,20 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
     implementation project(":osgi-framework-api")
-
+    
     implementation project(":components:configuration:configuration-read-service")
 
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:http-rpc:http-rpc-security-read')
+    implementation project(':libs:http-rpc:ssl-cert-read')
+    implementation project(':libs:http-rpc:http-rpc-server')
 
+    // Components
     implementation project(":components:http-rpc-gateway-comp")
-    implementation project(':libs:configuration:configuration-read')
+    implementation project(":components:configuration:configuration-read-service")
 
+    // Implementations (needs revision!)
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     runtimeOnly project(":libs:configuration:configuration-write-impl")
     runtimeOnly project(":libs:configuration:configuration-read-impl")
@@ -36,5 +43,3 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 }
-
-description 'HTTP RPC Gateway Application'
