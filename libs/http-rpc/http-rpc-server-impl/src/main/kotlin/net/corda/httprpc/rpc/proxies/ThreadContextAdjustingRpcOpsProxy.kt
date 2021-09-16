@@ -1,7 +1,7 @@
 package net.corda.httprpc.rpc.proxies
 
 import net.corda.httprpc.server.utils.executeWithThreadContextClassLoader
-import net.corda.v5.application.messaging.RPCOps
+import net.corda.v5.httprpc.api.RpcOps
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 
@@ -15,7 +15,7 @@ import java.lang.reflect.Proxy
  * that any provided classes from these libraries will be available during RPC calls.
  */
 internal object ThreadContextAdjustingRpcOpsProxy {
-    fun <T : RPCOps> proxy(delegate: T, clazz: Class<out T>, classLoader: ClassLoader): T {
+    fun <T : RpcOps> proxy(delegate: T, clazz: Class<out T>, classLoader: ClassLoader): T {
         require(clazz.isInterface) { "Interface is expected instead of $clazz" }
         val handler = ThreadContextAdjustingInvocationHandler(delegate, classLoader)
         @Suppress("UNCHECKED_CAST")
