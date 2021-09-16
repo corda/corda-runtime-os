@@ -1,7 +1,5 @@
 package net.corda.v5.application.node;
 
-import net.corda.v5.serialization.SerializeAsTokenContext;
-import net.corda.v5.serialization.SingletonSerializationToken;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -17,20 +15,6 @@ import static org.mockito.Mockito.when;
 public class CordaClockJavaApiTest {
 
     private final CordaClock cordaClock = mock(CordaClock.class);
-
-    @Test
-    public void toToken() {
-        final SerializeAsTokenContext serializeAsTokenContext = mock(SerializeAsTokenContext.class);
-        final SingletonSerializationToken singletonSerializationToken =
-                SingletonSerializationToken.singletonSerializationToken(SerializeAsTokenContext.class);
-        when(cordaClock.toToken(serializeAsTokenContext)).thenReturn(singletonSerializationToken);
-
-        final SingletonSerializationToken singletonSerializationTokenTest = cordaClock.toToken(serializeAsTokenContext);
-
-        Assertions.assertThat(singletonSerializationTokenTest).isNotNull();
-        Assertions.assertThat(singletonSerializationTokenTest).isEqualTo(singletonSerializationToken);
-        verify(cordaClock, times(1)).toToken(serializeAsTokenContext);
-    }
 
     @Test
     public void instant() {
