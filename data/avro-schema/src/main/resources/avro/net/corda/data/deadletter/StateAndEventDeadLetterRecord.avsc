@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "StateAndEventDeadLetterRecord",
+  "namespace": "net.corda.data.deadletter",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": {
+          "type": "long",
+          "logicalType": "timestamp-millis"
+        }
+    },
+    {
+      "name": "key",
+      "type": ["bytes"]
+    },
+    {
+      "name": "state",
+      "type": ["null", "bytes"]
+    },
+    {
+      "name": "event",
+      "type": ["bytes"]
+    }
+  ]
+}
