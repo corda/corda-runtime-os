@@ -42,12 +42,12 @@ class ConnectionManager(
         logger.info("Starting connection manager")
 
         writeGroup = NioEventLoopGroup(NUM_CLIENT_WRITE_THREADS).also {
-            keepResource(it)
+            keepResources(it)
         }
         nettyGroup = NioEventLoopGroup(NUM_CLIENT_NETTY_THREADS).also {
-            keepResource(it)
+            keepResources(it)
         }
-        keepResource(clientPool)
+        keepResources(clientPool)
     }
 
     fun addListener(eventListener: HttpEventListener) {

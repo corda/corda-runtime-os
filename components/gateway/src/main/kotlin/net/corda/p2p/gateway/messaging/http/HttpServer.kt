@@ -61,10 +61,10 @@ class HttpServer(
     override fun prepareResources() {
         logger.info("Starting HTTP Server")
         val bossGroup = NioEventLoopGroup(1).also {
-            keepResource(it)
+            keepResources(it)
         }
         val workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS).also {
-            keepResource(it)
+            keepResources(it)
         }
 
         val server = ServerBootstrap()
@@ -74,14 +74,14 @@ class HttpServer(
         val channelFuture = server.bind(host, port).sync()
         logger.info("Listening on port $port")
         channelFuture.channel().also { serverChannel ->
-            keepResource(serverChannel)
+            keepResources(serverChannel)
             serverChannel.closeFuture().addListener {
                 if (isRunning) {
                     close()
                 }
             }
         }
-        keepResource(clientChannels)
+        keepResources(clientChannels)
     }
 
     private val clientChannels = ConcurrentHashMap<SocketAddress, Channel>()
