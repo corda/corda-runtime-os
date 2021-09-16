@@ -89,10 +89,7 @@ class DeliveryTrackerTest {
             isRunning = true
             return
         }
-
-        override fun getValue(key: K): S? {
-            fail("getValue should not be called in this test.")
-        }
+        
     }
 
     private fun createTracker(
