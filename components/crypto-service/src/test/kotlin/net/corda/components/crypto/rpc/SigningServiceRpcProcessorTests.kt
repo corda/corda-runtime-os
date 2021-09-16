@@ -32,10 +32,13 @@ import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.sha256Bytes
 import org.hamcrest.CoreMatchers.instanceOf
 import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.allOf
 import org.hamcrest.Matchers.greaterThanOrEqualTo
+import org.hamcrest.Matchers.lessThanOrEqualTo
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -89,10 +92,14 @@ class SigningServiceRpcProcessorTests {
             )
         )
         private fun assertEquivalent(expected: WireRequestContext, actual: WireResponseContext) {
+            val now = Instant.now()
             assertEquals(expected.memberId, actual.memberId)
             assertEquals(expected.requestingComponent, actual.requestingComponent)
             assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-            assertThat(actual.responseTimestamp, greaterThanOrEqualTo(expected.requestTimestamp))
+            assertThat(
+                actual.responseTimestamp.epochSecond,
+                allOf(greaterThanOrEqualTo(expected.requestTimestamp.epochSecond), lessThanOrEqualTo(now.epochSecond))
+            )
             assertTrue(
                 actual.other.size == expected.other.size &&
                         actual.other.containsAll(expected.other) &&
@@ -140,6 +147,7 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should return WireNoContentValue for unknown key alias`() {
         val alias = UUID.randomUUID().toString()
         val context = getWireRequestContext()
@@ -158,6 +166,7 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should generate key pair and be able to find and sign using default and custom schemes`() {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = UUID.randomUUID().toString()
@@ -199,6 +208,7 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should complete future exceptionally in case of service failure`() {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = UUID.randomUUID().toString()
@@ -243,6 +253,7 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should complete future exceptionally in case of unknown request`() {
         val context = getWireRequestContext()
         val future = CompletableFuture<WireSigningResponse>()
@@ -263,6 +274,7 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should complete future exceptionally when service category is not specified in context`() {
         val context = getWireRequestContextWithoutCategory()
         val future = CompletableFuture<WireSigningResponse>()
@@ -283,6 +295,7 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should return all supported scheme codes`() {
         val context = getWireRequestContext()
         val future = CompletableFuture<WireSigningResponse>()

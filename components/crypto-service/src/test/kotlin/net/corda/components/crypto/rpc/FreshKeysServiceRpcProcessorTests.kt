@@ -27,10 +27,13 @@ import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.sha256Bytes
 import org.hamcrest.CoreMatchers.instanceOf
 import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.allOf
 import org.hamcrest.Matchers.greaterThanOrEqualTo
+import org.hamcrest.Matchers.lessThanOrEqualTo
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -87,10 +90,14 @@ class FreshKeysServiceRpcProcessorTests {
         )
 
         private fun assertEquivalent(expected: WireRequestContext, actual: WireResponseContext) {
+            val now = Instant.now()
             assertEquals(expected.memberId, actual.memberId)
             assertEquals(expected.requestingComponent, actual.requestingComponent)
             assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-            assertThat(actual.responseTimestamp, greaterThanOrEqualTo(expected.requestTimestamp))
+            assertThat(
+                actual.responseTimestamp.epochSecond,
+                allOf(greaterThanOrEqualTo(expected.requestTimestamp.epochSecond), lessThanOrEqualTo(now.epochSecond))
+            )
             assertTrue(
                 actual.other.size == expected.other.size &&
                         actual.other.containsAll(expected.other) &&
@@ -138,6 +145,7 @@ class FreshKeysServiceRpcProcessorTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should generate fresh key with associating it with any id and be able to sign using default and custom schemes`() {
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
@@ -161,6 +169,7 @@ class FreshKeysServiceRpcProcessorTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should generate fresh key associated with external id and be able to sign using default and custom schemes`() {
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
@@ -185,6 +194,7 @@ class FreshKeysServiceRpcProcessorTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should complete future exceptionally in case of service failure`() {
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
@@ -228,6 +238,7 @@ class FreshKeysServiceRpcProcessorTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should complete future exceptionally in case of unknown request`() {
         val context = getWireRequestContext()
         val future = CompletableFuture<WireFreshKeysResponse>()
@@ -248,6 +259,7 @@ class FreshKeysServiceRpcProcessorTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should fail filtering my keys as it's not implemented yet`() {
         val context1 = getWireRequestContext()
         val future1 = CompletableFuture<WireFreshKeysResponse>()

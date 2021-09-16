@@ -207,7 +207,6 @@ open class DefaultCryptoService(
                 val signingData = signatureSpec.getSigningData(hashingService, data)
                 signature.update(signingData)
                 signature.sign()
-
             }
         }
         return signatureBytes

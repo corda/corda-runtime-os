@@ -170,7 +170,7 @@ class SigningServiceClient(
                             (response.response::class.java == respClazz) &&
                             response.context.memberId == context.memberId
                 ) {
-                    "Expected ${respClazz::class.java.name} for ${context.memberId} member, but " +
+                    "Expected ${respClazz.name} for ${context.memberId} member, but " +
                             "received ${response.response::class.java.name} with ${response.context.memberId} member"
                 }
                 logger.debug("Received response {} for member {}", respClazz.name, context.memberId)

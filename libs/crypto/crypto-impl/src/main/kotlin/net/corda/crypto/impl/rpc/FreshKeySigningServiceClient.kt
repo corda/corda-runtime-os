@@ -44,58 +44,58 @@ class FreshKeySigningServiceClient(
     }
 
     override fun freshKey(): PublicKey {
-            val request = createRequest(
-                WireFreshKeysFreshKey()
-            )
-            val response = request.executeWithTimeoutRetry(WirePublicKey::class.java)
-            return schemeMetadata.decodePublicKey(response.key.array())
-        }
-
-    override fun freshKey(externalId: UUID): PublicKey {
-            val request = createRequest(
-                WireFreshKeysFreshKey(externalId.toString())
-            )
-            val response = request.executeWithTimeoutRetry(WirePublicKey::class.java)
-            return schemeMetadata.decodePublicKey(response.key.array())
-        }
-
-    override fun sign(publicKey: PublicKey, data: ByteArray): DigitalSignature.WithKey {
-            val request = createRequest(
-                WireFreshKeysSign(
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    ByteBuffer.wrap(data)
-                )
-            )
-            val response = request.executeWithTimeoutRetry(WireSignatureWithKey::class.java)
-            return DigitalSignature.WithKey(
-                by = schemeMetadata.decodePublicKey(response.publicKey.array()),
-                bytes = response.bytes.array()
-            )
-        }
-
-    override fun sign(publicKey: PublicKey, signatureSpec: SignatureSpec, data: ByteArray): DigitalSignature.WithKey {
-            val request = createRequest(
-                WireFreshKeysSignWithSpec(
-                    ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    WireSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
-                    ByteBuffer.wrap(data)
-                )
-            )
-            val response = request.executeWithTimeoutRetry(WireSignatureWithKey::class.java)
-            return DigitalSignature.WithKey(
-                by = schemeMetadata.decodePublicKey(response.publicKey.array()),
-                bytes = response.bytes.array()
-            )
-        }
-
-    override fun ensureWrappingKey() {
-            val request = createRequest(
-                WireFreshKeysEnsureWrappingKey()
-            )
-            request.executeWithTimeoutRetry(WireNoContentValue::class.java)
+        val request = createRequest(
+            WireFreshKeysFreshKey()
+        )
+        val response = request.executeWithTimeoutRetry(WirePublicKey::class.java)
+        return schemeMetadata.decodePublicKey(response.key.array())
     }
 
-    override fun filterMyKeys(candidateKeys: Iterable<PublicKey>): Iterable<PublicKey>{
+    override fun freshKey(externalId: UUID): PublicKey {
+        val request = createRequest(
+            WireFreshKeysFreshKey(externalId.toString())
+        )
+        val response = request.executeWithTimeoutRetry(WirePublicKey::class.java)
+        return schemeMetadata.decodePublicKey(response.key.array())
+    }
+
+    override fun sign(publicKey: PublicKey, data: ByteArray): DigitalSignature.WithKey {
+        val request = createRequest(
+            WireFreshKeysSign(
+                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
+                ByteBuffer.wrap(data)
+            )
+        )
+        val response = request.executeWithTimeoutRetry(WireSignatureWithKey::class.java)
+        return DigitalSignature.WithKey(
+            by = schemeMetadata.decodePublicKey(response.publicKey.array()),
+            bytes = response.bytes.array()
+        )
+    }
+
+    override fun sign(publicKey: PublicKey, signatureSpec: SignatureSpec, data: ByteArray): DigitalSignature.WithKey {
+        val request = createRequest(
+            WireFreshKeysSignWithSpec(
+                ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
+                WireSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
+                ByteBuffer.wrap(data)
+            )
+        )
+        val response = request.executeWithTimeoutRetry(WireSignatureWithKey::class.java)
+        return DigitalSignature.WithKey(
+            by = schemeMetadata.decodePublicKey(response.publicKey.array()),
+            bytes = response.bytes.array()
+        )
+    }
+
+    override fun ensureWrappingKey() {
+        val request = createRequest(
+            WireFreshKeysEnsureWrappingKey()
+        )
+        request.executeWithTimeoutRetry(WireNoContentValue::class.java)
+    }
+
+    override fun filterMyKeys(candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> {
         val request = createRequest(
             WireFreshKeysFilterMyKeys(
                 candidateKeys.map {
@@ -135,7 +135,7 @@ class FreshKeySigningServiceClient(
                             (response.response::class.java == respClazz) &&
                             response.context.memberId == context.memberId
                 ) {
-                    "Expected ${respClazz::class.java.name} for ${context.memberId} member, but " +
+                    "Expected ${respClazz.name} for ${context.memberId} member, but " +
                             "received ${response.response::class.java.name} with ${response.context.memberId} member"
                 }
                 logger.debug("Received response {} for member {}", respClazz.name, context.memberId)

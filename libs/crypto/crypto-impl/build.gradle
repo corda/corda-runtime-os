@@ -32,10 +32,10 @@ dependencies {
     runtimeOnly "javax.xml.bind:jaxb-api:$jaxbVersion"
 
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    testImplementation "com.h2database:h2:$h2Version"
-
-    testImplementation project(":libs:crypto:crypto-testkit")
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation project(":libs:crypto:crypto-testkit")
 }
 
 description 'Crypto Implementation'
