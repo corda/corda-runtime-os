@@ -79,18 +79,14 @@ class CorDappCustomSerializer @JvmOverloads constructor(
                 SerializationCustomSerializer<Any?, Any?>>(serializer).toProxy(obj)
 
         data.withDescribed(descriptor) {
-            data.withList {
-                proxySerializer.propertySerializers.forEach { (_, serializer) ->
-                    serializer.writeProperty(proxy, this, output, context, debugIndent)
-                }
-            }
+            output.writeObjectOrNull(proxy, data, proxyType, context, 0)
         }
     }
 
     override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
                             input: DeserializationInput, context: SerializationContext
     ) = uncheckedCast<SerializationCustomSerializer<*, *>, SerializationCustomSerializer<Any?, Any?>>(
-            serializer).fromProxy(uncheckedCast(proxySerializer.readObject(obj, serializationSchemas, metadata, input, context)))!!
+            serializer).fromProxy(uncheckedCast(input.readObjectOrNull(obj, serializationSchemas, metadata, proxyType, context)))!!
 
     /**
      * For 3rd party plugin serializers we are going to exist on exact type matching. i.e. we will
