@@ -168,6 +168,7 @@ class SigningServiceClient(
                 require(
                     response.response != null &&
                             (response.response::class.java == respClazz) &&
+                            response.context.requestingComponent == context.requestingComponent &&
                             response.context.memberId == context.memberId
                 ) {
                     "Expected ${respClazz.name} for ${context.memberId} member, but " +
@@ -177,7 +178,7 @@ class SigningServiceClient(
                 return response.response as TRESP
             } catch (e: TimeoutException) {
                 retry--
-                if (retry <= 0) {
+                if (retry < 0) {
                     logger.error("Timeout executing ${request::class.java.name} for member ${context.memberId}", e)
                     throw CryptoServiceTimeoutException(clientTimeout)
                 } else {

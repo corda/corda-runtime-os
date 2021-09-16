@@ -17,6 +17,9 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.SignatureSpec
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.exceptions.CryptoServiceException
+import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
+import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.allOf
@@ -29,10 +32,13 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -42,8 +48,11 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeoutException
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class FreshKeySigningServiceClientTests {
@@ -253,6 +262,190 @@ class FreshKeySigningServiceClientTests {
         assertTrue(result.any { it == myPublicKeys[1] })
     }
 
+    @Test
+    @Timeout(5)
+    fun `Should execute filterMyKeys request when it returns empty list`() {
+        val requests = argumentCaptor<WireFreshKeysRequest>()
+        val client = createClient()
+        val notMyKeys = listOf(
+            generateKeyPair().public,
+            generateKeyPair().public
+        )
+        setupCompletedResponse {
+            WirePublicKeys(emptyList())
+        }
+        val nowBefore = Instant.now()
+        val result = client.filterMyKeys(notMyKeys)
+        val nowAfter = Instant.now()
+        Mockito.verify(sender).sendRequest(requests.capture())
+        assertEquals(memberId, requests.firstValue.context.memberId)
+        assertEquals(requestingComponent, requests.firstValue.context.requestingComponent)
+        assertThat(
+            requests.firstValue.context.requestTimestamp.epochSecond,
+            allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
+        )
+        assertThat(requests.firstValue.context.other, empty())
+        assertThat(requests.firstValue.request, instanceOf(WireFreshKeysFilterMyKeys::class.java))
+        assertEquals(2, (requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.size)
+        assertTrue((requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.any {
+            schemeMetadata.decodePublicKey(it.array()) == notMyKeys[0]
+        })
+        assertTrue((requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.any {
+            schemeMetadata.decodePublicKey(it.array()) == notMyKeys[1]
+        })
+        assertEquals(0, result.count())
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should fail when response context member id does not match the request`() {
+        val client = createClient()
+        whenever(
+            sender.sendRequest(any())
+        ).then {
+            val req = it.getArgument(0, WireFreshKeysRequest::class.java)
+            val future = CompletableFuture<WireFreshKeysResponse>()
+            future.complete(
+                WireFreshKeysResponse(
+                    WireResponseContext(
+                        req.context.requestingComponent,
+                        req.context.requestTimestamp,
+                        Instant.now(),
+                        UUID.randomUUID().toString(),
+                        req.context.other
+                    ), WireNoContentValue()
+                )
+            )
+            future
+        }
+        val exception = assertThrows<CryptoServiceException> {
+            client.ensureWrappingKey()
+        }
+        assertNotNull(exception.cause)
+        assertThat(exception.cause, instanceOf(IllegalArgumentException::class.java))
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should fail when response context requestingComponent does not match the request`() {
+        val client = createClient()
+        whenever(
+            sender.sendRequest(any())
+        ).then {
+            val req = it.getArgument(0, WireFreshKeysRequest::class.java)
+            val future = CompletableFuture<WireFreshKeysResponse>()
+            future.complete(
+                WireFreshKeysResponse(
+                    WireResponseContext(
+                        UUID.randomUUID().toString(),
+                        req.context.requestTimestamp,
+                        Instant.now(),
+                        req.context.memberId,
+                        req.context.other
+                    ), WireNoContentValue()
+                )
+            )
+            future
+        }
+        val exception = assertThrows<CryptoServiceException> {
+            client.ensureWrappingKey()
+        }
+        assertNotNull(exception.cause)
+        assertThat(exception.cause, instanceOf(IllegalArgumentException::class.java))
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should fail when response class is not expected`() {
+        val client = createClient()
+        whenever(
+            sender.sendRequest(any())
+        ).then {
+            val req = it.getArgument(0, WireFreshKeysRequest::class.java)
+            val future = CompletableFuture<WireFreshKeysResponse>()
+            future.complete(
+                WireFreshKeysResponse(
+                    WireResponseContext(
+                        req.context.requestingComponent,
+                        req.context.requestTimestamp,
+                        Instant.now(),
+                        req.context.memberId,
+                        req.context.other
+                    ), WirePublicKeys(emptyList())
+                )
+            )
+            future
+        }
+        val exception = assertThrows<CryptoServiceException> {
+            client.ensureWrappingKey()
+        }
+        assertNotNull(exception.cause)
+        assertThat(exception.cause, instanceOf(IllegalArgumentException::class.java))
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should fail when sendRequest throws CryptoServiceLibraryException exception`() {
+        val client = createClient()
+        val error = CryptoServiceLibraryException("Test failure.")
+        whenever(sender.sendRequest(any())).thenThrow(error)
+        val exception = assertThrows<Exception> {
+            client.ensureWrappingKey()
+        }
+        assertSame(error, exception)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should fail when sendRequest throws TimeoutException exception exceeding number retries`() {
+        val client = createClient()
+        val timeout1 = TimeoutException()
+        val timeout2 = TimeoutException()
+        whenever(sender.sendRequest(any())).then { throw timeout1 }.then { throw timeout2 }
+        val exception = assertThrows<CryptoServiceTimeoutException> {
+            client.ensureWrappingKey()
+        }
+        assertNotNull(exception.cause)
+        assertSame(timeout2, exception.cause)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should eventually succeed request after retry`() {
+        val requests = argumentCaptor<WireFreshKeysRequest>()
+        val client = createClient()
+        whenever(
+            sender.sendRequest(any())
+        ).then { throw TimeoutException() }.then {
+            val req = it.getArgument(0, WireFreshKeysRequest::class.java)
+            val future = CompletableFuture<WireFreshKeysResponse>()
+            future.complete(
+                WireFreshKeysResponse(
+                    WireResponseContext(
+                        req.context.requestingComponent,
+                        req.context.requestTimestamp,
+                        Instant.now(),
+                        req.context.memberId,
+                        req.context.other
+                    ), WireNoContentValue()
+                )
+            )
+            future
+        }
+        val nowBefore = Instant.now()
+        client.ensureWrappingKey()
+        val nowAfter = Instant.now()
+        Mockito.verify(sender, times(2)).sendRequest(requests.capture())
+        assertEquals(memberId, requests.firstValue.context.memberId)
+        assertEquals(requestingComponent, requests.firstValue.context.requestingComponent)
+        assertThat(
+            requests.firstValue.context.requestTimestamp.epochSecond,
+            allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
+        )
+        assertThat(requests.firstValue.context.other, empty())
+        assertThat(requests.firstValue.request, instanceOf(WireFreshKeysEnsureWrappingKey::class.java))
+    }
+
     private fun createClient(): FreshKeySigningServiceClient =
         FreshKeySigningServiceClient(
             memberId = memberId,
@@ -264,9 +457,9 @@ class FreshKeySigningServiceClientTests {
         )
 
     private fun setupCompletedResponse(respFactory: (WireFreshKeysRequest) -> Any) {
-        Mockito.`when`(
+        whenever(
             sender.sendRequest(any())
-        ).thenAnswer {
+        ).then {
             val req = it.getArgument(0, WireFreshKeysRequest::class.java)
             val future = CompletableFuture<WireFreshKeysResponse>()
             future.complete(
