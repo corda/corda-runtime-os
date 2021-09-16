@@ -32,7 +32,7 @@ import kotlin.concurrent.write
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
  */
-class InboundMessageHandler(
+internal class InboundMessageHandler(
     coordinatorFactory: DominoCoordinatorFactory,
     private val server: HttpServer,
     private val publisherFactory: PublisherFactory,

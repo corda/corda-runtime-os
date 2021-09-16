@@ -11,28 +11,50 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
-import java.util.concurrent.atomic.AtomicReference
 
+// YIFT: Need to break this into more than one class and remove the suppression
+@Suppress("TooManyFunctions")
 abstract class DominoTile(
     internal val coordinatorFactory: DominoCoordinatorFactory,
 ) : Lifecycle, LifecycleEventHandler {
     companion object {
         private val logger = contextLogger()
     }
+
     private val coordinator by lazy {
         coordinatorFactory.createFor(this)
     }
 
     private val createdResources = ConcurrentLinkedDeque<AutoCloseable>()
-    private val toStart = ConcurrentLinkedDeque<Lifecycle>()
 
-    private val readyFuture = AtomicReference<CompletableFuture<Unit>>(null)
+    private val waitForStateChange = ConcurrentHashMap.newKeySet<CompletableFuture<LifecycleStatus>>()
 
-    fun waitForReady() {
-        val future = readyFuture.get()
-            ?: throw DominoException("Can not get ready future before starting the tile")
-        future.join()
+    fun startAndWaitForStarted() {
+        start()
+        waitForStatus(LifecycleStatus.UP)
+    }
+
+    fun stopAndWaitForDestruction() {
+        stop()
+        waitForStatus(LifecycleStatus.DOWN)
+    }
+
+    private fun waitForStatus(statusToWait: LifecycleStatus) {
+        val future = CompletableFuture<LifecycleStatus>()
+        waitForStateChange.add(future)
+        try {
+            if (coordinator.status == statusToWait) {
+                return
+            }
+            val newStatus = future.get()
+            if (newStatus != statusToWait) {
+                throw DominoException("Failed to wait for $statusToWait, status changed to $newStatus instead")
+            }
+        } finally {
+            waitForStateChange.remove(future)
+        }
     }
 
     abstract fun prepareResources()
@@ -48,21 +70,19 @@ abstract class DominoTile(
 
     override fun start() {
         logger.info("Starting ${coordinator.name}")
-        readyFuture.updateAndGet {
-            it ?: CompletableFuture()
-        }
         coordinator.start()
     }
 
     override fun stop() {
         logger.info("Stopping ${coordinator.name}")
-        readyFuture.set(null)
         coordinator.stop()
     }
 
     fun gotError(error: Throwable) {
         coordinator.postEvent(ErrorEvent(error))
-        readyFuture.get()?.completeExceptionally(error)
+        waitForStateChange.forEach {
+            it.completeExceptionally(error)
+        }
     }
 
     private fun handleErrorEvent(event: ErrorEvent) {
@@ -71,21 +91,37 @@ abstract class DominoTile(
         stop()
     }
 
+    protected open fun startupSequenceCompleted() {
+        setReady()
+    }
+
+    protected fun setReady() {
+        coordinator.updateStatus(LifecycleStatus.UP)
+        logger.info("Started ${coordinator.name}")
+        waitForStateChange.forEach {
+            it.complete(LifecycleStatus.UP)
+        }
+    }
+
     private fun startNextResource() {
-        val resource = toStart.pollFirst()
-        if (resource == null) {
-            coordinator.updateStatus(LifecycleStatus.UP)
-            readyFuture.get()?.complete(Unit)
+        val resourceNotStarted = createdResources
+            .filterIsInstance<Lifecycle>()
+            .filterNot {
+                it.isRunning
+            }.lastOrNull()
+
+        if (resourceNotStarted == null) {
+            startupSequenceCompleted()
         } else {
-            resource.start()
-            if (resource is DominoTile) {
+            resourceNotStarted.start()
+            if (resourceNotStarted is DominoTile) {
                 keepResources(
                     coordinator.followStatusChanges(
-                        setOf(resource.coordinator)
+                        setOf(resourceNotStarted.coordinator)
                     )
                 )
             }
-            if (resource.isRunning) {
+            if (resourceNotStarted.isRunning) {
                 startNextResource()
             }
         }
@@ -94,20 +130,12 @@ abstract class DominoTile(
     private fun handleStartEvent() {
         prepareResources()
 
-        toStart.clear()
-
-        createdResources
-            .filterIsInstance<Lifecycle>()
-            .forEach {
-                toStart.addFirst(it)
-            }
-
         startNextResource()
     }
 
     @Suppress("TooGenericExceptionCaught")
     private fun handleStopEvent() {
-        toStart.clear()
+
         createdResources
             .forEach {
                 try {
@@ -122,6 +150,10 @@ abstract class DominoTile(
             }
         coordinator.updateStatus(LifecycleStatus.DOWN)
         createdResources.clear()
+        logger.info("Stopped ${coordinator.name}")
+        waitForStateChange.forEach {
+            it.complete(LifecycleStatus.DOWN)
+        }
     }
 
     private fun handleChildStatusChange(newStatus: LifecycleStatus) {

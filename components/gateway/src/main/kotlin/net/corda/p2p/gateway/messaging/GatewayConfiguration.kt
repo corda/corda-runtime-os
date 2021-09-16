@@ -1,5 +1,7 @@
 package net.corda.p2p.gateway.messaging
 
+import java.time.Duration
+
 data class GatewayConfiguration(
     /**
      * Host name or IP address used when binding the HTTP server
@@ -29,17 +31,18 @@ data class ConnectionConfiguration(
      */
     val maxClientConnections: Long = 100L,
     /**
-     * Time in milliseconds after which a connection request will fail
+     * Time after which a connection request will fail
      */
-    val acquireTimeout: Long = 10000L,
+    val acquireTimeout: Duration = Duration.ofSeconds(10),
     /**
-     * Time in milliseconds after which an inactive connection in the pool will be released (closed)
+     * Time after which an inactive connection in the pool will be released (closed)
      */
-    val connectionIdleTimeout: Long = 60000L,
-    /**
-     * Time in milliseconds after which a message delivery is considered failed
-     */
-    val responseTimeout: Long = 1000L,
+    val connectionIdleTimeout: Duration = Duration.ofMinutes(1),
 
-    val retryDelay: Long = 5000L
+    /**
+     * Time after which a message delivery is considered failed
+     */
+    val responseTimeout: Duration = Duration.ofSeconds(1),
+
+    val retryDelay: Duration = Duration.ofSeconds(5)
 )

@@ -31,7 +31,7 @@ import java.nio.ByteBuffer
  * This is an implementation of an [EventLogProcessor] used to consume messages from a P2P message subscription. The received
  * events are processed and fed into the HTTP pipeline. No records will be produced by this processor as a result.
  */
-class OutboundMessageHandler(
+internal class OutboundMessageHandler(
     coordinatorFactory: DominoCoordinatorFactory,
     private val connectionPool: ConnectionManager,
     private val publisherFactory: PublisherFactory

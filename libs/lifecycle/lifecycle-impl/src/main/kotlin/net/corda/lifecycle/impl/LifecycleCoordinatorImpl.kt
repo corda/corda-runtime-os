@@ -48,10 +48,12 @@ class LifecycleCoordinatorImpl(
         private val logger: Logger = contextLogger()
 
         /**
-         * The maximal number of threads to keep active in the thread pool.
+         * The minimum number of threads to keep active in the threadpool.
+         *
+         * Under load, the number of threads may increase. By keeping a minimum of one, the lifecycle library should
+         * remain responsive to change while not consuming excessive resources.
          */
-        // YIFT: Do we want to stop unused thread using allowCoreThreadTimeOut?
-        private const val MAX_THREADS = 10
+        private const val MIN_THREADS = 1
 
         /**
          * The executor on which events are processed. Note that all events should be processed on an executor thread,
@@ -60,10 +62,10 @@ class LifecycleCoordinatorImpl(
          * The coordinator guarantees that the event processing task is only scheduled once. This means that event
          * processing is effectively single threaded in the sense that no event processing will happen concurrently.
          *
-         * By sharing a thread pool among coordinators, it should be possible to reduce resource usage when in a stable
+         * By sharing a threadpool among coordinators, it should be possible to reduce resource usage when in a stable
          * state.
          */
-        private val executor = Executors.newScheduledThreadPool(MAX_THREADS) { runnable ->
+        private val executor = Executors.newScheduledThreadPool(MIN_THREADS) { runnable ->
             val thread = Thread(runnable)
             thread.isDaemon = true
             thread

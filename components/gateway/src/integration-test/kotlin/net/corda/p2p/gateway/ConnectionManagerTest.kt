@@ -4,6 +4,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.gateway.messaging.ConnectionManager
+import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
@@ -14,22 +15,20 @@ import org.junit.jupiter.api.Timeout
 import java.net.SocketAddress
 import java.net.URI
 import java.util.concurrent.CountDownLatch
-import net.corda.p2p.gateway.messaging.http.DestinationInfo
 
 class ConnectionManagerTest : TestBase() {
 
     private val serverAddress = URI.create("http://localhost:10000")
     private val destination = DestinationInfo(serverAddress, aliceSNI[0], null)
-    private val coodrinator = DominoCoordinatorFactory(LifecycleCoordinatorFactoryImpl(), "localhost:10000")
-
+    private val coordinator = DominoCoordinatorFactory(LifecycleCoordinatorFactoryImpl(), "localhost:10000")
 
     @Test
     @Timeout(30)
     fun `acquire connection`() {
-        val manager = ConnectionManager(coodrinator, aliceSslConfig)
+        val manager = ConnectionManager(coordinator, aliceSslConfig)
         manager.start()
         val (host, port) = serverAddress.let { Pair(it.host, it.port) }
-        HttpServer(coodrinator, host, port, aliceSslConfig).use { server ->
+        HttpServer(coordinator, host, port, aliceSslConfig).use { server ->
             server.addListener(object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
                     assertEquals(clientMessageContent, String(message.payload))
@@ -55,10 +54,10 @@ class ConnectionManagerTest : TestBase() {
     @Test
     @Timeout(30)
     fun `reuse connection`() {
-        val manager = ConnectionManager(coodrinator, aliceSslConfig)
+        val manager = ConnectionManager(coordinator, aliceSslConfig)
         manager.start()
         val requestReceived = CountDownLatch(2)
-        HttpServer(coodrinator, serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
+        HttpServer(coordinator, serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
             val remotePeers = mutableListOf<SocketAddress>()
             server.addListener(object : HttpEventListener {
                 override fun onOpen(event: HttpConnectionEvent) {

@@ -51,7 +51,7 @@ class GatewayTest : TestBase() {
 
     private val sessionId = "session-1"
 
-    private val coodrinator = LifecycleCoordinatorFactoryImpl()
+    private val coordinator = LifecycleCoordinatorFactoryImpl()
 
     private class Node(private val name: String) {
         private val topicService = TopicServiceImpl()
@@ -104,10 +104,9 @@ class GatewayTest : TestBase() {
             GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),
             alice.subscriptionFactory,
             alice.publisherFactory,
-            coodrinator,
+            coordinator,
         ).use {
-            it.start()
-            it.waitForReady()
+            it.startAndWaitForStarted()
             val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null)
             HttpClient(serverInfo, bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
                 val responseReceived = CountDownLatch(1)
@@ -125,6 +124,7 @@ class GatewayTest : TestBase() {
                 client.start()
                 client.write(linkInMessage.toByteBuffer().array())
                 responseReceived.await()
+                it.stopAndWaitForDestruction()
             }
         }
 
@@ -152,10 +152,9 @@ class GatewayTest : TestBase() {
             GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),
             alice.subscriptionFactory,
             alice.publisherFactory,
-            coodrinator,
+            coordinator,
         ).use {
-            it.start()
-            it.waitForReady()
+            it.startAndWaitForStarted()
             val responseReceived = CountDownLatch(clientNumber)
             repeat(clientNumber) { index ->
                 val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null)
@@ -178,6 +177,7 @@ class GatewayTest : TestBase() {
             }
             responseReceived.await()
             clients.forEach { client -> client.stop() }
+            it.stopAndWaitForDestruction()
         }
 
         // Verify Gateway has received all [clientNumber] messages and that they were forwarded to the P2P_IN topic
@@ -219,7 +219,7 @@ class GatewayTest : TestBase() {
             URI.create(serverUrl)
         }.map { serverUri ->
             HttpServer(
-                DominoCoordinatorFactory(coodrinator, "${serverUri.host}:${serverUri.port}"),
+                DominoCoordinatorFactory(coordinator, "${serverUri.host}:${serverUri.port}"),
                 serverUri.host,
                 serverUri.port,
                 chipSslConfig).also {
@@ -236,7 +236,7 @@ class GatewayTest : TestBase() {
                 })
             }
         }.onEach {
-            it.start()
+            it.startAndWaitForStarted()
         }
 
         var startTime: Long
@@ -246,18 +246,18 @@ class GatewayTest : TestBase() {
             GatewayConfiguration(gatewayAddress.first, gatewayAddress.second, aliceSslConfig),
             alice.subscriptionFactory,
             alice.publisherFactory,
-            coodrinator,
+            coordinator,
         ).use {
             startTime = Instant.now().toEpochMilli()
-            it.start()
-            it.waitForReady()
+            it.startAndWaitForStarted()
             // Wait until all messages have been delivered
             deliveryLatch.await(1, TimeUnit.MINUTES)
             endTime = Instant.now().toEpochMilli()
+            it.stopAndWaitForDestruction()
         }
 
         logger.info("Done sending ${messageCount * serversCount} messages in ${endTime - startTime} milliseconds")
-        servers.forEach { it.stop() }
+        servers.forEach { it.stopAndWaitForDestruction() }
     }
 
     @Test
@@ -328,12 +328,12 @@ class GatewayTest : TestBase() {
                 GatewayConfiguration(aliceGatewayAddress.host, aliceGatewayAddress.port, chipSslConfig),
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                coodrinator
+                coordinator
             ).also {
-                it.start()
-                it.waitForReady()
+                it.startAndWaitForStarted()
             }.use {
                 receivedLatch.await()
+                it.stopAndWaitForDestruction()
             }
         }
         val t2 = thread {
@@ -341,12 +341,12 @@ class GatewayTest : TestBase() {
                 GatewayConfiguration(bobGatewayAddress.host, bobGatewayAddress.port, daleSslConfig),
                 bob.subscriptionFactory,
                 bob.publisherFactory,
-                coodrinator
+                coordinator
             ).also {
-                it.start()
-                it.waitForReady()
+                it.startAndWaitForStarted()
             }.use {
                 receivedLatch.await()
+                it.stopAndWaitForDestruction()
             }
         }
 
