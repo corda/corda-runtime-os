@@ -512,7 +512,7 @@ private inline val Class<*>.isConcreteClass: Boolean get() = !isInterface && !is
  */
 private fun constructorForDeserialization(type: Type): KFunction<Any>? {
     val clazz = type.asClass()
-    if (!clazz.isConcreteClass || clazz.isSynthetic) return null
+    if (!clazz.isConcreteClass || clazz.isSynthetic || clazz.isAnonymousClass) return null
 
     val kotlinCtors = clazz.kotlin.constructors
 
