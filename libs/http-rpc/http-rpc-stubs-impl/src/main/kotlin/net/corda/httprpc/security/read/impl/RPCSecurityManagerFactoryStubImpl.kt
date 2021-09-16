@@ -8,7 +8,7 @@ import org.osgi.service.component.annotations.Component
 @Component
 class RPCSecurityManagerFactoryStubImpl @Activate constructor() : RPCSecurityManagerFactory {
 
-    override fun get(): RPCSecurityManager {
+    override fun createRPCSecurityManager(): RPCSecurityManager {
         return RPCSecurityManagerStubImpl()
     }
 }

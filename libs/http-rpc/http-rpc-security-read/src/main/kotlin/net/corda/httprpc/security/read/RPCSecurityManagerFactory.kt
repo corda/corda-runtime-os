@@ -1,5 +1,5 @@
 package net.corda.httprpc.security.read
 
-import java.util.function.Supplier
-
-interface RPCSecurityManagerFactory : Supplier<RPCSecurityManager>
+interface RPCSecurityManagerFactory {
+    fun createRPCSecurityManager(): RPCSecurityManager
+}
