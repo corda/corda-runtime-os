@@ -1,8 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.AbstractMutableClassWhitelist
-import net.corda.v5.serialization.ClassWhitelist
-import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.MutableClassWhitelist
 import net.corda.internal.serialization.amqp.testutils.deserialize
@@ -10,6 +7,7 @@ import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvel
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
+import net.corda.v5.serialization.SerializationCustomSerializer
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
