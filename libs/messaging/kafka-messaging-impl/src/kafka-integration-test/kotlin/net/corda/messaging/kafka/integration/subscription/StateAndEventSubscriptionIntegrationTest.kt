@@ -25,6 +25,7 @@ import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPI
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC5_TEMPLATE
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC6
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC6_TEMPLATE
+import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.getStringRecords
@@ -76,7 +77,7 @@ class StateAndEventSubscriptionIntegrationTest {
     fun beforeEach() {
         kafkaConfig = ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(BOOTSTRAP_SERVERS_VALUE))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
     @Test

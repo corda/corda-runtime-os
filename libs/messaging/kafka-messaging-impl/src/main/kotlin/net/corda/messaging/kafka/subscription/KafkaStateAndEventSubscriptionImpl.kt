@@ -231,7 +231,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun generateDeadLetterRecord(event: ConsumerRecord<K, E>, state: S?): Record<*, *> {
         val stateBytes = if (state != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(stateTopic.topic, state)) else null
         val eventBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(eventTopic.topic, event.value()))
-        return Record(eventTopic.topic + deadLetterQueueSuffix, event.key(),
+        return Record(eventTopic.suffix + deadLetterQueueSuffix, event.key(),
             StateAndEventDeadLetterRecord(clock.instant(), stateBytes, eventBytes)
         )
     }

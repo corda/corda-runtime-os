@@ -26,8 +26,8 @@ data class StateAndEventConfig(
     companion object {
         fun getStateAndEventConfig(config: Config): StateAndEventConfig {
             val topicPrefix = config.getString(ConfigProperties.TOPIC_PREFIX)
-            val eventTopic = "$topicPrefix${config.getString(ConfigProperties.TOPIC_NAME)}"
-            val stateTopic = "$topicPrefix${config.getString(ConfigProperties.STATE_TOPIC_NAME)}"
+            val eventTopic = config.getString(ConfigProperties.TOPIC_NAME)
+            val stateTopic = config.getString(ConfigProperties.STATE_TOPIC_NAME)
             val eventGroupID = config.getString(ConfigProperties.EVENT_GROUP_ID)
             val loggerName = "$eventGroupID.${config.getString(ConfigProperties.PRODUCER_TRANSACTIONAL_ID)}"
             val producerClientId: String = config.getString(ConfigProperties.PRODUCER_CLIENT_ID)
