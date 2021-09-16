@@ -33,6 +33,8 @@ configurations {
         transitive = true
         canBeConsumed = false
         extendsFrom(systemPackages)
+        //This is to ensure that, when you add a project dependency to the configuration, you add the project's jar artifact,
+        // otherwise Gradle adds the project's classes directory as that is usually enough to compile/run
         attributes { attrs ->
             attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR))
         }
@@ -44,6 +46,8 @@ configurations {
         transitive = true
         canBeConsumed = false
         extendsFrom(runtimeClasspath)
+        //This is to ensure that, when you add a project dependency to the configuration, you add the project's jar artifact,
+        // otherwise Gradle adds the project's classes directory as that is usually enough to compile/run
         attributes { attrs ->
             attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR))
         }
@@ -56,12 +60,11 @@ configurations {
 dependencies {
     bootstrapClasspath project(":osgi-framework-bootstrap")
 
-    systemPackages "net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion"
-    systemPackages "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
-    systemPackages "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    systemPackages "org.jetbrains.kotlin:kotlin-osgi-bundle"
     systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    systemPackages "net.corda:corda-base:$cordaApiVersion"
     systemPackages project(":osgi-framework-api")
 }
 
