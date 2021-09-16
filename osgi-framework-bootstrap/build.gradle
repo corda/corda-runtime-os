@@ -7,6 +7,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     implementation project(":osgi-framework-api")
+    implementation 'net.corda:corda-base'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
     implementation "org.slf4j:jul-to-slf4j:$slf4jVersion"
