@@ -21,7 +21,7 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation project(':libs:crypto:crypto-internal')
-    implementation project(':libs:crypto:cipher-suite-impl')
+    implementation project(':libs:crypto:crypto-impl')
     implementation project(':libs:configuration:configuration-read')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
@@ -31,7 +31,7 @@ dependencies {
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(':libs:crypto:crypto-testkit')
+    testImplementation project(':testing:crypto-testkit')
     testImplementation project(":libs:lifecycle:lifecycle-impl")
 }
 

@@ -19,7 +19,7 @@ configurations {
 dependencies {
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(":libs:crypto:crypto-impl")
+    implementation project(":components:crypto:crypto-client")
     implementation project(":libs:install")
     implementation 'net.corda:corda-packaging'
     implementation 'net.corda:corda-serialization'
