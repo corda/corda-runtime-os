@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "AuthenticatedMessageDeliveryState",
+  "namespace": "net.corda.p2p",
+  "doc": "State used to track when a {@link net.corda.p2p.app.AuthenticatedMessage} should be replayed.",
+  "fields": [
+    {
+      "name": "message",
+      "type": "net.corda.p2p.AuthenticatedMessageAndKey",
+      "doc": "A copy of the original message in P2P_OUT_TOPIC."
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "The timestamp when the message was originally processed for the first time."
+    }
+  ]
+}

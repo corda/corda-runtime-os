@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "FlowMessageMarker",
+  "name": "AppMessageMarker",
   "namespace": "net.corda.p2p.markers",
   "fields": [
     {
@@ -13,6 +13,11 @@
         "net.corda.p2p.markers.GatewaySentMarker",
         "net.corda.p2p.markers.TtlExpiredMarker"
       ]
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "The timestamp when the status change happened."
     }
   ],
   "doc": "Used by the sending side to track the end to end delivery of a {@link net.corda.p2p.FlowMessage}. When processing a FlowMessage a component can persist a FlowMessageMarker to communicate the status to other components."
