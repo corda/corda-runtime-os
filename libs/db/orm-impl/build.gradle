@@ -9,7 +9,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     compileOnly "org.osgi:osgi.annotation"
-    implementation "org.slf4j:slf4j-api"
     api "javax.persistence:javax.persistence-api"
 
     implementation "org.hibernate:hibernate-core:$hibernateVersion"

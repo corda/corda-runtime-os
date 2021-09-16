@@ -9,10 +9,8 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
-    implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
     implementation project(":osgi-framework-api")
     implementation project(":libs:messaging:messaging")

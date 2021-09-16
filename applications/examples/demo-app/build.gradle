@@ -11,8 +11,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
     implementation project(":osgi-framework-api")
 
