@@ -1,16 +1,22 @@
-package net.corda.kryoserialization
+package net.corda.kryoserialization.impl
 
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.io.serialization.kryo.KryoSerializer
+import com.esotericsoftware.kryo.Serializer
 import net.corda.classinfo.ClassInfoService
+import net.corda.kryoserialization.DefaultKryoCustomizer
+import net.corda.kryoserialization.KryoCheckpointSerializer
+import net.corda.kryoserialization.KryoCheckpointSerializerAdapter
 import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.ClassSerializer
+import net.corda.kryoserialization.serializers.SingletonSerializeAsTokenSerializer
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.CheckpointInternalCustomSerializer
 import net.corda.serialization.CheckpointSerializerBuilder
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.BasicHashingService
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -28,7 +34,8 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
         val log = contextLogger()
     }
 
-    private val serializers: MutableMap<Class<*>, CheckpointInternalCustomSerializer<*>> = mutableMapOf()
+    private val serializers: MutableMap<Class<*>, Serializer<*>> = mutableMapOf()
+    private val singletonInstances: MutableMap<String, SingletonSerializeAsToken> = mutableMapOf()
     private var sandboxGroup: SandboxGroup? = null
 
     private val kryoFromQuasar = (Fiber.getFiberSerializer(false) as KryoSerializer).kryo
@@ -46,19 +53,25 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
     override fun addSerializer(
         clazz: Class<*>,
         serializer: CheckpointInternalCustomSerializer<*>
-    ): CheckpointSerializerBuilder {
-        if (PublicKey::class.java.isAssignableFrom(clazz)) {
-            throw CordaRuntimeException("Custom serializers for public keys are not allowed")
-        }
-        serializers += mapOf(clazz to serializer)
-        return this
-    }
+    ): CheckpointSerializerBuilder = addSerializerForClasses(listOf(clazz), serializer)
 
     override fun addSerializerForClasses(
         classes: List<Class<*>>,
         serializer: CheckpointInternalCustomSerializer<*>
     ): CheckpointSerializerBuilder {
-        serializers += classes.associateWith { serializer }
+        for (clazz in classes) {
+            if (PublicKey::class.java.isAssignableFrom(clazz)) {
+                throw CordaRuntimeException("Custom serializers for public keys are not allowed")
+            }
+            serializers[clazz] = KryoCheckpointSerializerAdapter(serializer).adapt()
+        }
+        return this
+    }
+
+    override fun addSingletonSerializableInstances(
+        instances: Set<SingletonSerializeAsToken>
+    ): CheckpointSerializerBuilder {
+        singletonInstances.putAll(instances.associateBy { it.tokenName })
         return this
     }
 
@@ -81,17 +94,20 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
             hashingService
         )
 
+        val singletonSerializeAsTokenSerializer = SingletonSerializeAsTokenSerializer(singletonInstances.toMap())
+
         val kryo = DefaultKryoCustomizer.customize(
             kryoFromQuasar,
-            serializers,
+            serializers + mapOf(SingletonSerializeAsToken::class.java to singletonSerializeAsTokenSerializer),
             classResolver,
-            classSerializer
+            classSerializer,
         )
 
         return KryoCheckpointSerializer(kryo).also {
             // Clear the builder state
             this.sandboxGroup = null
             serializers.clear()
+            singletonInstances.clear()
         }
     }
 }
