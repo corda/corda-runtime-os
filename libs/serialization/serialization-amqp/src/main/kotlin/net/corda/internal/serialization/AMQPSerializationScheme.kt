@@ -97,7 +97,7 @@ abstract class AbstractAMQPSerializationScheme private constructor(
 
         val serializersToRegister = context.customSerializers ?: cordappCustomSerializers
         serializersToRegister.forEach { customSerializer ->
-            factory.registerExternal(CorDappCustomSerializer(customSerializer, factory))
+            factory.registerExternal(CorDappCustomSerializer(customSerializer))
         }
 
         context.properties[ContextPropertyKeys.SERIALIZERS]?.apply {

@@ -38,14 +38,11 @@ const val PROXY_TYPE = 1
  * @property proxyType the Java [Type] of the class into which instances of [type] are proxied for use by
  * the underlying serialization engine
  *
- * @param factory a [SerializerFactory] belonging to the context this serializer is being instantiated
- * for
  * @param withInheritance should the serializer work for this type and all inheriting classes? Allows serializers for
  * interfaces and abstract classes. Always set to false for CorDapp defined serializers
  */
 class CorDappCustomSerializer @JvmOverloads constructor(
         private val serializer: SerializationCustomSerializer<*, *>,
-        factory: SerializerFactory,
         private val withInheritance: Boolean = false
 ) : AMQPSerializer<Any>, SerializerFor {
     override val revealSubclassesInSchema: Boolean get() = false
@@ -66,9 +63,6 @@ class CorDappCustomSerializer @JvmOverloads constructor(
     val proxyType = types[PROXY_TYPE]
     override val typeDescriptor: Symbol = typeDescriptorFor(type)
     val descriptor: Descriptor = Descriptor(typeDescriptor)
-    private val proxySerializer: ObjectSerializer by lazy {
-        ObjectSerializer.make(factory.getTypeInformation(proxyType), factory)
-    }
 
     override fun writeClassInfo(output: SerializationOutput) {}
 

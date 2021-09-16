@@ -43,7 +43,7 @@ public class JavaCustomSerializerMapProxyTests {
         l.add(20);
         ClassThatNeedsCustomSerializer e = new ClassThatNeedsCustomSerializer(l);
 
-        CorDappCustomSerializer ccs = new CorDappCustomSerializer(new ExampleSerializer(), factory);
+        CorDappCustomSerializer ccs = new CorDappCustomSerializer(new ExampleSerializer());
         factory.registerExternal(ccs);
 
         var serializedBytes = ser.serialize(e, TestSerializationContext.testSerializationContext);
