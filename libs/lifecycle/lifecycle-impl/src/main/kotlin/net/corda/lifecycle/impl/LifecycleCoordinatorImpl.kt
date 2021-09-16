@@ -50,7 +50,7 @@ class LifecycleCoordinatorImpl(
         /**
          * The maximal number of threads to keep active in the thread pool.
          */
-        // YIFT: Do we want to stop unused thred using allowCoreThreadTimeOut?
+        // YIFT: Do we want to stop unused thread using allowCoreThreadTimeOut?
         private const val MAX_THREADS = 10
 
         /**

@@ -9,9 +9,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.timeout.IdleStateHandler
-import net.corda.p2p.gateway.domino.CloseableChannel
-import net.corda.p2p.gateway.domino.CloseableMap
-import net.corda.p2p.gateway.domino.CloseableNioEventLoopGroup
 import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.SslConfiguration
@@ -63,10 +60,12 @@ class HttpServer(
 
     override fun prepareResources() {
         logger.info("Starting HTTP Server")
-        val bossGroup = NioEventLoopGroup(1)
-        keepResources(CloseableNioEventLoopGroup(bossGroup))
-        val workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS)
-        keepResources(CloseableNioEventLoopGroup(workerGroup))
+        val bossGroup = NioEventLoopGroup(1).also {
+            keepResource(it)
+        }
+        val workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS).also {
+            keepResource(it)
+        }
 
         val server = ServerBootstrap()
         server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
@@ -74,17 +73,15 @@ class HttpServer(
         logger.info("Trying to bind to $host:$port")
         val channelFuture = server.bind(host, port).sync()
         logger.info("Listening on port $port")
-        val serverChannel = channelFuture.channel()
-
-        serverChannel.closeFuture().addListener {
-            if (isRunning) {
-                close()
+        channelFuture.channel().also { serverChannel ->
+            keepResource(serverChannel)
+            serverChannel.closeFuture().addListener {
+                if (isRunning) {
+                    close()
+                }
             }
         }
-        keepResources(
-            CloseableChannel(serverChannel),
-            CloseableMap(clientChannels)
-        )
+        keepResource(clientChannels)
     }
 
     private val clientChannels = ConcurrentHashMap<SocketAddress, Channel>()

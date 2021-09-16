@@ -1,5 +1,7 @@
 package net.corda.p2p.gateway.domino
 
+import io.netty.channel.Channel
+import io.netty.channel.EventLoopGroup
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -37,6 +39,22 @@ abstract class DominoTile(
 
     abstract fun prepareResources()
 
+    fun keepResource(group: EventLoopGroup) {
+        keepResources({
+            group.shutdownGracefully()
+            group.terminationFuture().sync()
+        })
+    }
+    fun keepResource(channel: Channel) {
+        keepResources({
+            channel.close().sync()
+        })
+    }
+    fun keepResource(map: MutableMap<*, *>) {
+        keepResources({
+            map.clear()
+        })
+    }
     fun keepResources(firstResource: AutoCloseable, vararg other: AutoCloseable) {
         createdResources.addFirst(firstResource)
         other.forEach {

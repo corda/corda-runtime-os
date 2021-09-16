@@ -2,8 +2,6 @@ package net.corda.p2p.gateway.messaging
 
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
-import net.corda.p2p.gateway.domino.CloseableMap
-import net.corda.p2p.gateway.domino.CloseableNioEventLoopGroup
 import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
@@ -43,13 +41,13 @@ class ConnectionManager(
     override fun prepareResources() {
         logger.info("Starting connection manager")
 
-        writeGroup = NioEventLoopGroup(NUM_CLIENT_WRITE_THREADS)
-        keepResources(CloseableNioEventLoopGroup(writeGroup!!))
-        nettyGroup = NioEventLoopGroup(NUM_CLIENT_NETTY_THREADS)
-        keepResources(
-            CloseableNioEventLoopGroup(nettyGroup!!),
-            CloseableMap(clientPool)
-        )
+        writeGroup = NioEventLoopGroup(NUM_CLIENT_WRITE_THREADS).also {
+            keepResource(it)
+        }
+        nettyGroup = NioEventLoopGroup(NUM_CLIENT_NETTY_THREADS).also {
+            keepResource(it)
+        }
+        keepResource(clientPool)
     }
 
     fun addListener(eventListener: HttpEventListener) {
