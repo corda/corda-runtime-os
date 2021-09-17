@@ -16,8 +16,12 @@ import net.corda.v5.base.concurrent.getOrThrow
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.service.ServiceExtension
+import java.util.concurrent.CompletableFuture
 
+@ExtendWith(ServiceExtension::class)
 class RPCSubscriptionIntegrationTest {
 
     private lateinit var rpcConfig: RPCConfig<String, String>
@@ -56,13 +60,16 @@ class RPCSubscriptionIntegrationTest {
 
         rpcConfig = RPCConfig(CLIENT_ID, CLIENT_ID, TopicTemplates.RPC_TOPIC, String::class.java, String::class.java)
         rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
-        rpcSender.start()
-        val future = rpcSender.sendRequest("REQUEST")
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
             rpcConfig, kafkaConfig, TestRPCResponderProcessor()
         )
+
+        rpcSender.start()
         rpcSub.start()
+
+        Thread.sleep(5000)
+        val future = rpcSender.sendRequest("REQUEST")
 
         Assertions.assertThat(future.getOrThrow()).isEqualTo("RECEIVED and PROCESSED")
 

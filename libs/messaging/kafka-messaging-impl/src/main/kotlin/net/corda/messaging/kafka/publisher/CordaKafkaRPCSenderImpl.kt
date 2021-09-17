@@ -24,7 +24,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import org.jboss.util.collection.WeakValueHashMap
+import org.infinispan.commons.util.WeakValueHashMap
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import java.nio.ByteBuffer
@@ -112,7 +112,6 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                 ).use {
                     it.subscribe(
                         listOf("$topicPrefix$responseTopic"),
-
                         partitionListener
                     )
                     pollAndProcessRecords(it)

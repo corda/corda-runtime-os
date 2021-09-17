@@ -42,7 +42,7 @@ dependencies {
     
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
-    implementation "org.jboss:jboss-common-core:$jbossVersion"
+    implementation "org.infinispan:infinispan-commons:$infinispanVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
@@ -82,7 +82,7 @@ def kafkaTestingBundle = tasks.register('kafkaTestingBundle', Bundle) {
 
     bnd """\
 Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
-Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
+Test-Cases: net.corda.messaging.kafka.integration.subscription.RPCSubscriptionIntegrationTest
 """
 }
 

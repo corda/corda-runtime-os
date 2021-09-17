@@ -18,13 +18,13 @@ class RPCConsumerRebalanceListener(
     }
 
     override fun onPartitionsRevoked(partitions: MutableCollection<TopicPartition>) {
-        partitions.removeAll(partitions)
+        this.partitions.removeAll(partitions)
         val partitionIds = partitions.map{it.partition()}.joinToString(",")
         log.info("Consumer group name $groupName for topic $topic partition revoked: $partitionIds.")
     }
 
     override fun onPartitionsAssigned(partitions: MutableCollection<TopicPartition>) {
-        partitions.addAll(partitions)
+        this.partitions.addAll(partitions)
         val partitionIds = partitions.map{it.partition()}.joinToString(",")
         log.info("Consumer group name $groupName for topic $topic partition assigned: $partitionIds.")
     }
