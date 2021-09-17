@@ -40,6 +40,8 @@ const val PROXY_TYPE = 1
  *
  * @param factory a [SerializerFactory] belonging to the context this serializer is being instantiated
  * for
+ * @param withInheritance should the serializer work for this type and all inheriting classes? Allows serializers for
+ * interfaces and abstract classes. Always set to false for CorDapp defined serializers
  */
 class CorDappCustomSerializer @JvmOverloads constructor(
         private val serializer: SerializationCustomSerializer<*, *>,
