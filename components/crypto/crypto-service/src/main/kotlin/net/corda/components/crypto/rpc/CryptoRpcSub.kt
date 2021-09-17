@@ -1,5 +1,5 @@
 package net.corda.components.crypto.rpc
 
-import net.corda.lifecycle.Lifecycle
+import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
 
-interface CryptoRpcSub : Lifecycle
+interface CryptoRpcSub : CryptoLifecycleComponent

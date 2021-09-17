@@ -179,7 +179,10 @@ class FreshKeySigningServiceClientTests {
         )
         assertThat(requests.firstValue.context.other, empty())
         assertThat(requests.firstValue.request, instanceOf(WireFreshKeysSign::class.java))
-        assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), (requests.firstValue.request as WireFreshKeysSign).publicKey.array())
+        assertArrayEquals(
+            schemeMetadata.encodeAsByteArray(keyPair.public),
+            (requests.firstValue.request as WireFreshKeysSign).publicKey.array()
+        )
         assertArrayEquals(data, (requests.firstValue.request as WireFreshKeysSign).bytes .array())
         assertEquals(keyPair.public, result.by)
         assertArrayEquals(signature, result.bytes)
@@ -212,10 +215,19 @@ class FreshKeySigningServiceClientTests {
         )
         assertThat(requests.firstValue.context.other, empty())
         assertThat(requests.firstValue.request, instanceOf(WireFreshKeysSignWithSpec::class.java))
-        assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.public), (requests.firstValue.request as WireFreshKeysSignWithSpec).publicKey.array())
+        assertArrayEquals(
+            schemeMetadata.encodeAsByteArray(keyPair.public),
+            (requests.firstValue.request as WireFreshKeysSignWithSpec).publicKey.array()
+        )
         assertArrayEquals(data, (requests.firstValue.request as WireFreshKeysSignWithSpec).bytes .array())
-        assertEquals("NONEwithECDSA", (requests.firstValue.request as WireFreshKeysSignWithSpec).signatureSpec.signatureName)
-        assertEquals("SHA-256", (requests.firstValue.request as WireFreshKeysSignWithSpec).signatureSpec.customDigestName)
+        assertEquals(
+            "NONEwithECDSA",
+            (requests.firstValue.request as WireFreshKeysSignWithSpec).signatureSpec.signatureName
+        )
+        assertEquals(
+            "SHA-256",
+            (requests.firstValue.request as WireFreshKeysSignWithSpec).signatureSpec.customDigestName
+        )
         assertEquals(keyPair.public, result.by)
         assertArrayEquals(signature, result.bytes)
     }

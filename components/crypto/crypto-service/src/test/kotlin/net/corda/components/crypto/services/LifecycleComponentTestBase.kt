@@ -1,8 +1,7 @@
 package net.corda.components.crypto.services
 
 import net.corda.components.crypto.CryptoCoordinator
-import net.corda.crypto.impl.lifecycle.CryptoServiceLifecycleEventHandler
-import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
+import net.corda.crypto.impl.lifecycle.AbstractCryptoLifecycleComponent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -49,7 +48,7 @@ abstract class LifecycleComponentTestBase {
         libraryCoordinator.close()
     }
 
-    protected fun <C : CryptoLifecycleComponent> createComponent(factory: () -> C): C {
+    protected fun <C : AbstractCryptoLifecycleComponent> createComponent(factory: () -> C): C {
         val component = factory()
         ready()
         return component

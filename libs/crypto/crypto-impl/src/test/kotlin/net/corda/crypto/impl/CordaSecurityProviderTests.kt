@@ -1,8 +1,5 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.impl.CompositeKeyFactory
-import net.corda.crypto.impl.CompositeSignature
-import net.corda.crypto.impl.CordaSecurityProvider
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.CompositeKey

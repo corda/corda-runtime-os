@@ -7,10 +7,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.components.crypto.services.CryptoServiceCircuitBreaker
 import net.corda.crypto.impl.config.CryptoCacheConfig
-import net.corda.crypto.impl.config.CryptoConfigEvent
+import net.corda.crypto.impl.lifecycle.NewCryptoConfigReceived
 import net.corda.crypto.impl.config.CryptoLibraryConfig
-import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
-import net.corda.crypto.impl.lifecycle.CryptoServiceLifecycleEventHandler
 import net.corda.crypto.impl.lifecycle.clearCache
 import net.corda.components.crypto.services.FreshKeySigningServiceImpl
 import net.corda.components.crypto.services.SigningServiceImpl
@@ -20,8 +18,8 @@ import net.corda.components.crypto.services.persistence.SigningKeyCacheImpl
 import net.corda.crypto.CryptoCategories
 import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.SigningService
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.StopEvent
+import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoService
@@ -32,20 +30,26 @@ import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 @Component(service = [CryptoFactory::class])
 class CryptoFactoryImpl @Activate constructor(
-    @Reference(service = CryptoServiceLifecycleEventHandler::class)
-    val cryptoServiceLifecycleEventHandler: CryptoServiceLifecycleEventHandler,
     @Reference(service = PersistentCacheFactory::class)
     private val persistenceFactory: PersistentCacheFactory,
     @Reference(service = CipherSuiteFactory::class)
     private val cipherSuiteFactory: CipherSuiteFactory,
     @Reference(service = CryptoServiceProvider::class)
     private val cryptoServiceProviders: List<CryptoServiceProvider<*>>,
-) : CryptoLifecycleComponent(cryptoServiceLifecycleEventHandler), CryptoFactory {
+) : CryptoLifecycleComponent, CryptoFactory {
+    companion object {
+        private val logger: Logger = contextLogger()
+    }
+
     private var libraryConfig: CryptoLibraryConfig? = null
+
+    private val lock = ReentrantLock()
 
     private val isConfigured: Boolean
         get() = libraryConfig != null
@@ -63,11 +67,24 @@ class CryptoFactoryImpl @Activate constructor(
         .enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
+    override var isRunning: Boolean = false
+
+    override fun start() = lock.withLock {
+        logger.info("Starting...")
+        isRunning = true
+    }
 
     override fun stop() = lock.withLock {
+        logger.info("Stopping...")
         clearCaches()
         libraryConfig = null
-        super.stop()
+        isRunning = false
+    }
+
+    override fun handleConfigEvent(event: NewCryptoConfigReceived) = lock.withLock {
+        logger.info("Received new configuration...")
+        clearCaches()
+        libraryConfig = event.config
     }
 
     override val cipherSchemeMetadata: CipherSchemeMetadata by lazy {
@@ -157,25 +174,6 @@ class CryptoFactoryImpl @Activate constructor(
                 persistence = persistenceFactory.createSigningPersistentCache(config)
             )
         }
-    }
-
-    override fun handleLifecycleEvent(event: LifecycleEvent) = lock.withLock {
-        logger.info("LifecycleEvent received: $event")
-        when (event) {
-            is CryptoConfigEvent -> {
-                logger.info("Received config event {}", event::class.qualifiedName)
-                reset(event.config)
-            }
-            is StopEvent -> {
-                stop()
-                logger.info("Received stop event")
-            }
-        }
-    }
-
-    private fun reset(config: CryptoLibraryConfig) {
-        clearCaches()
-        libraryConfig = config
     }
 
     private fun clearCaches() {

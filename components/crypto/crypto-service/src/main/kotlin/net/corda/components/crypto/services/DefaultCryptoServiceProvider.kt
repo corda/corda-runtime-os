@@ -1,14 +1,12 @@
 package net.corda.components.crypto.services
 
-import net.corda.crypto.impl.lifecycle.CryptoServiceLifecycleEventHandler
-import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
-import net.corda.crypto.impl.config.CryptoConfigEvent
+import net.corda.crypto.impl.lifecycle.NewCryptoConfigReceived
 import net.corda.crypto.impl.config.CryptoLibraryConfig
 import net.corda.components.crypto.services.persistence.DefaultCryptoKeyCache
 import net.corda.components.crypto.services.persistence.DefaultCryptoKeyCacheImpl
 import net.corda.components.crypto.services.persistence.PersistentCacheFactory
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.StopEvent
+import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
@@ -17,15 +15,21 @@ import net.corda.v5.cipher.suite.config.CryptoServiceConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 @Component(service = [CryptoServiceProvider::class, DefaultCryptoServiceProvider::class])
 class DefaultCryptoServiceProvider @Activate constructor(
-    @Reference(service = CryptoServiceLifecycleEventHandler::class)
-    private val cryptoServiceLifecycleEventHandler: CryptoServiceLifecycleEventHandler,
     @Reference(service = PersistentCacheFactory::class)
     private val persistenceFactory: PersistentCacheFactory
-) : CryptoLifecycleComponent(cryptoServiceLifecycleEventHandler), CryptoServiceProvider<DefaultCryptoServiceConfig> {
+) : CryptoLifecycleComponent, CryptoServiceProvider<DefaultCryptoServiceConfig> {
+    companion object {
+        private val logger: Logger = contextLogger()
+    }
+
+    private val lock = ReentrantLock()
+
     override val name: String = CryptoServiceConfig.DEFAULT_SERVICE_NAME
 
     override val configType: Class<DefaultCryptoServiceConfig> = DefaultCryptoServiceConfig::class.java
@@ -35,9 +39,22 @@ class DefaultCryptoServiceProvider @Activate constructor(
     private val isConfigured: Boolean
         get() = libraryConfig != null
 
+    override var isRunning: Boolean = false
+
+    override fun start() = lock.withLock {
+        logger.info("Starting...")
+        isRunning = true
+    }
+
     override fun stop() = lock.withLock {
+        logger.info("Stopping...")
         libraryConfig = null
-        super.stop()
+        isRunning = false
+    }
+
+    override fun handleConfigEvent(event: NewCryptoConfigReceived) = lock.withLock {
+        logger.info("Received new configuration...")
+        libraryConfig = event.config
     }
 
     override fun getInstance(context: CryptoServiceContext<DefaultCryptoServiceConfig>): CryptoService = lock.withLock {
@@ -63,23 +80,5 @@ class DefaultCryptoServiceProvider @Activate constructor(
             persistence = persistenceFactory.createDefaultCryptoPersistentCache(libraryConfig!!.keyCache),
             schemeMetadata = schemeMetadata
         )
-    }
-
-    override fun handleLifecycleEvent(event: LifecycleEvent) = lock.withLock {
-        logger.info("LifecycleEvent received: $event")
-        when (event) {
-            is CryptoConfigEvent -> {
-                logger.info("Received config event {}", event::class.qualifiedName)
-                reset(event.config)
-            }
-            is StopEvent -> {
-                logger.info("Received stop event")
-                stop()
-            }
-        }
-    }
-
-    private fun reset(config: CryptoLibraryConfig) {
-        libraryConfig = config
     }
 }

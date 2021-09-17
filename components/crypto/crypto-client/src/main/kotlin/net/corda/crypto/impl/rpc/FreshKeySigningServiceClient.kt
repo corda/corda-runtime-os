@@ -31,6 +31,7 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.TimeoutException
 
+@Suppress("LongParameterList")
 class FreshKeySigningServiceClient(
     private val memberId: String,
     private val requestingComponent: String,
@@ -121,7 +122,7 @@ class FreshKeySigningServiceClient(
         emptyList()
     )
 
-    @Suppress("ThrowsCount", "UNCHECKED_CAST")
+    @Suppress("ThrowsCount", "UNCHECKED_CAST", "ComplexMethod", "TooGenericExceptionCaught")
     private fun <TRESP> WireFreshKeysRequest.executeWithTimeoutRetry(
         respClazz: Class<TRESP>
     ): TRESP {

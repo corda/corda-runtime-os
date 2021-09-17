@@ -3,7 +3,6 @@ package net.corda.crypto.impl
 import net.corda.crypto.CryptoCategories
 import net.corda.crypto.SignatureVerificationServiceInternal
 import net.corda.crypto.SigningService
-import net.corda.crypto.impl.SignatureVerificationServiceProviderImpl
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.SignatureVerificationServiceProvider

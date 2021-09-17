@@ -2,8 +2,6 @@ package net.corda.crypto.impl
 
 import net.corda.crypto.CryptoCategories
 import net.corda.crypto.SigningService
-import net.corda.crypto.impl.CipherSchemeMetadataProviderImpl
-import net.corda.crypto.impl.CordaSecureRandomService
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME

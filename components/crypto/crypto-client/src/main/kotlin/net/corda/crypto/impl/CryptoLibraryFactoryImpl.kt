@@ -18,6 +18,7 @@ import net.corda.v5.crypto.SignatureVerificationService
 import org.osgi.service.component.annotations.Activate
 import java.time.Duration
 
+@Suppress("LongParameterList")
 class CryptoLibraryFactoryImpl @Activate constructor(
     private val memberId: String,
     private val requestingComponent: String,

@@ -1,41 +1,44 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.impl.config.CryptoConfigEvent
+import net.corda.crypto.impl.lifecycle.NewCryptoConfigReceived
 import net.corda.crypto.impl.config.CryptoLibraryConfig
 import net.corda.crypto.impl.config.CryptoRpcConfig
-import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
-import net.corda.crypto.impl.lifecycle.CryptoServiceLifecycleEventHandler
 import net.corda.crypto.impl.lifecycle.clearCache
 import net.corda.crypto.impl.lifecycle.closeGracefully
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.CryptoLibraryFactoryProvider
+import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
 import net.corda.data.crypto.wire.signing.WireSigningRequest
 import net.corda.data.crypto.wire.signing.WireSigningResponse
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 @Component(service = [CryptoLibraryFactoryProvider::class])
 class CryptoLibraryFactoryProviderImpl @Activate constructor(
-    @Reference(service = CryptoServiceLifecycleEventHandler::class)
-    val cryptoServiceLifecycleEventHandler: CryptoServiceLifecycleEventHandler,
     @Reference(service = CipherSuiteFactory::class)
     private val cipherSuiteFactory: CipherSuiteFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = MemberIdProvider::class)
     private val memberIdProvider: MemberIdProvider
-) : CryptoLifecycleComponent(cryptoServiceLifecycleEventHandler), CryptoLibraryFactoryProvider {
+) : CryptoLifecycleComponent, CryptoLibraryFactoryProvider {
+    companion object {
+        private val logger: Logger = contextLogger()
+    }
+
+    private val lock = ReentrantLock()
 
     private var libraryConfig: CryptoLibraryConfig? = null
 
@@ -43,9 +46,33 @@ class CryptoLibraryFactoryProviderImpl @Activate constructor(
         get() = libraryConfig != null
 
     private var signingServiceSender: RPCSender<WireSigningRequest, WireSigningResponse>? = null
+
     private var freshKeysServiceSender: RPCSender<WireFreshKeysRequest, WireFreshKeysResponse>? = null
 
     private val factories = ConcurrentHashMap<String, CryptoLibraryFactory>()
+
+    override var isRunning: Boolean = false
+
+    override fun start() = lock.withLock {
+        logger.info("Starting...")
+        isRunning = true
+    }
+
+    override fun stop() = lock.withLock {
+        logger.info("Stopping...")
+        factories.clearCache()
+        signingServiceSender?.closeGracefully()
+        freshKeysServiceSender?.closeGracefully()
+        signingServiceSender = null
+        freshKeysServiceSender = null
+        libraryConfig = null
+        isRunning = false
+    }
+
+    override fun handleConfigEvent(event: NewCryptoConfigReceived) = lock.withLock {
+        logger.info("Received new configuration...")
+        libraryConfig = event.config
+    }
 
     override fun create(requestingComponent: String): CryptoLibraryFactory = lock.withLock {
         val config = getConfig()
@@ -66,30 +93,6 @@ class CryptoLibraryFactoryProviderImpl @Activate constructor(
                 signingServiceSender = signingServiceSender!!,
                 freshKeysServiceSender = freshKeysServiceSender!!
             )
-        }
-    }
-
-    override fun stop() = lock.withLock {
-        factories.clearCache()
-        signingServiceSender?.closeGracefully()
-        freshKeysServiceSender?.closeGracefully()
-        signingServiceSender = null
-        freshKeysServiceSender = null
-        libraryConfig = null
-        super.stop()
-    }
-
-    override fun handleLifecycleEvent(event: LifecycleEvent) = lock.withLock {
-        logger.info("LifecycleEvent received: $event")
-        when (event) {
-            is CryptoConfigEvent -> {
-                logger.info("Received config event {}", event::class.qualifiedName)
-                libraryConfig = event.config
-            }
-            is StopEvent -> {
-                stop()
-                logger.info("Received stop event")
-            }
         }
     }
 

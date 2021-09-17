@@ -3,14 +3,14 @@ package net.corda.components.crypto
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.SigningService
-import net.corda.lifecycle.Lifecycle
+import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 
 /**
  * The [CryptoLibraryFactory] provides operations to create service side services.
  */
-interface CryptoFactory : Lifecycle {
+interface CryptoFactory : CryptoLifecycleComponent {
 
     /**
      * Return an instance of the [CipherSchemeMetadata]

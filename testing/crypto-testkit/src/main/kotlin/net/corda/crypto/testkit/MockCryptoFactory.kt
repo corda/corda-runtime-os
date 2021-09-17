@@ -9,7 +9,7 @@ import net.corda.components.crypto.services.persistence.SigningKeyCacheImpl
 import net.corda.crypto.CryptoCategories
 import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.SigningService
-import net.corda.lifecycle.Lifecycle
+import net.corda.crypto.impl.lifecycle.NewCryptoConfigReceived
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
@@ -55,6 +55,9 @@ class MockCryptoFactory(
                 defaultSignatureSchemeCodeName = defaultSignatureScheme.codeName
             )
         }
+
+    override fun handleConfigEvent(event: NewCryptoConfigReceived) {
+    }
 
     override val isRunning: Boolean = true
 

@@ -1,7 +1,6 @@
 package net.corda.components.crypto.rpc
 
 import net.corda.components.crypto.CryptoFactory
-import net.corda.crypto.impl.lifecycle.CryptoServiceLifecycleEventHandler
 import net.corda.crypto.impl.config.CryptoLibraryConfig
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
@@ -13,13 +12,11 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(service = [CryptoRpcSub::class])
 class FreshKeysServiceRpcSub @Activate constructor(
-    @Reference(service = CryptoServiceLifecycleEventHandler::class)
-    private val cryptoServiceLifecycleEventHandler: CryptoServiceLifecycleEventHandler,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = CryptoFactory::class)
     private val cryptoFactory: CryptoFactory
-) : CryptoRpcSubBase<WireFreshKeysRequest, WireFreshKeysResponse>(cryptoServiceLifecycleEventHandler), CryptoRpcSub {
+) : AbstractCryptoRpcSub<WireFreshKeysRequest, WireFreshKeysResponse>(), CryptoRpcSub {
 
     override fun createSubscription(
         libraryConfig: CryptoLibraryConfig

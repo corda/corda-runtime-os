@@ -35,7 +35,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeoutException
 
-@Suppress("TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionCaught", "LongParameterList")
 class SigningServiceClient(
     private val memberId: String,
     private val requestingComponent: String,
@@ -147,7 +147,7 @@ class SigningServiceClient(
         )
     )
 
-    @Suppress("ThrowsCount", "UNCHECKED_CAST")
+    @Suppress("ThrowsCount", "UNCHECKED_CAST", "ComplexMethod")
     private fun <TRESP> WireSigningRequest.executeWithTimeoutRetry(
         respClazz: Class<TRESP>,
         allowNoContentValue: Boolean = false
