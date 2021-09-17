@@ -1,5 +1,6 @@
 package net.corda.messaging.kafka.subscription.consumer.wrapper.impl
 
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
@@ -23,23 +24,21 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override val stateConsumer: CordaKafkaConsumer<K, S>,
     private val partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>?
-) : StateAndEventConsumer<K, S, E> {
+) : StateAndEventConsumer<K, S, E>, AutoCloseable {
 
     companion object {
         //short timeout for poll of paused partitions when waiting for processor to finish
         private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
-        private const val MIN_THREADS = 1
     }
 
     //single threaded executor per state and event consumer
-    private val executor = Executors.newScheduledThreadPool(MIN_THREADS) { runnable ->
+    private val executor = Executors.newSingleThreadScheduledExecutor() { runnable ->
         val thread = Thread(runnable)
         thread.isDaemon = true
         thread
     }
 
     private val log = LoggerFactory.getLogger(config.loggerName)
-
 
     private val consumerCloseTimeout = config.consumerCloseTimeout
     private val topicPrefix = config.topicPrefix
@@ -88,6 +87,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override fun close() {
         eventConsumer.close(consumerCloseTimeout)
         stateConsumer.close(consumerCloseTimeout)
+        executor.shutdown()
     }
 
     private fun getSyncedEventPartitions() : Set<TopicPartition> {
