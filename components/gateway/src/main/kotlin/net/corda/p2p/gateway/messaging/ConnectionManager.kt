@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class ConnectionManager(
     dominoCoordinatorFactory: DominoCoordinatorFactory,
-    private val sslConfiguration: SslConfiguration,
+    private val configuration: () -> GatewayConfiguration,
 ) : DominoTile(dominoCoordinatorFactory) {
 
     companion object {
@@ -66,7 +66,7 @@ class ConnectionManager(
      */
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
         return clientPool.computeIfAbsent(destinationInfo.uri) {
-            val client = HttpClient(destinationInfo, sslConfiguration, writeGroup!!, nettyGroup!!)
+            val client = HttpClient(destinationInfo, configuration().sslConfig, writeGroup!!, nettyGroup!!)
             keepResources(client)
             eventListeners.forEach { client.addListener(it) }
             client.start()

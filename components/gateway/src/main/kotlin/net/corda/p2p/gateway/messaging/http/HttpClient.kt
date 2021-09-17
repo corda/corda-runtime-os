@@ -150,7 +150,7 @@ class HttpClient(
         }
         logger.info("Connecting to ${destinationInfo.uri}")
         val bootstrap = Bootstrap()
-        bootstrap.group(nettyGroup).channel(NioSocketChannel::class.java).handler(ClientChannelInitializer(this))
+        bootstrap.group(nettyGroup).channel(NioSocketChannel::class.java).handler(ClientChannelInitializer())
         val clientFuture = bootstrap.connect(destinationInfo.uri.host, destinationInfo.uri.port)
         clientFuture.addListener(connectListener)
     }
@@ -190,11 +190,11 @@ class HttpClient(
         eventListeners.forEach { it.onMessage(message) }
     }
 
-    private class ClientChannelInitializer(val parent: HttpClient) : ChannelInitializer<SocketChannel>() {
+    private inner class ClientChannelInitializer : ChannelInitializer<SocketChannel>() {
         private val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
 
         init {
-            parent.sslConfiguration.run {
+            sslConfiguration.run {
                 val pkixParams = getCertCheckingParameters(trustStore, revocationCheck)
                 trustManagerFactory.init(pkixParams)
             }
@@ -205,15 +205,15 @@ class HttpClient(
             pipeline.addLast(
                 "sslHandler",
                 createClientSslHandler(
-                    parent.destinationInfo.sni,
-                    parent.destinationInfo.uri,
-                    parent.destinationInfo.legalName,
+                    destinationInfo.sni,
+                    destinationInfo.uri,
+                    destinationInfo.legalName,
                     trustManagerFactory
                 )
             )
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, CLIENT_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpClientCodec())
-            pipeline.addLast(HttpChannelHandler(parent, logger))
+            pipeline.addLast(HttpChannelHandler(this@HttpClient, logger))
         }
     }
 }

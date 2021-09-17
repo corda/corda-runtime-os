@@ -4,6 +4,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.gateway.messaging.ConnectionManager
+import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
@@ -21,58 +22,64 @@ class ConnectionManagerTest : TestBase() {
     private val serverAddress = URI.create("http://localhost:10000")
     private val destination = DestinationInfo(serverAddress, aliceSNI[0], null)
     private val coordinator = DominoCoordinatorFactory(LifecycleCoordinatorFactoryImpl(), "localhost:10000")
+    private val configuration = GatewayConfiguration(
+        hostAddress = serverAddress.host,
+        hostPort = serverAddress.port,
+        sslConfig = aliceSslConfig
+    )
 
     @Test
     @Timeout(30)
     fun `acquire connection`() {
-        val manager = ConnectionManager(coordinator, aliceSslConfig)
+        val manager = ConnectionManager(coordinator) {
+            configuration
+        }
         manager.start()
-        val (host, port) = serverAddress.let { Pair(it.host, it.port) }
-        HttpServer(coordinator, host, port, aliceSslConfig).use { server ->
-            server.addListener(object : HttpEventListener {
+        HttpServer(coordinator, { configuration }).use { server ->
+        server.addListener(object : HttpEventListener {
+            override fun onMessage(message: HttpMessage) {
+                assertEquals(clientMessageContent, String(message.payload))
+                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), message.source)
+            }
+        })
+        server.startAndWaitForStarted()
+        manager.acquire(destination).use { client ->
+            // Client is connected at this point
+            val responseReceived = CountDownLatch(1)
+            client.addListener(object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
-                    assertEquals(clientMessageContent, String(message.payload))
-                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), message.source)
+                    assertEquals(serverResponseContent, String(message.payload))
+                    responseReceived.countDown()
                 }
             })
-            server.start()
-            manager.acquire(destination).use { client ->
-                // Client is connected at this point
-                val responseReceived = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onMessage(message: HttpMessage) {
-                        assertEquals(serverResponseContent, String(message.payload))
-                        responseReceived.countDown()
-                    }
-                })
-                client.write(clientMessageContent.toByteArray())
-                responseReceived.await()
-            }
+            client.write(clientMessageContent.toByteArray())
+            responseReceived.await()
         }
+    }
     }
 
     @Test
     @Timeout(30)
     fun `reuse connection`() {
-        val manager = ConnectionManager(coordinator, aliceSslConfig)
+        val manager = ConnectionManager(coordinator, {configuration})
         manager.start()
         val requestReceived = CountDownLatch(2)
-        HttpServer(coordinator, serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
-            val remotePeers = mutableListOf<SocketAddress>()
-            server.addListener(object : HttpEventListener {
-                override fun onOpen(event: HttpConnectionEvent) {
-                    remotePeers.add(event.channel.remoteAddress())
-                }
-                override fun onMessage(message: HttpMessage) {
-                    requestReceived.countDown()
-                }
-            })
-            server.start()
-            manager.acquire(destination).write(clientMessageContent.toByteArray())
-            manager.acquire(destination).write(clientMessageContent.toByteArray())
-            requestReceived.await()
-            assertEquals(1, remotePeers.size)
-            manager.acquire(destination).stop()
-        }
+        HttpServer(coordinator, { configuration }).use { server ->
+        val remotePeers = mutableListOf<SocketAddress>()
+        server.addListener(object : HttpEventListener {
+            override fun onOpen(event: HttpConnectionEvent) {
+                remotePeers.add(event.channel.remoteAddress())
+            }
+            override fun onMessage(message: HttpMessage) {
+                requestReceived.countDown()
+            }
+        })
+        server.startAndWaitForStarted()
+        manager.acquire(destination).write(clientMessageContent.toByteArray())
+        manager.acquire(destination).write(clientMessageContent.toByteArray())
+        requestReceived.await()
+        assertEquals(1, remotePeers.size)
+        manager.acquire(destination).stop()
+    }
     }
 }

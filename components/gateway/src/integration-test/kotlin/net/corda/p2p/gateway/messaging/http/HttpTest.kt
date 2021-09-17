@@ -15,6 +15,7 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.LoggingInterceptor
 import net.corda.p2p.gateway.TestBase
 import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
+import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.apache.logging.log4j.Level
 import org.bouncycastle.asn1.x500.X500Name
@@ -65,14 +66,20 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `simple client POST request`() {
-        HttpServer(coordinator, serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
+        HttpServer(coordinator) {
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                aliceSslConfig
+            )
+        }.use { server ->
             server.addListener(object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
                     assertEquals(clientMessageContent, String(message.payload))
                     server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
                 }
             })
-            server.start()
+            server.startAndWaitForStarted()
             HttpClient(DestinationInfo(serverAddress, aliceSNI[0], null), chipSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
                 var responseReceived = false
@@ -99,7 +106,13 @@ class HttpTest : TestBase() {
         val threadNo = 2
         val threads = mutableListOf<Thread>()
         val times = mutableListOf<Long>()
-        val httpServer = HttpServer(coordinator, serverAddress.host, serverAddress.port, aliceSslConfig)
+        val httpServer = HttpServer(coordinator) {
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                aliceSslConfig
+            )
+        }
         val threadPool = NioEventLoopGroup(threadNo)
         httpServer.use { server ->
             server.addListener(object : HttpEventListener {
@@ -108,7 +121,7 @@ class HttpTest : TestBase() {
                     server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
                 }
             })
-            server.start()
+            server.startAndWaitForStarted()
             repeat(threadNo) {
                 val t = thread {
                     var startTime: Long = 0
@@ -155,14 +168,20 @@ class HttpTest : TestBase() {
     fun `large payload`() {
         val hugePayload = FileInputStream(javaClass.classLoader.getResource("10mb.txt")!!.file).readAllBytes()
 
-        HttpServer(coordinator, serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
+        HttpServer(coordinator) {
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                aliceSslConfig
+            )
+        }.use { server ->
             server.addListener(object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
                     assertTrue(Arrays.equals(hugePayload, message.payload))
                     server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
                 }
             })
-            server.start()
+            server.startAndWaitForStarted()
             HttpClient(DestinationInfo(serverAddress, aliceSNI[0], null), bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
                 val clientReceivedResponses = CountDownLatch(1)
                 var responseReceived = false
@@ -185,8 +204,14 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake succeeds - revocation checking disabled C5`() {
-        HttpServer(coordinator, serverAddress.host, serverAddress.port, bobSslConfig).use { server ->
-            server.start()
+        HttpServer(coordinator) {
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                bobSslConfig
+            )
+        }.use { server ->
+            server.startAndWaitForStarted()
             HttpClient(DestinationInfo(serverAddress, bobSNI[0], null), aliceSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
                 var connected = false
                 val connectedLatch = CountDownLatch(1)
@@ -208,8 +233,14 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake succeeds - revocation checking disabled C4`() {
-        HttpServer(coordinator, serverAddress.host, serverAddress.port, c4sslConfig).use { server ->
-            server.start()
+        HttpServer(coordinator) {
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                c4sslConfig
+            )
+        }.use { server ->
+            server.startAndWaitForStarted()
             HttpClient(DestinationInfo(serverAddress, partyASNI, partyAx500Name), c4sslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
                 var connected = false
                 val connectedLatch = CountDownLatch(1)
@@ -285,8 +316,14 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake fails - requested SNI is not recognized`() {
-        HttpServer(coordinator, serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
-            server.start()
+        HttpServer(coordinator) {
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                aliceSslConfig
+            )
+        }.use { server ->
+            server.startAndWaitForStarted()
             HttpClient(DestinationInfo(serverAddress, bobSNI[0], null), chipSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
                 val connectedLatch = CountDownLatch(1)
                 client.addListener(object : HttpEventListener {
@@ -310,8 +347,14 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake fails - server presents revoked certificate`() {
-        HttpServer(coordinator, serverAddress.host, serverAddress.port, bobSslConfig).use { server ->
-            server.start()
+        HttpServer(coordinator) {
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                bobSslConfig
+            )
+        }.use { server ->
+            server.startAndWaitForStarted()
             HttpClient(DestinationInfo(serverAddress, bobSNI[0], null), chipSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
                 val connectedLatch = CountDownLatch(1)
                 client.addListener(object : HttpEventListener {
@@ -384,7 +427,7 @@ class HttpTest : TestBase() {
             }
         }
 
-        private class ServerChannelInitializer(private val parent: MitmServer) : ChannelInitializer<SocketChannel>() {
+        private class ServerChannelInitializer(parent: MitmServer) : ChannelInitializer<SocketChannel>() {
 
             private val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
 

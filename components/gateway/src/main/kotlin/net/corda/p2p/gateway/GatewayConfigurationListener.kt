@@ -3,7 +3,6 @@ package net.corda.p2p.gateway
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.lifecycle.LifecycleEvent
 import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
@@ -15,33 +14,37 @@ import net.corda.v5.base.util.contextLogger
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.util.Base64
+import java.util.concurrent.atomic.AtomicReference
 
 internal class GatewayConfigurationListener(
     private val readerService: ConfigurationReadService,
     coordinatorFactory: DominoCoordinatorFactory,
-) : DominoTile(coordinatorFactory), ConfigurationHandler {
+) : DominoTile(coordinatorFactory), ConfigurationHandler, () -> GatewayConfiguration {
     companion object {
-        const val CONFIG_KEY = "GATEWAY"
+        const val CONFIG_KEY = "p2p.gateway"
         private val logger = contextLogger()
     }
+
+    private val configurationHolder = AtomicReference<GatewayConfiguration>()
+
     private class ConfigurationError(msg: String) : Exception(msg)
 
     // YIFT: Handle changes to configuration
-    class ConfigurationChanged(val configuration: GatewayConfiguration) : LifecycleEvent
+    // class ConfigurationChanged(val configuration: GatewayConfiguration) : LifecycleEvent
 
     @Suppress("TooGenericExceptionCaught")
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
         if (changedKeys.contains(CONFIG_KEY)) {
             try {
                 val configuration = toGatewayConfig(config[CONFIG_KEY])
-                logger.info("Got new Gateway configuration $configuration")
-                //coordinator.postEvent(ConfigurationChanged(configuration))
+                logger.info("Got new Gateway configuration ${configuration.hostPort}:${configuration.hostPort}")
+                configurationHolder.set(configuration)
+                // coordinator.postEvent(ConfigurationChanged(configuration))
                 setReady()
             } catch (e: Throwable) {
                 gotError(e)
             }
         }
-        // setReady()
     }
 
     private fun readKeyStore(config: Config, name: String): Pair<String, KeyStore> {
@@ -100,5 +103,9 @@ internal class GatewayConfigurationListener(
     }
     override fun startupSequenceCompleted() {
         // Do nothing, we will report ready when we get the correct configuration
+    }
+
+    override fun invoke(): GatewayConfiguration {
+        return configurationHolder.get() ?: throw IllegalStateException("Configuration is not ready")
     }
 }

@@ -8,7 +8,8 @@ class ConfigurationHandlerStorage {
 
     private val handlers: MutableMap<CallbackHandle, Unit> = ConcurrentHashMap()
 
-    private val subscription: ConfigReadService? = null
+    // YIFT: Temporary hack - see https://r3-cev.atlassian.net/browse/CORE-2703
+    private var subscription: ConfigReadService? = null
 
     private class CallbackHandle(
         private val callback: ConfigurationHandler,
@@ -49,6 +50,8 @@ class ConfigurationHandlerStorage {
     }
 
     fun addSubscription(subscription: ConfigReadService) {
+        // YIFT: Temporary hack - see https://r3-cev.atlassian.net/browse/CORE-2703
+        this.subscription = subscription
         handlers.keys.forEach {
             it.subscribe(subscription)
         }

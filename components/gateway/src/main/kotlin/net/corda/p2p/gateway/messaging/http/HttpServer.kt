@@ -11,9 +11,8 @@ import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.timeout.IdleStateHandler
 import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.gateway.domino.DominoTile
-import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.v5.base.util.contextLogger
-import java.lang.IllegalStateException
 import java.net.SocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -30,15 +29,12 @@ import javax.net.ssl.KeyManagerFactory
  * and a response is sent back to the client. The response body is empty unless it follows a session handshake request,
  * in which case the body will contain additional information.
  *
- * @param host [String] value representing a host name or IP address used when binding the server
- * @param port port number used when binding the server
- * @param sslConfig the configuration to be used for the one-way TLS handshake
+ * @param dominoCoordinatorFactory The Gateway domino coordinator factory
+ * @param configuration The Gateway configuration
  */
 class HttpServer(
     dominoCoordinatorFactory: DominoCoordinatorFactory,
-    private val host: String,
-    private val port: Int,
-    private val sslConfig: SslConfiguration
+    private val configuration: () -> GatewayConfiguration,
 ) : DominoTile(
     dominoCoordinatorFactory
 ),
@@ -70,6 +66,8 @@ class HttpServer(
         val server = ServerBootstrap()
         server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
             .childHandler(ServerChannelInitializer())
+        val host = configuration().hostAddress
+        val port = configuration().hostPort
         logger.info("Trying to bind to $host:$port")
         val channelFuture = server.bind(host, port).sync()
         logger.info("Listening on port $port")
@@ -139,14 +137,14 @@ class HttpServer(
         private val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
 
         init {
-            sslConfig.run {
+            configuration().sslConfig.run {
                 keyManagerFactory.init(this.keyStore, this.keyStorePassword.toCharArray())
             }
         }
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createServerSslHandler(sslConfig.keyStore, keyManagerFactory))
+            pipeline.addLast("sslHandler", createServerSslHandler(configuration().sslConfig.keyStore, keyManagerFactory))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
             pipeline.addLast(HttpChannelHandler(this@HttpServer, logger))

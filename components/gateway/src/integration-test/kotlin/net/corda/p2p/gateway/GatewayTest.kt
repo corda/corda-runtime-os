@@ -101,7 +101,7 @@ class GatewayTest : TestBase() {
         val serverAddress = URI.create("http://www.alice.net:10000")
         val linkInMessage = LinkInMessage(authenticatedP2PMessage(String()))
         Gateway(
-            GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),
+            createConfigurationServiceFor(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),),
             alice.subscriptionFactory,
             alice.publisherFactory,
             coordinator,
@@ -149,7 +149,7 @@ class GatewayTest : TestBase() {
         val clients = mutableListOf<HttpClient>()
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
         Gateway(
-            GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),
+            createConfigurationServiceFor(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig)),
             alice.subscriptionFactory,
             alice.publisherFactory,
             coordinator,
@@ -219,10 +219,10 @@ class GatewayTest : TestBase() {
             URI.create(serverUrl)
         }.map { serverUri ->
             HttpServer(
-                DominoCoordinatorFactory(coordinator, "${serverUri.host}:${serverUri.port}"),
-                serverUri.host,
-                serverUri.port,
-                chipSslConfig).also {
+                DominoCoordinatorFactory(coordinator, "${serverUri.host}:${serverUri.port}")
+            ) {
+                GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig)
+            }.also {
                 it.addListener(object : HttpEventListener {
                     override fun onMessage(message: HttpMessage) {
                         val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
@@ -243,7 +243,7 @@ class GatewayTest : TestBase() {
         var endTime: Long
         val gatewayAddress = Pair("localhost", 10000)
         Gateway(
-            GatewayConfiguration(gatewayAddress.first, gatewayAddress.second, aliceSslConfig),
+            createConfigurationServiceFor(GatewayConfiguration(gatewayAddress.first, gatewayAddress.second, aliceSslConfig)),
             alice.subscriptionFactory,
             alice.publisherFactory,
             coordinator,
@@ -325,7 +325,7 @@ class GatewayTest : TestBase() {
         // Start the gateways and let them run until all messages have been processed
         val t1 = thread {
             Gateway(
-                GatewayConfiguration(aliceGatewayAddress.host, aliceGatewayAddress.port, chipSslConfig),
+                createConfigurationServiceFor(GatewayConfiguration(aliceGatewayAddress.host, aliceGatewayAddress.port, chipSslConfig)),
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 coordinator
@@ -338,7 +338,7 @@ class GatewayTest : TestBase() {
         }
         val t2 = thread {
             Gateway(
-                GatewayConfiguration(bobGatewayAddress.host, bobGatewayAddress.port, daleSslConfig),
+                createConfigurationServiceFor(GatewayConfiguration(bobGatewayAddress.host, bobGatewayAddress.port, daleSslConfig)),
                 bob.subscriptionFactory,
                 bob.publisherFactory,
                 coordinator

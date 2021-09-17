@@ -1,6 +1,7 @@
 package net.corda.p2p.gateway
 
 import com.typesafe.config.ConfigFactory
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -8,7 +9,6 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.ConnectionManager
-import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
@@ -16,6 +16,7 @@ import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 /**
  * The Gateway is a light component which facilitates the sending and receiving of P2P messages.
@@ -30,7 +31,8 @@ import org.slf4j.LoggerFactory
  */
 // YIFT: should this be internal?
 class Gateway(
-    config: GatewayConfiguration,
+    @Reference(service = ConfigurationReadService::class)
+    configurationReaderService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)
     subscriptionFactory: SubscriptionFactory,
     @Reference(service = PublisherFactory::class)
@@ -40,7 +42,7 @@ class Gateway(
 ) : DominoTile(
     DominoCoordinatorFactory(
         lifecycleCoordinatorFactory,
-        "${config.hostAddress}:${config.hostPort}"
+        UUID.randomUUID().toString().replace("-", "")
     )
 ) {
 
@@ -50,13 +52,16 @@ class Gateway(
         const val PUBLISHER_ID = "gateway"
     }
 
+    private val configurationListener = GatewayConfigurationListener(
+        configurationReaderService,
+        coordinatorFactory
+    )
+
     private val httpServer = HttpServer(
         coordinatorFactory,
-        config.hostAddress,
-        config.hostPort,
-        config.sslConfig
+        configurationListener
     )
-    private val connectionManager = ConnectionManager(coordinatorFactory, config.sslConfig)
+    private val connectionManager = ConnectionManager(coordinatorFactory, configurationListener)
     private val sessionPartitionMapper = SessionPartitionMapperImpl(coordinatorFactory, subscriptionFactory)
     private val inboundMessageProcessor = InboundMessageHandler(
         coordinatorFactory,
@@ -67,7 +72,7 @@ class Gateway(
     private val outboundMessageProcessor = OutboundMessageHandler(
         coordinatorFactory, connectionManager, publisherFactory
     )
-    private var p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
+    private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, LINK_OUT_TOPIC),
         outboundMessageProcessor,
         ConfigFactory.empty(),
@@ -77,6 +82,7 @@ class Gateway(
     override fun prepareResources() {
         logger.info("Starting Gateway service")
         keepResources(
+            configurationListener,
             connectionManager,
             httpServer,
             sessionPartitionMapper,
