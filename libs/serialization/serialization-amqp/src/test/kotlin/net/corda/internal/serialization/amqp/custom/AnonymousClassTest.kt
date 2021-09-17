@@ -61,8 +61,8 @@ class AnonymousClassTest {
 
     private val factoryWithSerializersRegistered = testDefaultFactory().also {
         registerCustomSerializers(it)
-        it.registerExternal(CorDappCustomSerializer(SerializerForInterface(), it, true))
-        it.registerExternal(CorDappCustomSerializer(SerializerForAbstractClass(), it, true))
+        it.registerExternal(CorDappCustomSerializer(SerializerForInterface(), true))
+        it.registerExternal(CorDappCustomSerializer(SerializerForAbstractClass(), true))
     }
 
     class ProxyClass
