@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory
  * to the internal messaging system.
  *
  */
-// TODO, should this be internal?
+// YIFT: should this be internal?
 class Gateway(
     config: GatewayConfiguration,
     @Reference(service = SubscriptionFactory::class)

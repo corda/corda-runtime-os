@@ -69,7 +69,7 @@ class HttpServer(
 
         val server = ServerBootstrap()
         server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
-            .childHandler(ServerChannelInitializer(this))
+            .childHandler(ServerChannelInitializer())
         logger.info("Trying to bind to $host:$port")
         val channelFuture = server.bind(host, port).sync()
         logger.info("Listening on port $port")
@@ -134,22 +134,22 @@ class HttpServer(
         eventListeners.forEach { it.onMessage(message) }
     }
 
-    private class ServerChannelInitializer(private val parent: HttpServer) : ChannelInitializer<SocketChannel>() {
+    private inner class ServerChannelInitializer : ChannelInitializer<SocketChannel>() {
 
         private val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
 
         init {
-            parent.sslConfig.run {
+            sslConfig.run {
                 keyManagerFactory.init(this.keyStore, this.keyStorePassword.toCharArray())
             }
         }
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createServerSslHandler(parent.sslConfig.keyStore, keyManagerFactory))
+            pipeline.addLast("sslHandler", createServerSslHandler(sslConfig.keyStore, keyManagerFactory))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
-            pipeline.addLast(HttpChannelHandler(parent, logger))
+            pipeline.addLast(HttpChannelHandler(this@HttpServer, logger))
         }
     }
 }

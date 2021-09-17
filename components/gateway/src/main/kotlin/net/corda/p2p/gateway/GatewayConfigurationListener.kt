@@ -25,6 +25,8 @@ internal class GatewayConfigurationListener(
         private val logger = contextLogger()
     }
     private class ConfigurationError(msg: String) : Exception(msg)
+
+    // YIFT: Handle changes to configuration
     class ConfigurationChanged(val configuration: GatewayConfiguration) : LifecycleEvent
 
     @Suppress("TooGenericExceptionCaught")
