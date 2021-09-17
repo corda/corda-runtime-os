@@ -52,8 +52,6 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
         }
     }
 
-    override fun getValue(key: K): S? =
-        stateSubscription.getValue(key)
 
     internal fun setValue(key: K, updatedState: S?, partition: Int) {
         stateSubscription.setValue(key, updatedState, partition)

@@ -107,11 +107,6 @@ class InMemoryStateAndEventSubscriptionTest {
         subscription.start()
         subscription.setValue("key", "value", 1)
 
-        assertThat(subscription.getValue("key")).isEqualTo("value")
-    }
-
-    @Test
-    fun `getValue will return null by default`() {
-        assertThat(subscription.getValue("key")).isNull()
+        assertThat(subscription.stateSubscription.getValue("key")).isEqualTo("value")
     }
 }
