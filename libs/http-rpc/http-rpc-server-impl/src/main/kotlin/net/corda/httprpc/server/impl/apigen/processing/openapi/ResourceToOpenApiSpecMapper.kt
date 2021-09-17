@@ -15,6 +15,7 @@ import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.responses.ApiResponses
 import io.swagger.v3.oas.models.tags.Tag
 import net.corda.httprpc.server.impl.apigen.models.Endpoint
+import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.ParameterType
 import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.DefaultSchemaModelProvider
@@ -31,7 +32,7 @@ import org.slf4j.LoggerFactory
 import java.util.Collections.singletonList
 
 private val log =
-    LoggerFactory.getLogger("net.corda.httprpc.server.apigen.processing.openapi.ResourceToOpenApiSpecMapper.kt")
+    LoggerFactory.getLogger("net.corda.httprpc.server.impl.apigen.processing.openapi.ResourceToOpenApiSpecMapper.kt")
 
 /**
  * Convert a Resource list to an OpenAPI object
@@ -220,8 +221,8 @@ private fun Resource.toTag(): Tag {
 private fun Resource.getPathToPathItems(schemaModelProvider: SchemaModelProvider): Map<String, PathItem> {
     log.trace { "Map resource: \"${this.name}\" to Map of Path to PathItem." }
     return this.endpoints.groupBy { toOpenApiPath(path, it.path) }.map {
-        val getEndpoint = it.value.singleOrNull { endpoint -> net.corda.httprpc.server.impl.apigen.models.EndpointMethod.GET == endpoint.method }
-        val postEndpoint = it.value.singleOrNull { endpoint -> net.corda.httprpc.server.impl.apigen.models.EndpointMethod.POST == endpoint.method }
+        val getEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.GET == endpoint.method }
+        val postEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.POST == endpoint.method }
         val fullPath = it.key
 
         fullPath to PathItem().also { pathItem ->
