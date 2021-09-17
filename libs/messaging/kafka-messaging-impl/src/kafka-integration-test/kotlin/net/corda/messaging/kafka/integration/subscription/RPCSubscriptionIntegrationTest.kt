@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -17,6 +18,7 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CompletableFuture
@@ -67,11 +69,22 @@ class RPCSubscriptionIntegrationTest {
 
         rpcSender.start()
         rpcSub.start()
+        var responseReceived = false
+        var attempts = 5
+        while (!responseReceived && attempts > 0) {
+            attempts--
+            try {
+                val future = rpcSender.sendRequest("REQUEST")
+                Assertions.assertThat(future.getOrThrow()).isEqualTo("RECEIVED and PROCESSED")
+                responseReceived = true
+            } catch (ex: CordaMessageAPIFatalException) {
+                Thread.sleep(2000)
+            }
+        }
 
-        Thread.sleep(5000)
-        val future = rpcSender.sendRequest("REQUEST")
-
-        Assertions.assertThat(future.getOrThrow()).isEqualTo("RECEIVED and PROCESSED")
+        if(!responseReceived) {
+            fail("Failed to get a response for the request")
+        }
 
         rpcSender.close()
         rpcSub.stop()
