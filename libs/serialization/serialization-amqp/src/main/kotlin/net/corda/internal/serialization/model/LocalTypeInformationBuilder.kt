@@ -501,6 +501,8 @@ private inline val Class<*>.isAbstractClass: Boolean get() = Modifier.isAbstract
 
 private inline val Class<*>.isConcreteClass: Boolean get() = !isInterface && !isAbstractClass
 
+private inline val Class<*>.isTypeWithoutConstructor: Boolean get() = !isConcreteClass || isSynthetic || isAnonymousClass
+
 /**
  * Code for finding the unique constructor we will use for deserialization.
  *
@@ -512,7 +514,7 @@ private inline val Class<*>.isConcreteClass: Boolean get() = !isInterface && !is
  */
 private fun constructorForDeserialization(type: Type): KFunction<Any>? {
     val clazz = type.asClass()
-    if (!clazz.isConcreteClass || clazz.isSynthetic || clazz.isAnonymousClass) return null
+    if (clazz.isTypeWithoutConstructor) return null
 
     val kotlinCtors = clazz.kotlin.constructors
 
@@ -542,7 +544,7 @@ private fun constructorForDeserialization(type: Type): KFunction<Any>? {
  */
 private fun evolutionConstructors(type: Type): List<KFunction<Any>> {
     val clazz = type.asClass()
-    if (!clazz.isConcreteClass || clazz.isSynthetic) return emptyList()
+    if (clazz.isTypeWithoutConstructor) return emptyList()
 
     return clazz.kotlin.constructors.asSequence()
             .mapNotNull {
