@@ -1,6 +1,5 @@
 package net.corda.kryoserialization.resolver
 
-import com.esotericsoftware.kryo.KryoException
 import com.esotericsoftware.kryo.Registration
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
@@ -9,6 +8,7 @@ import com.esotericsoftware.kryo.util.IdentityObjectIntMap
 import com.esotericsoftware.kryo.util.IntMap
 import net.corda.classinfo.ClassInfoException
 import net.corda.classinfo.ClassInfoService
+import net.corda.kryoserialization.CordaKryoException
 import net.corda.packaging.Cpk
 import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.NonCpkClassInfo
@@ -18,7 +18,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.BasicHashingService
 import net.corda.v5.crypto.SecureHash
-import java.util.TreeSet
+import java.util.*
 
 open class SandboxClassResolver(
     private val classInfoService: ClassInfoService,
@@ -154,7 +154,8 @@ open class SandboxClassResolver(
                 try {
                     type = Class.forName(className, false, kryo.classLoader)
                 } catch (ex: ClassNotFoundException) {
-                    throw KryoException("Unable to find class: $className in default classloader (not in a Sandbox).")
+                    throw CordaKryoException("Unable to find class: $className in default " +
+                            "classloader (not in a Sandbox).")
                 }
                 nameIdToClass.put(nameId, type)
                 return kryo.getRegistration(type)
@@ -167,7 +168,7 @@ open class SandboxClassResolver(
             }   catch (ex: SandboxException) {
                 Class.forName(className, false, kryo.classLoader)
             } catch (ex: ClassNotFoundException) {
-                throw KryoException("Unable to find class: " + className + " in CPK: " + cpkIdentifier.symbolicName, ex)
+                throw CordaKryoException("Unable to find class: $className in CPK: ${cpkIdentifier.symbolicName}", ex)
             }
 
             nameIdToClass.put(nameId, type)

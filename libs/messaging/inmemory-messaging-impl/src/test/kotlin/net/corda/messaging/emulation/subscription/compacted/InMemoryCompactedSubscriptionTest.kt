@@ -29,7 +29,7 @@ class InMemoryCompactedSubscriptionTest {
     }
     private val consumption = mock<Consumption>()
     private val topic = mock<TopicService> {
-        on { subscribe(any()) } doReturn consumption
+        on { createConsumption(any()) } doReturn consumption
         on { getLatestOffsets(any()) } doReturn mapOf(
             1 to 1,
             2 to 2,
@@ -169,7 +169,7 @@ class InMemoryCompactedSubscriptionTest {
     fun `start will subscribe a consumer`() {
         subscription.start()
 
-        verify(topic).subscribe(any<CompactedConsumer<String, URL>>())
+        verify(topic).createConsumption(any<CompactedConsumer<String, URL>>())
     }
 
     @Test
@@ -182,7 +182,7 @@ class InMemoryCompactedSubscriptionTest {
     @Test
     fun `start will send snapshot if we have all the data`() {
         val topic = mock<TopicService> {
-            on { subscribe(any()) } doReturn consumption
+            on { createConsumption(any()) } doReturn consumption
             on { getLatestOffsets(any()) } doReturn mapOf(
                 1 to -1,
                 2 to -1,
@@ -205,7 +205,7 @@ class InMemoryCompactedSubscriptionTest {
         subscription.start()
         subscription.start()
 
-        verify(topic, times(1)).subscribe(any())
+        verify(topic, times(1)).createConsumption(any())
     }
 
     @Test
