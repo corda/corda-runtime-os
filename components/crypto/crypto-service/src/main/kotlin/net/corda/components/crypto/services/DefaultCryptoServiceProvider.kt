@@ -1,9 +1,9 @@
 package net.corda.components.crypto.services
 
-import net.corda.cipher.suite.impl.lifecycle.CryptoServiceLifecycleEventHandler
-import net.corda.cipher.suite.impl.lifecycle.CryptoLifecycleComponent
-import net.corda.cipher.suite.impl.config.CryptoConfigEvent
-import net.corda.cipher.suite.impl.config.CryptoLibraryConfig
+import net.corda.crypto.impl.lifecycle.CryptoServiceLifecycleEventHandler
+import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
+import net.corda.crypto.impl.config.CryptoConfigEvent
+import net.corda.crypto.impl.config.CryptoLibraryConfig
 import net.corda.components.crypto.services.persistence.DefaultCryptoKeyCache
 import net.corda.components.crypto.services.persistence.DefaultCryptoKeyCacheImpl
 import net.corda.components.crypto.services.persistence.PersistentCacheFactory

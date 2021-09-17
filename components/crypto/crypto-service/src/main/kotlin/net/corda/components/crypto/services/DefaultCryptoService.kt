@@ -1,6 +1,6 @@
 package net.corda.components.crypto.services
 
-import net.corda.cipher.suite.impl.SignatureInstances
+import net.corda.crypto.impl.SignatureInstances
 import net.corda.components.crypto.services.persistence.DefaultCryptoKeyCache
 import net.corda.components.crypto.services.persistence.WrappingKey
 import net.corda.v5.base.util.contextLogger

@@ -1,6 +1,6 @@
 package net.corda.components.crypto.services.persistence
 
-import net.corda.cipher.suite.impl.config.CryptoCacheConfig
+import net.corda.crypto.impl.config.CryptoCacheConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.osgi.service.component.annotations.Activate

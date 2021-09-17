@@ -2,9 +2,9 @@ package net.corda.components.crypto
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import net.corda.cipher.suite.impl.config.ConfigReader
-import net.corda.cipher.suite.impl.config.CryptoConfigReceivedEvent
-import net.corda.cipher.suite.impl.lifecycle.CryptoServiceLifecycleEventHandler
+import net.corda.crypto.impl.config.ConfigReader
+import net.corda.crypto.impl.config.CryptoConfigReceivedEvent
+import net.corda.crypto.impl.lifecycle.CryptoServiceLifecycleEventHandler
 import net.corda.components.crypto.rpc.CryptoRpcSub
 import net.corda.components.crypto.services.DefaultCryptoServiceProvider
 import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory

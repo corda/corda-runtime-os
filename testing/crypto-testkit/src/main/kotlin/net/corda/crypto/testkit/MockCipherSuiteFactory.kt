@@ -1,7 +1,7 @@
 package net.corda.crypto.testkit
 
-import net.corda.cipher.suite.impl.DigestServiceProviderImpl
-import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
+import net.corda.crypto.impl.DigestServiceProviderImpl
+import net.corda.crypto.impl.SignatureVerificationServiceImpl
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoService

@@ -1,6 +1,6 @@
 package net.corda.components.crypto.services.persistence
 
-import net.corda.cipher.suite.impl.config.CryptoCacheConfig
+import net.corda.crypto.impl.config.CryptoCacheConfig
 
 /**
  * Defines a factory which must create a new instance implementing [PersistentCache]

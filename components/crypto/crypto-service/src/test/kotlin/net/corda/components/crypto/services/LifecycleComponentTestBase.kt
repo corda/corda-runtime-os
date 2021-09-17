@@ -1,8 +1,8 @@
 package net.corda.components.crypto.services
 
 import net.corda.components.crypto.CryptoCoordinator
-import net.corda.cipher.suite.impl.lifecycle.CryptoServiceLifecycleEventHandler
-import net.corda.cipher.suite.impl.lifecycle.CryptoLifecycleComponent
+import net.corda.crypto.impl.lifecycle.CryptoServiceLifecycleEventHandler
+import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent

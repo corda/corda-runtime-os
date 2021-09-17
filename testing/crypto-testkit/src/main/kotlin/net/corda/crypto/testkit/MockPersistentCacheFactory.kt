@@ -1,6 +1,6 @@
 package net.corda.crypto.testkit
 
-import net.corda.cipher.suite.impl.config.CryptoCacheConfig
+import net.corda.crypto.impl.config.CryptoCacheConfig
 import net.corda.components.crypto.services.persistence.DefaultCryptoCachedKeyInfo
 import net.corda.components.crypto.services.persistence.DefaultCryptoPersistentKeyInfo
 import net.corda.components.crypto.services.persistence.PersistentCache
