@@ -39,13 +39,10 @@ fun SerializerFactory.addToWhitelist(types: Collection<Class<*>>) {
         types.toSet().forEach { duplicates -= it }
         "Cannot add duplicate classes to the whitelist ($duplicates)."
     }
+    val mutableClassWhitelist = this.whitelist as? MutableClassWhitelist
+        ?: throw CordaRuntimeException("whitelist is not an instance of MutableClassWhitelist, cannot whitelist types")
     for (type in types) {
-        val mutableClassWhitelist = this.whitelist as? MutableClassWhitelist
-        if (mutableClassWhitelist == null) {
-            throw CordaRuntimeException("whitelist is not an instance of MutableClassWhitelist, cannot whitelist type $type")
-        } else {
-            mutableClassWhitelist.add(type)
-        }
+        mutableClassWhitelist.add(type)
     }
 }
 
