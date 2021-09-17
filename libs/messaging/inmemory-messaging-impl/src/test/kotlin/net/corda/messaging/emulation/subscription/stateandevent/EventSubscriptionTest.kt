@@ -26,12 +26,13 @@ class EventSubscriptionTest {
     }
     private val response = mutableListOf<Record<*, *>>()
     private var newState: String? = null
+    private val stateSubscription = mock<StateSubscription<String, String>>()
     private val received = mutableListOf<Pair<String?, Record<String, String>>>()
     private val subscription = mock<InMemoryStateAndEventSubscription<String, String, String>> {
         on { topicService } doReturn topicService
         on { subscriptionConfig } doReturn SubscriptionConfig("group", "topic")
         on { stateSubscriptionConfig } doReturn SubscriptionConfig("group1", "topic1")
-        on { stateSubscription } doReturn mock()
+        on { stateSubscription } doReturn stateSubscription
         on { processor } doReturn object : StateAndEventProcessor<String, String, String> {
             override fun onNext(state: String?, event: Record<String, String>): StateAndEventProcessor.Response<String> {
                 received.add(state to event)
@@ -109,7 +110,7 @@ class EventSubscriptionTest {
             RecordMetadata(2L, Record("topic", "key1", "event1"), 1),
             RecordMetadata(2L, Record("topic", "key2", "event2"), 1),
         )
-        whenever(subscription.getValue("key1")).thenReturn("state1")
+        whenever(stateSubscription.getValue("key1")).thenReturn("state1")
 
         eventsSubscription.processEvents(records)
 
