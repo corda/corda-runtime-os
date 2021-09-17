@@ -2,6 +2,7 @@ package net.corda.internal.serialization.amqp.custom
 
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
@@ -13,25 +14,29 @@ class ReusableSerialiseDeserializeAssert {
         // Build factory
         val factory = testDefaultFactory().also { registerCustomSerializers(it) }
 
-        inline fun <reified T : Any> serializeDeserialize(instance: T): T {
+        inline fun <reified T : Any> serializeDeserialize(instance: T, withFactory: SerializerFactory = factory): T {
             // Serialize
-            val bytes = SerializationOutput(factory).serialize(instance)
+            val bytes = SerializationOutput(withFactory).serialize(instance)
 
             // Deserialize
-            val deserialized = DeserializationInput(factory).deserialize(bytes)
+            val deserialized = DeserializationInput(withFactory).deserialize(bytes)
 
             return deserialized
         }
 
 
-        inline fun <reified T : Any> serializeDeserializeAssert(instance: T): T {
+        inline fun <reified T : Any> serializeDeserializeAssert(
+            instance: T,
+            withFactory: SerializerFactory = factory
+        ): T {
             // Serialize
             // Deserialize
-            val deserialized = serializeDeserialize(instance)
+            val deserialized = serializeDeserialize(instance, withFactory)
 
             // Check
             assertEquals(instance, deserialized)
 
             return deserialized
         }
-    }}
+    }
+}
