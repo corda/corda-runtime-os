@@ -121,14 +121,15 @@ class ReplaySchedulerTest {
         private var numberOfExceptions = 0
 
         fun replayMessage(message: String) {
-            latch.countDown()
             if (numberOfExceptions < totalNumberOfExceptions) {
                 numberOfExceptions++
+                latch.countDown()
                 throw MyException()
             }
             numberOfReplays.compute(message) { _, numberOfReplays ->
                 (numberOfReplays ?: 0) + 1
             }
+            latch.countDown()
         }
 
         class MyException: Exception("Ohh No")
