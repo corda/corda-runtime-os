@@ -15,8 +15,7 @@ import org.mockito.kotlin.verify
 
 class PubSubConsumerTest {
     private val subscription = mock<PubSubSubscription<String, SubscriptionConfig>> {
-        on { groupName } doReturn "group"
-        on { topic } doReturn "topic"
+        on { subscriptionConfig } doReturn SubscriptionConfig("group", "topic")
     }
     private val consumer = PubSubConsumer(subscription)
 
