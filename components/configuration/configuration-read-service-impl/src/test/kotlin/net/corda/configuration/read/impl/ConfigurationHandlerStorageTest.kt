@@ -11,7 +11,7 @@ class ConfigurationHandlerStorageTest {
     @Test
     fun `an added callback is invoked when subscription happens after registration`() {
         val storage = ConfigurationHandlerStorage()
-        val sub = ConfigReadServiceStub()
+        val sub = ConfigReaderStub()
         val keys = setOf("foo", "bar")
         val configMap = buildConfigMap(keys)
         storage.add { changedKeys, newConfig ->
@@ -26,7 +26,7 @@ class ConfigurationHandlerStorageTest {
     @Test
     fun `an added callback is invoked when subscription happens before registration`() {
         val storage = ConfigurationHandlerStorage()
-        val sub = ConfigReadServiceStub()
+        val sub = ConfigReaderStub()
         sub.start()
         storage.addSubscription(sub)
         val keys = setOf("foo", "bar")
@@ -41,7 +41,7 @@ class ConfigurationHandlerStorageTest {
     @Test
     fun `closing a callback results in it not being invoked`() {
         val storage = ConfigurationHandlerStorage()
-        val sub = ConfigReadServiceStub()
+        val sub = ConfigReaderStub()
         sub.start()
         storage.addSubscription(sub)
         val keys = setOf("foo", "bar")
@@ -58,7 +58,7 @@ class ConfigurationHandlerStorageTest {
     @Test
     fun `removing the subscription stops any events being posted to listeners`() {
         val storage = ConfigurationHandlerStorage()
-        val sub = ConfigReadServiceStub()
+        val sub = ConfigReaderStub()
         sub.start()
         storage.addSubscription(sub)
         val keys = setOf("foo", "bar")
