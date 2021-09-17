@@ -209,7 +209,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val thisEventUpdates = getUpdatesForEvent(state, event)
 
         if (thisEventUpdates == null) {
-            log.error("Sending event: $event, and state: $state to dead letter queue. Processor failed to complete.")
+            log.warn("Sending event: $event, and state: $state to dead letter queue. Processor failed to complete.")
             outputRecords.add(generateDeadLetterRecord(event.record, state))
             outputRecords.add(Record(stateTopic.suffix, key, null))
             updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
