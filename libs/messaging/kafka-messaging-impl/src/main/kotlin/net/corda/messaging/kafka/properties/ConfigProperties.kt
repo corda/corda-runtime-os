@@ -12,6 +12,7 @@ class ConfigProperties {
 
         const val TOPIC_PREFIX = "topic.prefix"
         const val TOPIC_NAME = "topic.name"
+        const val RESPONSE_TOPIC = "responseTopic"
 
         const val KAFKA_PRODUCER = "producer"
         const val KAFKA_CONSUMER = "consumer"
@@ -27,6 +28,8 @@ class ConfigProperties {
         const val PATTERN_STATEANDEVENT = "messaging.pattern.stateAndEvent"
         const val PATTERN_EVENTLOG = "messaging.pattern.eventLog"
         const val PATTERN_RANDOMACCESS = "messaging.pattern.randomAccess"
+        const val PATTERN_RPC_SENDER = "messaging.pattern.rpcSender"
+        const val PATTERN_RPC_RESPONDER = "messaging.pattern.rpcResponder"
 
         const val CLOSE_TIMEOUT = "close.timeout"
         const val PRODUCER_CLOSE_TIMEOUT = "producer.$CLOSE_TIMEOUT"
