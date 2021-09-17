@@ -5,6 +5,7 @@ import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
+import java.io.NotSerializableException
 import java.lang.reflect.Type
 import kotlin.reflect.jvm.javaType
 import kotlin.reflect.jvm.jvmErasure
@@ -38,14 +39,11 @@ const val PROXY_TYPE = 1
  * @property proxyType the Java [Type] of the class into which instances of [type] are proxied for use by
  * the underlying serialization engine
  *
- * @param factory a [SerializerFactory] belonging to the context this serializer is being instantiated
- * for
  * @param withInheritance should the serializer work for this type and all inheriting classes? Allows serializers for
  * interfaces and abstract classes. Always set to false for CorDapp defined serializers
  */
 class CorDappCustomSerializer @JvmOverloads constructor(
         private val serializer: SerializationCustomSerializer<*, *>,
-        factory: SerializerFactory,
         private val withInheritance: Boolean = false
 ) : AMQPSerializer<Any>, SerializerFor {
     override val revealSubclassesInSchema: Boolean get() = false
@@ -66,9 +64,6 @@ class CorDappCustomSerializer @JvmOverloads constructor(
     val proxyType = types[PROXY_TYPE]
     override val typeDescriptor: Symbol = typeDescriptorFor(type)
     val descriptor: Descriptor = Descriptor(typeDescriptor)
-    private val proxySerializer: ObjectSerializer by lazy {
-        ObjectSerializer.make(factory.getTypeInformation(proxyType), factory)
-    }
 
     override fun writeClassInfo(output: SerializationOutput) {}
 
@@ -77,20 +72,17 @@ class CorDappCustomSerializer @JvmOverloads constructor(
     ) {
         val proxy = uncheckedCast<SerializationCustomSerializer<*, *>,
                 SerializationCustomSerializer<Any?, Any?>>(serializer).toProxy(obj)
+            ?: throw NotSerializableException("proxy object is null")
 
         data.withDescribed(descriptor) {
-            data.withList {
-                proxySerializer.propertySerializers.forEach { (_, serializer) ->
-                    serializer.writeProperty(proxy, this, output, context, debugIndent)
-                }
-            }
+            output.writeObject(proxy, data, proxyType, context)
         }
     }
 
     override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
                             input: DeserializationInput, context: SerializationContext
     ) = uncheckedCast<SerializationCustomSerializer<*, *>, SerializationCustomSerializer<Any?, Any?>>(
-            serializer).fromProxy(uncheckedCast(proxySerializer.readObject(obj, serializationSchemas, metadata, input, context)))!!
+        serializer).fromProxy(uncheckedCast(input.readObject(obj, serializationSchemas, metadata, proxyType, context)))!!
 
     /**
      * For 3rd party plugin serializers we are going to exist on exact type matching. i.e. we will
