@@ -179,6 +179,18 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
             Record(subscriptionConfig.eventTopic, Key(3), Event.INCREASE_STATE),
         )
         val countDown = CountDownLatch(records.size)
+        val latestStates = ConcurrentHashMap<Key, State?>()
+        val listener = object : StateAndEventListener<Key, State> {
+            override fun onPartitionSynced(states: Map<Key, State>) {
+            }
+
+            override fun onPartitionLost(states: Map<Key, State>) {
+            }
+
+            override fun onPostCommit(updatedStates: Map<Key, State?>) {
+                latestStates += updatedStates
+            }
+        }
 
         val processor = object : StateAndEventProcessor<Key, State, Event> {
             override fun onNext(state: State?, event: Record<Key, Event>): StateAndEventProcessor.Response<State> {
@@ -198,7 +210,11 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
             override val stateValueClass = State::class.java
             override val eventValueClass = Event::class.java
         }
-        val subscription = subscriptionFactory.createStateAndEventSubscription(subscriptionConfig, processor = processor)
+        val subscription = subscriptionFactory.createStateAndEventSubscription(
+            subscriptionConfig,
+            processor = processor,
+            stateAndEventListener = listener
+        )
 
         subscription.start()
 
@@ -209,10 +225,10 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
         }
         countDown.await(1, TimeUnit.MINUTES)
 
-        assertThat(subscription.getValue(Key(4))).isNull()
-        assertThat(subscription.getValue(Key(2))).isEqualTo(State(4))
-        assertThat(subscription.getValue(Key(1))).isEqualTo(State(1))
-        assertThat(subscription.getValue(Key(3))).isEqualTo(State(2))
+        assertThat(latestStates[Key(4)]).isNull()
+        assertThat(latestStates[Key(2)]).isEqualTo(State(4))
+        assertThat(latestStates[Key(1)]).isEqualTo(State(1))
+        assertThat(latestStates[Key(3)]).isEqualTo(State(2))
 
         subscription.close()
     }

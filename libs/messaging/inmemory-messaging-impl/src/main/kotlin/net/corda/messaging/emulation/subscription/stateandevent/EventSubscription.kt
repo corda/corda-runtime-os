@@ -34,7 +34,7 @@ internal class EventSubscription<K : Any, S : Any, E : Any>(
                 subscription.processor.eventValueClass
             )
             if (event != null) {
-                val state = subscription.getValue(event.key)
+                val state = subscription.stateSubscription.getValue(event.key)
                 val response = subscription.processor.onNext(state, event)
                 subscription.setValue(event.key, response.updatedState, eventMetaData.partition)
                 subscription.topicService.addRecords(
