@@ -11,7 +11,6 @@ import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.crypto.SignatureVerificationService
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -20,7 +19,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class DefaultCryptoServiceProviderTests : LifecycleComponentTestBase() {
+class DefaultCryptoServiceProviderTests {
     private val masterKeyAlias = "wrapping-key-alias"
     private lateinit var memberId: String
     private lateinit var cryptoMocks: CryptoMocks
@@ -33,12 +32,6 @@ class DefaultCryptoServiceProviderTests : LifecycleComponentTestBase() {
         cryptoMocks = CryptoMocks()
         schemeMetadata = cryptoMocks.schemeMetadata
         signatureVerifier = cryptoMocks.factories.cryptoClients.getSignatureVerificationService()
-        setupCoordinator()
-    }
-
-    @AfterEach
-    fun cleanup() {
-        stopCoordinator()
     }
 
     @Test
