@@ -42,11 +42,6 @@ dependencies {
     runtimeOnly project(":libs:http-rpc:http-rpc-server-impl")
     runtimeOnly project(':libs:http-rpc:http-rpc-stubs-impl')
 
-    //runtimeOnly project(":libs:configuration:kafka-configuration-write-impl")
-    //runtimeOnly project(":libs:configuration:kafka-configuration-read-impl")
-    //runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
-    //runtimeOnly project(":libs:schema-registry:schema-registry-impl")
-
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
