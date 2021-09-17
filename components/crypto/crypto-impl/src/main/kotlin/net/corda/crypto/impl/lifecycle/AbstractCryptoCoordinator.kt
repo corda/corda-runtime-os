@@ -42,7 +42,6 @@ abstract class AbstractCryptoCoordinator(
         subcomponents.forEach {
             it.closeGracefully()
         }
-        configHandle?.closeGracefully()
         coordinator.stop()
     }
 
@@ -53,6 +52,8 @@ abstract class AbstractCryptoCoordinator(
                 // No need to check what registration this is as there is only one.
                 if (event.status == LifecycleStatus.UP) {
                     configHandle = configurationReadService.registerForUpdates(::onConfigChange)
+                } else {
+                    configHandle?.closeGracefully()
                 }
             }
             is NewCryptoConfigReceived -> {

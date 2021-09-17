@@ -1,7 +1,6 @@
 package net.corda.components.crypto.services
 
 import net.corda.components.crypto.CryptoCoordinator
-import net.corda.crypto.impl.lifecycle.AbstractCryptoLifecycleComponent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -20,24 +19,19 @@ abstract class LifecycleComponentTestBase {
     private lateinit var stopLatch: CountDownLatch
     private lateinit var startLatch: CountDownLatch
     private lateinit var libraryCoordinator: LifecycleCoordinator
-    protected lateinit var cryptoServiceLifecycleEventHandler: CryptoServiceLifecycleEventHandler
 
     protected fun setupCoordinator() {
         readyLatch = CountDownLatch(1)
         stopLatch = CountDownLatch(1)
         startLatch = CountDownLatch(1)
-        cryptoServiceLifecycleEventHandler = CryptoServiceLifecycleEventHandler()
-        cryptoServiceLifecycleEventHandler.add { event, _ ->
+        lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl()
+        libraryCoordinator = lifecycleCoordinatorFactory.createCoordinator<CryptoCoordinator> { event, _ ->
             when (event) {
                 is ReadyEvent -> readyLatch.countDown()
                 is StartEvent -> startLatch.countDown()
                 is StopEvent -> stopLatch.countDown()
             }
         }
-        lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl()
-        libraryCoordinator = lifecycleCoordinatorFactory.createCoordinator<CryptoCoordinator>(
-            cryptoServiceLifecycleEventHandler
-        )
         libraryCoordinator.start()
         assertTrue(startLatch.await(latchTimeout, TimeUnit.MILLISECONDS))
     }
@@ -46,21 +40,6 @@ abstract class LifecycleComponentTestBase {
         libraryCoordinator.stop()
         stopLatch.await(latchTimeout, TimeUnit.MILLISECONDS)
         libraryCoordinator.close()
-    }
-
-    protected fun <C : AbstractCryptoLifecycleComponent> createComponent(factory: () -> C): C {
-        val component = factory()
-        ready()
-        return component
-    }
-
-    protected fun postEvent(event: LifecycleEvent) {
-        libraryCoordinator.postEvent(event)
-    }
-
-    private fun ready() {
-        libraryCoordinator.postEvent(ReadyEvent())
-        assertTrue(readyLatch.await(latchTimeout, TimeUnit.MILLISECONDS))
     }
 
     class ReadyEvent : LifecycleEvent

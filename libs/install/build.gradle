@@ -34,7 +34,7 @@ dependencies {
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-serialization"
     implementation project(":components:crypto:crypto-client")
-    implementation project(":libs:crypto:crypto-internal")
+    implementation project(":components:crypto:crypto-internal")
     implementation project(":libs:utilities")
 
     compileOnly "org.osgi:osgi.annotation"

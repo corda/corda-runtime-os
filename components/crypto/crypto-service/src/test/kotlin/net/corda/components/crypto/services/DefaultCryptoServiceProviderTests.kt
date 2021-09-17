@@ -1,9 +1,9 @@
 package net.corda.components.crypto.services
 
 import com.typesafe.config.ConfigFactory
-import net.corda.crypto.impl.config.CryptoConfigReceivedEvent
 import net.corda.crypto.impl.config.CryptoLibraryConfig
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.impl.lifecycle.NewCryptoConfigReceived
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.crypto.testkit.MockPersistentCacheFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -88,14 +88,13 @@ class DefaultCryptoServiceProviderTests : LifecycleComponentTestBase() {
 
     private fun newAlias(): String = UUID.randomUUID().toString()
 
-    private fun createCryptoServiceProvider(): DefaultCryptoServiceProvider = createComponent {
+    private fun createCryptoServiceProvider(): DefaultCryptoServiceProvider {
         val provider = DefaultCryptoServiceProvider(
-            cryptoServiceLifecycleEventHandler = cryptoServiceLifecycleEventHandler,
             persistenceFactory = MockPersistentCacheFactory()
         )
         provider.start()
-        postEvent(
-            CryptoConfigReceivedEvent(
+        provider.handleConfigEvent(
+            NewCryptoConfigReceived(
                 config = CryptoLibraryConfig(
                     ConfigFactory.parseMap(
                         mapOf(
@@ -106,7 +105,7 @@ class DefaultCryptoServiceProviderTests : LifecycleComponentTestBase() {
                 )
             )
         )
-        provider
+        return provider
     }
 
     private fun DefaultCryptoServiceProvider.createCryptoService(category: String): CryptoService = getInstance(

@@ -11,7 +11,7 @@ dependencies {
     implementation "net.corda:avro-schema"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
-    implementation project(":libs:crypto:crypto-internal")
+    implementation project(":components:crypto:crypto-internal")
     implementation project(":libs:utilities")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")

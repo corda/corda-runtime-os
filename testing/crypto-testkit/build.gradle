@@ -8,9 +8,9 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
-    implementation project(":libs:crypto:crypto-impl")
+    implementation project(":components:crypto:crypto-impl")
     implementation project(":components:crypto:crypto-client")
-    implementation project(":libs:crypto:crypto-internal")
+    implementation project(":components:crypto:crypto-internal")
     implementation project(":libs:messaging:inmemory-messaging-impl")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":components:crypto:crypto-service")
