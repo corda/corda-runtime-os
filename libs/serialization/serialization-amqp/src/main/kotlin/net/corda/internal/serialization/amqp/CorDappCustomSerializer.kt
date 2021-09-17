@@ -5,6 +5,7 @@ import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
+import java.io.NotSerializableException
 import java.lang.reflect.Type
 import kotlin.reflect.jvm.javaType
 import kotlin.reflect.jvm.jvmErasure
@@ -71,16 +72,17 @@ class CorDappCustomSerializer @JvmOverloads constructor(
     ) {
         val proxy = uncheckedCast<SerializationCustomSerializer<*, *>,
                 SerializationCustomSerializer<Any?, Any?>>(serializer).toProxy(obj)
+            ?: throw NotSerializableException("proxy object is null")
 
         data.withDescribed(descriptor) {
-            output.writeObjectOrNull(proxy, data, proxyType, context, 0)
+            output.writeObject(proxy, data, proxyType, context)
         }
     }
 
     override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
                             input: DeserializationInput, context: SerializationContext
     ) = uncheckedCast<SerializationCustomSerializer<*, *>, SerializationCustomSerializer<Any?, Any?>>(
-            serializer).fromProxy(uncheckedCast(input.readObjectOrNull(obj, serializationSchemas, metadata, proxyType, context)))!!
+        serializer).fromProxy(uncheckedCast(input.readObject(obj, serializationSchemas, metadata, proxyType, context)))!!
 
     /**
      * For 3rd party plugin serializers we are going to exist on exact type matching. i.e. we will
