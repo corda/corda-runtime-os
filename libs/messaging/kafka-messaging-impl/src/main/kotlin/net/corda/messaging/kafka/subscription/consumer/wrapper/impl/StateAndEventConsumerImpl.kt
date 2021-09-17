@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription.consumer.wrapper.impl
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
@@ -48,6 +49,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private val eventTopic = Topic(topicPrefix, config.eventTopic)
     private val stateTopic = Topic(topicPrefix, config.stateTopic)
+    private val groupName = config.eventGroupName
 
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = partitionState.partitionsToSync
@@ -90,7 +92,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         executor.shutdown()
     }
 
-    private fun getSyncedEventPartitions() : Set<TopicPartition> {
+    private fun getSyncedEventPartitions(): Set<TopicPartition> {
         val partitionsSynced = mutableSetOf<TopicPartition>()
         val statePartitionsToSync = partitionsToSync.toMap()
         for (partition in statePartitionsToSync) {
@@ -126,7 +128,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    override fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String) : CompletableFuture<Any> {
+    override fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String): CompletableFuture<Any> {
         val future: CompletableFuture<Any> = CompletableFuture.supplyAsync({ function() }, executor)
         tryGetFutureResult(future, getInitialConsumerTimeout())
 
@@ -182,7 +184,8 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 val key = entry.key
                 val value = entry.value
                 //will never be null, created on assignment in rebalance listener
-                val currentStatesByPartition = currentStates[partitionId]!!
+                val currentStatesByPartition = currentStates[partitionId]
+                    ?: throw CordaMessageAPIFatalException("Current State map for group $groupName on topic $stateTopic[$partitionId] is null.")
                 updatedStatesByKey[key] = value
                 if (value != null) {
                     currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)
@@ -217,8 +220,8 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun getNextPollIntervalCutoff() : Long {
-        return System.currentTimeMillis() + (maxPollInterval/2)
+    private fun getNextPollIntervalCutoff(): Long {
+        return System.currentTimeMillis() + (maxPollInterval / 2)
     }
 
     private fun getStatesForPartition(partitionId: Int): Map<K, S> {
