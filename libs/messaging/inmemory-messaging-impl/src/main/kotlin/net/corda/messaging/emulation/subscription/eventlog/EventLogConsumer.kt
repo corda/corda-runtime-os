@@ -12,8 +12,8 @@ class EventLogConsumer<K : Any, V : Any>(
     private val subscription: EventLogSubscription<K, V>,
 ) : Consumer {
     override val offsetStrategy = OffsetStrategy.EARLIEST
-    override val groupName: String = subscription.groupName
-    override val topicName: String = subscription.topicName
+    override val groupName = subscription.subscriptionConfig.groupName
+    override val topicName = subscription.subscriptionConfig.eventTopic
     override val partitionAssignmentListener: PartitionAssignmentListener? = subscription.partitionAssignmentListener
     override val commitStrategy = CommitStrategy.COMMIT_AFTER_PROCESSING
     override val partitionStrategy = PartitionStrategy.DIVIDE_PARTITIONS
@@ -28,7 +28,7 @@ class EventLogConsumer<K : Any, V : Any>(
         val record = castToType(subscription.processor.keyClass, subscription.processor.valueClass)
         return if (record != null) {
             EventLogRecord(
-                subscription.topicName,
+                topicName,
                 record.key,
                 record.value,
                 this.partition,

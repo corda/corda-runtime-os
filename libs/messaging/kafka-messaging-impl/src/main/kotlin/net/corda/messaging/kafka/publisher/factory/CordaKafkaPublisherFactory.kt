@@ -7,8 +7,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBLISHER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_PRODUCER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_PUBLISHER
 import net.corda.messaging.kafka.publisher.CordaKafkaPublisherImpl
 import net.corda.messaging.kafka.utils.ConfigUtils.Companion.resolvePublisherConfiguration
 import net.corda.messaging.kafka.utils.toConfig

@@ -8,8 +8,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import org.slf4j.LoggerFactory
 

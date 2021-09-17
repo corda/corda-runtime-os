@@ -5,11 +5,11 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer

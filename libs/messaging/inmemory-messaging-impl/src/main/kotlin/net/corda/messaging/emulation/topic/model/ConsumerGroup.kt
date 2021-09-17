@@ -59,6 +59,30 @@ internal class ConsumerGroup(
         }
     }
 
+    fun assignPartition(consumer: Consumer, partitions: Collection<Partition>) {
+        if (partitionStrategy != PartitionStrategy.MANUAL) {
+            throw IllegalStateException("Can not manually assign partitions to this type of consumer")
+        }
+        lock.write {
+            val loop = consumers[consumer] ?: throw IllegalStateException("No such consumer")
+            addPartitionsToLoop(loop, partitions)
+
+            newData.signalAll()
+        }
+    }
+
+    fun unAssignPartition(consumer: Consumer, partitions: Collection<Partition>) {
+        if (partitionStrategy != PartitionStrategy.MANUAL) {
+            throw IllegalStateException("Can not manually un assign partitions to this type of consumer")
+        }
+        lock.write {
+            val loop = consumers[consumer] ?: throw IllegalStateException("No such consumer")
+            loop.removePartitions(partitions)
+
+            newData.signalAll()
+        }
+    }
+
     fun isConsuming(consumer: Consumer): Boolean {
         return consumers.containsKey(consumer)
     }
@@ -73,6 +97,9 @@ internal class ConsumerGroup(
         when (partitionStrategy) {
             PartitionStrategy.DIVIDE_PARTITIONS -> repartitionDivision()
             PartitionStrategy.SHARE_PARTITIONS -> repartitionShare()
+            PartitionStrategy.MANUAL -> {
+                // Do nothing
+            }
         }
     }
 

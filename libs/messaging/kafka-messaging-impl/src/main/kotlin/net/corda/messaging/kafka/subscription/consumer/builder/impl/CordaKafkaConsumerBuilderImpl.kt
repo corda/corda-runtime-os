@@ -2,7 +2,7 @@ package net.corda.messaging.kafka.subscription.consumer.builder.impl
 
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.DurableConsumerRebalanceListener
