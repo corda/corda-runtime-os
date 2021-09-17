@@ -2,7 +2,7 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
 }
-description 'Corda HTTP RPC API'
+description 'Corda HTTP RPC Server'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
