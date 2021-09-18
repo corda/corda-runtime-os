@@ -7,14 +7,18 @@ import net.corda.data.crypto.wire.signing.WireSigningRequest
 import net.corda.data.crypto.wire.signing.WireSigningResponse
 import net.corda.v5.crypto.exceptions.CryptoConfigurationException
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import java.time.Duration
 import java.util.UUID
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CryptoLibraryConfigTests {
     @Test
+    @Timeout(5)
     fun `Should be able to use all helper properties`() {
         val raw = mapOf<String, Any?>(
             "rpc" to mapOf(
@@ -106,6 +110,7 @@ class CryptoLibraryConfigTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should return object with default values if 'cipherSuite' is not specified`() {
         val config = CryptoLibraryConfigImpl(emptyMap())
         assertEquals("default", config.cipherSuite.schemeMetadataProvider)
@@ -114,6 +119,7 @@ class CryptoLibraryConfigTests {
     }
 
     @Test
+    @Timeout(5)
     fun `CryptoRpcConfig should return default values if the value is not provided`() {
         val config = CryptoRpcConfig(emptyMap())
         assertEquals("crypto.rpc", config.groupName)
@@ -125,6 +131,7 @@ class CryptoLibraryConfigTests {
     }
 
     @Test
+    @Timeout(5)
     fun `CryptoRpcConfig should create RPC config for signing service`() {
         val raw = mapOf(
             "groupName" to "rpcGroupName",
@@ -143,6 +150,7 @@ class CryptoLibraryConfigTests {
     }
 
     @Test
+    @Timeout(5)
     fun `CryptoRpcConfig should create RPC config for fresh keys service`() {
         val raw = mapOf(
             "groupName" to "rpcGroupName",
@@ -161,6 +169,7 @@ class CryptoLibraryConfigTests {
     }
 
     @Test
+    @Timeout(5)
     fun `CryptoCacheConfig should return default values if the value is not provided`() {
         val config = CryptoCacheConfig(emptyMap())
         assertEquals(60, config.expireAfterAccessMins)
@@ -169,6 +178,7 @@ class CryptoLibraryConfigTests {
     }
 
     @Test
+    @Timeout(5)
     fun `CipherSuiteConfig should return default values if the value is not provided`() {
         val config = CipherSuiteConfig(emptyMap())
         assertEquals("default", config.schemeMetadataProvider)
@@ -177,6 +187,7 @@ class CryptoLibraryConfigTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should fail if the 'rpc' path is not supplied`() {
         val config = CryptoLibraryConfigImpl(emptyMap())
         assertThrows<CryptoConfigurationException> {
@@ -185,6 +196,7 @@ class CryptoLibraryConfigTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should fail if the 'keyCache' path is not supplied`() {
         val config = CryptoLibraryConfigImpl(emptyMap())
         assertThrows<CryptoConfigurationException> {
@@ -193,6 +205,7 @@ class CryptoLibraryConfigTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should fail if the 'mngCache' path is not supplied`() {
         val config = CryptoLibraryConfigImpl(emptyMap())
         assertThrows<CryptoConfigurationException> {
@@ -201,6 +214,7 @@ class CryptoLibraryConfigTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should fail if neither the member id nor 'default' path is not supplied`() {
         val config = CryptoLibraryConfigImpl(emptyMap())
         assertThrows<CryptoConfigurationException> {
@@ -209,6 +223,7 @@ class CryptoLibraryConfigTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should return default member config if the member id path is not supplied`() {
         val config = CryptoLibraryConfigImpl(
             mapOf(
@@ -238,5 +253,117 @@ class CryptoLibraryConfigTests {
         assertEquals("CORDA.EDDSA.ED25519", ledger.defaultSignatureScheme)
         assertEquals("pwdD", ledger.serviceConfig["passphrase"])
         assertEquals("saltD", ledger.serviceConfig["salt"])
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getOptionalConfig should return existing config`() {
+        val map = CryptoLibraryConfigImpl(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to 42,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getOptionalConfig("config")
+        assertNotNull(value)
+        assertEquals(2, value.size)
+        assertTrue(value.any { it.key == "k1.k1" && it.value == "v1.v1" })
+        assertTrue(value.any { it.key == "k1.k2" && it.value == 55 })
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getOptionalConfig should return null if the key is not present`() {
+        val map = CryptoLibraryConfigImpl(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to 42,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getOptionalConfig("config2")
+        assertNull(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getOptionalConfig should return null if the key is present but value is null`() {
+        val map = CryptoLibraryConfigImpl(
+            mapOf(
+                "key1" to "value1",
+                "key2" to 42,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                ),
+                "config2" to null
+            )
+        )
+        val value = map.getOptionalConfig("config2")
+        assertNull(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getConfig should return existing config`() {
+        val map = CryptoLibraryConfigImpl(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to 42,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getConfig("config")
+        assertNotNull(value)
+        assertEquals(2, value.size)
+        assertTrue(value.any { it.key == "k1.k1" && it.value == "v1.v1" })
+        assertTrue(value.any { it.key == "k1.k2" && it.value == 55 })
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getConfig should throw CryptoConfigurationException if key is not present`() {
+        val map = CryptoLibraryConfigImpl(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to 42,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        assertThrows<CryptoConfigurationException> {
+            map.getConfig("config2")
+        }
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getConfig should throw CryptoConfigurationException if key is present but value is null`() {
+        val map = CryptoLibraryConfigImpl(
+            mapOf(
+                "key1" to "value1",
+                "key2" to 42,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                ),
+                "config2" to null
+            )
+        )
+        assertThrows<CryptoConfigurationException> {
+            map.getConfig("config2")
+        }
     }
 }
