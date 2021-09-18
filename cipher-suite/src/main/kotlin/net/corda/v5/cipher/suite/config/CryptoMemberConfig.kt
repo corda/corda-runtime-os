@@ -6,7 +6,7 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
  * Defines a member configuration. It expects that there should be at least one entry with the "default" key
  * the rest of the keys are categories, e.g. LEDGER, FRESH_KEYS, TLS, etc.
  */
-interface CryptoMemberConfig {
+interface CryptoMemberConfig : Map<String, Any?> {
     companion object {
         /**
          * The key which is used for the categories which don't have their own specific configuration.

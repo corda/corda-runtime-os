@@ -6,7 +6,7 @@ import net.corda.v5.crypto.exceptions.CryptoConfigurationException
  * Defines the minimum crypto library configuration, the keys are mix of member ids and other configuration
  * such as RPC, cache, etc., the latter values are internal to the crypto library implementation.
  */
-interface CryptoLibraryConfig : Map<String, Any> {
+interface CryptoLibraryConfig : Map<String, Any?> {
     companion object {
         /**
          * The key which is used for the members which don't have their own specific configuration.
@@ -21,3 +21,8 @@ interface CryptoLibraryConfig : Map<String, Any> {
      */
     fun getMember(memberId: String): CryptoMemberConfig
 }
+
+/**
+ * Similar ot typesafe's hasPath where it returns true if the key is present, and it's not null
+ */
+fun Map<String, Any?>.hasPath(key: String) : Boolean = get(key) != null
