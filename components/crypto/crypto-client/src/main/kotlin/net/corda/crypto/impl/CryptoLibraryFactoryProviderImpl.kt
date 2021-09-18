@@ -1,21 +1,22 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.impl.lifecycle.NewCryptoConfigReceived
-import net.corda.crypto.impl.config.CryptoLibraryConfig
 import net.corda.crypto.impl.config.CryptoRpcConfig
 import net.corda.crypto.impl.lifecycle.clearCache
 import net.corda.crypto.impl.lifecycle.closeGracefully
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.CryptoLibraryFactoryProvider
-import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
+import net.corda.crypto.impl.config.rpc
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
 import net.corda.data.crypto.wire.signing.WireSigningRequest
 import net.corda.data.crypto.wire.signing.WireSigningResponse
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSuiteFactory
+import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
+import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -33,7 +34,7 @@ class CryptoLibraryFactoryProviderImpl @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = MemberIdProvider::class)
     private val memberIdProvider: MemberIdProvider
-) : CryptoLifecycleComponent, CryptoLibraryFactoryProvider {
+) : Lifecycle, CryptoLifecycleComponent, CryptoLibraryFactoryProvider {
     companion object {
         private val logger: Logger = contextLogger()
     }
@@ -69,9 +70,9 @@ class CryptoLibraryFactoryProviderImpl @Activate constructor(
         isRunning = false
     }
 
-    override fun handleConfigEvent(event: NewCryptoConfigReceived) = lock.withLock {
+    override fun handleConfigEvent(config: CryptoLibraryConfig) = lock.withLock {
         logger.info("Received new configuration...")
-        libraryConfig = event.config
+        libraryConfig = config
     }
 
     override fun create(requestingComponent: String): CryptoLibraryFactory = lock.withLock {

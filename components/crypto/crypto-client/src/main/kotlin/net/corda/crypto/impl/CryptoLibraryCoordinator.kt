@@ -3,7 +3,6 @@ package net.corda.crypto.impl
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoLibraryFactoryProvider
 import net.corda.crypto.impl.lifecycle.AbstractCryptoCoordinator
-import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import org.osgi.service.component.annotations.Activate
@@ -25,7 +24,7 @@ class CryptoLibraryCoordinator @Activate constructor(
     coordinatorFactory,
     configurationReadService,
     listOf(
-        (cipherSuiteFactory as CryptoLifecycleComponent),
-        (cryptoFactoryProvider  as CryptoLifecycleComponent)
+        cipherSuiteFactory,
+        cryptoFactoryProvider
     )
 )

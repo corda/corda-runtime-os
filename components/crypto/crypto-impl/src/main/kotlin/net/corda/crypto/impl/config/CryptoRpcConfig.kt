@@ -1,54 +1,31 @@
 package net.corda.crypto.impl.config
 
-import com.typesafe.config.Config
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
 import net.corda.data.crypto.wire.signing.WireSigningRequest
 import net.corda.data.crypto.wire.signing.WireSigningResponse
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 
-class CryptoRpcConfig(private val raw: Config) {
+class CryptoRpcConfig(
+    map: Map<String, Any?>
+) : CryptoConfigMap(map) {
     val groupName: String
-        get() = if (raw.hasPath(this::groupName.name)) {
-            raw.getString(this::groupName.name)
-        } else {
-            "crypto.rpc"
-        }
+        get() = getString(this::groupName.name, "crypto.rpc")
 
     val clientName: String
-        get() = if (raw.hasPath(this::clientName.name)) {
-            raw.getString(this::clientName.name)
-        } else {
-            "crypto.rpc"
-        }
+        get() = getString(this::clientName.name, "crypto.rpc")
 
     val signingRequestTopic: String
-        get() = if (raw.hasPath(this::signingRequestTopic.name)) {
-            raw.getString(this::signingRequestTopic.name)
-        } else {
-            "crypto.rpc.signing"
-        }
+        get() = getString(this::signingRequestTopic.name, "crypto.rpc.signing")
 
     val freshKeysRequestTopic: String
-        get() = if (raw.hasPath(this::freshKeysRequestTopic.name)) {
-            raw.getString(this::freshKeysRequestTopic.name)
-        } else {
-            "crypto.rpc.freshKeys"
-        }
+        get() = getString(this::freshKeysRequestTopic.name, "crypto.rpc.freshKeys")
 
     val clientTimeout: Long
-        get() = if (raw.hasPath(this::clientTimeout.name)) {
-            raw.getLong(this::clientTimeout.name)
-        } else {
-            15
-        }
+        get() = getLong(this::clientTimeout.name, 15)
 
     val clientRetries: Long
-        get() = if (raw.hasPath(this::clientRetries.name)) {
-            raw.getLong(this::clientRetries.name)
-        } else {
-            1
-        }
+        get() = getLong(this::clientRetries.name, 1)
 
     val signingRpcConfig get() = RPCConfig(
         groupName = groupName,

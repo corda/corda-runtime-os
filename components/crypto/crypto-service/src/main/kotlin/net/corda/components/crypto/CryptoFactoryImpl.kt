@@ -7,8 +7,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.components.crypto.services.CryptoServiceCircuitBreaker
 import net.corda.crypto.impl.config.CryptoCacheConfig
-import net.corda.crypto.impl.lifecycle.NewCryptoConfigReceived
-import net.corda.crypto.impl.config.CryptoLibraryConfig
 import net.corda.crypto.impl.lifecycle.clearCache
 import net.corda.components.crypto.services.FreshKeySigningServiceImpl
 import net.corda.components.crypto.services.SigningServiceImpl
@@ -18,14 +16,17 @@ import net.corda.components.crypto.services.persistence.SigningKeyCacheImpl
 import net.corda.crypto.CryptoCategories
 import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.SigningService
-import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
+import net.corda.crypto.impl.config.mngCache
+import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.CryptoServiceProvider
+import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
+import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -42,7 +43,7 @@ class CryptoFactoryImpl @Activate constructor(
     private val cipherSuiteFactory: CipherSuiteFactory,
     @Reference(service = CryptoServiceProvider::class)
     private val cryptoServiceProviders: List<CryptoServiceProvider<*>>,
-) : CryptoLifecycleComponent, CryptoFactory {
+) : Lifecycle, CryptoLifecycleComponent, CryptoFactory {
     companion object {
         private val logger: Logger = contextLogger()
     }
@@ -81,10 +82,10 @@ class CryptoFactoryImpl @Activate constructor(
         isRunning = false
     }
 
-    override fun handleConfigEvent(event: NewCryptoConfigReceived) = lock.withLock {
+    override fun handleConfigEvent(config: CryptoLibraryConfig) = lock.withLock {
         logger.info("Received new configuration...")
         clearCaches()
-        libraryConfig = event.config
+        libraryConfig = config
     }
 
     override val cipherSchemeMetadata: CipherSchemeMetadata by lazy {

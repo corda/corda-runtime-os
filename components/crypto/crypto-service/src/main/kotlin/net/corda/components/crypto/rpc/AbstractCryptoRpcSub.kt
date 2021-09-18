@@ -1,15 +1,15 @@
 package net.corda.components.crypto.rpc
 
-import net.corda.crypto.impl.lifecycle.NewCryptoConfigReceived
-import net.corda.crypto.impl.config.CryptoLibraryConfig
-import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
+import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
+import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-abstract class AbstractCryptoRpcSub<TREQ: Any, TRESP: Any> : CryptoLifecycleComponent {
+abstract class AbstractCryptoRpcSub<TREQ: Any, TRESP: Any> : Lifecycle, CryptoLifecycleComponent {
 
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
@@ -32,10 +32,10 @@ abstract class AbstractCryptoRpcSub<TREQ: Any, TRESP: Any> : CryptoLifecycleComp
         isRunning = false
     }
 
-    override fun handleConfigEvent(event: NewCryptoConfigReceived): Unit = lock.withLock {
+    override fun handleConfigEvent(config: CryptoLibraryConfig): Unit = lock.withLock {
         subscription?.stop()
         logger.info("Creating durable subscription")
-        subscription = createSubscription(event.config)
+        subscription = createSubscription(config)
         logger.info("Starting durable subscription")
         subscription?.start()
     }

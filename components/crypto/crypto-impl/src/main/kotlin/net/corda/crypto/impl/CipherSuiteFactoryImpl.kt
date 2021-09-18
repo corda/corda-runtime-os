@@ -1,10 +1,9 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.impl.config.CipherSuiteConfig
-import net.corda.crypto.impl.lifecycle.NewCryptoConfigReceived
-import net.corda.crypto.impl.config.CryptoLibraryConfig
-import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
+import net.corda.crypto.impl.config.cipherSuite
 import net.corda.crypto.impl.lifecycle.clearCache
+import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSchemeMetadataProvider
@@ -12,7 +11,9 @@ import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.DigestServiceProvider
 import net.corda.v5.cipher.suite.SignatureVerificationServiceProvider
+import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.config.CryptoServiceConfigInfo
+import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
@@ -31,7 +32,7 @@ open class CipherSuiteFactoryImpl @Activate constructor(
     private val verifierProviders: List<SignatureVerificationServiceProvider>,
     @Reference(service = DigestServiceProvider::class)
     private val digestServiceProviders: List<DigestServiceProvider>
-) : CryptoLifecycleComponent, CipherSuiteFactory {
+) : Lifecycle, CryptoLifecycleComponent, CipherSuiteFactory {
     companion object {
         private val logger: Logger = contextLogger()
     }
@@ -63,10 +64,10 @@ open class CipherSuiteFactoryImpl @Activate constructor(
         isRunning = false
     }
 
-    override fun handleConfigEvent(event: NewCryptoConfigReceived) = lock.withLock {
+    override fun handleConfigEvent(config: CryptoLibraryConfig) = lock.withLock {
         logger.info("Received new configuration...")
         clearCaches()
-        libraryConfig = event.config
+        libraryConfig = config
     }
 
     @Suppress("TooGenericExceptionCaught")

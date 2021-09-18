@@ -1,12 +1,11 @@
 package net.corda.crypto.impl.config
 
-import com.typesafe.config.ConfigException
-import com.typesafe.config.ConfigFactory
 import net.corda.crypto.CryptoCategories
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
 import net.corda.data.crypto.wire.signing.WireSigningRequest
 import net.corda.data.crypto.wire.signing.WireSigningResponse
+import net.corda.v5.crypto.exceptions.CryptoConfigurationException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.Duration
@@ -17,68 +16,66 @@ import kotlin.test.assertTrue
 class CryptoLibraryConfigTests {
     @Test
     fun `Should be able to use all helper properties`() {
-        val raw = ConfigFactory.parseMap(
-            mapOf<String, Any>(
-                "rpc" to mapOf(
-                    "groupName" to "rpcGroupName",
-                    "clientName" to "rpcClientName",
-                    "signingRequestTopic" to "rpcSigningRequestTopic",
-                    "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic",
-                    "clientTimeout" to "11",
-                    "clientRetries" to "77"
-                ),
-                "keyCache" to mapOf(
-                    "expireAfterAccessMins" to "90",
-                    "maximumSize" to "25",
-                    "persistenceConfig" to mapOf(
-                        "url" to "keyPersistenceUrl"
-                    )
-                ),
-                "mngCache" to mapOf(
-                    "expireAfterAccessMins" to "120",
-                    "maximumSize" to "50",
-                    "persistenceConfig" to mapOf(
-                        "url" to "mngPersistenceUrl"
-                    )
-                ),
-                "cipherSuite" to mapOf(
-                    "schemeMetadataProvider" to "customSchemeMetadataProvider",
-                    "signatureVerificationProvider" to "customSignatureVerificationProvider",
-                    "digestProvider" to "customDigestProvider",
-                ),
+        val raw = mapOf<String, Any?>(
+            "rpc" to mapOf(
+                "groupName" to "rpcGroupName",
+                "clientName" to "rpcClientName",
+                "signingRequestTopic" to "rpcSigningRequestTopic",
+                "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic",
+                "clientTimeout" to "11",
+                "clientRetries" to "77"
+            ),
+            "keyCache" to mapOf(
+                "expireAfterAccessMins" to "90",
+                "maximumSize" to "25",
+                "persistenceConfig" to mapOf(
+                    "url" to "keyPersistenceUrl"
+                )
+            ),
+            "mngCache" to mapOf(
+                "expireAfterAccessMins" to "120",
+                "maximumSize" to "50",
+                "persistenceConfig" to mapOf(
+                    "url" to "mngPersistenceUrl"
+                )
+            ),
+            "cipherSuite" to mapOf(
+                "schemeMetadataProvider" to "customSchemeMetadataProvider",
+                "signatureVerificationProvider" to "customSignatureVerificationProvider",
+                "digestProvider" to "customDigestProvider",
+            ),
+            "default" to mapOf(
                 "default" to mapOf(
-                    "default" to mapOf(
-                        "serviceName" to "default",
-                        "timeout" to "1",
-                        "defaultSignatureScheme" to "CORDA.EDDSA.ED25519",
-                        "serviceConfig" to mapOf(
-                            "passphrase" to "pwdD",
-                            "salt" to "saltD"
-                        )
+                    "serviceName" to "default",
+                    "timeout" to "1",
+                    "defaultSignatureScheme" to "CORDA.EDDSA.ED25519",
+                    "serviceConfig" to mapOf(
+                        "passphrase" to "pwdD",
+                        "salt" to "saltD"
+                    )
+                )
+            ),
+            "member123" to mapOf(
+                "default" to mapOf(
+                    "serviceName" to "default",
+                    "timeout" to "3",
+                    "defaultSignatureScheme" to "CORDA.ECDSA.SECP256K1",
+                    "serviceConfig" to mapOf(
+                        "passphrase" to "pwd123",
+                        "salt" to "salt123"
                     )
                 ),
-                "member123" to mapOf(
-                    "default" to mapOf(
-                        "serviceName" to "default",
-                        "timeout" to "3",
-                        "defaultSignatureScheme" to "CORDA.ECDSA.SECP256K1",
-                        "serviceConfig" to mapOf(
-                            "passphrase" to "pwd123",
-                            "salt" to "salt123"
-                        )
-                    ),
-                    "LEDGER" to mapOf(
-                        "serviceName" to "UTIMACO",
-                        "timeout" to "2",
-                        "defaultSignatureScheme" to "CORDA.ECDSA.SECP256R1",
-                        "serviceConfig" to mapOf(
-                            "password" to "pwd"
-                        )
+                "LEDGER" to mapOf(
+                    "serviceName" to "UTIMACO",
+                    "timeout" to "2",
+                    "defaultSignatureScheme" to "CORDA.ECDSA.SECP256R1",
+                    "serviceConfig" to mapOf(
+                        "password" to "pwd"
                     )
                 )
             )
         )
-        val config = CryptoLibraryConfig(raw)
+        val config = CryptoLibraryConfigImpl(raw)
         assertEquals("rpcGroupName", config.rpc.groupName)
         assertEquals("rpcClientName", config.rpc.clientName)
         assertEquals("rpcSigningRequestTopic", config.rpc.signingRequestTopic)
@@ -110,7 +107,7 @@ class CryptoLibraryConfigTests {
 
     @Test
     fun `Should return object with default values if 'cipherSuite' is not specified`() {
-        val config = CryptoLibraryConfig(ConfigFactory.empty())
+        val config = CryptoLibraryConfigImpl(emptyMap())
         assertEquals("default", config.cipherSuite.schemeMetadataProvider)
         assertEquals("default", config.cipherSuite.signatureVerificationProvider)
         assertEquals("default", config.cipherSuite.digestProvider)
@@ -118,7 +115,7 @@ class CryptoLibraryConfigTests {
 
     @Test
     fun `CryptoRpcConfig should return default values if the value is not provided`() {
-        val config = CryptoRpcConfig(ConfigFactory.empty())
+        val config = CryptoRpcConfig(emptyMap())
         assertEquals("crypto.rpc", config.groupName)
         assertEquals("crypto.rpc", config.clientName)
         assertEquals("crypto.rpc.signing", config.signingRequestTopic)
@@ -129,14 +126,12 @@ class CryptoLibraryConfigTests {
 
     @Test
     fun `CryptoRpcConfig should create RPC config for signing service`() {
-        val raw = ConfigFactory.parseMap(
-            mapOf(
-                "groupName" to "rpcGroupName",
-                "clientName" to "rpcClientName",
-                "signingRequestTopic" to "rpcSigningRequestTopic",
-                "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic"
+        val raw = mapOf(
+            "groupName" to "rpcGroupName",
+            "clientName" to "rpcClientName",
+            "signingRequestTopic" to "rpcSigningRequestTopic",
+            "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic"
 
-            )
         )
         val config = CryptoRpcConfig(raw)
         val rpc = config.signingRpcConfig
@@ -149,14 +144,12 @@ class CryptoLibraryConfigTests {
 
     @Test
     fun `CryptoRpcConfig should create RPC config for fresh keys service`() {
-        val raw = ConfigFactory.parseMap(
-            mapOf(
-                "groupName" to "rpcGroupName",
-                "clientName" to "rpcClientName",
-                "signingRequestTopic" to "rpcSigningRequestTopic",
-                "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic"
+        val raw = mapOf(
+            "groupName" to "rpcGroupName",
+            "clientName" to "rpcClientName",
+            "signingRequestTopic" to "rpcSigningRequestTopic",
+            "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic"
 
-            )
         )
         val config = CryptoRpcConfig(raw)
         val rpc = config.freshKeysRpcConfig
@@ -169,15 +162,15 @@ class CryptoLibraryConfigTests {
 
     @Test
     fun `CryptoCacheConfig should return default values if the value is not provided`() {
-        val config = CryptoCacheConfig(ConfigFactory.empty())
+        val config = CryptoCacheConfig(emptyMap())
         assertEquals(60, config.expireAfterAccessMins)
         assertEquals(100, config.maximumSize)
-        assertTrue(config.persistenceConfig.isEmpty)
+        assertTrue(config.persistenceConfig.isEmpty())
     }
 
     @Test
     fun `CipherSuiteConfig should return default values if the value is not provided`() {
-        val config = CipherSuiteConfig(ConfigFactory.empty())
+        val config = CipherSuiteConfig(emptyMap())
         assertEquals("default", config.schemeMetadataProvider)
         assertEquals("default", config.signatureVerificationProvider)
         assertEquals("default", config.digestProvider)
@@ -185,50 +178,48 @@ class CryptoLibraryConfigTests {
 
     @Test
     fun `Should fail if the 'rpc' path is not supplied`() {
-        val config = CryptoLibraryConfig(ConfigFactory.empty())
-        assertThrows<ConfigException.Missing> {
+        val config = CryptoLibraryConfigImpl(emptyMap())
+        assertThrows<CryptoConfigurationException> {
             config.rpc
         }
     }
 
     @Test
     fun `Should fail if the 'keyCache' path is not supplied`() {
-        val config = CryptoLibraryConfig(ConfigFactory.empty())
-        assertThrows<ConfigException.Missing> {
+        val config = CryptoLibraryConfigImpl(emptyMap())
+        assertThrows<CryptoConfigurationException> {
             config.keyCache
         }
     }
 
     @Test
     fun `Should fail if the 'mngCache' path is not supplied`() {
-        val config = CryptoLibraryConfig(ConfigFactory.empty())
-        assertThrows<ConfigException.Missing> {
+        val config = CryptoLibraryConfigImpl(emptyMap())
+        assertThrows<CryptoConfigurationException> {
             config.mngCache
         }
     }
 
     @Test
     fun `Should fail if neither the member id nor 'default' path is not supplied`() {
-        val config = CryptoLibraryConfig(ConfigFactory.empty())
-        assertThrows<ConfigException.Missing> {
+        val config = CryptoLibraryConfigImpl(emptyMap())
+        assertThrows<CryptoConfigurationException> {
             config.getMember(UUID.randomUUID().toString())
         }
     }
 
     @Test
     fun `Should return default member config if the member id path is not supplied`() {
-        val config = CryptoLibraryConfig(
-            ConfigFactory.parseMap(
-                mapOf(
+        val config = CryptoLibraryConfigImpl(
+            mapOf(
+                "default" to mapOf(
                     "default" to mapOf(
-                        "default" to mapOf(
-                            "serviceName" to "default",
-                            "timeout" to "1",
-                            "defaultSignatureScheme" to "CORDA.EDDSA.ED25519",
-                            "serviceConfig" to mapOf(
-                                "passphrase" to "pwdD",
-                                "salt" to "saltD"
-                            )
+                        "serviceName" to "default",
+                        "timeout" to "1",
+                        "defaultSignatureScheme" to "CORDA.EDDSA.ED25519",
+                        "serviceConfig" to mapOf(
+                            "passphrase" to "pwdD",
+                            "salt" to "saltD"
                         )
                     )
                 )

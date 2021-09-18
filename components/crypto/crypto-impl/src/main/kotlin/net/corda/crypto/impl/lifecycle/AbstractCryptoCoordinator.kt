@@ -2,20 +2,21 @@ package net.corda.crypto.impl.lifecycle
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.impl.config.CryptoLibraryConfig
+import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 abstract class AbstractCryptoCoordinator(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReadService: ConfigurationReadService,
-    private val subcomponents: List<CryptoLifecycleComponent>
+    private val subcomponents: List<Any>
 ) : Lifecycle {
     companion object {
         private const val CRYPTO_CONFIG: String = "corda.cryptoLibrary"
@@ -40,7 +41,9 @@ abstract class AbstractCryptoCoordinator(
     override fun stop() {
         logger.info("Stopping coordinator.")
         subcomponents.forEach {
-            it.closeGracefully()
+            if(it is AutoCloseable) {
+                it.closeGracefully()
+            }
         }
         coordinator.stop()
     }
@@ -58,10 +61,12 @@ abstract class AbstractCryptoCoordinator(
             }
             is NewCryptoConfigReceived -> {
                 subcomponents.forEach {
-                    if(!it.isRunning) {
+                    if(it is Lifecycle && !it.isRunning) {
                         it.start()
                     }
-                    it.handleConfigEvent(event)
+                    if(it is CryptoLifecycleComponent) {
+                        it.handleConfigEvent(event.config)
+                    }
                 }
             }
         }
@@ -71,7 +76,23 @@ abstract class AbstractCryptoCoordinator(
         if (CRYPTO_CONFIG in keys) {
             val newConfig = config[CRYPTO_CONFIG]
                 ?: throw IllegalStateException("Configuration '$CRYPTO_CONFIG' missing from map")
-            coordinator.postEvent(NewCryptoConfigReceived(CryptoLibraryConfig(newConfig)))
+            coordinator.postEvent(NewCryptoConfigReceived(CryptoLibraryConfigImpl(newConfig.root().unwrapped())))
         }
     }
+}
+
+@Suppress("TooGenericExceptionCaught")
+fun AutoCloseable.closeGracefully() {
+    try {
+        close()
+    } catch (e: Throwable) {
+        // intentional
+    }
+}
+
+fun MutableMap<*, *>.clearCache() {
+    forEach {
+        (it.value as? AutoCloseable)?.closeGracefully()
+    }
+    clear()
 }

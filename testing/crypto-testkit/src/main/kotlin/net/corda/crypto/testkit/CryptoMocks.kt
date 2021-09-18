@@ -1,6 +1,5 @@
 package net.corda.crypto.testkit
 
-import com.typesafe.config.ConfigFactory
 import net.corda.crypto.impl.CipherSchemeMetadataProviderImpl
 import net.corda.crypto.impl.config.CryptoCacheConfig
 import net.corda.components.crypto.services.persistence.DefaultCryptoCachedKeyInfo
@@ -19,12 +18,12 @@ class CryptoMocks(
 
     val signingPersistentKeyCache: MockPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo> =
         persistentCacheFactory.createSigningPersistentCache(
-            CryptoCacheConfig(ConfigFactory.empty())
+            CryptoCacheConfig(emptyMap())
         ) as MockPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
 
     val defaultPersistentKeyCache: MockPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo> =
         persistentCacheFactory.createDefaultCryptoPersistentCache(
-            CryptoCacheConfig(ConfigFactory.empty())
+            CryptoCacheConfig(emptyMap())
         ) as MockPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
 
     val factories = Factories(this)

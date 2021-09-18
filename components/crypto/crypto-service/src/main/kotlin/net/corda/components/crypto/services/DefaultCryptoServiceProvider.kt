@@ -1,17 +1,18 @@
 package net.corda.components.crypto.services
 
-import net.corda.crypto.impl.lifecycle.NewCryptoConfigReceived
-import net.corda.crypto.impl.config.CryptoLibraryConfig
 import net.corda.components.crypto.services.persistence.DefaultCryptoKeyCache
 import net.corda.components.crypto.services.persistence.DefaultCryptoKeyCacheImpl
 import net.corda.components.crypto.services.persistence.PersistentCacheFactory
-import net.corda.crypto.impl.lifecycle.CryptoLifecycleComponent
+import net.corda.crypto.impl.config.keyCache
+import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.CryptoServiceProvider
+import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
+import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -23,7 +24,7 @@ import kotlin.concurrent.withLock
 class DefaultCryptoServiceProvider @Activate constructor(
     @Reference(service = PersistentCacheFactory::class)
     private val persistenceFactory: PersistentCacheFactory
-) : CryptoLifecycleComponent, CryptoServiceProvider<DefaultCryptoServiceConfig> {
+) : Lifecycle, CryptoLifecycleComponent, CryptoServiceProvider<DefaultCryptoServiceConfig> {
     companion object {
         private val logger: Logger = contextLogger()
     }
@@ -52,9 +53,9 @@ class DefaultCryptoServiceProvider @Activate constructor(
         isRunning = false
     }
 
-    override fun handleConfigEvent(event: NewCryptoConfigReceived) = lock.withLock {
+    override fun handleConfigEvent(config: CryptoLibraryConfig) = lock.withLock {
         logger.info("Received new configuration...")
-        libraryConfig = event.config
+        libraryConfig = config
     }
 
     override fun getInstance(context: CryptoServiceContext<DefaultCryptoServiceConfig>): CryptoService = lock.withLock {

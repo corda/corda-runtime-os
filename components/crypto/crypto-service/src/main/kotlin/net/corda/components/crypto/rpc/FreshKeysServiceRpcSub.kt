@@ -1,11 +1,12 @@
 package net.corda.components.crypto.rpc
 
 import net.corda.components.crypto.CryptoFactory
-import net.corda.crypto.impl.config.CryptoLibraryConfig
+import net.corda.crypto.impl.config.rpc
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

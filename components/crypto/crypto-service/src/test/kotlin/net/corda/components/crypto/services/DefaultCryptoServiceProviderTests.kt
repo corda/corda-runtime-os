@@ -1,9 +1,7 @@
 package net.corda.components.crypto.services
 
-import com.typesafe.config.ConfigFactory
-import net.corda.crypto.impl.config.CryptoLibraryConfig
 import net.corda.crypto.CryptoCategories
-import net.corda.crypto.impl.lifecycle.NewCryptoConfigReceived
+import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.crypto.testkit.MockPersistentCacheFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -87,14 +85,10 @@ class DefaultCryptoServiceProviderTests {
         )
         provider.start()
         provider.handleConfigEvent(
-            NewCryptoConfigReceived(
-                config = CryptoLibraryConfig(
-                    ConfigFactory.parseMap(
-                        mapOf(
-                            "keyCache" to emptyMap<String, String>(),
-                            "mngCache" to emptyMap()
-                        )
-                    )
+            CryptoLibraryConfigImpl(
+                mapOf(
+                    "keyCache" to emptyMap<String, String>(),
+                    "mngCache" to emptyMap()
                 )
             )
         )
