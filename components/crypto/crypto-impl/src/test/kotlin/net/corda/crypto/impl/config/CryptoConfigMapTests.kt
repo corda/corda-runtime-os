@@ -314,6 +314,7 @@ class CryptoConfigMapTests {
 
     @Test
     @Timeout(5)
+    @Suppress("MaxLineLength")
     fun `getLong with default overload should throw CryptoConfigurationException if key is present but the value is not number nor string`() {
         val map = CryptoConfigMap(
             mapOf(

@@ -1,5 +1,6 @@
 package net.corda.crypto.impl.rpc
 
+import net.corda.crypto.CryptoCategories
 import net.corda.crypto.impl.generateKeyPair
 import net.corda.crypto.impl.sign
 import net.corda.crypto.testkit.CryptoMocks
@@ -7,14 +8,18 @@ import net.corda.data.crypto.wire.WireNoContentValue
 import net.corda.data.crypto.wire.WirePublicKey
 import net.corda.data.crypto.wire.WirePublicKeys
 import net.corda.data.crypto.wire.WireResponseContext
+import net.corda.data.crypto.wire.WireSignature
+import net.corda.data.crypto.wire.WireSignatureSchemes
 import net.corda.data.crypto.wire.WireSignatureWithKey
-import net.corda.data.crypto.wire.freshkeys.WireFreshKeysEnsureWrappingKey
-import net.corda.data.crypto.wire.freshkeys.WireFreshKeysFilterMyKeys
-import net.corda.data.crypto.wire.freshkeys.WireFreshKeysFreshKey
-import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
-import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
-import net.corda.data.crypto.wire.freshkeys.WireFreshKeysSign
-import net.corda.data.crypto.wire.freshkeys.WireFreshKeysSignWithSpec
+import net.corda.data.crypto.wire.signing.WireSigningFindPublicKey
+import net.corda.data.crypto.wire.signing.WireSigningGenerateKeyPair
+import net.corda.data.crypto.wire.signing.WireSigningGetSupportedSchemes
+import net.corda.data.crypto.wire.signing.WireSigningRequest
+import net.corda.data.crypto.wire.signing.WireSigningResponse
+import net.corda.data.crypto.wire.signing.WireSigningSign
+import net.corda.data.crypto.wire.signing.WireSigningSignWithAlias
+import net.corda.data.crypto.wire.signing.WireSigningSignWithAliasSpec
+import net.corda.data.crypto.wire.signing.WireSigningSignWithSpec
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.SignatureSpec
@@ -24,7 +29,6 @@ import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.allOf
-import org.hamcrest.Matchers.empty
 import org.hamcrest.Matchers.greaterThanOrEqualTo
 import org.hamcrest.Matchers.instanceOf
 import org.hamcrest.Matchers.lessThanOrEqualTo
@@ -35,6 +39,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
+import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
@@ -52,7 +57,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-class FreshKeySigningServiceClientTests {
+class SigningServiceClientTests {
     companion object {
         private const val requestingComponent = "requesting-component"
         private lateinit var memberId: String
@@ -68,7 +73,7 @@ class FreshKeySigningServiceClientTests {
         }
     }
 
-    private lateinit var sender: RPCSender<WireFreshKeysRequest, WireFreshKeysResponse>
+    private lateinit var sender: RPCSender<WireSigningRequest, WireSigningResponse>
 
     @BeforeEach
     fun setupEach() {
@@ -77,28 +82,30 @@ class FreshKeySigningServiceClientTests {
 
     @Test
     @Timeout(5)
-    fun `Should execute ensureWrappingKey request`() {
-        val requests = argumentCaptor<WireFreshKeysRequest>()
+    fun `Should execute supportedSchemes request`() {
+        val requests = argumentCaptor<WireSigningRequest>()
         val client = createClient()
-        setupCompletedResponse { WireNoContentValue() }
+        setupCompletedResponse {
+            WireSignatureSchemes(
+                schemeMetadata.schemes.map { it.codeName }
+            )
+        }
         val nowBefore = Instant.now()
-        client.ensureWrappingKey()
+        val result = client.supportedSchemes
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
-        assertEquals(memberId, requests.firstValue.context.memberId)
-        assertEquals(requestingComponent, requests.firstValue.context.requestingComponent)
-        assertThat(
-            requests.firstValue.context.requestTimestamp.epochSecond,
-            allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
-        )
-        assertThat(requests.firstValue.context.other, empty())
-        assertThat(requests.firstValue.request, instanceOf(WireFreshKeysEnsureWrappingKey::class.java))
+        validatePassedRequestContext(requests, nowBefore, nowAfter)
+        assertThat(requests.firstValue.request, instanceOf(WireSigningGetSupportedSchemes::class.java))
+        assertEquals(schemeMetadata.schemes.size, result.size)
+        schemeMetadata.schemes.forEach {
+            assertTrue(result.contains(it))
+        }
     }
 
     @Test
     @Timeout(5)
-    fun `Should execute freshKey without external id request`() {
-        val requests = argumentCaptor<WireFreshKeysRequest>()
+    fun `Should find public key`() {
+        val requests = argumentCaptor<WireSigningRequest>()
         val client = createClient()
         val keyPair = generateKeyPair(schemeMetadata)
         setupCompletedResponse {
@@ -106,54 +113,63 @@ class FreshKeySigningServiceClientTests {
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public))
             )
         }
+        val alias = UUID.randomUUID().toString()
         val nowBefore = Instant.now()
-        val result = client.freshKey()
+        val result = client.findPublicKey(alias)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
-        assertEquals(memberId, requests.firstValue.context.memberId)
-        assertEquals(requestingComponent, requests.firstValue.context.requestingComponent)
-        assertThat(
-            requests.firstValue.context.requestTimestamp.epochSecond,
-            allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
-        )
-        assertThat(requests.firstValue.context.other, empty())
-        assertThat(requests.firstValue.request, instanceOf(WireFreshKeysFreshKey::class.java))
-        assertNull((requests.firstValue.request as WireFreshKeysFreshKey).externalId)
+        validatePassedRequestContext(requests, nowBefore, nowAfter)
+        assertThat(requests.firstValue.request, instanceOf(WireSigningFindPublicKey::class.java))
+        assertEquals(alias, (requests.firstValue.request as WireSigningFindPublicKey).alias)
+        assertNotNull(result)
         assertEquals(keyPair.public, result)
     }
 
     @Test
     @Timeout(5)
-    fun `Should execute freshKey with external id request`() {
-        val requests = argumentCaptor<WireFreshKeysRequest>()
+    fun `Should return null when public key is not found`() {
+        val requests = argumentCaptor<WireSigningRequest>()
+        val client = createClient()
+        setupCompletedResponse {
+            WireNoContentValue()
+        }
+        val alias = UUID.randomUUID().toString()
+        val nowBefore = Instant.now()
+        val result = client.findPublicKey(alias)
+        val nowAfter = Instant.now()
+        Mockito.verify(sender).sendRequest(requests.capture())
+        validatePassedRequestContext(requests, nowBefore, nowAfter)
+        assertThat(requests.firstValue.request, instanceOf(WireSigningFindPublicKey::class.java))
+        assertEquals(alias, (requests.firstValue.request as WireSigningFindPublicKey).alias)
+        assertNull(result)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should execute generateKeyPair request`() {
+        val requests = argumentCaptor<WireSigningRequest>()
         val client = createClient()
         val keyPair = generateKeyPair(schemeMetadata)
-        val externalId = UUID.randomUUID()
         setupCompletedResponse {
             WirePublicKey(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public))
             )
         }
+        val alias = UUID.randomUUID().toString()
         val nowBefore = Instant.now()
-        val result = client.freshKey(externalId)
+        val result = client.generateKeyPair(alias)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
-        assertEquals(memberId, requests.firstValue.context.memberId)
-        assertEquals(requestingComponent, requests.firstValue.context.requestingComponent)
-        assertThat(
-            requests.firstValue.context.requestTimestamp.epochSecond,
-            allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
-        )
-        assertThat(requests.firstValue.context.other, empty())
-        assertThat(requests.firstValue.request, instanceOf(WireFreshKeysFreshKey::class.java))
-        assertEquals(externalId, UUID.fromString((requests.firstValue.request as WireFreshKeysFreshKey).externalId))
+        validatePassedRequestContext(requests, nowBefore, nowAfter)
+        assertThat(requests.firstValue.request, instanceOf(WireSigningGenerateKeyPair::class.java))
+        assertEquals(alias, (requests.firstValue.request as WireSigningGenerateKeyPair).alias)
         assertEquals(keyPair.public, result)
     }
 
     @Test
     @Timeout(5)
     fun `Should execute sign request`() {
-        val requests = argumentCaptor<WireFreshKeysRequest>()
+        val requests = argumentCaptor<WireSigningRequest>()
         val client = createClient()
         val keyPair = generateKeyPair(schemeMetadata)
         val data = UUID.randomUUID().toString().toByteArray()
@@ -168,19 +184,16 @@ class FreshKeySigningServiceClientTests {
         val result = client.sign(keyPair.public, data)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
-        assertEquals(memberId, requests.firstValue.context.memberId)
-        assertEquals(requestingComponent, requests.firstValue.context.requestingComponent)
-        assertThat(
-            requests.firstValue.context.requestTimestamp.epochSecond,
-            allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
-        )
-        assertThat(requests.firstValue.context.other, empty())
-        assertThat(requests.firstValue.request, instanceOf(WireFreshKeysSign::class.java))
+        validatePassedRequestContext(requests, nowBefore, nowAfter)
+        assertThat(requests.firstValue.request, instanceOf(WireSigningSign::class.java))
         assertArrayEquals(
             schemeMetadata.encodeAsByteArray(keyPair.public),
-            (requests.firstValue.request as WireFreshKeysSign).publicKey.array()
+            (requests.firstValue.request as WireSigningSign).publicKey.array()
         )
-        assertArrayEquals(data, (requests.firstValue.request as WireFreshKeysSign).bytes .array())
+        assertArrayEquals(
+            data,
+            (requests.firstValue.request as WireSigningSign).bytes .array()
+        )
         assertEquals(keyPair.public, result.by)
         assertArrayEquals(signature, result.bytes)
     }
@@ -188,7 +201,7 @@ class FreshKeySigningServiceClientTests {
     @Test
     @Timeout(5)
     fun `Should execute sign with custom signature spec request`() {
-        val requests = argumentCaptor<WireFreshKeysRequest>()
+        val requests = argumentCaptor<WireSigningRequest>()
         val client = createClient()
         val keyPair = generateKeyPair(schemeMetadata)
         val spec = SignatureSpec("NONEwithECDSA", DigestAlgorithmName.SHA2_256)
@@ -204,26 +217,23 @@ class FreshKeySigningServiceClientTests {
         val result = client.sign(keyPair.public, spec, data)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
-        assertEquals(memberId, requests.firstValue.context.memberId)
-        assertEquals(requestingComponent, requests.firstValue.context.requestingComponent)
-        assertThat(
-            requests.firstValue.context.requestTimestamp.epochSecond,
-            allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
-        )
-        assertThat(requests.firstValue.context.other, empty())
-        assertThat(requests.firstValue.request, instanceOf(WireFreshKeysSignWithSpec::class.java))
+        validatePassedRequestContext(requests, nowBefore, nowAfter)
+        assertThat(requests.firstValue.request, instanceOf(WireSigningSignWithSpec::class.java))
         assertArrayEquals(
             schemeMetadata.encodeAsByteArray(keyPair.public),
-            (requests.firstValue.request as WireFreshKeysSignWithSpec).publicKey.array()
+            (requests.firstValue.request as WireSigningSignWithSpec).publicKey.array()
         )
-        assertArrayEquals(data, (requests.firstValue.request as WireFreshKeysSignWithSpec).bytes .array())
+        assertArrayEquals(
+            data,
+            (requests.firstValue.request as WireSigningSignWithSpec).bytes .array()
+        )
         assertEquals(
             "NONEwithECDSA",
-            (requests.firstValue.request as WireFreshKeysSignWithSpec).signatureSpec.signatureName
+            (requests.firstValue.request as WireSigningSignWithSpec).signatureSpec.signatureName
         )
         assertEquals(
             "SHA-256",
-            (requests.firstValue.request as WireFreshKeysSignWithSpec).signatureSpec.customDigestName
+            (requests.firstValue.request as WireSigningSignWithSpec).signatureSpec.customDigestName
         )
         assertEquals(keyPair.public, result.by)
         assertArrayEquals(signature, result.bytes)
@@ -231,78 +241,67 @@ class FreshKeySigningServiceClientTests {
 
     @Test
     @Timeout(5)
-    fun `Should execute filterMyKeys request`() {
-        val requests = argumentCaptor<WireFreshKeysRequest>()
+    fun `Should execute sign request using alias`() {
+        val requests = argumentCaptor<WireSigningRequest>()
         val client = createClient()
-        val myPublicKeys = listOf(
-            generateKeyPair(schemeMetadata).public,
-            generateKeyPair(schemeMetadata).public
-        )
-        val notMyKey = generateKeyPair(schemeMetadata).public
+        val keyPair = generateKeyPair(schemeMetadata)
+        val data = UUID.randomUUID().toString().toByteArray()
+        val signature = sign(schemeMetadata, keyPair.private, data)
         setupCompletedResponse {
-            WirePublicKeys(
-                myPublicKeys.map { ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(it)) }
+            WireSignature(
+                ByteBuffer.wrap(signature)
             )
         }
+        val alias = UUID.randomUUID().toString()
         val nowBefore = Instant.now()
-        val result = client.filterMyKeys(listOf(myPublicKeys[0], myPublicKeys[1], notMyKey))
+        val result = client.sign(alias, data)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
-        assertEquals(memberId, requests.firstValue.context.memberId)
-        assertEquals(requestingComponent, requests.firstValue.context.requestingComponent)
-        assertThat(
-            requests.firstValue.context.requestTimestamp.epochSecond,
-            allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
+        validatePassedRequestContext(requests, nowBefore, nowAfter)
+        assertThat(requests.firstValue.request, instanceOf(WireSigningSignWithAlias::class.java))
+        assertEquals(alias, (requests.firstValue.request as WireSigningSignWithAlias).alias)
+        assertArrayEquals(
+            data,
+            (requests.firstValue.request as WireSigningSignWithAlias).bytes .array()
         )
-        assertThat(requests.firstValue.context.other, empty())
-        assertThat(requests.firstValue.request, instanceOf(WireFreshKeysFilterMyKeys::class.java))
-        assertEquals(3, (requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.size)
-        assertTrue((requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.any {
-            schemeMetadata.decodePublicKey(it.array()) == myPublicKeys[0]
-        })
-        assertTrue((requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.any {
-            schemeMetadata.decodePublicKey(it.array()) == myPublicKeys[1]
-        })
-        assertTrue((requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.any {
-            schemeMetadata.decodePublicKey(it.array()) == notMyKey
-        })
-        assertEquals(2, result.count())
-        assertTrue(result.any { it == myPublicKeys[0] })
-        assertTrue(result.any { it == myPublicKeys[1] })
+        assertArrayEquals(signature, result)
     }
 
     @Test
     @Timeout(5)
-    fun `Should execute filterMyKeys request when it returns empty list`() {
-        val requests = argumentCaptor<WireFreshKeysRequest>()
+    fun `Should execute sign with custom signature spec request using alias`() {
+        val requests = argumentCaptor<WireSigningRequest>()
         val client = createClient()
-        val notMyKeys = listOf(
-            generateKeyPair(schemeMetadata).public,
-            generateKeyPair(schemeMetadata).public
-        )
+        val keyPair = generateKeyPair(schemeMetadata)
+        val spec = SignatureSpec("NONEwithECDSA", DigestAlgorithmName.SHA2_256)
+        val data = UUID.randomUUID().toString().toByteArray()
+        val signature = sign(schemeMetadata, keyPair.private, data)
         setupCompletedResponse {
-            WirePublicKeys(emptyList())
+            WireSignature(
+                ByteBuffer.wrap(signature)
+            )
         }
+        val alias = UUID.randomUUID().toString()
         val nowBefore = Instant.now()
-        val result = client.filterMyKeys(notMyKeys)
+        val result = client.sign(alias, spec, data)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
-        assertEquals(memberId, requests.firstValue.context.memberId)
-        assertEquals(requestingComponent, requests.firstValue.context.requestingComponent)
-        assertThat(
-            requests.firstValue.context.requestTimestamp.epochSecond,
-            allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
+        validatePassedRequestContext(requests, nowBefore, nowAfter)
+        assertThat(requests.firstValue.request, instanceOf(WireSigningSignWithAliasSpec::class.java))
+        assertEquals(alias, (requests.firstValue.request as WireSigningSignWithAliasSpec).alias)
+        assertArrayEquals(
+            data,
+            (requests.firstValue.request as WireSigningSignWithAliasSpec).bytes .array()
         )
-        assertThat(requests.firstValue.context.other, empty())
-        assertThat(requests.firstValue.request, instanceOf(WireFreshKeysFilterMyKeys::class.java))
-        assertEquals(2, (requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.size)
-        assertTrue((requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.any {
-            schemeMetadata.decodePublicKey(it.array()) == notMyKeys[0]
-        })
-        assertTrue((requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.any {
-            schemeMetadata.decodePublicKey(it.array()) == notMyKeys[1]
-        })
-        assertEquals(0, result.count())
+        assertEquals(
+            "NONEwithECDSA",
+            (requests.firstValue.request as WireSigningSignWithAliasSpec).signatureSpec.signatureName
+        )
+        assertEquals(
+            "SHA-256",
+            (requests.firstValue.request as WireSigningSignWithAliasSpec).signatureSpec.customDigestName
+        )
+        assertArrayEquals(signature, result)
     }
 
     @Test
@@ -312,10 +311,10 @@ class FreshKeySigningServiceClientTests {
         whenever(
             sender.sendRequest(any())
         ).then {
-            val req = it.getArgument(0, WireFreshKeysRequest::class.java)
-            val future = CompletableFuture<WireFreshKeysResponse>()
+            val req = it.getArgument(0, WireSigningRequest::class.java)
+            val future = CompletableFuture<WireSigningResponse>()
             future.complete(
-                WireFreshKeysResponse(
+                WireSigningResponse(
                     WireResponseContext(
                         req.context.requestingComponent,
                         req.context.requestTimestamp,
@@ -328,7 +327,7 @@ class FreshKeySigningServiceClientTests {
             future
         }
         val exception = assertThrows<CryptoServiceException> {
-            client.ensureWrappingKey()
+            client.findPublicKey(UUID.randomUUID().toString())
         }
         assertNotNull(exception.cause)
         assertThat(exception.cause, instanceOf(IllegalArgumentException::class.java))
@@ -341,10 +340,10 @@ class FreshKeySigningServiceClientTests {
         whenever(
             sender.sendRequest(any())
         ).then {
-            val req = it.getArgument(0, WireFreshKeysRequest::class.java)
-            val future = CompletableFuture<WireFreshKeysResponse>()
+            val req = it.getArgument(0, WireSigningRequest::class.java)
+            val future = CompletableFuture<WireSigningResponse>()
             future.complete(
-                WireFreshKeysResponse(
+                WireSigningResponse(
                     WireResponseContext(
                         UUID.randomUUID().toString(),
                         req.context.requestTimestamp,
@@ -357,7 +356,7 @@ class FreshKeySigningServiceClientTests {
             future
         }
         val exception = assertThrows<CryptoServiceException> {
-            client.ensureWrappingKey()
+            client.findPublicKey(UUID.randomUUID().toString())
         }
         assertNotNull(exception.cause)
         assertThat(exception.cause, instanceOf(IllegalArgumentException::class.java))
@@ -370,10 +369,10 @@ class FreshKeySigningServiceClientTests {
         whenever(
             sender.sendRequest(any())
         ).then {
-            val req = it.getArgument(0, WireFreshKeysRequest::class.java)
-            val future = CompletableFuture<WireFreshKeysResponse>()
+            val req = it.getArgument(0, WireSigningRequest::class.java)
+            val future = CompletableFuture<WireSigningResponse>()
             future.complete(
-                WireFreshKeysResponse(
+                WireSigningResponse(
                     WireResponseContext(
                         req.context.requestingComponent,
                         req.context.requestTimestamp,
@@ -386,7 +385,7 @@ class FreshKeySigningServiceClientTests {
             future
         }
         val exception = assertThrows<CryptoServiceException> {
-            client.ensureWrappingKey()
+            client.findPublicKey(UUID.randomUUID().toString())
         }
         assertNotNull(exception.cause)
         assertThat(exception.cause, instanceOf(IllegalArgumentException::class.java))
@@ -399,7 +398,7 @@ class FreshKeySigningServiceClientTests {
         val error = CryptoServiceLibraryException("Test failure.")
         whenever(sender.sendRequest(any())).thenThrow(error)
         val exception = assertThrows<Exception> {
-            client.ensureWrappingKey()
+            client.findPublicKey(UUID.randomUUID().toString())
         }
         assertSame(error, exception)
     }
@@ -412,7 +411,7 @@ class FreshKeySigningServiceClientTests {
         val timeout2 = TimeoutException()
         whenever(sender.sendRequest(any())).then { throw timeout1 }.then { throw timeout2 }
         val exception = assertThrows<CryptoServiceTimeoutException> {
-            client.ensureWrappingKey()
+            client.findPublicKey(UUID.randomUUID().toString())
         }
         assertNotNull(exception.cause)
         assertSame(timeout2, exception.cause)
@@ -421,15 +420,15 @@ class FreshKeySigningServiceClientTests {
     @Test
     @Timeout(5)
     fun `Should eventually succeed request after retry`() {
-        val requests = argumentCaptor<WireFreshKeysRequest>()
+        val requests = argumentCaptor<WireSigningRequest>()
         val client = createClient()
         whenever(
             sender.sendRequest(any())
         ).then { throw TimeoutException() }.then {
-            val req = it.getArgument(0, WireFreshKeysRequest::class.java)
-            val future = CompletableFuture<WireFreshKeysResponse>()
+            val req = it.getArgument(0, WireSigningRequest::class.java)
+            val future = CompletableFuture<WireSigningResponse>()
             future.complete(
-                WireFreshKeysResponse(
+                WireSigningResponse(
                     WireResponseContext(
                         req.context.requestingComponent,
                         req.context.requestTimestamp,
@@ -441,23 +440,21 @@ class FreshKeySigningServiceClientTests {
             )
             future
         }
+        val alias = UUID.randomUUID().toString()
         val nowBefore = Instant.now()
-        client.ensureWrappingKey()
+        val result = client.findPublicKey(alias)
         val nowAfter = Instant.now()
         Mockito.verify(sender, times(2)).sendRequest(requests.capture())
-        assertEquals(memberId, requests.firstValue.context.memberId)
-        assertEquals(requestingComponent, requests.firstValue.context.requestingComponent)
-        assertThat(
-            requests.firstValue.context.requestTimestamp.epochSecond,
-            allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
-        )
-        assertThat(requests.firstValue.context.other, empty())
-        assertThat(requests.firstValue.request, instanceOf(WireFreshKeysEnsureWrappingKey::class.java))
+        validatePassedRequestContext(requests, nowBefore, nowAfter)
+        assertThat(requests.firstValue.request, instanceOf(WireSigningFindPublicKey::class.java))
+        assertEquals(alias, (requests.firstValue.request as WireSigningFindPublicKey).alias)
+        assertNull(result)
     }
 
-    private fun createClient(): FreshKeySigningServiceClient =
-        FreshKeySigningServiceClient(
+    private fun createClient(): SigningServiceClient =
+        SigningServiceClient(
             memberId = memberId,
+            category = CryptoCategories.LEDGER,
             requestingComponent = requestingComponent,
             clientTimeout = Duration.ofSeconds(15),
             clientRetries = 1,
@@ -465,14 +462,14 @@ class FreshKeySigningServiceClientTests {
             sender = sender
         )
 
-    private fun setupCompletedResponse(respFactory: (WireFreshKeysRequest) -> Any) {
+    private fun setupCompletedResponse(respFactory: (WireSigningRequest) -> Any) {
         whenever(
             sender.sendRequest(any())
         ).then {
-            val req = it.getArgument(0, WireFreshKeysRequest::class.java)
-            val future = CompletableFuture<WireFreshKeysResponse>()
+            val req = it.getArgument(0, WireSigningRequest::class.java)
+            val future = CompletableFuture<WireSigningResponse>()
             future.complete(
-                WireFreshKeysResponse(
+                WireSigningResponse(
                     WireResponseContext(
                         req.context.requestingComponent,
                         req.context.requestTimestamp,
@@ -484,5 +481,21 @@ class FreshKeySigningServiceClientTests {
             )
             future
         }
+    }
+
+    private fun validatePassedRequestContext(
+        requests: KArgumentCaptor<WireSigningRequest>,
+        nowBefore: Instant,
+        nowAfter: Instant
+    ) {
+        assertEquals(memberId, requests.firstValue.context.memberId)
+        assertEquals(requestingComponent, requests.firstValue.context.requestingComponent)
+        assertThat(
+            requests.firstValue.context.requestTimestamp.epochSecond,
+            allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
+        )
+        assertEquals(1, requests.firstValue.context.other.size)
+        assertEquals("category", requests.firstValue.context.other[0].key)
+        assertEquals(CryptoCategories.LEDGER, requests.firstValue.context.other[0].value)
     }
 }

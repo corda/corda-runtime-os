@@ -157,7 +157,15 @@ class SigningServiceClient(
             try {
                 logger.info("Sending {} for member {}", request::class.java.name, context.memberId)
                 val response = sender.sendRequest(this).getOrThrow(clientTimeout)
-                if (response::class.java == WireNoContentValue::class.java && allowNoContentValue) {
+                require(
+                    response.context.requestingComponent == context.requestingComponent &&
+                        response.context.memberId == context.memberId
+                ) {
+                    "Expected ${context.memberId} member and ${context.requestingComponent} component, but " +
+                            "received ${response.response::class.java.name} with ${response.context.memberId} member" +
+                            " ${response.context.requestingComponent} component"
+                }
+                if (response.response::class.java == WireNoContentValue::class.java && allowNoContentValue) {
                     logger.debug(
                         "Received empty response for {} for member {}",
                         request::class.java.name,
@@ -167,9 +175,7 @@ class SigningServiceClient(
                 }
                 require(
                     response.response != null &&
-                            (response.response::class.java == respClazz) &&
-                            response.context.requestingComponent == context.requestingComponent &&
-                            response.context.memberId == context.memberId
+                            (response.response::class.java == respClazz)
                 ) {
                     "Expected ${respClazz.name} for ${context.memberId} member, but " +
                             "received ${response.response::class.java.name} with ${response.context.memberId} member"

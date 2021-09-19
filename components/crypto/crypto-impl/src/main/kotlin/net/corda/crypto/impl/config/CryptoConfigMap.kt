@@ -3,7 +3,7 @@ package net.corda.crypto.impl.config
 import net.corda.v5.crypto.exceptions.CryptoConfigurationException
 
 open class CryptoConfigMap(
-    protected val map: Map<String, Any?>
+    map: Map<String, Any?>
 ) : Map<String, Any?> by map {
 
     @Suppress("UNCHECKED_CAST")
