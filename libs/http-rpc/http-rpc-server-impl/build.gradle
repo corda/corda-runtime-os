@@ -39,4 +39,10 @@ dependencies {
     implementation "org.webjars:swagger-ui:$swaggeruiVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+
+//    testImplementation project(":libs:http-rpc:http-rpc-test-utilities")
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testRuntimeOnly 'org.osgi:osgi.core'
 }
