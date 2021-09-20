@@ -1,10 +1,10 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.impl.config.CryptoRpcConfig
 import net.corda.crypto.impl.lifecycle.clearCache
 import net.corda.crypto.impl.lifecycle.closeGracefully
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.CryptoLibraryFactoryProvider
+import net.corda.crypto.impl.config.isDev
 import net.corda.crypto.impl.config.rpc
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
@@ -22,7 +22,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -50,7 +49,7 @@ class CryptoLibraryFactoryProviderImpl @Activate constructor(
 
     private var freshKeysServiceSender: RPCSender<WireFreshKeysRequest, WireFreshKeysResponse>? = null
 
-    private val factories = ConcurrentHashMap<String, CryptoLibraryFactory>()
+    private val factories = HashMap<String, CryptoLibraryFactory>()
 
     override var isRunning: Boolean = false
 
@@ -61,35 +60,46 @@ class CryptoLibraryFactoryProviderImpl @Activate constructor(
 
     override fun stop() = lock.withLock {
         logger.info("Stopping...")
-        factories.clearCache()
-        signingServiceSender?.closeGracefully()
-        freshKeysServiceSender?.closeGracefully()
-        signingServiceSender = null
-        freshKeysServiceSender = null
+        reset()
         libraryConfig = null
         isRunning = false
     }
 
     override fun handleConfigEvent(config: CryptoLibraryConfig) = lock.withLock {
         logger.info("Received new configuration...")
+        reset()
         libraryConfig = config
     }
 
     override fun create(requestingComponent: String): CryptoLibraryFactory = lock.withLock {
-        val config = getConfig()
-        if(signingServiceSender == null) {
-            signingServiceSender = publisherFactory.createRPCSender(config.signingRpcConfig)
-        }
-        if(freshKeysServiceSender == null) {
-            freshKeysServiceSender = publisherFactory.createRPCSender(config.freshKeysRpcConfig)
+        if (!isConfigured) {
+            throw IllegalStateException("The provider is not configured.")
         }
         val memberId = memberIdProvider.memberId
-        return factories.getOrPut("$memberId:$requestingComponent") {
+        if(libraryConfig!!.isDev) {
+            createDevCryptoLibraryFactory(memberId, requestingComponent)
+        } else {
+            createProductionCryptoLibraryFactory(memberId, requestingComponent)
+        }
+    }
+
+    private fun createProductionCryptoLibraryFactory(
+        memberId: String,
+        requestingComponent: String
+    ): CryptoLibraryFactory {
+        val rpcConfig = libraryConfig!!.rpc
+        if (signingServiceSender == null) {
+            signingServiceSender = publisherFactory.createRPCSender(rpcConfig.signingRpcConfig)
+        }
+        if (freshKeysServiceSender == null) {
+            freshKeysServiceSender = publisherFactory.createRPCSender(rpcConfig.freshKeysRpcConfig)
+        }
+        return factories.getOrPut(makeFactoryKey(memberId, requestingComponent)) {
             CryptoLibraryFactoryImpl(
                 memberId = memberId,
                 requestingComponent = requestingComponent,
-                clientTimeout = Duration.ofSeconds(config.clientTimeout),
-                clientRetries = config.clientRetries,
+                clientTimeout = Duration.ofSeconds(rpcConfig.clientTimeout),
+                clientRetries = rpcConfig.clientRetries,
                 cipherSuiteFactory = cipherSuiteFactory,
                 signingServiceSender = signingServiceSender!!,
                 freshKeysServiceSender = freshKeysServiceSender!!
@@ -97,10 +107,26 @@ class CryptoLibraryFactoryProviderImpl @Activate constructor(
         }
     }
 
-    private fun getConfig(): CryptoRpcConfig {
-        if (!isConfigured) {
-            throw IllegalStateException("The provider is not configured.")
+    private fun createDevCryptoLibraryFactory(
+        memberId: String,
+        requestingComponent: String
+    ): CryptoLibraryFactory {
+        return factories.getOrPut(makeFactoryKey(memberId, requestingComponent)) {
+            CryptoLibraryFactoryDevImpl(
+                memberId = memberId,
+                cipherSuiteFactory = cipherSuiteFactory
+            )
         }
-        return libraryConfig!!.rpc
+    }
+
+    private fun makeFactoryKey(memberId: String, requestingComponent: String) =
+        "$memberId:$requestingComponent"
+
+    private fun reset() {
+        factories.clearCache()
+        signingServiceSender?.closeGracefully()
+        freshKeysServiceSender?.closeGracefully()
+        signingServiceSender = null
+        freshKeysServiceSender = null
     }
 }

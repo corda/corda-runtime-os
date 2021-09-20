@@ -1,11 +1,11 @@
 package net.corda.crypto.testkit
 
 import net.corda.components.crypto.CryptoFactory
-import net.corda.components.crypto.services.DefaultCryptoService
-import net.corda.components.crypto.services.FreshKeySigningServiceImpl
-import net.corda.components.crypto.services.SigningServiceImpl
-import net.corda.components.crypto.services.persistence.DefaultCryptoKeyCacheImpl
-import net.corda.components.crypto.services.persistence.SigningKeyCacheImpl
+import net.corda.crypto.impl.DefaultCryptoService
+import net.corda.crypto.impl.FreshKeySigningServiceImpl
+import net.corda.crypto.impl.SigningServiceImpl
+import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
+import net.corda.crypto.impl.persistence.SigningKeyCacheImpl
 import net.corda.crypto.CryptoCategories
 import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.SigningService

@@ -12,8 +12,7 @@ import org.junit.jupiter.api.assertThrows
 import java.time.Duration
 import java.util.UUID
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CryptoLibraryConfigTests {
@@ -80,6 +79,7 @@ class CryptoLibraryConfigTests {
             )
         )
         val config = CryptoLibraryConfigImpl(raw)
+        assertFalse(config.isDev)
         assertEquals("rpcGroupName", config.rpc.groupName)
         assertEquals("rpcClientName", config.rpc.clientName)
         assertEquals("rpcSigningRequestTopic", config.rpc.signingRequestTopic)
@@ -179,6 +179,15 @@ class CryptoLibraryConfigTests {
 
     @Test
     @Timeout(5)
+    fun `CryptoCacheConfig default object should return default values`() {
+        val config = CryptoCacheConfig.default
+        assertEquals(60, config.expireAfterAccessMins)
+        assertEquals(100, config.maximumSize)
+        assertTrue(config.persistenceConfig.isEmpty())
+    }
+
+    @Test
+    @Timeout(5)
     fun `CipherSuiteConfig should return default values if the value is not provided`() {
         val config = CipherSuiteConfig(emptyMap())
         assertEquals("default", config.schemeMetadataProvider)
@@ -257,113 +266,19 @@ class CryptoLibraryConfigTests {
 
     @Test
     @Timeout(5)
-    fun `getOptionalConfig should return existing config`() {
-        val map = CryptoLibraryConfigImpl(
-            mapOf<String, Any?>(
-                "key1" to "value1",
-                "key2" to 42,
-                "config" to mapOf<String, Any?>(
-                    "k1.k1" to "v1.v1",
-                    "k1.k2" to 55
-                )
-            )
-        )
-        val value = map.getOptionalConfig("config")
-        assertNotNull(value)
-        assertEquals(2, value.size)
-        assertTrue(value.any { it.key == "k1.k1" && it.value == "v1.v1" })
-        assertTrue(value.any { it.key == "k1.k2" && it.value == 55 })
+    fun `Should return false if 'isDev' path is not supplied`() {
+        val config = CryptoLibraryConfigImpl(emptyMap())
+        assertFalse(config.isDev)
     }
 
     @Test
     @Timeout(5)
-    fun `getOptionalConfig should return null if the key is not present`() {
-        val map = CryptoLibraryConfigImpl(
-            mapOf<String, Any?>(
-                "key1" to "value1",
-                "key2" to 42,
-                "config" to mapOf<String, Any?>(
-                    "k1.k1" to "v1.v1",
-                    "k1.k2" to 55
-                )
-            )
-        )
-        val value = map.getOptionalConfig("config2")
-        assertNull(value)
-    }
-
-    @Test
-    @Timeout(5)
-    fun `getOptionalConfig should return null if the key is present but value is null`() {
-        val map = CryptoLibraryConfigImpl(
+    fun `Should return 'isDev' value`() {
+        val config = CryptoLibraryConfigImpl(
             mapOf(
-                "key1" to "value1",
-                "key2" to 42,
-                "config" to mapOf<String, Any?>(
-                    "k1.k1" to "v1.v1",
-                    "k1.k2" to 55
-                ),
-                "config2" to null
+                "isDev" to "true"
             )
         )
-        val value = map.getOptionalConfig("config2")
-        assertNull(value)
-    }
-
-    @Test
-    @Timeout(5)
-    fun `getConfig should return existing config`() {
-        val map = CryptoLibraryConfigImpl(
-            mapOf<String, Any?>(
-                "key1" to "value1",
-                "key2" to 42,
-                "config" to mapOf<String, Any?>(
-                    "k1.k1" to "v1.v1",
-                    "k1.k2" to 55
-                )
-            )
-        )
-        val value = map.getConfig("config")
-        assertNotNull(value)
-        assertEquals(2, value.size)
-        assertTrue(value.any { it.key == "k1.k1" && it.value == "v1.v1" })
-        assertTrue(value.any { it.key == "k1.k2" && it.value == 55 })
-    }
-
-    @Test
-    @Timeout(5)
-    fun `getConfig should throw CryptoConfigurationException if key is not present`() {
-        val map = CryptoLibraryConfigImpl(
-            mapOf<String, Any?>(
-                "key1" to "value1",
-                "key2" to 42,
-                "config" to mapOf<String, Any?>(
-                    "k1.k1" to "v1.v1",
-                    "k1.k2" to 55
-                )
-            )
-        )
-        assertThrows<CryptoConfigurationException> {
-            map.getConfig("config2")
-        }
-    }
-
-    @Test
-    @Timeout(5)
-    fun `getConfig should throw CryptoConfigurationException if key is present but value is null`() {
-        val map = CryptoLibraryConfigImpl(
-            mapOf(
-                "key1" to "value1",
-                "key2" to 42,
-                "config" to mapOf<String, Any?>(
-                    "k1.k1" to "v1.v1",
-                    "k1.k2" to 55
-                ),
-                "config2" to null
-            )
-        )
-        assertThrows<CryptoConfigurationException> {
-            map.getConfig("config2")
-        }
+        assertTrue(config.isDev)
     }
 }

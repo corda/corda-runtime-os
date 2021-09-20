@@ -5,14 +5,14 @@ import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.components.crypto.services.CryptoServiceCircuitBreaker
+import net.corda.crypto.impl.CryptoServiceCircuitBreaker
 import net.corda.crypto.impl.config.CryptoCacheConfig
 import net.corda.crypto.impl.lifecycle.clearCache
-import net.corda.components.crypto.services.FreshKeySigningServiceImpl
-import net.corda.components.crypto.services.SigningServiceImpl
-import net.corda.components.crypto.services.persistence.PersistentCacheFactory
-import net.corda.components.crypto.services.persistence.SigningKeyCache
-import net.corda.components.crypto.services.persistence.SigningKeyCacheImpl
+import net.corda.crypto.impl.FreshKeySigningServiceImpl
+import net.corda.crypto.impl.SigningServiceImpl
+import net.corda.crypto.impl.persistence.PersistentCacheFactory
+import net.corda.crypto.impl.persistence.SigningKeyCache
+import net.corda.crypto.impl.persistence.SigningKeyCacheImpl
 import net.corda.crypto.CryptoCategories
 import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.SigningService
@@ -88,7 +88,7 @@ class CryptoFactoryImpl @Activate constructor(
         libraryConfig = config
     }
 
-    override val cipherSchemeMetadata: CipherSchemeMetadata by lazy {
+    override val cipherSchemeMetadata: CipherSchemeMetadata by lazy(LazyThreadSafetyMode.PUBLICATION) {
         cipherSuiteFactory.getSchemeMap()
     }
 
@@ -96,7 +96,7 @@ class CryptoFactoryImpl @Activate constructor(
     override fun getFreshKeySigningService(memberId: String): FreshKeySigningService = lock.withLock {
         try {
             logger.debug("Getting the fresh key service for memberId=$memberId")
-            return freshKeyServices.getOrPut(memberId) {
+            freshKeyServices.getOrPut(memberId) {
                 logger.debug("Creating the fresh key service for memberId=$memberId")
                 val ledgerConfig = getServiceConfig(memberId, CryptoCategories.LEDGER)
                 val freshKeysConfig = getServiceConfig(memberId, CryptoCategories.FRESH_KEYS)
@@ -119,11 +119,11 @@ class CryptoFactoryImpl @Activate constructor(
     override fun getSigningService(memberId: String, category: String): SigningService = lock.withLock {
         try {
             logger.debug("Getting the signing service for memberId=$memberId")
-            return signingServices.getOrPut("$memberId:$category") {
+            signingServices.getOrPut("$memberId:$category") {
                 logger.debug("Creating the signing service for memberId=$memberId")
                 val config = getServiceConfig(memberId, category)
                 val cryptoService = getCryptoService(memberId, category, config)
-                return SigningServiceImpl(
+                SigningServiceImpl(
                     cache = getSigningKeyCache(memberId, libraryConfig!!.mngCache),
                     cryptoService = cryptoService,
                     defaultSignatureSchemeCodeName = config.defaultSignatureScheme,

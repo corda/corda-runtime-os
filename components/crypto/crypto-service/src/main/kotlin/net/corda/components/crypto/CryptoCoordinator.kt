@@ -1,7 +1,7 @@
 package net.corda.components.crypto
 
 import net.corda.components.crypto.rpc.CryptoRpcSub
-import net.corda.components.crypto.services.DefaultCryptoServiceProvider
+import net.corda.crypto.impl.DefaultCryptoServiceProvider
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.impl.lifecycle.AbstractCryptoCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory

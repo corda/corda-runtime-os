@@ -9,6 +9,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -75,9 +76,17 @@ abstract class AbstractCryptoCoordinator(
     private fun onConfigChange(keys: Set<String>, config: Map<String, Config>) {
         if (CRYPTO_CONFIG in keys) {
             val newConfig = config[CRYPTO_CONFIG]
-                ?: throw IllegalStateException("Configuration '$CRYPTO_CONFIG' missing from map")
-            coordinator.postEvent(NewCryptoConfigReceived(CryptoLibraryConfigImpl(newConfig.root().unwrapped())))
+            val libraryConfig = if(newConfig == null || newConfig.isEmpty) {
+                handleEmptyCryptoConfig()
+            } else {
+                CryptoLibraryConfigImpl(newConfig.root().unwrapped())
+            }
+            coordinator.postEvent(NewCryptoConfigReceived(libraryConfig))
         }
+    }
+
+    open fun handleEmptyCryptoConfig(): CryptoLibraryConfig {
+        throw IllegalStateException("Configuration '$CRYPTO_CONFIG' missing from map")
     }
 }
 

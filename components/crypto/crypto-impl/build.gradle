@@ -35,6 +35,7 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
     testImplementation project(":testing:crypto-testkit")
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation project(":components:crypto:crypto-service")
     testImplementation project(":libs:lifecycle:lifecycle")
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

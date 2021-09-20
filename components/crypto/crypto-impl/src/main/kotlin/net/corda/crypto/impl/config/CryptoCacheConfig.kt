@@ -3,6 +3,10 @@ package net.corda.crypto.impl.config
 class CryptoCacheConfig(
     map: Map<String, Any?>
 ) : CryptoConfigMap(map) {
+    companion object {
+        val default = CryptoCacheConfig(emptyMap())
+    }
+
     val expireAfterAccessMins: Long
         get() = getLong(this::expireAfterAccessMins.name, 60)
 

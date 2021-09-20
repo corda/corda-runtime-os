@@ -95,7 +95,7 @@ open class CipherSuiteFactoryImpl @Activate constructor(
     @Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught", "MaxLineLength")
     override fun getSignatureVerificationService(): SignatureVerificationService = lock.withLock  {
         val name = getConfig().signatureVerificationProvider
-        return verifiers.getOrPut(name) {
+        verifiers.getOrPut(name) {
             val provider = verifierProviders.firstOrNull { it.name == name }
                 ?: throw CryptoServiceLibraryException("Cannot find $name implementing ${SignatureVerificationServiceProvider::class.java.name}")
             try {
@@ -114,7 +114,7 @@ open class CipherSuiteFactoryImpl @Activate constructor(
     @Suppress("TooGenericExceptionCaught")
     override fun getDigestService(): DigestService = lock.withLock  {
         val name = getConfig().digestProvider
-        return digestServices.getOrPut(name) {
+        digestServices.getOrPut(name) {
             val provider = digestServiceProviders.firstOrNull { it.name == name }
                 ?: throw CryptoServiceLibraryException("Cannot find $name implementing ${DigestServiceProvider::class.java.name}")
             try {

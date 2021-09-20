@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -501,6 +502,386 @@ class CryptoConfigMapTests {
         )
         val value = map.getString("key2", "what?")
         assertEquals("what?", value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean should return exiting value as true`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to true,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key2")
+        assertTrue(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean should return exiting value as false`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to false,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key2")
+        assertFalse(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean should return converted from string value as 1`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to "1",
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key2")
+        assertTrue(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean should return converted from string value as true`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to "true",
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key2")
+        assertTrue(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean should return converted from string value as 0`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to "0",
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key2")
+        assertFalse(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean should return converted from string value as false`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to "false",
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key2")
+        assertFalse(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean should return converted from double value as true`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to 54.4,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 77
+                )
+            )
+        )
+        val value = map.getBoolean("key2")
+        assertTrue(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean should return converted from double value as false`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to 0,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 77
+                )
+            )
+        )
+        val value = map.getBoolean("key2")
+        assertFalse(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean should throw CryptoConfigurationException if key is not present`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to 42,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        assertThrows<CryptoConfigurationException> {
+            map.getBoolean("key!!!")
+        }
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean should throw CryptoConfigurationException if key is present but the value is null`() {
+        val map = CryptoConfigMap(
+            mapOf(
+                "key1" to "value1",
+                "key2" to null,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        assertThrows<CryptoConfigurationException> {
+            map.getBoolean("key2")
+        }
+    }
+
+    @Test
+    @Timeout(5)
+    @Suppress("MaxLineLength")
+    fun `getBoolean should throw CryptoConfigurationException if key is present but the value is not number nor string nor boolean`() {
+        val map = CryptoConfigMap(
+            mapOf(
+                "key1" to "value1",
+                "key2" to listOf(33),
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        assertThrows<CryptoConfigurationException> {
+            map.getBoolean("key2")
+        }
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean with default overload should return exiting value as true`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to true,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key2", false)
+        assertTrue(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean with default overload should return exiting value as false`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to false,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key2", true)
+        assertFalse(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean with default overload should return converted from string value as 1`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to "1",
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key2", false)
+        assertTrue(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean with default overload should return converted from string value as true`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to "true",
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key2", false)
+        assertTrue(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean with default overload should return converted from string value as 0`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to "0",
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key2", true)
+        assertFalse(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean with default overload should return converted from string value as false`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to "false",
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key2", true)
+        assertFalse(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean with default overload should return converted from double value as true`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to 54.4,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 77
+                )
+            )
+        )
+        val value = map.getBoolean("key2", false)
+        assertTrue(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean with default overload should return converted from double value as false`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to 0,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 77
+                )
+            )
+        )
+        val value = map.getBoolean("key2", true)
+        assertFalse(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean with default overload should return default value if key is not present`() {
+        val map = CryptoConfigMap(
+            mapOf<String, Any?>(
+                "key1" to "value1",
+                "key2" to 42,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key!!!", true)
+        assertTrue(value)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `getBoolean with default overload should return default value if key is present but the value is null`() {
+        val map = CryptoConfigMap(
+            mapOf(
+                "key1" to "value1",
+                "key2" to null,
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        val value = map.getBoolean("key2", false)
+        assertFalse(value)
+    }
+
+    @Test
+    @Timeout(5)
+    @Suppress("MaxLineLength")
+    fun `getBoolean with default overload should throw CryptoConfigurationException if key is present but the value is not number nor string nor Boolean`() {
+        val map = CryptoConfigMap(
+            mapOf(
+                "key1" to "value1",
+                "key2" to listOf(33),
+                "config" to mapOf<String, Any?>(
+                    "k1.k1" to "v1.v1",
+                    "k1.k2" to 55
+                )
+            )
+        )
+        assertThrows<CryptoConfigurationException> {
+            map.getBoolean("key2", true)
+        }
     }
 
     class TestObject {

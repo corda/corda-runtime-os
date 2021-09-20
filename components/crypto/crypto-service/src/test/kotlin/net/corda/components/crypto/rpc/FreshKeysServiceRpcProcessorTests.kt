@@ -1,6 +1,6 @@
 package net.corda.components.crypto.rpc
 
-import net.corda.components.crypto.services.persistence.SigningPersistentKeyInfo
+import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.SignatureVerificationServiceInternal
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.data.WireKeyValuePair

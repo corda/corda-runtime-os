@@ -2,9 +2,11 @@ package net.corda.crypto.testkit
 
 import net.corda.crypto.impl.CipherSchemeMetadataProviderImpl
 import net.corda.crypto.impl.config.CryptoCacheConfig
-import net.corda.components.crypto.services.persistence.DefaultCryptoCachedKeyInfo
-import net.corda.components.crypto.services.persistence.DefaultCryptoPersistentKeyInfo
-import net.corda.components.crypto.services.persistence.SigningPersistentKeyInfo
+import net.corda.crypto.impl.dev.InMemoryPersistentCache
+import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
+import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
+import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
+import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
@@ -12,19 +14,19 @@ import net.corda.v5.cipher.suite.schemes.SignatureScheme
 class CryptoMocks(
     schemeMetadataOverride: CipherSchemeMetadata? = null
 ) {
-    private val persistentCacheFactory: MockPersistentCacheFactory = MockPersistentCacheFactory()
+    val persistentCacheFactory: InMemoryPersistentCacheFactory = InMemoryPersistentCacheFactory()
 
     val schemeMetadata: CipherSchemeMetadata = schemeMetadataOverride ?: CipherSchemeMetadataProviderImpl().getInstance()
 
-    val signingPersistentKeyCache: MockPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo> =
+    val signingPersistentKeyCache: InMemoryPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo> =
         persistentCacheFactory.createSigningPersistentCache(
-            CryptoCacheConfig(emptyMap())
-        ) as MockPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
+            CryptoCacheConfig.default
+        ) as InMemoryPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
 
-    val defaultPersistentKeyCache: MockPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo> =
+    val defaultPersistentKeyCache: InMemoryPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo> =
         persistentCacheFactory.createDefaultCryptoPersistentCache(
-            CryptoCacheConfig(emptyMap())
-        ) as MockPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
+            CryptoCacheConfig.default
+        ) as InMemoryPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
 
     val factories = Factories(this)
 
