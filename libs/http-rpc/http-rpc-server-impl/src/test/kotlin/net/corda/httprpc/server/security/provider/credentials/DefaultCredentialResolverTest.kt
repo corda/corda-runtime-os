@@ -24,12 +24,12 @@ class DefaultCredentialResolverTest {
     private val resolver = DefaultCredentialResolver()
 
     @Test
-    fun `resolve_emptyCredential_shouldReturnEmptyCredentialWhenNoOtherAvailable`() {
-        assertNull(resolver.resolve(mock()))
+    fun `resolve empty credential should return empty credential when no other available`() {
+        assertNull(resolver.resolve(context))
     }
 
     @Test
-    fun `resolve_bearerToken_shouldReturnBearerTokenCredential`() {
+    fun `resolve bearer token should return bearer token credential`() {
         val token = "token"
         whenever(req.getHeader(AUTHORIZATION)).thenReturn("Bearer $token")
 
@@ -37,8 +37,8 @@ class DefaultCredentialResolverTest {
     }
 
     @Test
-    fun `resolve_malformedBearerToken_shouldThrow`() {
-        whenever(req.getHeader(AUTHORIZATION)).thenReturn("Bearer_token")
+    fun `resolve malformed BearerToken should throw`() {
+        whenever(req.getHeader(AUTHORIZATION)).thenReturn("Bearer token")
 
         Assertions.assertThrows(FailedLoginException::class.java) {
             resolver.resolve(context)
@@ -46,7 +46,7 @@ class DefaultCredentialResolverTest {
     }
 
     @Test
-    fun `resolve_basicAuthCredential_shouldReturnBasicAuthenticationCredential`() {
+    fun `resolve basic auth credential should return basic authentication credential`() {
         val username = "user"
         val password = "pass"
 

@@ -17,11 +17,7 @@ import java.time.Instant
 import java.time.ZonedDateTime
 import java.util.*
 
-@HttpRpcResource(
-    name = "HealthCheckAPI",
-    description = "Health Check",
-    path = "health/"
-)
+@HttpRpcResource(name = "HealthCheckAPI", description = "Health Check", path = "health/")
 interface TestHealthCheckAPI : RpcOps {
 
     @HttpRpcGET(path = "sanity", title = "Sanity", description = "Sanity endpoint")

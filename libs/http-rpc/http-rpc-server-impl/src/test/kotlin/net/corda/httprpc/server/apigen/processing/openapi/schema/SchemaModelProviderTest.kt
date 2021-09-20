@@ -2,6 +2,7 @@ package net.corda.httprpc.server.apigen.processing.openapi.schema
 
 import net.corda.httprpc.server.apigen.models.EndpointParameter
 import net.corda.httprpc.server.apigen.models.GenericParameterizedType
+import net.corda.httprpc.server.apigen.models.ParameterType
 import net.corda.httprpc.server.apigen.processing.openapi.schema.model.DataFormat
 import net.corda.httprpc.server.apigen.processing.openapi.schema.model.DataType
 import net.corda.httprpc.server.apigen.processing.openapi.schema.model.SchemaCollectionModel
@@ -17,9 +18,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import java.io.ByteArrayInputStream
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -31,11 +29,11 @@ import javax.security.auth.x500.X500Principal
 class SchemaModelProviderTest {
 
     @Test
-    fun `build WithBoolean succeeds`() {
+    fun `build with Boolean succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = true
-        val mockParam = mockEndpointParameter(data::class.java)
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -47,11 +45,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithJavaBoolean succeeds`() {
+    fun `build with Java Boolean succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = true
-        val mockParam = mockEndpointParameter(data::class.javaObjectType)
+        val mockParam = endpointParameter(data::class.javaObjectType)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -61,10 +59,10 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithX500Principal succeeds`() {
+    fun `build with X500Principal succeeds`() {
         val provider = DefaultSchemaModelProvider(SchemaModelContextHolder())
         val data = X500Principal("CN=Common,L=London,O=Org,C=UK")
-        val mockParam = mockEndpointParameter(data::class.javaObjectType)
+        val mockParam = endpointParameter(data::class.javaObjectType)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -73,10 +71,10 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithCordaX500Name succeeds`() {
+    fun `build with CordaX500Name succeeds`() {
         val provider = DefaultSchemaModelProvider(SchemaModelContextHolder())
         val data = CordaX500Name.parse("O=Bank A, L=New York, C=US, OU=Org Unit, CN=Service Name")
-        val mockParam = mockEndpointParameter(data::class.javaObjectType)
+        val mockParam = endpointParameter(data::class.javaObjectType)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -85,10 +83,10 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithInteger succeeds`() {
+    fun `build with Integer succeeds`() {
         val provider = DefaultSchemaModelProvider(SchemaModelContextHolder())
         val data = 1
-        val mockParam = mockEndpointParameter(data::class.java)
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -98,10 +96,10 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithJavaInteger succeeds`() {
+    fun `build with Java Integer succeeds`() {
         val provider = DefaultSchemaModelProvider(SchemaModelContextHolder())
         val data = 1
-        val mockParam = mockEndpointParameter(data::class.javaObjectType)
+        val mockParam = endpointParameter(data::class.javaObjectType)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -111,10 +109,10 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithLong succeeds`() {
+    fun `build with Long succeeds`() {
         val provider = DefaultSchemaModelProvider(SchemaModelContextHolder())
         val data = 1L
-        val mockParam = mockEndpointParameter(data::class.java)
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -123,10 +121,10 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithJavaLong succeeds`() {
+    fun `build with Java Long succeeds`() {
         val provider = DefaultSchemaModelProvider(SchemaModelContextHolder())
         val data = 1L
-        val mockParam = mockEndpointParameter(data::class.javaObjectType)
+        val mockParam = endpointParameter(data::class.javaObjectType)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -135,11 +133,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithBigInt succeeds`() {
+    fun `build with BigInt succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = BigInteger.ONE
-        val mockParam = mockEndpointParameter(data::class.java)
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -148,11 +146,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithFloat succeeds`() {
+    fun `build with Float succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = 1f
-        val mockParam = mockEndpointParameter(data::class.java)
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -161,11 +159,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithJavaFloat succeeds`() {
+    fun `build with Java Float succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = 1f
-        val mockParam = mockEndpointParameter(data::class.javaObjectType)
+        val mockParam = endpointParameter(data::class.javaObjectType)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -174,11 +172,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithDouble succeeds`() {
+    fun `build with Double succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = 1.0
-        val mockParam = mockEndpointParameter(data::class.java)
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -187,11 +185,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithJavaDouble succeeds`() {
+    fun `build with Java Double succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = 1.0
-        val mockParam = mockEndpointParameter(data::class.javaObjectType)
+        val mockParam = endpointParameter(data::class.javaObjectType)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -200,11 +198,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithBigDecimal succeeds`() {
+    fun `build with BigDecimal succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = BigDecimal.ONE
-        val mockParam = mockEndpointParameter(data::class.java)
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -213,11 +211,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithString succeeds`() {
+    fun `build with String succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = "a"
-        val mockParam = mockEndpointParameter(data::class.java)
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -226,11 +224,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithByteArray succeeds`() {
+    fun `build with ByteArray succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = ByteArray(0)
-        val mockParam = mockEndpointParameter(data::class.java)
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -239,11 +237,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithInputStream succeeds`() {
+    fun `build with InputStream succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = ByteArrayInputStream(byteArrayOf(1, 2, 3))
-        val mockParam = mockEndpointParameter(data::class.java)
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -252,11 +250,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithDate succeeds`() {
+    fun `build with Date succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = Date()
-        val mockParam = mockEndpointParameter(data::class.java)
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -265,11 +263,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithDateTime succeeds`() {
+    fun `build with DateTime succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = LocalDateTime.now()
-        val mockParam = mockEndpointParameter(data::class.java)
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -278,11 +276,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithUUID succeeds`() {
+    fun `build with UUID succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
-        val data = mock<UUID>()
-        val mockParam = mockEndpointParameter(data::class.java)
+        val data = UUID.randomUUID()
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -291,11 +289,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithEnum succeeds`() {
+    fun `build with Enum succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = TestEnum.ONE
-        val mockParam = mockEndpointParameter(data::class.java)
+        val mockParam = endpointParameter(data::class.java)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -305,11 +303,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithJavaEnum succeeds`() {
+    fun `build with Java Enum succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = TestEnum.ONE
-        val mockParam = mockEndpointParameter(data::class.javaObjectType)
+        val mockParam = endpointParameter(data::class.javaObjectType)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -319,11 +317,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithStringList succeeds`() {
+    fun `build with String List succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = listOf("a", "b")
-        val mockParam = mockEndpointParameter(data::class.javaObjectType, listOf(GenericParameterizedType(String::class.java)))
+        val mockParam = endpointParameter(data::class.javaObjectType, listOf(GenericParameterizedType(String::class.java)))
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -333,10 +331,10 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithListWithNestedStringList succeeds`() {
+    fun `build with List with Nested String List succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
-        val mockParam = mockEndpointParameter(
+        val mockParam = endpointParameter(
             List::class.java,
             listOf(GenericParameterizedType(List::class.java, listOf(GenericParameterizedType(String::class.java))))
         )
@@ -350,12 +348,12 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithListWithMoreGenerics succeedsButHasNoItems`() {
+    fun `build with List with MoreGenerics succeedsButHasNoItems`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         // can happen if a custom class extends Iterable and has more than one generics. In this case, we don't know which generic type
         // would represent the item class
-        val mockParam = mockEndpointParameter(
+        val mockParam = endpointParameter(
             List::class.java,
             listOf(GenericParameterizedType(String::class.java), GenericParameterizedType(String::class.java))
         )
@@ -368,11 +366,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithStringSet succeeds`() {
+    fun `build with String Set succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = setOf("a", "b")
-        val mockParam = mockEndpointParameter(data::class.java, listOf(GenericParameterizedType(String::class.java)))
+        val mockParam = endpointParameter(data::class.java, listOf(GenericParameterizedType(String::class.java)))
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -383,10 +381,10 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithSetWithNestedStringToStringMap succeeds`() {
+    fun `build with Set with NestedStringToStringMap succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
-        val mockParam = mockEndpointParameter(
+        val mockParam = endpointParameter(
             HashSet::class.java,
             listOf(
                 GenericParameterizedType(
@@ -406,12 +404,12 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithSetWithMoreGenerics succeedsButHasNoItems`() {
+    fun `build with Set with MoreGenerics succeedsButHasNoItems`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         // can happen if a custom class extends Set and has more than one generics. In this case, we don't know which generic type
         // would represent the item class
-        val mockParam = mockEndpointParameter(
+        val mockParam = endpointParameter(
             Set::class.java,
             listOf(GenericParameterizedType(String::class.java), GenericParameterizedType(String::class.java))
         )
@@ -425,11 +423,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithMap succeeds`() {
+    fun `build with Map succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = mapOf("a" to "b")
-        val mockParam = mockEndpointParameter(
+        val mockParam = endpointParameter(
             data::class.javaObjectType,
             listOf(GenericParameterizedType(String::class.java), GenericParameterizedType(String::class.java))
         )
@@ -442,11 +440,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithMapWithNestedList succeeds`() {
+    fun `build with Map with NestedList succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = mapOf("a" to "b")
-        val mockParam = mockEndpointParameter(
+        val mockParam = endpointParameter(
             data::class.javaObjectType,
             listOf(
                 GenericParameterizedType(String::class.java),
@@ -466,12 +464,12 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithMapWithMoreGenerics succeedsButHasNoItems`() {
+    fun `build with Map with MoreGenerics succeedsButHasNoItems`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         // can happen if a custom class extends Map and has more than two generics. In this case, we don't know which generic type
         // would represent the item class
-        val mockParam = mockEndpointParameter(
+        val mockParam = endpointParameter(
             Map::class.java,
             listOf(
                 GenericParameterizedType(String::class.java),
@@ -488,11 +486,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithCustomObject succeeds`() {
+    fun `build with CustomObject succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = TestClass()
-        val mockParam = mockEndpointParameter(data::class.javaObjectType)
+        val mockParam = endpointParameter(data::class.javaObjectType)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -500,12 +498,12 @@ class SchemaModelProviderTest {
         assertEquals(null, result.format)
         assertEquals("TestClass", (result as SchemaRefObjectModel).ref)
 
-        with(schemaModelContextHolder.getSchema(ParameterizedClass(data::class.java))!!) {
+        with (schemaModelContextHolder.getSchema(ParameterizedClass(data::class.java))!!) {
             assertEquals(2, this.properties.size)
             assertEquals(DataType.STRING, this.properties["a"]!!.type)
             assertEquals("NestedTestClass", (this.properties["b"]!! as SchemaRefObjectModel).ref)
         }
-        with(schemaModelContextHolder.getSchema(ParameterizedClass(NestedTestClass::class.java))!!) {
+        with (schemaModelContextHolder.getSchema(ParameterizedClass(NestedTestClass::class.java))!!) {
             assertEquals(DataType.OBJECT, this.type)
             assertEquals(2, this.properties.size)
             assertEquals(DataType.ARRAY, this.properties["aa"]!!.type)
@@ -515,10 +513,10 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithPair succeeds`() {
+    fun `build with Pair succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
-        val mockParam = mockEndpointParameter(
+        val mockParam = endpointParameter(
             Pair::class.java,
             listOf(
                 GenericParameterizedType(Int::class.java, emptyList()),
@@ -531,18 +529,18 @@ class SchemaModelProviderTest {
         assertEquals(DataType.OBJECT, result.type)
         assertNull(result.format)
         assertNull(schemaModelContextHolder.getSchema(ParameterizedClass(Pair::class.java)))
-        with(result as SchemaPairModel) {
+        with (result as SchemaPairModel) {
             assertEquals(DataType.INTEGER, this.properties["first"]!!.type)
             assertEquals(DataType.STRING, this.properties["second"]!!.type)
         }
     }
 
     @Test
-    fun `build WithCustomObjectAndContextAlreadyPopulated succeeds`() {
+    fun `build with custom object and context already populated succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = TestClass()
-        val mockParam = mockEndpointParameter(data::class.javaObjectType)
+        val mockParam = endpointParameter(data::class.javaObjectType)
         provider.toSchemaModel(mockParam)
 
         assertNotNull(schemaModelContextHolder.getSchema(ParameterizedClass(data::class.java)))
@@ -553,12 +551,12 @@ class SchemaModelProviderTest {
         assertEquals(null, result.format)
         assertEquals("TestClass", (result as SchemaRefObjectModel).ref)
 
-        with(schemaModelContextHolder.getSchema(ParameterizedClass(data::class.java))!!) {
+        with (schemaModelContextHolder.getSchema(ParameterizedClass(data::class.java))!!) {
             assertEquals(2, this.properties.size)
             assertEquals(DataType.STRING, this.properties["a"]!!.type)
             assertEquals("NestedTestClass", (this.properties["b"]!! as SchemaRefObjectModel).ref)
         }
-        with(schemaModelContextHolder.getSchema(ParameterizedClass(NestedTestClass::class.java))!!) {
+        with (schemaModelContextHolder.getSchema(ParameterizedClass(NestedTestClass::class.java))!!) {
             assertEquals(DataType.OBJECT, this.type)
             assertEquals(2, this.properties.size)
             assertEquals(DataType.ARRAY, this.properties["aa"]!!.type)
@@ -567,11 +565,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithCustomJavaObject succeeds`() {
+    fun `build with custom java object succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = net.corda.httprpc.server.apigen.processing.openapi.schema.TestClass()
-        val mockParam = mockEndpointParameter(data::class.javaObjectType)
+        val mockParam = endpointParameter(data::class.javaObjectType)
 
         val result = provider.toSchemaModel(mockParam)
 
@@ -579,7 +577,7 @@ class SchemaModelProviderTest {
         assertEquals(null, result.format)
         assertEquals("TestClass", (result as SchemaRefObjectModel).ref)
 
-        with(schemaModelContextHolder.getSchema(ParameterizedClass(data::class.java))!!) {
+        with (schemaModelContextHolder.getSchema(ParameterizedClass(data::class.java))!!) {
             assertEquals(2, this.properties.size)
             assertEquals(DataType.STRING, this.properties["a"]!!.type)
             assertEquals(
@@ -587,7 +585,7 @@ class SchemaModelProviderTest {
                 (this.properties["b"]!! as SchemaRefObjectModel).ref
             )
         }
-        with(schemaModelContextHolder.getSchema(ParameterizedClass(TestNestedClass::class.java))!!) {
+        with (schemaModelContextHolder.getSchema(ParameterizedClass(TestNestedClass::class.java))!!) {
             assertEquals(DataType.OBJECT, this.type)
             assertEquals(2, this.properties.size)
             assertEquals(DataType.ARRAY, this.properties["aa"]!!.type)
@@ -596,11 +594,11 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build WithDurableReturnResult succeeds`() {
+    fun `build with DurableReturnResult succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = DurableReturnResult(listOf(testPositionedValue("a")), 1)
-        val mockParam = mockEndpointParameter(
+        val mockParam = endpointParameter(
             data::class.javaObjectType,
             listOf(GenericParameterizedType(String::class.java, emptyList()))
         )
@@ -609,15 +607,15 @@ class SchemaModelProviderTest {
         assertNull(result.format)
         assertNull(result.type)
         result as SchemaRefObjectModel
-        assertEquals("DurableReturnResult of String", result.ref)
+        assertEquals("DurableReturnResult_of_String", result.ref)
     }
 
     @Test
-    fun `build WithFiniteDurableReturnResult succeeds`() {
+    fun `build with FiniteDurableReturnResult succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val data = FiniteDurableReturnResult(listOf(testPositionedValue("a")), 1, false)
-        val mockParam = mockEndpointParameter(
+        val mockParam = endpointParameter(
             data::class.javaObjectType,
             listOf(GenericParameterizedType(String::class.java, emptyList()))
         )
@@ -628,11 +626,11 @@ class SchemaModelProviderTest {
         assertNull(result.type)
         assertNull(result.format)
         result as SchemaRefObjectModel
-        assertEquals("FiniteDurableReturnResult of String", result.ref)
+        assertEquals("FiniteDurableReturnResult_of_String", result.ref)
     }
 
     @Test
-    fun `build WithMultiple Generics types succeeds`() {
+    fun `build with multiple generics types succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
 
@@ -645,11 +643,11 @@ class SchemaModelProviderTest {
 
         assertEquals(null, result.type)
         assertEquals(null, result.format)
-        assertEquals("TestClass of String int", (result as SchemaRefObjectModel).ref)
+        assertEquals("TestClass_of_String_int", (result as SchemaRefObjectModel).ref)
     }
 
     @Test
-    fun `build WithSame Class name in different packages succeeds`() {
+    fun `build with same class name in different packages succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
 
@@ -658,11 +656,11 @@ class SchemaModelProviderTest {
         assertEquals("DurableStreamsMethodInvoker", (result as SchemaRefObjectModel).ref)
 
         val result2 = provider.toSchemaModel(ParameterizedClass(DurableStreamsMethodInvoker::class.java))
-        assertEquals("DurableStreamsMethodInvoker 1", (result2 as SchemaRefObjectModel).ref)
+        assertEquals("DurableStreamsMethodInvoker_1", (result2 as SchemaRefObjectModel).ref)
     }
 
     @Test
-    fun `build WithSame Class succeeds`() {
+    fun `build with same class succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
 
@@ -672,7 +670,7 @@ class SchemaModelProviderTest {
                 listOf(GenericParameterizedType(String::class.java))
             )
         )
-        assertEquals("DurableStreamsMethodInvoker of String", (result as SchemaRefObjectModel).ref)
+        assertEquals("DurableStreamsMethodInvoker_of_String", (result as SchemaRefObjectModel).ref)
 
         val result2 = provider.toSchemaModel(
             ParameterizedClass(
@@ -680,10 +678,10 @@ class SchemaModelProviderTest {
                 listOf(GenericParameterizedType(Date::class.java))
             )
         )
-        assertEquals("DurableStreamsMethodInvoker of Date", (result2 as SchemaRefObjectModel).ref)
+        assertEquals("DurableStreamsMethodInvoker_of_Date", (result2 as SchemaRefObjectModel).ref)
     }
 
-    class DurableStreamsMethodInvoker()
+    class DurableStreamsMethodInvoker
 
     class NestedTestClass(
         val aa: List<String> = listOf("aa"),
@@ -697,13 +695,19 @@ class SchemaModelProviderTest {
         private val c: String = "c"
     )
 
-    private fun mockEndpointParameter(clazz: Class<*>, parameterizedTypes: List<GenericParameterizedType> = emptyList()) =
-        mock<EndpointParameter>().also {
-            doReturn(clazz).whenever(it).classType
-            doReturn(parameterizedTypes).whenever(it).parameterizedTypes
-            doReturn("name").whenever(it).name
-            doReturn("description").whenever(it).description
-        }
+    private fun endpointParameter(clazz: Class<*>, parameterizedTypes: List<GenericParameterizedType> = emptyList()): EndpointParameter {
+        return EndpointParameter(
+            classType = clazz,
+            parameterizedTypes = parameterizedTypes,
+            name = "name",
+            description = "description",
+            default = "default",
+            id = "id",
+            nullable = true,
+            required = true,
+            type = ParameterType.PATH
+        )
+    }
 
     private enum class TestEnum {
         ONE, TWO

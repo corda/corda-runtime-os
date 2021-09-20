@@ -1,49 +1,62 @@
 package net.corda.httprpc.server.apigen.processing
 
 import net.corda.httprpc.server.apigen.models.Endpoint
+import net.corda.httprpc.server.apigen.models.EndpointMethod
 import net.corda.httprpc.server.apigen.models.InvocationMethod
+import net.corda.httprpc.server.apigen.models.ResponseBody
 import net.corda.httprpc.server.apigen.test.TestHealthCheckAPI
 import net.corda.httprpc.server.apigen.test.TestHealthCheckAPIImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import kotlin.reflect.jvm.javaMethod
 
 class RouteInfoTest {
+
     @Test
     fun `endpointInvocation withoutParameters shouldSucceed`() {
-        val endpointMock = mock<Endpoint> {
-            on { invocationMethod } doReturn InvocationMethod(TestHealthCheckAPI::void.javaMethod!!, TestHealthCheckAPIImpl())
-        }
-
-        val route = RouteInfo("", "", "", endpointMock)
-
+        val endpoint = Endpoint(
+            invocationMethod = InvocationMethod(TestHealthCheckAPI::void.javaMethod!!, TestHealthCheckAPIImpl()),
+            description = "Sanity endpoint",
+            method = EndpointMethod.GET,
+            parameters = emptyList(),
+            path = "sanity",
+            responseBody = ResponseBody(description = "", type = String::class.java, parameterizedTypes = emptyList()),
+            title = "Sanity"
+        )
+        val route = RouteInfo("sanity", "", "", endpoint)
         assertEquals("Sane", route.invokeDelegatedMethod())
     }
 
     @Test
     fun `endpointInvocation withParameters shouldSucceed`() {
-        val endpointMock = mock<Endpoint> {
-            on { invocationMethod } doReturn InvocationMethod(TestHealthCheckAPI::hello.javaMethod!!, TestHealthCheckAPIImpl())
-        }
+        val endpoint = Endpoint(
+            invocationMethod = InvocationMethod(TestHealthCheckAPI::hello.javaMethod!!, TestHealthCheckAPIImpl()),
+            description = "Hello endpoint",
+            method = EndpointMethod.GET,
+            parameters = emptyList(),
+            path = "hello/{name}",
+            responseBody = ResponseBody(description = "", type = String::class.java, parameterizedTypes = emptyList()),
+            title = "Hello"
+        )
         val param1 = "name"
         val param2 = 1
-
-        val route = RouteInfo("", "", "", endpointMock)
-
+        val route = RouteInfo("", "", "", endpoint)
         assertEquals("Hello 1 : name", route.invokeDelegatedMethod(param1, param2))
     }
 
     @Test
     fun `endpointInvocation withParametersList shouldSucceed`() {
-        val endpointMock = mock<Endpoint> {
-            on { invocationMethod } doReturn InvocationMethod(TestHealthCheckAPI::plusOne.javaMethod!!, TestHealthCheckAPIImpl())
-        }
+        val endpoint = Endpoint(
+            invocationMethod = InvocationMethod(TestHealthCheckAPI::plusOne.javaMethod!!, TestHealthCheckAPIImpl()),
+            description = "Sanity endpoint",
+            method = EndpointMethod.GET,
+            parameters = emptyList(),
+            path = "sanity",
+            responseBody = ResponseBody(description = "Increased by one", type = String::class.java, parameterizedTypes = emptyList()),
+            title = "Sanity"
+        )
         val params = listOf("1", "2", "3")
-
-        val route = RouteInfo("", "", "", endpointMock)
-
+        val route = RouteInfo("", "", "", endpoint)
         assertEquals(listOf(2.0, 3.0, 4.0), route.invokeDelegatedMethod(params))
     }
 }
