@@ -1,6 +1,5 @@
 package net.corda.db.admin.impl
 
-import net.corda.db.admin.ClassloaderChangeLog
 import net.corda.db.core.InMemoryDataSourceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach

@@ -121,7 +121,7 @@ a Change Log file as a Stream.
 
 The latest version of Liquibase (4.4.x) does not work in OSGi. This is related to Liquibase using the 
 ServiceLoader to load an implementation of its own logging abstraction.
-This GitHub issues describes the problem we were also seeing: https://github.com/liquibase/liquibase/issues/2054
+This [GitHub issue](https://github.com/liquibase/liquibase/issues/2054) describes the problem we were also seeing.
 The patch in the associated PR does work.
 Because API changed between 3.x and 4.x is impacting us, we have chosen to take a copy of the patch for
 now and raised [CORE-2723](https://r3-cev.atlassian.net/browse/CORE-2723) to resolve this when the patch is released.
