@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp.custom
 
 import net.corda.internal.serialization.amqp.custom.ReusableSerialiseDeserializeAssert.Companion.serializeDeserializeAssert
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.util.EnumSet
 
@@ -14,7 +13,6 @@ class EnumSetTest {
     }
 
     @Test
-    @Disabled("Will fix in CORE-2684")
     fun empty() {
         serializeDeserializeAssert(EnumSet.noneOf(Abc::class.java))
     }
