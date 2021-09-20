@@ -37,7 +37,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.Companion.getSessio
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.SessionKey
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
-import net.corda.p2p.markers.FlowMessageMarker
+import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema
@@ -321,12 +321,16 @@ class LinkManagerTest {
         val records = processor.onNext(listOf(EventLogRecord(P2P_OUT_TOPIC, KEY, appMessage, 1, 0)))
 
         assertThat(records).hasSize(3)
-        val markers = records.filter { it.value is FlowMessageMarker }
+        val markers = records.filter { it.value is AppMessageMarker }
         assertThat(markers).hasSize(2)
-        assertThat(markers.map { it.value as FlowMessageMarker }).containsExactlyInAnyOrder(
-            FlowMessageMarker(LinkManagerSentMarker(1, 0)),
-            FlowMessageMarker(LinkManagerReceivedMarker()),
-        )
+        val sentMarkers = markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerSentMarker }
+        assertThat(sentMarkers).hasSize(1)
+        val sentMarker = (sentMarkers.single().marker as LinkManagerSentMarker)
+        assertSame(authenticatedMsg, sentMarker.message.message)
+        assertEquals(KEY, sentMarker.message.key)
+
+        assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is LinkManagerReceivedMarker }).hasSize(1)
+
         assertThat(markers.map { it.topic }.distinct()).containsOnly(P2P_OUT_MARKERS)
         val messages = records.filter { it.value is AppMessage }
         assertThat(messages).hasSize(1)
@@ -401,8 +405,8 @@ class LinkManagerTest {
         }
         for (record in records) {
             assertEquals(P2P_OUT_MARKERS, record.topic)
-            assert(record.value is FlowMessageMarker)
-            val marker = (record.value as FlowMessageMarker)
+            assert(record.value is AppMessageMarker)
+            val marker = (record.value as AppMessageMarker)
             assertTrue(marker.marker is LinkManagerSentMarker)
         }
     }
@@ -436,7 +440,7 @@ class LinkManagerTest {
 
         assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(messages.size)
             .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
-            .extracting<FlowMessageMarker> { it.value as FlowMessageMarker }
+            .extracting<AppMessageMarker> { it.value as AppMessageMarker }
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
     }
 
@@ -492,7 +496,7 @@ class LinkManagerTest {
             .allSatisfy { assertThat(it.payload).isInstanceOf(AuthenticatedDataMessage::class.java) }
 
         assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(messages.size)
-            .extracting<FlowMessageMarker> { it.value as FlowMessageMarker }
+            .extracting<AppMessageMarker> { it.value as AppMessageMarker }
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
 
         @Suppress("SpreadOperator")
@@ -513,7 +517,7 @@ class LinkManagerTest {
 
         assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(messages.size)
             .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
-            .extracting<FlowMessageMarker> { it.value as FlowMessageMarker }
+            .extracting<AppMessageMarker> { it.value as AppMessageMarker }
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
     }
 
@@ -535,7 +539,7 @@ class LinkManagerTest {
 
         assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(messages.size)
             .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
-            .extracting<FlowMessageMarker> { it.value as FlowMessageMarker }
+            .extracting<AppMessageMarker> { it.value as AppMessageMarker }
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
     }
 
@@ -643,7 +647,7 @@ class LinkManagerTest {
 
         assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(1)
             .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
-            .extracting<FlowMessageMarker> { it.value as FlowMessageMarker }
+            .extracting<AppMessageMarker> { it.value as AppMessageMarker }
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerReceivedMarker::class.java) }
     }
 

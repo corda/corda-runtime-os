@@ -43,7 +43,7 @@ class DBEventLogSubscriptionTest {
     private val topic2 = "test.topic2"
     private val topicPartitions = 2
     private val dbRecords = listOf(topic1, topic2).map {
-        it to (1..topicPartitions).map { it to mutableListOf<RecordDbEntry>() }.toMap()
+        it to (1..topicPartitions).map { it to Collections.synchronizedList<RecordDbEntry>(mutableListOf()) }.toMap()
     }.toMap()
     private val dbCommittedOffsets = listOf(topic1, topic2)
         .map { it to (1..topicPartitions).map { it to Collections.synchronizedList<Long>(mutableListOf()) }.toMap() }.toMap()
@@ -52,10 +52,10 @@ class DBEventLogSubscriptionTest {
         it to (1..topicPartitions).map { it to AtomicLong(1) }.toMap()
     }.toMap()
     private val releasedOffsetsPerTopicPartition = listOf(topic1, topic2).map {
-        it to (1..topicPartitions).map { it to mutableListOf<Long>() }.toMap()
+        it to (1..topicPartitions).map { it to Collections.synchronizedList<Long>(mutableListOf()) }.toMap()
     }.toMap()
 
-    private val processedRecords = mutableListOf<EventLogRecord<String, String>>()
+    private val processedRecords = Collections.synchronizedList<EventLogRecord<String, String>>(mutableListOf())
 
     private var failuresToSimulateForDbOffsetWrite = 0
     private var failuresToSimulateForDbRecordsWrite = 0
@@ -195,18 +195,15 @@ class DBEventLogSubscriptionTest {
 
         subscription.start()
 
+        val expectedDbRecords = listOf(
+            RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), "value-2".toByteArray())
+        )
         eventually(1.seconds, 5.millis) {
             assertThat(processedRecords.size).isEqualTo(2)
-            synchronized(dbCommittedOffsets[topic1]!![1]!!) {
-                assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
-            }
-            assertThat(dbRecords[topic2]!![2]!!).containsExactlyElementsOf(
-                listOf(
-                    RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
-                    RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), "value-2".toByteArray())
-                )
-            )
-            assertThat(releasedOffsetsPerTopicPartition[topic2]!![2]!!).containsExactlyElementsOf(listOf(1, 2))
+            assertContainsItemsWithLock(dbCommittedOffsets[topic1]!![1]!!, listOf(2))
+            assertContainsItemsWithLock(dbRecords[topic2]!![2]!!, expectedDbRecords)
+            assertContainsItemsWithLock(releasedOffsetsPerTopicPartition[topic2]!![2]!!, listOf(1, 2))
         }
 
         subscription.stop()
@@ -229,18 +226,15 @@ class DBEventLogSubscriptionTest {
 
         subscription.start()
 
+        val expectedDbRecords = listOf(
+            RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), "value-2".toByteArray())
+        )
         eventually(1.seconds, 5.millis) {
             assertThat(processedRecords.size).isEqualTo(2)
-            synchronized(dbCommittedOffsets[topic1]!![1]!!) {
-                assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
-            }
-            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(
-                listOf(
-                    RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
-                    RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), "value-2".toByteArray())
-                )
-            )
-            assertThat(releasedOffsetsPerTopicPartition[topic2]!![2]).containsExactlyElementsOf(listOf(1, 2))
+            assertContainsItemsWithLock(dbCommittedOffsets[topic1]!![1]!!, listOf(2))
+            assertContainsItemsWithLock(dbRecords[topic2]!![2]!!, expectedDbRecords)
+            assertContainsItemsWithLock(releasedOffsetsPerTopicPartition[topic2]!![2]!!, listOf(1, 2))
         }
 
         subscription.stop()
@@ -261,16 +255,15 @@ class DBEventLogSubscriptionTest {
 
         subscription.start()
 
+        val expectedDbRecords = listOf(
+            RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), null),
+            RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), null)
+        )
         eventually(1.seconds, 5.millis) {
             assertThat(processedRecords.size).isEqualTo(2)
-            synchronized(dbCommittedOffsets[topic1]!![1]!!) {
-                assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
-            }
-            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(listOf(
-                RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), null),
-                RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), null)
-            ))
-            assertThat(releasedOffsetsPerTopicPartition[topic2]!![2]).containsExactlyElementsOf(listOf(1, 2))
+            assertContainsItemsWithLock(dbCommittedOffsets[topic1]!![1]!!, listOf(2))
+            assertContainsItemsWithLock(dbRecords[topic2]!![2]!!, expectedDbRecords)
+            assertContainsItemsWithLock(releasedOffsetsPerTopicPartition[topic2]!![2]!!, listOf(1, 2))
         }
 
         subscription.stop()
@@ -291,18 +284,15 @@ class DBEventLogSubscriptionTest {
 
         subscription.start()
 
+        val expectedDbRecords = listOf(
+            RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic2, 2, 8, "key-2".toByteArray(), "value-2".toByteArray())
+        )
         eventually(1.seconds, 5.millis) {
             assertThat(processedRecords.size).isEqualTo(expectedRecordsToProcess)
-            synchronized(dbCommittedOffsets[topic1]!![1]!!) {
-                assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
-            }
-            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(
-                listOf(
-                    RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
-                    RecordDbEntry(topic2, 2, 8, "key-2".toByteArray(), "value-2".toByteArray())
-                )
-            )
-            assertThat(releasedOffsetsPerTopicPartition[topic2]!![2]).containsExactlyElementsOf((1L..8L).toList())
+            assertContainsItemsWithLock(dbCommittedOffsets[topic1]!![1]!!, listOf(2))
+            assertContainsItemsWithLock(dbRecords[topic2]!![2]!!, expectedDbRecords)
+            assertContainsItemsWithLock(releasedOffsetsPerTopicPartition[topic2]!![2]!!, (1L..8L).toList())
         }
 
         subscription.stop()
@@ -323,18 +313,15 @@ class DBEventLogSubscriptionTest {
 
         subscription.start()
 
+        val expectedDbRecords = listOf(
+            RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic2, 2, 8, "key-2".toByteArray(), "value-2".toByteArray())
+        )
         eventually(1.seconds, 5.millis) {
             assertThat(processedRecords.size).isEqualTo(expectedRecordsToProcess)
-            synchronized(dbCommittedOffsets[topic1]!![1]!!) {
-                assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
-            }
-            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(
-                listOf(
-                    RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
-                    RecordDbEntry(topic2, 2, 8, "key-2".toByteArray(), "value-2".toByteArray())
-                )
-            )
-            assertThat(releasedOffsetsPerTopicPartition[topic2]!![2]).containsExactlyElementsOf((1L..8L).toList())
+            assertContainsItemsWithLock(dbCommittedOffsets[topic1]!![1]!!, listOf(2))
+            assertContainsItemsWithLock(dbRecords[topic2]!![2]!!, expectedDbRecords)
+            assertContainsItemsWithLock(releasedOffsetsPerTopicPartition[topic2]!![2]!!, (1L..8L).toList())
         }
 
         subscription.stop()
@@ -355,24 +342,21 @@ class DBEventLogSubscriptionTest {
 
         subscription.start()
 
+        val expectedDbRecords = listOf(
+            RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), "value-2".toByteArray()),
+            RecordDbEntry(topic2, 2, 3, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic2, 2, 4, "key-2".toByteArray(), "value-2".toByteArray()),
+            RecordDbEntry(topic2, 2, 5, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic2, 2, 6, "key-2".toByteArray(), "value-2".toByteArray()),
+            RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
+            RecordDbEntry(topic2, 2, 8, "key-2".toByteArray(), "value-2".toByteArray())
+        )
         eventually(1.seconds, 5.millis) {
             assertThat(processedRecords.size).isEqualTo(expectedRecordsToProcess)
-            synchronized(dbCommittedOffsets[topic1]!![1]!!) {
-                assertThat(dbCommittedOffsets[topic1]!![1]!!).containsExactly(2)
-            }
-            assertThat(dbRecords[topic2]!![2]).containsExactlyElementsOf(
-                listOf(
-                    RecordDbEntry(topic2, 2, 1, "key-1".toByteArray(), "value-1".toByteArray()),
-                    RecordDbEntry(topic2, 2, 2, "key-2".toByteArray(), "value-2".toByteArray()),
-                    RecordDbEntry(topic2, 2, 3, "key-1".toByteArray(), "value-1".toByteArray()),
-                    RecordDbEntry(topic2, 2, 4, "key-2".toByteArray(), "value-2".toByteArray()),
-                    RecordDbEntry(topic2, 2, 5, "key-1".toByteArray(), "value-1".toByteArray()),
-                    RecordDbEntry(topic2, 2, 6, "key-2".toByteArray(), "value-2".toByteArray()),
-                    RecordDbEntry(topic2, 2, 7, "key-1".toByteArray(), "value-1".toByteArray()),
-                    RecordDbEntry(topic2, 2, 8, "key-2".toByteArray(), "value-2".toByteArray())
-                )
-            )
-            assertThat(releasedOffsetsPerTopicPartition[topic2]!![2]).containsExactlyElementsOf((1L..8L).toList())
+            assertContainsItemsWithLock(dbCommittedOffsets[topic1]!![1]!!, listOf(2))
+            assertContainsItemsWithLock(dbRecords[topic2]!![2]!!, expectedDbRecords)
+            assertContainsItemsWithLock(releasedOffsetsPerTopicPartition[topic2]!![2]!!, (1L..8L).toList())
         }
 
         subscription.stop()
@@ -406,4 +390,11 @@ class DBEventLogSubscriptionTest {
             return events.map { Record(topicToWriteTo, it.key, it.value) }
         }
     }
+
+    fun <E> assertContainsItemsWithLock(actual: MutableList<E>, expected: List<E>) {
+        synchronized(actual) {
+            assertThat(actual).containsExactlyElementsOf(expected)
+        }
+    }
+
 }

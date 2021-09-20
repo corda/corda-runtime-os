@@ -56,6 +56,22 @@ internal class Topic(
             ?: throw IllegalStateException("Could not find partition id $partitionId, only know of ${partitions.map { it.partitionId }}!")
     }
 
+    fun assignPartition(consumer: Consumer, partitionsIds: Collection<Int>) {
+        val partitions = partitionsIds.map {
+            getPartition(it)
+        }
+        val group = consumerGroups[consumer.groupName] ?: throw IllegalStateException("Group ${consumer.groupName} had not subscribed")
+        group.assignPartition(consumer, partitions)
+    }
+
+    fun unAssignPartition(consumer: Consumer, partitionsIds: Collection<Int>) {
+        val partitions = partitionsIds.map {
+            getPartition(it)
+        }
+        val group = consumerGroups[consumer.groupName] ?: throw IllegalStateException("Group ${consumer.groupName} had not subscribed")
+        group.unAssignPartition(consumer, partitions)
+    }
+
     /**
      * Unsubscribe the [consumer] to this [topicName]
      */
@@ -69,9 +85,6 @@ internal class Topic(
      */
     fun addRecord(record: Record<*, *>) {
         getPartition(record).addRecord(record)
-        consumerGroups.values.forEach {
-            it.wakeUp()
-        }
     }
 
     /**
@@ -81,14 +94,17 @@ internal class Topic(
     fun addRecordToPartition(record: Record<*, *>, partitionId: Int) {
         getPartition(partitionId)
             .addRecord(record)
-        consumerGroups.values.forEach {
-            it.wakeUp()
-        }
     }
 
     fun getLatestOffsets(): Map<Int, Long> {
         return partitions.associate {
             it.partitionId to it.latestOffset() - 1
+        }
+    }
+
+    fun wakeUpConsumers() {
+        consumerGroups.values.forEach {
+            it.wakeUp()
         }
     }
 }
