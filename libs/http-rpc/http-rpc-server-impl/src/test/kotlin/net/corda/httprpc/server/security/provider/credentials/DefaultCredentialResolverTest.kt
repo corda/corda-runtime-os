@@ -38,7 +38,7 @@ class DefaultCredentialResolverTest {
 
     @Test
     fun `resolve malformed BearerToken should throw`() {
-        whenever(req.getHeader(AUTHORIZATION)).thenReturn("Bearer token")
+        whenever(req.getHeader(AUTHORIZATION)).thenReturn("Bearer_token")
 
         Assertions.assertThrows(FailedLoginException::class.java) {
             resolver.resolve(context)
