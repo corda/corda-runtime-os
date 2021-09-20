@@ -21,8 +21,7 @@ class EventLogConsumerTest {
     }
     private val subscription = mock<EventLogSubscription<String, SubscriptionConfig>> {
         on { processor } doReturn processor
-        on { groupName } doReturn "group"
-        on { topicName } doReturn "topic"
+        on { subscriptionConfig } doReturn SubscriptionConfig("group", "topic")
         on { partitionAssignmentListener } doReturn mock()
     }
     private val consumer = EventLogConsumer(subscription)

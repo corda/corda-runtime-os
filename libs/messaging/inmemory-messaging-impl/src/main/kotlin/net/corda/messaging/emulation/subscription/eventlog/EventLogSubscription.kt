@@ -21,7 +21,7 @@ import kotlin.concurrent.withLock
  * @property topicService - A topic service to supply events records.
  */
 class EventLogSubscription<K : Any, V : Any>(
-    private val subscriptionConfig: SubscriptionConfig,
+    internal val subscriptionConfig: SubscriptionConfig,
     internal val processor: EventLogProcessor<K, V>,
     internal val partitionAssignmentListener: PartitionAssignmentListener?,
     internal val topicService: TopicService,
@@ -30,10 +30,6 @@ class EventLogSubscription<K : Any, V : Any>(
     companion object {
         private val logger: Logger = contextLogger()
     }
-
-    internal val topicName = subscriptionConfig.eventTopic
-
-    internal val groupName = subscriptionConfig.groupName
 
     private var currentConsumer: Consumption? = null
     private val lock = ReentrantLock()
@@ -51,7 +47,7 @@ class EventLogSubscription<K : Any, V : Any>(
         lock.withLock {
             if (currentConsumer == null) {
                 val consumer = EventLogConsumer(this)
-                currentConsumer = topicService.subscribe(consumer)
+                currentConsumer = topicService.createConsumption(consumer)
             }
         }
     }
