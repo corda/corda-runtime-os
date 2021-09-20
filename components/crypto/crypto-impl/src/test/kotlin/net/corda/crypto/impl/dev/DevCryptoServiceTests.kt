@@ -9,11 +9,13 @@ import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoServiceContext
+import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.NaSignatureSpec
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
+import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.i2p.crypto.eddsa.EdDSAKey
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -21,9 +23,13 @@ import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import java.security.KeyPair
 import java.security.PublicKey
 import java.util.UUID
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -31,7 +37,6 @@ import kotlin.test.assertTrue
 class DevCryptoServiceTests {
     companion object {
         private const val wrappingKeyAlias = "wrapping-key-alias"
-        private val test100ZeroBytes = ByteArray(100)
         private val UNSUPPORTED_SIGNATURE_SCHEME = SignatureScheme(
             codeName = "UNSUPPORTED_SIGNATURE_SCHEME",
             algorithmOIDs = listOf(
@@ -116,53 +121,183 @@ class DevCryptoServiceTests {
 
     @Test
     @Timeout(5)
+    @Suppress("MaxLineLength")
     fun `containsKey should return true for unknown alias as it generates key when not found`() {
+        val testData = UUID.randomUUID().toString().toByteArray()
+        val badVerifyData = UUID.randomUUID().toString().toByteArray()
+        val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
         val alias = newAlias()
         assertTrue(cryptoService.containsKey(alias))
-        validateGeneratedKeySpecs(alias, true)
+        val keyPair = validateGeneratedKeySpecs(alias, true)
+        val signature = cryptoService.sign(alias, signatureScheme, testData)
+        assertTrue(signatureVerifier.isValid(keyPair.public, signature, testData))
+        assertFalse(signatureVerifier.isValid(keyPair.public, signature, badVerifyData))
     }
 
     @Test
     @Timeout(5)
-    fun `findPublicKey should return public for unknown alias as it generates key when not found`() {
+    @Suppress("MaxLineLength")
+    fun `findPublicKey should return public for unknown alias as it generates key when not found and be able to sign and verify with the key`() {
+        val testData = UUID.randomUUID().toString().toByteArray()
+        val badVerifyData = UUID.randomUUID().toString().toByteArray()
+        val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
         val alias = newAlias()
         val publicKey = cryptoService.findPublicKey(alias)
-        validateGeneratedKeySpecs(alias, true)
+        val keyPair = validateGeneratedKeySpecs(alias, true)
         assertNotNull(publicKey)
-        assertEquals(publicKey.algorithm, "EdDSA")
-        assertEquals((publicKey as EdDSAKey).params, EdDSANamedCurveTable.getByName("ED25519"))
+        assertEquals(keyPair.public, publicKey)
+        val signature = cryptoService.sign(alias, signatureScheme, testData)
+        assertTrue(signatureVerifier.isValid(publicKey, signature, testData))
+        assertFalse(signatureVerifier.isValid(publicKey, signature, badVerifyData))
     }
 
     @Test
     @Timeout(5)
-    fun `Should generate EDDSA key pair with ED25519 curve`() {
+    fun `findPublicKey should return public key for generated key`() {
+        val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
         val alias = newAlias()
-        val scheme = schemeMetadata.findSignatureScheme(EDDSA_ED25519_CODE_NAME)
-        cryptoService.generateKeyPair(alias, scheme)
-        validateGeneratedKeySpecs(alias, false)
+        cryptoService.generateKeyPair(alias, signatureScheme)
+        val generated = validateGeneratedKeySpecs(alias, false)
+        val publicKey = cryptoService.findPublicKey(alias)
+        assertNotNull(publicKey)
+        assertEquals(generated.public, publicKey)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should generate EDDSA key pair with ED25519 curve and be able to sign and verify with the key`() {
+        val testData = UUID.randomUUID().toString().toByteArray()
+        val badVerifyData = UUID.randomUUID().toString().toByteArray()
+        val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
+        val alias = newAlias()
+        val publicKey = cryptoService.generateKeyPair(alias, signatureScheme)
+        val keyPair = validateGeneratedKeySpecs(alias, false)
+        assertNotNull(publicKey)
+        assertEquals(keyPair.public, publicKey)
+        val signature = cryptoService.sign(alias, signatureScheme, testData)
+        assertTrue(signatureVerifier.isValid(publicKey, signature, testData))
+        assertFalse(signatureVerifier.isValid(publicKey, signature, badVerifyData))
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should generate deterministic EDDSA key pair with ED25519 curve based on alias`() {
+        val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
+        val alias1 = newAlias()
+        val publicKey1 = cryptoService.generateKeyPair(alias1, signatureScheme)
+        val keyPair1 = validateGeneratedKeySpecs(alias1, false)
+        assertNotNull(publicKey1)
+        assertEquals(keyPair1.public, publicKey1)
+        val publicKey2 = cryptoService.generateKeyPair(alias1, signatureScheme)
+        val keyPair2 = validateGeneratedKeySpecs(alias1, false)
+        assertNotNull(publicKey2)
+        assertEquals(keyPair2.public, publicKey2)
+        assertEquals(keyPair1.public, keyPair2.public)
+        assertEquals(keyPair1.private, keyPair2.private)
+        val alias3 = newAlias()
+        val publicKey3 = cryptoService.generateKeyPair(alias3, signatureScheme)
+        val keyPair3 = validateGeneratedKeySpecs(alias3, false)
+        assertNotNull(publicKey3)
+        assertEquals(keyPair3.public, publicKey3)
+        assertNotEquals(keyPair1.public, keyPair3.public)
+        assertNotEquals(keyPair1.private, keyPair3.private)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should auto generate key when signing using unknown alias`() {
+        val testData = UUID.randomUUID().toString().toByteArray()
+        val badVerifyData = UUID.randomUUID().toString().toByteArray()
+        val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
+        val alias = newAlias()
+        val signature = cryptoService.sign(alias, signatureScheme, testData)
+        val keyPair = validateGeneratedKeySpecs(alias, true)
+        assertTrue(signatureVerifier.isValid(keyPair.public, signature, testData))
+        assertFalse(signatureVerifier.isValid(keyPair.public, signature, badVerifyData))
     }
 
     private fun newAlias(): String = UUID.randomUUID().toString()
 
-    private fun validateGeneratedKeySpecs(alias: String, signingCacheShouldExists: Boolean) {
-        val keyPair = getGeneratedKeyPair(alias)
-        assertNotNull(keyPair)
-        assertEquals(memberId, keyPair.memberId)
-        assertNotNull(keyPair.privateKey)
-        assertNotNull(keyPair.publicKey)
-        assertEquals(keyPair.privateKey!!.algorithm, "EdDSA")
-        assertEquals((keyPair.privateKey as EdDSAKey).params, EdDSANamedCurveTable.getByName("ED25519"))
-        assertEquals(keyPair.publicKey!!.algorithm, "EdDSA")
-        assertEquals((keyPair.publicKey as EdDSAKey).params, EdDSANamedCurveTable.getByName("ED25519"))
-        val signingKeyInfo = getSigningKeyInfo(keyPair.publicKey!!)
+    private fun validateGeneratedKeySpecs(alias: String, signingCacheShouldExists: Boolean): KeyPair {
+        val keyPairInfo = getGeneratedKeyPair(alias)
+        assertNotNull(keyPairInfo)
+        assertEquals(memberId, keyPairInfo.memberId)
+        assertNotNull(keyPairInfo.privateKey)
+        assertNotNull(keyPairInfo.publicKey)
+        assertEquals(keyPairInfo.privateKey!!.algorithm, "EdDSA")
+        assertEquals((keyPairInfo.privateKey as EdDSAKey).params, EdDSANamedCurveTable.getByName("ED25519"))
+        assertEquals(keyPairInfo.publicKey!!.algorithm, "EdDSA")
+        assertEquals((keyPairInfo.publicKey as EdDSAKey).params, EdDSANamedCurveTable.getByName("ED25519"))
+        val signingKeyInfo = getSigningKeyInfo(keyPairInfo.publicKey!!)
         if (signingCacheShouldExists) {
             assertNotNull(signingKeyInfo)
             assertEquals(alias, signingKeyInfo.alias)
-            assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPair.publicKey!!), signingKeyInfo.publicKey)
+            assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPairInfo.publicKey!!), signingKeyInfo.publicKey)
             assertEquals(memberId, signingKeyInfo.memberId)
             assertNull(signingKeyInfo.externalId)
         } else {
             assertNull(signingKeyInfo)
+        }
+        return KeyPair(keyPairInfo.publicKey, keyPairInfo.privateKey)
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Should fail when generating key pair with unsupported signature scheme`() {
+        val testData = UUID.randomUUID().toString().toByteArray()
+        val alias = newAlias()
+        assertFailsWith<CryptoServiceBadRequestException> {
+            cryptoService.sign(alias, UNSUPPORTED_SIGNATURE_SCHEME, testData)
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Should fail when signing with unsupported signature scheme`() {
+        val alias = newAlias()
+        assertFailsWith<CryptoServiceBadRequestException> {
+            cryptoService.generateKeyPair(alias, UNSUPPORTED_SIGNATURE_SCHEME)
+        }
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should generate wrapped EDDSA key pair with ED25519 curve and be able to sign and verify with the key`() {
+        val testData = UUID.randomUUID().toString().toByteArray()
+        val badVerifyData = UUID.randomUUID().toString().toByteArray()
+        val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
+        val wrappedKeyPair = cryptoService.generateWrappedKeyPair(wrappingKeyAlias, signatureScheme)
+        val signature = cryptoService.sign(
+            WrappedPrivateKey(
+                keyMaterial = wrappedKeyPair.keyMaterial,
+                masterKeyAlias = wrappingKeyAlias,
+                signatureScheme = signatureScheme,
+                encodingVersion = wrappedKeyPair.encodingVersion
+            ),
+            signatureScheme.signatureSpec, testData
+        )
+        assertTrue(signatureVerifier.isValid(wrappedKeyPair.publicKey, signature, testData))
+        assertFalse(signatureVerifier.isValid(wrappedKeyPair.publicKey, signature, badVerifyData))
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should fail signing using wrapped key pair with unknown wrapping key`() {
+        val testData = UUID.randomUUID().toString().toByteArray()
+        val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
+        val wrappingKey2Alias = UUID.randomUUID().toString()
+        val wrappedKeyPair = cryptoService.generateWrappedKeyPair(wrappingKeyAlias, signatureScheme)
+        assertFailsWith<CryptoServiceBadRequestException> {
+            cryptoService.sign(
+                WrappedPrivateKey(
+                    keyMaterial = wrappedKeyPair.keyMaterial,
+                    masterKeyAlias = wrappingKey2Alias,
+                    signatureScheme = signatureScheme,
+                    encodingVersion = wrappedKeyPair.encodingVersion
+                ),
+                signatureScheme.signatureSpec,
+                testData
+            )
         }
     }
 
