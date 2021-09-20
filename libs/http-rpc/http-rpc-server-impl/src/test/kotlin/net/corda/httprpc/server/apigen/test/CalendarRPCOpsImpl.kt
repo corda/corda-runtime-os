@@ -5,9 +5,6 @@ import net.corda.v5.base.stream.FiniteDurableCursorBuilder
 import net.corda.v5.base.stream.PositionManager
 import net.corda.v5.httprpc.api.PluggableRPCOps
 import org.mockito.kotlin.mock
-import java.time.DayOfWeek
-import java.time.format.DateTimeFormatter
-import java.util.*
 
 @Suppress("MagicNumber")
 class CalendarRPCOpsImpl : CalendarRPCOps, PluggableRPCOps<CalendarRPCOps> {

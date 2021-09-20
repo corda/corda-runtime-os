@@ -15,7 +15,8 @@ import net.corda.v5.httprpc.api.annotations.HttpRpcResource
 import net.corda.v5.httprpc.api.annotations.RPCSinceVersion
 import java.time.Instant
 import java.time.ZonedDateTime
-import java.util.*
+import java.util.Date
+import java.util.UUID
 
 @HttpRpcResource(name = "HealthCheckAPI", description = "Health Check", path = "health/")
 interface TestHealthCheckAPI : RpcOps {

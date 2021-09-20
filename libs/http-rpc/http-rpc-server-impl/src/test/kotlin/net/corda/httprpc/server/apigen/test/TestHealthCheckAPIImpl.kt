@@ -42,8 +42,8 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
     override fun throwException(exception: String) {
 
         throw Class.forName(exception)
-                .getDeclaredConstructor(String::class.java)
-                .newInstance("$exception thrown from throwException method") as Throwable
+            .getDeclaredConstructor(String::class.java)
+            .newInstance("$exception thrown from throwException method") as Throwable
     }
 
     override fun laterAddedCall(): String = "Not implemented in protocol version 2"
@@ -59,5 +59,5 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
         return (1..daysCount).map { TestHealthCheckAPI.DateCallDto(calendar.apply { set(DAY_OF_YEAR, it) }.time) }
     }
 
-    override fun parseUuid(uuid: String): UUID  = UUID.fromString(uuid)
+    override fun parseUuid(uuid: String): UUID = UUID.fromString(uuid)
 }

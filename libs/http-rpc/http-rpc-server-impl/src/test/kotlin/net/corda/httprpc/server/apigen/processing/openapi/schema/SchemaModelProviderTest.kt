@@ -498,12 +498,12 @@ class SchemaModelProviderTest {
         assertEquals(null, result.format)
         assertEquals("TestClass", (result as SchemaRefObjectModel).ref)
 
-        with (schemaModelContextHolder.getSchema(ParameterizedClass(data::class.java))!!) {
+        with(schemaModelContextHolder.getSchema(ParameterizedClass(data::class.java))!!) {
             assertEquals(2, this.properties.size)
             assertEquals(DataType.STRING, this.properties["a"]!!.type)
             assertEquals("NestedTestClass", (this.properties["b"]!! as SchemaRefObjectModel).ref)
         }
-        with (schemaModelContextHolder.getSchema(ParameterizedClass(NestedTestClass::class.java))!!) {
+        with(schemaModelContextHolder.getSchema(ParameterizedClass(NestedTestClass::class.java))!!) {
             assertEquals(DataType.OBJECT, this.type)
             assertEquals(2, this.properties.size)
             assertEquals(DataType.ARRAY, this.properties["aa"]!!.type)
@@ -529,7 +529,7 @@ class SchemaModelProviderTest {
         assertEquals(DataType.OBJECT, result.type)
         assertNull(result.format)
         assertNull(schemaModelContextHolder.getSchema(ParameterizedClass(Pair::class.java)))
-        with (result as SchemaPairModel) {
+        with(result as SchemaPairModel) {
             assertEquals(DataType.INTEGER, this.properties["first"]!!.type)
             assertEquals(DataType.STRING, this.properties["second"]!!.type)
         }
@@ -551,12 +551,12 @@ class SchemaModelProviderTest {
         assertEquals(null, result.format)
         assertEquals("TestClass", (result as SchemaRefObjectModel).ref)
 
-        with (schemaModelContextHolder.getSchema(ParameterizedClass(data::class.java))!!) {
+        with(schemaModelContextHolder.getSchema(ParameterizedClass(data::class.java))!!) {
             assertEquals(2, this.properties.size)
             assertEquals(DataType.STRING, this.properties["a"]!!.type)
             assertEquals("NestedTestClass", (this.properties["b"]!! as SchemaRefObjectModel).ref)
         }
-        with (schemaModelContextHolder.getSchema(ParameterizedClass(NestedTestClass::class.java))!!) {
+        with(schemaModelContextHolder.getSchema(ParameterizedClass(NestedTestClass::class.java))!!) {
             assertEquals(DataType.OBJECT, this.type)
             assertEquals(2, this.properties.size)
             assertEquals(DataType.ARRAY, this.properties["aa"]!!.type)
@@ -577,7 +577,7 @@ class SchemaModelProviderTest {
         assertEquals(null, result.format)
         assertEquals("TestClass", (result as SchemaRefObjectModel).ref)
 
-        with (schemaModelContextHolder.getSchema(ParameterizedClass(data::class.java))!!) {
+        with(schemaModelContextHolder.getSchema(ParameterizedClass(data::class.java))!!) {
             assertEquals(2, this.properties.size)
             assertEquals(DataType.STRING, this.properties["a"]!!.type)
             assertEquals(
@@ -585,7 +585,7 @@ class SchemaModelProviderTest {
                 (this.properties["b"]!! as SchemaRefObjectModel).ref
             )
         }
-        with (schemaModelContextHolder.getSchema(ParameterizedClass(TestNestedClass::class.java))!!) {
+        with(schemaModelContextHolder.getSchema(ParameterizedClass(TestNestedClass::class.java))!!) {
             assertEquals(DataType.OBJECT, this.type)
             assertEquals(2, this.properties.size)
             assertEquals(DataType.ARRAY, this.properties["aa"]!!.type)

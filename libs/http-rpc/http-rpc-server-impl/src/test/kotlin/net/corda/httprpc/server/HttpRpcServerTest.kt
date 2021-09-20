@@ -2,7 +2,6 @@ package net.corda.httprpc.server
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
-import net.corda.httprpc.security.read.AdminSubject
 import net.corda.httprpc.server.apigen.processing.APIStructureRetriever
 import net.corda.httprpc.server.apigen.processing.JavalinRouteProviderImpl
 import net.corda.httprpc.server.apigen.processing.openapi.OpenApiInfoProvider
@@ -11,7 +10,6 @@ import net.corda.httprpc.server.apigen.test.NonCordaSerializableAPI
 import net.corda.httprpc.server.apigen.test.NonCordaSerializableAPIImpl
 import net.corda.httprpc.server.apigen.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.config.HttpRpcSettingsProvider
-import net.corda.httprpc.server.config.impl.HttpRpcObjectSettingsProvider
 import net.corda.httprpc.server.internal.HttpRpcServerInternal
 import net.corda.httprpc.server.internal.HttpRpcServerInternal.Companion.INSECURE_SERVER_DEV_MODE_WARNING
 import net.corda.httprpc.server.internal.HttpRpcServerInternal.Companion.SSL_PASSWORD_MISSING
@@ -63,7 +61,7 @@ class HttpRpcServerTest {
     @Test
     fun `start server with ssl disabled but without dev mode enabled throws unsupported operation exception`() {
         val configProvider = mock(HttpRpcSettingsProvider::class.java)
-        doReturn(NetworkHostAndPort("localhost", portAllocator )).whenever(configProvider).getHostAndPort()
+        doReturn(NetworkHostAndPort("localhost", portAllocator)).whenever(configProvider).getHostAndPort()
         doReturn("1").whenever(configProvider).getApiVersion()
         doReturn("/").whenever(configProvider).getBasePath()
         doReturn(null).whenever(configProvider).getSSLKeyStorePath()
@@ -90,7 +88,7 @@ class HttpRpcServerTest {
     @Test
     fun `start server with ssl disabled with dev mode enabled but non-CordaSerializable endpoint parameters throws exception`() {
         val configProvider = mock(HttpRpcSettingsProvider::class.java)
-        doReturn(NetworkHostAndPort("localhost", portAllocator )).whenever(configProvider).getHostAndPort()
+        doReturn(NetworkHostAndPort("localhost", portAllocator)).whenever(configProvider).getHostAndPort()
         doReturn("1").whenever(configProvider).getApiVersion()
         doReturn("/").whenever(configProvider).getBasePath()
         doReturn(null).whenever(configProvider).getSSLKeyStorePath()
@@ -118,7 +116,7 @@ class HttpRpcServerTest {
     @Test
     fun `OpenApi Json of discovered RPCOps should be deserializable to OpenApi object`() {
         val configProvider = mock(HttpRpcSettingsProvider::class.java)
-        doReturn(NetworkHostAndPort("localhost", portAllocator )).whenever(configProvider).getHostAndPort()
+        doReturn(NetworkHostAndPort("localhost", portAllocator)).whenever(configProvider).getHostAndPort()
         doReturn("1").whenever(configProvider).getApiVersion()
         doReturn("/").whenever(configProvider).getBasePath()
         doReturn("testOpenApi").whenever(configProvider).getApiTitle()
@@ -140,7 +138,7 @@ class HttpRpcServerTest {
     @Test
     fun `start server with duplicate HttpRpcParameter throws exception`() {
         val configProvider = mock(HttpRpcSettingsProvider::class.java)
-        doReturn(NetworkHostAndPort("localhost", portAllocator )).whenever(configProvider).getHostAndPort()
+        doReturn(NetworkHostAndPort("localhost", portAllocator)).whenever(configProvider).getHostAndPort()
         doReturn("1").whenever(configProvider).getApiVersion()
         doReturn("/").whenever(configProvider).getBasePath()
         doReturn(null).whenever(configProvider).getSSLKeyStorePath()

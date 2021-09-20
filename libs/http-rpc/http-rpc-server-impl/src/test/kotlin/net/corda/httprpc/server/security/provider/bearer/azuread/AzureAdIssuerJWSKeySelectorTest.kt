@@ -28,21 +28,21 @@ class AzureAdIssuerJWSKeySelectorTest {
     }
 
     @Test
-    fun `selectKeys_missingHeader_shouldThrow`() {
+    fun `selectKeys missingHeader shouldThrow`() {
         Assertions.assertThrows(BadJOSEException::class.java) {
             selector.selectKeys(null, null, null)
         }
     }
 
     @Test
-    fun `selectKeys_missingIssuer_shouldThrow`() {
+    fun `selectKeys missingIssuer shouldThrow`() {
         Assertions.assertThrows(BadJOSEException::class.java) {
             selector.selectKeys(JWSHeader(JWSAlgorithm.ES256 as JWSAlgorithm), null, null)
         }
     }
 
     @Test
-    fun `selectKeys_invalidIssuer_shouldThrow`() {
+    fun `selectKeys invalidIssuer shouldThrow`() {
         val claimSet = JWTClaimsSet.Builder().issuer("random").build()
         Assertions.assertThrows(BadJOSEException::class.java) {
             selector.selectKeys(JWSHeader(JWSAlgorithm.ES256 as JWSAlgorithm), claimSet, null)
@@ -50,23 +50,12 @@ class AzureAdIssuerJWSKeySelectorTest {
     }
 
     @Test
-    fun `selectKeys_oidcMetadataUnreachable_shouldThrow`() {
-        whenever(resourceRetriever.retrieveResource(URL("${issuer.trimEnd('/')}${AzureAdConfiguration.METADATA_PATH}"))).thenAnswer { throw IOException() }
-
-        val claimSet = JWTClaimsSet.Builder().issuer(issuer).build()
-        Assertions.assertThrows(BadJOSEException::class.java) {
-            selector.selectKeys(JWSHeader(JWSAlgorithm.ES256 as JWSAlgorithm), claimSet, null)
-        }
-    }
-
-    @Test
-    fun `selectKeys_oidcMetadataInvalid_shouldThrow`() {
-        whenever(resourceRetriever.retrieveResource(URL("${issuer.trimEnd('/')}${AzureAdConfiguration.METADATA_PATH}"))).thenReturn(
-            Resource(
-                "random",
-                "application/json"
+    fun `selectKeys oidcMetadataUnreachable shouldThrow`() {
+        whenever(
+            resourceRetriever.retrieveResource(
+                URL("${issuer.trimEnd('/')}${AzureAdConfiguration.METADATA_PATH}")
             )
-        )
+        ).thenAnswer { throw IOException() }
 
         val claimSet = JWTClaimsSet.Builder().issuer(issuer).build()
         Assertions.assertThrows(BadJOSEException::class.java) {
@@ -75,7 +64,21 @@ class AzureAdIssuerJWSKeySelectorTest {
     }
 
     @Test
-    fun `selectKeys_jwksUnreachable_shouldThrow`() {
+    fun `selectKeys oidcMetadataInvalid shouldThrow`() {
+        whenever(
+            resourceRetriever.retrieveResource(
+                URL("${issuer.trimEnd('/')}${AzureAdConfiguration.METADATA_PATH}")
+            )
+        ).thenReturn(Resource("random", "application/json"))
+
+        val claimSet = JWTClaimsSet.Builder().issuer(issuer).build()
+        Assertions.assertThrows(BadJOSEException::class.java) {
+            selector.selectKeys(JWSHeader(JWSAlgorithm.ES256 as JWSAlgorithm), claimSet, null)
+        }
+    }
+
+    @Test
+    fun `selectKeys jwksUnreachable shouldThrow`() {
         whenever(resourceRetriever.retrieveResource(URL("${issuer.trimEnd('/')}${AzureAdConfiguration.METADATA_PATH}"))).thenReturn(
             Resource(
                 oidcMetadata,

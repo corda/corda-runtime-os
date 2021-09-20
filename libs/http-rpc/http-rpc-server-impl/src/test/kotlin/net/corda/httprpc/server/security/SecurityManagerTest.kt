@@ -1,33 +1,18 @@
 package net.corda.httprpc.server.security
 
-import com.fasterxml.jackson.databind.ser.std.StdJdkSerializers.all
-import net.corda.httprpc.security.read.AuthorizingSubject
-import net.corda.httprpc.server.security.provider.AuthenticationProvider
-import net.corda.httprpc.server.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
-import net.corda.httprpc.server.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
-import net.corda.httprpc.server.security.provider.scheme.AuthenticationSchemeProvider
 import net.corda.v5.httprpc.api.RpcOps
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
-import java.security.Permissions
-import javax.security.auth.login.FailedLoginException
 
 interface TestRpcOps : RpcOps {
-    fun dummy()
-    fun dummy2()
+  fun dummy()
+  fun dummy2()
 }
 
 class TestRpcOpsImpl : TestRpcOps {
-    override val protocolVersion: Int
-        get() = 2
+  override val protocolVersion: Int
+    get() = 2
 
-    override fun dummy() {}
-    override fun dummy2() {}
+  override fun dummy() {}
+  override fun dummy2() {}
 }
 
 // THIS TEST SHOULD BE IN THE SECURITY MANAGER MODULE

@@ -6,10 +6,10 @@ import net.corda.v5.httprpc.api.annotations.HttpRpcResource
 
 @HttpRpcResource(path = "nonCordaSerializable")
 interface NonCordaSerializableAPI : RpcOps {
-    @HttpRpcPOST
-    fun call(data: NonCordaSerializableClass): String
+  @HttpRpcPOST
+  fun call(data: NonCordaSerializableClass): String
 }
 
 class NonCordaSerializableClass(
-    val data: String
+  val data: String
 )
