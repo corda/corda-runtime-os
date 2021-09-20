@@ -1,0 +1,107 @@
+package net.corda.crypto.impl.lifecycle
+
+import com.typesafe.config.Config
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.createCoordinator
+import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
+import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+abstract class AbstractCryptoCoordinator(
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    private val configurationReadService: ConfigurationReadService,
+    private val subcomponents: List<Any>
+) : Lifecycle {
+    companion object {
+        private const val CRYPTO_CONFIG: String = "corda.cryptoLibrary"
+    }
+
+    protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
+
+    override val isRunning: Boolean
+        get() = coordinator.isRunning
+
+    private var coordinator = coordinatorFactory.createCoordinator<AbstractCryptoCoordinator> { event, _ ->
+        handleEvent(event)
+    }
+
+    private var configHandle: AutoCloseable? = null
+
+    override fun start() {
+        logger.info("Starting coordinator.")
+        coordinator.start()
+    }
+
+    override fun stop() {
+        logger.info("Stopping coordinator.")
+        subcomponents.forEach {
+            if(it is AutoCloseable) {
+                it.closeGracefully()
+            }
+        }
+        coordinator.stop()
+    }
+
+    protected open fun handleEvent(event: LifecycleEvent) {
+        logger.info("LifecycleEvent received: $event")
+        when (event) {
+            is RegistrationStatusChangeEvent -> {
+                // No need to check what registration this is as there is only one.
+                if (event.status == LifecycleStatus.UP) {
+                    configHandle = configurationReadService.registerForUpdates(::onConfigChange)
+                } else {
+                    configHandle?.closeGracefully()
+                }
+            }
+            is NewCryptoConfigReceived -> {
+                subcomponents.forEach {
+                    if(it is Lifecycle && !it.isRunning) {
+                        it.start()
+                    }
+                    if(it is CryptoLifecycleComponent) {
+                        it.handleConfigEvent(event.config)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun onConfigChange(keys: Set<String>, config: Map<String, Config>) {
+        if (CRYPTO_CONFIG in keys) {
+            val newConfig = config[CRYPTO_CONFIG]
+            val libraryConfig = if(newConfig == null || newConfig.isEmpty) {
+                handleEmptyCryptoConfig()
+            } else {
+                CryptoLibraryConfigImpl(newConfig.root().unwrapped())
+            }
+            coordinator.postEvent(NewCryptoConfigReceived(libraryConfig))
+        }
+    }
+
+    open fun handleEmptyCryptoConfig(): CryptoLibraryConfig {
+        throw IllegalStateException("Configuration '$CRYPTO_CONFIG' missing from map")
+    }
+}
+
+@Suppress("TooGenericExceptionCaught")
+fun AutoCloseable.closeGracefully() {
+    try {
+        close()
+    } catch (e: Throwable) {
+        // intentional
+    }
+}
+
+fun MutableMap<*, *>.clearCache() {
+    forEach {
+        (it.value as? AutoCloseable)?.closeGracefully()
+    }
+    clear()
+}

@@ -1,0 +1,45 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:avro-schema"
+    implementation "net.corda:corda-crypto"
+    implementation "net.corda:corda-cipher-suite"
+    implementation project(":components:crypto:crypto-internal")
+    implementation project(":libs:utilities")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":components:configuration:configuration-read-service")
+    implementation "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "org.slf4j:slf4j-api"
+
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
+    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
+
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+    runtime "com.sun.activation:javax.activation:$activationVersion"
+    runtime "javax.xml.bind:jaxb-api:$jaxbVersion"
+
+//    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+
+    testImplementation project(":testing:crypto-testkit")
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    testImplementation project(":components:crypto:crypto-service")
+    testImplementation project(":libs:lifecycle:lifecycle")
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+}
+
+description 'Common across client and service Crypto implementation'
+
