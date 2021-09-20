@@ -12,6 +12,9 @@ dependencies {
 
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
+    integrationTestImplementation project(":libs:db:core")
+    integrationTestImplementation project(":libs:db:admin")
+    integrationTestImplementation project(":libs:db:admin-impl")
     integrationTestImplementation project(":libs:db:orm")
     integrationTestImplementation project(":libs:db:orm-impl")
 
@@ -25,4 +28,6 @@ dependencies {
     integrationTestRuntimeOnly project(":testing:bundles:dogs")
 
     integrationTestImplementation "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
 }

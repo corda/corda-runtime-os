@@ -49,7 +49,7 @@ class EntityManagerFactoryFactoryImpl(
         )
     }
 
-    // could possibly expose this on the api if there would be a need to pass in custom classloader(s)
+
     override fun create(
         persistenceUnitName: String,
         entities: List<String>,

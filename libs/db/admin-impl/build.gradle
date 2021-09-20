@@ -1,0 +1,50 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Database Admin Implementation'
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    compileOnly "org.osgi:osgi.annotation"
+    implementation "org.slf4j:slf4j-api"
+    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
+
+    implementation project(":libs:db:admin")
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestImplementation "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    integrationTestImplementation project(":libs:db:core")
+}
+
+// TODO: integrationTest/integration-test inconsistency
+sourceSets {
+    integrationTest {
+        kotlin {
+            srcDirs += "src/integrationTest/kotlin"
+        }
+        java {
+            srcDirs += "src/integrationTest/java"
+        }
+        resources {
+            srcDirs = [ "src/integrationTest/resources" ]
+        }
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+tasks.register('integrationTest', Test) {
+    description = "Runs integration tests."
+    group = "verification"
+
+    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
+    classpath = project.sourceSets["integrationTest"].runtimeClasspath
+}

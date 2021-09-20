@@ -14,8 +14,8 @@ dependencies {
 
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation "org.hibernate:hibernate-osgi:$hibernateVersion"
-    implementation "com.zaxxer:HikariCP:$hikariCpVersion"
 
+    implementation project(":libs:db:core")
     implementation project(":libs:db:orm")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
