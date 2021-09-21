@@ -9,8 +9,8 @@ pluginManagement {
                     basic(BasicAuthentication)
                 }
                 credentials {
-                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME') ?: settings.ext.find('cordaArtifactoryUsername')
-                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD') ?: settings.ext.find('cordaArtifactoryPassword')
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
                 }
             }
         } else {
@@ -29,8 +29,8 @@ pluginManagement {
                     basic(BasicAuthentication)
                 }
                 credentials {
-                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME') ?: settings.ext.find('cordaArtifactoryUsername')
-                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD') ?: settings.ext.find('cordaArtifactoryPassword')
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
                 }
             }
             gradlePluginPortal()
@@ -40,8 +40,8 @@ pluginManagement {
                     basic(BasicAuthentication)
                 }
                 credentials {
-                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME') ?: settings.ext.find('cordaArtifactoryUsername')
-                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD') ?: settings.ext.find('cordaArtifactoryPassword')
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
                 }
             }
         }
