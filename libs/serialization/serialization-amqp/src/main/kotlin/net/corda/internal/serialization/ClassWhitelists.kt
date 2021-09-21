@@ -7,7 +7,8 @@ interface MutableClassWhitelist : ClassWhitelist {
     fun add(entry: Class<*>)
 }
 
-object AllWhitelist : ClassWhitelist {
+object AllWhitelist : MutableClassWhitelist {
+    override fun add(entry: Class<*>) = Unit
     override fun hasListed(type: Class<*>): Boolean = true
 }
 

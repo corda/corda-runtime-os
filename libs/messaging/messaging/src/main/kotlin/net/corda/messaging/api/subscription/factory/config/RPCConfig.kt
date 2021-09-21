@@ -19,3 +19,7 @@ data class RPCConfig<TREQ, TRESP>(
     val requestType: Class<TREQ>,
     val responseType: Class<TRESP>
 )
+
+inline fun <reified TREQ, TRESP> RPCConfig<TREQ, TRESP>.requestType(): Class<out Class<TREQ>> { return requestType::class.java }
+
+inline fun <reified TREQ, TRESP> RPCConfig<TREQ, TRESP>.responseType(): Class<out Class<TRESP>> { return responseType::class.java }
