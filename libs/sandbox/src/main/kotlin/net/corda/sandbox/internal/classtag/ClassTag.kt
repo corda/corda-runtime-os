@@ -7,10 +7,10 @@ import java.util.NavigableSet
  * Identifies a sandboxed class during serialisation and deserialisation.
  *
  * @param version The version of the class tag.
- * @param isPlatformClass Indicates whether the class is a platform class.
+ * @param isNonCpkClass Indicates whether the class is a class in the non-CPK sandbox.
  * @param classBundleName The symbolic name of the bundle that the class was loaded from.
  */
-sealed class ClassTag(val version: Int, val isPlatformClass: Boolean, val classBundleName: String) {
+sealed class ClassTag(val version: Int, val isNonCpkClass: Boolean, val classBundleName: String) {
     /**
      * Serializes the class tag.
      *
@@ -25,8 +25,8 @@ sealed class ClassTag(val version: Int, val isPlatformClass: Boolean, val classB
  *
  * @param cpkFileHash The hash of the CPK the class was loaded from.
  */
-abstract class StaticTag(version: Int, isPlatformClass: Boolean, classBundleName: String, val cpkFileHash: SecureHash) :
-    ClassTag(version, isPlatformClass, classBundleName)
+abstract class StaticTag(version: Int, isNonCpkClass: Boolean, classBundleName: String, val cpkFileHash: SecureHash) :
+    ClassTag(version, isNonCpkClass, classBundleName)
 
 // TODO - CORE-2557 - Replace public key hashes with summary of hashes to identify CPKs.
 /**
@@ -37,8 +37,8 @@ abstract class StaticTag(version: Int, isPlatformClass: Boolean, classBundleName
  */
 abstract class EvolvableTag(
     version: Int,
-    isPlatformClass: Boolean,
+    isNonCpkClass: Boolean,
     classBundleName: String,
     val cordappBundleName: String,
     val cpkPublicKeyHashes: NavigableSet<SecureHash>
-) : ClassTag(version, isPlatformClass, classBundleName)
+) : ClassTag(version, isNonCpkClass, classBundleName)

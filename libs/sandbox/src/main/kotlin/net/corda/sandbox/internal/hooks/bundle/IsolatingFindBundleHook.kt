@@ -11,8 +11,8 @@ import org.osgi.service.component.annotations.Reference
 /**
  * This hook modifies the logic for how a bundle's context retrieves the list of all bundles.
  *
- * We only allow a bundle to find bundles it has visibility of. The exception is bundles in one of the platform
- * sandboxes, which are allowed to see all bundles.
+ * We only allow a bundle to find bundles it has visibility of. The exception is bundles in the non-CPK sandbox, which
+ * are allowed to see all bundles.
  */
 @Component
 internal class IsolatingFindBundleHook @Activate constructor(
@@ -20,9 +20,9 @@ internal class IsolatingFindBundleHook @Activate constructor(
         private val sandboxService: SandboxServiceInternal) : FindHook {
 
     override fun find(context: BundleContext, bundles: MutableCollection<Bundle>) {
-        // We allow the platform sandboxes to see all CorDapp bundles. This is required for `OSGiAggregateClassloader`.
+        // We allow the non-CPK sandbox to see all CorDapp bundles. This is required for `OSGiAggregateClassloader`.
         val currentSandbox = sandboxService.getSandbox(context.bundle)
-        if (currentSandbox != null && sandboxService.isPlatformSandbox(currentSandbox)) {
+        if (currentSandbox != null && sandboxService.isNonCpkSandbox(currentSandbox)) {
             return
         }
 

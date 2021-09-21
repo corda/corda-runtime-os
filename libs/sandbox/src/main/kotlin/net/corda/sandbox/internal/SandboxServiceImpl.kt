@@ -22,6 +22,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
+import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -30,16 +31,16 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
 
-/**
- * An implementation of the [SandboxCreationService] and [SandboxContextService] OSGi service interfaces.
- */
+/** An implementation of [SandboxCreationService] and [SandboxContextService]. */
 @Component(service = [SandboxCreationService::class, SandboxContextService::class, SandboxServiceInternal::class])
 @Suppress("TooManyFunctions")
 internal class SandboxServiceImpl @Activate constructor(
     @Reference
     private val installService: InstallService,
     @Reference
-    private val bundleUtils: BundleUtils
+    private val bundleUtils: BundleUtils,
+    @Reference
+    private val configAdmin: ConfigurationAdmin
 ) : SandboxServiceInternal, SingletonSerializeAsToken {
 
     // These sandboxes are not persisted in any way; they are recreated on node startup.
@@ -50,8 +51,8 @@ internal class SandboxServiceImpl @Activate constructor(
 
     private val logger = loggerFor<SandboxServiceImpl>()
 
-    // Made lazy because we only want to create the platform sandbox once all the platform bundles are installed.
-    private val platformSandbox by lazy(::createPlatformSandbox)
+    // Made lazy because we only want to create the non-CPK sandbox once all the non-CPK bundles are installed.
+    private val nonCpkSandbox by lazy(::createNonCpkSandbox)
 
     override fun createSandboxes(cpkFileHashes: Iterable<SecureHash>) =
         createSandboxes(cpkFileHashes, startBundles = true)
@@ -83,7 +84,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun getSandbox(bundle: Bundle) = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundle) }
 
-    override fun isPlatformSandbox(sandbox: Sandbox) = sandbox === platformSandbox
+    override fun isNonCpkSandbox(sandbox: Sandbox) = sandbox === nonCpkSandbox
 
     override fun hasVisibility(lookingBundle: Bundle, lookedAtBundle: Bundle): Boolean {
         val lookingSandbox = getSandbox(lookingBundle)
@@ -96,8 +97,8 @@ internal class SandboxServiceImpl @Activate constructor(
             lookedAtSandbox == null || lookingSandbox == null -> false
             // Does the looking sandbox not have visibility of the looked at sandbox?
             !lookingSandbox.hasVisibility(lookedAtSandbox) -> false
-            // Is the looking bundle a public bundle in the platform sandbox?
-            lookingSandbox === platformSandbox && lookingBundle in lookingSandbox.publicBundles -> true
+            // Is the looking bundle a public bundle in the non-CPK sandbox?
+            lookingSandbox === nonCpkSandbox && lookingBundle in lookingSandbox.publicBundles -> true
             // Is the looked-at bundle a public bundle in the looked-at sandbox?
             lookedAtSandbox.publicBundles.any { bundle -> bundle == lookedAtBundle } -> true
 
@@ -144,9 +145,9 @@ internal class SandboxServiceImpl @Activate constructor(
      * Retrieves the CPKs from the [installService] based on their [cpkFileHashes], and verifies the CPKs.
      *
      * Creates a [SandboxGroup], containing a [Sandbox] for each of the CPKs. On the first run, also initialises the
-     * platform sandbox. [startBundles] controls whether the CPK bundles are also started.
+     * non-CPK sandbox. [startBundles] controls whether the CPK bundles are also started.
      *
-     * Grants each sandbox visibility of the platform sandbox and of the other sandboxes in the group.
+     * Grants each sandbox visibility of the non-CPK sandbox and of the other sandboxes in the group.
      */
     private fun createSandboxes(cpkFileHashes: Iterable<SecureHash>, startBundles: Boolean): SandboxGroup {
         val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
@@ -175,12 +176,12 @@ internal class SandboxServiceImpl @Activate constructor(
         }
 
         newSandboxes.forEach { sandbox ->
-            // The "platform" sandbox contains the OSGi framework itself,
-            // and so it must be allowed to "see" every sandbox too.
-            platformSandbox.grantVisibility(sandbox)
+            // The non-CPK sandbox contains the OSGi framework itself, and so it must be allowed to "see" every
+            // sandbox too.
+            nonCpkSandbox.grantVisibility(sandbox)
 
-            // Each sandbox requires visibility of the sandboxes of the other CPKs and of the platform sandbox.
-            sandbox.grantVisibility(newSandboxes + platformSandbox)
+            // Each sandbox requires visibility of the sandboxes of the other CPKs and of the non-CPK sandbox.
+            sandbox.grantVisibility(newSandboxes + nonCpkSandbox)
         }
 
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
@@ -192,7 +193,7 @@ internal class SandboxServiceImpl @Activate constructor(
         val sandboxGroup = SandboxGroupImpl(
             bundleUtils,
             newSandboxes.associateBy { sandbox -> sandbox.cpk.id },
-            platformSandbox,
+            nonCpkSandbox,
             ClassTagFactoryImpl()
         )
 
@@ -204,19 +205,36 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     /**
-     * Creates the platform sandbox. This sandbox's public bundles are those bundles that CPKs require visibility of
-     * (including the public Corda API). The sandbox's private bundles are all other platform bundles.
+     * Creates the non-CPK sandbox. Reads the names of the public and private bundles to place in this sandbox from the
+     * [configAdmin], using the keys [NON_CPK_SANDBOX_PUBLIC_BUNDLES_KEY] and [NON_CPK_SANDBOX_PRIVATE_BUNDLES_KEY].
+     *
+     * Throws [SandboxException] if the properties listing the public and private bundles are not set.
      */
-    private fun createPlatformSandbox(): SandboxImpl {
-        val (publicBundles, privateBundles) = bundleUtils.allBundles.partition { bundle ->
-            bundle.symbolicName in PUBLIC_PLATFORM_BUNDLE_NAMES
-        }
+    private fun createNonCpkSandbox(): SandboxImpl {
+        val publicBundleNames = readConfigAdminStringList(NON_CPK_SANDBOX_PUBLIC_BUNDLES_KEY)
+        val privateBundleNames = readConfigAdminStringList(NON_CPK_SANDBOX_PRIVATE_BUNDLES_KEY)
 
-        val platformSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
+        val publicBundles =
+            bundleUtils.allBundles.filterTo(LinkedHashSet()) { bundle -> bundle.symbolicName in publicBundleNames }
+        val privateBundles =
+            bundleUtils.allBundles.filterTo(LinkedHashSet()) { bundle -> bundle.symbolicName in privateBundleNames }
 
-        sandboxes[platformSandbox.id] = platformSandbox
+        val nonCpkSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), publicBundles, privateBundles)
 
-        return platformSandbox
+        sandboxes[nonCpkSandbox.id] = nonCpkSandbox
+
+        return nonCpkSandbox
+    }
+
+    /**
+     * Reads the property [key] from the [ConfigurationAdmin]'s properties.
+     *
+     * Throws [SandboxException] if the property is not set, or is the property cannot be cast to a string list.
+     */
+    private fun readConfigAdminStringList(key: String): List<String> {
+        val config = configAdmin.getConfiguration(ConfigurationAdmin::class.java.name, null)
+        val rawConfigEntry = config.properties[key] ?: throw SandboxException("TODO")
+        @Suppress("UNCHECKED_CAST") return rawConfigEntry as List<String>
     }
 
     /**
@@ -238,7 +256,8 @@ internal class SandboxServiceImpl @Activate constructor(
         if (bundle.symbolicName == null)
             throw SandboxException(
                 "Bundle at $jarLocation could not be installed as it does not have a symbolic name, preventing " +
-                        "serialisation.")
+                        "serialisation."
+            )
 
         return bundle
     }

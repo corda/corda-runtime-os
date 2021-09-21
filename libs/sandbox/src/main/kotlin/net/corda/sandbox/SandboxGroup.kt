@@ -44,7 +44,7 @@ interface SandboxGroup {
      * Returns the serialised static tag for a given [klass].
      *
      * Throws [SandboxException] if the class is not loaded from any bundle, or is contained in a bundle that is not
-     * contained in any sandbox in the group or in the platform sandbox.
+     * contained in any sandbox in the group or in the non-CPK sandbox.
      */
     fun getStaticTag(klass: Class<*>): String
 
@@ -52,7 +52,7 @@ interface SandboxGroup {
      * Returns the serialised evolvable tag for a given [klass].
      *
      * Throws [SandboxException] if the class is not loaded from any bundle, or is contained in a bundle that is not
-     * contained in any sandbox in the group or in the platform sandbox.
+     * contained in any sandbox in the group or in the non-CPK sandbox.
      */
     fun getEvolvableTag(klass: Class<*>): String
 
@@ -60,7 +60,7 @@ interface SandboxGroup {
      * Returns the [Class] identified by the [className] and the [serialisedClassTag].
      *
      * Throws [SandboxException] if there is no sandbox matching the tag, if the class is not contained in the matching
-     * sandbox or in the platform sandbox, or if the class tag cannot be parsed.
+     * sandbox or in the non-CPK sandbox, or if the class tag cannot be parsed.
      */
     fun getClass(className: String, serialisedClassTag: String): Class<*>
 }

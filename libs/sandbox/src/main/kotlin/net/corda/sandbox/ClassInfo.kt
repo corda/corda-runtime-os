@@ -13,7 +13,7 @@ sealed class ClassInfo {
     abstract val classBundleVersion: Version
 }
 
-/** A [ClassInfo] for a class not loaded from a CPK (e.g. a platform or JDK class). */
+/** A [ClassInfo] for a class not loaded from a CPK. */
 data class NonCpkClassInfo(override val classBundleName: String, override val classBundleVersion: Version) : ClassInfo()
 
 /**

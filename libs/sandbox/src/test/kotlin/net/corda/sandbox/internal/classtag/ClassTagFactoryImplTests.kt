@@ -4,7 +4,7 @@ import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CORDAPP_BUNDLE_NAME
 import net.corda.sandbox.internal.ClassTagV1
-import net.corda.sandbox.internal.NON_PLATFORM_BUNDLE_NAME
+import net.corda.sandbox.internal.CPK_BUNDLE_NAME
 import net.corda.sandbox.internal.mockBundle
 import net.corda.sandbox.internal.mockCpk
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
@@ -19,7 +19,7 @@ import org.mockito.kotlin.whenever
 class ClassTagFactoryImplTests {
     private val classTagFactory = ClassTagFactoryImpl()
 
-    private val mockBundle = mockBundle(NON_PLATFORM_BUNDLE_NAME)
+    private val mockBundle = mockBundle(CPK_BUNDLE_NAME)
     private val mockCordappBundle = mockBundle(CORDAPP_BUNDLE_NAME)
     private val mockCpk = mockCpk()
     private val mockSandbox = mock<CpkSandboxInternal>().apply {
@@ -52,10 +52,10 @@ class ClassTagFactoryImplTests {
     }
 
     @Test
-    fun `can serialise and deserialise a static class tag for a non-platform class`() {
+    fun `can serialise and deserialise a static class tag for a non-CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = true,
-            isPlatformBundle = false,
+            isNonCpkBundle = false,
             mockBundle,
             mockSandbox
         )
@@ -63,16 +63,16 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag) as StaticTag
 
         assertEquals(1, classTag.version)
-        assertFalse(classTag.isPlatformClass)
+        assertFalse(classTag.isNonCpkClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(mockCpk.cpkHash, classTag.cpkFileHash)
     }
 
     @Test
-    fun `can serialise and deserialise a static class tag for a platform class`() {
+    fun `can serialise and deserialise a static class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = true,
-            isPlatformBundle = true,
+            isNonCpkBundle = true,
             mockBundle,
             mockSandbox
         )
@@ -80,16 +80,16 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag) as StaticTag
 
         assertEquals(1, classTag.version)
-        assertTrue(classTag.isPlatformClass)
+        assertTrue(classTag.isNonCpkClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(ClassTagV1.PLACEHOLDER_CPK_FILE_HASH, classTag.cpkFileHash)
     }
 
     @Test
-    fun `can serialise and deserialise an evolvable class tag for a non-platform class`() {
+    fun `can serialise and deserialise an evolvable class tag for a non-CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = false,
-            isPlatformBundle = false,
+            isNonCpkBundle = false,
             mockBundle,
             mockSandbox
         )
@@ -97,17 +97,17 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag) as EvolvableTag
 
         assertEquals(1, classTag.version)
-        assertFalse(classTag.isPlatformClass)
+        assertFalse(classTag.isNonCpkClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(mockSandbox.cordappBundle.symbolicName, classTag.cordappBundleName)
         assertEquals(mockCpk.id.signers, classTag.cpkPublicKeyHashes)
     }
 
     @Test
-    fun `can serialise and deserialise an evolvable class tag for a platform class`() {
+    fun `can serialise and deserialise an evolvable class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = false,
-            isPlatformBundle = true,
+            isNonCpkBundle = true,
             mockBundle,
             mockSandbox
         )
@@ -115,7 +115,7 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag) as EvolvableTag
 
         assertEquals(1, classTag.version)
-        assertTrue(classTag.isPlatformClass)
+        assertTrue(classTag.isNonCpkClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME, classTag.cordappBundleName)
         assertEquals(ClassTagV1.PLACEHOLDER_CPK_PUBLIC_KEY_HASHES, classTag.cpkPublicKeyHashes)
@@ -126,7 +126,7 @@ class ClassTagFactoryImplTests {
         assertThrows<SandboxException> {
             classTagFactory.createSerialised(
                 isStaticClassTag = false,
-                isPlatformBundle = true,
+                isNonCpkBundle = true,
                 mock(),
                 mockSandbox
             )

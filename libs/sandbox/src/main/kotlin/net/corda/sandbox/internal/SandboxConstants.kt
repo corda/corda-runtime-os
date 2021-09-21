@@ -4,32 +4,10 @@ package net.corda.sandbox.internal
 
 import net.corda.v5.crypto.SecureHash
 import java.util.Collections
-import java.util.Collections.unmodifiableList
 
-// The symbolic names of the bundles that should be public in the platform sandbox.
-// Wrapped inside an unmodifiable list to forbid any tampering.
-internal val PUBLIC_PLATFORM_BUNDLE_NAMES: List<String> = unmodifiableList(
-    listOf(
-        "javax.persistence-api",
-        "jcl.over.slf4j",
-        "net.corda.application",
-        "net.corda.base",
-        "net.corda.crypto-api",
-        "net.corda.flows",
-        "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
-        "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
-        "net.corda.ledger",
-        "net.corda.legacy-api",
-        "net.corda.persistence",
-        "net.corda.serialization",
-        "org.apache.aries.spifly.dynamic.bundle",
-        "org.apache.felix.framework",
-        "org.apache.felix.scr",
-        "org.hibernate.orm.core",
-        "org.jetbrains.kotlin.osgi-bundle",
-        "slf4j.api"
-    )
-)
+// The keys to the symbolic names of the public and private bundles of the non-CPK sandbox in the configuration admin.
+internal const val NON_CPK_SANDBOX_PUBLIC_BUNDLES_KEY = "nonCpkSandboxPublicBundles"
+internal const val NON_CPK_SANDBOX_PRIVATE_BUNDLES_KEY = "nonCpkSandboxPrivateBundles"
 
 // The index of the class tag identifier and version in all serialised class tags.
 internal const val CLASS_TAG_IDENTIFIER_IDX = 0
@@ -46,8 +24,8 @@ internal object ClassTagV1 {
     internal const val EVOLVABLE_IDENTIFIER = "E"
     internal const val COLLECTION_DELIMITER = ","
 
-    // Used as placeholders when generating class tags for platform classes.
-    internal const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "PLATFORM_BUNDLE"
+    // Used as placeholders when generating class tags for non-CPK sandbox classes.
+    internal const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "NON_CPK_BUNDLE"
     internal val PLACEHOLDER_CPK_FILE_HASH = SecureHash.create("SHA-256:0000000000000000")
     internal val PLACEHOLDER_CPK_PUBLIC_KEY_HASHES = Collections.emptyNavigableSet<SecureHash>()
 }

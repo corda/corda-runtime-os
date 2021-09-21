@@ -12,9 +12,9 @@ internal interface SandboxServiceInternal : SandboxCreationService, SandboxConte
     fun getSandbox(bundle: Bundle): SandboxInternal?
 
     /**
-     * Checks whether the [sandbox] is the platform sandbox (i.e. the sandbox containing the platform's bundles).
+     * Checks whether the [sandbox] is the non-CPK sandbox.
      */
-    fun isPlatformSandbox(sandbox: Sandbox): Boolean
+    fun isNonCpkSandbox(sandbox: Sandbox): Boolean
 
     /**
      * Returns true if the [lookingBundle]'s sandbox and the [lookedAtBundle]'s sandbox are both null, if both the
