@@ -3,7 +3,7 @@
 package net.corda.sandbox.test
 
 // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
-val NON_CPK_PUBLIC_BUNDLE_NAMES = listOf(
+val PLATFORM_PUBLIC_BUNDLE_NAMES = listOf(
     "javax.persistence-api",
     "jcl.over.slf4j",
     "net.corda.application",

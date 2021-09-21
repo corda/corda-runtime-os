@@ -19,7 +19,7 @@ internal class EvolvableTagImplV1(
 
     companion object {
         private const val ENTRIES_LENGTH = 6
-        private const val IS_NON_CPK_CLASS_IDX = 2
+        private const val IS_PLATFORM_CLASS_IDX = 2
         private const val CLASS_BUNDLE_NAME_IDX = 3
         private const val CORDAPP_BUNDLE_NAME_IDX = 4
         private const val CPK_PUBLIC_KEY_HASHES_IDX = 5
@@ -31,7 +31,7 @@ internal class EvolvableTagImplV1(
                         "entries were expected. The entries were $classTagEntries."
             )
 
-            val isPlatformClass = classTagEntries[IS_NON_CPK_CLASS_IDX].toBoolean()
+            val isPlatformClass = classTagEntries[IS_PLATFORM_CLASS_IDX].toBoolean()
 
             val cpkPublicKeyHashes = TreeSet(classTagEntries[CPK_PUBLIC_KEY_HASHES_IDX]
                 .split(ClassTagV1.COLLECTION_DELIMITER)
@@ -60,7 +60,7 @@ internal class EvolvableTagImplV1(
 
         entries[CLASS_TAG_IDENTIFIER_IDX] = ClassTagV1.EVOLVABLE_IDENTIFIER
         entries[CLASS_TAG_VERSION_IDX] = version
-        entries[IS_NON_CPK_CLASS_IDX] = isPlatformClass
+        entries[IS_PLATFORM_CLASS_IDX] = isPlatformClass
         entries[CLASS_BUNDLE_NAME_IDX] = classBundleName
         entries[CORDAPP_BUNDLE_NAME_IDX] = cordappBundleName
         entries[CPK_PUBLIC_KEY_HASHES_IDX] = stringifiedCpkPublicKeyHashes

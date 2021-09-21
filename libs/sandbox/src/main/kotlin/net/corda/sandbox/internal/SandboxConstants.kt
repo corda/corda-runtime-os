@@ -25,7 +25,7 @@ internal object ClassTagV1 {
     internal const val COLLECTION_DELIMITER = ","
 
     // Used as placeholders when generating class tags for platform sandbox classes.
-    internal const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "NON_CPK_BUNDLE"
+    internal const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "PLATFORM_BUNDLE"
     internal val PLACEHOLDER_CPK_FILE_HASH = SecureHash.create("SHA-256:0000000000000000")
     internal val PLACEHOLDER_CPK_PUBLIC_KEY_HASHES = Collections.emptyNavigableSet<SecureHash>()
 }

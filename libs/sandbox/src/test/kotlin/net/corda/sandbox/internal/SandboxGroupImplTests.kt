@@ -20,10 +20,10 @@ import java.util.NavigableSet
 
 // Various dummy serialised class tags.
 private const val CPK_STATIC_TAG = "serialised_static_cpk_class"
-private const val PLATFORM_STATIC_TAG = "serialised_static_non_cpk_class"
+private const val PLATFORM_STATIC_TAG = "serialised_static_platform_class"
 private const val BAD_CPK_FILE_HASH_STATIC_TAG = "serialised_static_bad_cpk_file_hash"
 private const val CPK_EVOLVABLE_TAG = "serialised_evolvable_cpk_class"
-private const val PLATFORM_EVOLVABLE_TAG = "serialised_evolvable_non_cpk_class"
+private const val PLATFORM_EVOLVABLE_TAG = "serialised_evolvable_platform_class"
 private const val BAD_CORDAPP_BUNDLE_NAME_EVOLVABLE_TAG = "serialised_evolvable_bad_cordapp_bundle_name"
 private const val BAD_SIGNERS_EVOLVABLE_TAG = "serialised_evolvable_bad_signers"
 
@@ -39,7 +39,7 @@ class SandboxGroupImplTests {
     private val nonSandboxClass = Float::class.java
 
     private val mockCpkBundle = mockBundle(CPK_BUNDLE_NAME)
-    private val mockPlatformBundle = mockBundle(NON_CPK_BUNDLE_NAME)
+    private val mockPlatformBundle = mockBundle(PLATFORM_BUNDLE_NAME)
     private val mockNonSandboxBundle = mock<Bundle>()
     private val mockCordappBundle = mockBundle(CORDAPP_BUNDLE_NAME)
 
@@ -53,7 +53,7 @@ class SandboxGroupImplTests {
     }
     private val mockPlatformSandbox = mock<SandboxInternal>().apply {
         whenever(containsBundle(mockPlatformBundle)).thenReturn(true)
-        whenever(loadClass(platformClass.name, NON_CPK_BUNDLE_NAME)).thenReturn(platformClass)
+        whenever(loadClass(platformClass.name, PLATFORM_BUNDLE_NAME)).thenReturn(platformClass)
     }
 
     private val mockBundleUtils = mock<BundleUtils>().apply {
@@ -187,7 +187,7 @@ private class DummyClassTagFactory(cpkHash: SecureHash, cpkSigners: NavigableSet
         StaticTagImpl(false, CPK_BUNDLE_NAME, cpkHash)
 
     private val platformStaticTag =
-        StaticTagImpl(true, NON_CPK_BUNDLE_NAME, ClassTagV1.PLACEHOLDER_CPK_FILE_HASH)
+        StaticTagImpl(true, PLATFORM_BUNDLE_NAME, ClassTagV1.PLACEHOLDER_CPK_FILE_HASH)
 
     private val invalidCpkFileHashStaticTag =
         StaticTagImpl(false, CPK_BUNDLE_NAME, randomSecureHash())
@@ -198,7 +198,7 @@ private class DummyClassTagFactory(cpkHash: SecureHash, cpkSigners: NavigableSet
 
     private val platformEvolvableTag =
         EvolvableTagImpl(true,
-        NON_CPK_BUNDLE_NAME,
+        PLATFORM_BUNDLE_NAME,
         ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME,
         ClassTagV1.PLACEHOLDER_CPK_PUBLIC_KEY_HASHES
     )

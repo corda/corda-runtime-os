@@ -9,7 +9,7 @@ import org.osgi.framework.Version
 import java.util.TreeSet
 import kotlin.random.Random
 
-const val NON_CPK_BUNDLE_NAME = "non_cpk_bundle_symbolic_name"
+const val PLATFORM_BUNDLE_NAME = "platform_bundle_symbolic_name"
 const val CPK_BUNDLE_NAME = "cpk_bundle_symbolic_name"
 const val CORDAPP_BUNDLE_NAME = "cordapp_bundle_symbolic_name"
 

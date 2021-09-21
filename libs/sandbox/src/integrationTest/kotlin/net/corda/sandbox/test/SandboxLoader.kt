@@ -70,7 +70,7 @@ class SandboxLoader @Activate constructor(
 
     init {
         val privateBundleNames = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.filter { bundle ->
-            bundle.symbolicName !in NON_CPK_PUBLIC_BUNDLE_NAMES
+            bundle.symbolicName !in PLATFORM_PUBLIC_BUNDLE_NAMES
         }.map(Bundle::getSymbolicName)
 
         configAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
@@ -78,7 +78,7 @@ class SandboxLoader @Activate constructor(
             properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()
             properties[BLACKLISTED_KEYS_KEY] = emptyList<String>()
             properties[PLATFORM_VERSION_KEY] = 999
-            properties[PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] = NON_CPK_PUBLIC_BUNDLE_NAMES
+            properties[PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] = PLATFORM_PUBLIC_BUNDLE_NAMES
             properties[PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY] = privateBundleNames
             @Suppress("unchecked_cast")
             config.update(properties as Dictionary<String, Any>)
