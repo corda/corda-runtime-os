@@ -50,7 +50,7 @@ class EntitiesInBundlesTest {
 
         private val dogBundle = run {
             val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
-                bundle.symbolicName == "net.corda.dogs"
+                bundle.symbolicName == "net.corda.testing-dogs"
             }
             logger.info("Dog bundle $bundle".emphasise())
             bundle
@@ -58,7 +58,7 @@ class EntitiesInBundlesTest {
 
         private val catBundle = run {
             val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
-                bundle.symbolicName == "net.corda.cats"
+                bundle.symbolicName == "net.corda.testing-cats"
             }
             logger.info("Cat bundle $bundle".emphasise())
             bundle

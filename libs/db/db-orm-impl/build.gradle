@@ -15,8 +15,8 @@ dependencies {
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation "org.hibernate:hibernate-osgi:$hibernateVersion"
 
-    implementation project(":libs:db:core")
-    implementation project(":libs:db:orm")
+    implementation project(":libs:db:db-core")
+    implementation project(":libs:db:db-orm")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

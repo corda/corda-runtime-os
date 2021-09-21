@@ -12,7 +12,7 @@ dependencies {
     implementation "org.slf4j:slf4j-api"
     implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
-    implementation project(":libs:db:admin")
+    implementation project(":libs:db:db-admin")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
@@ -21,7 +21,7 @@ dependencies {
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
-    integrationTestImplementation project(":libs:db:core")
+    integrationTestImplementation project(":libs:db:db-core")
 }
 
 // TODO: integrationTest/integration-test inconsistency
