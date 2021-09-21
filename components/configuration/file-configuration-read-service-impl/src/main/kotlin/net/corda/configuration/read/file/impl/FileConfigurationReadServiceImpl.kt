@@ -1,9 +1,6 @@
 package net.corda.configuration.read.file.impl
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigException
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigParseOptions
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.read.ConfigReadService
@@ -15,46 +12,33 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.io.File
-import java.io.IOException
-import java.util.Collections
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
-import net.corda.lifecycle.createCoordinator
-import net.corda.v5.base.util.debug
 
 @Component(service = [ConfigurationReadService::class])
-class FileConfigurationReadServiceImpl(
+class FileConfigurationReadServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigReadServiceFactory::class)
     private val configReadServiceFactory: ConfigReadServiceFactory
 ) : ConfigurationReadService {
 
-    companion object {
-        private val log = contextLogger()
-
-        @VisibleForTesting
-        internal const val CONFIG_FILE_NAME = "config.file"
+    private companion object {
+        val log = contextLogger()
     }
-
-    private lateinit var configFilePath: String
-    private lateinit var fileConfig: Config
 
     private var bootstrapConfig: Config? = null
 
     private var subscription: ConfigReadService? = null
 
+    private val callbackHandles = FileConfigurationHandlerStorage()
+
     @Volatile
     private var stopped = true
-
-    private val lock = ReentrantLock()
-
-    private val configUpdates = Collections.synchronizedMap(mutableMapOf<ConfigListenerSubscription, ConfigurationHandler>())
 
     override val isRunning: Boolean get() = !stopped
 
@@ -65,7 +49,7 @@ class FileConfigurationReadServiceImpl(
             is StartEvent -> {
                 log.debug { "File configuration read service starting up." }
                 if (bootstrapConfig != null) {
-                    coordinator.postEvent(ReadFileConfig)
+                    coordinator.postEvent(SetupSubscription)
                 }
             }
             is BootstrapConfigProvided -> {
@@ -76,81 +60,47 @@ class FileConfigurationReadServiceImpl(
                     "An attempt was made to set the bootstrap configuration twice."
                 }
                 bootstrapConfig = event.config
-                coordinator.postEvent(ReadFileConfig)
+                coordinator.postEvent(SetupSubscription)
             }
-            is ReadFileConfig -> {
-                readConfigFile()
+            is SetupSubscription -> {
+                setupSubscription()
                 coordinator.updateStatus(LifecycleStatus.UP, "Connected to configuration repository.")
             }
             is StopEvent -> {
                 log.debug { "File configuration read service stopping." }
+                callbackHandles.removeSubscription()
                 subscription?.stop()
                 subscription = null
-                // James didn't use this stop
-                stop()
             }
             is ErrorEvent -> log.error("An error occurred in the file configuration read service: ${event.cause.message}.", event.cause)
         }
+    }
+
+    private fun setupSubscription() {
+        val config = requireNotNull(bootstrapConfig) { "Cannot setup the subscription with no bootstrap configuration" }
+        if (subscription != null) {
+            throw IllegalArgumentException("The subscription already exists")
+        }
+        val sub = configReadServiceFactory.createReadService(config)
+        subscription = sub
+        callbackHandles.addSubscription(sub)
+        sub.start()
     }
 
     override fun bootstrapConfig(config: Config) {
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
     }
 
+    override fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable {
+        return callbackHandles.add(configHandler)
+    }
+
     override fun start() {
         lifecycleCoordinator.start()
-        lock.withLock {
-            configUpdates.forEach { (_, handler) -> handler.onNewConfiguration(setOf(configFilePath), mapOf(configFilePath to fileConfig)) }
-            stopped = false
-        }
     }
 
     override fun stop() {
         lifecycleCoordinator.stop()
-        lock.withLock {
-            if (!stopped) {
-                configUpdates.clear()
-                stopped = true
-            }
-        }
-    }
-
-    override fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable {
-        val sub = ConfigListenerSubscription(this)
-        configUpdates[sub] = configHandler
-        if (isRunning) {
-            configHandler.onNewConfiguration(setOf(configFilePath), mapOf(configFilePath to fileConfig))
-        }
-        return sub
-    }
-
-    private fun readConfigFile() {
-        val config = requireNotNull(bootstrapConfig) { "Cannot read the config file without the bootstrap configuration" }
-        configFilePath = config.getString(CONFIG_FILE_NAME)
-        fileConfig = parseConfigFile()
-    }
-
-    private fun parseConfigFile(): Config {
-        return try {
-            val parseOptions = ConfigParseOptions.defaults().setAllowMissing(false)
-            ConfigFactory.parseURL(File(configFilePath).toURI().toURL(), parseOptions).resolve()
-        } catch (e: ConfigException) {
-            log.error(e.message, e)
-            ConfigFactory.empty()
-        } catch (e: IOException) {
-            log.error(e.message, e)
-            ConfigFactory.empty()
-        }
-    }
-
-    private fun unregisterCallback(sub: ConfigListenerSubscription) {
-        configUpdates.remove(sub)
-    }
-
-    private class ConfigListenerSubscription(private val configReadService: FileConfigurationReadServiceImpl) : AutoCloseable {
-        override fun close() {
-            configReadService.unregisterCallback(this)
-        }
     }
 }
 

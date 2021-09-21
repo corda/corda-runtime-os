@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigurationHandler
 import net.corda.libs.configuration.read.ConfigReadService
 import java.util.concurrent.ConcurrentHashMap
 
-class ConfigurationHandlerStorage {
+class FileConfigurationHandlerStorage {
 
     private val handlers: MutableMap<CallbackHandle, Unit> = ConcurrentHashMap()
 
@@ -12,7 +12,7 @@ class ConfigurationHandlerStorage {
 
     private class CallbackHandle(
         private val callback: ConfigurationHandler,
-        private val storage: ConfigurationHandlerStorage
+        private val storage: FileConfigurationHandlerStorage
     ) : AutoCloseable {
 
         private var handle: AutoCloseable? = null
@@ -38,7 +38,7 @@ class ConfigurationHandlerStorage {
         handlers.remove(handle)
     }
 
-    fun add(callback: ConfigurationHandler) : AutoCloseable {
+    fun add(callback: ConfigurationHandler): AutoCloseable {
         val sub = subscription
         val handle = CallbackHandle(callback, this)
         handlers[handle] = Unit

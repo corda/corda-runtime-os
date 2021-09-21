@@ -11,6 +11,6 @@ import net.corda.lifecycle.LifecycleEvent
 internal data class BootstrapConfigProvided(val config: Config) : LifecycleEvent
 
 /**
- * The service should read the configuration from the file specified in the bootstrap configuration.
+ * The service should create its subscription to the updates from the configuration file.
  */
-internal object ReadFileConfig : LifecycleEvent
+internal object SetupSubscription : LifecycleEvent

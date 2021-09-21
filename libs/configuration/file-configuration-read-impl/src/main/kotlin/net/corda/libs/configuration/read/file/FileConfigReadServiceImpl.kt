@@ -10,11 +10,9 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import java.io.File
 import java.io.IOException
-import java.util.Collections
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-@Suppress("TooGenericExceptionCaught")
 class FileConfigReadServiceImpl(
     private val configurationRepository: ConfigRepository,
     private val bootstrapConfig: Config
@@ -31,7 +29,6 @@ class FileConfigReadServiceImpl(
     private var stopped = false
 
     private val lock = ReentrantLock()
-    private val configUpdates = Collections.synchronizedMap(mutableMapOf<ConfigListenerSubscription, ConfigListener>())
 
     override val isRunning: Boolean
         get() {
@@ -40,31 +37,28 @@ class FileConfigReadServiceImpl(
 
     override fun start() {
         lock.withLock {
-
+            readConfigFile()
+            stopped = false
         }
     }
 
     override fun stop() {
         lock.withLock {
             if (!stopped) {
-                configUpdates.clear()
                 stopped = true
             }
         }
     }
 
     override fun registerCallback(configListener: ConfigListener): AutoCloseable {
-        val sub = ConfigListenerSubscription(this)
-        configUpdates[sub] = configListener
-        if (snapshotReceived) {
-            val configs = configurationRepository.getConfigurations()
-            configListener.onUpdate(configs.keys, configs)
-        }
+        val sub = ConfigListenerSubscription()
+        val configs = configurationRepository.getConfigurations()
+        configListener.onUpdate(configs.keys, configs)
         return sub
     }
 
-    private fun readConfigFile(): Config {
-        return try {
+    private fun readConfigFile() {
+        val config = try {
             val parseOptions = ConfigParseOptions.defaults().setAllowMissing(false)
             val configFilePath = bootstrapConfig.getString(CONFIG_FILE_NAME)
             ConfigFactory.parseURL(File(configFilePath).toURI().toURL(), parseOptions).resolve()
@@ -75,15 +69,12 @@ class FileConfigReadServiceImpl(
             log.error(e.message, e)
             ConfigFactory.empty()
         }
+        configurationRepository.storeConfiguration(mapOf("corda" to config.getConfig("corda")))
     }
 
-    private fun unregisterCallback(sub: ConfigListenerSubscription) {
-        configUpdates.remove(sub)
-    }
-
-    private class ConfigListenerSubscription(private val configReadService: FileConfigReadServiceImpl) : AutoCloseable {
+    private class ConfigListenerSubscription : AutoCloseable {
         override fun close() {
-            configReadService.unregisterCallback(this)
+            // do nothing
         }
     }
 }
