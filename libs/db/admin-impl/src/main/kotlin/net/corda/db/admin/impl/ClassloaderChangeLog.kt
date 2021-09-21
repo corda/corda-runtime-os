@@ -34,7 +34,7 @@ class ClassloaderChangeLog(
         val classLoader: ClassLoader = ChangeLogResourceFiles::class.java.classLoader
     ) {
         init {
-            if(masterFiles.isEmpty())
+            if (masterFiles.isEmpty())
                 throw IllegalArgumentException("masterFiles must have at least one item.")
         }
     }
@@ -43,41 +43,42 @@ class ClassloaderChangeLog(
         const val CLASS_LOADER_PREFIX = "classloader://"
     }
 
-    private val allChangeFiles = mutableListOf<String>()
+    private val allChangeFiles = mutableSetOf<String>()
 
     private val distinctLoaders by lazy {
-        changelogFiles.map { it.classLoader }.distinct()
+        changelogFiles.mapTo(HashSet(), ChangeLogResourceFiles::classLoader)
     }
 
     override val masterChangeLogFiles by lazy {
-        LinkedHashSet(changelogFiles.map { clf ->
+        changelogFiles.flatMapTo(LinkedHashSet()) { clf ->
             clf.masterFiles.map { mf ->
-                "$CLASS_LOADER_PREFIX${URLEncoder.encode(clf.name, "utf-8")}/${mf}" }
-            }.flatten())
+                "$CLASS_LOADER_PREFIX${URLEncoder.encode(clf.name, "utf-8")}/${mf}"
+            }
+        }
     }
 
     override val changeLogFileList: Set<String>
         get() {
-            return allChangeFiles.toSet()
+            return allChangeFiles
         }
 
     override fun fetch(path: String): InputStream {
         // if classloader is specified
-        if(path.startsWith(CLASS_LOADER_PREFIX)) {
+        if (path.startsWith(CLASS_LOADER_PREFIX)) {
             val splitPath = path.removePrefix(CLASS_LOADER_PREFIX).split('/', limit = 2)
             if (splitPath.size != 2 || splitPath[1].isEmpty())
                 throw IllegalArgumentException("$path is not a valid classloader resource path.")
-            val cl = changelogFiles.firstOrNull {  URLEncoder.encode(it.name, "utf-8") == splitPath[0] }
+            val cl = changelogFiles.firstOrNull { URLEncoder.encode(it.name, "utf-8") == splitPath[0] }
                 ?: throw IllegalArgumentException("Cannot find classloader ${splitPath[0]} from $path")
             allChangeFiles.add(path)
-            return cl.classLoader.getResourceAsStream(splitPath[1]) ?:
-                throw FileNotFoundException("Master file '$path' not found.")
+            return cl.classLoader.getResourceAsStream(splitPath[1])
+                ?: throw FileNotFoundException("Master file '$path' not found.")
         }
 
         // else look in all classLoaders if classloader not specified.
         distinctLoaders.forEach {
             val resource = it.getResourceAsStream(path)
-            if(null != resource) {
+            if (null != resource) {
                 allChangeFiles.add(path)
                 return resource
             }

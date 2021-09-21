@@ -16,10 +16,10 @@ dependencies {
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestImplementation "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     integrationTestImplementation project(":libs:db:core")
 }

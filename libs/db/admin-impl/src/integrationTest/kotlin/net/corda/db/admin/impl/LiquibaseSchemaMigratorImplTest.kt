@@ -32,11 +32,11 @@ class LiquibaseSchemaMigratorImplTest {
 
         var tables = mutableListOf<String>()
         ds.connection.use {
-            val rs = it.metaData.getTables(null, null, null, arrayOf("TABLE"))
-            while (rs.next()) {
-                tables.add(rs.getString("TABLE_NAME").toLowerCase())
+            it.metaData.getTables(null, null, null, arrayOf("TABLE")).use { rs ->
+                while (rs.next()) {
+                    tables.add(rs.getString("TABLE_NAME").toLowerCase())
+                }
             }
-            rs.close()
         }
 
         assertThat(tables).containsAll(

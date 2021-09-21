@@ -11,16 +11,16 @@ class PostgresEntityManagerConfigurationTest {
     @Test
     fun `set default config values`() {
         val dataSourceFactory = mock<DataSourceFactory>() {
-            on { create(any(), any(), any(), any(), any(), any()) } doReturn(mock())
+            on { create(any(), any(), any(), any(), any(), any()) } doReturn (mock())
         }
 
         PostgresDataSourceFactory(dataSourceFactory).create(
-    "jdbcUrl",
-    "user",
-    "pass",
-    true,
-    20
-            )
+            "jdbcUrl",
+            "user",
+            "pass",
+            true,
+            20
+        )
 
         verify(dataSourceFactory).create(
             eq("org.postgresql.Driver"),

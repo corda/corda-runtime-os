@@ -5,12 +5,18 @@ import liquibase.resource.ClassLoaderResourceAccessor
 import liquibase.resource.InputStreamList
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
+import net.corda.db.admin.LiquibaseXmlConstants
 import net.corda.v5.base.util.contextLogger
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.StringWriter
 import java.net.URI
 import java.util.SortedSet
+import java.util.TreeSet
+import javax.xml.XMLConstants.ACCESS_EXTERNAL_DTD
+import javax.xml.XMLConstants.ACCESS_EXTERNAL_STYLESHEET
+import javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING
+import javax.xml.XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI
 import javax.xml.stream.XMLOutputFactory
 import javax.xml.transform.OutputKeys
 import javax.xml.transform.TransformerFactory
@@ -34,6 +40,23 @@ class StreamResourceAccessor(
 ) : AbstractResourceAccessor() {
     companion object {
         private val log = contextLogger()
+    }
+
+    // transformer only used for debugging
+    private val transformerFactory by lazy {
+        TransformerFactory.newInstance().apply {
+            setFeature(FEATURE_SECURE_PROCESSING, true)
+            try {
+                setAttribute(ACCESS_EXTERNAL_STYLESHEET, "")
+            } catch (e: IllegalArgumentException) {
+                // attribute not supported
+            }
+            try {
+                setAttribute(ACCESS_EXTERNAL_DTD, "")
+            } catch (e: IllegalArgumentException) {
+                // attribute not supported
+            }
+        }
     }
 
     /**
@@ -73,19 +96,18 @@ class StreamResourceAccessor(
         ByteArrayOutputStream().use {
             val xmlWriter = XMLOutputFactory.newInstance().createXMLStreamWriter(it)
             xmlWriter.writeStartDocument("utf-8", "1.0")
-            xmlWriter.writeStartElement("databaseChangeLog")
-            xmlWriter.writeDefaultNamespace("http://www.liquibase.org/xml/ns/dbchangelog")
-            xmlWriter.writeNamespace("xsi", "http://www.w3.org/2001/XMLSchema-instance")
+            xmlWriter.writeStartElement(LiquibaseXmlConstants.DB_CHANGE_LOG_ROOT_ELEMENT)
+            xmlWriter.writeDefaultNamespace(LiquibaseXmlConstants.DB_CHANGE_LOG_NS)
+            xmlWriter.writeNamespace("xsi", W3C_XML_SCHEMA_INSTANCE_NS_URI)
             xmlWriter.writeAttribute(
-                "http://www.w3.org/2001/XMLSchema-instance",
+                W3C_XML_SCHEMA_INSTANCE_NS_URI,
                 "schemaLocation",
-                "http://www.liquibase.org/xml/ns/dbchangelog " +
-                        "http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                "${LiquibaseXmlConstants.DB_CHANGE_LOG_NS} ${LiquibaseXmlConstants.DB_CHANGE_LOG_XSD}"
             )
 
             dbChange.masterChangeLogFiles.forEach { f ->
-                xmlWriter.writeStartElement("include")
-                xmlWriter.writeAttribute("file", f)
+                xmlWriter.writeStartElement(LiquibaseXmlConstants.DB_CHANGE_LOG_INCLUDE_ELEMENT)
+                xmlWriter.writeAttribute(LiquibaseXmlConstants.DB_CHANGE_LOG_INCLUDE_FILE_ATTRIBUTE, f)
                 xmlWriter.writeEndElement()
             }
 
@@ -93,12 +115,12 @@ class StreamResourceAccessor(
             xmlWriter.flush()
 
             if(log.isDebugEnabled) {
-                val transformer = TransformerFactory.newInstance().newTransformer()
+                val transformer = transformerFactory.newTransformer()
                 transformer.setOutputProperty(OutputKeys.INDENT, "yes")
                 transformer.setOutputProperty(OutputKeys.STANDALONE, "yes")
                 StringWriter().use { sw ->
                     transformer.transform(StreamSource(ByteArrayInputStream(it.toByteArray())), StreamResult(sw))
-                    log.debug("Generated Master XML$sw")
+                    log.debug("Generated Master XML:\n$sw")
                 }
             }
 
@@ -142,6 +164,6 @@ class StreamResourceAccessor(
      */
     override fun describeLocations(): SortedSet<String> {
         return (dbChange.changeLogFileList + masterChangeLogFileName)
-            .map { "[${dbChange.javaClass.simpleName}]$it" }.toSortedSet()
+            .mapTo(TreeSet()) { "[${dbChange.javaClass.simpleName}]$it" }
     }
 }
