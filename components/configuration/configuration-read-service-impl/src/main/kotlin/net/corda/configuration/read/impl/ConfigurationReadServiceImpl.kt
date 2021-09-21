@@ -3,8 +3,8 @@ package net.corda.configuration.read.impl
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.libs.configuration.read.ConfigReadService
-import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
+import net.corda.libs.configuration.read.ConfigReader
+import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -23,8 +23,8 @@ import org.osgi.service.component.annotations.Reference
 class ConfigurationReadServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = ConfigReadServiceFactory::class)
-    private val readServiceFactory: ConfigReadServiceFactory
+    @Reference(service = ConfigReaderFactory::class)
+    private val readServiceFactory: ConfigReaderFactory
 ) : ConfigurationReadService {
 
     private companion object {
@@ -36,7 +36,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
 
     private var bootstrapConfig: Config? = null
 
-    private var subscription: ConfigReadService? = null
+    private var subscription: ConfigReader? = null
 
     private val callbackHandles = ConfigurationHandlerStorage()
 
@@ -83,7 +83,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
         if (subscription != null) {
             throw IllegalArgumentException("The subscription already exists")
         }
-        val sub = readServiceFactory.createReadService(config)
+        val sub = readServiceFactory.createReader(config)
         subscription = sub
         callbackHandles.addSubscription(sub)
         sub.start()
