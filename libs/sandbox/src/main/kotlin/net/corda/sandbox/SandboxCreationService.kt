@@ -1,14 +1,12 @@
 package net.corda.sandbox
 
-import net.corda.sandbox.internal.PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY
-import net.corda.sandbox.internal.PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY
 import net.corda.v5.crypto.SecureHash
 
 /**
  * A service for creating sandboxes.
  *
  * The service is initialised with a single [Sandbox], the platform sandbox. This sandbox contains the public and
- * private bundles named by the [PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] and [PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY]
+ * private bundles named by the `PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY` and `PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY`
  * configuration admin properties. This sandbox is initialised lazily; the named bundles must be installed and the
  * configuration admin properties set before this service is first interacted with.
  *
