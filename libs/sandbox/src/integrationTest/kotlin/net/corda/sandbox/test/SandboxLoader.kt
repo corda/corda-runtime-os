@@ -157,7 +157,7 @@ class SandboxLoader @Activate constructor(
         return context.getServiceReferences(serviceType, null)
             .map(context::getService)
             .filterIsInstance(bundleClass)
-            .firstOrNull() ?: fail("No service for $bundleClass")
+            .firstOrNull() ?: fail("No service for $serviceType.")
     }
 
     private fun hasVisibility(sandbox1: Sandbox, sandbox2: Sandbox): Boolean {

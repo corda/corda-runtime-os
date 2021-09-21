@@ -84,8 +84,6 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun getSandbox(bundle: Bundle) = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundle) }
 
-    override fun isPlatformSandbox(sandbox: Sandbox) = sandbox === platformSandbox
-
     override fun hasVisibility(lookingBundle: Bundle, lookedAtBundle: Bundle): Boolean {
         val lookingSandbox = getSandbox(lookingBundle)
         val lookedAtSandbox = getSandbox(lookedAtBundle)
@@ -98,7 +96,7 @@ internal class SandboxServiceImpl @Activate constructor(
             // Does the looking sandbox not have visibility of the looked at sandbox?
             !lookingSandbox.hasVisibility(lookedAtSandbox) -> false
             // Is the looking bundle a public bundle in the platform sandbox?
-            lookingSandbox === platformSandbox && lookingBundle in lookingSandbox.publicBundles -> true
+            lookingSandbox === platformSandbox && lookingBundle in platformSandbox.publicBundles -> true
             // Is the looked-at bundle a public bundle in the looked-at sandbox?
             lookedAtBundle in lookedAtSandbox.publicBundles -> true
 
