@@ -10,7 +10,7 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.schema.TestSchema
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
-import net.corda.p2p.test.NetworkType
+import net.corda.p2p.NetworkType
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.lang.IllegalStateException
 import java.nio.ByteBuffer
@@ -76,7 +76,7 @@ class StubNetworkMap(subscriptionFactory: SubscriptionFactory): LinkManagerNetwo
     override fun getNetworkType(groupId: String): LinkManagerNetworkMap.NetworkType? {
         lock.read {
             if (!running) {
-                throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
+                throw IllegalStateException("getNetworkType operation invoked while component was stopped.")
             }
 
             return processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.networkType?.toLMNetworkType()
@@ -101,8 +101,8 @@ class StubNetworkMap(subscriptionFactory: SubscriptionFactory): LinkManagerNetwo
 
     private fun NetworkType.toLMNetworkType(): LinkManagerNetworkMap.NetworkType {
         return when(this) {
-            NetworkType.CORDA_4_LEGACY -> LinkManagerNetworkMap.NetworkType.CORDA_4
-            NetworkType.MODERN -> LinkManagerNetworkMap.NetworkType.CORDA_5
+            NetworkType.CORDA_4 -> LinkManagerNetworkMap.NetworkType.CORDA_4
+            NetworkType.CORDA_5 -> LinkManagerNetworkMap.NetworkType.CORDA_5
         }
     }
 

@@ -11,7 +11,7 @@ import net.corda.osgi.api.Shutdown
 import net.corda.p2p.schema.TestSchema
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
-import net.corda.p2p.test.NetworkType
+import net.corda.p2p.NetworkType
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -74,15 +74,16 @@ class NetworkMapCreator @Activate constructor(
 
             val topic = parameters.topic ?: TestSchema.NETWORK_MAP_TOPIC
             val netmapConfig = ConfigFactory.parseFile(parameters.networkMapFile)
-            val records = netmapConfig.getConfigList("entries").map { config ->
+            val recordsWithAdditions = netmapConfig.getConfigList("entriesToAdd").map { config ->
                 val x500Name = config.getString("x500name")
                 val groupId = config.getString("groupId")
-                val publicKeyStoreFile = config.getString("publicKeyStoreFile")
-                val publicKeyAlias = config.getString("publicKeyAlias")
-                val keystorePassword = config.getString("keystorePassword")
-                val publicKeyAlgo = config.getString("publicKeyAlgo")
-                val address = config.getString("address")
-                val networkType = parseNetworkType(config.getString("networkType"))
+                val dataConfig = config.getConfig("data")
+                val publicKeyStoreFile = dataConfig.getString("publicKeyStoreFile")
+                val publicKeyAlias = dataConfig.getString("publicKeyAlias")
+                val keystorePassword = dataConfig.getString("keystorePassword")
+                val publicKeyAlgo = dataConfig.getString("publicKeyAlgo")
+                val address = dataConfig.getString("address")
+                val networkType = parseNetworkType(dataConfig.getString("networkType"))
 
                 val (keyAlgo, publicKey) = readKey(publicKeyStoreFile, publicKeyAlgo, publicKeyAlias, keystorePassword)
                 val networkMapEntry = NetworkMapEntry(
@@ -94,6 +95,13 @@ class NetworkMapCreator @Activate constructor(
                 )
                 Record(topic, "$x500Name-$groupId", networkMapEntry)
             }
+            val recordsWithRemovals = netmapConfig.getConfigList("entriesToDelete").map { config ->
+                val x500Name = config.getString("x500name")
+                val groupId = config.getString("groupId")
+
+                Record(topic, "$x500Name-$groupId", null)
+            }
+            val totalRecords = recordsWithAdditions + recordsWithRemovals
 
             val publisherConfig = ConfigFactory.empty()
                 .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
@@ -101,17 +109,17 @@ class NetworkMapCreator @Activate constructor(
             val publisher = publisherFactory.createPublisher(PublisherConfig("network-map-creator"), publisherConfig)
 
             publisher.start()
-            publisher.publish(records).forEach { it.get() }
+            publisher.publish(totalRecords).forEach { it.get() }
 
-            consoleLogger.info("Produced ${records.size} entries on topic $topic.")
+            consoleLogger.info("Produced ${totalRecords.size} entries on topic $topic.")
             shutdown()
         }
     }
 
     override fun shutdown() {
-        consoleLogger.info("Shutting down crypto service key creation tool")
+        consoleLogger.info("Shutting down network map creation tool")
         shutdownOSGiFramework()
-        logger.info("Shutting down crypto service key creation tool")
+        logger.info("Shutting down network map creation tool")
     }
 
     private fun shutdownOSGiFramework() {
@@ -125,8 +133,8 @@ class NetworkMapCreator @Activate constructor(
 
     private fun parseNetworkType(networkType: String): NetworkType {
         val parsedNetworkType = when(networkType) {
-            "CORDA_4_LEGACY" -> NetworkType.CORDA_4_LEGACY
-            "MODERN" -> NetworkType.MODERN
+            "CORDA_4" -> NetworkType.CORDA_4
+            "CORDA_5" -> NetworkType.CORDA_5
             else -> null
         }
 

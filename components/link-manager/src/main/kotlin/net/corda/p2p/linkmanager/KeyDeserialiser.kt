@@ -12,6 +12,7 @@ class KeyDeserialiser {
     private val rsaKeyFactory = KeyFactory.getInstance("RSA")
     private val ecdsaKeyFactory = KeyFactory.getInstance("EC")
 
+    @Synchronized
     fun toPrivateKey(bytes: ByteArray, keyAlgorithm: KeyAlgorithm): PrivateKey {
         return when (keyAlgorithm) {
             KeyAlgorithm.ECDSA -> {
@@ -23,6 +24,7 @@ class KeyDeserialiser {
         }
     }
 
+    @Synchronized
     fun toPublicKey(bytes: ByteArray, keyAlgorithm: KeyAlgorithm): PublicKey {
         return when (keyAlgorithm) {
             KeyAlgorithm.ECDSA -> {

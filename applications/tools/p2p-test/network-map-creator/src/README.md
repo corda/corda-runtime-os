@@ -22,26 +22,36 @@ bootstrap.servers=localhost:9092
 The file provided on the `--netmap-file` CLI parameter should have the following structure:
 ```json
 {
-    "entries": [
+    "entriesToAdd": [
         {
           "x500name": "O=Alice, L=London, C=GB",
           "groupId": "group-1",
-          "publicKeyStoreFile": "<path_to_the_keystore_file>",
-          "publicKeyAlias": "<alias_of_public_key>", 
-          "keystorePassword": "keystore-password",
-          "publicKeyAlgo": "RSA",
-          "address": "http://alice.com",
-          "networkType": "CORDA_4_LEGACY"
+          "data": {
+               "publicKeyStoreFile": "<path_to_the_keystore_file>",
+               "publicKeyAlias": "<alias_of_public_key>", 
+               "keystorePassword": "keystore-password",
+               "publicKeyAlgo": "RSA",
+               "address": "http://alice.com",
+               "networkType": "CORDA_4"       
+          }
         },
         {
           "x500name": "O=Bob, L=London, C=GB",
           "groupId": "group-2",
-          "publicKeyStoreFile": "<path_to_the_keystore_file>",
-          "publicKeyAlias": "<alias_of_public_key>", 
-          "keystorePassword": "keystore-password",
-          "publicKeyAlgo": "ECDSA",
-          "address": "http://bob.com",
-          "networkType": "MODERN"
+          "data": {
+              "publicKeyStoreFile": "<path_to_the_keystore_file>",
+              "publicKeyAlias": "<alias_of_public_key>", 
+              "keystorePassword": "keystore-password",
+              "publicKeyAlgo": "ECDSA",
+              "address": "http://bob.com",
+              "networkType": "CORDA_5"
+          }
+        }
+    ],
+    "entriesToDelete": [
+        {
+          "x500name": "O=Charlie, L=London, C=GB",
+          "groupId": "group-1"
         }
     ]
 }
