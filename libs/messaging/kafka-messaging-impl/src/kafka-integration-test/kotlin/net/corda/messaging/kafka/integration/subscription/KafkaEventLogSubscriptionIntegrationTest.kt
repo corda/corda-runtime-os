@@ -50,7 +50,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
     @Test
     fun `asynch publish records and then start durable subscription`() {
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val futures = publisher.publish(getRecords(TOPIC1, 5, 2))
         Assertions.assertThat(futures.size).isEqualTo(10)
@@ -73,7 +73,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
     @Test
     fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
-        publisherConfig = PublisherConfig(CLIENT_ID, 1)
+        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC2, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         val futures = publisher.publish(getRecords(TOPIC2, 5, 2))
         Assertions.assertThat(futures.size).isEqualTo(1)

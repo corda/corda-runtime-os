@@ -21,11 +21,11 @@ interface TopicService {
     fun addRecordsToPartition(records: List<Record<*, *>>, partition: Int)
 
     /**
-     * Subscribe to with the given [consumer].
+     * Create a consumption for a given [consumer].
      * If the topic does not exist it is created.
      * To unsubscribe, close the returned lifecycle
      */
-    fun subscribe(consumer: Consumer): Consumption
+    fun createConsumption(consumer: Consumer): Consumption
 
     /**
      * Get the latest added offsets of a specific [topicName].
@@ -33,4 +33,18 @@ interface TopicService {
      * Return a map from a partition ID to the offset of that partition (-1 if no record was added).
      */
     fun getLatestOffsets(topicName: String): Map<Int, Long>
+
+    /**
+     * assign partitions to a consumer manually.
+     *
+     * The consumer must have manual partition assignment set.
+     */
+    fun manualAssignPartitions(consumer: Consumer, partitionsIds: Collection<Int>)
+
+    /**
+     * un-assign partitions to a consumer manually.
+     *
+     * The consumer must have manual partition assignment set.
+     */
+    fun manualUnAssignPartitions(consumer: Consumer, partitionsIds: Collection<Int>)
 }

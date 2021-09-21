@@ -1,14 +1,10 @@
 package net.corda.kryoserialization
 
-import com.esotericsoftware.kryo.Kryo
 import net.corda.kryoserialization.TestClass.Companion.TEST_INT
 import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
-import net.corda.kryoserialization.resolver.CordaClassResolver
-import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.serialization.CheckpointInternalCustomSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 import java.util.concurrent.Executors
 
 internal class KryoCheckpointSerializerTest {
@@ -61,16 +57,4 @@ internal class KryoCheckpointSerializerTest {
         assertThat(tested.someString).isEqualTo(tester.someString)
     }
 
-    private fun createCheckpointSerializer(
-        serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>> = emptyMap()
-    ): KryoCheckpointSerializer {
-        return KryoCheckpointSerializer(
-            DefaultKryoCustomizer.customize(
-                Kryo(),
-                serializers,
-                CordaClassResolver(mock(), mock(), mock()),
-                ClassSerializer(mock(), mock(), mock())
-            )
-        )
-    }
 }

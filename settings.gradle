@@ -38,7 +38,7 @@ pluginManagement {
         id 'net.corda.cordapp.cordapp-configuration' version cordaApiVersion
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
-        id 'org.jetbrains.kotlin.plugin.noarg' version kotlinVersion
+        id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
         id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
         id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
         id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
@@ -60,6 +60,10 @@ include 'applications:examples:goodbyeworld'
 include 'applications:tools:kafka-reader'
 include 'applications:tools:kafka-setup'
 include 'applications:tools:p2p-test:cryptoservice-key-creator'
+include 'components:configuration:configuration-read-service'
+include 'components:configuration:configuration-read-service-impl'
+include 'components:flow-service'
+include 'components:gateway'
 include 'components:kafka-config-read'
 include 'components:kafka-config-write'
 include 'components:kafka-topic-admin'
@@ -72,9 +76,9 @@ include 'components:examples:pubsub-sub'
 include 'components:examples:state-plus-event-sub'
 include 'libs:class-info'
 include 'libs:configuration:configuration-read'
+include 'libs:configuration:configuration-read-impl'
 include 'libs:configuration:configuration-write'
-include 'libs:configuration:kafka-configuration-read-impl'
-include 'libs:configuration:kafka-configuration-write-impl'
+include 'libs:configuration:configuration-write-impl'
 include 'libs:crypto:crypto-internal'
 include 'libs:crypto:crypto-impl'
 include 'libs:crypto:crypto-testkit'

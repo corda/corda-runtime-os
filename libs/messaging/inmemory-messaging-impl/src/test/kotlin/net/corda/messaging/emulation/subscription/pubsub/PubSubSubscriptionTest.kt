@@ -1,10 +1,8 @@
 package net.corda.messaging.emulation.subscription.pubsub
 
-import com.typesafe.config.Config
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.EVENT_TOPIC
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.GROUP_NAME
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -22,10 +20,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 
 class PubSubSubscriptionTest {
-    private val config = mock<Config> {
-        on { getString(EVENT_TOPIC) } doReturn "topic"
-        on { getString(GROUP_NAME) } doReturn "group"
-    }
+    private val config = SubscriptionConfig("group", "topic")
     private val processor = mock<PubSubProcessor<String, Number>> {
         on { keyClass } doReturn String::class.java
         on { valueClass } doReturn Number::class.java
@@ -33,20 +28,10 @@ class PubSubSubscriptionTest {
     private val executor = mock<ExecutorService>()
     private val consumeLifeCycle = mock<Consumption>()
     private val topicService = mock<TopicService> {
-        on { subscribe(any()) } doReturn consumeLifeCycle
+        on { createConsumption(any()) } doReturn consumeLifeCycle
     }
 
     private val pubSubSubscription = PubSubSubscription(config, processor, executor, topicService)
-
-    @Test
-    fun `verify topic name is correct`() {
-        assertThat(pubSubSubscription.topic).isEqualTo("topic")
-    }
-
-    @Test
-    fun `verify group name is correct`() {
-        assertThat(pubSubSubscription.groupName).isEqualTo("group")
-    }
 
     @Test
     fun `isRunning return false if was not started`() {
@@ -73,7 +58,7 @@ class PubSubSubscriptionTest {
     fun `start will subscribe a consumer`() {
         pubSubSubscription.start()
 
-        verify(topicService).subscribe(any())
+        verify(topicService).createConsumption(any())
     }
 
     @Test
@@ -81,7 +66,7 @@ class PubSubSubscriptionTest {
         pubSubSubscription.start()
         pubSubSubscription.start()
 
-        verify(topicService, times(1)).subscribe(any())
+        verify(topicService, times(1)).createConsumption(any())
     }
 
     @Test

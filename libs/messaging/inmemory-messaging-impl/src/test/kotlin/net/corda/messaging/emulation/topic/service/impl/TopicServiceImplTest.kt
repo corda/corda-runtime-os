@@ -2,6 +2,7 @@ package net.corda.messaging.emulation.topic.service.impl
 
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.properties.InMemoryConfiguration
+import net.corda.messaging.emulation.topic.model.Consumer
 import net.corda.messaging.emulation.topic.model.ConsumptionThread
 import net.corda.messaging.emulation.topic.model.Topic
 import net.corda.messaging.emulation.topic.model.Topics
@@ -36,8 +37,8 @@ class TopicServiceImplTest {
     private val impl = TopicServiceImpl(config, topics)
 
     @Test
-    fun `subscribe will start the thread`() {
-        impl.subscribe(mock())
+    fun `createConsumption will start the thread`() {
+        impl.createConsumption(mock())
 
         verify(thread).start()
     }
@@ -66,6 +67,17 @@ class TopicServiceImplTest {
     }
 
     @Test
+    fun `addRecords will wake up the topic consumers`() {
+        val records = (1..10).map {
+            Record("topic.${it % 2 + 1}", it, it + 3)
+        }
+        impl.addRecords(records)
+
+        verify(topicOne).wakeUpConsumers()
+        verify(topicTwo).wakeUpConsumers()
+    }
+
+    @Test
     fun `addRecordsToPartition will lock the partitions`() {
         val records = (1..10).map {
             Record("topic.${it % 2 + 1}", it, it + 3)
@@ -89,11 +101,42 @@ class TopicServiceImplTest {
     }
 
     @Test
+    fun `addRecordsToPartition will wake up the consumers`() {
+        val records = (1..10).map {
+            Record("topic.${it % 2 + 1}", it, it + 3)
+        }
+        impl.addRecordsToPartition(records, 12)
+
+        verify(topicOne).wakeUpConsumers()
+        verify(topicTwo).wakeUpConsumers()
+    }
+
+    @Test
     fun `getLatestOffsets send the handler to the correct topic`() {
         whenever(topics.getLatestOffsets(any())).doReturn(mapOf(1 to 3))
 
         val offsets = impl.getLatestOffsets("topic.1")
 
         assertThat(offsets).isEqualTo(mapOf(1 to 3L))
+    }
+
+    @Test
+    fun `manualAssignPartitions assign partitions to the correct topic`() {
+        val consumer = mock<Consumer> {
+            on { topicName } doReturn "topic.1"
+        }
+        impl.manualAssignPartitions(consumer, listOf(1, 2, 3))
+
+        verify(topicOne).assignPartition(consumer, listOf(1, 2, 3))
+    }
+
+    @Test
+    fun `manualUnAssignPartitions un assign partitions to the correct topic`() {
+        val consumer = mock<Consumer> {
+            on { topicName } doReturn "topic.1"
+        }
+        impl.manualUnAssignPartitions(consumer, listOf(1, 2, 3))
+
+        verify(topicOne).unAssignPartition(consumer, listOf(1, 2, 3))
     }
 }

@@ -3,7 +3,7 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
-description 'Dogs test bunddle'
+description 'Dogs test bundle'
 
 dependencies {
     api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
@@ -11,4 +11,10 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
     api 'javax.persistence:javax.persistence-api'
+}
+
+tasks.named('jar', Jar) {
+    bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
 }
