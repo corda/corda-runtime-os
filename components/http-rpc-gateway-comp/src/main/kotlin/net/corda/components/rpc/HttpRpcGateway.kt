@@ -1,15 +1,13 @@
 package net.corda.components.rpc
 
 import com.typesafe.config.Config
-import net.corda.libs.configuration.read.ConfigListener
-import net.corda.libs.configuration.read.ConfigReadService
-import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
+import net.corda.configuration.read.ConfigurationReadService
+
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
 
@@ -17,9 +15,8 @@ class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>)
 class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 
 class HttpRpcGateway(
-    private val lifeCycleCoordinator: LifecycleCoordinator,
-    @Reference(service = ConfigReadServiceFactory::class)
-    private val readServiceFactory: ConfigReadServiceFactory
+        private val lifeCycleCoordinator: LifecycleCoordinator,
+    private val configurationReadService: ConfigurationReadService,
 ) : Lifecycle {
 
     companion object {
@@ -29,7 +26,6 @@ class HttpRpcGateway(
 
     private var receivedSnapshot = false
 
-    private var configReadService: ConfigReadService? = null
     private var sub: AutoCloseable? = null
     private var bootstrapConfig: Config? = null
 
@@ -49,8 +45,8 @@ class HttpRpcGateway(
             log.error(message)
             throw CordaRuntimeException(message)
         }
-        configReadService = readServiceFactory.createReadService(bootstrapConfig!!)
-        val listener = ConfigListener { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
+
+        val listener =  { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
             if (changedKeys.contains(MESSAGING_CONFIG)) {
                 if (receivedSnapshot) {
                     log.info("Config update received")
@@ -63,8 +59,9 @@ class HttpRpcGateway(
                 }
             }
         }
-        sub = configReadService!!.registerCallback(listener)
-        configReadService!!.start()
+        sub = configurationReadService.registerForUpdates(listener)
+
+        configurationReadService.start()
     }
 
     override fun stop() {

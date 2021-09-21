@@ -6,7 +6,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.components.rpc.ConfigReceivedEvent
 import net.corda.components.rpc.HttpRpcGateway
 import net.corda.components.rpc.MessagingConfigUpdateEvent
-import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -38,8 +38,8 @@ class HttpRpcGatewayApp @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = ConfigReadServiceFactory::class)
-    private var configReadServiceFactory: ConfigReadServiceFactory,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
 ) : Application {
@@ -102,7 +102,7 @@ class HttpRpcGatewayApp @Activate constructor(
                         }
                     }
                 }
-            httpRpcGateway = HttpRpcGateway(lifeCycleCoordinator!!, configReadServiceFactory)
+            httpRpcGateway = HttpRpcGateway(lifeCycleCoordinator!!, configurationReadService)
 
             log.info("Starting life cycle coordinator")
             lifeCycleCoordinator!!.start()
