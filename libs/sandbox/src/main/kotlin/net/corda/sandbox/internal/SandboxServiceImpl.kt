@@ -43,8 +43,8 @@ internal class SandboxServiceImpl @Activate constructor(
     private val configAdmin: ConfigurationAdmin
 ) : SandboxServiceInternal, SingletonSerializeAsToken {
     // These two framework bundles require full visibility.
-    private val felixFrameworkBundle by lazy { getFirstBundleByName(FELIX_FRAMEWORK_BUNDLE) }
-    private val felixScrBundle by lazy { getFirstBundleByName(FELIX_SCR_BUNDLE) }
+    private val felixFrameworkBundle by lazy { getFirstMatchingBundle(FELIX_FRAMEWORK_BUNDLE) }
+    private val felixScrBundle by lazy { getFirstMatchingBundle(FELIX_SCR_BUNDLE) }
 
     // These sandboxes are not persisted in any way; they are recreated on node startup.
     private val sandboxes = ConcurrentHashMap<UUID, SandboxInternal>()
@@ -143,7 +143,7 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     /** Returns the first installed bundle with the [symbolicName]. */
-    private fun getFirstBundleByName(symbolicName: String) = bundleUtils.allBundles.firstOrNull { bundle ->
+    private fun getFirstMatchingBundle(symbolicName: String) = bundleUtils.allBundles.firstOrNull { bundle ->
         bundle.symbolicName == symbolicName
     } ?: throw SandboxException("There is no installed bundle with the symbolic name $symbolicName.")
 
