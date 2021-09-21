@@ -31,7 +31,7 @@ class ClassSerializer(
         } else {
             val version = input.readString()
             val signerSummaryHash = SecureHash.create(input.readString())
-            val cpk = Cpk.ShortIdentifier(cpkName, version, signerSummaryHash)
+            val cpk = Cpk.Identifier(cpkName, version, signerSummaryHash)
             sandboxGroup.loadClassFromCordappBundle(cpk, input.readString())
         }
     }

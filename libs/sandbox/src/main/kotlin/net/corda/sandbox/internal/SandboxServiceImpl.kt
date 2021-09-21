@@ -131,10 +131,10 @@ internal class SandboxServiceImpl @Activate constructor(
         )
     }
 
-    override fun getCallingCpk(): Cpk.ShortIdentifier? {
+    override fun getCallingCpk(): Cpk.Identifier? {
         val callingSandbox = getCallingSandbox()
         return if (callingSandbox is CpkSandbox) {
-            callingSandbox.cpk.shortId
+            callingSandbox.cpk.id
         } else {
             null
         }
@@ -191,7 +191,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
         val sandboxGroup = SandboxGroupImpl(
             bundleUtils,
-            newSandboxes.associateBy { sandbox -> sandbox.cpk.shortId },
+            newSandboxes.associateBy { sandbox -> sandbox.cpk.id },
             platformSandbox,
             ClassTagFactoryImpl()
         )
@@ -282,7 +282,7 @@ internal class SandboxServiceImpl @Activate constructor(
             sandbox.cordappBundle.symbolicName,
             sandbox.cordappBundle.version,
             cpk.cpkHash,
-            cpk.shortId.signerSummaryHash,
+            cpk.id.signerSummaryHash,
             cpkDependencyHashes
         )
     }

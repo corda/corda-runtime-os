@@ -44,7 +44,7 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
                 isPlatformClass = false,
                 bundleSymbolicName,
                 sandbox.cordappBundle.symbolicName,
-                sandbox.cpk.shortId.signerSummaryHash
+                sandbox.cpk.id.signerSummaryHash
             )
         }.serialise()
     }

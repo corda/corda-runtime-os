@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.io.TempDir
@@ -89,6 +90,7 @@ class CordaPackagePersistenceTests {
         assertEquals(loadedCpk, cpkRetrievedByHash)
     }
 
+    @Disabled
     @Test
     fun `can store CPBs and retrieve their CPKs `() {
         Cpb.assemble(Files.newOutputStream(testCpbLocation), listOf(flowsCpkLocation, workflowCpkLocation, contractCpkLocation))

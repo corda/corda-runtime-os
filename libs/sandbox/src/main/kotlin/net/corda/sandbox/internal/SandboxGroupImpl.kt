@@ -19,16 +19,16 @@ import net.corda.sandbox.internal.utilities.BundleUtils
  */
 internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils,
-    private val sandboxesById: Map<Cpk.ShortIdentifier, CpkSandboxInternal>,
+    private val sandboxesById: Map<Cpk.Identifier, CpkSandboxInternal>,
     private val platformSandbox: SandboxInternal,
     private val classTagFactory: ClassTagFactory
 ) : SandboxGroup {
     override val sandboxes = sandboxesById.values
 
-    override fun getSandbox(cpkIdentifier: Cpk.ShortIdentifier) = sandboxesById[cpkIdentifier]
+    override fun getSandbox(cpkIdentifier: Cpk.Identifier) = sandboxesById[cpkIdentifier]
         ?: throw SandboxException("CPK $cpkIdentifier was not found in the sandbox group.")
 
-    override fun loadClassFromCordappBundle(cpkIdentifier: Cpk.ShortIdentifier, className: String) =
+    override fun loadClassFromCordappBundle(cpkIdentifier: Cpk.Identifier, className: String) =
         getSandbox(cpkIdentifier).loadClassFromCordappBundle(className)
 
     override fun <T : Any> loadClassFromCordappBundle(className: String, type: Class<T>): Class<out T> {
@@ -62,7 +62,7 @@ internal class SandboxGroupImpl(
             when (classTag) {
                 is StaticTag -> sandboxes.find { sandbox -> sandbox.cpk.cpkHash == classTag.cpkFileHash }
                 is EvolvableTag -> sandboxes.find { sandbox ->
-                    sandbox.cpk.shortId.signerSummaryHash == classTag.cpkSignerSummaryHash
+                    sandbox.cpk.id.signerSummaryHash == classTag.cpkSignerSummaryHash
                             && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
                 }
             }

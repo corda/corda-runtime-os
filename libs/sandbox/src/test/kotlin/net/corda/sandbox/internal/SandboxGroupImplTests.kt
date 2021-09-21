@@ -62,7 +62,7 @@ class SandboxGroupImplTests {
         whenever(getBundle(nonSandboxClass)).thenReturn(mockNonSandboxBundle)
     }
 
-    private val sandboxesById = mapOf(mockCpk.shortId to mockNonPlatformSandbox)
+    private val sandboxesById = mapOf(mockCpk.id to mockNonPlatformSandbox)
     private val classTagFactory = DummyClassTagFactory(mockCpk)
     private val sandboxGroupImpl =
         SandboxGroupImpl(mockBundleUtils, sandboxesById, mockPlatformSandbox, classTagFactory)
@@ -197,7 +197,7 @@ private class DummyClassTagFactory(cpk: Cpk.Expanded) : ClassTagFactory {
         StaticTagImpl(false, NON_PLATFORM_BUNDLE_NAME, randomSecureHash())
 
     private val nonPlatformEvolvableTag =
-        EvolvableTagImpl(false, NON_PLATFORM_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, cpk.shortId.signerSummaryHash)
+        EvolvableTagImpl(false, NON_PLATFORM_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, cpk.id.signerSummaryHash)
 
     private val platformEvolvableTag =
         EvolvableTagImpl(
@@ -212,7 +212,7 @@ private class DummyClassTagFactory(cpk: Cpk.Expanded) : ClassTagFactory {
             false,
             NON_PLATFORM_BUNDLE_NAME,
             "invalid_cordapp_bundle_name",
-            cpk.shortId.signerSummaryHash
+            cpk.id.signerSummaryHash
         )
 
     private val invalidSignersEvolvableTag =

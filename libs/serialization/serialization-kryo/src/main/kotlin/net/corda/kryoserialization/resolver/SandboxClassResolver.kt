@@ -29,7 +29,7 @@ open class SandboxClassResolver(
         val logger = contextLogger()
     }
 
-    private var cpkToId: IdentityObjectIntMap<Cpk.ShortIdentifier>? = null
+    private var cpkToId: IdentityObjectIntMap<Cpk.Identifier>? = null
 
     private var idToCpk: IntMap<Cpk.Identifier>? = null
 
@@ -45,7 +45,7 @@ open class SandboxClassResolver(
      * @return The [Cpk.Identifier] associated with [klass] if it is a CPK class info, or null otherwise.
      */
     @Suppress("TooGenericExceptionCaught")
-    private fun getCpkFromClass(klass: Class<*>): Cpk.ShortIdentifier? {
+    private fun getCpkFromClass(klass: Class<*>): Cpk.Identifier? {
         val classInfo = try {
             classInfoService.getClassInfo(klass)
         } catch (ex: ClassInfoException) {
@@ -57,7 +57,7 @@ open class SandboxClassResolver(
         } ?: return null
 
         return when (classInfo) {
-            is CpkClassInfo -> Cpk.ShortIdentifier(
+            is CpkClassInfo -> Cpk.Identifier(
                 classInfo.classBundleName,
                 classInfo.classBundleVersion.toString(),
                 classInfo.cpkSignerSummaryHash
@@ -71,7 +71,7 @@ open class SandboxClassResolver(
      * CPKs to ids and Class names to ids.
      */
     private fun checkAndInitWriteStructures() {
-        if (cpkToId == null) cpkToId = IdentityObjectIntMap<Cpk.ShortIdentifier>()
+        if (cpkToId == null) cpkToId = IdentityObjectIntMap<Cpk.Identifier>()
         if (classToNameId == null) classToNameId = IdentityObjectIntMap<Class<*>>()
     }
 
@@ -119,7 +119,7 @@ open class SandboxClassResolver(
         }
     }
 
-    private fun writeCpkIdentifier(output: Output, identifier: Cpk.ShortIdentifier) {
+    private fun writeCpkIdentifier(output: Output, identifier: Cpk.Identifier) {
         output.writeString(identifier.symbolicName)
         output.writeString(identifier.version)
         output.writeString(identifier.signerSummaryHash.toString())
@@ -172,11 +172,11 @@ open class SandboxClassResolver(
         return kryo.getRegistration(type)
     }
 
-    private fun readCpkIdentifier(input: Input): Cpk.ShortIdentifier {
+    private fun readCpkIdentifier(input: Input): Cpk.Identifier {
         val symbolicName = input.readString()
         val version = input.readString()
         val signerSummaryHash = SecureHash.create(input.readString())
-        return Cpk.ShortIdentifier(symbolicName, version, signerSummaryHash)
+        return Cpk.Identifier(symbolicName, version, signerSummaryHash)
     }
 
     override fun reset() {

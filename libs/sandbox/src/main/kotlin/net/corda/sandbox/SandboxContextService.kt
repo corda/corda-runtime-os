@@ -41,11 +41,11 @@ interface SandboxContextService {
     fun getCallingSandboxGroup(): SandboxGroup?
 
     /**
-     * Finds the [Sandbox] lowest in the stack of calls to this function, and returns the [Cpk.ShortIdentifier] of the
+     * Finds the [Sandbox] lowest in the stack of calls to this function, and returns the [Cpk.Identifier] of the
      * [Cpk] it was created from. Returns null if no sandbox is on the stack, or if the sandbox has no source CPK.
      *
      * A [SandboxException] is thrown if the sandbox bundle's location is not formatted correctly, the ID is not a
      * valid UUID, or there is no known sandbox with the given ID.
      */
-    fun getCallingCpk(): Cpk.ShortIdentifier?
+    fun getCallingCpk(): Cpk.Identifier?
 }

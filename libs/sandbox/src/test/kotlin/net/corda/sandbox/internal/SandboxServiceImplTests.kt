@@ -191,7 +191,7 @@ class SandboxServiceImplTests {
         assertEquals(2, sandboxes.size)
 
         val sandboxesFromSandboxGroup =
-            cpksAndBundles.map { cpkAndBundles -> sandboxGroup.getSandbox(cpkAndBundles.cpk.shortId) }
+            cpksAndBundles.map { cpkAndBundles -> sandboxGroup.getSandbox(cpkAndBundles.cpk.id) }
         assertEquals(sandboxes.toSet(), sandboxesFromSandboxGroup.toSet())
     }
 
@@ -344,7 +344,7 @@ class SandboxServiceImplTests {
             Cpk.Identifier(
                 cpk.cordappManifest.bundleSymbolicName,
                 cpk.cordappManifest.bundleVersion,
-                cpk.id.signers
+                cpk.id.signerSummaryHash
             )
         }.toCollection(TreeSet())
         val cpkWithDependenciesData =
@@ -363,7 +363,7 @@ class SandboxServiceImplTests {
             cpkWithDependenciesData.cordappBundle.symbolicName,
             cpkWithDependenciesData.cordappBundle.version,
             cpkWithDependenciesData.cpk.cpkHash,
-            cpkWithDependenciesData.cpk.shortId.signerSummaryHash,
+            cpkWithDependenciesData.cpk.id.signerSummaryHash,
             setOf(cpkOne.cpkHash, cpkTwo.cpkHash)
         )
 
@@ -380,7 +380,7 @@ class SandboxServiceImplTests {
             Cpk.Identifier(
                 cpk.cordappManifest.bundleSymbolicName,
                 cpk.cordappManifest.bundleVersion,
-                cpk.id.signers
+                cpk.id.signerSummaryHash
             )
         }.toCollection(TreeSet())
         val cpkWithDependenciesData =
@@ -398,7 +398,7 @@ class SandboxServiceImplTests {
             cpkWithDependenciesData.cordappBundle.symbolicName,
             cpkWithDependenciesData.cordappBundle.version,
             cpkWithDependenciesData.cpk.cpkHash,
-            cpkWithDependenciesData.cpk.shortId.signerSummaryHash,
+            cpkWithDependenciesData.cpk.id.signerSummaryHash,
             setOf(cpkOne.cpkHash, cpkTwo.cpkHash)
         )
 
@@ -419,7 +419,7 @@ class SandboxServiceImplTests {
     fun `throws if asked to retrieve CPK info for a class and a dependency cannot be resolved`() {
         val cordappClass = Int::class.java
 
-        val badCpkDependency = Cpk.Identifier("unknown", "", Collections.emptyNavigableSet())
+        val badCpkDependency = Cpk.Identifier("unknown", "", randomSecureHash())
         val cpkAndBundlesWithBadDependency =
             createDummyCpkAndBundles(cordappClass, List::class.java, sequenceOf(badCpkDependency).toCollection(TreeSet()))
 
@@ -594,7 +594,7 @@ class SandboxServiceImplTests {
         val validSandboxLocation = SandboxLocation(sandbox.id, URI("testUri"))
         whenever(mockBundle.location).thenReturn(validSandboxLocation.toString())
 
-        assertEquals(sandbox.cpk.shortId, sandboxService.getCallingCpk())
+        assertEquals(sandbox.cpk.id, sandboxService.getCallingCpk())
     }
 
     @Test

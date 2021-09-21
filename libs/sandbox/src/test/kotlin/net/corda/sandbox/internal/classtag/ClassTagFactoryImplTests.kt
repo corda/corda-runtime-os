@@ -100,7 +100,7 @@ class ClassTagFactoryImplTests {
         assertFalse(classTag.isPlatformClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(mockSandbox.cordappBundle.symbolicName, classTag.cordappBundleName)
-        assertEquals(mockCpk.shortId.signerSummaryHash, classTag.cpkSignerSummaryHash)
+        assertEquals(mockCpk.id.signerSummaryHash, classTag.cpkSignerSummaryHash)
     }
 
     @Test

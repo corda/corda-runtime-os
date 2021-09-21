@@ -147,13 +147,13 @@ class DefaultLocalSerializerFactory(
     override fun getTypeInformation(context: SerializationContext, metadata: Metadata, typeName: String): LocalTypeInformation? {
         return typesByName.getOrPut(typeName) {
             val localType = try {
-                val classInfoParts = metadata.getValue(typeName) as List<*>
-                val classInfo = Cpk.ShortIdentifier(
-                    classInfoParts[0] as String,
-                    classInfoParts[1] as String,
-                    SecureHash.create(classInfoParts[4] as String)
+                val cpkIdentifierParts = metadata.getValue(typeName) as List<*>
+                val cpkIdentifier = Cpk.Identifier(
+                    cpkIdentifierParts[0] as String,
+                    cpkIdentifierParts[1] as String,
+                    SecureHash.create(cpkIdentifierParts[4] as String)
                 )
-                (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(classInfo, typeName)
+                (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(cpkIdentifier, typeName)
             } catch (_: SandboxException) {
                 logger.trace { "Failed to load class $typeName from any sandboxes" }
                 null
