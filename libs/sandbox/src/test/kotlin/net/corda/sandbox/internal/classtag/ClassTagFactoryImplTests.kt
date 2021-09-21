@@ -52,7 +52,7 @@ class ClassTagFactoryImplTests {
     }
 
     @Test
-    fun `can serialise and deserialise a static class tag for a platform class`() {
+    fun `can serialise and deserialise a static class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = true,
             isPlatformBundle = false,
@@ -69,7 +69,7 @@ class ClassTagFactoryImplTests {
     }
 
     @Test
-    fun `can serialise and deserialise a static class tag for a CPK class`() {
+    fun `can serialise and deserialise a static class tag for a platform class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = true,
             isPlatformBundle = true,
@@ -86,7 +86,7 @@ class ClassTagFactoryImplTests {
     }
 
     @Test
-    fun `can serialise and deserialise an evolvable class tag for a platform class`() {
+    fun `can serialise and deserialise an evolvable class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = false,
             isPlatformBundle = false,
@@ -104,7 +104,7 @@ class ClassTagFactoryImplTests {
     }
 
     @Test
-    fun `can serialise and deserialise an evolvable class tag for a CPK class`() {
+    fun `can serialise and deserialise an evolvable class tag for a platform class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = false,
             isPlatformBundle = true,
