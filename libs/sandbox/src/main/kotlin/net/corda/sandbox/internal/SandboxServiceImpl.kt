@@ -100,7 +100,7 @@ internal class SandboxServiceImpl @Activate constructor(
             // Is the looking bundle a public bundle in the platform sandbox?
             lookingSandbox === platformSandbox && lookingBundle in lookingSandbox.publicBundles -> true
             // Is the looked-at bundle a public bundle in the looked-at sandbox?
-            lookedAtSandbox.publicBundles.any { bundle -> bundle == lookedAtBundle } -> true
+            lookedAtBundle in lookedAtSandbox.publicBundles -> true
 
             else -> false
         }
