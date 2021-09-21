@@ -189,7 +189,7 @@ class SandboxServiceImplTests {
 
     /**
      * Creates a mock [ConfigurationAdmin] that lists the [frameworkBundle] and [applicationBundle] as public bundles
-     * in the non-CPK sandbox, and [secretBundle] as private bundles in the non-CPK sandbox.
+     * in the non-CPK sandbox, and [secretBundle] as a private bundle in the non-CPK sandbox.
      */
     private fun createMockConfigAdmin(): ConfigurationAdmin {
         val properties = Hashtable<String, Any>()

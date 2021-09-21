@@ -176,8 +176,7 @@ internal class SandboxServiceImpl @Activate constructor(
         }
 
         newSandboxes.forEach { sandbox ->
-            // The non-CPK sandbox contains the OSGi framework itself, and so it must be allowed to "see" every
-            // sandbox too.
+            // The non-CPK sandbox has visibility of all sandboxes.
             nonCpkSandbox.grantVisibility(sandbox)
 
             // Each sandbox requires visibility of the sandboxes of the other CPKs and of the non-CPK sandbox.
@@ -255,8 +254,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
         if (bundle.symbolicName == null)
             throw SandboxException(
-                "Bundle at $jarLocation could not be installed as it does not have a symbolic name, preventing " +
-                        "serialisation."
+                "Bundle at $jarLocation does not have a symbolic name, which would prevent serialisation."
             )
 
         return bundle
