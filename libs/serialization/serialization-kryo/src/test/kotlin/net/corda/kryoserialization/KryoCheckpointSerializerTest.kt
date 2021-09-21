@@ -1,7 +1,10 @@
 package net.corda.kryoserialization
 
+import com.esotericsoftware.kryo.Kryo
 import net.corda.kryoserialization.TestClass.Companion.TEST_INT
 import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
+import net.corda.kryoserialization.resolver.CordaClassResolver
+import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.serialization.CheckpointInternalCustomSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -47,7 +50,15 @@ internal class KryoCheckpointSerializerTest {
 
     @Test
     fun `serialization of a simple object using the kryo default serialization`() {
-        val serializer = createCheckpointSerializer()
+        val sandboxGroup = mockSandboxGroup(setOf(TestClass::class.java))
+        val serializer = KryoCheckpointSerializer(
+            DefaultKryoCustomizer.customize(
+                Kryo(),
+                emptyMap(),
+                CordaClassResolver(sandboxGroup),
+                ClassSerializer(sandboxGroup)
+            )
+        )
         val tester = TestClass(TEST_INT, TEST_STRING)
 
         val bytes = serializer.serialize(tester)

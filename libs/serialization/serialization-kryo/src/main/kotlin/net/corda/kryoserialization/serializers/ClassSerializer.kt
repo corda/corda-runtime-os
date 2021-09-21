@@ -10,10 +10,11 @@ class ClassSerializer(
     private val sandboxGroup: SandboxGroup
 ) : Serializer<Class<*>>() {
     override fun read(kryo: Kryo, input: Input, type: Class<Class<*>>): Class<*> {
-        return sandboxGroup.getClass(type.name, input.readString())
+        return sandboxGroup.getClass(input.readString(), input.readString())
     }
 
     override fun write(kryo: Kryo, output: Output, clazz: Class<*>) {
+        output.writeString(clazz.name)
         output.writeString(sandboxGroup.getStaticTag(clazz))
     }
 }

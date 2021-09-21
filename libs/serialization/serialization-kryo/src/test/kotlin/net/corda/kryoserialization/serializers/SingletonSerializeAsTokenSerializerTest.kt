@@ -1,10 +1,16 @@
 package net.corda.kryoserialization.serializers
 
+import com.esotericsoftware.kryo.Kryo
+import net.corda.kryoserialization.CordaKryoException
+import net.corda.kryoserialization.DefaultKryoCustomizer
+import net.corda.kryoserialization.KryoCheckpointSerializer
 import net.corda.kryoserialization.createCheckpointSerializer
-import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.kryoserialization.mockSandboxGroup
+import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 internal class SingletonSerializeAsTokenSerializerTest {
@@ -25,21 +31,40 @@ internal class SingletonSerializeAsTokenSerializerTest {
     @Test
     fun `singleton serializer throws on serialize when instance not registered`() {
         val instance = Tester(1)
-        val serializer = createCheckpointSerializer()
+        val sandboxGroup = mockSandboxGroup(setOf(Tester::class.java))
 
-        assertThatExceptionOfType(CordaRuntimeException::class.java).isThrownBy {
+        val serializer = KryoCheckpointSerializer(
+            DefaultKryoCustomizer.customize(
+                Kryo(),
+                mapOf(SingletonSerializeAsToken::class.java to SingletonSerializeAsTokenSerializer(emptyMap())),
+                CordaClassResolver(sandboxGroup),
+                ClassSerializer(sandboxGroup)
+            )
+        )
+
+        assertThatExceptionOfType(CordaKryoException::class.java).isThrownBy {
             serializer.serialize(instance)
         }
     }
 
+    @Disabled("Not sure we need this as the FieldSerializer will sort us out?")
     @Test
     fun `singleton serializer throws on deserialize when instance not registered`() {
         val instance = Tester(1)
         val serializer = createCheckpointSerializer(singletonInstances = listOf(instance))
-        val deserializer = createCheckpointSerializer()
+
+        val sandboxGroup = mockSandboxGroup(setOf(Tester::class.java))
+        val deserializer = KryoCheckpointSerializer(
+            DefaultKryoCustomizer.customize(
+                Kryo(),
+                emptyMap(),
+                CordaClassResolver(sandboxGroup),
+                ClassSerializer(sandboxGroup)
+            )
+        )
 
         val bytes = serializer.serialize(instance)
-        assertThatExceptionOfType(CordaRuntimeException::class.java).isThrownBy {
+        assertThatExceptionOfType(CordaKryoException::class.java).isThrownBy {
             deserializer.deserialize(bytes, instance::class.java)
         }
     }
