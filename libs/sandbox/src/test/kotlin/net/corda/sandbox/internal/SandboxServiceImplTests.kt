@@ -11,7 +11,6 @@ import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.crypto.SecureHash
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
