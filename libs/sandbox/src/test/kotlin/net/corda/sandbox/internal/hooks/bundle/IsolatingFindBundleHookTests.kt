@@ -45,7 +45,7 @@ class IsolatingFindBundleHookTests {
     }
 
     @Test
-    fun `bundle is found if a bundle is in a platform sandbox`() {
+    fun `bundle is found if a bundle is in the platform sandbox`() {
         val platformSandbox = mock<SandboxInternal>()
 
         val sandboxService = mock<SandboxServiceInternal>().apply {

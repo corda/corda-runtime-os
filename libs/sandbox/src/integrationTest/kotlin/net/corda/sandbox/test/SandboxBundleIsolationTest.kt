@@ -1,7 +1,6 @@
 package net.corda.sandbox.test
 
 import net.corda.sandbox.Sandbox
-import net.corda.sandbox.test.SandboxLoader.Companion.LIBRARY_SYMBOLIC_NAME
 import org.assertj.core.api.AbstractListAssert
 import org.assertj.core.api.ObjectAssert
 import org.junit.jupiter.api.Test
@@ -60,7 +59,7 @@ class SandboxBundleIsolationTest {
             .existsOnlyInsideSandbox(sandboxLoader.cpk2.id.symbolicName, sandbox2)
 
             // CPK1 can only see its own library bundle.
-            .existsOnlyInsideSandbox(LIBRARY_SYMBOLIC_NAME, sandbox1)
+            .existsOnlyInsideSandbox(LIBRARY_BUNDLE_SYMBOLIC_NAME, sandbox1)
     }
 
     @Test
@@ -81,7 +80,7 @@ class SandboxBundleIsolationTest {
             .existsOnlyInsideSandbox(sandboxLoader.cpk2.id.symbolicName, sandbox2)
 
             // CPK2 can only see its own library bundle.
-            .existsOnlyInsideSandbox(LIBRARY_SYMBOLIC_NAME, sandbox2)
+            .existsOnlyInsideSandbox(LIBRARY_BUNDLE_SYMBOLIC_NAME, sandbox2)
     }
 
     @Test
@@ -100,6 +99,6 @@ class SandboxBundleIsolationTest {
             .existsOnlyInsideSandbox(sandboxLoader.cpk3.id.symbolicName, sandbox3)
 
             // CPK3 can only see its own library bundle
-            .existsOnlyInsideSandbox(LIBRARY_SYMBOLIC_NAME, sandbox3)
+            .existsOnlyInsideSandbox(LIBRARY_BUNDLE_SYMBOLIC_NAME, sandbox3)
     }
 }

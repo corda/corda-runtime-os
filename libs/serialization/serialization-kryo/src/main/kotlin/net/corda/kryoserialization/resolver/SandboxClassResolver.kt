@@ -11,7 +11,7 @@ import net.corda.classinfo.ClassInfoService
 import net.corda.kryoserialization.CordaKryoException
 import net.corda.packaging.Cpk
 import net.corda.sandbox.CpkClassInfo
-import net.corda.sandbox.NonCpkClassInfo
+import net.corda.sandbox.PlatformClassInfo
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.base.util.contextLogger
@@ -63,7 +63,7 @@ open class SandboxClassResolver(
                     classInfo.classBundleVersion.toString(),
                     TreeSet(classInfo.cpkPublicKeyHashes)
             )
-            is NonCpkClassInfo -> null
+            is PlatformClassInfo -> null
         }
     }
 
@@ -101,7 +101,7 @@ open class SandboxClassResolver(
         output.writeVarInt(nameId, true)
         output.writeString(type.name)
 
-        // If the type is a NonCpkClassInfo, write noCpkId
+        // If the type is a PlatformClassInfo, write noCpkId
         val cpk = getCpkFromClass(type)
         if (cpk == null) {
             output.writeVarInt(noCpkId, true)
