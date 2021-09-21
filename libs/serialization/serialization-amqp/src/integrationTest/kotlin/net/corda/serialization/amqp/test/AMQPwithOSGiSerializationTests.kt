@@ -62,7 +62,7 @@ class AMQPwithOSGiSerializationTests {
             assertThat(classInfoService).isNotNull
 
             val privateBundleNames = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.filter { bundle ->
-                bundle.symbolicName !in NON_CPK_PUBLIC_BUNDLE_NAMES
+                bundle.symbolicName !in PLATFORM_PUBLIC_BUNDLE_NAMES
             }.map(Bundle::getSymbolicName)
 
             // Initialise configurationAdmin
@@ -70,8 +70,8 @@ class AMQPwithOSGiSerializationTests {
             properties["platformVersion"] = 999
             properties["blacklistedKeys"] = emptyList<Any>()
             properties["baseDirectory"] = testDirectory.toAbsolutePath().toString()
-            properties[NON_CPK_SANDBOX_PUBLIC_BUNDLES_KEY] = NON_CPK_PUBLIC_BUNDLE_NAMES
-            properties[NON_CPK_SANDBOX_PRIVATE_BUNDLES_KEY] = privateBundleNames
+            properties[PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] = PLATFORM_PUBLIC_BUNDLE_NAMES
+            properties[PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY] = privateBundleNames
             val conf = configurationAdmin.getConfiguration(ConfigurationAdmin::class.java.name, null)
             conf?.update(properties)
         }

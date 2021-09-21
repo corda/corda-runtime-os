@@ -2,8 +2,8 @@
 
 package net.corda.serialization.amqp.test
 
-// The names of the bundles to place as public bundles in the sandbox service's non-CPK sandbox.
-val NON_CPK_PUBLIC_BUNDLE_NAMES = listOf(
+// The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
+val PLATFORM_PUBLIC_BUNDLE_NAMES = listOf(
     "javax.persistence-api",
     "jcl.over.slf4j",
     "net.corda.application",
@@ -24,5 +24,5 @@ val NON_CPK_PUBLIC_BUNDLE_NAMES = listOf(
     "slf4j.api"
 )
 
-internal const val NON_CPK_SANDBOX_PUBLIC_BUNDLES_KEY = "nonCpkSandboxPublicBundles"
-internal const val NON_CPK_SANDBOX_PRIVATE_BUNDLES_KEY = "nonCpkSandboxPrivateBundles"
+internal const val PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY = "platformSandboxPublicBundles"
+internal const val PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY = "platformSandboxPrivateBundles"
