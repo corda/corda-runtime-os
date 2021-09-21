@@ -15,7 +15,7 @@ import java.lang.UnsupportedOperationException
 class StreamResourceAccessorTest {
 
     private val dbChange = mock<DbChange> {
-        on { masterChangeLogFiles } doReturn(linkedSetOf("fred.xml", "jon.xml"))
+        on { masterChangeLogFiles } doReturn(listOf("fred.xml", "jon.xml"))
         on { changeLogFileList } doReturn(setOf("fred.xml", "jon.xml", "another.xml"))
         on { fetch(any()) } doReturn(mock())
     }

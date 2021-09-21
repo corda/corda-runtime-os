@@ -13,12 +13,12 @@ interface DbChange {
      * List of all the "master" change log files that need to be taken into account.
      * These can each have 'include' elements.
      * The [LiquibaseSchemaMigrator] is expected to combine them all.
-     * [LinkedHashSet] because order and uniqueness are important. Log files will be
-     * processed in order.
+     * [List] because order is important, i.e. Log files will be processed in the order
+     * they are specified. But implementers will need to ensure that the list is also unique.
      * Each entry represents the "path" that can be used to [fetch] the ChangeLog file.
      *
      */
-    val masterChangeLogFiles: LinkedHashSet<String>
+    val masterChangeLogFiles: List<String>
 
     /**
      * List of all the change log files that need to be considered.

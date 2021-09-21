@@ -25,7 +25,7 @@ class ClassloaderChangeLog(
      * Name could be the jar or bundle name, for example.
      *
      * @property name that uniquely identifies the set of changelogs related to the classloader
-     * @property masterFiles one or more master ChangeLog files.
+     * @property masterFiles one or more master ChangeLog files in order the should be executed.
      * @property classLoader defaulted to current classloader
      */
     data class ChangeLogResourceFiles(
@@ -50,11 +50,11 @@ class ClassloaderChangeLog(
     }
 
     override val masterChangeLogFiles by lazy {
-        changelogFiles.flatMapTo(LinkedHashSet()) { clf ->
+        changelogFiles.flatMap { clf ->
             clf.masterFiles.map { mf ->
                 "$CLASS_LOADER_PREFIX${URLEncoder.encode(clf.name, "utf-8")}/${mf}"
             }
-        }
+        }.distinct()
     }
 
     override val changeLogFileList: Set<String>
