@@ -5,6 +5,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.net.URLEncoder
+import java.util.Collections.unmodifiableSet
 
 /**
  * Classloader implementation of [DbChange]
@@ -59,7 +60,7 @@ class ClassloaderChangeLog(
 
     override val changeLogFileList: Set<String>
         get() {
-            return allChangeFiles
+            return unmodifiableSet(allChangeFiles)
         }
 
     override fun fetch(path: String): InputStream {

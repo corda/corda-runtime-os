@@ -55,9 +55,10 @@ class LiquibaseSchemaMigratorImplTest {
         lbm.createUpdateSql(ds.connection, cl, writer)
 
         val sql = writer.toString().toLowerCase()
-        assertThat(sql).contains("create table public.test_table")
-        assertThat(sql).contains("create table public.another_table")
-        assertThat(sql).contains("create table public.generic_table")
-        assertThat(sql).doesNotContain("create table public.postgres_table")
+        assertThat(sql)
+            .contains("create table public.test_table")
+            .contains("create table public.another_table")
+            .contains("create table public.generic_table")
+            .doesNotContain("create table public.postgres_table")
     }
 }
