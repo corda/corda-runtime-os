@@ -13,19 +13,19 @@ import org.osgi.framework.Bundle
 internal class ClassTagFactoryImpl : ClassTagFactory {
     override fun createSerialised(
         isStaticClassTag: Boolean,
-        isNonCpkBundle: Boolean,
+        isPlatformBundle: Boolean,
         bundle: Bundle,
         sandbox: Sandbox
     ): String {
         val bundleSymbolicName = bundle.symbolicName ?: throw SandboxException(
             "Bundle at ${bundle.location} does not have a symbolic name, preventing serialisation.")
 
-        if (isNonCpkBundle) {
+        if (isPlatformBundle) {
             return if (isStaticClassTag) {
-                StaticTagImplV1(isNonCpkClass = true, bundleSymbolicName, ClassTagV1.PLACEHOLDER_CPK_FILE_HASH)
+                StaticTagImplV1(isPlatformClass = true, bundleSymbolicName, ClassTagV1.PLACEHOLDER_CPK_FILE_HASH)
             } else {
                 EvolvableTagImplV1(
-                    isNonCpkClass = true,
+                    isPlatformClass = true,
                     bundleSymbolicName,
                     ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME,
                     ClassTagV1.PLACEHOLDER_CPK_PUBLIC_KEY_HASHES
@@ -34,14 +34,14 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
 
         }
 
-        if (sandbox !is CpkSandboxInternal) throw SandboxException("Sandbox was neither the non-CPK sandbox nor a " +
+        if (sandbox !is CpkSandboxInternal) throw SandboxException("Sandbox was neither the platform sandbox nor a " +
                 "CPK sandbox. A valid class tag cannot be constructed.")
 
         return if (isStaticClassTag) {
-            StaticTagImplV1(isNonCpkClass = false, bundleSymbolicName, sandbox.cpk.cpkHash)
+            StaticTagImplV1(isPlatformClass = false, bundleSymbolicName, sandbox.cpk.cpkHash)
         } else {
             EvolvableTagImplV1(
-                isNonCpkClass = false,
+                isPlatformClass = false,
                 bundleSymbolicName,
                 sandbox.cordappBundle.symbolicName,
                 sandbox.cpk.id.signers

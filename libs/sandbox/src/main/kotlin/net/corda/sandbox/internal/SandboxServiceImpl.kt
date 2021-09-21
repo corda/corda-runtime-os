@@ -5,7 +5,7 @@ import net.corda.packaging.Cpk
 import net.corda.sandbox.ClassInfo
 import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.CpkSandbox
-import net.corda.sandbox.NonCpkClassInfo
+import net.corda.sandbox.PlatformClassInfo
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
@@ -51,8 +51,8 @@ internal class SandboxServiceImpl @Activate constructor(
 
     private val logger = loggerFor<SandboxServiceImpl>()
 
-    // Made lazy because we only want to create the non-CPK sandbox once all the non-CPK bundles are installed.
-    private val nonCpkSandbox by lazy(::createNonCpkSandbox)
+    // Made lazy because we only want to create the platform sandbox once all the platform bundles are installed.
+    private val platformSandbox by lazy(::createPlatformSandbox)
 
     override fun createSandboxes(cpkFileHashes: Iterable<SecureHash>) =
         createSandboxes(cpkFileHashes, startBundles = true)
@@ -84,7 +84,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun getSandbox(bundle: Bundle) = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundle) }
 
-    override fun isNonCpkSandbox(sandbox: Sandbox) = sandbox === nonCpkSandbox
+    override fun isPlatformSandbox(sandbox: Sandbox) = sandbox === platformSandbox
 
     override fun hasVisibility(lookingBundle: Bundle, lookedAtBundle: Bundle): Boolean {
         val lookingSandbox = getSandbox(lookingBundle)
@@ -97,8 +97,8 @@ internal class SandboxServiceImpl @Activate constructor(
             lookedAtSandbox == null || lookingSandbox == null -> false
             // Does the looking sandbox not have visibility of the looked at sandbox?
             !lookingSandbox.hasVisibility(lookedAtSandbox) -> false
-            // Is the looking bundle a public bundle in the non-CPK sandbox?
-            lookingSandbox === nonCpkSandbox && lookingBundle in lookingSandbox.publicBundles -> true
+            // Is the looking bundle a public bundle in the platform sandbox?
+            lookingSandbox === platformSandbox && lookingBundle in lookingSandbox.publicBundles -> true
             // Is the looked-at bundle a public bundle in the looked-at sandbox?
             lookedAtSandbox.publicBundles.any { bundle -> bundle == lookedAtBundle } -> true
 
@@ -145,9 +145,9 @@ internal class SandboxServiceImpl @Activate constructor(
      * Retrieves the CPKs from the [installService] based on their [cpkFileHashes], and verifies the CPKs.
      *
      * Creates a [SandboxGroup], containing a [Sandbox] for each of the CPKs. On the first run, also initialises the
-     * non-CPK sandbox. [startBundles] controls whether the CPK bundles are also started.
+     * platform sandbox. [startBundles] controls whether the CPK bundles are also started.
      *
-     * Grants each sandbox visibility of the non-CPK sandbox and of the other sandboxes in the group.
+     * Grants each sandbox visibility of the platform sandbox and of the other sandboxes in the group.
      */
     private fun createSandboxes(cpkFileHashes: Iterable<SecureHash>, startBundles: Boolean): SandboxGroup {
         val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
@@ -176,11 +176,11 @@ internal class SandboxServiceImpl @Activate constructor(
         }
 
         newSandboxes.forEach { sandbox ->
-            // The non-CPK sandbox has visibility of all sandboxes.
-            nonCpkSandbox.grantVisibility(sandbox)
+            // The platform sandbox has visibility of all sandboxes.
+            platformSandbox.grantVisibility(sandbox)
 
-            // Each sandbox requires visibility of the sandboxes of the other CPKs and of the non-CPK sandbox.
-            sandbox.grantVisibility(newSandboxes + nonCpkSandbox)
+            // Each sandbox requires visibility of the sandboxes of the other CPKs and of the platform sandbox.
+            sandbox.grantVisibility(newSandboxes + platformSandbox)
         }
 
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
@@ -192,7 +192,7 @@ internal class SandboxServiceImpl @Activate constructor(
         val sandboxGroup = SandboxGroupImpl(
             bundleUtils,
             newSandboxes.associateBy { sandbox -> sandbox.cpk.id },
-            nonCpkSandbox,
+            platformSandbox,
             ClassTagFactoryImpl()
         )
 
@@ -204,25 +204,25 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     /**
-     * Creates the non-CPK sandbox. Reads the names of the public and private bundles to place in this sandbox from the
-     * [configAdmin], using the keys [NON_CPK_SANDBOX_PUBLIC_BUNDLES_KEY] and [NON_CPK_SANDBOX_PRIVATE_BUNDLES_KEY].
+     * Creates the platform sandbox. Reads the names of the public and private bundles to place in this sandbox from the
+     * [configAdmin], using the keys [PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] and [PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY].
      *
      * Throws [SandboxException] if the properties listing the public and private bundles are not set.
      */
-    private fun createNonCpkSandbox(): SandboxImpl {
-        val publicBundleNames = readConfigAdminStringList(NON_CPK_SANDBOX_PUBLIC_BUNDLES_KEY)
-        val privateBundleNames = readConfigAdminStringList(NON_CPK_SANDBOX_PRIVATE_BUNDLES_KEY)
+    private fun createPlatformSandbox(): SandboxImpl {
+        val publicBundleNames = readConfigAdminStringList(PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY)
+        val privateBundleNames = readConfigAdminStringList(PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY)
 
         val publicBundles =
             bundleUtils.allBundles.filterTo(LinkedHashSet()) { bundle -> bundle.symbolicName in publicBundleNames }
         val privateBundles =
             bundleUtils.allBundles.filterTo(LinkedHashSet()) { bundle -> bundle.symbolicName in privateBundleNames }
 
-        val nonCpkSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), publicBundles, privateBundles)
+        val platformSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), publicBundles, privateBundles)
 
-        sandboxes[nonCpkSandbox.id] = nonCpkSandbox
+        sandboxes[platformSandbox.id] = platformSandbox
 
-        return nonCpkSandbox
+        return platformSandbox
     }
 
     /**
@@ -282,7 +282,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
         val cpk = when (sandbox) {
             is CpkSandboxInternal -> sandbox.cpk
-            else -> return NonCpkClassInfo(bundle.symbolicName, bundle.version)
+            else -> return PlatformClassInfo(bundle.symbolicName, bundle.version)
         }
 
         // This lookup is required because a CPK's dependencies are only given as <name, version, public key hashes>

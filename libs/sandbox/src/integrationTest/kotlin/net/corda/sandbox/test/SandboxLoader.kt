@@ -78,8 +78,8 @@ class SandboxLoader @Activate constructor(
             properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()
             properties[BLACKLISTED_KEYS_KEY] = emptyList<String>()
             properties[PLATFORM_VERSION_KEY] = 999
-            properties[NON_CPK_SANDBOX_PUBLIC_BUNDLES_KEY] = NON_CPK_PUBLIC_BUNDLE_NAMES
-            properties[NON_CPK_SANDBOX_PRIVATE_BUNDLES_KEY] = privateBundleNames
+            properties[PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] = NON_CPK_PUBLIC_BUNDLE_NAMES
+            properties[PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY] = privateBundleNames
             @Suppress("unchecked_cast")
             config.update(properties as Dictionary<String, Any>)
         }

@@ -11,11 +11,11 @@ import java.util.TreeSet
 
 /** Implements [EvolvableTag]. */
 internal class EvolvableTagImplV1(
-    isNonCpkClass: Boolean,
+    isPlatformClass: Boolean,
     classBundleName: String,
     cordappBundleName: String,
     cpkPublicKeyHashes: NavigableSet<SecureHash>
-) : EvolvableTag(1, isNonCpkClass, classBundleName, cordappBundleName, cpkPublicKeyHashes) {
+) : EvolvableTag(1, isPlatformClass, classBundleName, cordappBundleName, cpkPublicKeyHashes) {
 
     companion object {
         private const val ENTRIES_LENGTH = 6
@@ -31,7 +31,7 @@ internal class EvolvableTagImplV1(
                         "entries were expected. The entries were $classTagEntries."
             )
 
-            val isNonCpkClass = classTagEntries[IS_NON_CPK_CLASS_IDX].toBoolean()
+            val isPlatformClass = classTagEntries[IS_NON_CPK_CLASS_IDX].toBoolean()
 
             val cpkPublicKeyHashes = TreeSet(classTagEntries[CPK_PUBLIC_KEY_HASHES_IDX]
                 .split(ClassTagV1.COLLECTION_DELIMITER)
@@ -43,7 +43,7 @@ internal class EvolvableTagImplV1(
                 } })
 
             return EvolvableTagImplV1(
-                isNonCpkClass,
+                isPlatformClass,
                 classTagEntries[CLASS_BUNDLE_NAME_IDX],
                 classTagEntries[CORDAPP_BUNDLE_NAME_IDX],
                 cpkPublicKeyHashes
@@ -60,7 +60,7 @@ internal class EvolvableTagImplV1(
 
         entries[CLASS_TAG_IDENTIFIER_IDX] = ClassTagV1.EVOLVABLE_IDENTIFIER
         entries[CLASS_TAG_VERSION_IDX] = version
-        entries[IS_NON_CPK_CLASS_IDX] = isNonCpkClass
+        entries[IS_NON_CPK_CLASS_IDX] = isPlatformClass
         entries[CLASS_BUNDLE_NAME_IDX] = classBundleName
         entries[CORDAPP_BUNDLE_NAME_IDX] = cordappBundleName
         entries[CPK_PUBLIC_KEY_HASHES_IDX] = stringifiedCpkPublicKeyHashes

@@ -45,13 +45,13 @@ class IsolatingFindBundleHookTests {
     }
 
     @Test
-    fun `bundle is found if a bundle is in the non-CPK sandbox`() {
-        val nonCpkSandbox = mock<SandboxInternal>()
+    fun `bundle is found if a bundle is in the platform sandbox`() {
+        val platformSandbox = mock<SandboxInternal>()
 
         val sandboxService = mock<SandboxServiceInternal>().apply {
             whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(false)
-            whenever(getSandbox(bundleOne)).thenReturn(nonCpkSandbox)
-            whenever(isNonCpkSandbox(nonCpkSandbox)).thenReturn(true)
+            whenever(getSandbox(bundleOne)).thenReturn(platformSandbox)
+            whenever(isPlatformSandbox(platformSandbox)).thenReturn(true)
         }
 
         val isolatingFindBundleHook = IsolatingFindBundleHook(sandboxService)

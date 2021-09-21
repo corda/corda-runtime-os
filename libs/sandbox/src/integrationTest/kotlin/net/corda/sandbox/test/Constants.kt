@@ -2,7 +2,7 @@
 
 package net.corda.sandbox.test
 
-// The names of the bundles to place as public bundles in the sandbox service's non-CPK sandbox.
+// The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
 val NON_CPK_PUBLIC_BUNDLE_NAMES = listOf(
     "javax.persistence-api",
     "jcl.over.slf4j",
@@ -27,8 +27,8 @@ val NON_CPK_PUBLIC_BUNDLE_NAMES = listOf(
 internal const val BASE_DIRECTORY_KEY = "baseDirectory"
 internal const val BLACKLISTED_KEYS_KEY = "blacklistedKeys"
 internal const val PLATFORM_VERSION_KEY = "platformVersion"
-internal const val NON_CPK_SANDBOX_PUBLIC_BUNDLES_KEY = "nonCpkSandboxPublicBundles"
-internal const val NON_CPK_SANDBOX_PRIVATE_BUNDLES_KEY = "nonCpkSandboxPrivateBundles"
+internal const val PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY = "platformSandboxPublicBundles"
+internal const val PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY = "platformSandboxPrivateBundles"
 
 internal const val CPK_ONE = "sandbox-cpk-one-cordapp.cpk"
 internal const val CPK_TWO = "sandbox-cpk-two-cordapp.cpk"

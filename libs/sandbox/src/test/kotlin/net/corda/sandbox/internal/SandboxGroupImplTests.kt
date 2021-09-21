@@ -20,10 +20,10 @@ import java.util.NavigableSet
 
 // Various dummy serialised class tags.
 private const val CPK_STATIC_TAG = "serialised_static_cpk_class"
-private const val NON_CPK_STATIC_TAG = "serialised_static_non_cpk_class"
+private const val PLATFORM_STATIC_TAG = "serialised_static_non_cpk_class"
 private const val BAD_CPK_FILE_HASH_STATIC_TAG = "serialised_static_bad_cpk_file_hash"
 private const val CPK_EVOLVABLE_TAG = "serialised_evolvable_cpk_class"
-private const val NON_CPK_EVOLVABLE_TAG = "serialised_evolvable_non_cpk_class"
+private const val PLATFORM_EVOLVABLE_TAG = "serialised_evolvable_non_cpk_class"
 private const val BAD_CORDAPP_BUNDLE_NAME_EVOLVABLE_TAG = "serialised_evolvable_bad_cordapp_bundle_name"
 private const val BAD_SIGNERS_EVOLVABLE_TAG = "serialised_evolvable_bad_signers"
 
@@ -34,12 +34,12 @@ private const val BAD_SIGNERS_EVOLVABLE_TAG = "serialised_evolvable_bad_signers"
  */
 class SandboxGroupImplTests {
     private val cpkClass = String::class.java
-    private val nonCpkClass = Int::class.java
+    private val platformClass = Int::class.java
     private val nonBundleClass = Boolean::class.java
     private val nonSandboxClass = Float::class.java
 
     private val mockCpkBundle = mockBundle(CPK_BUNDLE_NAME)
-    private val mockNonCpkBundle = mockBundle(NON_CPK_BUNDLE_NAME)
+    private val mockPlatformBundle = mockBundle(NON_CPK_BUNDLE_NAME)
     private val mockNonSandboxBundle = mock<Bundle>()
     private val mockCordappBundle = mockBundle(CORDAPP_BUNDLE_NAME)
 
@@ -51,21 +51,21 @@ class SandboxGroupImplTests {
         whenever(cordappBundle).thenReturn(mockCordappBundle)
         whenever(loadClass(cpkClass.name, CPK_BUNDLE_NAME)).thenReturn(cpkClass)
     }
-    private val mockNonCpkSandbox = mock<SandboxInternal>().apply {
-        whenever(containsBundle(mockNonCpkBundle)).thenReturn(true)
-        whenever(loadClass(nonCpkClass.name, NON_CPK_BUNDLE_NAME)).thenReturn(nonCpkClass)
+    private val mockPlatformSandbox = mock<SandboxInternal>().apply {
+        whenever(containsBundle(mockPlatformBundle)).thenReturn(true)
+        whenever(loadClass(platformClass.name, NON_CPK_BUNDLE_NAME)).thenReturn(platformClass)
     }
 
     private val mockBundleUtils = mock<BundleUtils>().apply {
         whenever(getBundle(cpkClass)).thenReturn(mockCpkBundle)
-        whenever(getBundle(nonCpkClass)).thenReturn(mockNonCpkBundle)
+        whenever(getBundle(platformClass)).thenReturn(mockPlatformBundle)
         whenever(getBundle(nonSandboxClass)).thenReturn(mockNonSandboxBundle)
     }
 
     private val sandboxesById = mapOf(mockCpk.id to mockCpkSandbox)
     private val classTagFactory = DummyClassTagFactory(mockCpk.cpkHash, mockCpk.id.signers)
     private val sandboxGroupImpl =
-        SandboxGroupImpl(mockBundleUtils, sandboxesById, mockNonCpkSandbox, classTagFactory)
+        SandboxGroupImpl(mockBundleUtils, sandboxesById, mockPlatformSandbox, classTagFactory)
 
     @Test
     fun `creates valid static tag for a CPK class`() {
@@ -74,9 +74,9 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `creates valid static tag for a non-CPK class`() {
-        val expectedTag = "true;true;$mockNonCpkBundle;$mockNonCpkSandbox"
-        assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(nonCpkClass))
+    fun `creates valid static tag for a platform class`() {
+        val expectedTag = "true;true;$mockPlatformBundle;$mockPlatformSandbox"
+        assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(platformClass))
     }
 
     @Test
@@ -100,9 +100,9 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `creates valid evolvable tag for a non-CPK class`() {
-        val expectedTag = "false;true;$mockNonCpkBundle;$mockNonCpkSandbox"
-        assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(nonCpkClass))
+    fun `creates valid evolvable tag for a platform class`() {
+        val expectedTag = "false;true;$mockPlatformBundle;$mockPlatformSandbox"
+        assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(platformClass))
     }
 
     @Test
@@ -125,8 +125,8 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `returns non-CPK class identified by a static tag`() {
-        assertEquals(nonCpkClass, sandboxGroupImpl.getClass(nonCpkClass.name, NON_CPK_STATIC_TAG))
+    fun `returns platform class identified by a static tag`() {
+        assertEquals(platformClass, sandboxGroupImpl.getClass(platformClass.name, PLATFORM_STATIC_TAG))
     }
 
     @Test
@@ -135,8 +135,8 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `returns non-CPK class identified by an evolvable tag`() {
-        assertEquals(nonCpkClass, sandboxGroupImpl.getClass(nonCpkClass.name, NON_CPK_EVOLVABLE_TAG))
+    fun `returns platform class identified by an evolvable tag`() {
+        assertEquals(platformClass, sandboxGroupImpl.getClass(platformClass.name, PLATFORM_EVOLVABLE_TAG))
     }
 
     @Test
@@ -165,19 +165,19 @@ class SandboxGroupImplTests {
 }
 
 /** A dummy [StaticTag] implementation. */
-private class StaticTagImpl(isNonCpkClass: Boolean, classBundleName: String, cpkHash: SecureHash) :
-    StaticTag(1, isNonCpkClass, classBundleName, cpkHash) {
+private class StaticTagImpl(isPlatformClass: Boolean, classBundleName: String, cpkHash: SecureHash) :
+    StaticTag(1, isPlatformClass, classBundleName, cpkHash) {
     override fun serialise() = ""
 }
 
 /** A dummy [EvolvableTag] implementation. */
 private class EvolvableTagImpl(
-    isNonCpkClass: Boolean,
+    isPlatformClass: Boolean,
     classBundleName: String,
     cordappBundleName: String,
     cpkSigners: NavigableSet<SecureHash>
 ) :
-    EvolvableTag(1, isNonCpkClass, classBundleName, cordappBundleName, cpkSigners) {
+    EvolvableTag(1, isPlatformClass, classBundleName, cordappBundleName, cpkSigners) {
     override fun serialise() = ""
 }
 
@@ -186,7 +186,7 @@ private class DummyClassTagFactory(cpkHash: SecureHash, cpkSigners: NavigableSet
     private val cpkStaticTag =
         StaticTagImpl(false, CPK_BUNDLE_NAME, cpkHash)
 
-    private val nonCpkStaticTag =
+    private val platformStaticTag =
         StaticTagImpl(true, NON_CPK_BUNDLE_NAME, ClassTagV1.PLACEHOLDER_CPK_FILE_HASH)
 
     private val invalidCpkFileHashStaticTag =
@@ -196,7 +196,7 @@ private class DummyClassTagFactory(cpkHash: SecureHash, cpkSigners: NavigableSet
     private val cpkEvolvableTag =
         EvolvableTagImpl(false, CPK_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, cpkSigners)
 
-    private val nonCpkmEvolvableTag =
+    private val platformEvolvableTag =
         EvolvableTagImpl(true,
         NON_CPK_BUNDLE_NAME,
         ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME,
@@ -216,18 +216,18 @@ private class DummyClassTagFactory(cpkHash: SecureHash, cpkSigners: NavigableSet
 
     override fun createSerialised(
         isStaticClassTag: Boolean,
-        isNonCpkBundle: Boolean,
+        isPlatformBundle: Boolean,
         bundle: Bundle,
         sandbox: Sandbox
-    ) = "$isStaticClassTag;$isNonCpkBundle;$bundle;$sandbox"
+    ) = "$isStaticClassTag;$isPlatformBundle;$bundle;$sandbox"
 
     override fun deserialise(serialisedClassTag: String): ClassTag {
         return when (serialisedClassTag) {
             CPK_STATIC_TAG -> cpkStaticTag
-            NON_CPK_STATIC_TAG -> nonCpkStaticTag
+            PLATFORM_STATIC_TAG -> platformStaticTag
             BAD_CPK_FILE_HASH_STATIC_TAG -> invalidCpkFileHashStaticTag
             CPK_EVOLVABLE_TAG -> cpkEvolvableTag
-            NON_CPK_EVOLVABLE_TAG -> nonCpkmEvolvableTag
+            PLATFORM_EVOLVABLE_TAG -> platformEvolvableTag
             BAD_CORDAPP_BUNDLE_NAME_EVOLVABLE_TAG -> invalidCordappBundleNameEvolvableTag
             BAD_SIGNERS_EVOLVABLE_TAG -> invalidSignersEvolvableTag
             else -> throw IllegalArgumentException("Could not deserialise tag.")

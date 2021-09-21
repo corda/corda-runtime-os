@@ -14,7 +14,7 @@ sealed class ClassInfo {
 }
 
 /** A [ClassInfo] for a class not loaded from a CPK. */
-data class NonCpkClassInfo(override val classBundleName: String, override val classBundleVersion: Version) : ClassInfo()
+data class PlatformClassInfo(override val classBundleName: String, override val classBundleVersion: Version) : ClassInfo()
 
 /**
  * A [ClassInfo] for a class from a CPK.

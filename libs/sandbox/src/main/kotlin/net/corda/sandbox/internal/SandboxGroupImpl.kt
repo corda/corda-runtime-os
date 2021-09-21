@@ -15,12 +15,12 @@ import net.corda.sandbox.internal.utilities.BundleUtils
  *
  * @param bundleUtils The [BundleUtils] that all OSGi activity is delegated to for testing purposes.
  * @param sandboxesById The [CpkSandboxInternal]s in this sandbox group, keyed by the identifier of their CPK.
- * @param nonCpkSandbox The sandbox containing all the non-CPK bundles.
+ * @param platformSandbox The sandbox containing all the platform bundles.
  */
 internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils,
     private val sandboxesById: Map<Cpk.Identifier, CpkSandboxInternal>,
-    private val nonCpkSandbox: SandboxInternal,
+    private val platformSandbox: SandboxInternal,
     private val classTagFactory: ClassTagFactory
 ) : SandboxGroup {
     override val sandboxes = sandboxesById.values
@@ -56,8 +56,8 @@ internal class SandboxGroupImpl(
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
         val classTag = classTagFactory.deserialise(serialisedClassTag)
 
-        val sandbox = if (classTag.isNonCpkClass) {
-            nonCpkSandbox
+        val sandbox = if (classTag.isPlatformClass) {
+            platformSandbox
         } else {
             when (classTag) {
                 is StaticTag -> sandboxes.find { sandbox -> sandbox.cpk.cpkHash == classTag.cpkFileHash }
@@ -67,7 +67,7 @@ internal class SandboxGroupImpl(
                 }
             }
         } ?: throw SandboxException(
-            "Class tag $className did not match any sandbox in the sandbox group or the non-CPK sandbox."
+            "Class tag $className did not match any sandbox in the sandbox group or the platform sandbox."
         )
 
         return sandbox.loadClass(className, classTag.classBundleName) ?: throw SandboxException(
@@ -82,20 +82,20 @@ internal class SandboxGroupImpl(
      * returned.
      *
      * Throws [SandboxException] if the class is not contained in any bundle, the class is contained in a bundle that
-     * is not contained in any sandbox in the group or in the non-CPK sandbox, or the class is contained in a bundle
+     * is not contained in any sandbox in the group or in the platform sandbox, or the class is contained in a bundle
      * that does not have a symbolic name.
      */
     private fun getClassTag(klass: Class<*>, isStaticTag: Boolean): String {
         val bundle = bundleUtils.getBundle(klass)
             ?: throw SandboxException("Class ${klass.name} was not loaded from any bundle.")
 
-        val sandbox = (sandboxes + nonCpkSandbox).find { sandbox -> sandbox.containsBundle(bundle) }
+        val sandbox = (sandboxes + platformSandbox).find { sandbox -> sandbox.containsBundle(bundle) }
             ?: throw SandboxException(
-                "Bundle ${bundle.symbolicName} was not found in the sandbox group or in the non-CPK sandbox."
+                "Bundle ${bundle.symbolicName} was not found in the sandbox group or in the platform sandbox."
             )
 
-        val isNonCpkBundle = nonCpkSandbox.containsBundle(bundle)
+        val isPlatformBundle = platformSandbox.containsBundle(bundle)
 
-        return classTagFactory.createSerialised(isStaticTag, isNonCpkBundle, bundle, sandbox)
+        return classTagFactory.createSerialised(isStaticTag, isPlatformBundle, bundle, sandbox)
     }
 }

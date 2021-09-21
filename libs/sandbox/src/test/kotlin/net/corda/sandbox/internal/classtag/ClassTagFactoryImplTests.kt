@@ -52,10 +52,10 @@ class ClassTagFactoryImplTests {
     }
 
     @Test
-    fun `can serialise and deserialise a static class tag for a non-CPK class`() {
+    fun `can serialise and deserialise a static class tag for a platform class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = true,
-            isNonCpkBundle = false,
+            isPlatformBundle = false,
             mockBundle,
             mockSandbox
         )
@@ -63,7 +63,7 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag) as StaticTag
 
         assertEquals(1, classTag.version)
-        assertFalse(classTag.isNonCpkClass)
+        assertFalse(classTag.isPlatformClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(mockCpk.cpkHash, classTag.cpkFileHash)
     }
@@ -72,7 +72,7 @@ class ClassTagFactoryImplTests {
     fun `can serialise and deserialise a static class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = true,
-            isNonCpkBundle = true,
+            isPlatformBundle = true,
             mockBundle,
             mockSandbox
         )
@@ -80,16 +80,16 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag) as StaticTag
 
         assertEquals(1, classTag.version)
-        assertTrue(classTag.isNonCpkClass)
+        assertTrue(classTag.isPlatformClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(ClassTagV1.PLACEHOLDER_CPK_FILE_HASH, classTag.cpkFileHash)
     }
 
     @Test
-    fun `can serialise and deserialise an evolvable class tag for a non-CPK class`() {
+    fun `can serialise and deserialise an evolvable class tag for a platform class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = false,
-            isNonCpkBundle = false,
+            isPlatformBundle = false,
             mockBundle,
             mockSandbox
         )
@@ -97,7 +97,7 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag) as EvolvableTag
 
         assertEquals(1, classTag.version)
-        assertFalse(classTag.isNonCpkClass)
+        assertFalse(classTag.isPlatformClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(mockSandbox.cordappBundle.symbolicName, classTag.cordappBundleName)
         assertEquals(mockCpk.id.signers, classTag.cpkPublicKeyHashes)
@@ -107,7 +107,7 @@ class ClassTagFactoryImplTests {
     fun `can serialise and deserialise an evolvable class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = false,
-            isNonCpkBundle = true,
+            isPlatformBundle = true,
             mockBundle,
             mockSandbox
         )
@@ -115,7 +115,7 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag) as EvolvableTag
 
         assertEquals(1, classTag.version)
-        assertTrue(classTag.isNonCpkClass)
+        assertTrue(classTag.isPlatformClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME, classTag.cordappBundleName)
         assertEquals(ClassTagV1.PLACEHOLDER_CPK_PUBLIC_KEY_HASHES, classTag.cpkPublicKeyHashes)
@@ -126,7 +126,7 @@ class ClassTagFactoryImplTests {
         assertThrows<SandboxException> {
             classTagFactory.createSerialised(
                 isStaticClassTag = false,
-                isNonCpkBundle = true,
+                isPlatformBundle = true,
                 mock(),
                 mockSandbox
             )

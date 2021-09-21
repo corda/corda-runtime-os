@@ -41,7 +41,7 @@ import kotlin.random.Random
 /**
  * Tests of [SandboxServiceImpl].
  *
- * Does not test whether the non-CPK sandbox is set up correctly.
+ * Does not test whether the platform sandbox is set up correctly.
  */
 class SandboxServiceImplTests {
     companion object {
@@ -189,13 +189,13 @@ class SandboxServiceImplTests {
 
     /**
      * Creates a mock [ConfigurationAdmin] that lists the [frameworkBundle] and [applicationBundle] as public bundles
-     * in the non-CPK sandbox, and [secretBundle] as a private bundle in the non-CPK sandbox.
+     * in the platform sandbox, and [secretBundle] as a private bundle in the platform sandbox.
      */
     private fun createMockConfigAdmin(): ConfigurationAdmin {
         val properties = Hashtable<String, Any>()
-        properties[NON_CPK_SANDBOX_PUBLIC_BUNDLES_KEY] = listOf(frameworkBundle, applicationBundle)
+        properties[PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] = listOf(frameworkBundle, applicationBundle)
             .map(Bundle::getSymbolicName)
-        properties[NON_CPK_SANDBOX_PRIVATE_BUNDLES_KEY] = listOf(secretBundle.symbolicName)
+        properties[PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY] = listOf(secretBundle.symbolicName)
 
         val configuration = mock<Configuration>()
         val configurationAdmin = mock<ConfigurationAdmin>()
@@ -551,7 +551,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `public bundles in the non-CPK sandbox can both see and be seen by other sandboxes`() {
+    fun `public bundles in the platform sandbox can both see and be seen by other sandboxes`() {
         val startedBundles = mutableListOf<Bundle>()
         val sandboxService = createSandboxService(startedBundles = startedBundles)
 
@@ -559,13 +559,13 @@ class SandboxServiceImplTests {
         assertThat(startedBundles).isNotEmpty
 
         startedBundles.forEach { bundle ->
-            // The public bundles in the non-CPK sandbox should be visible and have visibility.
+            // The public bundles in the platform sandbox should be visible and have visibility.
             assertTrue(sandboxService.hasVisibility(bundle, applicationBundle))
             assertTrue(sandboxService.hasVisibility(applicationBundle, bundle))
             assertTrue(sandboxService.hasVisibility(bundle, frameworkBundle))
             assertTrue(sandboxService.hasVisibility(frameworkBundle, bundle))
 
-            // The non-public bundles in the non-CPK sandbox should not be visible.
+            // The non-public bundles in the platform sandbox should not be visible.
             assertFalse(sandboxService.hasVisibility(bundle, secretBundle))
         }
     }
