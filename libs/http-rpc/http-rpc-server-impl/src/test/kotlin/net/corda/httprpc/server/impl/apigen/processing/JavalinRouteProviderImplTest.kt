@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
 import net.corda.httprpc.server.impl.apigen.models.Endpoint
-import net.corda.httprpc.server.impl.apigen.models.EndpointMethod.*
+import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.InvocationMethod
 import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.httprpc.server.impl.apigen.models.ResponseBody
@@ -31,7 +31,7 @@ class JavalinRouteProviderImplTest {
         val resourceName = "testresource"
         val resourcePath = "testpath"
         val testEndpoint = Endpoint(
-            GET, "", "",
+                EndpointMethod.GET, "", "",
             "abc/${pathParameterStartMarker}${testEndpointName}${pathParameterEndMarker}/def",
             emptyList(), ResponseBody("", Unit::class.java), invocationMethod
         )
@@ -60,7 +60,7 @@ class JavalinRouteProviderImplTest {
         val resourceName = "testresource"
         val resourcePath = "testpath"
         val testEndpoint = Endpoint(
-            GET, "", "",
+                EndpointMethod.GET, "", "",
             "getprotocolversion",
             emptyList(), ResponseBody("", Unit::class.java), invocationMethod
         )
