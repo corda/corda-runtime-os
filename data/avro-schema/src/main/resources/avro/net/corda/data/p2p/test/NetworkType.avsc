@@ -1,6 +1,0 @@
-{
-  "type": "enum",
-  "name": "NetworkType",
-  "namespace": "net.corda.p2p.test",
-  "symbols": [ "CORDA_4_LEGACY", "MODERN" ]
-}

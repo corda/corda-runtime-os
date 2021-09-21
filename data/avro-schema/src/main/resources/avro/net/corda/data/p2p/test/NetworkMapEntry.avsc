@@ -21,7 +21,7 @@
     },
     {
       "name": "networkType",
-      "type": "net.corda.p2p.test.NetworkType"
+      "type": "net.corda.p2p.NetworkType"
     }
   ]
 }
