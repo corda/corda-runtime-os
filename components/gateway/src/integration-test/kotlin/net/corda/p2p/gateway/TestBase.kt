@@ -4,11 +4,11 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
-import net.corda.libs.configuration.read.kafka.ConfigReaderImpl
 import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
 import net.corda.libs.configuration.write.kafka.ConfigWriterImpl
+import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
@@ -22,6 +22,8 @@ import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.SniCalculator
+import net.corda.test.util.eventually
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
@@ -142,5 +144,12 @@ open class TestBase {
 
     fun createGatewayConfigService(configuration: GatewayConfiguration): GatewayConfigurationService {
         return GatewayConfigurationService(createParentCoordinator(), createConfigurationServiceFor(configuration))
+    }
+
+    fun Lifecycle.startAndWaitForStarted() {
+        this.start()
+        eventually {
+            assertThat(this.isRunning).isTrue
+        }
     }
 }

@@ -21,7 +21,6 @@ class ConnectionManagerTest : TestBase() {
 
     private val serverAddress = URI.create("http://localhost:10000")
     private val destination = DestinationInfo(serverAddress, aliceSNI[0], null)
-    private val coordinator = DominoCoordinatorFactory(LifecycleCoordinatorFactoryImpl(), "localhost:10000")
     private val configuration = GatewayConfiguration(
         hostAddress = serverAddress.host,
         hostPort = serverAddress.port,
@@ -34,7 +33,7 @@ class ConnectionManagerTest : TestBase() {
     @Timeout(30)
     fun `acquire connection`() {
         val manager = ConnectionManager(parent, configService)
-        manager.start()
+        manager.startAndWaitForStarted()
         HttpServer(parent, configService).use { server ->
         server.addListener(object : HttpEventListener {
             override fun onMessage(message: HttpMessage) {
@@ -62,7 +61,7 @@ class ConnectionManagerTest : TestBase() {
     @Timeout(30)
     fun `reuse connection`() {
         val manager = ConnectionManager(parent, configService)
-        manager.start()
+        manager.startAndWaitForStarted()
         val requestReceived = CountDownLatch(2)
         HttpServer(parent, configService).use { server ->
         val remotePeers = mutableListOf<SocketAddress>()

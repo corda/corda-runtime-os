@@ -106,11 +106,4 @@ class GatewayConfigurationService(
             executeBeforeStop { it.close() }
         }
     }
-    // YIFT: Remove?
-    fun startAndWaitForStarted() {
-        start()
-        while (status != LifecycleStatus.UP) {
-            Thread.sleep(100)
-        }
-    }
 }

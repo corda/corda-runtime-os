@@ -28,10 +28,6 @@ internal class Registration(
     private val registeringCoordinator: LifecycleCoordinator
 ) : RegistrationHandle {
 
-    override fun toString(): String {
-        return "YIFT(${coordinators.map { it.name.componentName }}, $isOpen)"
-    }
-
     private val coordinatorStatusMap = ConcurrentHashMap(coordinators.associateWith { LifecycleStatus.DOWN })
 
     private val isClosed = AtomicBoolean(false)

@@ -257,7 +257,7 @@ class GatewayTest : TestBase() {
         }
 
         logger.info("Done sending ${messageCount * serversCount} messages in ${endTime - startTime} milliseconds")
-        servers.forEach { it.stopAndWaitForDestruction() }
+        servers.forEach { it.close() }
     }
 
     @Test

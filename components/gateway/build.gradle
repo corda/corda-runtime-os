@@ -40,6 +40,8 @@ dependencies {
         exclude group: 'mockito-core'
     }
 
+    integrationTestApi project(":testing:test-utilities")
+
     // TODO: Change to OSGI
     testImplementation project(":libs:messaging:inmemory-messaging-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
