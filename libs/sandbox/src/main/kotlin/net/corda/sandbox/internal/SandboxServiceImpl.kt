@@ -42,6 +42,9 @@ internal class SandboxServiceImpl @Activate constructor(
     @Reference
     private val configAdmin: ConfigurationAdmin
 ) : SandboxServiceInternal, SingletonSerializeAsToken {
+    // These two framework bundles require full visibility.
+    private val felixFrameworkBundle by lazy { getFirstBundleByName(FELIX_FRAMEWORK_BUNDLE) }
+    private val felixScrBundle by lazy { getFirstBundleByName(FELIX_SCR_BUNDLE) }
 
     // These sandboxes are not persisted in any way; they are recreated on node startup.
     private val sandboxes = ConcurrentHashMap<UUID, SandboxInternal>()
@@ -89,14 +92,14 @@ internal class SandboxServiceImpl @Activate constructor(
         val lookedAtSandbox = getSandbox(lookedAtBundle)
 
         return when {
+            // These two framework bundles require full visibility.
+            lookingBundle in listOf(felixFrameworkBundle, felixScrBundle) -> true
             // Do both bundles belong to the same sandbox, or is neither bundle in a sandbox?
             lookedAtSandbox === lookingSandbox -> true
             // Does only one of the bundles belong to a sandbox?
             lookedAtSandbox == null || lookingSandbox == null -> false
             // Does the looking sandbox not have visibility of the looked at sandbox?
             !lookingSandbox.hasVisibility(lookedAtSandbox) -> false
-            // Is the looking bundle a public bundle in the platform sandbox?
-            lookingSandbox === platformSandbox && lookingBundle in platformSandbox.publicBundles -> true
             // Is the looked-at bundle a public bundle in the looked-at sandbox?
             lookedAtBundle in lookedAtSandbox.publicBundles -> true
 
@@ -138,6 +141,11 @@ internal class SandboxServiceImpl @Activate constructor(
             null
         }
     }
+
+    /** Returns the first installed bundle with the [symbolicName]. */
+    private fun getFirstBundleByName(symbolicName: String) = bundleUtils.allBundles.firstOrNull { bundle ->
+        bundle.symbolicName == symbolicName
+    } ?: throw SandboxException("There is no installed bundle with the symbolic name $symbolicName.")
 
     /**
      * Retrieves the CPKs from the [installService] based on their [cpkFileHashes], and verifies the CPKs.
@@ -202,19 +210,18 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     /**
-     * Creates the platform sandbox. Reads the names of the public and private bundles to place in this sandbox from the
-     * [configAdmin], using the keys [PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] and [PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY].
+     * Creates the platform sandbox. Reads the names of the public and private bundles to place in this sandbox from
+     * the [configAdmin], using the keys [PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] and
+     * [PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY].
      *
      * Throws [SandboxException] if the properties listing the public and private bundles are not set.
      */
     private fun createPlatformSandbox(): SandboxImpl {
+        val allBundles = bundleUtils.allBundles
         val publicBundleNames = readConfigAdminStringList(PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY)
         val privateBundleNames = readConfigAdminStringList(PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY)
-
-        val publicBundles =
-            bundleUtils.allBundles.filterTo(LinkedHashSet()) { bundle -> bundle.symbolicName in publicBundleNames }
-        val privateBundles =
-            bundleUtils.allBundles.filterTo(LinkedHashSet()) { bundle -> bundle.symbolicName in privateBundleNames }
+        val publicBundles = allBundles.filter { bundle -> bundle.symbolicName in publicBundleNames }.toSet()
+        val privateBundles = allBundles.filter { bundle -> bundle.symbolicName in privateBundleNames }.toSet()
 
         val platformSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), publicBundles, privateBundles)
 

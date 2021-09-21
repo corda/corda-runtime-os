@@ -47,14 +47,12 @@ class SandboxServiceImplTests {
     companion object {
         private const val hashAlgorithm = "SHA-256"
         private const val hashLength = 32
-        private const val APPLICATION_VERSION = "5.0"
-        private const val FRAMEWORK_VERSION = "1.9"
-        private const val SECRET_VERSION = "9.9.99"
     }
 
-    private val applicationBundle = mockBundle("net.corda.application", APPLICATION_VERSION)
-    private val frameworkBundle = mockBundle("org.apache.felix.framework", FRAMEWORK_VERSION)
-    private val secretBundle = mockBundle("secret.service", SECRET_VERSION)
+    private val frameworkBundle = mockBundle("org.apache.felix.framework", "1.9")
+    private val scrBundle = mockBundle("org.apache.felix.scr", "2.3")
+    private val applicationBundle = mockBundle("net.corda.application", "5.0")
+    private val secretBundle = mockBundle("secret.service", "9.9.99")
 
     private val cpkAndBundlesOne = createDummyCpkAndBundles(String::class.java, Boolean::class.java)
     private val cpkOne = cpkAndBundlesOne.cpk
@@ -173,8 +171,9 @@ class SandboxServiceImplTests {
 
         whenever(allBundles).thenReturn(
             listOf(
-                applicationBundle,
                 frameworkBundle,
+                scrBundle,
+                applicationBundle,
                 secretBundle
             )
         )
@@ -188,12 +187,12 @@ class SandboxServiceImplTests {
     }
 
     /**
-     * Creates a mock [ConfigurationAdmin] that lists the [frameworkBundle] and [applicationBundle] as public bundles
-     * in the platform sandbox, and [secretBundle] as a private bundle in the platform sandbox.
+     * Creates a mock [ConfigurationAdmin] that lists the [frameworkBundle], [scrBundle] and [applicationBundle] as
+     * public bundles in the platform sandbox, and [secretBundle] as a private bundle in the platform sandbox.
      */
     private fun createMockConfigAdmin(): ConfigurationAdmin {
         val properties = Hashtable<String, Any>()
-        properties[PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] = listOf(frameworkBundle, applicationBundle)
+        properties[PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] = listOf(frameworkBundle, scrBundle, applicationBundle)
             .map(Bundle::getSymbolicName)
         properties[PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY] = listOf(secretBundle.symbolicName)
 
@@ -547,26 +546,6 @@ class SandboxServiceImplTests {
             sandboxTwoPrivateBundles.forEach { sandboxTwoPrivateBundle ->
                 assertFalse(sandboxService.hasVisibility(sandboxOneBundle, sandboxTwoPrivateBundle))
             }
-        }
-    }
-
-    @Test
-    fun `public bundles in the platform sandbox can both see and be seen by other sandboxes`() {
-        val startedBundles = mutableListOf<Bundle>()
-        val sandboxService = createSandboxService(startedBundles = startedBundles)
-
-        sandboxService.createSandboxes(listOf(cpkOne.cpkHash, cpkTwo.cpkHash))
-        assertThat(startedBundles).isNotEmpty
-
-        startedBundles.forEach { bundle ->
-            // The public bundles in the platform sandbox should be visible and have visibility.
-            assertTrue(sandboxService.hasVisibility(bundle, applicationBundle))
-            assertTrue(sandboxService.hasVisibility(applicationBundle, bundle))
-            assertTrue(sandboxService.hasVisibility(bundle, frameworkBundle))
-            assertTrue(sandboxService.hasVisibility(frameworkBundle, bundle))
-
-            // The non-public bundles in the platform sandbox should not be visible.
-            assertFalse(sandboxService.hasVisibility(bundle, secretBundle))
         }
     }
 

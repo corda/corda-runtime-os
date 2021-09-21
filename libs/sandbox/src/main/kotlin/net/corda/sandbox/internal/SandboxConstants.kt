@@ -5,6 +5,9 @@ package net.corda.sandbox.internal
 import net.corda.v5.crypto.SecureHash
 import java.util.Collections
 
+internal const val FELIX_FRAMEWORK_BUNDLE = "org.apache.felix.framework"
+internal const val FELIX_SCR_BUNDLE = "org.apache.felix.scr"
+
 // The keys to the symbolic names of the public and private bundles of the platform sandbox in the configuration admin.
 internal const val PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY = "platformSandboxPublicBundles"
 internal const val PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY = "platformSandboxPrivateBundles"
