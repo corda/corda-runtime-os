@@ -128,11 +128,14 @@ class HttpServer(
     }
 
     override fun onStart() {
+        println("QQQ ${this.hashCode()} onStart....")
         configurationService.start()
+        println("QQQ ${this.hashCode()} started configurationService")
         onStatusChange(configurationService.status)
     }
 
     override fun onStatusChange(newStatus: LifecycleStatus) {
+        println("QQQ ${this.hashCode()} onStatusChange configurationService.status -> ${configurationService.status} status ->$status")
         if ((configurationService.status == LifecycleStatus.UP) && (status != LifecycleStatus.UP)) {
             logger.info("Starting HTTP Server")
             val bossGroup = NioEventLoopGroup(1).also {
@@ -178,8 +181,11 @@ class HttpServer(
 
     // YIFT: Remove?
     fun startAndWaitForStarted() {
+        println("QQQ ${this.hashCode()} starting....")
         start()
+        println("QQQ ${this.hashCode()}  started")
         while (status != LifecycleStatus.UP) {
+            println("QQQ ${this.hashCode()} started status = $status")
             Thread.sleep(100)
         }
     }
