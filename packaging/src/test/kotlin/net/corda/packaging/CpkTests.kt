@@ -25,7 +25,6 @@ import java.nio.file.Path
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.util.Base64
-import java.util.TreeSet
 import java.util.jar.JarFile
 import java.util.stream.Collectors
 import java.util.zip.ZipEntry
@@ -206,10 +205,11 @@ class CpkTests {
         val dependencies = workflowCpk.dependencies
         Assertions.assertEquals(1, dependencies.size)
         val contractCpkDependency = dependencies.single()
+
         contractCpkDependency.apply {
             Assertions.assertEquals(System.getProperty("net.corda.packaging.test.contract.bundle.symbolic.name"), symbolicName)
             Assertions.assertEquals(System.getProperty("net.corda.packaging.test.contract.bundle.version"), version)
-            Assertions.assertEquals(sortedSetOf(cordaDevKey), signers,
+            Assertions.assertEquals(cordaDevKey.toString().toByteArray().hash(), signerSummaryHash,
         "The cpk dependency is expected to be signed with corda development key only"
             )
         }
@@ -327,7 +327,13 @@ class CpkTests {
         val hashdata1 = publicKey.hash(DigestAlgorithmName.SHA2_384)
         val hashdata2 = publicKey.hash(DigestAlgorithmName.SHA2_384)
         val hashdata3 = publicKey.hash(DigestAlgorithmName.SHA2_512)
-        val expectedSigners = sequenceOf(hashdata1, hashdata2, hashdata3).toCollection(TreeSet(Cpk.Identifier.secureHashComparator))
+        val expectedSignersSummaryHash = hash { md ->
+            sequenceOf(hashdata1, hashdata2, hashdata3)
+                .sortedWith(Cpk.Identifier.secureHashComparator)
+                .map(SecureHash::toString)
+                .map(String::toByteArray)
+                .forEach(md::update)
+        }
 
         val modifiedWorkflowCpk = testDir.resolve("tweaked.cpk")
         val xml = """
@@ -348,7 +354,7 @@ class CpkTests {
                     cpkLocation = modifiedWorkflowCpk.toString(), verifySignature = false)
         val dependency = cpk.dependencies.find { it.symbolicName == dummyName && it.version == dummyVersion }
         Assertions.assertNotNull(dependency, "Test dependency not found")
-        Assertions.assertEquals(expectedSigners, dependency!!.signers)
+        Assertions.assertEquals(expectedSignersSummaryHash, dependency!!.signerSummaryHash)
     }
 
     @Test

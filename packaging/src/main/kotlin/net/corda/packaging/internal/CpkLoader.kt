@@ -337,25 +337,26 @@ object CpkLoader {
 
             val signers = dependencySignersElements.item(0) as Element
 
-            val publicKeyHashes: TreeSet<SecureHash> = ElementIterator(signers.getElementsByTagName(DEPENDENCY_SIGNER_TAG)).asSequence()
-                    .mapTo(TreeSet(Cpk.Identifier.secureHashComparator)) { signer ->
-                        val algorithm = signer.getAttribute("algorithm")?.trim()
-                        if (algorithm.isNullOrEmpty()) {
-                            // Should already have been validated by schema.
-                            val msg = fileLocationAppender("The entry at index ${el.index} of the CPK dependencies file" +
-                                    " did not specify an algorithm for its signer's public key hash.")
-                            throw DependencyMetadataException(msg)
-                        }
-                        val hashData = Base64.getDecoder().decode(signer.textContent)
-                        when (algorithm) {
-                            DigestAlgorithmName.SHA2_256.name -> SecureHash(DigestAlgorithmName.SHA2_256.name, hashData)
-                            else -> SecureHash(algorithm, hashData)
-                        }
+            val publicKeySummaryHash: SecureHash = hash { md ->
+                ElementIterator(signers.getElementsByTagName(DEPENDENCY_SIGNER_TAG)).asSequence().map { signer ->
+                    val algorithm = signer.getAttribute("algorithm")?.trim()
+                    if (algorithm.isNullOrEmpty()) {
+                        // Should already have been validated by schema.
+                        val msg = fileLocationAppender("The entry at index ${el.index} of the CPK dependencies file" +
+                                " did not specify an algorithm for its signer's public key hash.")
+                        throw DependencyMetadataException(msg)
                     }
+                    val hashData = Base64.getDecoder().decode(signer.textContent)
+                    SecureHash(algorithm, hashData)
+                }.sortedWith(Cpk.Identifier.secureHashComparator)
+                .map(SecureHash::toString)
+                .map(String::toByteArray)
+                .forEach(md::update)
+            }
             Cpk.Identifier(
                     dependencyNameElements.item(0).textContent,
                     dependencyVersionElements.item(0).textContent,
-                    publicKeyHashes).takeIf {
+                    publicKeySummaryHash).takeIf {
                 when(dependencyTypeElements.length) {
                     0 -> true
                     1 -> Cpk.Type.parse(dependencyTypeElements.item(0).textContent) != Cpk.Type.CORDA_API

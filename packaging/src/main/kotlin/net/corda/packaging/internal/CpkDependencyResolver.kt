@@ -3,12 +3,16 @@ package net.corda.packaging.internal
 import net.corda.packaging.Cpk
 import net.corda.packaging.DependencyResolutionException
 import net.corda.packaging.VersionComparator
+import net.corda.v5.crypto.SecureHash
 import java.util.Collections
 import java.util.NavigableMap
 import java.util.NavigableSet
 import java.util.TreeSet
 
 object CpkDependencyResolver {
+
+    //We need an SecureHash instance that compares lower against with all other
+    private val zerothHash = SecureHash("", ByteArray(1))
 
     @Suppress("NestedBlockDepth", "ComplexMethod", "ThrowsCount")
     fun resolveDependencies(roots: Iterable<Cpk.Identifier>,
@@ -23,9 +27,9 @@ object CpkDependencyResolver {
             val dependencyAlreadyResolved = resolvedSet.tailSet(cpkIdentifier).any { it.symbolicName == cpkIdentifier.symbolicName }
             if (!dependencyAlreadyResolved) {
                 //All CPKs with the required symbolic name and version greater or equal are valid candidates
-                val needle = cpkIdentifier.copy(signers = Collections.emptyNavigableSet())
+                val needle = cpkIdentifier.copy(signerSummaryHash = zerothHash)
                 val cpkCandidates = availableIds.tailMap(needle).asSequence()
-                        .filter { it.key.symbolicName == needle.symbolicName && (!useSignatures || cpkIdentifier.signers == it.key.signers) }
+                        .filter { it.key.symbolicName == needle.symbolicName && (!useSignatures || cpkIdentifier.signerSummaryHash == it.key.signerSummaryHash) }
                         .toList()
                 when {
                     cpkCandidates.isNotEmpty() -> {

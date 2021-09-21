@@ -14,12 +14,19 @@ import java.util.TreeSet
 
 private fun id(name: String,
                version : String,
-               signers : NavigableSet<SecureHash> = Collections.emptyNavigableSet()) =
-        Cpk.Identifier(name, version, signers)
+               signers : NavigableSet<SecureHash> = Collections.emptyNavigableSet()) : Cpk.Identifier {
+    val signersSummaryHash = hash { md ->
+        signers.map(SecureHash::toString)
+            .map(String::toByteArray)
+            .forEach(md::update)
+    }
+    return Cpk.Identifier(name, version, signersSummaryHash)
+}
+
 private fun ids(vararg ids : Cpk.Identifier) = ids.toCollection(TreeSet())
 
 private fun signers(vararg publicKey : String) =
-    publicKey.mapTo(TreeSet()) { SecureHash.create("SHA256:$it") } as NavigableSet<SecureHash>
+    publicKey.mapTo(TreeSet(Cpk.Identifier.secureHashComparator)) { SecureHash.create("SHA256:$it") } as NavigableSet<SecureHash>
 
 private fun dependencyMap(vararg pairs : Pair<Cpk.Identifier, NavigableSet<Cpk.Identifier>>) =
         pairs.associateByTo(TreeMap(),

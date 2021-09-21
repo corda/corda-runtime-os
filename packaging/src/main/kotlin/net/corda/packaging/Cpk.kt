@@ -7,14 +7,11 @@ import net.corda.packaging.internal.hash
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.nio.file.Path
-import java.security.MessageDigest
 import java.security.cert.Certificate
 import java.util.Arrays
 import java.util.NavigableMap
 import java.util.NavigableSet
-import java.util.SortedSet
 import java.util.TreeMap
-import java.util.TreeSet
 
 /** Contains information on a [Cpk]. */
 @Suppress("LongParameterList")
@@ -30,18 +27,16 @@ sealed class Cpk(
         val dependencies: NavigableSet<Identifier>) {
 
     val id = let {
-        val signers: NavigableSet<SecureHash> = cordappCertificates.mapNotNullTo(TreeSet(Identifier.secureHashComparator)) { certificate ->
-            certificate.publicKey?.encoded?.hash()
+        val signerSummaryHash = hash {
+            cordappCertificates
+                .asSequence()
+                .map { certificate -> certificate.encoded.hash() }
+                .sortedWith(Identifier.secureHashComparator)
+                .map(SecureHash::toString)
+                .map(String::toByteArray)
+                .forEach(it::update)
         }
-        Identifier(cordappManifest.bundleSymbolicName, cordappManifest.bundleVersion, signers)
-    }
-
-    val shortId = let {
-        val signerBytes = id.signers.joinToString("").toByteArray()
-        val digest = MessageDigest.getInstance(hashAlgorithm)
-        val signerSummaryHash = SecureHash(digest.algorithm, digest.digest(signerBytes))
-
-        ShortIdentifier(id.symbolicName, id.version, signerSummaryHash)
+        Identifier(cordappManifest.bundleSymbolicName, cordappManifest.bundleVersion, signerSummaryHash)
     }
 
     companion object {
@@ -154,19 +149,17 @@ sealed class Cpk(
 
     /**
      * Identifies a CPK whose CorDapp JAR has the matching [symbolicName] and [version], and that is signed by the public
-     * keys with the hashes [signers].
+     * keys with the hashes [signerSummaryHash].
      */
     data class Identifier(val symbolicName: String,
                           val version: String,
-                          val signers: NavigableSet<SecureHash>) : Comparable<Identifier> {
+                          val signerSummaryHash: SecureHash) : Comparable<Identifier> {
         companion object {
-            val secureHashComparator = Comparator<SecureHash?> { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) }
-            private val signersComparator = Comparator<SortedSet<SecureHash>> { s1, s2 ->
-                Arrays.compare(s1.toTypedArray(), s2.toTypedArray(), secureHashComparator)
-            }
+            val secureHashComparator = Comparator.comparing(SecureHash::algorithm)
+                .then { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) }
             private val identifierComparator = Comparator.comparing(Identifier::symbolicName)
                     .thenComparing(Identifier::version, VersionComparator())
-                    .thenComparing(Identifier::signers, signersComparator)
+                    .thenComparing(Identifier::signerSummaryHash, secureHashComparator)
         }
 
         override fun compareTo(other: Identifier): Int = identifierComparator.compare(this, other)
