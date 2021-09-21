@@ -3,12 +3,11 @@ package net.corda.configuration.read.impl
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.libs.configuration.read.ConfigReadService
-import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
+import net.corda.libs.configuration.read.ConfigReader
+import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
@@ -19,28 +18,25 @@ import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.UUID
 
 @Component(service = [ConfigurationReadService::class])
 class ConfigurationReadServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = ConfigReadServiceFactory::class)
-    private val readServiceFactory: ConfigReadServiceFactory,
+    @Reference(service = ConfigReaderFactory::class)
+    private val readServiceFactory: ConfigReaderFactory
 ) : ConfigurationReadService {
 
     private companion object {
         private val logger = contextLogger()
     }
 
-    // YIFT: Need a solution for more than one configuration in the same machine?!
     private val lifecycleCoordinator =
-        lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName(ConfigurationReadService::class.java.canonicalName,
-            UUID.randomUUID().toString()), ::eventHandler)
+        lifecycleCoordinatorFactory.createCoordinator<ConfigurationReadService>(::eventHandler)
 
     private var bootstrapConfig: Config? = null
 
-    private var subscription: ConfigReadService? = null
+    private var subscription: ConfigReader? = null
 
     private val callbackHandles = ConfigurationHandlerStorage()
 
@@ -87,7 +83,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
         if (subscription != null) {
             throw IllegalArgumentException("The subscription already exists")
         }
-        val sub = readServiceFactory.createReadService(config)
+        val sub = readServiceFactory.createReader(config)
         subscription = sub
         callbackHandles.addSubscription(sub)
         sub.start()
