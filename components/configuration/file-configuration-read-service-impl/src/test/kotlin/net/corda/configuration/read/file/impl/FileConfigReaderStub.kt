@@ -3,10 +3,10 @@ package net.corda.configuration.read.file.impl
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.read.ConfigListener
-import net.corda.libs.configuration.read.ConfigReadService
+import net.corda.libs.configuration.read.ConfigReader
 import org.junit.jupiter.api.Assertions.assertEquals
 
-class FileConfigReadServiceStub : ConfigReadService {
+class FileConfigReaderStub : ConfigReader {
 
     private val listeners = mutableSetOf<ConfigListener>()
 
@@ -37,7 +37,7 @@ class FileConfigReadServiceStub : ConfigReadService {
         assertEquals(setOf<ConfigListener>(), listeners)
     }
 
-    fun withBootstrapConfig(bootstrapConfig: Config): FileConfigReadServiceStub {
+    fun withBootstrapConfig(bootstrapConfig: Config): FileConfigReaderStub {
         config = bootstrapConfig
         return this
     }

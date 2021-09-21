@@ -13,7 +13,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 
-class ConfigReadServiceImplTest {
+class FileConfigReaderImplTest {
 
     private companion object {
         const val TEMP_DIRECTORY_PREFIX = "file-config-read-service-test"
@@ -21,14 +21,14 @@ class ConfigReadServiceImplTest {
     }
 
     private val configRepository = ConfigRepository()
-    private lateinit var service: FileConfigReadServiceImpl
+    private lateinit var service: FileConfigReaderImpl
     private lateinit var tempDirectoryPath: Path
     private lateinit var tempConfigFilePath: Path
 
     @BeforeEach
     fun beforeEach() {
         createTempTestConfig()
-        service = FileConfigReadServiceImpl(configRepository, bootstrapConfig())
+        service = FileConfigReaderImpl(configRepository, bootstrapConfig())
         service.start()
     }
 
@@ -65,6 +65,6 @@ class ConfigReadServiceImplTest {
     private fun bootstrapConfig(): Config {
         return ConfigFactory
             .empty()
-            .withValue(FileConfigReadServiceImpl.CONFIG_FILE_NAME, ConfigValueFactory.fromAnyRef(tempConfigFilePath.toString()))
+            .withValue(FileConfigReaderImpl.CONFIG_FILE_NAME, ConfigValueFactory.fromAnyRef(tempConfigFilePath.toString()))
     }
 }

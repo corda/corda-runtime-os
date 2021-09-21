@@ -5,13 +5,13 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
-class FileConfigReadServiceFactoryImplTest {
+class FileConfigReaderFactoryImplTest {
 
     private val config: Config = mock()
-    private val readServiceFactoryImpl = FileConfigReadServiceFactoryImpl()
+    private val readServiceFactoryImpl = FileConfigReaderFactoryImpl()
 
     @Test
     fun testCreateRepository() {
-        assertNotNull(readServiceFactoryImpl.createReadService(config))
+        assertNotNull(readServiceFactoryImpl.createReader(config))
     }
 }

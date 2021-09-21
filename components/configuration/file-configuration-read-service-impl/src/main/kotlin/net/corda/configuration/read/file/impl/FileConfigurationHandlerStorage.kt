@@ -1,14 +1,14 @@
 package net.corda.configuration.read.file.impl
 
 import net.corda.configuration.read.ConfigurationHandler
-import net.corda.libs.configuration.read.ConfigReadService
+import net.corda.libs.configuration.read.ConfigReader
 import java.util.concurrent.ConcurrentHashMap
 
 class FileConfigurationHandlerStorage {
 
     private val handlers: MutableMap<CallbackHandle, Unit> = ConcurrentHashMap()
 
-    private val subscription: ConfigReadService? = null
+    private val subscription: ConfigReader? = null
 
     private class CallbackHandle(
         private val callback: ConfigurationHandler,
@@ -17,7 +17,7 @@ class FileConfigurationHandlerStorage {
 
         private var handle: AutoCloseable? = null
 
-        fun subscribe(subscription: ConfigReadService) {
+        fun subscribe(subscription: ConfigReader) {
             handle?.close()
             handle = subscription.registerCallback(callback::onNewConfiguration)
         }
@@ -48,7 +48,7 @@ class FileConfigurationHandlerStorage {
         return handle
     }
 
-    fun addSubscription(subscription: ConfigReadService) {
+    fun addSubscription(subscription: ConfigReader) {
         handlers.keys.forEach {
             it.subscribe(subscription)
         }

@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import net.corda.libs.configuration.read.ConfigListener
-import net.corda.libs.configuration.read.ConfigReadService
+import net.corda.libs.configuration.read.ConfigReader
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import java.io.File
@@ -13,10 +13,10 @@ import java.io.IOException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class FileConfigReadServiceImpl(
+class FileConfigReaderImpl(
     private val configurationRepository: ConfigRepository,
     private val bootstrapConfig: Config
-) : ConfigReadService {
+) : ConfigReader {
 
     companion object {
         private val log = contextLogger()
