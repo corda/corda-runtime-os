@@ -1,12 +1,14 @@
 package net.corda.p2p.gateway.messaging.session
 
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.SessionPartitions
-import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -22,8 +24,8 @@ class SessionPartitionMapperImplTest {
 
     private var processor: CompactedProcessor<String, SessionPartitions>? = null
     private val coordinator = mock<LifecycleCoordinator>()
-    private val coordinatorFactory = mock<DominoCoordinatorFactory> {
-        on { createFor(any()) } doReturn coordinator
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
+        on { createCoordinator(any(), any()) } doReturn coordinator
     }
 
     private val subscriptionFactory = mock<SubscriptionFactory> {
@@ -32,6 +34,10 @@ class SessionPartitionMapperImplTest {
             processor = it.arguments[1] as CompactedProcessor<String, SessionPartitions>
             mock()
         }
+    }
+    private val parent = mock<LifecycleWithCoordinatorAndResources> {
+        on { coordinatorFactory } doReturn lifecycleCoordinatorFactory
+        on { name } doReturn LifecycleCoordinatorName("name", "instance")
     }
 
     @Test
@@ -42,7 +48,7 @@ class SessionPartitionMapperImplTest {
             "2" to SessionPartitions(listOf(3, 4))
         )
 
-        val sessionPartitionMapper = SessionPartitionMapperImpl(coordinatorFactory, subscriptionFactory)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(parent, subscriptionFactory)
         sessionPartitionMapper.start()
 
         processor!!.onSnapshot(partitionsMapping)
@@ -59,7 +65,7 @@ class SessionPartitionMapperImplTest {
     @Test
     fun `getPartitions cannot be invoked, when component is not running`() {
         val sessionId = "test-session-id"
-        val sessionPartitionMapper = SessionPartitionMapperImpl(coordinatorFactory, subscriptionFactory)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(parent, subscriptionFactory)
 
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)
@@ -73,5 +79,4 @@ class SessionPartitionMapperImplTest {
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)
     }
-
 }

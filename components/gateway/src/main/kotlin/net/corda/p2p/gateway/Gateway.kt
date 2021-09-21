@@ -1,19 +1,12 @@
 package net.corda.p2p.gateway
 
-import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
-import net.corda.p2p.gateway.domino.DominoTile
-import net.corda.p2p.gateway.messaging.ConnectionManager
-import net.corda.p2p.gateway.messaging.http.HttpServer
-import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
-import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
-import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -39,11 +32,9 @@ class Gateway(
     publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-) : DominoTile(
-    DominoCoordinatorFactory(
-        lifecycleCoordinatorFactory,
-        UUID.randomUUID().toString().replace("-", "")
-    )
+) : LifecycleWithCoordinatorAndResources(
+    lifecycleCoordinatorFactory,
+    UUID.randomUUID().toString().replace("-", "")
 ) {
 
     companion object {
@@ -52,44 +43,70 @@ class Gateway(
         const val PUBLISHER_ID = "gateway"
     }
 
-    private val configurationListener = GatewayConfigurationListener(
-        configurationReaderService,
-        coordinatorFactory
-    )
+    private val configurationService = GatewayConfigurationService(this, configurationReaderService)
 
-    private val httpServer = HttpServer(
-        coordinatorFactory,
-        configurationListener
-    )
-    private val connectionManager = ConnectionManager(coordinatorFactory, configurationListener)
-    private val sessionPartitionMapper = SessionPartitionMapperImpl(coordinatorFactory, subscriptionFactory)
-    private val inboundMessageProcessor = InboundMessageHandler(
-        coordinatorFactory,
-        httpServer,
-        publisherFactory,
-        sessionPartitionMapper
+    private val server = Server(
+        this,
+        configurationService,
+        subscriptionFactory,
+        publisherFactory
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
-        coordinatorFactory, connectionManager, publisherFactory
-    )
-    private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(CONSUMER_GROUP_ID, LINK_OUT_TOPIC),
-        outboundMessageProcessor,
-        ConfigFactory.empty(),
-        null
+        this,
+        configurationService,
+        subscriptionFactory,
+        publisherFactory,
     )
 
-    override fun prepareResources() {
+    init {
+        followStatusChanges(server).also {
+            executeBeforeClose(it::close)
+        }
+        followStatusChanges(outboundMessageProcessor).also {
+            executeBeforeClose(it::close)
+        }
+    }
+
+    override fun onStart() {
         logger.info("Starting Gateway service")
-        keepResources(
-            configurationListener,
-            connectionManager,
-            httpServer,
-            sessionPartitionMapper,
-            inboundMessageProcessor,
-            outboundMessageProcessor,
-            p2pMessageSubscription
-        )
+        configurationService.start()
+        server.start()
+        executeBeforeStop(server::stop)
+        onStatusChange(LifecycleStatus.UP)
+        outboundMessageProcessor.start()
+        executeBeforeStop(outboundMessageProcessor::stop)
         logger.info("Gateway started")
+    }
+
+    override fun onStatusChange(newStatus: LifecycleStatus) {
+        if (newStatus == LifecycleStatus.UP) {
+            if ((configurationService.status == LifecycleStatus.UP) &&
+                (server.status == LifecycleStatus.UP) &&
+                (outboundMessageProcessor.status == LifecycleStatus.UP)
+            ) {
+                logger.info("Gateway is running")
+                status = LifecycleStatus.UP
+            }
+        } else {
+            outboundMessageProcessor.stop()
+            server.stop()
+        }
+        super.onStatusChange(newStatus)
+    }
+
+    // YIFT: Remove?
+    fun startAndWaitForStarted() {
+        start()
+        while (status != LifecycleStatus.UP) {
+            Thread.sleep(100)
+        }
+    }
+
+    // YIFT: Remove?
+    fun stopAndWaitForDestruction() {
+        stop()
+        while (status != LifecycleStatus.DOWN) {
+            Thread.sleep(100)
+        }
     }
 }

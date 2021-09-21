@@ -28,6 +28,10 @@ internal class Registration(
     private val registeringCoordinator: LifecycleCoordinator
 ) : RegistrationHandle {
 
+    override fun toString(): String {
+        return "YIFT(${coordinators.map { it.name.componentName }}, $isOpen)"
+    }
+
     private val coordinatorStatusMap = ConcurrentHashMap(coordinators.associateWith { LifecycleStatus.DOWN })
 
     private val isClosed = AtomicBoolean(false)
@@ -44,7 +48,6 @@ internal class Registration(
      * being delivered out of order (which could result in a hang) or status updates not being delivered at all.
      */
     private val lock = ReentrantLock()
-
 
     /**
      * Update this registration with the status of one of the coordinators.
@@ -96,4 +99,7 @@ internal class Registration(
             coordinators.forEach { it.postEvent(CancelRegistration(this)) }
         }
     }
+
+    internal val isOpen: Boolean
+        get() = !isClosed.get()
 }

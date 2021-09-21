@@ -1,21 +1,24 @@
 package net.corda.p2p.gateway.messaging.session
 
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.SessionPartitions
-import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
-import net.corda.p2p.gateway.domino.DominoTile
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import java.lang.IllegalStateException
 import java.util.concurrent.ConcurrentHashMap
 
 class SessionPartitionMapperImpl(
-    coordinatorFactory: DominoCoordinatorFactory,
-    subscriptionFactory: SubscriptionFactory
-) : SessionPartitionMapper, DominoTile(coordinatorFactory) {
-
+    parent: LifecycleWithCoordinator,
+    subscriptionFactory: SubscriptionFactory,
+) : SessionPartitionMapper,
+    LifecycleWithCoordinatorAndResources(
+        parent
+    ) {
     companion object {
         const val CONSUMER_GROUP_ID = "session_partitions_mapper"
     }
@@ -24,12 +27,8 @@ class SessionPartitionMapperImpl(
 
     private var sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
-        SessionPartitionProcessor(sessionPartitionsMapping)
+        SessionPartitionProcessor()
     )
-
-    override fun prepareResources() {
-        keepResources(sessionPartitionSubscription)
-    }
 
     override fun getPartitions(sessionId: String): List<Int>? {
         if (!isRunning) {
@@ -39,7 +38,7 @@ class SessionPartitionMapperImpl(
         }
     }
 
-    private class SessionPartitionProcessor(private val sessionPartitionMapping: ConcurrentHashMap<String, List<Int>>) :
+    private inner class SessionPartitionProcessor :
         CompactedProcessor<String, SessionPartitions> {
         override val keyClass: Class<String>
             get() = String::class.java
@@ -47,7 +46,8 @@ class SessionPartitionMapperImpl(
             get() = SessionPartitions::class.java
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
-            sessionPartitionMapping.putAll(currentData.map { it.key to it.value.partitions })
+            sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
+            status = LifecycleStatus.UP
         }
 
         override fun onNext(
@@ -56,10 +56,17 @@ class SessionPartitionMapperImpl(
             currentData: Map<String, SessionPartitions>
         ) {
             if (newRecord.value == null) {
-                sessionPartitionMapping.remove(newRecord.key)
+                sessionPartitionsMapping.remove(newRecord.key)
             } else {
-                sessionPartitionMapping[newRecord.key] = newRecord.value!!.partitions
+                sessionPartitionsMapping[newRecord.key] = newRecord.value!!.partitions
             }
+        }
+    }
+
+    override fun onStart() {
+        sessionPartitionSubscription.start()
+        executeBeforeStop {
+            sessionPartitionSubscription.stop()
         }
     }
 }

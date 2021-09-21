@@ -9,9 +9,10 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.timeout.IdleStateHandler
-import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
-import net.corda.p2p.gateway.domino.DominoTile
-import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.p2p.gateway.GatewayConfigurationService
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.v5.base.util.contextLogger
 import java.net.SocketAddress
 import java.util.concurrent.ConcurrentHashMap
@@ -28,15 +29,12 @@ import javax.net.ssl.KeyManagerFactory
  * responsible for validating these messages, only the request headers. Once a request is checks out, its body is sent upstream
  * and a response is sent back to the client. The response body is empty unless it follows a session handshake request,
  * in which case the body will contain additional information.
- *
- * @param dominoCoordinatorFactory The Gateway domino coordinator factory
- * @param configuration The Gateway configuration
  */
 class HttpServer(
-    dominoCoordinatorFactory: DominoCoordinatorFactory,
-    private val configuration: () -> GatewayConfiguration,
-) : DominoTile(
-    dominoCoordinatorFactory
+    parent: LifecycleWithCoordinator,
+    private val configurationService: GatewayConfigurationService
+) : LifecycleWithCoordinatorAndResources(
+    parent
 ),
     HttpEventListener {
 
@@ -54,34 +52,6 @@ class HttpServer(
         private const val SERVER_IDLE_TIME_SECONDS = 5
     }
 
-    override fun prepareResources() {
-        logger.info("Starting HTTP Server")
-        val bossGroup = NioEventLoopGroup(1).also {
-            keepResources(it)
-        }
-        val workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS).also {
-            keepResources(it)
-        }
-
-        val server = ServerBootstrap()
-        server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
-            .childHandler(ServerChannelInitializer())
-        val host = configuration().hostAddress
-        val port = configuration().hostPort
-        logger.info("Trying to bind to $host:$port")
-        val channelFuture = server.bind(host, port).sync()
-        logger.info("Listening on port $port")
-        channelFuture.channel().also { serverChannel ->
-            keepResources(serverChannel)
-            serverChannel.closeFuture().addListener {
-                if (isRunning) {
-                    close()
-                }
-            }
-        }
-        keepResources(clientChannels)
-    }
-
     private val clientChannels = ConcurrentHashMap<SocketAddress, Channel>()
 
     private val eventListeners = CopyOnWriteArrayList<HttpEventListener>()
@@ -95,6 +65,12 @@ class HttpServer(
 
     fun removeListener(eventListener: HttpEventListener) {
         eventListeners.remove(eventListener)
+    }
+
+    init {
+        followStatusChanges(configurationService).also {
+            executeBeforeClose(it::close)
+        }
     }
 
     /**
@@ -137,17 +113,81 @@ class HttpServer(
         private val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
 
         init {
-            configuration().sslConfig.run {
+            configurationService.configuration.sslConfig.run {
                 keyManagerFactory.init(this.keyStore, this.keyStorePassword.toCharArray())
             }
         }
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createServerSslHandler(configuration().sslConfig.keyStore, keyManagerFactory))
+            pipeline.addLast("sslHandler", createServerSslHandler(configurationService.configuration.sslConfig.keyStore, keyManagerFactory))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
             pipeline.addLast(HttpChannelHandler(this@HttpServer, logger))
+        }
+    }
+
+    override fun onStart() {
+        configurationService.start()
+        onStatusChange(configurationService.status)
+    }
+
+    override fun onStatusChange(newStatus: LifecycleStatus) {
+        if ((configurationService.status == LifecycleStatus.UP) && (status != LifecycleStatus.UP)) {
+            logger.info("Starting HTTP Server")
+            val bossGroup = NioEventLoopGroup(1).also {
+                executeBeforeStop {
+                    it.shutdownGracefully()
+                    it.terminationFuture().sync()
+                }
+            }
+            val workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS).also {
+                executeBeforeStop {
+                    it.shutdownGracefully()
+                    it.terminationFuture().sync()
+                }
+            }
+
+            val server = ServerBootstrap()
+            server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
+                .childHandler(ServerChannelInitializer())
+            val host = configurationService.configuration.hostAddress
+            val port = configurationService.configuration.hostPort
+            logger.info("Trying to bind to $host:$port")
+            val channelFuture = server.bind(host, port).sync()
+            logger.info("Listening on port $port")
+            channelFuture.channel().also { serverChannel ->
+                executeBeforeStop {
+                    if (serverChannel.isOpen) {
+                        serverChannel.close().sync()
+                    }
+                }
+                serverChannel.closeFuture().addListener {
+                    if (isRunning) {
+                        close()
+                    }
+                }
+            }
+            executeBeforeStop {
+                clientChannels.clear()
+            }
+            status = LifecycleStatus.UP
+            logger.info("HTTP Server started")
+        }
+    }
+
+    // YIFT: Remove?
+    fun startAndWaitForStarted() {
+        start()
+        while (status != LifecycleStatus.UP) {
+            Thread.sleep(100)
+        }
+    }
+    // YIFT: Remove?
+    fun stopAndWaitForDestruction() {
+        stop()
+        while (status != LifecycleStatus.DOWN) {
+            Thread.sleep(100)
         }
     }
 }

@@ -14,6 +14,8 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.NetworkType
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
@@ -89,6 +91,8 @@ open class TestBase {
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
 
+    private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl()
+
     protected fun createConfigurationServiceFor(configuration: GatewayConfiguration): ConfigurationReadService {
         val configurationTopicService = TopicServiceImpl()
         val topicName = "config.${UUID.randomUUID().toString().replace("-", "")}"
@@ -120,11 +124,22 @@ open class TestBase {
         val bootstrapper = ConfigFactory.empty()
             .withValue("config.topic.name", ConfigValueFactory.fromAnyRef(topicName))
         return ConfigurationReadServiceImpl(
-            LifecycleCoordinatorFactoryImpl(),
-            ConfigReadServiceFactoryImpl(InMemSubscriptionFactory(configurationTopicService))
+            lifecycleCoordinatorFactory,
+            ConfigReadServiceFactoryImpl(InMemSubscriptionFactory(configurationTopicService)),
         ).also {
             it.start()
             it.bootstrapConfig(bootstrapper)
         }
+    }
+
+    fun createParentCoordinator(): LifecycleWithCoordinator {
+        return object : LifecycleWithCoordinatorAndResources(lifecycleCoordinatorFactory, UUID.randomUUID().toString()) {
+            override fun onStart() {
+            }
+        }
+    }
+
+    fun createGatewayConfigService(configuration: GatewayConfiguration): GatewayConfigurationService {
+        return GatewayConfigurationService(createParentCoordinator(), createConfigurationServiceFor(configuration))
     }
 }

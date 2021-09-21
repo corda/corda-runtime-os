@@ -2,8 +2,10 @@ package net.corda.p2p.gateway.messaging
 
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
-import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
-import net.corda.p2p.gateway.domino.DominoTile
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.p2p.gateway.GatewayConfigurationService
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
@@ -21,9 +23,9 @@ import java.util.concurrent.ConcurrentHashMap
  *
  */
 class ConnectionManager(
-    dominoCoordinatorFactory: DominoCoordinatorFactory,
-    private val configuration: () -> GatewayConfiguration,
-) : DominoTile(dominoCoordinatorFactory) {
+    parent: LifecycleWithCoordinator,
+    private val configurationService: GatewayConfigurationService,
+) : LifecycleWithCoordinatorAndResources(parent) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(ConnectionManager::class.java)
@@ -37,18 +39,6 @@ class ConnectionManager(
     private var nettyGroup: EventLoopGroup? = null
 
     private val eventListeners = ConcurrentHashMap.newKeySet<HttpEventListener>()
-
-    override fun prepareResources() {
-        logger.info("Starting connection manager")
-
-        writeGroup = NioEventLoopGroup(NUM_CLIENT_WRITE_THREADS).also {
-            keepResources(it)
-        }
-        nettyGroup = NioEventLoopGroup(NUM_CLIENT_NETTY_THREADS).also {
-            keepResources(it)
-        }
-        keepResources(clientPool)
-    }
 
     fun addListener(eventListener: HttpEventListener) {
         eventListeners.add(eventListener)
@@ -66,11 +56,48 @@ class ConnectionManager(
      */
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
         return clientPool.computeIfAbsent(destinationInfo.uri) {
-            val client = HttpClient(destinationInfo, configuration().sslConfig, writeGroup!!, nettyGroup!!)
-            keepResources(client)
+            val client = HttpClient(destinationInfo, configurationService.configuration.sslConfig, writeGroup!!, nettyGroup!!)
+            executeBeforeStop(client::close)
             eventListeners.forEach { client.addListener(it) }
             client.start()
             client
+        }
+    }
+
+    override fun onStatusChange(newStatus: LifecycleStatus) {
+        startIfNeeded()
+    }
+
+    init {
+        followStatusChanges(configurationService).also {
+            executeBeforeClose(it::close)
+        }
+    }
+
+    override fun onStart() {
+        logger.info("Starting connection manager")
+        configurationService.start()
+        startIfNeeded()
+    }
+
+    private fun startIfNeeded() {
+        if ((configurationService.status == LifecycleStatus.UP) && (status != LifecycleStatus.UP)) {
+            NioEventLoopGroup(NUM_CLIENT_WRITE_THREADS).also {
+                executeBeforeStop {
+                    it.shutdownGracefully()
+                    it.terminationFuture().sync()
+                }
+            }.also { writeGroup = it }
+            nettyGroup = NioEventLoopGroup(NUM_CLIENT_NETTY_THREADS).also {
+                executeBeforeStop {
+                    it.shutdownGracefully()
+                    it.terminationFuture().sync()
+                }
+            }
+            executeBeforeStop(clientPool::clear)
+            status = LifecycleStatus.UP
+        } else if ((configurationService.status != LifecycleStatus.UP) && (status == LifecycleStatus.UP)) {
+            stop()
         }
     }
 }

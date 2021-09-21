@@ -20,7 +20,6 @@ import net.corda.p2p.SessionPartitions
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
-import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
@@ -218,11 +217,12 @@ class GatewayTest : TestBase() {
         }.map { serverUrl ->
             URI.create(serverUrl)
         }.map { serverUri ->
+            val configService = createGatewayConfigService(GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig))
+            configService.startAndWaitForStarted()
             HttpServer(
-                DominoCoordinatorFactory(coordinator, "${serverUri.host}:${serverUri.port}")
-            ) {
-                GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig)
-            }.also {
+                createParentCoordinator(),
+                configService
+            ).also {
                 it.addListener(object : HttpEventListener {
                     override fun onMessage(message: HttpMessage) {
                         val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
@@ -268,20 +268,6 @@ class GatewayTest : TestBase() {
         val messageCount = 100
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
         bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
-        // Produce messages for each Gateway
-        repeat(messageCount) {
-            var msg = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("", NetworkType.CORDA_5, bobGatewayAddress.toString())
-                payload = authenticatedP2PMessage("Target-$bobGatewayAddress")
-            }.build()
-            alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
-
-            msg = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("", NetworkType.CORDA_5, aliceGatewayAddress.toString())
-                payload = authenticatedP2PMessage("Target-$aliceGatewayAddress")
-            }.build()
-            bob.publish(Record(LINK_OUT_TOPIC, "key", msg))
-        }
 
         val receivedLatch = CountDownLatch(messageCount * 2)
         val bobSubscription = bob.subscriptionFactory.createEventLogSubscription(
@@ -323,28 +309,40 @@ class GatewayTest : TestBase() {
 
         val startTime = Instant.now().toEpochMilli()
         // Start the gateways and let them run until all messages have been processed
-        val t1 = thread {
+        val gateways = listOf(
             Gateway(
                 createConfigurationServiceFor(GatewayConfiguration(aliceGatewayAddress.host, aliceGatewayAddress.port, chipSslConfig)),
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 coordinator
-            ).also {
-                it.startAndWaitForStarted()
-            }.use {
-                receivedLatch.await()
-                it.stopAndWaitForDestruction()
-            }
-        }
-        val t2 = thread {
+            ),
             Gateway(
                 createConfigurationServiceFor(GatewayConfiguration(bobGatewayAddress.host, bobGatewayAddress.port, daleSslConfig)),
                 bob.subscriptionFactory,
                 bob.publisherFactory,
                 coordinator
-            ).also {
-                it.startAndWaitForStarted()
-            }.use {
+            )
+        ).onEach {
+            it.startAndWaitForStarted()
+        }
+
+        // Produce messages for each Gateway
+        repeat(messageCount) {
+            var msg = LinkOutMessage.newBuilder().apply {
+                header = LinkOutHeader("", NetworkType.CORDA_5, bobGatewayAddress.toString())
+                payload = authenticatedP2PMessage("Target-$bobGatewayAddress")
+            }.build()
+            alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
+
+            msg = LinkOutMessage.newBuilder().apply {
+                header = LinkOutHeader("", NetworkType.CORDA_5, aliceGatewayAddress.toString())
+                payload = authenticatedP2PMessage("Target-$aliceGatewayAddress")
+            }.build()
+            bob.publish(Record(LINK_OUT_TOPIC, "key", msg))
+        }
+
+        val threads = gateways.map {
+            thread {
                 receivedLatch.await()
                 it.stopAndWaitForDestruction()
             }
@@ -354,8 +352,9 @@ class GatewayTest : TestBase() {
         val endTime = Instant.now().toEpochMilli()
         logger.info("Done processing ${messageCount * 2} in ${endTime - startTime} milliseconds.")
 
-        t1.join()
-        t2.join()
+        threads.forEach {
+            it.join()
+        }
     }
 
     private fun authenticatedP2PMessage(content: String) = AuthenticatedDataMessage.newBuilder().apply {

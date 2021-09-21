@@ -3,8 +3,9 @@ package net.corda.p2p.gateway
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
-import net.corda.p2p.gateway.domino.DominoTile
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
@@ -16,10 +17,11 @@ import java.security.KeyStore
 import java.util.Base64
 import java.util.concurrent.atomic.AtomicReference
 
-internal class GatewayConfigurationListener(
-    private val readerService: ConfigurationReadService,
-    coordinatorFactory: DominoCoordinatorFactory,
-) : DominoTile(coordinatorFactory), ConfigurationHandler, () -> GatewayConfiguration {
+class GatewayConfigurationService(
+    parent: LifecycleWithCoordinator,
+    private val configurationReaderService: ConfigurationReadService,
+) : LifecycleWithCoordinatorAndResources(parent),
+    ConfigurationHandler {
     companion object {
         const val CONFIG_KEY = "p2p.gateway"
         private val logger = contextLogger()
@@ -29,18 +31,14 @@ internal class GatewayConfigurationListener(
 
     private class ConfigurationError(msg: String) : Exception(msg)
 
-    // YIFT: Handle changes to configuration
-    // class ConfigurationChanged(val configuration: GatewayConfiguration) : LifecycleEvent
-
     @Suppress("TooGenericExceptionCaught")
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
         if (changedKeys.contains(CONFIG_KEY)) {
             try {
                 val configuration = toGatewayConfig(config[CONFIG_KEY])
-                logger.info("Got new Gateway configuration ${configuration.hostPort}:${configuration.hostPort}")
+                logger.info("Got for ${name.instanceId} new Gateway configuration ${configuration.hostAddress}:${configuration.hostPort}")
                 configurationHolder.set(configuration)
-                // coordinator.postEvent(ConfigurationChanged(configuration))
-                setReady()
+                status = LifecycleStatus.UP
             } catch (e: Throwable) {
                 gotError(e)
             }
@@ -98,14 +96,21 @@ internal class GatewayConfigurationListener(
         )
     }
 
-    override fun prepareResources() {
-        keepResources(readerService.registerForUpdates(this))
-    }
-    override fun startupSequenceCompleted() {
-        // Do nothing, we will report ready when we get the correct configuration
-    }
+    val configuration: GatewayConfiguration
+        get() {
+            return configurationHolder.get() ?: throw IllegalStateException("Configuration is not ready")
+        }
 
-    override fun invoke(): GatewayConfiguration {
-        return configurationHolder.get() ?: throw IllegalStateException("Configuration is not ready")
+    override fun onStart() {
+        configurationReaderService.registerForUpdates(this).also {
+            executeBeforeStop { it.close() }
+        }
+    }
+    // YIFT: Remove?
+    fun startAndWaitForStarted() {
+        start()
+        while (status != LifecycleStatus.UP) {
+            Thread.sleep(100)
+        }
     }
 }

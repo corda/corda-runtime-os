@@ -27,15 +27,15 @@ class ConnectionManagerTest : TestBase() {
         hostPort = serverAddress.port,
         sslConfig = aliceSslConfig
     )
+    private val parent = createParentCoordinator()
+    private val configService = createGatewayConfigService(configuration)
 
     @Test
     @Timeout(30)
     fun `acquire connection`() {
-        val manager = ConnectionManager(coordinator) {
-            configuration
-        }
+        val manager = ConnectionManager(parent, configService)
         manager.start()
-        HttpServer(coordinator, { configuration }).use { server ->
+        HttpServer(parent, configService).use { server ->
         server.addListener(object : HttpEventListener {
             override fun onMessage(message: HttpMessage) {
                 assertEquals(clientMessageContent, String(message.payload))
@@ -61,10 +61,10 @@ class ConnectionManagerTest : TestBase() {
     @Test
     @Timeout(30)
     fun `reuse connection`() {
-        val manager = ConnectionManager(coordinator, {configuration})
+        val manager = ConnectionManager(parent, configService)
         manager.start()
         val requestReceived = CountDownLatch(2)
-        HttpServer(coordinator, { configuration }).use { server ->
+        HttpServer(parent, configService).use { server ->
         val remotePeers = mutableListOf<SocketAddress>()
         server.addListener(object : HttpEventListener {
             override fun onOpen(event: HttpConnectionEvent) {

@@ -3,6 +3,7 @@ package net.corda.p2p.gateway.messaging.internal
 import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -16,47 +17,48 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
-import net.corda.p2p.gateway.domino.DominoTile
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
-import net.corda.p2p.gateway.messaging.session.SessionPartitionMapper
+import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.UUID
-import kotlin.concurrent.write
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
  */
 internal class InboundMessageHandler(
-    coordinatorFactory: DominoCoordinatorFactory,
-    private val server: HttpServer,
+    parent: LifecycleWithCoordinatorAndResources,
     private val publisherFactory: PublisherFactory,
-    private val sessionPartitionMapper: SessionPartitionMapper
-) : Lifecycle, HttpEventListener, DominoTile(coordinatorFactory) {
+    private val httpServer: HttpServer,
+    private val sessionPartitionMapper: SessionPartitionMapperImpl,
+) : Lifecycle, HttpEventListener,
+    LifecycleWithCoordinatorAndResources(parent) {
 
     companion object {
         private var logger = LoggerFactory.getLogger(InboundMessageHandler::class.java)
     }
 
     private var p2pInPublisher: Publisher? = null
-
-    override fun prepareResources() {
+    override fun onStart() {
         logger.info("Starting P2P message receiver")
         val publisherConfig = PublisherConfig(PUBLISHER_ID)
         val publisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty())
-        keepResources(publisher)
+        executeBeforeStop {
+            publisher.close()
+        }
         p2pInPublisher = publisher
-        server.addListener(this)
-        keepResources({
-            server.removeListener(this@InboundMessageHandler)
-        })
+        httpServer.addListener(this)
+        executeBeforeStop {
+            httpServer.removeListener(this@InboundMessageHandler)
+        }
 
         logger.info("Started P2P message receiver")
+        status = LifecycleStatus.UP
     }
 
     /**
@@ -66,13 +68,13 @@ internal class InboundMessageHandler(
     override fun onMessage(message: HttpMessage) {
         if (!isRunning) {
             logger.error("Received message from ${message.source}, while handler is stopped. Discarding it and returning error code.")
-            server.write(HttpResponseStatus.SERVICE_UNAVAILABLE, ByteArray(0), message.source)
+            httpServer.write(HttpResponseStatus.SERVICE_UNAVAILABLE, ByteArray(0), message.source)
             return
         }
 
         if (message.statusCode != HttpResponseStatus.OK) {
             logger.warn("Received invalid request from ${message.source}. Status code ${message.statusCode}")
-            server.write(message.statusCode, ByteArray(0), message.source)
+            httpServer.write(message.statusCode, ByteArray(0), message.source)
             return
         }
 
@@ -82,7 +84,7 @@ internal class InboundMessageHandler(
         } catch (e: IOException) {
             logger.warn("Invalid message received. Cannot deserialize")
             logger.debug(e.stackTraceToString())
-            server.write(HttpResponseStatus.INTERNAL_SERVER_ERROR, ByteArray(0), message.source)
+            httpServer.write(HttpResponseStatus.INTERNAL_SERVER_ERROR, ByteArray(0), message.source)
             return
         }
 
@@ -90,11 +92,11 @@ internal class InboundMessageHandler(
         when (p2pMessage.payload) {
             is UnauthenticatedMessage -> {
                 p2pInPublisher!!.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
-                server.write(HttpResponseStatus.OK, ByteArray(0), message.source)
+                httpServer.write(HttpResponseStatus.OK, ByteArray(0), message.source)
             }
             else -> {
                 val statusCode = processSessionMessage(p2pMessage)
-                server.write(statusCode, ByteArray(0), message.source)
+                httpServer.write(statusCode, ByteArray(0), message.source)
             }
         }
     }

@@ -3,23 +3,29 @@ package net.corda.p2p.gateway.messaging.internal
 import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
+import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
-import net.corda.p2p.gateway.domino.DominoTile
+import net.corda.p2p.gateway.GatewayConfigurationService
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.SniCalculator
+import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
@@ -32,29 +38,63 @@ import java.nio.ByteBuffer
  * events are processed and fed into the HTTP pipeline. No records will be produced by this processor as a result.
  */
 internal class OutboundMessageHandler(
-    coordinatorFactory: DominoCoordinatorFactory,
-    private val connectionPool: ConnectionManager,
-    private val publisherFactory: PublisherFactory
+    parent: LifecycleWithCoordinator,
+    configurationService: GatewayConfigurationService,
+    subscriptionFactory: SubscriptionFactory,
+    private val publisherFactory: PublisherFactory,
 ) : EventLogProcessor<String, LinkOutMessage>,
     Lifecycle,
     HttpEventListener,
-    DominoTile(coordinatorFactory) {
+    LifecycleWithCoordinatorAndResources(parent) {
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
     }
 
+    private val connectionManager = ConnectionManager(
+        this,
+        configurationService
+    )
+    private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
+        SubscriptionConfig(Gateway.CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC),
+        this,
+        ConfigFactory.empty(),
+        null
+    )
+
     private var p2pInPublisher: Publisher? = null
 
-    override fun prepareResources() {
-        logger.info("Starting P2P message sender")
-        val publisher = publisherFactory.createPublisher(PublisherConfig(PUBLISHER_ID), ConfigFactory.empty())
-        keepResources(publisher)
-        connectionPool.addListener(this)
-        keepResources({
-            connectionPool.removeListener(this)
-        })
+    init {
+        followStatusChanges(connectionManager).also {
+            executeBeforeClose(it::close)
+        }
     }
 
+    override fun onStart() {
+        logger.info("Starting P2P message sender")
+        p2pInPublisher = publisherFactory.createPublisher(PublisherConfig(PUBLISHER_ID), ConfigFactory.empty()).also {
+            executeBeforeStop(it::close)
+        }
+
+        connectionManager.start()
+
+        onStatusChange(LifecycleStatus.UP)
+    }
+
+    override fun onStatusChange(newStatus: LifecycleStatus) {
+        if (newStatus == LifecycleStatus.UP) {
+            if (connectionManager.status == LifecycleStatus.UP) {
+                p2pMessageSubscription.start()
+                executeBeforeStop(p2pMessageSubscription::close)
+                connectionManager.addListener(this)
+                executeBeforeStop {
+                    connectionManager.removeListener(this)
+                }
+                status = LifecycleStatus.UP
+            }
+        } else {
+            stop()
+        }
+    }
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
         events.forEach { evt ->
@@ -76,7 +116,7 @@ internal class OutboundMessageHandler(
                         sni,
                         expectedX500Name
                     )
-                    connectionPool.acquire(destinationInfo).write(message)
+                    connectionManager.acquire(destinationInfo).write(message)
                 } catch (e: IllegalArgumentException) {
                     logger.warn("Can't send message to destination ${peerMessage.header.address}. ${e.message}")
                 }

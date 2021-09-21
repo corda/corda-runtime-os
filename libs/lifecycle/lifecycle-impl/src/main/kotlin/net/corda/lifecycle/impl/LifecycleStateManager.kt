@@ -24,6 +24,7 @@ internal class LifecycleStateManager(
     /**
      * The set of registrations to post status updates to when this coordinator's status changes.
      */
+    // YIFT - Why not set?!
     val registrations = ConcurrentHashMap<Registration, Unit>()
 
     /**
@@ -117,6 +118,7 @@ internal class LifecycleStateManager(
      * @return True if there are no registrations, false otherwise.
      */
     fun registrationsEmpty(): Boolean {
-        return registrations.isEmpty() && trackedRegistrations.isEmpty()
+        // YIFT: We need to be able to close the coordinator after closing the registration!
+        return !registrations.keys.any{it.isOpen} && !trackedRegistrations.keys.any { it.isOpen }
     }
 }
