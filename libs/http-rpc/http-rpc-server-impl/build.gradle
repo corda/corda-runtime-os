@@ -16,17 +16,11 @@ dependencies {
     implementation project(":libs:http-rpc:http-rpc-tools")
     implementation project(':libs:http-rpc:http-rpc-security-read')
 
-    implementation "net.corda:corda-base"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
     implementation "net.corda:corda-application"
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     implementation project(":libs:http-rpc:http-rpc-server")
-
-    implementation 'org.slf4j:slf4j-api'
-
-    implementation "org.apache.avro:avro:$avroVersion"
-
 
     implementation "net.corda:corda-crypto"
     implementation "net.corda.osgi.bundles:javalin-osgi:$javalinVersion"
@@ -36,8 +30,8 @@ dependencies {
     implementation "org.eclipse.jetty.websocket:websocket-server:$jettyVersion"
     implementation "org.eclipse.jetty.http2:http2-server:$jettyVersion"
     implementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
-    implementation "org.webjars:swagger-ui:$swaggeruiVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
 
 //    testImplementation project(":libs:http-rpc:http-rpc-test-utilities")
@@ -45,4 +39,11 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly 'org.osgi:osgi.core'
+
+    runtimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
+    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    runtimeOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    runtimeOnly "io.github.classgraph:classgraph:$classgraphVersion"
+    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
+
 }

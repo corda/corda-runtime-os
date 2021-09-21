@@ -1,6 +1,6 @@
 package net.corda.httprpc.rpc.proxies
 
-import net.corda.httprpc.server.utils.executeWithThreadContextClassLoader
+import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
 import net.corda.v5.httprpc.api.RpcOps
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy

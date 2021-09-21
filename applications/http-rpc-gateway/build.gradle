@@ -3,6 +3,8 @@ plugins {
     id 'corda.common-app'
 }
 
+description 'HTTP RPC Gateway Application'
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
@@ -20,21 +22,28 @@ dependencies {
 
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:http-rpc:http-rpc-security-read')
+    implementation project(':libs:http-rpc:ssl-cert-read')
+    implementation project(':libs:http-rpc:http-rpc-server')
 
+    // Components
     implementation project(":components:http-rpc-gateway-comp")
-    implementation project(':libs:configuration:configuration-read')
+    implementation project(":components:configuration:configuration-read-service")
 
+    // Implementations (needs revision!)
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
+
     runtimeOnly project(":libs:configuration:configuration-write-impl")
     runtimeOnly project(":libs:configuration:configuration-read-impl")
     runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
+
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
+    runtimeOnly project(":libs:http-rpc:http-rpc-server-impl")
+    runtimeOnly project(':libs:http-rpc:http-rpc-stubs-impl')
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 }
-
-description 'HTTP RPC Gateway Application'
