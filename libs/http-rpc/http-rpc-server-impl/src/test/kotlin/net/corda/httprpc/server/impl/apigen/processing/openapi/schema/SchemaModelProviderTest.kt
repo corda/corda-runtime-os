@@ -653,7 +653,8 @@ class SchemaModelProviderTest {
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
 
         val result =
-            provider.toSchemaModel(ParameterizedClass(net.corda.httprpc.server.impl.apigen.processing.DurableStreamsMethodInvoker::class.java))
+            provider.toSchemaModel(
+                    ParameterizedClass(net.corda.httprpc.server.impl.apigen.processing.DurableStreamsMethodInvoker::class.java))
         assertEquals("DurableStreamsMethodInvoker", (result as SchemaRefObjectModel).ref)
 
         val result2 = provider.toSchemaModel(ParameterizedClass(DurableStreamsMethodInvoker::class.java))
