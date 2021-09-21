@@ -44,10 +44,10 @@ dependencies {
     testImplementation project(":libs:messaging:inmemory-messaging-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":components:configuration:configuration-read-service-impl")
-    testImplementation project(":libs:configuration:kafka-configuration-read-impl")
+    testImplementation project(":libs:configuration:configuration-read-impl")
     testImplementation project(":libs:configuration:configuration-read")
     testImplementation project(":libs:configuration:configuration-write")
-    testImplementation project(":libs:configuration:kafka-configuration-write-impl")
+    testImplementation project(":libs:configuration:configuration-write-impl")
 }
 
 sourceSets {

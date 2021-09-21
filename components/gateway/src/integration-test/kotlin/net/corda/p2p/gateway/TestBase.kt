@@ -4,10 +4,11 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
-import net.corda.libs.configuration.read.kafka.factory.ConfigReadServiceFactoryImpl
+import net.corda.libs.configuration.read.kafka.ConfigReaderImpl
+import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
-import net.corda.libs.configuration.write.kafka.ConfigWriteServiceImpl
+import net.corda.libs.configuration.write.kafka.ConfigWriterImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
@@ -112,7 +113,7 @@ open class TestBase {
             .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
 
         val publisher = CordaPublisherFactory(configurationTopicService).createPublisher(PublisherConfig((topicName)))
-        val configurationPublisher = ConfigWriteServiceImpl(topicName, publisher)
+        val configurationPublisher = ConfigWriterImpl(topicName, publisher)
         configurationPublisher.updateConfiguration(
             CordaConfigurationKey(
                 "myKey",
@@ -125,7 +126,7 @@ open class TestBase {
             .withValue("config.topic.name", ConfigValueFactory.fromAnyRef(topicName))
         return ConfigurationReadServiceImpl(
             lifecycleCoordinatorFactory,
-            ConfigReadServiceFactoryImpl(InMemSubscriptionFactory(configurationTopicService)),
+            ConfigReaderFactoryImpl(InMemSubscriptionFactory(configurationTopicService)),
         ).also {
             it.start()
             it.bootstrapConfig(bootstrapper)
