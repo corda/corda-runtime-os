@@ -43,8 +43,8 @@ abstract class LifecycleWithCoordinator(
         set(newStatus) {
             val oldStatus = knownStatus.getAndSet(newStatus)
             if (oldStatus != newStatus) {
-                   coordinator.updateStatus(newStatus)
-               }
+                coordinator.updateStatus(newStatus)
+            }
             logger.info("Status of $name is $newStatus")
         }
 
