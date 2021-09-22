@@ -328,7 +328,7 @@ internal class SandboxServiceImpl @Activate constructor(
             sandbox.cordappBundle.symbolicName,
             sandbox.cordappBundle.version,
             cpk.cpkHash,
-            cpk.id.signers,
+            cpk.id.signerSummaryHash,
             cpkDependencyHashes
         )
     }

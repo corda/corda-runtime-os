@@ -8,16 +8,16 @@ interface SandboxGroup {
     val sandboxes: Collection<CpkSandbox>
 
     /**
-     * Returns the [CpkSandbox] out of [sandboxes] with the given [Cpk.Identifier]. There is guaranteed to be at most
-     * one.
+     * Returns the [CpkSandbox] out of [sandboxes] with the given [Cpk.Identifier]. There is guaranteed to be at
+     * most one.
      *
      * Throws [SandboxException] if no sandbox with the given CPK identifier exists.
      */
     fun getSandbox(cpkIdentifier: Cpk.Identifier): CpkSandbox
 
     /**
-     * Finds the [CpkSandbox] out of [sandboxes] with the given [Cpk.Identifier] (there is guaranteed to be at most
-     * one), and loads the [Class] with [className] from the CorDapp bundle of that sandbox.
+     * Finds the [CpkSandbox] out of [sandboxes] with the given [Cpk.Identifier] (there is guaranteed to be at
+     * most one), and loads the [Class] with [className] from the CorDapp bundle of that sandbox.
      *
      * Throws [SandboxException] if there is no sandbox with the given CPK identifier, if this sandbox does not contain
      * the named class, or if the CorDapp bundle of the sandbox with the given CPK identifier is uninstalled.

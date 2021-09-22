@@ -18,7 +18,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.BasicHashingService
 import net.corda.v5.crypto.SecureHash
-import java.util.*
 
 open class SandboxClassResolver(
     private val classInfoService: ClassInfoService,
@@ -59,9 +58,9 @@ open class SandboxClassResolver(
 
         return when (classInfo) {
             is CpkClassInfo -> Cpk.Identifier(
-                    classInfo.classBundleName,
-                    classInfo.classBundleVersion.toString(),
-                    TreeSet(classInfo.cpkPublicKeyHashes)
+                classInfo.classBundleName,
+                classInfo.classBundleVersion.toString(),
+                classInfo.cpkSignerSummaryHash
             )
             is PlatformClassInfo -> null
         }
@@ -123,10 +122,7 @@ open class SandboxClassResolver(
     private fun writeCpkIdentifier(output: Output, identifier: Cpk.Identifier) {
         output.writeString(identifier.symbolicName)
         output.writeString(identifier.version)
-        output.writeString(identifier.signers.size.toString())
-        identifier.signers.forEach {
-            output.writeString(it.toString())
-        }
+        output.writeString(identifier.signerSummaryHash.toString())
     }
 
     private fun checkAndInitReadStructures() {
@@ -179,13 +175,8 @@ open class SandboxClassResolver(
     private fun readCpkIdentifier(input: Input): Cpk.Identifier {
         val symbolicName = input.readString()
         val version = input.readString()
-        var numberOfSigners = Integer.parseInt(input.readString())
-        val signers = TreeSet<SecureHash>()
-        while (numberOfSigners > 0) {
-            signers.add(hashingService.create(input.readString()))
-            numberOfSigners--
-        }
-        return Cpk.Identifier(symbolicName, version, signers)
+        val signerSummaryHash = SecureHash.create(input.readString())
+        return Cpk.Identifier(symbolicName, version, signerSummaryHash)
     }
 
     override fun reset() {

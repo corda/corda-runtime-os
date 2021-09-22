@@ -3,7 +3,6 @@
 package net.corda.sandbox.internal
 
 import net.corda.v5.crypto.SecureHash
-import java.util.Collections
 
 internal const val FELIX_FRAMEWORK_BUNDLE = "org.apache.felix.framework"
 internal const val FELIX_SCR_BUNDLE = "org.apache.felix.scr"
@@ -25,10 +24,10 @@ internal const val CLASS_TAG_DELIMITER = "$"
 internal object ClassTagV1 {
     internal const val STATIC_IDENTIFIER = "S"
     internal const val EVOLVABLE_IDENTIFIER = "E"
-    internal const val COLLECTION_DELIMITER = ","
 
     // Used as placeholders when generating class tags for platform sandbox classes.
     internal const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "PLATFORM_BUNDLE"
-    internal val PLACEHOLDER_CPK_FILE_HASH = SecureHash.create("SHA-256:0000000000000000")
-    internal val PLACEHOLDER_CPK_PUBLIC_KEY_HASHES = Collections.emptyNavigableSet<SecureHash>()
+    internal val PLACEHOLDER_HASH = SecureHash.create("SHA-256:0000000000000000")
 }
+
+internal const val HASH_ALGORITHM = "SHA-256"
