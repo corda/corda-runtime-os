@@ -11,6 +11,7 @@ import net.corda.common.identity.CordaX500NameDeserializer
 import net.corda.v5.base.annotations.CordaInternal
 import java.util.TimeZone
 import net.corda.v5.application.identity.CordaX500Name
+import net.corda.v5.application.utilities.JsonRepresentable
 
 /**
  * General purpose Jackson Mapper which has sensible security default applied to it.
