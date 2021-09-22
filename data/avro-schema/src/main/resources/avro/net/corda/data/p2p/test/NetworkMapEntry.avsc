@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "NetworkMapEntry",
+  "namespace": "net.corda.p2p.test",
+  "fields": [
+    {
+      "name": "holdingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "publicKey",
+      "type": "bytes"
+    },
+    {
+      "name": "publicKeyAlgorithm",
+      "type": "net.corda.p2p.test.KeyAlgorithm"
+    },
+    {
+      "name": "address",
+      "type": "string"
+    },
+    {
+      "name": "networkType",
+      "type": "net.corda.p2p.NetworkType"
+    }
+  ]
+}
