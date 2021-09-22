@@ -549,6 +549,34 @@ class SandboxServiceImplTests {
     }
 
     @Test
+    fun `throws if Felix framework bundle is not installed`() {
+        val mockBundleUtils = mock<BundleUtils>().apply {
+            whenever(allBundles).thenReturn(listOf(scrBundle))
+        }
+        val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils, mockConfigAdmin)
+
+        val e = assertThrows<SandboxException> { sandboxService.hasVisibility(mock(), mock()) }
+        assertEquals(
+            "The bundle org.apache.felix.framework is not installed. This bundle is required by the sandbox service.",
+            e.message
+        )
+    }
+
+    @Test
+    fun `throws if Felix SCR bundle is not installed`() {
+        val mockBundleUtils = mock<BundleUtils>().apply {
+            whenever(allBundles).thenReturn(listOf(frameworkBundle))
+        }
+        val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils, mockConfigAdmin)
+
+        val e = assertThrows<SandboxException> { sandboxService.hasVisibility(mock(), mock()) }
+        assertEquals(
+            "The bundle org.apache.felix.scr is not installed. This bundle is required by the sandbox service.",
+            e.message
+        )
+    }
+
+    @Test
     fun `can retrieve calling sandbox`() {
         val mockBundle = mockBundle()
         // `getBundle` is called during stack-walking to identify the current frame's bundle. Here, we ensure that
