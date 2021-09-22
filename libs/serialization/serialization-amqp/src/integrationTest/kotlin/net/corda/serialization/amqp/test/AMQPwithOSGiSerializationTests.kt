@@ -20,7 +20,6 @@ import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.io.TempDir
@@ -115,7 +114,6 @@ class AMQPwithOSGiSerializationTests {
             serializationContext: SerializationContext
     ): ObjectAndEnvelope<T> = deserializeAndReturnEnvelope(bytes, T::class.java, serializationContext)
 
-    @Disabled
     @Test
     fun `successfully deserialise when composed bundle class is installed`() {
         val cpk1 = testingBundle.getResource("TestSerializable1-workflows-$cordappVersion-cordapp.cpk")
