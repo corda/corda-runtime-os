@@ -157,3 +157,29 @@ include 'testing:apps:test-app'
 include 'testing:bundles:cats'
 include 'testing:bundles:dogs'
 include 'testing:test-utilities'
+
+
+if ("${compositeBuild}".toBoolean() && file('../corda-api').exists()){
+    logger.lifecycle( "\nCorda-Api project exists on disk in the expected location and Gradle composite build is enabled, corda-api binaries will be substituted with source code")
+
+    includeBuild('../corda-api') {
+            dependencySubstitution {
+				substitute module('net.corda:corda-base') using project (':base')
+				substitute module('net.corda:corda-api') using project (':corda-api')
+				substitute module('net.corda:corda-application') using project (':application')
+				substitute module('net.corda:corda-base') using project (':base')
+				substitute module('net.corda:corda-cipher-suite') using project (':cipher-suite')
+				substitute module('net.corda:corda-crypto') using project (':crypto')
+				substitute module('net.corda:avro-schema') using project (':data:avro-schema')
+				substitute module('net.corda:topic-schema') using project (':data:topic-schema')
+				substitute module('net.corda.cordapp:cordapp-configuration') using project (':cordapp-configuration-publish')
+				substitute module('net.corda.cordapp.cordapp-configuration:net.corda.cordapp.cordapp-configuration.gradle.plugin') using project (':cordapp-configuration-publish')
+				substitute module('net.corda:corda-persistence') using project (':persistence')
+				substitute module('net.corda:corda-serialization') using project (':serialization')
+                substitute module('net.corda:corda-packaging') using project (':packaging')
+                substitute module('net.corda:corda-ledger') using project (':ledger')
+         }
+    }
+}else{
+    logger.lifecycle( "\nGradle composite build is not enabled or source not availble in expetced location, using binaries")
+}
