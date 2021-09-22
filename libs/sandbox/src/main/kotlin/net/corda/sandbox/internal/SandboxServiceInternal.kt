@@ -12,7 +12,7 @@ internal interface SandboxServiceInternal : SandboxCreationService, SandboxConte
     fun getSandbox(bundle: Bundle): SandboxInternal?
 
     /**
-     * Checks whether the [sandbox] is the platform sandbox (i.e. the sandbox containing the platform's bundles).
+     * Checks whether the [sandbox] is the platform sandbox.
      */
     fun isPlatformSandbox(sandbox: Sandbox): Boolean
 
