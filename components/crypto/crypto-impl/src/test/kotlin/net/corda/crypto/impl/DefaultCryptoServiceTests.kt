@@ -1,15 +1,12 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.CryptoCategories
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
 import net.corda.crypto.SignatureVerificationServiceInternal
-import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
-import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
@@ -87,7 +84,6 @@ class DefaultCryptoServiceTests {
         private lateinit var signatureVerifier: SignatureVerificationServiceInternal
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var cryptoServiceCache: DefaultCryptoKeyCache
-        private lateinit var defaultCryptoServiceProvider: DefaultCryptoServiceProvider
         private lateinit var cryptoService: DefaultCryptoService
 
         @JvmStatic
@@ -98,22 +94,18 @@ class DefaultCryptoServiceTests {
             schemeMetadata = cryptoMocks.schemeMetadata
             signatureVerifier =
                 cryptoMocks.factories.cryptoClients.getSignatureVerificationService() as SignatureVerificationServiceInternal
-            defaultCryptoServiceProvider = DefaultCryptoServiceProvider(cryptoMocks.persistentCacheFactory)
-            defaultCryptoServiceProvider.start()
-            defaultCryptoServiceProvider.handleConfigEvent(CryptoLibraryConfigImpl(mapOf<String, Any?>(
-                "keyCache" to emptyMap<String, Any?>()
-            )))
-            cryptoService = defaultCryptoServiceProvider.getInstance(
-                CryptoServiceContext(
-                    sandboxId = memberId,
-                    category = CryptoCategories.LEDGER,
-                    cipherSuiteFactory = cryptoMocks.factories.cipherSuite,
-                    config = DefaultCryptoServiceConfig(
-                        passphrase = "PASSPHRASE",
-                        salt = "SALT"
-                    )
-                )
-            ) as DefaultCryptoService
+            cryptoServiceCache = DefaultCryptoKeyCacheImpl(
+                memberId = memberId,
+                passphrase = "PASSPHRASE",
+                salt = "SALT",
+                schemeMetadata = cryptoMocks.schemeMetadata,
+                persistence = cryptoMocks.defaultPersistentKeyCache
+            )
+            cryptoService = DefaultCryptoService(
+                cache = cryptoServiceCache,
+                schemeMetadata = schemeMetadata,
+                hashingService = cryptoMocks.factories.cryptoClients.getDigestService()
+            )
             cryptoServiceCache = cryptoService.cache
             cryptoService.createWrappingKey(wrappingKeyAlias, true)
         }
@@ -553,38 +545,7 @@ class DefaultCryptoServiceTests {
             }
         }
     }
-
-    @ParameterizedTest
-    @MethodSource("supportedWrappingSchemes")
-    @Timeout(30)
-    fun `Should generate and then sign and verify using wrapped key pair several times with different data for all supported schemes`(
-        signatureScheme: SignatureScheme
-    ) {
-        val badVerifyData = UUID.randomUUID().toString().toByteArray()
-        val wrappedKeyPair = cryptoService.generateWrappedKeyPair(wrappingKeyAlias, signatureScheme)
-        val random = Random()
-        for (i in 0..5) {
-            val testData = ByteArray(173)
-            random.nextBytes(testData)
-            val signature = cryptoService.sign(
-                WrappedPrivateKey(
-                    keyMaterial = wrappedKeyPair.keyMaterial,
-                    masterKeyAlias = wrappingKeyAlias,
-                    signatureScheme = signatureScheme,
-                    encodingVersion = wrappedKeyPair.encodingVersion
-                ),
-                signatureScheme.signatureSpec,
-                testData
-            )
-            assertNotNull(signature)
-            assertTrue(signature.isNotEmpty())
-            assertTrue(signatureVerifier.isValid(wrappedKeyPair.publicKey, signature, testData))
-            assertFailsWith<SignatureException> {
-                signatureVerifier.verify(wrappedKeyPair.publicKey, signature, badVerifyData)
-            }
-        }
-    }
-
+    
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
     @Timeout(30)
