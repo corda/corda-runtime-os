@@ -43,8 +43,8 @@ internal class SandboxServiceImpl @Activate constructor(
     private val configAdmin: ConfigurationAdmin
 ) : SandboxServiceInternal, SingletonSerializeAsToken {
     // These two framework bundles require full visibility.
-    private val felixFrameworkBundle by lazy { getFirstMatchingBundle(FELIX_FRAMEWORK_BUNDLE) }
-    private val felixScrBundle by lazy { getFirstMatchingBundle(FELIX_SCR_BUNDLE) }
+    private val felixFrameworkBundle by lazy { getRequiredBundle(FELIX_FRAMEWORK_BUNDLE) }
+    private val felixScrBundle by lazy { getRequiredBundle(FELIX_SCR_BUNDLE) }
 
     // These sandboxes are not persisted in any way; they are recreated on node startup.
     private val sandboxes = ConcurrentHashMap<UUID, SandboxInternal>()
@@ -142,10 +142,16 @@ internal class SandboxServiceImpl @Activate constructor(
         }
     }
 
-    /** Returns the first installed bundle with the [symbolicName]. */
-    private fun getFirstMatchingBundle(symbolicName: String) = bundleUtils.allBundles.firstOrNull { bundle ->
+    /**
+     * Returns the first installed bundle with the [symbolicName].
+     *
+     * Throws [SandboxException] if a matching bundle cannot be found.
+     */
+    private fun getRequiredBundle(symbolicName: String) = bundleUtils.allBundles.firstOrNull { bundle ->
         bundle.symbolicName == symbolicName
-    } ?: throw SandboxException("There is no installed bundle with the symbolic name $symbolicName.")
+    } ?: throw SandboxException(
+        "The bundle $symbolicName is not installed. This bundle is required by the sandbox service."
+    )
 
     /**
      * Retrieves the CPKs from the [installService] based on their [cpkFileHashes], and verifies the CPKs.
