@@ -162,6 +162,8 @@ internal class SandboxServiceImpl @Activate constructor(
      * Grants each sandbox visibility of the platform sandbox and of the other sandboxes in the group.
      */
     private fun createSandboxes(cpkFileHashes: Iterable<SecureHash>, startBundles: Boolean): SandboxGroup {
+        platformSandbox // We force the lazy initialisation of `platformSandbox`.
+
         val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
             installService.getCpk(cpkFileHash)
                 ?: throw SandboxException("No CPK is installed for CPK file hash $cpkFileHash.")
@@ -223,13 +225,17 @@ internal class SandboxServiceImpl @Activate constructor(
      * Throws [SandboxException] if the properties listing the public and private bundles are not set.
      */
     private fun createPlatformSandbox(): SandboxImpl {
-        val allBundles = bundleUtils.allBundles
         val publicBundleNames = readConfigAdminStringList(PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY)
         val privateBundleNames = readConfigAdminStringList(PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY)
-        val publicBundles = allBundles.filter { bundle -> bundle.symbolicName in publicBundleNames }.toSet()
-        val privateBundles = allBundles.filter { bundle -> bundle.symbolicName in privateBundleNames }.toSet()
 
-        val platformSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), publicBundles, privateBundles)
+        val relevantBundles = bundleUtils.allBundles.filter { bundle ->
+            bundle.symbolicName in publicBundleNames + privateBundleNames
+        }
+        val (publicBundles, privateBundles) = relevantBundles.partition { bundle ->
+            bundle.symbolicName in publicBundleNames
+        }
+
+        val platformSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
 
         sandboxes[platformSandbox.id] = platformSandbox
 

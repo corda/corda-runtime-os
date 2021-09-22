@@ -272,7 +272,7 @@ class SandboxServiceImplTests {
 
     @Test
     fun `throws if asked to create a sandbox for an unstored CPK hash`() {
-        val sandboxService = SandboxServiceImpl(mock(), mock(), mock())
+        val sandboxService = SandboxServiceImpl(mock(), mock(), mockConfigAdmin)
         assertThrows<SandboxException> {
             sandboxService.createSandboxes(listOf(SecureHash(hashAlgorithm, Random.nextBytes(hashLength))))
         }
