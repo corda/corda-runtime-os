@@ -22,7 +22,7 @@ interface SandboxCreationService {
      *
      * A [SandboxException] is thrown if the sandbox creation fails.
      */
-    fun createSandboxes(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
+    fun createSandboxGroup(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
 
     /**
      * Creates a new [SandboxGroup] containing a sandbox for each of the CPKs identified by the [cpkFileHashes].
@@ -34,5 +34,5 @@ interface SandboxCreationService {
      *
      * A [SandboxException] is thrown if the sandbox creation fails.
      */
-    fun createSandboxesWithoutStarting(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
+    fun createSandboxGroupWithoutStarting(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
 }

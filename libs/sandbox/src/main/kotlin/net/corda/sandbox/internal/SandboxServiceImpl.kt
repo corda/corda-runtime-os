@@ -57,10 +57,10 @@ internal class SandboxServiceImpl @Activate constructor(
     // Made lazy because we only want to create the platform sandbox once all the platform bundles are installed.
     private val platformSandbox by lazy(::createPlatformSandbox)
 
-    override fun createSandboxes(cpkFileHashes: Iterable<SecureHash>) =
+    override fun createSandboxGroup(cpkFileHashes: Iterable<SecureHash>) =
         createSandboxes(cpkFileHashes, startBundles = true)
 
-    override fun createSandboxesWithoutStarting(cpkFileHashes: Iterable<SecureHash>) =
+    override fun createSandboxGroupWithoutStarting(cpkFileHashes: Iterable<SecureHash>) =
         createSandboxes(cpkFileHashes, startBundles = false)
 
     override fun getClassInfo(klass: Class<*>): ClassInfo {
