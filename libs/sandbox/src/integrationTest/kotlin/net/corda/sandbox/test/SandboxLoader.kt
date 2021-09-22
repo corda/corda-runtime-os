@@ -37,11 +37,6 @@ class SandboxLoader @Activate constructor(
     private val sandboxCreationService: SandboxCreationService
 ) {
     companion object {
-        const val LIBRARY_SYMBOLIC_NAME = "com.example.sandbox.sandbox-cpk-library"
-        const val QUERY_CLASS = "com.example.sandbox.library.SandboxQuery"
-
-        private const val SHA256 = "SHA-256"
-
         private val baseDirectory = Paths.get(
             URI.create(System.getProperty("base.directory") ?: fail("base.directory property not found"))
         ).toAbsolutePath()
@@ -74,18 +69,24 @@ class SandboxLoader @Activate constructor(
     val group2: SandboxGroup
 
     init {
+        val privateBundleNames = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.filter { bundle ->
+            bundle.symbolicName !in PLATFORM_PUBLIC_BUNDLE_NAMES
+        }.map(Bundle::getSymbolicName)
+
         configAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
             val properties = Properties()
-            properties["baseDirectory"] = baseDirectory.toString()
-            properties["blacklistedKeys"] = emptyList<String>()
-            properties["platformVersion"] = 999
+            properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()
+            properties[BLACKLISTED_KEYS_KEY] = emptyList<String>()
+            properties[PLATFORM_VERSION_KEY] = 999
+            properties[PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] = PLATFORM_PUBLIC_BUNDLE_NAMES
+            properties[PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY] = privateBundleNames
             @Suppress("unchecked_cast")
             config.update(properties as Dictionary<String, Any>)
         }
 
-        cpk1 = loadCPK(resourceName = "sandbox-cpk-one-cordapp.cpk")
-        cpk2 = loadCPK(resourceName = "sandbox-cpk-two-cordapp.cpk")
-        cpk3 = loadCPK(resourceName = "sandbox-cpk-three-cordapp.cpk")
+        cpk1 = loadCPK(resourceName = CPK_ONE)
+        cpk2 = loadCPK(resourceName = CPK_TWO)
+        cpk3 = loadCPK(resourceName = CPK_THREE)
 
         group1 = createSandboxGroupFor(cpk1, cpk2)
         assertThat(group1.sandboxes).hasSize(2)
@@ -106,12 +107,11 @@ class SandboxLoader @Activate constructor(
         // Verify sandbox2 and sandbox3 cannot see each other.
         assertMutuallyInvisible(sandbox2, sandbox3)
 
-        val library1 = getBundle(QUERY_CLASS, sandbox1)
-        val library2 = getBundle(QUERY_CLASS, sandbox2)
-        val library3 = getBundle(QUERY_CLASS, sandbox3)
+        val library1 = getBundle(LIBRARY_QUERY_CLASS, sandbox1)
+        val library2 = getBundle(LIBRARY_QUERY_CLASS, sandbox2)
+        val library3 = getBundle(LIBRARY_QUERY_CLASS, sandbox3)
 
-        // Verify these bundles are all distinct,
-        // but still share the same symbolic name.
+        // Verify these bundles are all distinct, but still share the same symbolic name.
         assertDistinctDuplicates(library1, library2)
         assertDistinctDuplicates(library1, library3)
         assertDistinctDuplicates(library2, library3)
@@ -152,7 +152,7 @@ class SandboxLoader @Activate constructor(
         return sandboxCreationService.createSandboxes(cpks.map(Cpk::cpkHash))
     }
 
-    fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {
+    private fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {
         val context = FrameworkUtil.getBundle(bundleClass).bundleContext
         return context.getServiceReferences(serviceType, null)
             .map(context::getService)

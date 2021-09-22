@@ -34,8 +34,8 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
 
         }
 
-        if (sandbox !is CpkSandboxInternal) throw SandboxException("Sandbox was neither a platform sandbox nor a CPK " +
-                "sandbox. A valid class tag cannot be constructed.")
+        if (sandbox !is CpkSandboxInternal) throw SandboxException("Sandbox was neither the platform sandbox nor a " +
+                "CPK sandbox. A valid class tag cannot be constructed.")
 
         return if (isStaticClassTag) {
             StaticTagImplV1(isPlatformClass = false, bundleSymbolicName, sandbox.cpk.cpkHash)

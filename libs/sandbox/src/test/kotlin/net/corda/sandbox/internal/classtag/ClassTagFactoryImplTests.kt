@@ -4,7 +4,7 @@ import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CORDAPP_BUNDLE_NAME
 import net.corda.sandbox.internal.ClassTagV1
-import net.corda.sandbox.internal.NON_PLATFORM_BUNDLE_NAME
+import net.corda.sandbox.internal.CPK_BUNDLE_NAME
 import net.corda.sandbox.internal.mockBundle
 import net.corda.sandbox.internal.mockCpk
 import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
@@ -19,7 +19,7 @@ import org.mockito.kotlin.whenever
 class ClassTagFactoryImplTests {
     private val classTagFactory = ClassTagFactoryImpl()
 
-    private val mockBundle = mockBundle(NON_PLATFORM_BUNDLE_NAME)
+    private val mockBundle = mockBundle(CPK_BUNDLE_NAME)
     private val mockCordappBundle = mockBundle(CORDAPP_BUNDLE_NAME)
     private val mockCpk = mockCpk()
     private val mockSandbox = mock<CpkSandboxInternal>().apply {
@@ -52,7 +52,7 @@ class ClassTagFactoryImplTests {
     }
 
     @Test
-    fun `can serialise and deserialise a static class tag for a non-platform class`() {
+    fun `can serialise and deserialise a static class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = true,
             isPlatformBundle = false,
@@ -86,7 +86,7 @@ class ClassTagFactoryImplTests {
     }
 
     @Test
-    fun `can serialise and deserialise an evolvable class tag for a non-platform class`() {
+    fun `can serialise and deserialise an evolvable class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = false,
             isPlatformBundle = false,
