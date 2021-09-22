@@ -31,18 +31,15 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:schema-registry:schema-registry")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:avro-schema"
-    implementation "net.corda:corda-base"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "net.corda:corda-base"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
-    implementation "org.infinispan:infinispan-commons:$infinispanVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation project(":libs:lifecycle:lifecycle")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
@@ -61,9 +58,6 @@ dependencies {
     kafkaIntegrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
     kafkaIntegrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     kafkaIntegrationTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
-    kafkaIntegrationTestRuntimeOnly ("org.hibernate:hibernate-osgi:$hibernateVersion") {
-        exclude group: 'org.osgi'
-    }
     kafkaIntegrationTestRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     kafkaIntegrationTestRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     kafkaIntegrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"

@@ -1,25 +1,15 @@
 package net.corda.messaging.kafka.publisher.factory
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
-import net.corda.data.messaging.RPCResponse
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.GROUP
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_PUBLISHER
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_RPC_SENDER
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
-import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.publisher.CordaKafkaPublisherImpl
-import net.corda.messaging.kafka.publisher.CordaKafkaRPCSenderImpl
-import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
-import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.utils.ConfigUtils.Companion.resolvePublisherConfiguration
 import net.corda.messaging.kafka.utils.toConfig
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -59,33 +49,6 @@ class CordaKafkaPublisherFactory @Activate constructor(
         rpcConfig: RPCConfig<TREQ, TRESP>,
         nodeConfig: Config
     ): RPCSender<TREQ, TRESP> {
-
-        val publisherConfiguration = ConfigFactory.empty()
-            .withValue(GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
-            .withValue(TOPIC, ConfigValueFactory.fromAnyRef(rpcConfig.requestTopic))
-            .withValue("clientName", ConfigValueFactory.fromAnyRef(rpcConfig.clientName))
-
-        val publisherConfig = resolvePublisherConfiguration(
-            publisherConfiguration,
-            nodeConfig,
-            clientIdCounter.getAndIncrement(),
-            PATTERN_RPC_SENDER
-        )
-
-        val publisher = createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)
-
-        val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCResponse>(avroSchemaRegistry)
-        val serializer = CordaAvroSerializer<TREQ>(avroSchemaRegistry)
-        val deserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.responseType)
-        val errorDeserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, String::class.java)
-
-        return CordaKafkaRPCSenderImpl(
-            publisherConfig,
-            publisher,
-            consumerBuilder,
-            serializer,
-            deserializer,
-            errorDeserializer
-        )
+        TODO("Not yet implemented")
     }
 }

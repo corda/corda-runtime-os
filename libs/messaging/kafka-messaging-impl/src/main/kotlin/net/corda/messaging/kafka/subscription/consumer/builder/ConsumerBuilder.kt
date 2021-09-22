@@ -53,17 +53,4 @@ interface ConsumerBuilder<K : Any, V : Any> {
         onError: (String, ByteArray) -> Unit = {_, _ ->},
     ) : CordaKafkaConsumer<K, V>
 
-    /**
-     * Generate a Corda Kafka RPC topic Consumer based on the [consumerConfig].
-     * This function will handle all retry logic and kafka error handling
-     * @return CordaKafkaConsumer
-     * @throws CordaMessageAPIFatalException if fatal error occurs during construction of the consumer
-     */
-    fun createRPCConsumer(
-        consumerConfig: Config,
-        kClazz: Class<K>,
-        vClazz: Class<V>,
-        onError: (String, ByteArray) -> Unit = {_, _ ->},
-    ) : CordaKafkaConsumer<K, V>
-
 }
