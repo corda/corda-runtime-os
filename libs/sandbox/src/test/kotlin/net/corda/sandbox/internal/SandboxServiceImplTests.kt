@@ -557,7 +557,7 @@ class SandboxServiceImplTests {
 
         val e = assertThrows<SandboxException> { sandboxService.hasVisibility(mock(), mock()) }
         assertEquals(
-            "The bundle org.apache.felix.framework is not installed. This bundle is required by the sandbox service.",
+            "Bundle org.apache.felix.framework, required by the sandbox service, is not installed.",
             e.message
         )
     }
@@ -571,7 +571,37 @@ class SandboxServiceImplTests {
 
         val e = assertThrows<SandboxException> { sandboxService.hasVisibility(mock(), mock()) }
         assertEquals(
-            "The bundle org.apache.felix.scr is not installed. This bundle is required by the sandbox service.",
+            "Bundle org.apache.felix.scr, required by the sandbox service, is not installed.",
+            e.message
+        )
+    }
+
+    @Test
+    fun `throws if multiple Felix framework bundles are installed`() {
+        val mockBundleUtils = mock<BundleUtils>().apply {
+            whenever(allBundles).thenReturn(listOf(frameworkBundle, frameworkBundle, scrBundle))
+        }
+        val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils, mockConfigAdmin)
+
+        val e = assertThrows<SandboxException> { sandboxService.hasVisibility(mock(), mock()) }
+        assertEquals(
+            "Multiple org.apache.felix.framework bundles were installed. We cannot identify the bundle " +
+                    "required by the sandbox service.",
+            e.message
+        )
+    }
+
+    @Test
+    fun `throws if multiple Felix SCR bundles are installed`() {
+        val mockBundleUtils = mock<BundleUtils>().apply {
+            whenever(allBundles).thenReturn(listOf(frameworkBundle, scrBundle, scrBundle))
+        }
+        val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils, mockConfigAdmin)
+
+        val e = assertThrows<SandboxException> { sandboxService.hasVisibility(mock(), mock()) }
+        assertEquals(
+            "Multiple org.apache.felix.scr bundles were installed. We cannot identify the bundle required " +
+                    "by the sandbox service.",
             e.message
         )
     }

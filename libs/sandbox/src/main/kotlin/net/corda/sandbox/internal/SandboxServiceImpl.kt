@@ -143,15 +143,24 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     /**
-     * Returns the first installed bundle with the [symbolicName].
+     * Returns the installed bundle with the [symbolicName].
      *
-     * Throws [SandboxException] if a matching bundle cannot be found.
+     * Throws [SandboxException] if there is not exactly one match.
      */
-    private fun getRequiredBundle(symbolicName: String) = bundleUtils.allBundles.firstOrNull { bundle ->
-        bundle.symbolicName == symbolicName
-    } ?: throw SandboxException(
-        "The bundle $symbolicName is not installed. This bundle is required by the sandbox service."
-    )
+    private fun getRequiredBundle(symbolicName: String): Bundle {
+        val matchingBundles = bundleUtils.allBundles.filter { bundle ->
+            bundle.symbolicName == symbolicName
+        }
+
+        return when (matchingBundles.size) {
+            0 -> throw SandboxException("Bundle $symbolicName, required by the sandbox service, is not installed.")
+            1 -> matchingBundles.single()
+            else -> throw SandboxException(
+                "Multiple $symbolicName bundles were installed. We cannot identify the bundle required by the " +
+                        "sandbox service."
+            )
+        }
+    }
 
     /**
      * Retrieves the CPKs from the [installService] based on their [cpkFileHashes], and verifies the CPKs.
@@ -162,7 +171,10 @@ internal class SandboxServiceImpl @Activate constructor(
      * Grants each sandbox visibility of the platform sandbox and of the other sandboxes in the group.
      */
     private fun createSandboxes(cpkFileHashes: Iterable<SecureHash>, startBundles: Boolean): SandboxGroup {
-        platformSandbox // We force the lazy initialisation of `platformSandbox`.
+        // We force the lazy initialisation of these variables before any sandboxes are created.
+        felixFrameworkBundle
+        felixScrBundle
+        platformSandbox
 
         val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
             installService.getCpk(cpkFileHash)
