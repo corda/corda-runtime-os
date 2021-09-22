@@ -7,6 +7,7 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id "com.github.davidmc24.gradle.plugin.avro-base"
     id 'biz.aQute.bnd.builder'
+    id 'java-library'
 }
 
 dependencies {

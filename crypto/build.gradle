@@ -1,7 +1,7 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'com.r3.internal.gradle.plugins.r3Publish'
-    id 'biz.aQute.bnd.builder'
+    id 'corda-api.common-library'
 }
 
 description 'Corda Crypto'
@@ -24,12 +24,9 @@ dependencies {
 }
 
 tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-crypto'
-    bnd """\
-Bundle-Name: Corda Crypto
-Bundle-SymbolicName: \${project.group}.crypto
+    bnd '''\
 Import-Package:\
     net.i2p.crypto.eddsa.math;resolution:=optional,\
     *
-"""
+'''
 }

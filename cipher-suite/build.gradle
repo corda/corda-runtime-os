@@ -1,7 +1,7 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'com.r3.internal.gradle.plugins.r3Publish'
-    id 'biz.aQute.bnd.builder'
+    id 'corda-api.common-library'
 }
 
 description 'Corda Cipher Suite'
@@ -25,12 +25,9 @@ dependencies {
 }
 
 tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-cipher-suite'
-    bnd """\
-Bundle-Name: Corda Cipher Suite
-Bundle-SymbolicName: \${project.group}.cipher-suite
+    bnd '''\
 Import-Package:\
     net.i2p.crypto.eddsa.math;resolution:=optional,\
     *
-"""
+'''
 }
