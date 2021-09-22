@@ -10,11 +10,9 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.ssl.SslHandler
 import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.LoggingInterceptor
 import net.corda.p2p.gateway.TestBase
-import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.apache.logging.log4j.Level
@@ -27,8 +25,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.io.FileInputStream
-import java.net.InetSocketAddress
-import java.net.ServerSocket
 import java.net.URI
 import java.security.SecureRandom
 import java.time.Instant
@@ -60,10 +56,6 @@ class HttpTest : TestBase() {
     }
 
     private val serverAddress = URI.create("http://alice.net:10000")
-    private val coordinator = DominoCoordinatorFactory(
-        LifecycleCoordinatorFactoryImpl(),
-        "alice.net:10000"
-    )
 
     @Test
     @Timeout(30)

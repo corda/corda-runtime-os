@@ -13,15 +13,15 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.v5.base.util.contextLogger
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 abstract class LifecycleWithCoordinator(
     internal val coordinatorFactory: LifecycleCoordinatorFactory,
     instanceId: String?,
 ) :
-    Lifecycle,
-    LifecycleEventHandler {
-
+    Lifecycle {
     companion object {
         private val logger = contextLogger()
     }
@@ -31,10 +31,12 @@ abstract class LifecycleWithCoordinator(
         instanceId
     )
 
-    private val coordinator = coordinatorFactory.createCoordinator(name, this)
+    private val coordinator = coordinatorFactory.createCoordinator(name, EventHandler())
 
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
+
+    private val waitingForStatusChange = ConcurrentHashMap.newKeySet<CompletableFuture<LifecycleStatus>>()
 
     // YIFT: The updateStatus won't set the status immediately after the updateStatus?!...
     private val knownStatus = AtomicReference(coordinator.status)
@@ -44,6 +46,9 @@ abstract class LifecycleWithCoordinator(
             val oldStatus = knownStatus.getAndSet(newStatus)
             if (oldStatus != newStatus) {
                 coordinator.updateStatus(newStatus)
+                waitingForStatusChange.forEach {
+                    it.complete(newStatus)
+                }
             }
             logger.info("Status of $name is $newStatus")
         }
@@ -69,10 +74,6 @@ abstract class LifecycleWithCoordinator(
         return followStatusChanges(lifecycles.map { it.name })
     }
 
-    fun followStatusChanges(vararg names: LifecycleCoordinatorName): RegistrationHandle {
-        return followStatusChanges(names.toSet())
-    }
-
     fun followStatusChanges(names: Collection<LifecycleCoordinatorName>): RegistrationHandle {
         return coordinator.followStatusChangesByName(names.toSet())
     }
@@ -90,27 +91,42 @@ abstract class LifecycleWithCoordinator(
         status = LifecycleStatus.ERROR
     }
 
-    override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        when (event) {
-            is ErrorEvent -> {
-                onError(event.cause)
-            }
-            is StartEvent -> {
-                onStart()
-            }
-            is StopEvent -> {
-                onStop()
-            }
-            is RegistrationStatusChangeEvent -> {
-                onStatusChange(event.status)
-            }
-            else -> {
-                onCustomEvent(event)
+    private inner class EventHandler : LifecycleEventHandler {
+        override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+            when (event) {
+                is ErrorEvent -> {
+                    onError(event.cause)
+                }
+                is StartEvent -> {
+                    onStart()
+                }
+                is StopEvent -> {
+                    onStop()
+                }
+                is RegistrationStatusChangeEvent -> {
+                    onStatusChange(event.status)
+                }
+                else -> {
+                    onCustomEvent(event)
+                }
             }
         }
     }
 
     override fun close() {
+        val waitForStop = CompletableFuture<LifecycleStatus>()
+        waitingForStatusChange.add(waitForStop)
+
+        stop()
+
+        if (status == LifecycleStatus.UP) {
+            if (waitForStop.join() != LifecycleStatus.DOWN) {
+                logger.warn("Could not stop $name")
+            }
+        }
+
+        waitingForStatusChange.remove(waitForStop)
+
         coordinator.close()
     }
 }

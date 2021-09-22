@@ -93,12 +93,4 @@ class Gateway(
         }
         super.onStatusChange(newStatus)
     }
-
-    // YIFT: Remove?
-    fun stopAndWaitForDestruction() {
-        stop()
-        while (status != LifecycleStatus.DOWN) {
-            Thread.sleep(100)
-        }
-    }
 }

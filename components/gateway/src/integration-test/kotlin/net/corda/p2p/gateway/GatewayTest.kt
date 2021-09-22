@@ -123,7 +123,6 @@ class GatewayTest : TestBase() {
                 client.start()
                 client.write(linkInMessage.toByteBuffer().array())
                 responseReceived.await()
-                it.stopAndWaitForDestruction()
             }
         }
 
@@ -176,7 +175,6 @@ class GatewayTest : TestBase() {
             }
             responseReceived.await()
             clients.forEach { client -> client.stop() }
-            it.stopAndWaitForDestruction()
         }
 
         // Verify Gateway has received all [clientNumber] messages and that they were forwarded to the P2P_IN topic
@@ -253,7 +251,6 @@ class GatewayTest : TestBase() {
             // Wait until all messages have been delivered
             deliveryLatch.await(1, TimeUnit.MINUTES)
             endTime = Instant.now().toEpochMilli()
-            it.stopAndWaitForDestruction()
         }
 
         logger.info("Done sending ${messageCount * serversCount} messages in ${endTime - startTime} milliseconds")
@@ -344,7 +341,7 @@ class GatewayTest : TestBase() {
         val threads = gateways.map {
             thread {
                 receivedLatch.await()
-                it.stopAndWaitForDestruction()
+                it.close()
             }
         }
 

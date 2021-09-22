@@ -1,8 +1,6 @@
 package net.corda.p2p.gateway
 
 import io.netty.handler.codec.http.HttpResponseStatus
-import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
-import net.corda.p2p.gateway.domino.DominoCoordinatorFactory
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
@@ -35,26 +33,26 @@ class ConnectionManagerTest : TestBase() {
         val manager = ConnectionManager(parent, configService)
         manager.startAndWaitForStarted()
         HttpServer(parent, configService).use { server ->
-        server.addListener(object : HttpEventListener {
-            override fun onMessage(message: HttpMessage) {
-                assertEquals(clientMessageContent, String(message.payload))
-                server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), message.source)
-            }
-        })
-        server.startAndWaitForStarted()
-        manager.acquire(destination).use { client ->
-            // Client is connected at this point
-            val responseReceived = CountDownLatch(1)
-            client.addListener(object : HttpEventListener {
+            server.addListener(object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
-                    assertEquals(serverResponseContent, String(message.payload))
-                    responseReceived.countDown()
+                    assertEquals(clientMessageContent, String(message.payload))
+                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), message.source)
                 }
             })
-            client.write(clientMessageContent.toByteArray())
-            responseReceived.await()
+            server.startAndWaitForStarted()
+            manager.acquire(destination).use { client ->
+                // Client is connected at this point
+                val responseReceived = CountDownLatch(1)
+                client.addListener(object : HttpEventListener {
+                    override fun onMessage(message: HttpMessage) {
+                        assertEquals(serverResponseContent, String(message.payload))
+                        responseReceived.countDown()
+                    }
+                })
+                client.write(clientMessageContent.toByteArray())
+                responseReceived.await()
+            }
         }
-    }
     }
 
     @Test
@@ -64,21 +62,21 @@ class ConnectionManagerTest : TestBase() {
         manager.startAndWaitForStarted()
         val requestReceived = CountDownLatch(2)
         HttpServer(parent, configService).use { server ->
-        val remotePeers = mutableListOf<SocketAddress>()
-        server.addListener(object : HttpEventListener {
-            override fun onOpen(event: HttpConnectionEvent) {
-                remotePeers.add(event.channel.remoteAddress())
-            }
-            override fun onMessage(message: HttpMessage) {
-                requestReceived.countDown()
-            }
-        })
-        server.startAndWaitForStarted()
-        manager.acquire(destination).write(clientMessageContent.toByteArray())
-        manager.acquire(destination).write(clientMessageContent.toByteArray())
-        requestReceived.await()
-        assertEquals(1, remotePeers.size)
-        manager.acquire(destination).stop()
-    }
+            val remotePeers = mutableListOf<SocketAddress>()
+            server.addListener(object : HttpEventListener {
+                override fun onOpen(event: HttpConnectionEvent) {
+                    remotePeers.add(event.channel.remoteAddress())
+                }
+                override fun onMessage(message: HttpMessage) {
+                    requestReceived.countDown()
+                }
+            })
+            server.startAndWaitForStarted()
+            manager.acquire(destination).write(clientMessageContent.toByteArray())
+            manager.acquire(destination).write(clientMessageContent.toByteArray())
+            requestReceived.await()
+            assertEquals(1, remotePeers.size)
+            manager.acquire(destination).stop()
+        }
     }
 }

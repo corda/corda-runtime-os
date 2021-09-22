@@ -41,12 +41,8 @@ abstract class LifecycleWithCoordinatorAndResources(
     }
 
     override fun close() {
-
         stop()
-        // YIFT: add future
-        while (status == LifecycleStatus.UP) {
-            Thread.sleep(100)
-        }
+
         closeActions.onEach {
             @Suppress("TooGenericExceptionCaught")
             try {
@@ -56,6 +52,7 @@ abstract class LifecycleWithCoordinatorAndResources(
             }
         }
         closeActions.clear()
+
         super.close()
     }
 }
