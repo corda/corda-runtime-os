@@ -37,7 +37,7 @@ class FileConfigReaderImpl(
 
     override fun start() {
         lock.withLock {
-            readConfigFile()
+            storeFileConfig()
             stopped = false
         }
     }
@@ -57,8 +57,18 @@ class FileConfigReaderImpl(
         return sub
     }
 
-    private fun readConfigFile() {
-        val config = try {
+    private fun storeFileConfig() {
+        val config = parseConfigFile()
+        for (packageKey in config.root().keys) {
+            val packageConfig = config.getConfig(packageKey)
+            for (componentKey in packageConfig.root().keys) {
+                configurationRepository.updateConfiguration("$packageKey.$componentKey", packageConfig.getConfig(componentKey))
+            }
+        }
+    }
+
+    private fun parseConfigFile(): Config {
+        return try {
             val parseOptions = ConfigParseOptions.defaults().setAllowMissing(false)
             val configFilePath = bootstrapConfig.getString(CONFIG_FILE_NAME)
             ConfigFactory.parseURL(File(configFilePath).toURI().toURL(), parseOptions).resolve()
@@ -69,7 +79,6 @@ class FileConfigReaderImpl(
             log.error(e.message, e)
             ConfigFactory.empty()
         }
-        configurationRepository.storeConfiguration(mapOf("corda" to config.getConfig("corda")))
     }
 
     private class ConfigListenerSubscription : AutoCloseable {

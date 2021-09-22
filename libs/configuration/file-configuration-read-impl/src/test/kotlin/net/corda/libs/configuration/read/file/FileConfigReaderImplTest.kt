@@ -49,10 +49,11 @@ class FileConfigReaderImplTest {
             configSnapshot = config
         }
         assertThat(lambdaFlag).isTrue
-        assertThat(changedKeys.size).isEqualTo(1)
-        assertNotNull(configRepository.getConfigurations()["corda"])
-        assertThat(configSnapshot["corda"]).isEqualTo(configRepository.getConfigurations()["corda"])
-        assertTrue(configRepository.getConfigurations()["corda"]!!.hasPath("rpc.address"))
+        assertThat(changedKeys.size).isEqualTo(2)
+        assertNotNull(configRepository.getConfigurations()["corda.rpc"])
+        assertNotNull(configRepository.getConfigurations()["corda.another_rpc"])
+        assertThat(configSnapshot["corda.rpc"]).isEqualTo(configRepository.getConfigurations()["corda.rpc"])
+        assertTrue(configRepository.getConfigurations()["corda.rpc"]!!.hasPath("address"))
     }
 
     private fun createTempTestConfig() {
