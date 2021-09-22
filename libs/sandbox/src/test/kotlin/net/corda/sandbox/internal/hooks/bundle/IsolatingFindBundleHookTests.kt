@@ -1,6 +1,5 @@
 package net.corda.sandbox.internal.hooks.bundle
 
-import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.SandboxServiceInternal
 import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.createMockBundleContext
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -42,20 +41,5 @@ class IsolatingFindBundleHookTests {
         val isolatingFindBundleHook = IsolatingFindBundleHook(sandboxService)
         isolatingFindBundleHook.find(bundleOneContext, candidates)
         assertEquals(0, candidates.size)
-    }
-
-    @Test
-    fun `bundle is found if a bundle is in the platform sandbox`() {
-        val platformSandbox = mock<SandboxInternal>()
-
-        val sandboxService = mock<SandboxServiceInternal>().apply {
-            whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(false)
-            whenever(getSandbox(bundleOne)).thenReturn(platformSandbox)
-            whenever(isPlatformSandbox(platformSandbox)).thenReturn(true)
-        }
-
-        val isolatingFindBundleHook = IsolatingFindBundleHook(sandboxService)
-        isolatingFindBundleHook.find(bundleOneContext, candidates)
-        assertEquals(1, candidates.size)
     }
 }
