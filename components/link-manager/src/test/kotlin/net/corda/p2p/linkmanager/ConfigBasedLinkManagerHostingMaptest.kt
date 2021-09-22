@@ -1,8 +1,8 @@
 package net.corda.p2p.linkmanager
 
 import com.typesafe.config.ConfigFactory
-import net.corda.libs.configuration.read.ConfigListener
-import net.corda.libs.configuration.read.ConfigReadService
+import net.corda.configuration.read.ConfigurationHandler
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -14,13 +14,13 @@ import kotlin.concurrent.thread
 
 class ConfigBasedLinkManagerHostingMaptest {
 
-    private var listeners = mutableListOf<ConfigListener>()
+    private var listeners = mutableListOf<ConfigurationHandler>()
     private val latch = CountDownLatch(1)
 
-    private val configReadService = mock<ConfigReadService> {
-        on { registerCallback(any()) } doAnswer {invocation ->
+    private val configReadService = mock<ConfigurationReadService> {
+        on { registerForUpdates(any()) } doAnswer {invocation ->
             @Suppress("UNCHECKED_CAST")
-            listeners.add(invocation.arguments[0] as ConfigListener)
+            listeners.add(invocation.arguments[0] as ConfigurationHandler)
             latch.countDown()
             mock
         }
@@ -53,7 +53,7 @@ class ConfigBasedLinkManagerHostingMaptest {
         latch.await()
 
         listeners.forEach { listener ->
-            listener.onUpdate(setOf(LinkManagerConfiguration.CONFIG_KEY), mapOf(
+            listener.onNewConfiguration(setOf(LinkManagerConfiguration.CONFIG_KEY), mapOf(
                 LinkManagerConfiguration.CONFIG_KEY to config
             ))
         }

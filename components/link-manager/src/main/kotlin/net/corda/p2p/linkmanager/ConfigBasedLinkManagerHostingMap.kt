@@ -1,9 +1,8 @@
 package net.corda.p2p.linkmanager
 
 import com.typesafe.config.Config
-import net.corda.libs.configuration.read.ConfigListener
-import net.corda.libs.configuration.read.ConfigReadService
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.configuration.read.ConfigurationHandler
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CONFIG_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
@@ -19,7 +18,7 @@ import kotlin.concurrent.write
 /**
  * Reads the set of holding identities hosted locally from configuration.
  */
-class ConfigBasedLinkManagerHostingMap(private val configReadService: ConfigReadService): LinkManagerHostingMap, Lifecycle {
+class ConfigBasedLinkManagerHostingMap(private val configReadService: ConfigurationReadService): LinkManagerHostingMap, Lifecycle {
 
     private val locallyHostedIdentities = mutableSetOf<LinkManagerNetworkMap.HoldingIdentity>()
     private val configListener = HostingMapConfigListener(locallyHostedIdentities)
@@ -36,7 +35,7 @@ class ConfigBasedLinkManagerHostingMap(private val configReadService: ConfigRead
     override fun start() {
         lock.write {
             if (!running) {
-                configRegistration = configReadService.registerCallback(configListener)
+                configRegistration = configReadService.registerForUpdates(configListener)
                 configListener.waitUntilFirstConfig()
                 running = true
             }
@@ -63,7 +62,7 @@ class ConfigBasedLinkManagerHostingMap(private val configReadService: ConfigRead
     }
 
     private class HostingMapConfigListener(val locallyHostedIdentities: MutableSet<LinkManagerNetworkMap.HoldingIdentity>):
-        ConfigListener {
+        ConfigurationHandler {
 
         companion object {
             private val log = contextLogger()
@@ -71,12 +70,12 @@ class ConfigBasedLinkManagerHostingMap(private val configReadService: ConfigRead
 
         private val latch = CountDownLatch(1)
 
-        override fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config>) {
+        override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
             if (changedKeys.contains(CONFIG_KEY)) {
-                val linkManagerConfig = currentConfigurationSnapshot[CONFIG_KEY]!!
-                val holdingIdentities = linkManagerConfig.getConfigList(LOCALLY_HOSTED_IDENTITIES_KEY).map { config ->
-                    val x500name = config.getString(LOCALLY_HOSTED_IDENTITY_X500_NAME)
-                    val groupId = config.getString(LOCALLY_HOSTED_IDENTITY_GPOUP_ID)
+                val linkManagerConfig = config[CONFIG_KEY]!!
+                val holdingIdentities = linkManagerConfig.getConfigList(LOCALLY_HOSTED_IDENTITIES_KEY).map { identityConfig ->
+                    val x500name = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_X500_NAME)
+                    val groupId = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_GPOUP_ID)
                     LinkManagerNetworkMap.HoldingIdentity(x500name, groupId)
                 }
                 locallyHostedIdentities.clear()
