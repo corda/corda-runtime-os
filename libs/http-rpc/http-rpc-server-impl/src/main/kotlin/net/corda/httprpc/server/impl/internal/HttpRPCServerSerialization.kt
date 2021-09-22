@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import net.corda.common.json.serialization.jacksonObjectMapper
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.crypto.SecureHash
 
