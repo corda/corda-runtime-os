@@ -1,35 +1,47 @@
 pluginManagement {
     repositories {
-        maven {
-            url "$artifactoryContextUrl/corda-releases"
-            content {
-                includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
-            }
-        }
-        maven {
-            url "$artifactoryContextUrl/corda-os-maven"
-            content {
-                includeGroupByRegex 'net\\.corda\\.cordapp(\\..*)?'
-            }
-            credentials {
-                username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
-                password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
-            }
-        }
-        gradlePluginPortal()
-        maven {
-            url "$artifactoryContextUrl/engineering-tools-maven"
-            credentials {
-                if (settings.hasProperty("cordaArtifactoryUsername")) {
-                    username = settings.cordaArtifactoryUsername
-                } else {
-                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+        def cordaUseCache = System.getenv("CORDA_USE_CACHE")
+        if (cordaUseCache != null) {
+            maven {
+                url = "${artifactoryContextUrl}/${cordaUseCache}"
+                name = "R3 Maven remote repositories"
+                authentication {
+                    basic(BasicAuthentication)
                 }
-
-                if (settings.hasProperty("cordaArtifactoryPassword")) {
-                    password = settings.cordaArtifactoryPassword
-                } else {
-                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        } else {
+            maven {
+                url "${artifactoryContextUrl}/corda-releases"
+                content {
+                    includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
+                }
+            }
+            maven {
+                url "${artifactoryContextUrl}/corda-os-maven"
+                content {
+                    includeGroupByRegex 'net\\.corda\\.cordapp(\\..*)?'
+                }
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+            gradlePluginPortal()
+            maven {
+                url "${artifactoryContextUrl}/engineering-tools-maven"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
                 }
             }
         }
@@ -77,9 +89,9 @@ include 'components:examples:state-plus-event-sub'
 include 'libs:class-info'
 include 'libs:configuration:configuration-read'
 include 'libs:configuration:configuration-schema:p2p'
+include 'libs:configuration:configuration-read-impl'
 include 'libs:configuration:configuration-write'
-include 'libs:configuration:kafka-configuration-read-impl'
-include 'libs:configuration:kafka-configuration-write-impl'
+include 'libs:configuration:configuration-write-impl'
 include 'libs:crypto:crypto-internal'
 include 'libs:crypto:crypto-impl'
 include 'libs:crypto:crypto-testkit'

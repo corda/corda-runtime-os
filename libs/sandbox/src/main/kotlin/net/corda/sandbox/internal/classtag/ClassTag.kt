@@ -7,7 +7,7 @@ import java.util.NavigableSet
  * Identifies a sandboxed class during serialisation and deserialisation.
  *
  * @param version The version of the class tag.
- * @param isPlatformClass Indicates whether the class is a platform class.
+ * @param isPlatformClass Indicates whether the class is a class in the platform sandbox.
  * @param classBundleName The symbolic name of the bundle that the class was loaded from.
  */
 sealed class ClassTag(val version: Int, val isPlatformClass: Boolean, val classBundleName: String) {
