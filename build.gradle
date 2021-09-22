@@ -3,6 +3,8 @@ import static org.gradle.api.JavaVersion.*
 
 buildscript {
     ext {
+        vcsUrl = System.getenv('GIT_URL') ?: 'https://github.com/corda/corda-api.git'
+
         // Remember where our Java executable lives (until Bnd supports Gradle toolchains).
         javaExecutable = file("${System.getProperty('java.home')}/bin/java")
     }

@@ -14,8 +14,6 @@ ext {
     pluginGroup = 'net.corda.cordapp'
     pluginName = 'cordapp-configuration'
     pluginId = 'net.corda.cordapp.cordapp-configuration'
-
-    vcsUrl = System.getenv('GIT_URL') ?: 'https://github.com/corda/corda-api.git'
 }
 
 configurations {

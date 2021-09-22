@@ -4,6 +4,8 @@ plugins {
     id 'com.jfrog.artifactory'
 }
 
+description = 'Declares the Corda API component versions.'
+
 dependencies {
     constraints {
         api project(':application')
@@ -34,6 +36,12 @@ publishing {
 
             pom {
                 name = 'Corda API Platform'
+                description = project.description
+
+                url = vcsUrl - '.git'
+                scm {
+                    url = vcsUrl
+                }
 
                 licenses {
                     license {
