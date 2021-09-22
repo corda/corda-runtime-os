@@ -30,7 +30,7 @@ sealed class Cpk(
         val signerSummaryHash = hash {
             cordappCertificates
                 .asSequence()
-                .map { certificate -> certificate.encoded.hash() }
+                .map { certificate -> certificate.publicKey.encoded.hash() }
                 .sortedWith(Identifier.secureHashComparator)
                 .map(SecureHash::toString)
                 .map(String::toByteArray)

@@ -381,10 +381,18 @@ class CpkTests {
     }
 
     @Test
-    fun `corda-api dependencies are not included in in cpk dependencies`() {
+    fun `corda-api dependencies are not included in cpk dependencies`() {
         Assertions.assertTrue(workflowCpk.dependencies.none {
             it == flowsCpk.id
         })
+    }
+
+    @Test
+    fun `signers summary hash is computed correctly`() {
+        val md = MessageDigest.getInstance(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name)
+        md.update(cordaDevKey.toString().toByteArray())
+        val expectedHash = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, md.digest())
+        Assertions.assertEquals(expectedHash, flowsCpk.id.signerSummaryHash)
     }
 }
 
