@@ -105,14 +105,6 @@ class CachingCustomSerializerRegistry(
         storeCustomSerializer(customSerializer)
     }
 
-    private fun storeCustomSerializer(customSerializer: AMQPSerializer<Any>) {
-        require(customSerializer is SerializerFor) { "customSerializer must implement SerializerFor" }
-        checkActiveCache(customSerializer.type)
-
-        customSerializers += customSerializer
-        descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) { customSerializer }
-    }
-
     override fun register(customSerializer: SerializationCustomSerializer<*, *>) {
         TODO("Not yet implemented")
     }
@@ -123,6 +115,18 @@ class CachingCustomSerializerRegistry(
         storeCustomSerializer(customSerializer)
     }
 
+    override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>) {
+        registerExternal(CorDappCustomSerializer(customSerializer, false))
+    }
+
+    private fun storeCustomSerializer(customSerializer: AMQPSerializer<Any>) {
+        require(customSerializer is SerializerFor) { "customSerializer must implement SerializerFor" }
+        checkActiveCache(customSerializer.type)
+
+        customSerializers += customSerializer
+        descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) { customSerializer }
+    }
+
     private fun checkActiveCache(type: Type) {
         if (customSerializersCache.isNotEmpty()) {
             val message = "Attempting to register custom serializer $type in an active cache. " +
@@ -130,10 +134,6 @@ class CachingCustomSerializerRegistry(
             logger.warn(message)
             throw AMQPNotSerializableException(type, message)
         }
-    }
-
-    override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>) {
-        registerExternal(CorDappCustomSerializer(customSerializer, false))
     }
 
     override fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? {
