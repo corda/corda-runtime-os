@@ -24,9 +24,19 @@ import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+<<<<<<< HEAD
+=======
+import net.corda.p2p.linkmanager.delivery.HeartbeatManager
+import net.corda.p2p.linkmanager.delivery.HeartbeatManagerImpl
+>>>>>>> Update SessionManagerTest to take into account HeartbeatManager
 import net.corda.p2p.linkmanager.delivery.SessionReplayer
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+<<<<<<< HEAD
+=======
+import net.corda.p2p.linkmanager.utilities.MockHeartbeatManager
+import net.corda.p2p.linkmanager.utilities.MockNetworkMap
+>>>>>>> Update SessionManagerTest to take into account HeartbeatManager
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -58,6 +68,7 @@ class SessionManagerTest {
         val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
         val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
+<<<<<<< HEAD
         val OUR_PARTY = LinkManagerNetworkMap.HoldingIdentity("Alice", GROUP_ID)
         val OUR_KEY = keyGenerator.genKeyPair()
         val OUR_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(OUR_PARTY, OUR_KEY.public, KeyAlgorithm.ECDSA,
@@ -66,6 +77,23 @@ class SessionManagerTest {
         val PEER_KEY = keyGenerator.genKeyPair()
         val PEER_MEMBER_INFO = LinkManagerNetworkMap.MemberInfo(PEER_PARTY, PEER_KEY.public, KeyAlgorithm.ECDSA,
             LinkManagerNetworkMap.EndPoint("http://bob.com"))
+=======
+        private fun sessionManagerWithNetMap(
+            netMap: LinkManagerNetworkMap,
+            cryptoService: LinkManagerCryptoService = Mockito.mock(LinkManagerCryptoService::class.java),
+            messageReplayer: SessionReplayer = noReplayer,
+            heartbeatManager: HeartbeatManager = Mockito.mock(HeartbeatManagerImpl::class.java)
+        ): SessionManagerImpl {
+            return SessionManagerImpl(
+                SessionManagerImpl.ParametersForSessionNegotiation(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                netMap,
+                cryptoService,
+                MockSessionMessageQueues(),
+                messageReplayer,
+                heartbeatManager
+            )
+        }
+>>>>>>> Update SessionManagerTest to take into account HeartbeatManager
 
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -126,11 +154,118 @@ class SessionManagerTest {
         KEY
     )
 
+<<<<<<< HEAD
     @Test
     fun `when no session exists, processing outbound message creates a new session`() {
         whenever(pendingSessionMessageQueues.queueMessage(eq(message), any())).thenReturn(true)
         val initiatorHello = mock<InitiatorHelloMessage>()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+=======
+    private fun sessionManager(
+        party: LinkManagerNetworkMap.HoldingIdentity,
+        queues: MockSessionMessageQueues = MockSessionMessageQueues(),
+        mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY,
+        cryptoService: LinkManagerCryptoService? = null,
+        messageReplayer: SessionReplayer = noReplayer,
+        heartbeatManager: HeartbeatManager = Mockito.mock(HeartbeatManagerImpl::class.java)
+    ) : SessionManagerImpl {
+        val netMap = globalNetMap.getSessionNetworkMapForNode(party)
+        val realCryptoService = cryptoService ?: MockCryptoService(netMap)
+        return SessionManagerImpl(
+            SessionManagerImpl.ParametersForSessionNegotiation(MAX_MESSAGE_SIZE, setOf(mode)),
+            netMap,
+            realCryptoService,
+            queues,
+            messageReplayer,
+            heartbeatManager
+        )
+    }
+
+    private fun negotiateOutboundSession(
+        FlowMessageAndKey: AuthenticatedMessageAndKey,
+        outboundManager: SessionManager,
+        supportedMode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY
+    ): Session {
+        val state = outboundManager.processOutboundFlowMessage(FlowMessageAndKey)
+        assertTrue(state is NewSessionNeeded)
+        assertTrue((state as NewSessionNeeded).sessionInitMessage.payload is InitiatorHelloMessage)
+
+        val initiatorHelloMessage = state.sessionInitMessage.payload as InitiatorHelloMessage
+
+        val protocolResponder = AuthenticationProtocolResponder(
+            initiatorHelloMessage.header.sessionId, setOf(supportedMode), MAX_MESSAGE_SIZE
+        )
+        protocolResponder.receiveInitiatorHello(initiatorHelloMessage)
+
+        val initiatorHandshakeMessage = outboundManager.processSessionMessage(LinkInMessage(protocolResponder.generateResponderHello()))
+
+        assertTrue(initiatorHandshakeMessage!!.payload is InitiatorHandshakeMessage)
+        protocolResponder.generateHandshakeSecrets()
+
+        protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage.payload as InitiatorHandshakeMessage,
+            netMapOutbound.getKeyPair().public,
+            KeyAlgorithm.ECDSA
+        )
+
+        val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(netMapInbound.getKeyPair().public) {
+            signDataWithKey(netMapInbound.getKeyPair().private, it)
+        }
+        assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHandshakeMessage)))
+        return protocolResponder.getSession()
+    }
+
+    private fun negotiateInboundSession(
+        sessionId: String,
+        inboundManager: SessionManager,
+        supportedMode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY
+    ): Session {
+        val protocolInitiator = AuthenticationProtocolInitiator(
+            sessionId, setOf(supportedMode),
+            MAX_MESSAGE_SIZE, netMapOutbound.getKeyPair().public, GROUP_ID
+        )
+        val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
+        val responderHelloMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))?.payload
+        assertTrue(responderHelloMessage is ResponderHelloMessage)
+        protocolInitiator.receiveResponderHello(responderHelloMessage as ResponderHelloMessage)
+        protocolInitiator.generateHandshakeSecrets()
+        val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(
+            netMapInbound.getKeyPair().public,
+        ) { signDataWithKey(netMapOutbound.getKeyPair().private, it) }
+        val responderHandshakeMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
+        assertTrue(responderHandshakeMessage?.payload is ResponderHandshakeMessage)
+
+        protocolInitiator.validatePeerHandshakeMessage(
+            responderHandshakeMessage?.payload as ResponderHandshakeMessage,
+            netMapInbound.getKeyPair().public,
+            KeyAlgorithm.ECDSA
+        )
+
+        return protocolInitiator.getSession()
+    }
+
+    private fun negotiateToInitiatorHandshake(
+        inboundManager: SessionManager,
+        sessionId: String,
+        mode: ProtocolMode = ProtocolMode.AUTHENTICATION_ONLY,
+    ): InitiatorHandshakeMessage {
+        val protocolInitiator = AuthenticationProtocolInitiator(
+            sessionId, setOf(mode), MAX_MESSAGE_SIZE, netMapOutbound.getKeyPair().public, GROUP_ID
+        )
+        val initiatorHelloMessage = protocolInitiator.generateInitiatorHello()
+
+        val responderHello = inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))?.payload
+        assertTrue(responderHello is ResponderHelloMessage)
+
+        protocolInitiator.receiveResponderHello(responderHello as ResponderHelloMessage)
+        protocolInitiator.generateHandshakeSecrets()
+        return protocolInitiator.generateOurHandshakeMessage(
+            netMapInbound.getKeyPair().public,
+        ) {
+            signDataWithKey(netMapOutbound.getKeyPair().private, it)
+        }
+    }
+>>>>>>> Update SessionManagerTest to take into account HeartbeatManager
 
         val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
         assertThat(sessionState.sessionInitMessage.payload).isEqualTo(initiatorHello)
@@ -151,6 +286,7 @@ class SessionManagerTest {
     }
 
     @Test
+<<<<<<< HEAD
     fun `when no session exists, if source member info is missing from network map no message is sent`() {
         whenever(pendingSessionMessageQueues.queueMessage(eq(message), any())).thenReturn(true)
         whenever(networkMap.getMemberInfo(OUR_PARTY)).thenReturn(null)
@@ -160,6 +296,46 @@ class SessionManagerTest {
         verify(sessionReplayer, never()).addMessageForReplay(any(), any())
         loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PEER_PARTY " +
                 "but our identity $OUR_PARTY is not in the network map. The sessionInit message was not sent.")
+=======
+    fun `A session can be negotiated by a SessionManager and a message can be sent (in AUTHENTICATION_ONLY mode)`() {
+        val queues = MockSessionMessageQueues()
+        val messageReplayer = MockSessionReplayer()
+        val heartbeatManager = MockHeartbeatManager()
+        val outboundSessionManager = sessionManager(
+            OUTBOUND_PARTY,
+            queues,
+            messageReplayer = messageReplayer,
+            heartbeatManager = heartbeatManager
+        )
+        val responderSession = negotiateOutboundSession(wrappedMessage, outboundSessionManager)
+
+        assertTrue(responderSession is AuthenticatedSession)
+        assertEquals(queues.processedMessageQueue.size, 1)
+
+        val messageFromQueue = queues.processedMessageQueue[0]
+        assertTrue(messageFromQueue.payload is AuthenticatedDataMessage)
+        val authenticatedDataMessage = (messageFromQueue.payload as AuthenticatedDataMessage)
+
+        val responderMessage = extractPayload(
+            responderSession, "",
+            DataMessage.Authenticated(authenticatedDataMessage),
+            LinkManagerPayload::fromByteBuffer
+        )
+
+        assertNotNull(responderMessage)
+        assertTrue(responderMessage!!.message is AuthenticatedMessageAndKey)
+
+        assertEquals(wrappedMessage.message.payload, (responderMessage.message as AuthenticatedMessageAndKey).message.payload)
+        assertEquals(0, messageReplayer.messagesForReplay.size)
+
+        val sessionId = authenticatedDataMessage.header.sessionId
+        assertEquals(2, heartbeatManager.ackedSessionMessages.size)
+        assertEquals(2, heartbeatManager.addedSessionMessages.size)
+        assertTrue(heartbeatManager.addedSessionMessages.contains("${sessionId}_${InitiatorHelloMessage::class.java.simpleName}"))
+        assertTrue(heartbeatManager.addedSessionMessages.contains("${sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}"))
+        assertTrue(heartbeatManager.ackedSessionMessages.contains("${sessionId}_${InitiatorHelloMessage::class.java.simpleName}"))
+        assertTrue(heartbeatManager.ackedSessionMessages.contains("${sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}"))
+>>>>>>> Update SessionManagerTest to take into account HeartbeatManager
     }
 
     @Test
@@ -299,10 +475,23 @@ class SessionManagerTest {
     }
 
     @Test
+<<<<<<< HEAD
     fun `when responder hello is received, but our member info is missing from network map, message is dropped`() {
         whenever(pendingSessionMessageQueues.queueMessage(eq(message), any())).thenReturn(true)
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
         val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+=======
+    fun `ResponderHandshakeMessage is dropped (with appropriate logging) if authentication fails`() {
+        val messageReplayer = MockSessionReplayer()
+        val heartbeatManager = MockHeartbeatManager()
+
+        val outboundManager = sessionManager(OUTBOUND_PARTY, messageReplayer = messageReplayer, heartbeatManager = heartbeatManager)
+        val sessionId = negotiateToResponderHandshake(outboundManager, wrappedMessage).header.sessionId
+
+        val mockHeader = Mockito.mock(CommonHeader::class.java)
+        Mockito.`when`(mockHeader.sessionId).thenReturn(sessionId)
+        Mockito.`when`(mockHeader.toByteBuffer()).thenReturn(ByteBuffer.wrap("HEADER".toByteArray()))
+>>>>>>> Update SessionManagerTest to take into account HeartbeatManager
 
         val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
@@ -311,9 +500,25 @@ class SessionManagerTest {
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
 
+<<<<<<< HEAD
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarning("Received ${ResponderHelloMessage::class.java.simpleName} with sessionId " +
                 "${sessionState.sessionId} but cannot find public key for our identity $OUR_PARTY. The message was discarded.")
+=======
+        assertNull(outboundManager.processSessionMessage(LinkInMessage(mockResponderHandshakeMessage)))
+        loggingInterceptor.assertSingleWarning(
+            "Received ${mockResponderHandshakeMessage::class.java.simpleName} with sessionId $sessionId," +
+                " which failed validation with: The handshake message was invalid. The message was discarded."
+        )
+
+        //The ResponderHandshakeMessage acts as ack for InitiatorHandshake, so this should be queued for replay
+        messageReplayer.assertSingleReplayMessage<InitiatorHandshakeMessage>(INBOUND_PARTY)
+        assertEquals(1, heartbeatManager.ackedSessionMessages.size)
+        assertEquals(2, heartbeatManager.addedSessionMessages.size)
+        assertTrue(heartbeatManager.addedSessionMessages.contains("${sessionId}_${InitiatorHelloMessage::class.java.simpleName}"))
+        assertTrue(heartbeatManager.addedSessionMessages.contains("${sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}"))
+        assertTrue(heartbeatManager.ackedSessionMessages.contains("${sessionId}_${InitiatorHelloMessage::class.java.simpleName}"))
+>>>>>>> Update SessionManagerTest to take into account HeartbeatManager
     }
 
     @Test
@@ -370,6 +575,7 @@ class SessionManagerTest {
     }
 
     @Test
+<<<<<<< HEAD
     fun `when initiator handshake is received, a responder handshake is returned and session is established`() {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
@@ -406,12 +612,28 @@ class SessionManagerTest {
         val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
         val initiatorHandshakeMessage = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
+=======
+    fun `Responder hello message is dropped if we are not in the network map`() {
+        val messageReplayer = MockSessionReplayer()
+        val heartbeatManager = MockHeartbeatManager()
+
+        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
+        val outboundInfo = netMapOutbound.getOurMemberInfo()
+        Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
+        Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo()).thenReturn(null)
+
+        val outboundManager = sessionManagerWithNetMap(netMap, messageReplayer = messageReplayer, heartbeatManager = heartbeatManager)
+        val responderHello = negotiateToResponderHello(outboundManager, wrappedMessage)
+        assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHello)))
+>>>>>>> Update SessionManagerTest to take into account HeartbeatManager
 
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarning("Received ${InitiatorHandshakeMessage::class.java.simpleName} with sessionId " +
                 "$sessionId but there is no pending session with this id. The message was discarded.")
     }
 
+<<<<<<< HEAD
     @Test
     fun `when initiator handshake is received, but peer's member info is missing from network map, message is dropped`() {
         val sessionId = "some-session-id"
@@ -443,12 +665,26 @@ class SessionManagerTest {
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         whenever(pendingSessionMessageQueues.queueMessage(eq(message), any())).thenReturn(true)
         whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+=======
+        //The ResponderHelloMessage acts as ack for InitiatorHello, so this should be queued for replay
+        messageReplayer.assertSingleReplayMessage<InitiatorHelloMessage>(INBOUND_PARTY)
+        assertEquals("${responderHello.header.sessionId}_${InitiatorHelloMessage::class.java.simpleName}",
+            heartbeatManager.addedSessionMessages.single())
+        assertEquals(0, heartbeatManager.ackedSessionMessages.size)
+    }
+
+    @Test
+    fun `Responder hello message is dropped if the receiver is not in the network map`() {
+        val messageReplayer = MockSessionReplayer()
+        val heartbeatManager = MockHeartbeatManager()
+>>>>>>> Update SessionManagerTest to take into account HeartbeatManager
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
             PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID))
         sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
 
+<<<<<<< HEAD
         val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
@@ -467,6 +703,27 @@ class SessionManagerTest {
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         whenever(pendingSessionMessageQueues.queueMessage(eq(message), any())).thenReturn(true)
         whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+=======
+        val outboundManager = sessionManagerWithNetMap(netMap, messageReplayer = messageReplayer, heartbeatManager = heartbeatManager)
+        val responderHello = negotiateToResponderHello(outboundManager, wrappedMessage)
+        assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHello)))
+
+        loggingInterceptor.assertSingleWarning(
+            "Received ResponderHelloMessage with sessionId ${responderHello.header.sessionId}" +
+                " from peer $INBOUND_PARTY which is not in the network map. The message was discarded."
+        )
+        //The ResponderHelloMessage acts as ack for InitiatorHello, so this should be queued for replay
+        messageReplayer.assertSingleReplayMessage<InitiatorHelloMessage>(INBOUND_PARTY)
+        assertEquals("${responderHello.header.sessionId}_${InitiatorHelloMessage::class.java.simpleName}",
+            heartbeatManager.addedSessionMessages.single())
+        assertEquals(0, heartbeatManager.ackedSessionMessages.size)
+    }
+
+    @Test
+    fun `Responder hello message is dropped if we are removed from the network map during processSessionMessage`() {
+        val messageReplayer = MockSessionReplayer()
+        val heartbeatManager = MockHeartbeatManager()
+>>>>>>> Update SessionManagerTest to take into account HeartbeatManager
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -481,8 +738,25 @@ class SessionManagerTest {
             .thenThrow(InvalidHandshakeMessageException())
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
+<<<<<<< HEAD
         assertThat(responseMessage).isNull()
         loggingInterceptor.assertSingleWarningContains("The message was discarded.")
+=======
+        val outboundManager = sessionManagerWithNetMap(netMap, cryptoService, messageReplayer, heartbeatManager)
+        val responderHello = negotiateToResponderHello(outboundManager, wrappedMessage)
+        assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHello)))
+
+        loggingInterceptor.assertSingleWarning(
+            "Could not find the private key corresponding to public key" +
+                " $key. The ResponderHelloMessage with sessionId ${responderHello.header.sessionId} was discarded."
+        )
+
+        //The ResponderHelloMessage acts as ack for InitiatorHello, so this should be queued for replay
+        messageReplayer.assertSingleReplayMessage<InitiatorHelloMessage>(INBOUND_PARTY)
+        assertEquals("${responderHello.header.sessionId}_${InitiatorHelloMessage::class.java.simpleName}",
+            heartbeatManager.addedSessionMessages.single())
+        assertEquals(0, heartbeatManager.ackedSessionMessages.size)
+>>>>>>> Update SessionManagerTest to take into account HeartbeatManager
     }
 
     @Test
@@ -652,4 +926,46 @@ class SessionManagerTest {
         loggingInterceptor.assertSingleWarningContains("The message was discarded.")
     }
 
+<<<<<<< HEAD
+=======
+    @Test
+    fun `Responder handshake message is dropped if the sender is not in the network map`() {
+        val messageReplayer = MockSessionReplayer()
+        val heartbeatManager = MockHeartbeatManager()
+
+        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
+        Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
+
+        Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
+        // Called for the first time in `getSessionInitMessage`, the second time in `processResponderHello` and
+        // the third in processResponderHandshake.
+        Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY))
+            .thenReturn(netMapInbound.getOurMemberInfo())
+            .thenReturn(netMapInbound.getOurMemberInfo())
+            .thenReturn(null)
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
+            .thenReturn(netMapInbound.getOurMemberInfo())
+        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
+            .thenReturn(netMapOutbound.getOurMemberInfo())
+
+        val outboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapOutbound), messageReplayer, heartbeatManager)
+
+        val message = negotiateToResponderHandshake(outboundManager, wrappedMessage)
+        val response = outboundManager.processSessionMessage(LinkInMessage(message))
+        assertNull(response)
+
+        val sessionId = message.header.sessionId
+
+        loggingInterceptor.assertSingleWarning(
+            "Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId " +
+                "$sessionId from peer $INBOUND_PARTY which is not in the network map. The message was discarded."
+        )
+        messageReplayer.assertSingleReplayMessage<InitiatorHandshakeMessage>(INBOUND_PARTY)
+        assertEquals(1, heartbeatManager.ackedSessionMessages.size)
+        assertEquals(2, heartbeatManager.addedSessionMessages.size)
+        assertTrue(heartbeatManager.addedSessionMessages.contains("${sessionId}_${InitiatorHelloMessage::class.java.simpleName}"))
+        assertTrue(heartbeatManager.addedSessionMessages.contains("${sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}"))
+        assertTrue(heartbeatManager.ackedSessionMessages.contains("${sessionId}_${InitiatorHelloMessage::class.java.simpleName}"))
+    }
+>>>>>>> Update SessionManagerTest to take into account HeartbeatManager
 }

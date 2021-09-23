@@ -161,8 +161,9 @@ class SessionManagerImpl(
         pendingOutboundSessions[sessionId] = Pair(sessionKey, session)
 
         val sessionInitPayload = session.generateInitiatorHello()
+        val initiatorHelloUniqueId = "${sessionId}_${sessionInitPayload::class.java.simpleName}"
         sessionReplayer.addMessageForReplay(
-            sessionId + "_" + sessionInitPayload::class.java.simpleName,
+            initiatorHelloUniqueId,
             SessionMessageReplay(sessionInitPayload, sessionKey.responderId)
         )
 
@@ -172,7 +173,7 @@ class SessionManagerImpl(
                     "The sessionInit message was not sent.")
             return null
         }
-        heartbeatManager.sessionMessageAdded(sessionId, ::destroyPendingOutboundSession)
+        heartbeatManager.sessionMessageAdded(initiatorHelloUniqueId, ::destroyPendingOutboundSession)
 
         val message = createLinkOutMessage(sessionInitPayload, responderMemberInfo, networkType)
         return sessionId to message
@@ -215,11 +216,11 @@ class SessionManagerImpl(
             return null
         }
 
-        val initiatorHelloUniqueId = message.header.sessionId + "_" + InitiatorHelloMessage::class.java.simpleName
+        val initiatorHelloUniqueId = "${message.header.sessionId}_${InitiatorHelloMessage::class.java.simpleName}"
         sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId)
         heartbeatManager.sessionMessageAcknowledged(initiatorHelloUniqueId)
 
-        val initiatorHandshakeUniqueId = message.header.sessionId + "_" + payload::class.java.simpleName
+        val initiatorHandshakeUniqueId = "${message.header.sessionId}_${payload::class.java.simpleName}"
         sessionReplayer.addMessageForReplay(initiatorHandshakeUniqueId, SessionMessageReplay(payload, sessionInfo.responderId))
         heartbeatManager.sessionMessageAdded(initiatorHandshakeUniqueId, ::destroyPendingOutboundSession)
 
