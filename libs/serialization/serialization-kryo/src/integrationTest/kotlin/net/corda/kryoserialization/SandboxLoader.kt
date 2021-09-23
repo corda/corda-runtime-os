@@ -97,7 +97,7 @@ class SandboxLoader @Activate constructor(
     }
 
     private fun createSandboxGroupFor(vararg cpks: Cpk): SandboxGroup {
-        return sandboxCreationService.createSandboxes(cpks.map(Cpk::cpkHash))
+        return sandboxCreationService.createSandboxGroup(cpks.map(Cpk::cpkHash))
     }
 
     private fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {

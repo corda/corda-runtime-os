@@ -32,7 +32,4 @@ internal const val PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY = "platformSandboxPrivat
 
 internal const val CPK_ONE = "serializable-cpk-one-cordapp.cpk"
 
-internal const val LIBRARY_BUNDLE_SYMBOLIC_NAME = "com.example.sandbox.sandbox-cpk-library"
-internal const val LIBRARY_QUERY_CLASS = "com.example.sandbox.library.SandboxQuery"
-
 internal const val SHA256 = "SHA-256"
