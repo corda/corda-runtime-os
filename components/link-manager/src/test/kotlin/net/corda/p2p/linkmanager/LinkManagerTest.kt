@@ -6,6 +6,7 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkInMessage
+import net.corda.p2p.LinkManagerPayload
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.MessageAck
@@ -223,10 +224,11 @@ class LinkManagerTest {
 
     private fun extractPayload(session: Session, message: LinkOutMessage): ByteBuffer {
         val dataMessage = createDataMessage(message)
-        val payload = MessageConverter.extractPayload(session, "", dataMessage, AuthenticatedMessageAndKey::fromByteBuffer)
+        val payload = MessageConverter.extractPayload(session, "", dataMessage, LinkManagerPayload::fromByteBuffer)
         assertNotNull(payload)
         assertNotNull(payload!!.message)
-        return payload.message!!.payload
+        assertTrue(payload.message is AuthenticatedMessageAndKey)
+        return (payload.message as AuthenticatedMessageAndKey).message.payload
     }
 
     private fun assignedListener(partitions: List<Int>): InboundAssignmentListener {
@@ -281,7 +283,10 @@ class LinkManagerTest {
         Mockito.`when`(mockNetworkMap.getMemberInfo(any())).thenReturn(FIRST_DEST_MEMBER_INFO)
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
 
+        val mockSessionManager = Mockito.mock(SessionManager::class.java)
+
         val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, Mockito.mock(HeartbeatManager::class.java))
+        queue.sessionManager = mockSessionManager
 
         assertTrue(queue.queueMessage(message1, key1))
         assertFalse(queue.queueMessage(message2, key1))
@@ -607,9 +612,9 @@ class LinkManagerTest {
     private fun testDataMessagesWithInboundMessageProcessor(session: SessionPair) {
 
         val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
-        val flowMessageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
+        val messageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
-        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(flowMessageAndKey, session.initiatorSession, netMap)
+        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session.initiatorSession, netMap)
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
 
         val messages = listOf(
@@ -632,8 +637,8 @@ class LinkManagerTest {
                 is AppMessage -> {
                     assertEquals(P2P_IN_TOPIC, record.topic)
                     assertTrue(value.message is AuthenticatedMessage)
-                    assertArrayEquals(flowMessageAndKey.message.payload.array(), (value.message as AuthenticatedMessage).payload.array())
-                    assertEquals(flowMessageAndKey.key, record.key)
+                    assertArrayEquals(messageAndKey.message.payload.array(), (value.message as AuthenticatedMessage).payload.array())
+                    assertEquals(messageAndKey.key, record.key)
                 }
                 is LinkOutMessage -> {
                     assertEquals(LINK_OUT_TOPIC, record.topic)

@@ -251,16 +251,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun recordsForSessionEstablished(
             state: SessionState.SessionEstablished,
-            flowMessageAndKey: AuthenticatedMessageAndKey
+            messageAndKey: AuthenticatedMessageAndKey
         ): List<Record<String, *>> {
             val records = mutableListOf<Record<String, *>>()
-            val message = linkOutMessageFromAuthenticatedMessageAndKey(flowMessageAndKey, state.session, networkMap) ?: return emptyList()
+            val message = linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, state.session, networkMap) ?: return emptyList()
             val key = generateKey()
             records.add(Record(Schema.LINK_OUT_TOPIC, key, message))
             heartbeatManager.messageSent(
-                flowMessageAndKey.message.header.messageId,
-                flowMessageAndKey.message.header.source,
-                flowMessageAndKey.message.header.destination,
+                messageAndKey.message.header.messageId,
+                messageAndKey.message.header.source,
+                messageAndKey.message.header.destination,
                 state.session,
                 sessionManager::destroyOutboundSession
             )
@@ -358,7 +358,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         makeAckMessageForHeartbeatMessage(innerMessage, session)?.let { ack -> messages.add(ack) }
                     }
                     is AuthenticatedMessageAndKey -> {
-                        messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(it.message)))
+                        messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
                         makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
                         sessionManager.inboundSessionEstablished(sessionId)
                     }
@@ -413,7 +413,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
-        val heartbeatManager: HeartbeatManager
+        private val heartbeatManager: HeartbeatManager
     ): PendingSessionMessageQueues, Lifecycle {
         private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
         private val config = PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, 1)
