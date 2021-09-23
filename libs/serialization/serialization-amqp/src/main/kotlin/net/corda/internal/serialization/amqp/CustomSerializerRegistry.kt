@@ -101,17 +101,17 @@ class CachingCustomSerializerRegistry(
      */
     override fun register(customSerializer: CustomSerializer<out Any>) {
         logger.trace { "action=\"Registering custom serializer\", class=\"${customSerializer.type}\"" }
-
         storeCustomSerializer(customSerializer)
     }
 
     override fun register(customSerializer: SerializationCustomSerializer<*, *>) {
-        TODO("Not yet implemented")
+        val serializer = CorDappCustomSerializer(customSerializer, false)
+        logger.trace { "action=\"Registering custom serializer\", class=\"${serializer.type}\"" }
+        storeCustomSerializer(serializer)
     }
 
     override fun registerExternal(customSerializer: CorDappCustomSerializer) {
         logger.trace { "action=\"Registering external serializer\", class=\"${customSerializer.type}\"" }
-
         storeCustomSerializer(customSerializer)
     }
 
