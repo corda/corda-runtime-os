@@ -10,12 +10,11 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
 
-
 class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 
 class HttpRpcGateway(
-        private val lifeCycleCoordinator: LifecycleCoordinator,
+    private val lifeCycleCoordinator: LifecycleCoordinator,
     private val configurationReadService: ConfigurationReadService,
 ) : Lifecycle {
 
@@ -30,7 +29,7 @@ class HttpRpcGateway(
     private var bootstrapConfig: Config? = null
 
     override val isRunning: Boolean
-    get() = receivedSnapshot
+        get() = receivedSnapshot
 
     fun start(bootstrapConfig: Config) {
         log.info("Starting with bootstrap config")
@@ -46,7 +45,7 @@ class HttpRpcGateway(
             throw CordaRuntimeException(message)
         }
 
-        val listener =  { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
+        val listener = { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
             if (changedKeys.contains(MESSAGING_CONFIG)) {
                 if (receivedSnapshot) {
                     log.info("Config update received")

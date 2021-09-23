@@ -18,6 +18,7 @@ import org.apache.avro.specific.SpecificData
 import org.apache.avro.specific.SpecificDatumReader
 import org.apache.avro.specific.SpecificDatumWriter
 import org.apache.avro.specific.SpecificRecord
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
@@ -29,7 +30,7 @@ import java.util.zip.InflaterInputStream
  * Implementation of [AvroSchemaRegistry].
  */
 @SuppressWarnings("TooManyFunctions")
-@Component
+@Component(service = [AvroSchemaRegistry::class])
 class AvroSchemaRegistryImpl(
     private val options: Options = Options()
 ): AvroSchemaRegistry {

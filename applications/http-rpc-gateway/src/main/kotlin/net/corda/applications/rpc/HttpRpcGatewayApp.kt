@@ -32,7 +32,7 @@ enum class LifeCycleState {
     UNINITIALIZED, STARTING, STARTINGMESSAGING, REINITMESSAGING
 }
 
-@Component
+@Component(service = [Application::class], immediate = true)
 class HttpRpcGatewayApp @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
@@ -65,7 +65,7 @@ class HttpRpcGatewayApp @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
-            //val instanceId = parameters.instanceId.toInt()
+//            val instanceId = parameters.instanceId.toInt()
             val kafkaProperties = getKafkaPropertiesFromFile(parameters.kafkaProperties)
             val bootstrapConfig = getBootstrapConfig(kafkaProperties)
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
