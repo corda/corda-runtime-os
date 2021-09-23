@@ -6,4 +6,6 @@ data class LinkManagerConfig(
     val maxMessageSize: Int,
     val protocolModes: Set<ProtocolMode>,
     val messageReplayPeriodSecs: Long,
+    val heartbeatMessagePeriodSecs: Long,
+    val heartbeatTimeOutPeriods: Int = 2,
 )

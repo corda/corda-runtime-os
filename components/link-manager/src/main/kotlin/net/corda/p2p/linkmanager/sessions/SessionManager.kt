@@ -4,12 +4,20 @@ import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 
 interface SessionManager {
     fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState
     fun getSessionById(uuid: String): SessionDirection
     fun processSessionMessage(message: LinkInMessage): LinkOutMessage?
     fun inboundSessionEstablished(sessionId: String)
+    fun destroyOutboundSession(sessionKey: SessionKey)
+
+    //On the Outbound side there is a single unique session per SessionKey.
+    data class SessionKey(
+        val ourId: LinkManagerNetworkMap.HoldingIdentity,
+        val responderId: LinkManagerNetworkMap.HoldingIdentity
+    )
 
     sealed class SessionState {
         data class NewSessionNeeded(val sessionId: String, val sessionInitMessage: LinkOutMessage): SessionState()

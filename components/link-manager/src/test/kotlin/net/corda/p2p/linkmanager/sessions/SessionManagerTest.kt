@@ -4,7 +4,6 @@ import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.p2p.app.HoldingIdentity
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
@@ -111,10 +110,6 @@ class SessionManagerTest {
         return digest()
     }
 
-    internal fun LinkManagerNetworkMap.HoldingIdentity.toHoldingIdentity(): HoldingIdentity {
-        return HoldingIdentity(x500Name, groupId)
-    }
-
     private val payload = ByteBuffer.wrap("Hi inbound it's outbound here".toByteArray())
 
     private val message = AuthenticatedMessageAndKey(
@@ -184,11 +179,9 @@ class SessionManagerTest {
     @Test
     fun `when messages already queued for a peer, there is already a pending session`() {
         whenever(pendingSessionMessageQueues.queueMessage(eq(message), any())).thenReturn(false)
-
         val sessionState = sessionManager.processOutboundMessage(message)
-
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
-        verify(pendingSessionMessageQueues).queueMessage(message, SessionManagerImpl.SessionKey(OUR_PARTY, PEER_PARTY))
+        verify(pendingSessionMessageQueues).queueMessage(message, SessionManager.SessionKey(OUR_PARTY, PEER_PARTY))
     }
 
     @Test
@@ -594,7 +587,7 @@ class SessionManagerTest {
             }
         verify(sessionReplayer).removeMessageFromReplay("${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}")
         verify(pendingSessionMessageQueues)
-            .sessionNegotiatedCallback(SessionManagerImpl.SessionKey(OUR_PARTY, PEER_PARTY), session, networkMap)
+            .sessionNegotiatedCallback(SessionManager.SessionKey(OUR_PARTY, PEER_PARTY), session, networkMap)
     }
 
     @Test

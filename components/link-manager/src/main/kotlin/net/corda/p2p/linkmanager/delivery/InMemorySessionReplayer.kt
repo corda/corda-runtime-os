@@ -61,7 +61,6 @@ class InMemorySessionReplayer(
             if (!running) {
                 throw IllegalStateException("A message was added for replay before the InMemorySessionReplayer was started.")
             }
-
             replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay)
         }
     }
