@@ -12,7 +12,7 @@ class KryoCheckpointTest {
 
     companion object {
         @InjectService(timeout = 1000)
-        lateinit var sandboxLoader: SandboxLoader
+        lateinit var sandboxManagementService: SandboxManagementService
 
         @InjectService
         lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
@@ -20,7 +20,7 @@ class KryoCheckpointTest {
 
     @Test
     fun `correct serialization of a simple object`() {
-        val builder = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxLoader.group1)
+        val builder = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group1)
         val serializer = builder
             .addSerializer(TestClass::class.java, TestClass.Serializer())
             .build()

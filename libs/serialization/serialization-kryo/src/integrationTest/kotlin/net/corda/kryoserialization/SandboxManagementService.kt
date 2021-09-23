@@ -21,8 +21,8 @@ import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.util.*
 
-@Component(service = [SandboxLoader::class])
-class SandboxLoader @Activate constructor(
+@Component(service = [SandboxManagementService::class])
+class SandboxManagementService @Activate constructor(
     @Reference
     configAdmin: ConfigurationAdmin,
 
