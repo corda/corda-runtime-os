@@ -223,6 +223,9 @@ logger.quiet("Corda runtime OS release version: {}", version)
 logger.quiet("Corda API dependency version spec: {}", cordaApiVersion)
 logger.quiet("Old Corda dependencies version spec: {}", cordaVersion)
 //logger.quiet("Release Type: {}", releaseType)
+if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
+    logger.quiet( "Corda-Api project exists on disk in the expected location and Gradle composite build is enabled, corda-api binaries will be substituted with source code")
+}
 
 subprojects {
     buildscript {
@@ -264,7 +267,7 @@ subprojects {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
     }
 
-    task allDependencyInsight(type: DependencyInsightReportTask) {}
+    task printAllDependencies(type: DependencyReportTask) {}
 
     configurations {
         all {
