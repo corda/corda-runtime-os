@@ -30,7 +30,6 @@ dependencies {
     runtime "com.sun.activation:javax.activation:$activationVersion"
     runtime "javax.xml.bind:jaxb-api:$jaxbVersion"
 
-//    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
@@ -39,6 +38,7 @@ dependencies {
     testImplementation project(":components:crypto:crypto-service")
     testImplementation project(":libs:lifecycle:lifecycle")
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
 
 description 'Common across client and service Crypto implementation'

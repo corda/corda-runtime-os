@@ -20,7 +20,7 @@ abstract class AbstractCryptoCoordinator(
     private val subcomponents: List<Any>
 ) : Lifecycle {
     companion object {
-        private const val CRYPTO_CONFIG: String = "corda.cryptoLibrary"
+        const val CRYPTO_CONFIG: String = "corda.cryptoLibrary"
     }
 
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
@@ -47,6 +47,7 @@ abstract class AbstractCryptoCoordinator(
             }
         }
         coordinator.stop()
+        configHandle?.close()
     }
 
     protected open fun handleEvent(event: LifecycleEvent) {
@@ -85,23 +86,7 @@ abstract class AbstractCryptoCoordinator(
         }
     }
 
-    open fun handleEmptyCryptoConfig(): CryptoLibraryConfig {
+    protected open fun handleEmptyCryptoConfig(): CryptoLibraryConfig {
         throw IllegalStateException("Configuration '$CRYPTO_CONFIG' missing from map")
     }
-}
-
-@Suppress("TooGenericExceptionCaught")
-fun AutoCloseable.closeGracefully() {
-    try {
-        close()
-    } catch (e: Throwable) {
-        // intentional
-    }
-}
-
-fun MutableMap<*, *>.clearCache() {
-    forEach {
-        (it.value as? AutoCloseable)?.closeGracefully()
-    }
-    clear()
 }

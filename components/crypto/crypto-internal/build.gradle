@@ -19,6 +19,10 @@ dependencies {
     implementation "org.bouncycastle:bcprov-jdk15on:${bouncyCastleVersion}"
     implementation "org.bouncycastle:bcpkix-jdk15on:${bouncyCastleVersion}"
     implementation "net.i2p.crypto:eddsa:$eddsaVersion"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
 }
 
 description 'Crypto Internal API'
