@@ -202,7 +202,7 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(PeriodSerializer(this))
         register(ClassSerializer(this))
         register(X509CertificateSerializer, true)
-        register(X509CRLSerializer)
+        register(X509CRLSerializer, true)
         register(CertPathSerializer(this))
         register(StringBufferSerializer, false)
         register(InputStreamSerializer, true)
