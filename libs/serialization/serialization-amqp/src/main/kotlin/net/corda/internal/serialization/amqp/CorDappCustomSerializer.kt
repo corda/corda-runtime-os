@@ -43,10 +43,10 @@ const val PROXY_TYPE = 1
  * interfaces and abstract classes. Always set to false for CorDapp defined serializers
  */
 class CorDappCustomSerializer @JvmOverloads constructor(
-        private val serializer: SerializationCustomSerializer<*, *>,
-        private val withInheritance: Boolean = false
+    private val serializer: SerializationCustomSerializer<*, *>,
+    private val withInheritance: Boolean = false,
+    override val revealSubclassesInSchema: Boolean = false
 ) : AMQPSerializer<Any>, SerializerFor {
-    override val revealSubclassesInSchema: Boolean get() = false
 
     private val types = serializer::class.supertypes.filter { it.jvmErasure == SerializationCustomSerializer::class }
             .flatMap { it.arguments }

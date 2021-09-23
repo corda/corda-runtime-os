@@ -192,7 +192,7 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(LocalDateTimeSerializer(this))
         register(LocalTimeSerializer(this))
         register(ZonedDateTimeSerializer(this))
-        register(ZoneIdSerializer(this))
+        register(ZoneIdSerializer(), true, revealSubclassesInSchema = false)
         register(OffsetTimeSerializer(this))
         register(OffsetDateTimeSerializer(this))
         register(OptionalSerializer(this))

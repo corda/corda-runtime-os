@@ -42,7 +42,7 @@ interface CustomSerializerRegistry {
      * that expects to find getters and a constructor with a parameter for each property.
      */
     fun register(customSerializer: CustomSerializer<out Any>)
-    fun register(customSerializer: SerializationCustomSerializer<*, *>, withInheritance: Boolean)
+    fun register(customSerializer: SerializationCustomSerializer<*, *>, withInheritance: Boolean, revealSubclassesInSchema: Boolean = false)
     fun registerExternal(customSerializer: CorDappCustomSerializer)
     fun registerExternal(customSerializer: SerializationCustomSerializer<*,*>)
 
@@ -104,8 +104,8 @@ class CachingCustomSerializerRegistry(
         storeCustomSerializer(customSerializer)
     }
 
-    override fun register(customSerializer: SerializationCustomSerializer<*, *>, withInheritance: Boolean) {
-        val serializer = CorDappCustomSerializer(customSerializer, withInheritance)
+    override fun register(customSerializer: SerializationCustomSerializer<*, *>, withInheritance: Boolean, revealSubclassesInSchema: Boolean) {
+        val serializer = CorDappCustomSerializer(customSerializer, withInheritance, revealSubclassesInSchema)
         logger.trace { "action=\"Registering custom serializer\", class=\"${serializer.type}\"" }
         storeCustomSerializer(serializer)
     }
