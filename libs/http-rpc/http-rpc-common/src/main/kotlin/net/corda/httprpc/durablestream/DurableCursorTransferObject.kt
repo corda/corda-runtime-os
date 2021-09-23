@@ -12,7 +12,8 @@ import java.util.function.Supplier
  * Methods of [FiniteDurableCursorBuilder] are not meant to be used, it is just a data container that wraps [Cursor.PollResult].
  */
 @CordaSerializable
-class DurableCursorTransferObject<T>(private val pollResult: Cursor.PollResult<T>) : FiniteDurableCursorBuilder<T>, Supplier<Cursor.PollResult<T>> {
+class DurableCursorTransferObject<T>
+(private val pollResult: Cursor.PollResult<T>) : FiniteDurableCursorBuilder<T>, Supplier<Cursor.PollResult<T>> {
 
     companion object {
         data class PollResultImpl<T>(

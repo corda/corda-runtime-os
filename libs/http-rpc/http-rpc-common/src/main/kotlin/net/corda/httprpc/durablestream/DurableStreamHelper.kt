@@ -18,10 +18,12 @@ object DurableStreamHelper {
     /**
      * DSL to unify retrieval of [DurableStreamContext]
      *
-     * @param block function that performs some processing with [DurableStreamContext] and returns a result in the form of a [DurableStreamContextExecutionOutcome]
+     * @param block function that performs some processing with [DurableStreamContext]
+     * and returns a result in the form of a [DurableStreamContextExecutionOutcome]
      */
     @JvmStatic
-    fun <T> withDurableStreamContext(block: DurableStreamContext.() -> DurableStreamContextExecutionOutcome<T>): FiniteDurableCursorBuilder<T> {
+    fun <T> withDurableStreamContext
+            (block: DurableStreamContext.() -> DurableStreamContextExecutionOutcome<T>): FiniteDurableCursorBuilder<T> {
         val durableStreamContext = requireNotNull(rpcContext().invocation.durableStreamContext) {
             "Durable stream context should always be set for durable streams invocation."
         }
