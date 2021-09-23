@@ -144,7 +144,7 @@ class CachingCustomSerializerRegistry(
     }
 
     override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>) {
-        TODO("Not yet implemented")
+        registerExternal(CorDappCustomSerializer(customSerializer, false))
     }
 
     override fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? {
