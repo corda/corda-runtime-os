@@ -149,7 +149,7 @@ class SandboxLoader @Activate constructor(
     }
 
     private fun createSandboxGroupFor(vararg cpks: Cpk): SandboxGroup {
-        return sandboxCreationService.createSandboxes(cpks.map(Cpk::cpkHash))
+        return sandboxCreationService.createSandboxGroup(cpks.map(Cpk::cpkHash))
     }
 
     private fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {
@@ -157,7 +157,7 @@ class SandboxLoader @Activate constructor(
         return context.getServiceReferences(serviceType, null)
             .map(context::getService)
             .filterIsInstance(bundleClass)
-            .firstOrNull() ?: fail("No service for $bundleClass")
+            .firstOrNull() ?: fail("No service for $serviceType.")
     }
 
     private fun hasVisibility(sandbox1: Sandbox, sandbox2: Sandbox): Boolean {

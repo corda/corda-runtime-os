@@ -1,7 +1,6 @@
 package net.corda.sandbox.internal.classtag
 
 import net.corda.v5.crypto.SecureHash
-import java.util.NavigableSet
 
 /**
  * Identifies a sandboxed class during serialisation and deserialisation.
@@ -28,17 +27,16 @@ sealed class ClassTag(val version: Int, val isPlatformClass: Boolean, val classB
 abstract class StaticTag(version: Int, isPlatformClass: Boolean, classBundleName: String, val cpkFileHash: SecureHash) :
     ClassTag(version, isPlatformClass, classBundleName)
 
-// TODO - CORE-2557 - Replace public key hashes with summary of hashes to identify CPKs.
 /**
  * Identifies a sandboxed class in an evolvable way.
  *
  * @param cordappBundleName The symbolic name of the CorDapp bundle of the CPK that the class if from.
- * @param cpkPublicKeyHashes The hashes of the public keys that signed the CPK the class was loaded from.
+ * @param cpkSignerSummaryHash A summary hash of the hashes of the public keys that signed the CPK the class is from.
  */
 abstract class EvolvableTag(
     version: Int,
     isPlatformClass: Boolean,
     classBundleName: String,
     val cordappBundleName: String,
-    val cpkPublicKeyHashes: NavigableSet<SecureHash>
+    val cpkSignerSummaryHash: SecureHash
 ) : ClassTag(version, isPlatformClass, classBundleName)

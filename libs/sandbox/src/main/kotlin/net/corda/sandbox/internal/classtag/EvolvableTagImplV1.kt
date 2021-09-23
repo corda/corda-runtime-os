@@ -6,16 +6,14 @@ import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
 import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.ClassTagV1
 import net.corda.v5.crypto.SecureHash
-import java.util.NavigableSet
-import java.util.TreeSet
 
 /** Implements [EvolvableTag]. */
 internal class EvolvableTagImplV1(
     isPlatformClass: Boolean,
     classBundleName: String,
     cordappBundleName: String,
-    cpkPublicKeyHashes: NavigableSet<SecureHash>
-) : EvolvableTag(1, isPlatformClass, classBundleName, cordappBundleName, cpkPublicKeyHashes) {
+    cpkSignerSummaryHash: SecureHash
+) : EvolvableTag(1, isPlatformClass, classBundleName, cordappBundleName, cpkSignerSummaryHash) {
 
     companion object {
         private const val ENTRIES_LENGTH = 6
@@ -33,27 +31,25 @@ internal class EvolvableTagImplV1(
 
             val isPlatformClass = classTagEntries[IS_PLATFORM_CLASS_IDX].toBoolean()
 
-            val cpkPublicKeyHashes = TreeSet(classTagEntries[CPK_PUBLIC_KEY_HASHES_IDX]
-                .split(ClassTagV1.COLLECTION_DELIMITER)
-                .filter { secureHash -> secureHash != "" } // Catches an edge-case when the list of signers is empty.
-                .map { publicKeyHash -> try {
-                    SecureHash.create(publicKeyHash)
-                } catch  (e: IllegalArgumentException) {
-                    throw SandboxException("Couldn't parse hash $publicKeyHash in serialised evolvable class tag.", e)
-                } })
+            val cpkSignerSummaryHashString = classTagEntries[CPK_PUBLIC_KEY_HASHES_IDX]
+            val cpkSignerSummaryHash = try {
+                SecureHash.create(cpkSignerSummaryHashString)
+            } catch (e: IllegalArgumentException) {
+                throw SandboxException(
+                    "Couldn't parse hash $cpkSignerSummaryHashString in serialised evolvable class tag.", e
+                )
+            }
 
             return EvolvableTagImplV1(
                 isPlatformClass,
                 classTagEntries[CLASS_BUNDLE_NAME_IDX],
                 classTagEntries[CORDAPP_BUNDLE_NAME_IDX],
-                cpkPublicKeyHashes
+                cpkSignerSummaryHash
             )
         }
     }
 
     override fun serialise(): String {
-        val stringifiedCpkPublicKeyHashes = cpkPublicKeyHashes.joinToString(ClassTagV1.COLLECTION_DELIMITER)
-
         // This approach - of allocating an array of the expected length and adding the entries by index - is designed
         // to minimise errors where serialisation and deserialisation retrieve entries from different indices.
         val entries = arrayOfNulls<Any>(ENTRIES_LENGTH)
@@ -63,7 +59,7 @@ internal class EvolvableTagImplV1(
         entries[IS_PLATFORM_CLASS_IDX] = isPlatformClass
         entries[CLASS_BUNDLE_NAME_IDX] = classBundleName
         entries[CORDAPP_BUNDLE_NAME_IDX] = cordappBundleName
-        entries[CPK_PUBLIC_KEY_HASHES_IDX] = stringifiedCpkPublicKeyHashes
+        entries[CPK_PUBLIC_KEY_HASHES_IDX] = cpkSignerSummaryHash
 
         return entries.joinToString(CLASS_TAG_DELIMITER)
     }

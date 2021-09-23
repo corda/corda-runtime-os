@@ -2,7 +2,6 @@ package net.corda.sandbox
 
 import net.corda.v5.crypto.SecureHash
 import org.osgi.framework.Version
-import java.util.NavigableSet
 
 /** The restricted information about a class's bundle and CPK that is provided to `ClassInfoService`. */
 sealed class ClassInfo {
@@ -19,10 +18,10 @@ data class PlatformClassInfo(override val classBundleName: String, override val 
 /**
  * A [ClassInfo] for a class from a CPK.
  *
- * @param cordappBundleName The symbolic name of the CorDapp bundle of the CPK the class was loaded from
- * @param cordappBundleVersion The version of the CorDapp bundle of the CPK the class was loaded from
+ * @param cordappBundleName The symbolic name of the CorDapp bundle of the CPK the class was loaded from.
+ * @param cordappBundleVersion The version of the CorDapp bundle of the CPK the class was loaded from.
  * @param cpkFileHash The hash of the CPK the class was loaded from.
- * @param cpkPublicKeyHashes The public key hashes of the CPK the class was loaded from.
+ * @param cpkSignerSummaryHash A summary hash of the hashes of the public keys that signed the CPK the class is from.
  * @param cpkDependencies The hashes of the CPK's dependencies.
  */
 data class CpkClassInfo(
@@ -31,6 +30,6 @@ data class CpkClassInfo(
     val cordappBundleName: String,
     val cordappBundleVersion: Version,
     val cpkFileHash: SecureHash,
-    val cpkPublicKeyHashes: NavigableSet<SecureHash>,
+    val cpkSignerSummaryHash: SecureHash,
     val cpkDependencies: Set<SecureHash>
 ) : ClassInfo()

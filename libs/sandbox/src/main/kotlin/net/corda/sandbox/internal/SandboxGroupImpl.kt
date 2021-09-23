@@ -62,7 +62,7 @@ internal class SandboxGroupImpl(
             when (classTag) {
                 is StaticTag -> sandboxes.find { sandbox -> sandbox.cpk.cpkHash == classTag.cpkFileHash }
                 is EvolvableTag -> sandboxes.find { sandbox ->
-                    sandbox.cpk.id.signers == classTag.cpkPublicKeyHashes
+                    sandbox.cpk.id.signerSummaryHash == classTag.cpkSignerSummaryHash
                             && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
                 }
             }
