@@ -60,18 +60,17 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `simple client POST request`() {
+        val listeners = mutableListOf<HttpEventListener>()
 
         HttpServer(
-            createParentCoordinator(),
-            createGatewayConfigService(
-                GatewayConfiguration(
-                    serverAddress.host,
-                    serverAddress.port,
-                    aliceSslConfig
-                )
-            )
+            listeners,
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                aliceSslConfig
+            ),
         ).use { server ->
-            server.addListener(object : HttpEventListener {
+            listeners.add(object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
                     assertEquals(clientMessageContent, String(message.payload))
                     server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
@@ -104,19 +103,18 @@ class HttpTest : TestBase() {
         val threadNo = 2
         val threads = mutableListOf<Thread>()
         val times = mutableListOf<Long>()
+        val listeners = mutableListOf<HttpEventListener>()
         val httpServer = HttpServer(
-            createParentCoordinator(),
-            createGatewayConfigService(
-                GatewayConfiguration(
-                    serverAddress.host,
-                    serverAddress.port,
-                    aliceSslConfig
-                )
+            listeners,
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                aliceSslConfig
             )
         )
         val threadPool = NioEventLoopGroup(threadNo)
         httpServer.use { server ->
-            server.addListener(object : HttpEventListener {
+            listeners.add(object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
                     assertEquals(clientMessageContent, String(message.payload))
                     server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
@@ -168,18 +166,17 @@ class HttpTest : TestBase() {
     @Timeout(30)
     fun `large payload`() {
         val hugePayload = FileInputStream(javaClass.classLoader.getResource("10mb.txt")!!.file).readAllBytes()
+        val listeners = mutableListOf<HttpEventListener>()
 
         HttpServer(
-            createParentCoordinator(),
-            createGatewayConfigService(
-                GatewayConfiguration(
-                    serverAddress.host,
-                    serverAddress.port,
-                    aliceSslConfig
-                )
+            listeners,
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                aliceSslConfig
             )
         ).use { server ->
-            server.addListener(object : HttpEventListener {
+            listeners.add(object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
                     assertTrue(Arrays.equals(hugePayload, message.payload))
                     server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
@@ -209,13 +206,11 @@ class HttpTest : TestBase() {
     @Timeout(30)
     fun `tls handshake succeeds - revocation checking disabled C5`() {
         HttpServer(
-            createParentCoordinator(),
-            createGatewayConfigService(
-                GatewayConfiguration(
-                    serverAddress.host,
-                    serverAddress.port,
-                    bobSslConfig
-                )
+            emptyList(),
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                bobSslConfig
             )
         ).use { server ->
             server.startAndWaitForStarted()
@@ -241,13 +236,11 @@ class HttpTest : TestBase() {
     @Timeout(30)
     fun `tls handshake succeeds - revocation checking disabled C4`() {
         HttpServer(
-            createParentCoordinator(),
-            createGatewayConfigService(
-                GatewayConfiguration(
-                    serverAddress.host,
-                    serverAddress.port,
-                    c4sslConfig
-                )
+            emptySet(),
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                c4sslConfig
             )
         ).use { server ->
             server.startAndWaitForStarted()
@@ -328,13 +321,11 @@ class HttpTest : TestBase() {
     fun `tls handshake fails - requested SNI is not recognized`() {
 
         HttpServer(
-            createParentCoordinator(),
-            createGatewayConfigService(
-                GatewayConfiguration(
-                    serverAddress.host,
-                    serverAddress.port,
-                    aliceSslConfig
-                )
+            emptyList(),
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                aliceSslConfig
             )
         ).use { server ->
             server.startAndWaitForStarted()
@@ -363,13 +354,11 @@ class HttpTest : TestBase() {
     fun `tls handshake fails - server presents revoked certificate`() {
 
         HttpServer(
-            createParentCoordinator(),
-            createGatewayConfigService(
-                GatewayConfiguration(
-                    serverAddress.host,
-                    serverAddress.port,
-                    bobSslConfig
-                )
+            emptyList(),
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                bobSslConfig
             )
         ).use { server ->
             server.startAndWaitForStarted()

@@ -14,6 +14,7 @@ import net.corda.v5.base.util.contextLogger
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.util.Base64
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 class GatewayConfigurationService(
@@ -24,6 +25,19 @@ class GatewayConfigurationService(
     companion object {
         const val CONFIG_KEY = "p2p.gateway"
         private val logger = contextLogger()
+    }
+
+    interface ReconfigurationListener {
+        fun gotNewConfiguration(newConfiguration: GatewayConfiguration, oldConfiguration: GatewayConfiguration)
+    }
+
+    private val listeners = ConcurrentHashMap.newKeySet<ReconfigurationListener>()
+
+    fun listenToReconfigurations(listener: ReconfigurationListener) {
+        listeners.add(listener)
+    }
+    fun stopListenToReconfigurations(listener: ReconfigurationListener) {
+        listeners.remove(listener)
     }
 
     private val configurationHolder = AtomicReference<GatewayConfiguration>()
@@ -38,8 +52,9 @@ class GatewayConfigurationService(
                 logger.info("Got for ${name.instanceId} new Gateway configuration ${configuration.hostAddress}:${configuration.hostPort}")
                 val oldConfiguration = configurationHolder.getAndSet(configuration)
                 if ((oldConfiguration != configuration) && (oldConfiguration != null)) {
-                    // YIFT: Reconfiguration mode, ideally stop and start
-                    logger.info("Reconfigure the gateway...")
+                    listeners.onEach {
+                        it.gotNewConfiguration(configuration, oldConfiguration)
+                    }
                 } else {
                     state = State.Up
                 }

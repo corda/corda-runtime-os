@@ -147,6 +147,7 @@ class GatewayTest : TestBase() {
         // Bad->Bad->good
         // Good->good->good
         // Good -> bad -> bad -> good
+        // Also test the outbound
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
         val serverOneAddress = URI.create("http://www.alice.net:10000")
         val serverTwoAddress = URI.create("http://www.alice.net:10001")
@@ -282,13 +283,12 @@ class GatewayTest : TestBase() {
         }.map { serverUrl ->
             URI.create(serverUrl)
         }.map { serverUri ->
-            val configService = createGatewayConfigService(GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig))
-            configService.startAndWaitForStarted()
+            val listeners = mutableListOf<HttpEventListener>()
             HttpServer(
-                createParentCoordinator(),
-                configService
+                listeners,
+                GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig)
             ).also {
-                it.addListener(object : HttpEventListener {
+                listeners.add(object : HttpEventListener {
                     override fun onMessage(message: HttpMessage) {
                         val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
                         assertThat(

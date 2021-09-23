@@ -31,15 +31,17 @@ class ConnectionManagerTest : TestBase() {
     @Timeout(30)
     fun `acquire connection`() {
         val manager = ConnectionManager(parent, configService)
+        val listeners = mutableListOf<HttpEventListener>()
         manager.startAndWaitForStarted()
-        HttpServer(parent, configService).use { server ->
-            server.addListener(object : HttpEventListener {
+        HttpServer(listeners, configuration).use { server ->
+            listeners.add(
+            object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
                     assertEquals(clientMessageContent, String(message.payload))
                     server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), message.source)
                 }
             })
-            server.startAndWaitForStarted()
+            server.start()
             manager.acquire(destination).use { client ->
                 // Client is connected at this point
                 val responseReceived = CountDownLatch(1)
@@ -59,18 +61,18 @@ class ConnectionManagerTest : TestBase() {
     @Timeout(30)
     fun `reuse connection`() {
         val manager = ConnectionManager(parent, configService)
+        val remotePeers = mutableListOf<SocketAddress>()
         manager.startAndWaitForStarted()
         val requestReceived = CountDownLatch(2)
-        HttpServer(parent, configService).use { server ->
-            val remotePeers = mutableListOf<SocketAddress>()
-            server.addListener(object : HttpEventListener {
-                override fun onOpen(event: HttpConnectionEvent) {
-                    remotePeers.add(event.channel.remoteAddress())
-                }
-                override fun onMessage(message: HttpMessage) {
-                    requestReceived.countDown()
-                }
-            })
+        val listener = object : HttpEventListener {
+            override fun onOpen(event: HttpConnectionEvent) {
+                remotePeers.add(event.channel.remoteAddress())
+            }
+            override fun onMessage(message: HttpMessage) {
+                requestReceived.countDown()
+            }
+        }
+        HttpServer(listOf(listener), configuration).use { server ->
             server.startAndWaitForStarted()
             manager.acquire(destination).write(clientMessageContent.toByteArray())
             manager.acquire(destination).write(clientMessageContent.toByteArray())

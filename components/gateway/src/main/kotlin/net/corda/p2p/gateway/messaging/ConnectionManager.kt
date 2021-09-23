@@ -24,7 +24,8 @@ import java.util.concurrent.ConcurrentHashMap
 class ConnectionManager(
     parent: LifecycleWithCoordinator,
     private val configurationService: GatewayConfigurationService,
-) : LifecycleWithCoordinatorAndResources(parent) {
+) : LifecycleWithCoordinatorAndResources(parent),
+    GatewayConfigurationService.ReconfigurationListener {
 
     companion object {
         private val logger = LoggerFactory.getLogger(ConnectionManager::class.java)
@@ -67,6 +68,10 @@ class ConnectionManager(
         followStatusChanges(configurationService).also {
             executeBeforeClose(it::close)
         }
+        configurationService.listenToReconfigurations(this)
+        executeBeforeClose {
+            configurationService.stopListenToReconfigurations(this)
+        }
     }
 
     override fun resumeSequence() {
@@ -96,5 +101,16 @@ class ConnectionManager(
 
     override fun onStatusDown() {
         stop()
+    }
+
+    override fun gotNewConfiguration(newConfiguration: GatewayConfiguration, oldConfiguration: GatewayConfiguration) {
+        if (newConfiguration.sslConfig != oldConfiguration.sslConfig) {
+            logger.info("Got new SSL configuraion, recreating the clients pool")
+            val oldClients = clientPool.toMap()
+            clientPool.clear()
+            oldClients.values.forEach {
+                it.close()
+            }
+        }
     }
 }
