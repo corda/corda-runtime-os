@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.FingerprintWriter
-import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Symbol
