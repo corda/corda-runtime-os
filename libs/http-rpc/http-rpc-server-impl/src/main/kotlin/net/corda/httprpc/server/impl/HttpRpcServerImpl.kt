@@ -35,6 +35,10 @@ class HttpRpcServerImpl(
         private val log = contextLogger()
     }
 
+    init {
+        log.info("Creating rpc server")
+    }
+
     @Volatile
     private var running = false
     private val startStopLock = ReentrantReadWriteLock()
@@ -61,6 +65,7 @@ class HttpRpcServerImpl(
     override fun start() {
         startStopLock.write {
             if (!running) {
+                log.info("Started the server")
                 httpRpcServerInternal.start()
                 running = true
             }

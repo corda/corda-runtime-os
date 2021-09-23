@@ -21,7 +21,5 @@ dependencies {
     implementation project(':libs:http-rpc:ssl-cert-read')
     implementation project(':libs:http-rpc:http-rpc-server')
 
-    implementation project(":components:configuration:configuration-read-service")
-
     implementation project(":osgi-framework-api")
 }

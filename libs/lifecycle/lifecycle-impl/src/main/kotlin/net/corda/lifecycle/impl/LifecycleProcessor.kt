@@ -135,6 +135,7 @@ internal class LifecycleProcessor(
 
     private fun processStartEvent(event: StartEvent, coordinator: LifecycleCoordinator): Boolean {
         return if (!state.isRunning) {
+            logger.info("SWITCHING TO RUNNING - $name")
             state.isRunning = true
             state.trackedRegistrations.keys.forEach { it.notifyCurrentStatus() }
             // If there was previously an error, clear this now.

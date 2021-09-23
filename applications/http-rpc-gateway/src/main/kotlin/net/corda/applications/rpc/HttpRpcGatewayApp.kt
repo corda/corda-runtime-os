@@ -7,6 +7,8 @@ import net.corda.components.rpc.ConfigReceivedEvent
 import net.corda.components.rpc.HttpRpcGateway
 import net.corda.components.rpc.MessagingConfigUpdateEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.httprpc.security.read.RPCSecurityManagerFactory
+import net.corda.httprpc.server.factory.HttpRpcServerFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -42,6 +44,10 @@ class HttpRpcGatewayApp @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = HttpRpcServerFactory::class)
+    private val httpRpcServerFactory: HttpRpcServerFactory,
+    @Reference(service = RPCSecurityManagerFactory::class)
+    private val rpcSecurityManagerFactory: RPCSecurityManagerFactory
 ) : Application {
 
     private companion object {
@@ -72,8 +78,7 @@ class HttpRpcGatewayApp @Activate constructor(
             var httpRpcGateway: HttpRpcGateway? = null
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
-                coordinatorFactory.createCoordinator<HttpRpcGatewayApp>(
-                ) { event: LifecycleEvent, _: LifecycleCoordinator ->
+                coordinatorFactory.createCoordinator<HttpRpcGatewayApp> { event: LifecycleEvent, _: LifecycleCoordinator ->
                     log.info("LifecycleEvent received: $event")
                     when (event) {
                         is StartEvent -> {
@@ -102,7 +107,9 @@ class HttpRpcGatewayApp @Activate constructor(
                         }
                     }
                 }
-            httpRpcGateway = HttpRpcGateway(lifeCycleCoordinator!!, configurationReadService)
+            httpRpcGateway = HttpRpcGateway(lifeCycleCoordinator!!, configurationReadService, httpRpcServerFactory, rpcSecurityManagerFactory)
+            httpRpcGateway.start(bootstrapConfig)
+
 
             log.info("Starting life cycle coordinator")
             lifeCycleCoordinator!!.start()

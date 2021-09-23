@@ -9,7 +9,7 @@ import net.corda.v5.httprpc.api.PluggableRPCOps
 import net.corda.v5.httprpc.api.RpcOps
 import org.osgi.service.component.annotations.Component
 
-@Component(service = [HttpRpcServerFactory::class])
+@Component(immediate = true, service = [HttpRpcServerFactory::class])
 class HttpRpcServerFactoryImpl : HttpRpcServerFactory {
 
     override fun createHttpRpcServer(
