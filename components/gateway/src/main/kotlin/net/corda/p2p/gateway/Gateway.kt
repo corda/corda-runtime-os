@@ -2,7 +2,6 @@ package net.corda.p2p.gateway
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
@@ -67,30 +66,29 @@ class Gateway(
         }
     }
 
-    override fun onStart() {
+    override fun resumeSequence() {
         logger.info("Starting Gateway service")
         configurationService.start()
         server.start()
-        executeBeforeStop(server::stop)
-        onStatusChange(LifecycleStatus.UP)
+        executeBeforePause(server::stop)
         outboundMessageProcessor.start()
-        executeBeforeStop(outboundMessageProcessor::stop)
+        executeBeforePause(outboundMessageProcessor::stop)
+        onStatusUp()
         logger.info("Gateway started")
     }
 
-    override fun onStatusChange(newStatus: LifecycleStatus) {
-        if (newStatus == LifecycleStatus.UP) {
-            if ((configurationService.status == LifecycleStatus.UP) &&
-                (server.status == LifecycleStatus.UP) &&
-                (outboundMessageProcessor.status == LifecycleStatus.UP)
-            ) {
-                logger.info("Gateway is running")
-                status = LifecycleStatus.UP
-            }
-        } else {
-            outboundMessageProcessor.stop()
-            server.stop()
+    override fun onStatusUp() {
+        if ((configurationService.state == State.Up) &&
+            (server.state == State.Up) &&
+            (outboundMessageProcessor.state == State.Up)
+        ) {
+            logger.info("Gateway is running")
+            state = State.Up
         }
-        super.onStatusChange(newStatus)
+    }
+
+    override fun onStatusDown() {
+        outboundMessageProcessor.stop()
+        server.stop()
     }
 }

@@ -152,7 +152,7 @@ open class TestBase {
 
     fun createParentCoordinator(): LifecycleWithCoordinator {
         return object : LifecycleWithCoordinatorAndResources(lifecycleCoordinatorFactory, UUID.randomUUID().toString()) {
-            override fun onStart() {
+            override fun resumeSequence() {
             }
         }
     }

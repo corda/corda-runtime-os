@@ -2,7 +2,6 @@ package net.corda.p2p.gateway.messaging
 
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.p2p.gateway.GatewayConfigurationService
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
@@ -57,15 +56,11 @@ class ConnectionManager(
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
         return clientPool.computeIfAbsent(destinationInfo.uri) {
             val client = HttpClient(destinationInfo, configurationService.configuration.sslConfig, writeGroup!!, nettyGroup!!)
-            executeBeforeStop(client::close)
+            executeBeforePause(client::close)
             eventListeners.forEach { client.addListener(it) }
             client.start()
             client
         }
-    }
-
-    override fun onStatusChange(newStatus: LifecycleStatus) {
-        startIfNeeded()
     }
 
     init {
@@ -74,30 +69,32 @@ class ConnectionManager(
         }
     }
 
-    override fun onStart() {
+    override fun resumeSequence() {
         logger.info("Starting connection manager")
         configurationService.start()
-        startIfNeeded()
+        onStatusUp()
     }
 
-    private fun startIfNeeded() {
-        if ((configurationService.status == LifecycleStatus.UP) && (status != LifecycleStatus.UP)) {
+    override fun onStatusUp() {
+        if ((configurationService.state == State.Up) && (state != State.Up)) {
             NioEventLoopGroup(NUM_CLIENT_WRITE_THREADS).also {
-                executeBeforeStop {
+                executeBeforePause {
                     it.shutdownGracefully()
                     it.terminationFuture().sync()
                 }
             }.also { writeGroup = it }
             nettyGroup = NioEventLoopGroup(NUM_CLIENT_NETTY_THREADS).also {
-                executeBeforeStop {
+                executeBeforePause {
                     it.shutdownGracefully()
                     it.terminationFuture().sync()
                 }
             }
-            executeBeforeStop(clientPool::clear)
-            status = LifecycleStatus.UP
-        } else if ((configurationService.status != LifecycleStatus.UP) && (status == LifecycleStatus.UP)) {
-            stop()
+            executeBeforePause(clientPool::clear)
+            state = State.Up
         }
+    }
+
+    override fun onStatusDown() {
+        stop()
     }
 }

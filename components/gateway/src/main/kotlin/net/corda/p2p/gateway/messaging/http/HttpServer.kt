@@ -9,7 +9,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.timeout.IdleStateHandler
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.p2p.gateway.GatewayConfigurationService
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
@@ -127,22 +126,22 @@ class HttpServer(
         }
     }
 
-    override fun onStart() {
+    override fun resumeSequence() {
         configurationService.start()
-        onStatusChange(configurationService.status)
+        onStatusUp()
     }
 
-    override fun onStatusChange(newStatus: LifecycleStatus) {
-        if ((configurationService.status == LifecycleStatus.UP) && (status != LifecycleStatus.UP)) {
+    override fun onStatusUp() {
+        if ((configurationService.state == State.Up) && (state != State.Up)) {
             logger.info("Starting HTTP Server")
             val bossGroup = NioEventLoopGroup(1).also {
-                executeBeforeStop {
+                executeBeforePause {
                     it.shutdownGracefully()
                     it.terminationFuture().sync()
                 }
             }
             val workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS).also {
-                executeBeforeStop {
+                executeBeforePause {
                     it.shutdownGracefully()
                     it.terminationFuture().sync()
                 }
@@ -157,7 +156,7 @@ class HttpServer(
             val channelFuture = server.bind(host, port).sync()
             logger.info("Listening on port $port")
             channelFuture.channel().also { serverChannel ->
-                executeBeforeStop {
+                executeBeforePause {
                     if (serverChannel.isOpen) {
                         serverChannel.close().sync()
                     }
@@ -168,10 +167,10 @@ class HttpServer(
                     }
                 }
             }
-            executeBeforeStop {
+            executeBeforePause {
                 clientChannels.clear()
             }
-            status = LifecycleStatus.UP
+            state = State.Up
             logger.info("HTTP Server started")
         }
     }

@@ -1,6 +1,5 @@
 package net.corda.p2p.gateway.messaging.session
 
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -47,7 +46,7 @@ class SessionPartitionMapperImpl(
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
-            status = LifecycleStatus.UP
+            state = State.Up
         }
 
         override fun onNext(
@@ -63,9 +62,9 @@ class SessionPartitionMapperImpl(
         }
     }
 
-    override fun onStart() {
+    override fun resumeSequence() {
         sessionPartitionSubscription.start()
-        executeBeforeStop {
+        executeBeforePause {
             sessionPartitionSubscription.stop()
         }
     }

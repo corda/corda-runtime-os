@@ -1,7 +1,6 @@
 package net.corda.p2p.gateway.domino
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.ConcurrentLinkedDeque
 
@@ -12,7 +11,7 @@ abstract class LifecycleWithCoordinatorAndResources(
 
     constructor(parent: LifecycleWithCoordinator) : this(parent.coordinatorFactory, parent.name.instanceId)
 
-    private val stopActions = ConcurrentLinkedDeque<()->Unit>()
+    private val pauseActions = ConcurrentLinkedDeque<()->Unit>()
     private val closeActions = ConcurrentLinkedDeque<()->Unit>()
     companion object {
         private val logger = contextLogger()
@@ -22,12 +21,12 @@ abstract class LifecycleWithCoordinatorAndResources(
         closeActions.addFirst(action)
     }
 
-    fun executeBeforeStop(action: () -> Unit) {
-        stopActions.addFirst(action)
+    fun executeBeforePause(action: () -> Unit) {
+        pauseActions.addFirst(action)
     }
 
-    override fun onStop() {
-        stopActions.onEach {
+    override fun pauseSequence() {
+        pauseActions.onEach {
             @Suppress("TooGenericExceptionCaught")
             try {
                 it.invoke()
@@ -35,14 +34,11 @@ abstract class LifecycleWithCoordinatorAndResources(
                 logger.warn("Fail to stop", e)
             }
         }
-        stopActions.clear()
-        status = LifecycleStatus.DOWN
+        pauseActions.clear()
         logger.info("Stopped $name")
     }
 
-    override fun close() {
-        stop()
-
+    override fun closeSequence() {
         closeActions.onEach {
             @Suppress("TooGenericExceptionCaught")
             try {
@@ -52,7 +48,5 @@ abstract class LifecycleWithCoordinatorAndResources(
             }
         }
         closeActions.clear()
-
-        super.close()
     }
 }

@@ -1,6 +1,5 @@
 package net.corda.p2p.gateway
 
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
@@ -20,33 +19,28 @@ internal class Server(
     private val httpServer = HttpServer(this, configurationService)
     private val sessionPartitionMapper = SessionPartitionMapperImpl(this, subscriptionFactory)
     private val inboundMessageProcessor = InboundMessageHandler(this, publisherFactory, httpServer, sessionPartitionMapper)
-    private fun startNextThing() {
-        if (configurationService.status != LifecycleStatus.UP) {
+
+    override fun onStatusUp() {
+        if (configurationService.state != State.Up) {
             return
         }
-        if (httpServer.status != LifecycleStatus.UP) {
+        if (httpServer.state != State.Up) {
             httpServer.start()
             return
         }
-        if (sessionPartitionMapper.status != LifecycleStatus.UP) {
+        if (sessionPartitionMapper.state != State.Up) {
             sessionPartitionMapper.start()
             return
         }
-        if (inboundMessageProcessor.status != LifecycleStatus.UP) {
+        if (inboundMessageProcessor.state != State.Up) {
             inboundMessageProcessor.start()
             return
         }
-        status = LifecycleStatus.UP
+        state = State.Up
     }
 
-    override fun onStatusChange(newStatus: LifecycleStatus) {
-        if (newStatus == LifecycleStatus.DOWN) {
-            stop()
-        } else {
-            startNextThing()
-        }
-
-        super.onStatusChange(newStatus)
+    override fun onStatusDown() {
+        stop()
     }
 
     init {
@@ -64,15 +58,15 @@ internal class Server(
             }
     }
 
-    override fun onStart() {
+    override fun resumeSequence() {
         listOf(
             httpServer,
             sessionPartitionMapper,
             inboundMessageProcessor
         ).forEach {
-            executeBeforeStop(it::stop)
+            executeBeforePause(it::stop)
         }
 
-        startNextThing()
+        onStatusUp()
     }
 }

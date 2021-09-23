@@ -3,7 +3,6 @@ package net.corda.p2p.gateway.messaging.internal
 import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -69,32 +68,33 @@ internal class OutboundMessageHandler(
         }
     }
 
-    override fun onStart() {
+    override fun resumeSequence() {
         logger.info("Starting P2P message sender")
         p2pInPublisher = publisherFactory.createPublisher(PublisherConfig(PUBLISHER_ID), ConfigFactory.empty()).also {
-            executeBeforeStop(it::close)
+            executeBeforePause(it::close)
         }
 
         connectionManager.start()
 
-        onStatusChange(LifecycleStatus.UP)
+        onStatusUp()
     }
 
-    override fun onStatusChange(newStatus: LifecycleStatus) {
-        if (newStatus == LifecycleStatus.UP) {
-            if (connectionManager.status == LifecycleStatus.UP) {
-                p2pMessageSubscription.start()
-                executeBeforeStop(p2pMessageSubscription::close)
-                connectionManager.addListener(this)
-                executeBeforeStop {
-                    connectionManager.removeListener(this)
-                }
-                status = LifecycleStatus.UP
+    override fun onStatusDown() {
+        stop()
+    }
+
+    override fun onStatusUp() {
+        if ((connectionManager.state == State.Up) && (state != State.Up)) {
+            p2pMessageSubscription.start()
+            executeBeforePause(p2pMessageSubscription::close)
+            connectionManager.addListener(this)
+            executeBeforePause {
+                connectionManager.removeListener(this)
             }
-        } else {
-            stop()
+            state = State.Up
         }
     }
+
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
         events.forEach { evt ->

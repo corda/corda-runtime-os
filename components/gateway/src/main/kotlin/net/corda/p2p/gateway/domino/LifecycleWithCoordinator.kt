@@ -13,8 +13,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.v5.base.util.contextLogger
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 abstract class LifecycleWithCoordinator(
@@ -24,6 +22,22 @@ abstract class LifecycleWithCoordinator(
     Lifecycle {
     companion object {
         private val logger = contextLogger()
+    }
+
+    enum class State {
+        Initialized,
+        Starting,
+        Resuming,
+        Up,
+        Pausing,
+        Paused,
+        Closing,
+        Closed
+    }
+    private val currentState = AtomicReference(State.Initialized)
+    enum class TransitionEvents : LifecycleEvent {
+        Pause,
+        Resume
     }
 
     val name: LifecycleCoordinatorName = LifecycleCoordinatorName(
@@ -36,38 +50,59 @@ abstract class LifecycleWithCoordinator(
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
 
-    private val waitingForStatusChange = ConcurrentHashMap.newKeySet<CompletableFuture<LifecycleStatus>>()
-
     // YIFT: The updateStatus won't set the status immediately after the updateStatus?!...
     private val knownStatus = AtomicReference(coordinator.status)
-    var status: LifecycleStatus
-        get() = knownStatus.get()
-        set(newStatus) {
-            val oldStatus = knownStatus.getAndSet(newStatus)
-            if (oldStatus != newStatus) {
-                coordinator.updateStatus(newStatus)
-                waitingForStatusChange.forEach {
-                    it.complete(newStatus)
-                }
+
+    var state: State
+        get() = currentState.get()
+        set(newState) {
+            val oldState = currentState.getAndSet(newState)
+            if ((oldState == State.Up) && (oldState != State.Up)) {
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+            } else if ((oldState != State.Up) && (newState == State.Up)) {
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
-            logger.info("Status of $name is $newStatus")
+            logger.info("State of $name is $newState")
         }
 
     override fun start() {
         logger.info("Starting $name")
-        coordinator.start()
+        when (state) {
+            State.Initialized -> {
+                state = State.Starting
+                coordinator.start()
+            }
+            State.Pausing, State.Paused -> {
+                state = State.Resuming
+                coordinator.postEvent(TransitionEvents.Resume)
+            }
+            State.Starting, State.Resuming, State.Up -> {}
+            State.Closing, State.Closed -> throw IllegalStateException("Can not revive the dead")
+        }
     }
-    abstract fun onStart()
+    abstract fun resumeSequence()
 
     override fun stop() {
         logger.info("Stopping $name")
-        coordinator.stop()
+        when (state) {
+            State.Initialized -> {
+                state = State.Pausing
+                coordinator.start()
+            }
+            State.Starting, State.Resuming, State.Up -> {
+                state = State.Pausing
+                coordinator.postEvent(TransitionEvents.Pause)
+            }
+            State.Pausing, State.Paused, State.Closing, State.Closed -> {
+            }
+        }
     }
-    abstract fun onStop()
+    abstract fun pauseSequence()
+    open fun closeSequence() {}
 
     fun gotError(error: Throwable) {
-        logger.info("Got error in $name")
-        coordinator.postEvent(ErrorEvent(error))
+        logger.info("Got error in $name", error)
+        stop()
     }
 
     fun followStatusChanges(vararg lifecycles: LifecycleWithCoordinator): RegistrationHandle {
@@ -77,56 +112,57 @@ abstract class LifecycleWithCoordinator(
     fun followStatusChanges(names: Collection<LifecycleCoordinatorName>): RegistrationHandle {
         return coordinator.followStatusChangesByName(names.toSet())
     }
-    open fun onStatusChange(newStatus: LifecycleStatus) {
+    open fun onStatusUp() {
     }
-
-    fun postEvent(event: LifecycleEvent) {
-        coordinator.postEvent(event)
-    }
-    open fun onCustomEvent(event: LifecycleEvent) {
-        logger.warn("Unexpected event $event for $name")
-    }
-
-    open fun onError(error: Throwable) {
-        status = LifecycleStatus.ERROR
+    open fun onStatusDown() {
     }
 
     private inner class EventHandler : LifecycleEventHandler {
         override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
             when (event) {
                 is ErrorEvent -> {
-                    onError(event.cause)
+                    gotError(event.cause)
                 }
                 is StartEvent -> {
-                    onStart()
+                    when (state) {
+                        State.Starting -> {
+                            state = State.Resuming
+                            coordinator.postEvent(TransitionEvents.Resume)
+                        }
+                        State.Pausing -> coordinator.postEvent(TransitionEvents.Pause)
+                        else -> logger.warn("Unexpected start event, my stae is $state")
+                    }
                 }
                 is StopEvent -> {
-                    onStop()
+                    // Do nothing
                 }
                 is RegistrationStatusChangeEvent -> {
-                    onStatusChange(event.status)
+                    if(event.status == LifecycleStatus.UP) {
+                        onStatusUp()
+                    } else {
+                        onStatusDown()
+                    }
+                }
+                TransitionEvents.Resume -> {
+                    resumeSequence()
+                }
+                TransitionEvents.Pause -> {
+                    pauseSequence()
+                    logger.info("Stopped $name")
+                    state = State.Paused
                 }
                 else -> {
-                    onCustomEvent(event)
+                    logger.warn("Unexpected event $event")
                 }
             }
         }
     }
 
     override fun close() {
-        val waitForStop = CompletableFuture<LifecycleStatus>()
-        waitingForStatusChange.add(waitForStop)
-
-        stop()
-
-        if (status == LifecycleStatus.UP) {
-            if (waitForStop.join() != LifecycleStatus.DOWN) {
-                logger.warn("Could not stop $name")
-            }
-        }
-
-        waitingForStatusChange.remove(waitForStop)
-
+        state = State.Closing
+        pauseSequence()
+        closeSequence()
         coordinator.close()
+        state = State.Closed
     }
 }

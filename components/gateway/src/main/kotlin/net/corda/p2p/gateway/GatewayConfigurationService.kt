@@ -3,7 +3,6 @@ package net.corda.p2p.gateway
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
@@ -38,11 +37,11 @@ class GatewayConfigurationService(
                 val configuration = toGatewayConfig(config[CONFIG_KEY])
                 logger.info("Got for ${name.instanceId} new Gateway configuration ${configuration.hostAddress}:${configuration.hostPort}")
                 val oldConfiguration = configurationHolder.getAndSet(configuration)
-                if (oldConfiguration != configuration) {
+                if ((oldConfiguration != configuration) && (oldConfiguration != null)) {
                     // YIFT: Reconfiguration mode, ideally stop and start
                     logger.info("Reconfigure the gateway...")
                 } else {
-                    status = LifecycleStatus.UP
+                    state = State.Up
                 }
             } catch (e: Throwable) {
                 gotError(e)
@@ -106,9 +105,9 @@ class GatewayConfigurationService(
             return configurationHolder.get() ?: throw IllegalStateException("Configuration is not ready")
         }
 
-    override fun onStart() {
+    override fun resumeSequence() {
         configurationReaderService.registerForUpdates(this).also {
-            executeBeforeStop { it.close() }
+            executeBeforePause(it::close)
         }
     }
 }

@@ -3,7 +3,6 @@ package net.corda.p2p.gateway.messaging.internal
 import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -44,21 +43,21 @@ internal class InboundMessageHandler(
     }
 
     private var p2pInPublisher: Publisher? = null
-    override fun onStart() {
+    override fun resumeSequence() {
         logger.info("Starting P2P message receiver")
         val publisherConfig = PublisherConfig(PUBLISHER_ID)
         val publisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty())
-        executeBeforeStop {
+        executeBeforePause {
             publisher.close()
         }
         p2pInPublisher = publisher
         httpServer.addListener(this)
-        executeBeforeStop {
+        executeBeforePause {
             httpServer.removeListener(this@InboundMessageHandler)
         }
 
         logger.info("Started P2P message receiver")
-        status = LifecycleStatus.UP
+        state = State.Up
     }
 
     /**
