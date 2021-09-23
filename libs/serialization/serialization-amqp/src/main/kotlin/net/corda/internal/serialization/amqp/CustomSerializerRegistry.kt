@@ -102,10 +102,7 @@ class CachingCustomSerializerRegistry(
     override fun register(customSerializer: CustomSerializer<out Any>) {
         logger.trace { "action=\"Registering custom serializer\", class=\"${customSerializer.type}\"" }
 
-        if (customSerializersCache.isNotEmpty()) {
-            logger.warn("Attempting to register custom serializer ${customSerializer.type} in an active cache." +
-                    "All serializers should be registered before the cache comes into use.")
-        }
+        checkActiveCache(customSerializer.type)
 
         descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) {
             customSerializers += customSerializer
@@ -128,14 +125,20 @@ class CachingCustomSerializerRegistry(
     override fun registerExternal(customSerializer: CorDappCustomSerializer) {
         logger.trace { "action=\"Registering external serializer\", class=\"${customSerializer.type}\"" }
 
-        if (customSerializersCache.isNotEmpty()) {
-            logger.warn("Attempting to register custom serializer ${customSerializer.type} in an active cache." +
-                    "All serializers must be registered before the cache comes into use.")
-        }
+        checkActiveCache(customSerializer.type)
 
         descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) {
             customSerializers += customSerializer
             customSerializer
+        }
+    }
+
+    private fun checkActiveCache(type: Type) {
+        if (customSerializersCache.isNotEmpty()) {
+            logger.warn(
+                "Attempting to register custom serializer $type in an active cache." +
+                        "All serializers must be registered before the cache comes into use."
+            )
         }
     }
 
