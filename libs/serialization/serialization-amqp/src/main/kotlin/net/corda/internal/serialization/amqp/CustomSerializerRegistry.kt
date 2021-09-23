@@ -104,8 +104,8 @@ class CachingCustomSerializerRegistry(
 
         checkActiveCache(customSerializer.type)
 
+        customSerializers += customSerializer
         descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) {
-            customSerializers += customSerializer
             customSerializer
         }
     }
@@ -119,8 +119,8 @@ class CachingCustomSerializerRegistry(
 
         checkActiveCache(customSerializer.type)
 
+        customSerializers += customSerializer
         descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) {
-            customSerializers += customSerializer
             customSerializer
         }
     }
