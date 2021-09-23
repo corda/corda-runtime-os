@@ -118,13 +118,8 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
     }
 
     /**
-     * Additional base features for a custom serializer for all implementations of a particular interface or super class.
-     */
-    abstract class Implements<T : Any>(clazz: Class<T>) : CustomSerializerImp<T>(clazz, true)
-
-    /**
-     * Additional base features over and above [Implements] custom serializer for when the serialized form should be
-     * the serialized form of a proxy class, and the object can be re-created from that proxy on deserialization.
+     * Base features for when the serialized form should be the serialized form of a proxy class, and the object can
+     * be re-created from that proxy on deserialization.
      *
      * The proxy class must use only types which are either native AMQP or other types for which there are pre-registered
      * custom serializers.
