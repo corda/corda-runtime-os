@@ -17,6 +17,7 @@ import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.apigen.processing.RouteProvider
 import net.corda.httprpc.server.impl.apigen.processing.openapi.OpenApiInfoProvider
 import net.corda.httprpc.server.config.HttpRpcSettingsProvider
+import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.httprpc.server.security.Actor
 import net.corda.httprpc.server.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
@@ -271,7 +272,7 @@ internal class HttpRpcServerInternal(
 //TODO restore these when possible
 //            is StartFlowPermissionException -> throw ForbiddenResponse(messageEscaped)
 //            is FlowNotFoundException -> throw NotFoundResponse(messageEscaped)
-//            is MissingParameterException -> throw BadRequestResponse(messageEscaped)
+              is MissingParameterException -> throw BadRequestResponse(messageEscaped)
 //            is InvalidCordaX500NameException -> throw BadRequestResponse(messageEscaped)
 //            is MemberNotFoundException -> throw NotFoundResponse(messageEscaped)
 
