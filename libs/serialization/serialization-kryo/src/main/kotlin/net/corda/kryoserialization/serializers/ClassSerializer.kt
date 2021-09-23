@@ -13,7 +13,6 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.BasicHashingService
 import net.corda.v5.crypto.SecureHash
-import java.util.*
 
 class ClassSerializer(
     private val classInfoService: ClassInfoService,
@@ -31,13 +30,8 @@ class ClassSerializer(
             Class.forName(name, true, kryo.classLoader)
         } else {
             val version = input.readString()
-            var numberOfSigners = input.readVarInt(true)
-            val signers = TreeSet<SecureHash>()
-            while (numberOfSigners > 0) {
-                signers.add(hashingService.create(input.readString()))
-                numberOfSigners--
-            }
-            val cpk = Cpk.Identifier(cpkName, version, signers)
+            val signerSummaryHash = SecureHash.create(input.readString())
+            val cpk = Cpk.Identifier(cpkName, version, signerSummaryHash)
             sandboxGroup.loadClassFromCordappBundle(cpk, input.readString())
         }
     }
@@ -57,10 +51,7 @@ class ClassSerializer(
             output.writeString(classInfo.classBundleVersion.toString())
             output.writeString(classInfo.cordappBundleName)
             output.writeString(classInfo.cordappBundleVersion.toString())
-            output.writeVarInt(classInfo.cpkPublicKeyHashes.size, true)
-            classInfo.cpkPublicKeyHashes.forEach {
-                output.writeString(it.toString())
-            }
+            output.writeString(classInfo.cpkSignerSummaryHash.toString())
         } else {
             output.writeString(NO_CPK_NAME)
         }

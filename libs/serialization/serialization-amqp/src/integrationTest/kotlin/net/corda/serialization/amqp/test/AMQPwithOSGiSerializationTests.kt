@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.io.TempDir
+import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
 import java.io.NotSerializableException
@@ -60,11 +61,17 @@ class AMQPwithOSGiSerializationTests {
             assertThat(sandboxCreationService).isNotNull
             assertThat(classInfoService).isNotNull
 
+            val privateBundleNames = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.filter { bundle ->
+                bundle.symbolicName !in PLATFORM_PUBLIC_BUNDLE_NAMES
+            }.map(Bundle::getSymbolicName)
+
             // Initialise configurationAdmin
             val properties = Hashtable<String, Any>()
             properties["platformVersion"] = 999
             properties["blacklistedKeys"] = emptyList<Any>()
             properties["baseDirectory"] = testDirectory.toAbsolutePath().toString()
+            properties[PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] = PLATFORM_PUBLIC_BUNDLE_NAMES
+            properties[PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY] = privateBundleNames
             val conf = configurationAdmin.getConfiguration(ConfigurationAdmin::class.java.name, null)
             conf?.update(properties)
         }
@@ -122,7 +129,7 @@ class AMQPwithOSGiSerializationTests {
         val cpks = installService.getCpb(cpb.identifier)!!.cpks
 
         // Create sandbox group
-        val sandboxGroup = sandboxCreationService.createSandboxes(cpks.map(Cpk::cpkHash))
+        val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks.map(Cpk::cpkHash))
         assertThat(sandboxGroup).isNotNull
         assertThat(sandboxGroup.sandboxes).hasSize(4)
 

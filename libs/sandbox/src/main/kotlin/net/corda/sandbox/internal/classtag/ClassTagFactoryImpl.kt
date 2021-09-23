@@ -22,20 +22,20 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
 
         if (isPlatformBundle) {
             return if (isStaticClassTag) {
-                StaticTagImplV1(isPlatformClass = true, bundleSymbolicName, ClassTagV1.PLACEHOLDER_CPK_FILE_HASH)
+                StaticTagImplV1(isPlatformClass = true, bundleSymbolicName, ClassTagV1.PLACEHOLDER_HASH)
             } else {
                 EvolvableTagImplV1(
                     isPlatformClass = true,
                     bundleSymbolicName,
                     ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME,
-                    ClassTagV1.PLACEHOLDER_CPK_PUBLIC_KEY_HASHES
+                    ClassTagV1.PLACEHOLDER_HASH
                 )
             }.serialise()
 
         }
 
-        if (sandbox !is CpkSandboxInternal) throw SandboxException("Sandbox was neither a platform sandbox nor a CPK " +
-                "sandbox. A valid class tag cannot be constructed.")
+        if (sandbox !is CpkSandboxInternal) throw SandboxException("Sandbox was neither the platform sandbox nor a " +
+                "CPK sandbox. A valid class tag cannot be constructed.")
 
         return if (isStaticClassTag) {
             StaticTagImplV1(isPlatformClass = false, bundleSymbolicName, sandbox.cpk.cpkHash)
@@ -44,7 +44,7 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
                 isPlatformClass = false,
                 bundleSymbolicName,
                 sandbox.cordappBundle.symbolicName,
-                sandbox.cpk.id.signers
+                sandbox.cpk.id.signerSummaryHash
             )
         }.serialise()
     }

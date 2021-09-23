@@ -12,17 +12,14 @@ import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.v5.base.util.contextLogger
 import java.lang.IllegalStateException
-import java.security.KeyFactory
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
-import java.security.spec.PKCS8EncodedKeySpec
-import java.security.spec.X509EncodedKeySpec
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-class KafkaBackedCryptoService(subscriptionFactory: SubscriptionFactory): LinkManagerCryptoService, Lifecycle {
+class StubCryptoService(subscriptionFactory: SubscriptionFactory): LinkManagerCryptoService, Lifecycle {
 
     private val keyPairEntryProcessor = KeyPairEntryProcessor()
     private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC)
@@ -92,9 +89,7 @@ class KafkaBackedCryptoService(subscriptionFactory: SubscriptionFactory): LinkMa
         }
 
         private val keys = mutableMapOf<String, KeyPair>()
-
-        private val rsaKeyFactory = KeyFactory.getInstance("RSA")
-        private val ecdsaKeyFactory = KeyFactory.getInstance("EC")
+        private val keyDeserialiser = KeyDeserialiser()
 
         override val keyClass: Class<String>
             get() = String::class.java
@@ -119,8 +114,8 @@ class KafkaBackedCryptoService(subscriptionFactory: SubscriptionFactory): LinkMa
 
         override fun onSnapshot(currentData: Map<String, KeyPairEntry>) {
             currentData.forEach { (alias, keyPairEntry) ->
-                val privateKey = toPrivateKey(keyPairEntry.privateKey.array(), keyPairEntry.keyAlgo)
-                val publicKey = toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
+                val privateKey = keyDeserialiser.toPrivateKey(keyPairEntry.privateKey.array(), keyPairEntry.keyAlgo)
+                val publicKey = keyDeserialiser.toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
                 keys[alias] = KeyPair(keyPairEntry.keyAlgo, privateKey, publicKey)
             }
         }
@@ -132,31 +127,9 @@ class KafkaBackedCryptoService(subscriptionFactory: SubscriptionFactory): LinkMa
                 keys.remove(newRecord.key)
             } else {
                 val keyPairEntry = newRecord.value!!
-                val privateKey = toPrivateKey(keyPairEntry.privateKey.array(), keyPairEntry.keyAlgo)
-                val publicKey = toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
+                val privateKey = keyDeserialiser.toPrivateKey(keyPairEntry.privateKey.array(), keyPairEntry.keyAlgo)
+                val publicKey = keyDeserialiser.toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
                 keys[newRecord.key] = KeyPair(keyPairEntry.keyAlgo, privateKey, publicKey)
-            }
-        }
-
-        private fun toPrivateKey(bytes: ByteArray, keyAlgorithm: KeyAlgorithm): PrivateKey {
-            return when (keyAlgorithm) {
-                KeyAlgorithm.ECDSA -> {
-                    ecdsaKeyFactory.generatePrivate(PKCS8EncodedKeySpec(bytes))
-                }
-                KeyAlgorithm.RSA -> {
-                    rsaKeyFactory.generatePrivate(PKCS8EncodedKeySpec(bytes))
-                }
-            }
-        }
-
-        private fun toPublicKey(bytes: ByteArray, keyAlgorithm: KeyAlgorithm): PublicKey {
-            return when (keyAlgorithm) {
-                KeyAlgorithm.ECDSA -> {
-                    ecdsaKeyFactory.generatePublic(X509EncodedKeySpec(bytes))
-                }
-                KeyAlgorithm.RSA -> {
-                    rsaKeyFactory.generatePublic(X509EncodedKeySpec(bytes))
-                }
             }
         }
 
