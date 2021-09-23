@@ -267,6 +267,7 @@ subprojects {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
     }
 
+    task allDependencyInsight(type: DependencyInsightReportTask) {}
 
     configurations {
         all {
