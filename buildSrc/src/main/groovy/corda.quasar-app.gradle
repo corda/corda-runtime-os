@@ -4,6 +4,10 @@ plugins {
 }
 
 quasar {
+    version = quasarVersion
+    suspendableAnnotation = 'net.corda.v5.base.annotations.Suspendable'
+    instrumentTests = false
+    instrumentJavaExec = false
     excludePackages = [
             'co.paralleluniverse**',
             'com.esotericsoftware.**',
@@ -28,8 +32,8 @@ quasar {
 
 dependencies {
     implementation "com.esotericsoftware:kryo:$kryoVersion"
-    implementation "co.paralleluniverse:quasar-core-osgi:$quasar_version"
-    systemPackages "co.paralleluniverse:quasar-core-osgi:$quasar_version:agent"
+    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
+    systemPackages "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
 }
 
 osgiRun {
