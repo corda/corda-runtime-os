@@ -19,7 +19,7 @@ class KryoCheckpointTest {
     }
 
     @Test
-    fun `test correct serialization of a simple object`() {
+    fun `correct serialization of a simple object`() {
         val builder = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxLoader.group1)
         val serializer = builder
             .addSerializer(TestClass::class.java, TestClass.Serializer())
