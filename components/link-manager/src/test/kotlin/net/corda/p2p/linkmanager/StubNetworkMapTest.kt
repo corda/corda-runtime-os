@@ -59,10 +59,25 @@ class StubNetworkMapTest {
     @Test
     fun `network map maintains a valid dataset of entries and responds successfully to lookups`() {
         val snapshot = mapOf(
-            "$aliceName-$groupId1" to NetworkMapEntry(HoldingIdentity(aliceName, groupId1), ByteBuffer.wrap(aliceKeyPair.public.encoded), KeyAlgorithm.RSA, aliceAddress, NetworkType.CORDA_4),
-            "$bobName-$groupId1" to NetworkMapEntry(HoldingIdentity(bobName, groupId1), ByteBuffer.wrap(bobKeyPair.public.encoded), KeyAlgorithm.RSA, bobAddress, NetworkType.CORDA_4),
+            "$aliceName-$groupId1" to NetworkMapEntry(
+                HoldingIdentity(aliceName, groupId1),
+                ByteBuffer.wrap(aliceKeyPair.public.encoded),
+                KeyAlgorithm.RSA, aliceAddress,
+                NetworkType.CORDA_4
+            ),
+            "$bobName-$groupId1" to NetworkMapEntry(
+                HoldingIdentity(bobName, groupId1),
+                ByteBuffer.wrap(bobKeyPair.public.encoded),
+                KeyAlgorithm.RSA, bobAddress,
+                NetworkType.CORDA_4
+            ),
         )
-        val charlieEntry = "$charlieName-$groupId2" to NetworkMapEntry(HoldingIdentity(charlieName, groupId2), ByteBuffer.wrap(charlieKeyPair.public.encoded), KeyAlgorithm.ECDSA, charlieAddress, NetworkType.CORDA_5)
+        val charlieEntry = "$charlieName-$groupId2" to NetworkMapEntry(
+            HoldingIdentity(charlieName, groupId2),
+            ByteBuffer.wrap(charlieKeyPair.public.encoded),
+            KeyAlgorithm.ECDSA, charlieAddress,
+            NetworkType.CORDA_5
+        )
         clientProcessor!!.onSnapshot(snapshot)
         clientProcessor!!.onNext(Record(NETWORK_MAP_TOPIC, charlieEntry.first, charlieEntry.second), null, snapshot + charlieEntry)
 

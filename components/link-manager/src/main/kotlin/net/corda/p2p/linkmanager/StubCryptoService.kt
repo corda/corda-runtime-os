@@ -12,12 +12,9 @@ import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.v5.base.util.contextLogger
 import java.lang.IllegalStateException
-import java.security.KeyFactory
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
-import java.security.spec.PKCS8EncodedKeySpec
-import java.security.spec.X509EncodedKeySpec
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write

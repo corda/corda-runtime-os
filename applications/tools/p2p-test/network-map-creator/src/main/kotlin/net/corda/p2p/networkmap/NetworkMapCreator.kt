@@ -27,6 +27,7 @@ import java.security.KeyStore
 import java.security.PublicKey
 import java.util.Properties
 
+@Suppress("SpreadOperator")
 @Component(immediate = true)
 class NetworkMapCreator @Activate constructor(
     @Reference(service = Shutdown::class)
@@ -146,7 +147,9 @@ class NetworkMapCreator @Activate constructor(
         return parsedNetworkType!!
     }
 
-    private fun readKey(keyStoreFilePath: String, keyAlgo: String, keyAlias: String, keystorePassword: String): Pair<KeyAlgorithm, PublicKey> {
+    private fun readKey(keyStoreFilePath: String,
+                        keyAlgo: String, keyAlias:
+                        String, keystorePassword: String): Pair<KeyAlgorithm, PublicKey> {
         val keystore = KeyStore.getInstance("JKS")
         keystore.load(FileInputStream(keyStoreFilePath), keystorePassword.toCharArray())
 
