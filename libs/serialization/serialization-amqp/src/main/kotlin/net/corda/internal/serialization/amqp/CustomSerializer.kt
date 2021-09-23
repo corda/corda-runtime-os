@@ -177,41 +177,4 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
             return fromProxy(proxy)
         }
     }
-
-    /**
-     * A custom serializer where the on-wire representation is a string.  For example, a [Currency] might be represented
-     * as a 3 character currency code, and converted to and from that string.  By default, it is assumed that the
-     * [toString] method will generate the string representation and that there is a constructor that takes such a
-     * string as an argument to reconstruct.
-     *
-     * @param clazz The type to be marshalled
-     * @param withInheritance Whether subclasses of the class can also be marshalled.
-     * @param maker A lambda for constructing an instance, that defaults to calling a constructor that expects a string.
-     * @param unmaker A lambda that extracts the string value for an instance, that defaults to the [toString] method.
-     */
-    abstract class ToString<T : Any>(clazz: Class<T>, withInheritance: Boolean = false,
-                                     private val maker: (String) -> T = clazz.getConstructor(String::class.java).let { `constructor` ->
-                                         { string -> `constructor`.newInstance(string) }
-                                     },
-                                     private val unmaker: (T) -> String = { obj -> obj.toString() })
-        : CustomSerializerImp<T>(clazz, withInheritance) {
-
-        override val schemaForDocumentation = Schema(
-                listOf(RestrictedType(AMQPTypeIdentifiers.nameForType(type), "", listOf(AMQPTypeIdentifiers.nameForType(type)),
-                        AMQPTypeIdentifiers.primitiveTypeName(String::class.java),
-                        descriptor, emptyList())))
-
-        override fun writeDescribedObject(obj: T, data: Data, type: Type, output: SerializationOutput,
-                                          context: SerializationContext
-        ) {
-            data.putString(unmaker(obj))
-        }
-
-        override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
-                                input: DeserializationInput, context: SerializationContext
-        ): T {
-            val proxy = obj as String
-            return maker(proxy)
-        }
-    }
 }
