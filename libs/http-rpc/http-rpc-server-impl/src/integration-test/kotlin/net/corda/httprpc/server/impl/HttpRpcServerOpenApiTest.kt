@@ -26,7 +26,7 @@ import kotlin.test.assertTrue
 
 class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     companion object {
-        val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", serverPort), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
+        val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", portAllocator.nextPort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
