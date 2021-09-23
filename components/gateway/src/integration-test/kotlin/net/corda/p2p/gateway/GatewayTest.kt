@@ -139,6 +139,73 @@ class GatewayTest : TestBase() {
     }
 
     @Test
+    @Timeout(30)
+    fun `gateway reconfiguration`() {
+        // TODO: YIFT
+        // WIP: Need to verify what happpens with good configuration -> bad configuration (invalid port, invalid message all together) -> Different good configuration
+        // Good -> Good
+        // Bad->Bad->good
+        // Good->good->good
+        // Good -> bad -> bad -> good
+        alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+        val serverOneAddress = URI.create("http://www.alice.net:10000")
+        val serverTwoAddress = URI.create("http://www.alice.net:10001")
+        val linkInMessage = LinkInMessage(authenticatedP2PMessage(String()))
+        val publisher = ConfigPublisher()
+        Gateway(
+            publisher.readerService,
+            alice.subscriptionFactory,
+            alice.publisherFactory,
+            coordinator,
+        ).use {
+            it.start()
+            publisher.publishConfig(GatewayConfiguration(serverOneAddress.host, serverOneAddress.port, aliceSslConfig))
+            it.startAndWaitForStarted()
+            val serverInfo = DestinationInfo(serverOneAddress, aliceSNI[0], null)
+            HttpClient(serverInfo, bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
+                val responseReceived = CountDownLatch(1)
+                val clientListener = object : HttpEventListener {
+                    override fun onMessage(message: HttpMessage) {
+                        assertSoftly {
+                            println("QQQ 1")
+                            it.assertThat(message.source).isEqualTo(InetSocketAddress(serverOneAddress.host, serverOneAddress.port))
+                            it.assertThat(message.statusCode).isEqualTo(HttpResponseStatus.OK)
+                            it.assertThat(message.payload).isEmpty()
+                        }
+                        responseReceived.countDown()
+                    }
+                }
+                println("QQQ 2")
+                client.addListener(clientListener)
+                client.start()
+                client.write(linkInMessage.toByteBuffer().array())
+                responseReceived.await()
+                println("QQQ before change")
+                publisher.publishConfig(GatewayConfiguration(serverTwoAddress.host, serverTwoAddress.port, aliceSslConfig))
+                // TODO: Wait and create another client...
+                println("QQQ after")
+                (1..25).forEach {
+                    Thread.sleep(1000)
+                    println("QQQ waited $it")
+                }
+                println("QQQ closing?")
+            }
+        }
+        println("QQQ 4")
+
+        // Verify Gateway has successfully forwarded the message to the P2P_IN topic
+        /*val publishedRecords = alice.getRecords(LINK_IN_TOPIC, 1)
+        assertThat(publishedRecords)
+            .hasSize(1).allSatisfy {
+                assertThat(it.value).isInstanceOfSatisfying(LinkInMessage::class.java) {
+                    assertThat(it.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
+                        assertThat(it).isEqualTo(linkInMessage.payload)
+                    }
+                }
+            }*/
+    }
+
+    @Test
     @Timeout(60)
     fun `multiple clients to gateway`() {
         val clientNumber = 4

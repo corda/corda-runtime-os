@@ -28,6 +28,7 @@ import org.bouncycastle.asn1.x500.X500Name
 import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.security.KeyStore
+import java.time.Duration
 import java.util.Base64
 import java.util.UUID
 
@@ -95,44 +96,58 @@ open class TestBase {
     )
 
     private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl()
+    protected inner class ConfigPublisher {
+        private val configurationTopicService = TopicServiceImpl()
+        private val topicName = "config.${UUID.randomUUID().toString().replace("-", "")}"
+
+        val readerService by lazy {
+            ConfigurationReadServiceImpl(
+                lifecycleCoordinatorFactory,
+                ConfigReaderFactoryImpl(InMemSubscriptionFactory(configurationTopicService)),
+            ).also {
+                it.start()
+                val bootstrapper = ConfigFactory.empty()
+                    .withValue(
+                        "config.topic.name",
+                        ConfigValueFactory.fromAnyRef(topicName)
+                    )
+                it.bootstrapConfig(bootstrapper)
+            }
+        }
+
+        fun publishConfig(configuration: GatewayConfiguration) {
+            val publishConfig = ConfigFactory.empty()
+                .withValue("hostAddress", ConfigValueFactory.fromAnyRef(configuration.hostAddress))
+                .withValue("hostPort", ConfigValueFactory.fromAnyRef(configuration.hostPort))
+                .withValue("traceLogging", ConfigValueFactory.fromAnyRef(configuration.traceLogging))
+                .withValue("sslConfig.keyStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.keyStorePassword))
+                .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(saveKeyStore(configuration.sslConfig.keyStore, configuration.sslConfig.keyStorePassword)))
+                .withValue("sslConfig.trustStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.trustStorePassword))
+                .withValue("sslConfig.trustStore", ConfigValueFactory.fromAnyRef(saveKeyStore(configuration.sslConfig.trustStore, configuration.sslConfig.trustStorePassword)))
+                .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
+                .withValue("connectionConfig.connectionIdleTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
+                .withValue("connectionConfig.maxClientConnections", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
+                .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
+                .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
+                .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
+            CordaPublisherFactory(configurationTopicService).createPublisher(PublisherConfig((topicName))).use { publisher ->
+                val configurationPublisher = ConfigWriterImpl(topicName, publisher)
+                configurationPublisher.updateConfiguration(
+                    CordaConfigurationKey(
+                        "myKey",
+                        CordaConfigurationVersion("p2p", 0, 1),
+                        CordaConfigurationVersion("gateway", 0, 1)
+                    ),
+                    publishConfig
+                )
+            }
+        }
+    }
 
     protected fun createConfigurationServiceFor(configuration: GatewayConfiguration): ConfigurationReadService {
-        val configurationTopicService = TopicServiceImpl()
-        val topicName = "config.${UUID.randomUUID().toString().replace("-", "")}"
-        val publishConfig = ConfigFactory.empty()
-            .withValue("hostAddress", ConfigValueFactory.fromAnyRef(configuration.hostAddress))
-            .withValue("hostPort", ConfigValueFactory.fromAnyRef(configuration.hostPort))
-            .withValue("traceLogging", ConfigValueFactory.fromAnyRef(configuration.traceLogging))
-            .withValue("sslConfig.keyStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.keyStorePassword))
-            .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(saveKeyStore(configuration.sslConfig.keyStore, configuration.sslConfig.keyStorePassword)))
-            .withValue("sslConfig.trustStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.trustStorePassword))
-            .withValue("sslConfig.trustStore", ConfigValueFactory.fromAnyRef(saveKeyStore(configuration.sslConfig.trustStore, configuration.sslConfig.trustStorePassword)))
-            .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
-            .withValue("connectionConfig.connectionIdleTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
-            .withValue("connectionConfig.maxClientConnections", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
-            .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
-            .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
-            .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
-
-        val publisher = CordaPublisherFactory(configurationTopicService).createPublisher(PublisherConfig((topicName)))
-        val configurationPublisher = ConfigWriterImpl(topicName, publisher)
-        configurationPublisher.updateConfiguration(
-            CordaConfigurationKey(
-                "myKey",
-                CordaConfigurationVersion("p2p", 0, 1),
-                CordaConfigurationVersion("gateway", 0, 1)
-            ),
-            publishConfig
-        )
-        val bootstrapper = ConfigFactory.empty()
-            .withValue("config.topic.name", ConfigValueFactory.fromAnyRef(topicName))
-        return ConfigurationReadServiceImpl(
-            lifecycleCoordinatorFactory,
-            ConfigReaderFactoryImpl(InMemSubscriptionFactory(configurationTopicService)),
-        ).also {
-            it.start()
-            it.bootstrapConfig(bootstrapper)
-        }
+        val publisher = ConfigPublisher()
+        publisher.publishConfig(configuration)
+        return publisher.readerService
     }
 
     fun createParentCoordinator(): LifecycleWithCoordinator {
@@ -148,7 +163,7 @@ open class TestBase {
 
     fun Lifecycle.startAndWaitForStarted() {
         this.start()
-        eventually {
+        eventually(duration = Duration.ofSeconds(20)) {
             assertThat(this.isRunning).isTrue
         }
     }

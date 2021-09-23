@@ -164,7 +164,7 @@ class HttpServer(
                 }
                 serverChannel.closeFuture().addListener {
                     if (isRunning) {
-                        close()
+                        stop()
                     }
                 }
             }

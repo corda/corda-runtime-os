@@ -37,8 +37,13 @@ class GatewayConfigurationService(
             try {
                 val configuration = toGatewayConfig(config[CONFIG_KEY])
                 logger.info("Got for ${name.instanceId} new Gateway configuration ${configuration.hostAddress}:${configuration.hostPort}")
-                configurationHolder.set(configuration)
-                status = LifecycleStatus.UP
+                val oldConfiguration = configurationHolder.getAndSet(configuration)
+                if (oldConfiguration != configuration) {
+                    // YIFT: Reconfiguration mode, ideally stop and start
+                    logger.info("Reconfigure the gateway...")
+                } else {
+                    status = LifecycleStatus.UP
+                }
             } catch (e: Throwable) {
                 gotError(e)
             }
