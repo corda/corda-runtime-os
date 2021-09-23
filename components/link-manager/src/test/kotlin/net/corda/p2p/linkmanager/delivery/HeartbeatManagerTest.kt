@@ -72,7 +72,7 @@ class HeartbeatManagerTest {
     fun `An added session message will eventually timeout`() {
         val timeoutLatch = CountDownLatch(1)
 
-        val heartbeatManager = HeartbeatManager(publisherFactory, netMap, Duration.ofMillis(2), 2)
+        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, Duration.ofMillis(2), 2)
         heartbeatManager.start()
         heartbeatManager.sessionMessageAdded(SESSION_MESSAGE_ID) { timeoutLatch.countDown() }
         assertTrue(timeoutLatch.await(20, TimeUnit.MILLISECONDS))
@@ -82,7 +82,7 @@ class HeartbeatManagerTest {
     @Test
     fun `An added and acknowledged session message will not timeout`() {
         val timeoutLatch = CountDownLatch(1)
-        val heartbeatManager = HeartbeatManager(publisherFactory, netMap, Duration.ofMillis(2), 2)
+        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, Duration.ofMillis(2), 2)
         heartbeatManager.start()
         heartbeatManager.sessionMessageAdded(SESSION_MESSAGE_ID) { timeoutLatch.countDown() }
         heartbeatManager.sessionMessageAcknowledged(SESSION_MESSAGE_ID)
@@ -104,7 +104,7 @@ class HeartbeatManagerTest {
         )
         subscription.start()
 
-        val heartbeatManager = HeartbeatManager(publisherFactory, netMap, heartbeatPeriod, timeOutPeriods)
+        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, heartbeatPeriod, timeOutPeriods)
         heartbeatManager.start()
         heartbeatManager.messageSent(
             MESSAGE_ID,
@@ -134,7 +134,7 @@ class HeartbeatManagerTest {
         val timeoutLatch = CountDownLatch(1)
         val (inboundSession, outboundSession) = createSessionPair()
 
-        val heartbeatManager = HeartbeatManager(publisherFactory, netMap, heartbeatPeriod, timeOutPeriods)
+        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, heartbeatPeriod, timeOutPeriods)
         heartbeatManager.start()
         heartbeatManager.messageSent(
             MESSAGE_ID,
@@ -173,7 +173,7 @@ class HeartbeatManagerTest {
         val timeoutLatch = CountDownLatch(1)
         val (_, outboundSession) = createSessionPair()
 
-        val heartbeatManager = HeartbeatManager(publisherFactory, netMap, heartbeatPeriod, timeOutPeriods)
+        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, heartbeatPeriod, timeOutPeriods)
         heartbeatManager.start()
         heartbeatManager.messageSent(
             MESSAGE_ID,
@@ -210,7 +210,7 @@ class HeartbeatManagerTest {
         val timeoutLatch = CountDownLatch(1)
         val (_, outboundSession) = createSessionPair()
 
-        val heartbeatManager = HeartbeatManager(mockPublisherFactory, netMap, heartbeatPeriod, timeOutPeriods)
+        val heartbeatManager = HeartbeatManagerImpl(mockPublisherFactory, netMap, heartbeatPeriod, timeOutPeriods)
         heartbeatManager.start()
         heartbeatManager.messageSent(
             MESSAGE_ID,

@@ -28,6 +28,7 @@ import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.p2p.linkmanager.delivery.HeartbeatManager
+import net.corda.p2p.linkmanager.delivery.HeartbeatManagerImpl
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
@@ -85,7 +86,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private val inboundAssignmentListener = InboundAssignmentListener()
 
 
-    private val heartbeatManager = HeartbeatManager(
+    private val heartbeatManager = HeartbeatManagerImpl(
         publisherFactory,
         linkManagerNetworkMap,
         Duration.ofSeconds(config.heartbeatMessagePeriodSecs),
@@ -254,9 +255,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             messageAndKey: AuthenticatedMessageAndKey
         ): List<Record<String, *>> {
             val records = mutableListOf<Record<String, *>>()
-            val message = linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, state.session, networkMap) ?: return emptyList()
             val key = generateKey()
-            records.add(Record(Schema.LINK_OUT_TOPIC, key, message))
             heartbeatManager.messageSent(
                 messageAndKey.message.header.messageId,
                 messageAndKey.message.header.source,
@@ -264,6 +263,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 state.session,
                 sessionManager::destroyOutboundSession
             )
+            linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, state.session, networkMap)?. let {
+                records.add(Record(Schema.LINK_OUT_TOPIC, key, it))
+            }
             return records
         }
 
