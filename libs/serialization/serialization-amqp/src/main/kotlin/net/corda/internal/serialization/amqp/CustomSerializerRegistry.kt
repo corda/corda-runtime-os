@@ -8,6 +8,7 @@ import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import java.io.NotSerializableException
 import java.lang.reflect.Type
@@ -41,7 +42,9 @@ interface CustomSerializerRegistry {
      * that expects to find getters and a constructor with a parameter for each property.
      */
     fun register(customSerializer: CustomSerializer<out Any>)
+    fun register(customSerializer: SerializationCustomSerializer<*,*>)
     fun registerExternal(customSerializer: CorDappCustomSerializer)
+    fun registerExternal(customSerializer: SerializationCustomSerializer<*,*>)
 
     /**
      * Try to find a custom serializer for the actual class, and declared type, of a value.
@@ -122,6 +125,10 @@ class CachingCustomSerializerRegistry(
 
     }
 
+    override fun register(customSerializer: SerializationCustomSerializer<*, *>) {
+        TODO("Not yet implemented")
+    }
+
     override fun registerExternal(customSerializer: CorDappCustomSerializer) {
         logger.trace { "action=\"Registering external serializer\", class=\"${customSerializer.type}\"" }
 
@@ -134,6 +141,10 @@ class CachingCustomSerializerRegistry(
             customSerializers += customSerializer
             customSerializer
         }
+    }
+
+    override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>) {
+        TODO("Not yet implemented")
     }
 
     override fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? {

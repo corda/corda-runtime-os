@@ -10,6 +10,7 @@ import net.corda.internal.serialization.amqp.CustomSerializerRegistry
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.WhitelistBasedTypeModelConfiguration
 import net.corda.v5.base.annotations.SerializableCalculatedProperty
+import net.corda.v5.serialization.SerializationCustomSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -28,7 +29,9 @@ class LocalTypeModelTests {
     private val emptyCustomSerializerRegistry = object : CustomSerializerRegistry {
         override val customSerializerNames: List<String> = emptyList()
         override fun register(customSerializer: CustomSerializer<out Any>) {}
+        override fun register(customSerializer: SerializationCustomSerializer<*, *>) {}
         override fun registerExternal(customSerializer: CorDappCustomSerializer) {}
+        override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>) {}
         override fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? = null
     }
     private val modelWithoutOpacity =
