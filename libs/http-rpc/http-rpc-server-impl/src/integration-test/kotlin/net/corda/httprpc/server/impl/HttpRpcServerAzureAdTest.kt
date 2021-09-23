@@ -10,7 +10,7 @@ import net.corda.httprpc.server.config.models.HttpRpcContext
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.config.models.SsoSettings
 import net.corda.httprpc.server.impl.HttpRpcServerTestBase.Companion.portAllocator
-import net.corda.httprpc.server.impl.apigen.test.TestHealthCheckAPIImpl
+import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.utils.AzureAdMock
 import net.corda.httprpc.server.impl.utils.TestHttpClient
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl

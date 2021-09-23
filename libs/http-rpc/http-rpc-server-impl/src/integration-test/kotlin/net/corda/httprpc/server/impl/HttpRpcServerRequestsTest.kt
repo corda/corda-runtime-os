@@ -7,10 +7,10 @@ import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.toExample
-import net.corda.httprpc.server.impl.apigen.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.rpcops.CustomNonSerializableString
-import net.corda.httprpc.server.impl.rpcops.CustomSerializationAPIImpl
+import net.corda.httprpc.server.impl.rpcops.impl.CustomSerializationAPIImpl
 import net.corda.httprpc.server.impl.rpcops.CustomUnsafeString
+import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.v5.httprpc.tools.HttpVerb

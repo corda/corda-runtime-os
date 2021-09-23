@@ -32,6 +32,7 @@ dependencies {
     implementation "org.eclipse.jetty.http2:http2-server:$jettyVersion"
     implementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation project(":libs:http-rpc:http-rpc-common")
 
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
 

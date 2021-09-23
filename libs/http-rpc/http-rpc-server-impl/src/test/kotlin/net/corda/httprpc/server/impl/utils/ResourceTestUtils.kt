@@ -1,7 +1,6 @@
 package net.corda.httprpc.server.impl.utils
 
-import net.corda.httprpc.server.impl.apigen.test.TestHealthCheckAPI
-import net.corda.httprpc.server.impl.apigen.test.TestHealthCheckAPIImpl
+import net.corda.httprpc.server.impl.rpcops.TestHealthCheckAPI
 import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
 import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRpcOps
 import net.corda.httprpc.server.impl.apigen.models.Endpoint
@@ -12,6 +11,7 @@ import net.corda.httprpc.server.impl.apigen.models.InvocationMethod
 import net.corda.httprpc.server.impl.apigen.models.ParameterType
 import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.httprpc.server.impl.apigen.models.ResponseBody
+import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import kotlin.reflect.jvm.javaMethod
 
 fun getHealthCheckApiTestResource(): Resource {

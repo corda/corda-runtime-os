@@ -4,9 +4,9 @@ import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.httprpc.server.config.models.HttpRpcSettings
-import net.corda.httprpc.server.impl.apigen.test.CalendarRPCOpsImpl
-import net.corda.httprpc.server.impl.apigen.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.internal.OptionalDependency
+import net.corda.httprpc.server.impl.rpcops.impl.CalendarRPCOpsImpl
+import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.httprpc.server.impl.utils.compact

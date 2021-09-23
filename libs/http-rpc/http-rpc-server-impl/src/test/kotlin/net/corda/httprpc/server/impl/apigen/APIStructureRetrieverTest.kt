@@ -1,18 +1,18 @@
 package net.corda.httprpc.server.impl.apigen
 
-import net.corda.httprpc.server.impl.apigen.test.CalendarRPCOpsImpl
-import net.corda.httprpc.server.impl.apigen.test.TestDuplicateProtocolVersionAPIImpl
-import net.corda.httprpc.server.impl.apigen.test.TestHealthCheckAPIImpl
+import net.corda.httprpc.durablestream.DurableStreamContext
+import net.corda.httprpc.server.impl.rpcops.impl.TestDuplicateProtocolVersionAPIImpl
 import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.GenericParameterizedType
 import net.corda.httprpc.server.impl.apigen.models.ParameterType
 import net.corda.httprpc.server.impl.apigen.processing.APIStructureRetriever
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
-import net.corda.httprpc.server.impl.apigen.test.CalendarRPCOps
-import net.corda.httprpc.server.impl.apigen.test.TestRPCAPIAnnotatedImpl
-import net.corda.httprpc.server.impl.apigen.test.TestRPCAPIImpl
-import net.corda.httprpc.server.stream.DurableStreamContext
+import net.corda.httprpc.server.impl.rpcops.CalendarRPCOps
+import net.corda.httprpc.server.impl.rpcops.impl.CalendarRPCOpsImpl
+import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
+import net.corda.httprpc.server.impl.rpcops.impl.TestRPCAPIAnnotatedImpl
+import net.corda.httprpc.server.impl.rpcops.impl.TestRPCAPIImpl
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull

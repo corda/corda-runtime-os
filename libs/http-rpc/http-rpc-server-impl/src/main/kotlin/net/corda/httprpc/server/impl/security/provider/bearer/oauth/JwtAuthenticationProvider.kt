@@ -3,7 +3,7 @@ package net.corda.httprpc.server.impl.security.provider.bearer.oauth
 import com.nimbusds.jose.proc.BadJOSEException
 import com.nimbusds.jwt.JWT
 import com.nimbusds.jwt.JWTParser
-import net.corda.httprpc.security.read.AuthorizingSubject
+import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.read.RPCSecurityManager
 import net.corda.httprpc.server.impl.security.provider.bearer.BearerTokenAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials

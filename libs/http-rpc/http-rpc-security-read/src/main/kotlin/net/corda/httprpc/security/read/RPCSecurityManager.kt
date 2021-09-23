@@ -1,5 +1,7 @@
 package net.corda.httprpc.security.read
 
+import net.corda.httprpc.security.AuthServiceId
+import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.lifecycle.Lifecycle
 import javax.security.auth.login.FailedLoginException
 
@@ -26,10 +28,6 @@ interface RPCSecurityManager : Lifecycle {
     fun buildSubject(principal: String): AuthorizingSubject
 }
 
-/**
- * Authentication / Authorisation Service ID.
- */
-data class AuthServiceId(val value: String)
 
 /**
  * Non-throwing version of authenticate, returning null instead of throwing in case of authentication failure
