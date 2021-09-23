@@ -182,7 +182,7 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(ThrowableSerializer(this))
         register(StackTraceElementSerializer(factory))
         register(BigDecimalSerializer, false)
-        register(BigIntegerSerializer)
+        register(BigIntegerSerializer, false)
         register(CurrencySerializer, false)
         register(OpaqueBytesSubSequenceSerializer(this))
         register(InstantSerializer(this))
