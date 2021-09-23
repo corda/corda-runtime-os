@@ -53,6 +53,7 @@ import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializationWhitelist
 import net.corda.v5.serialization.SerializedBytes
+import java.security.PublicKey
 import java.util.Collections
 
 val AMQP_ENABLED get() = effectiveSerializationEnv.p2pContext.preferredSerializationVersion == amqpMagic
@@ -120,7 +121,7 @@ abstract class AbstractAMQPSerializationScheme private constructor(
     }
 
     private fun registerCustomSerializers(context: SerializationContext, factory: SerializerFactory) {
-        factory.register(publicKeySerializer)
+        factory.register(publicKeySerializer, true)
         registerCustomSerializers(factory)
 
         internalCustomSerializerFactories.forEach{
@@ -150,7 +151,7 @@ abstract class AbstractAMQPSerializationScheme private constructor(
     }
 
     // Not used as a simple direct import to facilitate testing
-    open val publicKeySerializer: CustomSerializer<*> = PublicKeySerializer(cipherSchemeMetadata)
+    open val publicKeySerializer: SerializationCustomSerializer<PublicKey, ByteArray> = PublicKeySerializer(cipherSchemeMetadata)
 
     fun getSerializerFactory(context: SerializationContext): SerializerFactory {
         val sandboxGroup = context.sandboxGroup as? SandboxGroup
