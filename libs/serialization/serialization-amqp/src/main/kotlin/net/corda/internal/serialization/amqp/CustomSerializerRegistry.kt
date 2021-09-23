@@ -102,12 +102,15 @@ class CachingCustomSerializerRegistry(
     override fun register(customSerializer: CustomSerializer<out Any>) {
         logger.trace { "action=\"Registering custom serializer\", class=\"${customSerializer.type}\"" }
 
+        storeCustomSerializer(customSerializer)
+    }
+
+    private fun storeCustomSerializer(customSerializer: AMQPSerializer<Any>) {
+        require(customSerializer is SerializerFor) { "customSerializer must implement SerializerFor" }
         checkActiveCache(customSerializer.type)
 
         customSerializers += customSerializer
-        descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) {
-            customSerializer
-        }
+        descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) { customSerializer }
     }
 
     override fun register(customSerializer: SerializationCustomSerializer<*, *>) {
@@ -117,12 +120,7 @@ class CachingCustomSerializerRegistry(
     override fun registerExternal(customSerializer: CorDappCustomSerializer) {
         logger.trace { "action=\"Registering external serializer\", class=\"${customSerializer.type}\"" }
 
-        checkActiveCache(customSerializer.type)
-
-        customSerializers += customSerializer
-        descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) {
-            customSerializer
-        }
+        storeCustomSerializer(customSerializer)
     }
 
     private fun checkActiveCache(type: Type) {
