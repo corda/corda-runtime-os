@@ -135,10 +135,10 @@ class CachingCustomSerializerRegistry(
 
     private fun checkActiveCache(type: Type) {
         if (customSerializersCache.isNotEmpty()) {
-            logger.warn(
-                "Attempting to register custom serializer $type in an active cache. " +
-                        "All serializers must be registered before the cache comes into use."
-            )
+            val message = "Attempting to register custom serializer $type in an active cache. " +
+                    "All serializers must be registered before the cache comes into use."
+            logger.warn(message)
+            throw AMQPNotSerializableException(type, message)
         }
     }
 
