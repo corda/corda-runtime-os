@@ -9,6 +9,7 @@ import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.amqpMagic
+import net.corda.internal.serialization.amqp.custom.StackTraceElementSerializer
 import net.corda.internal.serialization.custom.PrivateKeySerializer
 import net.corda.internal.serialization.custom.PublicKeySerializer
 import net.corda.sandbox.SandboxGroup
@@ -151,6 +152,7 @@ abstract class AbstractAMQPSerializationScheme private constructor(
 fun registerCustomSerializers(factory: SerializerFactory) {
     with(factory) {
         register(net.corda.internal.serialization.amqp.custom.ThrowableSerializer(this))
+        register(StackTraceElementSerializer(factory))
         register(net.corda.internal.serialization.amqp.custom.BigDecimalSerializer)
         register(net.corda.internal.serialization.amqp.custom.BigIntegerSerializer)
         register(net.corda.internal.serialization.amqp.custom.CurrencySerializer)

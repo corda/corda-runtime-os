@@ -16,8 +16,6 @@ class EnumSetSerializer(
         EnumSetProxy::class.java,
         factory
 ) {
-    override val additionalSerializers: Iterable<CustomSerializer<out Any>> = listOf(ClassSerializer(factory))
-
     override fun toProxy(obj: EnumSet<*>): EnumSetProxy = EnumSetProxy(elementType(obj), obj.toList())
 
     private fun elementType(set: EnumSet<*>): Class<*> {

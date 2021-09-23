@@ -16,11 +16,6 @@ class LocalDateTimeSerializer(
         LocalDateTimeProxy::class.java,
         factory
 ) {
-    override val additionalSerializers: Iterable<CustomSerializer<out Any>> = listOf(
-            LocalDateSerializer(factory),
-            LocalTimeSerializer(factory)
-    )
-
     override fun toProxy(obj: LocalDateTime): LocalDateTimeProxy = LocalDateTimeProxy(obj.toLocalDate(), obj.toLocalTime())
 
     override fun fromProxy(proxy: LocalDateTimeProxy): LocalDateTime = LocalDateTime.of(proxy.date, proxy.time)

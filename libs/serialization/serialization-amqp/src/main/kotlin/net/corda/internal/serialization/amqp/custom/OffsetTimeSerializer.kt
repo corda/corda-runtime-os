@@ -16,11 +16,6 @@ class OffsetTimeSerializer(
         OffsetTimeProxy::class.java,
         factory
 ) {
-    override val additionalSerializers: Iterable<CustomSerializer<out Any>> = listOf(
-            LocalTimeSerializer(factory),
-            ZoneIdSerializer(factory)
-    )
-
     override fun toProxy(obj: OffsetTime): OffsetTimeProxy = OffsetTimeProxy(obj.toLocalTime(), obj.offset)
 
     override fun fromProxy(proxy: OffsetTimeProxy): OffsetTime = OffsetTime.of(proxy.time, proxy.offset)

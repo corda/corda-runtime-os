@@ -109,10 +109,6 @@ class CachingCustomSerializerRegistry(
 
         descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) {
             customSerializers += customSerializer
-            for (additional in customSerializer.additionalSerializers) {
-                register(additional)
-            }
-
             for (alias in customSerializer.deserializationAliases) {
                 val aliasDescriptor = typeDescriptorFor(alias)
                 if (aliasDescriptor != customSerializer.typeDescriptor) {

@@ -23,11 +23,6 @@ interface SerializerFor {
  * cannot be automatically serialized.
  */
 abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
-    /**
-     * This is a collection of custom serializers that this custom serializer depends on.  e.g. for proxy objects
-     * that refer to other custom types etc.
-     */
-    open val additionalSerializers: Iterable<CustomSerializer<out Any>> = emptyList()
 
     /**
      * This custom serializer is also allowed to deserialize these classes. This allows us
@@ -160,9 +155,6 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
                             null,
                             emptyList(),
                             descriptor, proxySerializer.fields))
-            for (additional in additionalSerializers) {
-                typeNotations.addAll(additional.schemaForDocumentation.types)
-            }
             Schema(typeNotations.toList())
         }
 

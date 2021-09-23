@@ -17,7 +17,6 @@ class OpaqueBytesSubSequenceSerializer(
                 OpaqueBytes::class.java,
                 factory
 ) {
-    override val additionalSerializers: Iterable<CustomSerializer<out Any>> = emptyList()
     override fun toProxy(obj: OpaqueBytesSubSequence): OpaqueBytes = OpaqueBytes(obj.copyBytes())
     override fun fromProxy(proxy: OpaqueBytes): OpaqueBytesSubSequence = OpaqueBytesSubSequence(proxy.bytes, proxy.offset, proxy.size)
 }

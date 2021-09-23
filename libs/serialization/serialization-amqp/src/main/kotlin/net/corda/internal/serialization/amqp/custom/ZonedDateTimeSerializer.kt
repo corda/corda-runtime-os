@@ -17,12 +17,6 @@ class ZonedDateTimeSerializer(
                 ZonedDateTimeProxy::class.java,
                 factory
 ) {
-
-    override val additionalSerializers: Iterable<CustomSerializer<out Any>> = listOf(
-            LocalDateTimeSerializer(factory),
-            ZoneIdSerializer(factory)
-    )
-
     override fun toProxy(obj: ZonedDateTime): ZonedDateTimeProxy = ZonedDateTimeProxy(obj.toLocalDateTime(), obj.offset, obj.zone)
 
     override fun fromProxy(proxy: ZonedDateTimeProxy): ZonedDateTime = ZonedDateTime.ofInstant(

@@ -28,8 +28,6 @@ class ThrowableSerializer(
 
     override val revealSubclassesInSchema: Boolean = true
 
-    override val additionalSerializers: Iterable<CustomSerializer<out Any>> = listOf(StackTraceElementSerializer(factory))
-
     private val LocalTypeInformation.constructor: LocalConstructorInformation get() = when (this) {
         is LocalTypeInformation.NonComposable ->
             constructor
