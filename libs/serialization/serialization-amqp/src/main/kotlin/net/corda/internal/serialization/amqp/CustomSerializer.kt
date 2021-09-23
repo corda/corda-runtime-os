@@ -24,12 +24,6 @@ interface SerializerFor {
  */
 abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
 
-    /**
-     * This custom serializer is also allowed to deserialize these classes. This allows us
-     * to deserialize objects into completely different types, e.g. `A` -> `sandbox.A`.
-     */
-    open val deserializationAliases: Set<TypeIdentifier> = emptySet()
-
     protected abstract val descriptor: Descriptor
     /**
      * This exists purely for documentation and cross-platform purposes. It is not used by our serialization / deserialization
