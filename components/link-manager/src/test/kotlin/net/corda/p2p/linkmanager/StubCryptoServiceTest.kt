@@ -15,7 +15,7 @@ import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
 
-class KafkaBackedCryptoServiceTest {
+class StubCryptoServiceTest {
 
     private var clientProcessor: CompactedProcessor<String, KeyPairEntry>? = null
 
@@ -27,7 +27,7 @@ class KafkaBackedCryptoServiceTest {
         }
     }
 
-    private val cryptoService = KafkaBackedCryptoService(subscriptionFactory).apply {
+    private val cryptoService = StubCryptoService(subscriptionFactory).apply {
         start()
     }
 
