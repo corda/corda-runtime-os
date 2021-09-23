@@ -203,7 +203,7 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(X509CertificateSerializer)
         register(X509CRLSerializer)
         register(CertPathSerializer(this))
-        register(StringBufferSerializer)
+        register(StringBufferSerializer, false)
         register(InputStreamSerializer)
         register(BitSetSerializer(this))
         register(EnumSetSerializer(this))
