@@ -1,7 +1,6 @@
 package net.corda.crypto.impl.dev
 
 import net.corda.crypto.CryptoCategories
-import net.corda.crypto.SignatureVerificationServiceInternal
 import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCache
@@ -15,6 +14,7 @@ import net.corda.v5.cipher.suite.schemes.NaSignatureSpec
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
+import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.i2p.crypto.eddsa.EdDSAKey
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable
@@ -52,7 +52,7 @@ class DevCryptoServiceTests {
         private lateinit var memberId: String
         private lateinit var cryptoMocks: CryptoMocks
         private lateinit var devCryptoServiceProvider: DevCryptoServiceProvider
-        private lateinit var signatureVerifier: SignatureVerificationServiceInternal
+        private lateinit var signatureVerifier: SignatureVerificationService
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var cryptoServiceCache: DefaultCryptoKeyCache
         private lateinit var signingKeyCache: SigningKeyCache
@@ -64,8 +64,7 @@ class DevCryptoServiceTests {
             memberId = UUID.randomUUID().toString()
             cryptoMocks = CryptoMocks()
             schemeMetadata = cryptoMocks.schemeMetadata
-            signatureVerifier =
-                cryptoMocks.factories.cryptoClients.getSignatureVerificationService() as SignatureVerificationServiceInternal
+            signatureVerifier = cryptoMocks.factories.cryptoClients.getSignatureVerificationService()
             devCryptoServiceProvider = DevCryptoServiceProvider()
             cryptoService = devCryptoServiceProvider.getInstance(
                 CryptoServiceContext(

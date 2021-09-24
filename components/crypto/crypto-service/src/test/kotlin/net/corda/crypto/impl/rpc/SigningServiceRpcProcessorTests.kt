@@ -2,7 +2,6 @@ package net.corda.crypto.impl.rpc
 
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.CryptoCategories
-import net.corda.crypto.SignatureVerificationServiceInternal
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.data.WireKeyValuePair
 import net.corda.data.crypto.wire.WireNoContentValue
@@ -25,8 +24,9 @@ import net.corda.data.crypto.wire.signing.WireSigningSignWithAliasSpec
 import net.corda.data.crypto.wire.signing.WireSigningSignWithSpec
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.sha256Bytes
@@ -55,7 +55,7 @@ class SigningServiceRpcProcessorTests {
         private lateinit var memberId: String
         private lateinit var cryptoMocks: CryptoMocks
         private lateinit var schemeMetadata: CipherSchemeMetadata
-        private lateinit var verifier: SignatureVerificationServiceInternal
+        private lateinit var verifier: SignatureVerificationService
         private lateinit var processor: SigningServiceRpcProcessor
 
         @JvmStatic
@@ -65,7 +65,6 @@ class SigningServiceRpcProcessorTests {
             cryptoMocks = CryptoMocks()
             schemeMetadata = cryptoMocks.schemeMetadata
             verifier = cryptoMocks.factories.cryptoClients.getSignatureVerificationService()
-                as SignatureVerificationServiceInternal
             processor = SigningServiceRpcProcessor(
                 cryptoMocks.factories.cryptoServices
             )

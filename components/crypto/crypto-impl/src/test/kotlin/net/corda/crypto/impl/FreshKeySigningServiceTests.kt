@@ -5,16 +5,16 @@ import net.corda.crypto.impl.persistence.SigningKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCacheImpl
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.FreshKeySigningService
-import net.corda.crypto.SignatureVerificationServiceInternal
 import net.corda.crypto.SigningService
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.sha256Bytes
 import org.hamcrest.CoreMatchers.`is`
@@ -41,7 +41,7 @@ class FreshKeySigningServiceTests {
         private const val wrappingKeyAlias2 = "test-wrapping-key-alias-2"
         private lateinit var memberId: String
         private lateinit var cryptoMocks: CryptoMocks
-        private lateinit var signatureVerifier: SignatureVerificationServiceInternal
+        private lateinit var signatureVerifier: SignatureVerificationService
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var cryptoServiceCache: DefaultCryptoKeyCacheImpl
         private lateinit var cryptoService: CryptoService
@@ -53,9 +53,7 @@ class FreshKeySigningServiceTests {
             memberId = UUID.randomUUID().toString()
             cryptoMocks = CryptoMocks()
             schemeMetadata = cryptoMocks.schemeMetadata
-            signatureVerifier =
-                cryptoMocks.factories.cryptoClients
-                    .getSignatureVerificationService() as SignatureVerificationServiceInternal
+            signatureVerifier = cryptoMocks.factories.cryptoClients.getSignatureVerificationService()
             cryptoServiceCache = DefaultCryptoKeyCacheImpl(
                 memberId = memberId,
                 passphrase = "PASSPHRASE",

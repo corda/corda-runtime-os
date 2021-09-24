@@ -1,7 +1,6 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
-import net.corda.crypto.SignatureVerificationServiceInternal
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.base.types.OpaqueBytes
@@ -17,10 +16,11 @@ import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SM2_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
+import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.i2p.crypto.eddsa.EdDSAKey
@@ -81,7 +81,7 @@ class DefaultCryptoServiceTests {
 
         private lateinit var memberId: String
         private lateinit var cryptoMocks: CryptoMocks
-        private lateinit var signatureVerifier: SignatureVerificationServiceInternal
+        private lateinit var signatureVerifier: SignatureVerificationService
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var cryptoServiceCache: DefaultCryptoKeyCache
         private lateinit var cryptoService: DefaultCryptoService
@@ -92,8 +92,7 @@ class DefaultCryptoServiceTests {
             memberId = UUID.randomUUID().toString()
             cryptoMocks = CryptoMocks()
             schemeMetadata = cryptoMocks.schemeMetadata
-            signatureVerifier =
-                cryptoMocks.factories.cryptoClients.getSignatureVerificationService() as SignatureVerificationServiceInternal
+            signatureVerifier = cryptoMocks.factories.cryptoClients.getSignatureVerificationService()
             cryptoServiceCache = DefaultCryptoKeyCacheImpl(
                 memberId = memberId,
                 passphrase = "PASSPHRASE",

@@ -8,11 +8,9 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSchemeMetadataProvider
 import net.corda.v5.cipher.suite.CipherSuiteFactory
-import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.DigestServiceProvider
 import net.corda.v5.cipher.suite.SignatureVerificationServiceProvider
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
-import net.corda.v5.cipher.suite.config.CryptoServiceConfigInfo
 import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
@@ -84,12 +82,6 @@ open class CipherSuiteFactoryImpl @Activate constructor(
                 throw CryptoServiceLibraryException("Failed to create implementation of ${CipherSchemeMetadata::class.java.name}", e)
             }
         }
-    }
-
-    @Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught", "MaxLineLength")
-    override fun getCryptoService(info: CryptoServiceConfigInfo): CryptoService = lock.withLock  {
-        // TODO2 - delete from the CipherSuiteFactory interface
-        throw NotImplementedError()
     }
 
     @Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught", "MaxLineLength")

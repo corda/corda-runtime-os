@@ -13,13 +13,13 @@ import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
 import java.security.PublicKey
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeoutException
 
 class CryptoServiceCircuitBreaker(private val cryptoService: CryptoService, private val timeout: Duration) : CryptoService, AutoCloseable {
     companion object {
         private val logger = contextLogger()
-        private val executor = Executors.newCachedThreadPool()
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")
@@ -27,7 +27,7 @@ class CryptoServiceCircuitBreaker(private val cryptoService: CryptoService, priv
         val num = UUID.randomUUID()
         try {
             logger.info("Submitting crypto task for execution (num={})...", num)
-            val result = executor.submit(func).getOrThrow(timeout)
+            val result = CompletableFuture.supplyAsync(func).getOrThrow()
             logger.debug("Crypto task completed on time (num={})...", num)
             return result
         } catch (e: TimeoutException) {
@@ -43,7 +43,7 @@ class CryptoServiceCircuitBreaker(private val cryptoService: CryptoService, priv
     }
 
     override fun close() {
-        executor.shutdown()
+        (cryptoService as? AutoCloseable)?.close()
     }
 
     @Suppress("TooGenericExceptionCaught")

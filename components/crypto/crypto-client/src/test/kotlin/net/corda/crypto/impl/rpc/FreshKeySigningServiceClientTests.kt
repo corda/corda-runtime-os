@@ -17,7 +17,7 @@ import net.corda.data.crypto.wire.freshkeys.WireFreshKeysSign
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysSignWithSpec
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException

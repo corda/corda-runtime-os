@@ -1,7 +1,6 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.CryptoCategories
-import net.corda.crypto.SignatureVerificationServiceInternal
 import net.corda.crypto.SigningService
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -10,8 +9,9 @@ import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SignatureVerificationService
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.params.ParameterizedTest
@@ -77,7 +77,7 @@ class SignatureVerificationServiceTests {
 
         private fun getServices(
             defaultSignatureSchemeCodeName: String
-        ): Pair<SigningService, SignatureVerificationServiceInternal> {
+        ): Pair<SigningService, SignatureVerificationService> {
             val factories = cryptoMocks.factories(
                 defaultSignatureSchemeCodeName,
                 defaultSignatureSchemeCodeName
@@ -89,7 +89,7 @@ class SignatureVerificationServiceTests {
                 ),
                 signatureVerificationServiceProvider.getInstance(
                     cryptoMocks.factories.cipherSuite
-                ) as SignatureVerificationServiceInternal
+                )
             )
         }
     }
