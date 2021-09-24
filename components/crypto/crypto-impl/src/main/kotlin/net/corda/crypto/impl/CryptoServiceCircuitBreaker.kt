@@ -8,13 +8,11 @@ import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceException
-import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
 import java.security.PublicKey
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeoutException
 
 class CryptoServiceCircuitBreaker(private val cryptoService: CryptoService, private val timeout: Duration) : CryptoService, AutoCloseable {
@@ -27,18 +25,15 @@ class CryptoServiceCircuitBreaker(private val cryptoService: CryptoService, priv
         val num = UUID.randomUUID()
         try {
             logger.info("Submitting crypto task for execution (num={})...", num)
-            val result = CompletableFuture.supplyAsync(func).getOrThrow()
+            val result = CompletableFuture.supplyAsync(func).getOrThrow(timeout)
             logger.debug("Crypto task completed on time (num={})...", num)
             return result
         } catch (e: TimeoutException) {
             logger.error("Crypto task timeout (num=$num)", e)
             throw CryptoServiceTimeoutException(timeout, e)
-        } catch (e: CryptoServiceLibraryException) {
-            logger.error("Crypto task failed (num=$num)", e)
-            throw e
         } catch (e: Throwable) {
             logger.error("Crypto task failed (num=$num)", e)
-            throw CryptoServiceException("CryptoService operation failed", e)
+            throw e
         }
     }
 

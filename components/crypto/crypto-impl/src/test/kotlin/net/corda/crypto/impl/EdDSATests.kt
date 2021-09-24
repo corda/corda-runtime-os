@@ -174,7 +174,9 @@ class EdDSATests {
                 "5a5ca2df6668346291c2043d4eb3e90d"
         )
 
-        val privateKey = EdDSAPrivateKey(EdDSAPrivateKeySpec(testVectorEd25519ctx.privateKeyHex.hexToByteArray(), edParams))
+        val privateKey = EdDSAPrivateKey(
+            EdDSAPrivateKeySpec(testVectorEd25519ctx.privateKeyHex.hexToByteArray(), edParams)
+        )
         assertNotEquals(
             testVectorEd25519ctx.signatureOutputHex,
             doSign(

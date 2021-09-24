@@ -69,6 +69,7 @@ class KeyEncodingServiceTests {
     @ParameterizedTest
     @MethodSource("signatureSchemes")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should convert public key to PEM and backand and still to able to use for verification for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -89,6 +90,7 @@ class KeyEncodingServiceTests {
     @ParameterizedTest
     @MethodSource("signatureSchemes")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should convert public key to byte array and back and and still to able to use for verification for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {

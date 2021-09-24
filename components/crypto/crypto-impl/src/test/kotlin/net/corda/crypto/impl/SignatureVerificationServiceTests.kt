@@ -199,6 +199,7 @@ class SignatureVerificationServiceTests {
     @ParameterizedTest
     @MethodSource("signatureSchemesWithPrecalculatedDigest")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should fail verify for empty clear data using overload with signature spec for all supported signature schemes`(
         signatureScheme: SignatureScheme,
         signatureSpec: SignatureSpec
@@ -298,6 +299,7 @@ class SignatureVerificationServiceTests {
     @ParameterizedTest
     @MethodSource("signatureSchemesWithPrecalculatedDigest")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should fail validate empty signature using overload with signature spec for all supported signature schemes`(
         signatureScheme: SignatureScheme,
         signatureSpec: SignatureSpec
@@ -313,6 +315,7 @@ class SignatureVerificationServiceTests {
     @ParameterizedTest
     @MethodSource("signatureSchemesWithPrecalculatedDigest")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should fail validate for empty clear data using overload with signature spec for all supported signature schemes`(
         signatureScheme: SignatureScheme,
         signatureSpec: SignatureSpec

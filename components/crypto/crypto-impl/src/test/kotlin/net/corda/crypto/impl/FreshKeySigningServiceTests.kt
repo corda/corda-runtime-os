@@ -130,6 +130,7 @@ class FreshKeySigningServiceTests {
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should still be able to use fresh key without external id generated and with other master wrapping key for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -191,6 +192,7 @@ class FreshKeySigningServiceTests {
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should still be able to use fresh key with external id generated and with other master wrapping key for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -232,6 +234,7 @@ class FreshKeySigningServiceTests {
     @ParameterizedTest
     @MethodSource("signatureSchemesWithPrecalculatedDigest")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should generate keys and then sign using overload with explicit signature spec and verify for all supported schemes`(
         signatureScheme: SignatureScheme,
         signatureSpec: SignatureSpec
@@ -248,6 +251,7 @@ class FreshKeySigningServiceTests {
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should use first known key from CompositeKey when signing using public key overload for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {

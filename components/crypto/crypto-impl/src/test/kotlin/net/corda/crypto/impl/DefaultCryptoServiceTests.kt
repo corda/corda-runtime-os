@@ -468,6 +468,7 @@ class DefaultCryptoServiceTests {
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should generate and then sign and verify using wrapped key pair with different wrapping keys for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -519,6 +520,7 @@ class DefaultCryptoServiceTests {
     @ParameterizedTest
     @MethodSource("supportedWrappingSchemes")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should generate and then sign and verify using wrapped key pair several times with same data for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {

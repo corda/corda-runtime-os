@@ -103,7 +103,10 @@ class CipherSchemeMetadataTests {
     @Timeout(30)
     fun `Should not contain banned digest algorithms`() {
         schemeMetadata.digests.forEach {
-            assertFalse(CipherSchemeMetadata.BANNED_DIGESTS.any { d -> d == it.algorithmName }, "Should not contain $it digest.")
+            assertFalse(
+                CipherSchemeMetadata.BANNED_DIGESTS.any { d -> d == it.algorithmName },
+                "Should not contain $it digest."
+            )
         }
     }
 

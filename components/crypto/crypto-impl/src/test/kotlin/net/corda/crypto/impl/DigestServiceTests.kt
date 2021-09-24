@@ -105,7 +105,10 @@ class DigestServiceTests {
         val hash = digestService.hash(byteArrayOf(0x64, -0x13, 0x42, 0x3a), SHA2_256)
         assertEquals(32, hash.size)
         assertEquals(32, digestService.digestLength(SHA2_256))
-        assertEquals(digestService.create("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F"), hash)
+        assertEquals(
+            digestService.create("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F"),
+            hash
+        )
         assertEquals("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F", hash.toString())
     }
 

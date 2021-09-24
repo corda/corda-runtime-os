@@ -114,6 +114,7 @@ class SigningServiceImplTests {
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should generate keys and then sign using public key overload and verify multiple times for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -132,6 +133,7 @@ class SigningServiceImplTests {
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should fail to use key for signing with public key overload generated for different member for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -152,6 +154,7 @@ class SigningServiceImplTests {
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should generate keys and then sign using alias overload and verify multiple times for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -169,6 +172,7 @@ class SigningServiceImplTests {
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should fail to use key for signing with alias overload generated for different member for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
@@ -188,6 +192,7 @@ class SigningServiceImplTests {
     @ParameterizedTest
     @MethodSource("signatureSchemesWithPrecalculatedDigest")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should generate keys and then sign using public key overload with explicit signature spec and verify for all supported schemes`(
         signatureScheme: SignatureScheme,
         signatureSpec: SignatureSpec
@@ -219,6 +224,7 @@ class SigningServiceImplTests {
     @ParameterizedTest
     @MethodSource("signatureSchemesWithPrecalculatedDigest")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should generate keys and then sign using alias overload with explicit signature spec and verify for all supported schemes`(
         signatureScheme: SignatureScheme,
         signatureSpec: SignatureSpec
@@ -266,6 +272,7 @@ class SigningServiceImplTests {
     @ParameterizedTest
     @MethodSource("supportedSchemes")
     @Timeout(30)
+    @Suppress("MaxLineLength")
     fun `Should use first known key from CompositeKey when signing using public key overload for all supported schemes`(
         signatureScheme: SignatureScheme
     ) {
