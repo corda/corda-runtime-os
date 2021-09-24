@@ -18,7 +18,7 @@ class MockDatabaseBuilder {
             }
         }
 
-        private fun dbSettings() : Properties = h2Settings()
+        private fun dbSettings() : Properties =  h2Settings()
 
         private fun h2Settings(databaseName: String = UUID.randomUUID().toString()) = Properties().apply {
             setProperty("hibernate.dialect", "org.hibernate.dialect.H2Dialect")
