@@ -1,4 +1,4 @@
-package net.corda.impl.test
+package net.corda.test
 
 import net.corda.cipher.suite.impl.DefaultCryptoPersistentKey
 import net.corda.crypto.impl.SigningPersistentKey
