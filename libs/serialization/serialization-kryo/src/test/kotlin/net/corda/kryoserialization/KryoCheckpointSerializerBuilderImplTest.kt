@@ -8,13 +8,14 @@ import net.corda.serialization.CheckpointSerializerBuilder
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 
 internal class KryoCheckpointSerializerBuilderImplTest {
 
     @Test
     fun `builder builds a serializer correctly`() {
         val sandboxGroup: SandboxGroup = mockSandboxGroup(setOf(TestClass::class.java))
-        val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(sandboxGroup)
+        val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(mock(), sandboxGroup)
 
         val serializer = builder
             .addSerializer(TestClass::class.java, TestClass.Serializer())
@@ -32,6 +33,7 @@ internal class KryoCheckpointSerializerBuilderImplTest {
         class Tester(val someInt: Int) : SingletonSerializeAsToken
         val instance = Tester(1)
         val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(
+            mock(),
             mockSandboxGroup(setOf(Tester::class.java))
         )
         val serializer = builder
