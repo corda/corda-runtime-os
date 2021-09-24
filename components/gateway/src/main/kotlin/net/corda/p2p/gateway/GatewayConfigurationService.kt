@@ -122,9 +122,12 @@ class GatewayConfigurationService(
             return configurationHolder.get() ?: throw IllegalStateException("Configuration is not ready")
         }
 
-    override fun resumeSequence() {
+    override fun openSequence() {
         configurationReaderService.registerForUpdates(this).also {
-            executeBeforePause(it::close)
+            executeBeforeClose(it::close)
         }
+    }
+
+    override fun resumeSequence() {
     }
 }
