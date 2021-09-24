@@ -57,11 +57,8 @@ class Gateway(
         publisherFactory,
     )
 
-    init {
-        followStatusChanges(server).also {
-            executeBeforeClose(it::close)
-        }
-        followStatusChanges(outboundMessageProcessor).also {
+    override fun openSequence() {
+        followStatusChanges(server, outboundMessageProcessor).also {
             executeBeforeClose(it::close)
         }
     }

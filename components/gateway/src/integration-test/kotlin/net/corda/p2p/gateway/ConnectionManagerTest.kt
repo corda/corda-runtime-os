@@ -35,12 +35,12 @@ class ConnectionManagerTest : TestBase() {
         manager.startAndWaitForStarted()
         HttpServer(listeners, configuration).use { server ->
             listeners.add(
-            object : HttpEventListener {
-                override fun onMessage(message: HttpMessage) {
-                    assertEquals(clientMessageContent, String(message.payload))
-                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), message.source)
-                }
-            })
+                object : HttpEventListener {
+                    override fun onMessage(message: HttpMessage) {
+                        assertEquals(clientMessageContent, String(message.payload))
+                        server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), message.source)
+                    }
+                })
             server.start()
             manager.acquire(destination).use { client ->
                 // Client is connected at this point
@@ -73,7 +73,7 @@ class ConnectionManagerTest : TestBase() {
             }
         }
         HttpServer(listOf(listener), configuration).use { server ->
-            server.startAndWaitForStarted()
+            server.start()
             manager.acquire(destination).write(clientMessageContent.toByteArray())
             manager.acquire(destination).write(clientMessageContent.toByteArray())
             requestReceived.await()

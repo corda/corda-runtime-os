@@ -95,7 +95,7 @@ open class TestBase {
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
 
-    private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl()
+    protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl()
     protected inner class ConfigPublisher {
         private val configurationTopicService = TopicServiceImpl()
         private val topicName = "config.${UUID.randomUUID().toString().replace("-", "")}"

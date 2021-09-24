@@ -64,7 +64,7 @@ class ConnectionManager(
         }
     }
 
-    init {
+    override fun openSequence() {
         followStatusChanges(configurationService).also {
             executeBeforeClose(it::close)
         }

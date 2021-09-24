@@ -64,6 +64,7 @@ class HttpServer(
      */
     @Throws(IllegalStateException::class)
     fun write(statusCode: HttpResponseStatus, message: ByteArray, destination: SocketAddress) {
+        // YIFT: This method (together with the clientChannels) should move to the InboundMessageHandler
         val channel = clientChannels[destination]
         if (channel == null) {
             throw IllegalStateException("Connection to $destination not active")
@@ -168,10 +169,4 @@ class HttpServer(
             }
         }
     }
-
-    /*override fun resumeSequence() {
-        configurationService.start()
-        onStatusUp()
-    }
-*/
 }

@@ -62,7 +62,7 @@ internal class OutboundMessageHandler(
 
     private var p2pInPublisher: Publisher? = null
 
-    init {
+    override fun openSequence() {
         followStatusChanges(connectionManager).also {
             executeBeforeClose(it::close)
         }

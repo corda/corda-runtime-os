@@ -85,8 +85,7 @@ internal class Server(
         stop()
     }
 
-    init {
-        // YIFT: Why can't I follow all of them together?!
+    override fun openSequence() {
         listOf(
             configurationService,
             sessionPartitionMapper,

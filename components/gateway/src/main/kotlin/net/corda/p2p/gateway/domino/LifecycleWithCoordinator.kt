@@ -65,10 +65,13 @@ abstract class LifecycleWithCoordinator(
             logger.info("State of $name is $newState")
         }
 
+    open fun openSequence() {}
+
     override fun start() {
         logger.info("Starting $name")
         when (state) {
             State.Initialized -> {
+                openSequence()
                 state = State.Starting
                 coordinator.start()
             }
@@ -137,7 +140,7 @@ abstract class LifecycleWithCoordinator(
                     // Do nothing
                 }
                 is RegistrationStatusChangeEvent -> {
-                    if(event.status == LifecycleStatus.UP) {
+                    if (event.status == LifecycleStatus.UP) {
                         onStatusUp()
                     } else {
                         onStatusDown()
