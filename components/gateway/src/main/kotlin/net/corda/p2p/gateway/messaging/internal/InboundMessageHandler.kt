@@ -20,7 +20,7 @@ import net.corda.p2p.gateway.Server
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
-import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
+import net.corda.p2p.gateway.messaging.session.SessionPartitionMapper
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.contextLogger
 import java.io.IOException
@@ -34,7 +34,7 @@ internal class InboundMessageHandler(
     parent: LifecycleWithCoordinatorAndResources,
     private val publisherFactory: PublisherFactory,
     private val server: Server,
-    private val sessionPartitionMapper: SessionPartitionMapperImpl,
+    private val sessionPartitionMapper: SessionPartitionMapper,
 ) : Lifecycle, HttpEventListener,
     LifecycleWithCoordinatorAndResources(parent) {
 

@@ -50,9 +50,6 @@ abstract class LifecycleWithCoordinator(
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
 
-    // YIFT: The updateStatus won't set the status immediately after the updateStatus?!...
-    private val knownStatus = AtomicReference(coordinator.status)
-
     var state: State
         get() = currentState.get()
         set(newState) {
@@ -109,12 +106,9 @@ abstract class LifecycleWithCoordinator(
     }
 
     fun followStatusChanges(vararg lifecycles: LifecycleWithCoordinator): RegistrationHandle {
-        return followStatusChanges(lifecycles.map { it.name })
+        return coordinator.followStatusChangesByName(lifecycles.map { it.name }.toSet())
     }
 
-    fun followStatusChanges(names: Collection<LifecycleCoordinatorName>): RegistrationHandle {
-        return coordinator.followStatusChangesByName(names.toSet())
-    }
     open fun onStatusUp() {
     }
     open fun onStatusDown() {
