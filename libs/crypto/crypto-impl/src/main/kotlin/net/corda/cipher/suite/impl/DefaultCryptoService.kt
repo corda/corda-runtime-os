@@ -13,7 +13,7 @@ import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SM2_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException

@@ -10,15 +10,15 @@ import net.corda.crypto.testkit.CryptoMocks
 import net.corda.crypto.impl.caching.SimplePersistentCacheFactory
 import net.corda.crypto.impl.caching.SimplePersistentCacheImpl
 import net.corda.impl.test.MockDatabaseBuilder
-import net.corda.crypto.SignatureVerificationServiceInternal
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.schemes.NaSignatureSpec
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
+import net.corda.v5.crypto.SignatureVerificationService
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.hibernate.SessionFactory
 import org.junit.jupiter.api.AfterAll
@@ -71,7 +71,7 @@ class DefaultCryptoServiceTests {
 
         lateinit var sessionFactory: SessionFactory
         lateinit var basicKeyCache: DefaultKeyCacheImpl
-        lateinit var signatureVerifier: SignatureVerificationServiceInternal
+        lateinit var signatureVerifier: SignatureVerificationService
         lateinit var schemeMetadata: CipherSchemeMetadata
         lateinit var cryptoService: CryptoService
 
