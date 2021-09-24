@@ -1,4 +1,4 @@
-package net.corda.components.crypto
+package net.corda.crypto.impl
 
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.FreshKeySigningService

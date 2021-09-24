@@ -1,6 +1,6 @@
 package net.corda.crypto.testkit
 
-import net.corda.components.crypto.CryptoFactory
+import net.corda.crypto.impl.CryptoFactory
 import net.corda.crypto.impl.DefaultCryptoService
 import net.corda.crypto.impl.FreshKeySigningServiceImpl
 import net.corda.crypto.impl.SigningServiceImpl

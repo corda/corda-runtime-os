@@ -1,6 +1,6 @@
-package net.corda.components.crypto.rpc
+package net.corda.crypto.impl.rpc
 
-import net.corda.components.crypto.CryptoFactory
+import net.corda.crypto.impl.CryptoFactory
 import net.corda.crypto.FreshKeySigningService
 import net.corda.data.crypto.wire.WireNoContentValue
 import net.corda.data.crypto.wire.WirePublicKey

@@ -1,11 +1,6 @@
-package net.corda.components.crypto.persistence
+package net.corda.crypto.impl.persistence
 
 import net.corda.crypto.impl.config.CryptoCacheConfig
-import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
-import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
-import net.corda.crypto.impl.persistence.PersistentCache
-import net.corda.crypto.impl.persistence.PersistentCacheFactory
-import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory

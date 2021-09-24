@@ -1,7 +1,6 @@
-package net.corda.components.crypto
+package net.corda.crypto.impl
 
-import net.corda.components.crypto.rpc.CryptoRpcSub
-import net.corda.crypto.impl.DefaultCryptoServiceProvider
+import net.corda.crypto.impl.rpc.CryptoRpcSub
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.impl.lifecycle.AbstractCryptoCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -12,7 +11,7 @@ import org.osgi.service.component.annotations.Reference
 
 @Suppress("LongParameterList")
 @Component(immediate = true)
-class CryptoCoordinator @Activate constructor(
+open class CryptoCoordinator @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)

@@ -1,4 +1,4 @@
 @Export
-package net.corda.components.crypto.persistence;
+package net.corda.crypto.impl.rpc;
 
 import org.osgi.annotation.bundle.Export;

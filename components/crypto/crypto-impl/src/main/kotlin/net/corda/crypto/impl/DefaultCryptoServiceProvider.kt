@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 @Component(service = [CryptoServiceProvider::class, DefaultCryptoServiceProvider::class])
-class DefaultCryptoServiceProvider @Activate constructor(
+open class DefaultCryptoServiceProvider @Activate constructor(
     @Reference(service = PersistentCacheFactory::class)
     private val persistenceFactory: PersistentCacheFactory
 ) : Lifecycle, CryptoLifecycleComponent, CryptoServiceProvider<DefaultCryptoServiceConfig> {

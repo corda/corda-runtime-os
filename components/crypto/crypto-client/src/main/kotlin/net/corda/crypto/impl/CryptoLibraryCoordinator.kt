@@ -8,13 +8,14 @@ import net.corda.crypto.impl.lifecycle.AbstractCryptoCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
+import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Suppress("LongParameterList")
 @Component(immediate = true)
-class CryptoLibraryCoordinator @Activate constructor(
+open class CryptoLibraryCoordinator @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
@@ -42,7 +43,7 @@ class CryptoLibraryCoordinator @Activate constructor(
                     "default" to mapOf<String, Any?>(
                         "default" to mapOf<String, Any?>(
                             "serviceName" to DevCryptoServiceProvider.SERVICE_NAME,
-                            "defaultSignatureScheme" to "EDDSA_ED25519_CODE_NAME"
+                            "defaultSignatureScheme" to EDDSA_ED25519_CODE_NAME
                         )
                     )
                 )

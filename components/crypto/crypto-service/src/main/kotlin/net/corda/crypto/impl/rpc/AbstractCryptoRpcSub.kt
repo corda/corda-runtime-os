@@ -1,4 +1,4 @@
-package net.corda.components.crypto.rpc
+package net.corda.crypto.impl.rpc
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.RPCSubscription
