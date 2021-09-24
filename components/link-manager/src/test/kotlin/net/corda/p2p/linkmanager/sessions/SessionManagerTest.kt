@@ -33,6 +33,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSession
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.v5.base.util.toBase64
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -495,14 +496,8 @@ class SessionManagerTest {
         val responderHelloMessage = LinkInMessage(protocolResponder.generateResponderHello())
         val initiatorHandshakeMessage = outboundManager.processSessionMessage(responderHelloMessage)
 
-        // Duplicate Responder Hello message (second time the SessionManager should return null).
-        assertNull(outboundManager.processSessionMessage(responderHelloMessage))
-        loggingInterceptor.assertSingleWarning(
-            "Already received a ${ResponderHelloMessage::class.java.simpleName} for " +
-                "$sessionId. The message was discarded."
-        )
-        loggingInterceptor.reset()
-
+        // Duplicate Responder Hello message (same initiator handshake returned idempotently).
+        assertThat(outboundManager.processSessionMessage(responderHelloMessage)).isEqualTo(initiatorHandshakeMessage)
         assertTrue(initiatorHandshakeMessage!!.payload is InitiatorHandshakeMessage)
 
         protocolResponder.generateHandshakeSecrets()
@@ -516,8 +511,8 @@ class SessionManagerTest {
             signDataWithKey(netMapInbound.getKeyPair().private, it)
         }
 
-        // Duplicate ResponderHandshakeMessage
         assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHandshakeMessage)))
+        // Duplicate ResponderHandshakeMessage
         assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHandshakeMessage)))
         loggingInterceptor.assertSingleWarning(
             "Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId " +
@@ -588,8 +583,8 @@ class SessionManagerTest {
         val responderHandshakeMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
         assertTrue(responderHandshakeMessage?.payload is ResponderHandshakeMessage)
 
-        //Duplicate InitiatorHandshakeMessage
-        assertNull(inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage)))
+        // Same message returned (idempotently)
+        assertThat(inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))).isEqualTo(responderHelloMessage)
     }
 
     @Test
@@ -1000,8 +995,8 @@ class SessionManagerTest {
         assertNull(secondResponse)
 
         val keyHash = hashKeyToBase64(netMapOutbound.getKeyPair().public)
-        loggingInterceptor.assertSingleWarning("The received public key hash ($keyHash) corresponding to one of the sender's holding" +
-            " identities is not in the network map. We did not respond to replayed InitiatorHandshakeMessage for sessionId SessionId.")
+        loggingInterceptor.assertSingleWarning("Received InitiatorHandshakeMessage with sessionId SessionId. The received public key hash ($keyHash) corresponding to one of the sender's holding" +
+            " identities is not in the network map. The message was discarded.")
     }
 
     @Test
@@ -1026,9 +1021,9 @@ class SessionManagerTest {
         assertNull(secondResponse)
 
         val keyHash = hashKeyToBase64(netMapInbound.getKeyPair().public)
-        loggingInterceptor.assertSingleWarning("The received public key hash ($keyHash) corresponding to one of our holding" +
-            " identities is not in the network map. We did not respond to replayed InitiatorHandshakeMessage for" +
-            " sessionId $sessionId.")
+        loggingInterceptor.assertSingleWarning("Received InitiatorHandshakeMessage with sessionId SessionId. " +
+            "The received public key hash ($keyHash) corresponding to one of our holding" +
+            " identities is not in the network map. The message was discarded.")
     }
 
     @Test
@@ -1055,7 +1050,7 @@ class SessionManagerTest {
         assertNull(secondResponse)
 
         loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId myGroup. " +
-            "We did not respond to replayed InitiatorHandshakeMessage for sessionId $sessionId.")
+            "The InitiatorHandshakeMessage for sessionId SessionId was discarded.")
     }
 
     @Test
