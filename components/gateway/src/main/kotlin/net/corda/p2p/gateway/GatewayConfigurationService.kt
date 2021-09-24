@@ -49,12 +49,14 @@ class GatewayConfigurationService(
         if (changedKeys.contains(CONFIG_KEY)) {
             try {
                 val configuration = toGatewayConfig(config[CONFIG_KEY])
-                logger.info("Got for ${name.instanceId} new Gateway configuration ${configuration.hostAddress}:${configuration.hostPort}")
+                logger.info("Got for ${name.instanceId} Gateway configuration ${configuration.hostAddress}:${configuration.hostPort}")
                 val oldConfiguration = configurationHolder.getAndSet(configuration)
                 if ((oldConfiguration != configuration) && (oldConfiguration != null)) {
+                    logger.info("Reconfiguring gateway")
                     listeners.onEach {
                         it.gotNewConfiguration(configuration, oldConfiguration)
                     }
+                    logger.info("Gateway reconfigured")
                 } else {
                     state = State.Up
                 }
