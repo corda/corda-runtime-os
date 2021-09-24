@@ -1,10 +1,10 @@
 package net.corda.cipher.suite.impl
 
-import net.corda.crypto.SignatureVerificationServiceInternal
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.SignatureVerificationService
 import java.security.PublicKey
 import java.security.SignatureException
 import javax.crypto.Cipher
@@ -12,7 +12,7 @@ import javax.crypto.Cipher
 open class SignatureVerificationServiceImpl(
     private val schemeMetadata: CipherSchemeMetadata,
     private val hashingService: DigestService
-) : SignatureVerificationServiceInternal {
+) : SignatureVerificationService {
 
     private val signatureInstances = SignatureInstances(schemeMetadata.providers)
 

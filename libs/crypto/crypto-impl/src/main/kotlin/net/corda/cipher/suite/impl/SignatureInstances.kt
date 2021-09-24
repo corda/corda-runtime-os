@@ -2,7 +2,7 @@ package net.corda.cipher.suite.impl
 
 import net.corda.utilities.LazyPool
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec
 import java.security.Provider
 import java.security.Signature
 import java.util.concurrent.ConcurrentHashMap
