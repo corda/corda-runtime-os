@@ -1,7 +1,7 @@
 package net.corda.v5.cipher.suite
 
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import java.security.PublicKey

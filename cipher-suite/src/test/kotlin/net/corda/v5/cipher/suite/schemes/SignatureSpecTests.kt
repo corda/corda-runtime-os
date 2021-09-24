@@ -3,6 +3,7 @@ package net.corda.v5.cipher.suite.schemes
 import net.corda.v5.cipher.suite.mocks.DigestServiceMock
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.SignatureSpec
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue

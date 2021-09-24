@@ -1,7 +1,5 @@
-package net.corda.v5.cipher.suite.schemes
+package net.corda.v5.crypto
 
-import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigestService
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 
 /**

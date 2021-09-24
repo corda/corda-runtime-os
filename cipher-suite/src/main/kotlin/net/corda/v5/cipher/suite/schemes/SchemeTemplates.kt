@@ -4,6 +4,7 @@ package net.corda.v5.cipher.suite.schemes
 
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
+import net.corda.v5.crypto.SignatureSpec
 import net.i2p.crypto.eddsa.EdDSAEngine
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable
 import org.bouncycastle.asn1.ASN1Integer

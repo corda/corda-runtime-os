@@ -1,6 +1,5 @@
 package net.corda.v5.cipher.suite
 
-import net.corda.v5.cipher.suite.config.CryptoServiceConfigInfo
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
@@ -16,13 +15,6 @@ interface CipherSuiteFactory {
      * @throws [CryptoServiceLibraryException] for general cryptographic exceptions.
      */
     fun getSchemeMap(): CipherSchemeMetadata
-
-    /**
-     * Returns an instance of the [CryptoService].
-     *
-     * @throws [CryptoServiceLibraryException] for general cryptographic exceptions.
-     */
-    fun getCryptoService(info: CryptoServiceConfigInfo): CryptoService
 
     /**
      * Returns an instance of the [SignatureVerificationService].
