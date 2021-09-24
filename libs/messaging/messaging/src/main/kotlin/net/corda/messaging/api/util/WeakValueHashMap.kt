@@ -11,10 +11,10 @@ import java.util.*
  */
 class WeakValueHashMap<K, V>: MutableMap<K, V> {
 
-    /* Hash table mapping WeakKeys to values */
+    /* Hash table mapping Keys to WeakValues */
     private var map = HashMap<K, WeakValueRef<K,V>>()
 
-    /* Reference queue for cleared WeakKeys */
+    /* Reference queue for cleared WeakValues */
     private val queue = ReferenceQueue<V>()
 
     private class WeakValueRef<K, V> private constructor(var key: K, value: V, queue: ReferenceQueue<V>) :
