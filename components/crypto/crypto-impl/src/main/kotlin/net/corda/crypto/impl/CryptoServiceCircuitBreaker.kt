@@ -15,25 +15,37 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeoutException
 
-class CryptoServiceCircuitBreaker(private val cryptoService: CryptoService, private val timeout: Duration) : CryptoService, AutoCloseable {
+class CryptoServiceCircuitBreaker(
+    private val cryptoService: CryptoService,
+    private val timeout: Duration,
+    private val retries: Long
+) : CryptoService, AutoCloseable {
     companion object {
         private val logger = contextLogger()
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     private fun <T> executeWithTimeOut(func: () -> T): T {
+        var retry = retries
         val num = UUID.randomUUID()
-        try {
-            logger.info("Submitting crypto task for execution (num={})...", num)
-            val result = CompletableFuture.supplyAsync(func).getOrThrow(timeout)
-            logger.debug("Crypto task completed on time (num={})...", num)
-            return result
-        } catch (e: TimeoutException) {
-            logger.error("Crypto task timeout (num=$num)", e)
-            throw CryptoServiceTimeoutException(timeout, e)
-        } catch (e: Throwable) {
-            logger.error("Crypto task failed (num=$num)", e)
-            throw e
+        while (true) {
+            try {
+                logger.info("Submitting crypto task for execution (num={})...", num)
+                val result = CompletableFuture.supplyAsync(func).getOrThrow(timeout)
+                logger.debug("Crypto task completed on time (num={})...", num)
+                return result
+            } catch (e: TimeoutException) {
+                retry--
+                if (retry < 0) {
+                    logger.error("Crypto task timeout (num=$num), all retries are exhausted", e)
+                    throw CryptoServiceTimeoutException(timeout, e)
+                } else {
+                    logger.error("Crypto task timeout (num=$num), will retry...", e)
+                }
+            } catch (e: Throwable) {
+                logger.error("Crypto task failed (num=$num)", e)
+                throw e
+            }
         }
     }
 

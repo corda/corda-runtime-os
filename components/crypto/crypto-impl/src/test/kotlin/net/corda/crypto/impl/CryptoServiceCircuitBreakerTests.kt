@@ -32,20 +32,16 @@ class CryptoServiceCircuitBreakerTests {
     private interface CryptoServiceStub: CryptoService, AutoCloseable
 
     private lateinit var cryptoService: CryptoServiceStub
-    private lateinit var circuitBreaker: CryptoServiceCircuitBreaker
 
     @BeforeEach
     fun setup() {
         cryptoService = mock()
-        circuitBreaker = CryptoServiceCircuitBreaker(
-            cryptoService,
-            Duration.ofMillis(500)
-        )
     }
 
     @Test
     @Timeout(5)
     fun `Should close wrapped service`() {
+        val circuitBreaker = createCircuitBreaker()
         circuitBreaker.close()
         Mockito.verify(cryptoService, times(1)).close()
     }
@@ -53,6 +49,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should execute requiresWrappingKey`() {
+        val circuitBreaker = createCircuitBreaker()
         whenever(
             cryptoService.requiresWrappingKey()
         ).thenReturn(true, false)
@@ -63,6 +60,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw same CryptoServiceException from wrapped service when executing requiresWrappingKey`() {
+        val circuitBreaker = createCircuitBreaker()
         val expected = CryptoServiceException("")
         whenever(
             cryptoService.requiresWrappingKey()
@@ -76,6 +74,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw exception wrapped in CryptoServiceException when executing requiresWrappingKey`() {
+        val circuitBreaker = createCircuitBreaker()
         val expected = RuntimeException()
         whenever(
             cryptoService.requiresWrappingKey()
@@ -89,6 +88,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should execute supportedSchemes`() {
+        val circuitBreaker = createCircuitBreaker()
         val expected = arrayOf<SignatureScheme>()
         whenever(
             cryptoService.supportedSchemes()
@@ -99,6 +99,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw same CryptoServiceException from wrapped service when executing supportedSchemes`() {
+        val circuitBreaker = createCircuitBreaker()
         val expected = CryptoServiceException("")
         whenever(
             cryptoService.supportedSchemes()
@@ -112,6 +113,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw exception wrapped in CryptoServiceException  when executing supportedSchemes`() {
+        val circuitBreaker = createCircuitBreaker()
         val expected = RuntimeException()
         whenever(
             cryptoService.supportedSchemes()
@@ -125,6 +127,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should execute supportedWrappingSchemes`() {
+        val circuitBreaker = createCircuitBreaker()
         val expected = arrayOf<SignatureScheme>()
         whenever(
             cryptoService.supportedWrappingSchemes()
@@ -135,6 +138,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw same CryptoServiceException from wrapped service when executing supportedWrappingSchemes`() {
+        val circuitBreaker = createCircuitBreaker()
         val expected = CryptoServiceException("")
         whenever(
             cryptoService.supportedWrappingSchemes()
@@ -148,6 +152,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw exception wrapped in CryptoServiceException  when executing supportedWrappingSchemes`() {
+        val circuitBreaker = createCircuitBreaker()
         val expected = RuntimeException()
         whenever(
             cryptoService.supportedWrappingSchemes()
@@ -161,6 +166,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should execute containsKey`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         whenever(
             cryptoService.containsKey(alias)
@@ -171,19 +177,8 @@ class CryptoServiceCircuitBreakerTests {
 
     @Test
     @Timeout(5)
-    fun `Should throw CryptoServiceTimeoutException on timeout  when executing containsKey`() {
-        val alias = UUID.randomUUID().toString()
-        whenever(
-            cryptoService.containsKey(alias)
-        ).thenAnswer(AnswersWithDelay(1000, Returns(true)))
-        assertThrows<CryptoServiceTimeoutException> {
-            circuitBreaker.containsKey(alias)
-        }
-    }
-
-    @Test
-    @Timeout(5)
     fun `Should throw same CryptoServiceException from wrapped service when executing containsKey`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val expected = CryptoServiceException("")
         whenever(
@@ -198,6 +193,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw exception wrapped in CryptoServiceException when executing containsKey`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val expected = RuntimeException()
         whenever(
@@ -212,6 +208,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should execute findPublicKey`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val expected = mock<PublicKey>()
         whenever(
@@ -223,6 +220,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw same CryptoServiceException from wrapped service when executing findPublicKey`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val expected = CryptoServiceException("")
         whenever(
@@ -237,6 +235,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw exception wrapped in CryptoServiceException when executing findPublicKey`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val expected = RuntimeException()
         whenever(
@@ -251,6 +250,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should execute createWrappingKey`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val argCaptor1 = argumentCaptor<String>()
         val argCaptor2 = argumentCaptor<Boolean>()
@@ -266,6 +266,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw same CryptoServiceException from wrapped service when executing createWrappingKey`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val expected = CryptoServiceException("")
         whenever(
@@ -280,6 +281,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw same IllegalArgumentException from wrapped service when executing createWrappingKey`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val expected = IllegalArgumentException()
         whenever(
@@ -294,6 +296,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw exception wrapped in CryptoServiceException when executing createWrappingKey`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val expected = RuntimeException()
         whenever(
@@ -308,6 +311,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should execute generateKeyPair`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
             providerName = "Sun"
@@ -322,6 +326,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw same CryptoServiceException from wrapped service when executing generateKeyPair`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
             providerName = "Sun"
@@ -339,6 +344,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw exception wrapped in CryptoServiceException when executing generateKeyPair`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
             providerName = "Sun"
@@ -356,6 +362,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should execute generateWrappedKeyPair`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
             providerName = "Sun"
@@ -374,6 +381,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw same CryptoServiceException from wrapped service when executing generateWrappedKeyPair`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
             providerName = "Sun"
@@ -391,6 +399,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw same IllegalArgumentException from wrapped service when executing generateWrappedKeyPair`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
             providerName = "Sun"
@@ -408,6 +417,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw exception wrapped in CryptoServiceException when executing generateWrappedKeyPair`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
             providerName = "Sun"
@@ -425,6 +435,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should execute sign`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
             providerName = "Sun"
@@ -440,6 +451,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw same CryptoServiceException from wrapped service when executing sign`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
             providerName = "Sun"
@@ -458,6 +470,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should throw exception wrapped in CryptoServiceException when executing sign`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
             providerName = "Sun"
@@ -476,6 +489,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should execute sign overload with signature spec`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
             providerName = "Sun"
@@ -493,6 +507,7 @@ class CryptoServiceCircuitBreakerTests {
     @Timeout(5)
     @Suppress("MaxLineLength")
     fun `Should throw same CryptoServiceException from wrapped service when executing sign overload with signature spec`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
             providerName = "Sun"
@@ -513,6 +528,7 @@ class CryptoServiceCircuitBreakerTests {
     @Timeout(5)
     @Suppress("MaxLineLength")
     fun `Should throw exception wrapped in CryptoServiceException when executing sign overload with signature spec`() {
+        val circuitBreaker = createCircuitBreaker()
         val alias = UUID.randomUUID().toString()
         val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
             providerName = "Sun"
@@ -532,6 +548,7 @@ class CryptoServiceCircuitBreakerTests {
     @Test
     @Timeout(5)
     fun `Should execute sign overload with wrapped key`() {
+        val circuitBreaker = createCircuitBreaker()
         val wrappedKey = WrappedPrivateKey(
             keyMaterial = UUID.randomUUID().toString().toByteArray(),
             masterKeyAlias = UUID.randomUUID().toString(),
@@ -553,6 +570,7 @@ class CryptoServiceCircuitBreakerTests {
     @Timeout(5)
     @Suppress("MaxLineLength")
     fun `Should throw same CryptoServiceException from wrapped service when executing sign overload with wrapped key`() {
+        val circuitBreaker = createCircuitBreaker()
         val wrappedKey = WrappedPrivateKey(
             keyMaterial = UUID.randomUUID().toString().toByteArray(),
             masterKeyAlias = UUID.randomUUID().toString(),
@@ -577,6 +595,7 @@ class CryptoServiceCircuitBreakerTests {
     @Timeout(5)
     @Suppress("MaxLineLength")
     fun `Should throw same IllegalArgumentException from wrapped service when executing sign overload with wrapped key`() {
+        val circuitBreaker = createCircuitBreaker()
         val wrappedKey = WrappedPrivateKey(
             keyMaterial = UUID.randomUUID().toString().toByteArray(),
             masterKeyAlias = UUID.randomUUID().toString(),
@@ -601,6 +620,7 @@ class CryptoServiceCircuitBreakerTests {
     @Timeout(5)
     @Suppress("MaxLineLength")
     fun `Should throw exception wrapped in CryptoServiceException when executing sign overload with wrapped key`() {
+        val circuitBreaker = createCircuitBreaker()
         val wrappedKey = WrappedPrivateKey(
             keyMaterial = UUID.randomUUID().toString().toByteArray(),
             masterKeyAlias = UUID.randomUUID().toString(),
@@ -619,5 +639,56 @@ class CryptoServiceCircuitBreakerTests {
             circuitBreaker.sign(wrappedKey, signatureSpec, data)
         }
         assertSame(expected, actual.cause)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should throw CryptoServiceTimeoutException on timeout`() {
+        val circuitBreaker = createCircuitBreaker(0)
+        val alias = UUID.randomUUID().toString()
+        whenever(
+            cryptoService.containsKey(alias)
+        )
+            .thenAnswer(AnswersWithDelay(1000, Returns(true)))
+        assertThrows<CryptoServiceTimeoutException> {
+            circuitBreaker.containsKey(alias)
+        }
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should throw CryptoServiceTimeoutException on exceeding number of retries`() {
+        val circuitBreaker = createCircuitBreaker(1)
+        val alias = UUID.randomUUID().toString()
+        whenever(
+            cryptoService.containsKey(alias)
+        )
+            .thenAnswer(AnswersWithDelay(1000, Returns(true)))
+            .thenAnswer(AnswersWithDelay(1000, Returns(true)))
+        assertThrows<CryptoServiceTimeoutException> {
+            circuitBreaker.containsKey(alias)
+        }
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should eventually succeed after retry`() {
+        val circuitBreaker = createCircuitBreaker(1)
+        val alias = UUID.randomUUID().toString()
+        whenever(
+            cryptoService.containsKey(alias)
+        )
+            .thenAnswer(AnswersWithDelay(1000, Returns(true)))
+            .thenReturn(true, false)
+        assertTrue(circuitBreaker.containsKey(alias))
+        assertFalse(circuitBreaker.containsKey(alias))
+    }
+
+    private fun createCircuitBreaker(retries: Long = 0): CryptoServiceCircuitBreaker {
+        return CryptoServiceCircuitBreaker(
+            cryptoService,
+            Duration.ofMillis(500),
+            retries = retries
+        )
     }
 }

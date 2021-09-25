@@ -185,7 +185,8 @@ class SigningServiceClient(
             } catch (e: TimeoutException) {
                 retry--
                 if (retry < 0) {
-                    logger.error("Timeout executing ${request::class.java.name} for member ${context.memberId}", e)
+                    logger.error("Timeout executing ${request::class.java.name} for member ${context.memberId}, " +
+                        "all retries are exhausted", e)
                     throw CryptoServiceTimeoutException(clientTimeout, e)
                 } else {
                     logger.error(

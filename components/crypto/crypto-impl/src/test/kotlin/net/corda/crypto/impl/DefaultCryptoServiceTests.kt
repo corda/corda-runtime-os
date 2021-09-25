@@ -38,7 +38,6 @@ import java.security.KeyPair
 import java.security.PublicKey
 import java.security.Signature
 import java.security.SignatureException
-import java.time.Duration
 import java.util.Random
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -752,13 +751,10 @@ class DefaultCryptoServiceTests {
             schemeMetadata = cryptoMocks.schemeMetadata,
             persistence = cryptoMocks.defaultPersistentKeyCache
         )
-        return CryptoServiceCircuitBreaker(
-            cryptoService = DefaultCryptoService(
-                cache = cache,
-                schemeMetadata = schemeMetadata,
-                hashingService = cryptoMocks.factories.cryptoClients.getDigestService()
-            ),
-            timeout = Duration.ofSeconds(5)
+        return DefaultCryptoService(
+            cache = cache,
+            schemeMetadata = schemeMetadata,
+            hashingService = cryptoMocks.factories.cryptoClients.getDigestService()
         )
     }
 

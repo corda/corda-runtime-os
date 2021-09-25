@@ -28,7 +28,6 @@ import org.junit.jupiter.params.provider.MethodSource
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PublicKey
-import java.time.Duration
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -60,13 +59,10 @@ class SigningServiceImplTests {
                 schemeMetadata = cryptoMocks.schemeMetadata,
                 persistence = cryptoMocks.defaultPersistentKeyCache
             )
-            cryptoService = CryptoServiceCircuitBreaker(
-                cryptoService = DefaultCryptoService(
-                    cache = cryptoServiceCache,
-                    schemeMetadata = schemeMetadata,
-                    hashingService = cryptoMocks.factories.cryptoClients.getDigestService()
-                ),
-                timeout = Duration.ofSeconds(5)
+            cryptoService = DefaultCryptoService(
+                cache = cryptoServiceCache,
+                schemeMetadata = schemeMetadata,
+                hashingService = cryptoMocks.factories.cryptoClients.getDigestService()
             )
             cryptoService.createWrappingKey(wrappingKeyAlias, true)
             signingKeyCache = SigningKeyCacheImpl(

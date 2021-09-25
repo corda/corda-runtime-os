@@ -154,7 +154,8 @@ class CryptoFactoryImpl @Activate constructor(
             )
             return CryptoServiceCircuitBreaker(
                 cryptoService = provider.getInstance(context),
-                timeout = config.timeout
+                timeout = config.timeout,
+                retries = 0 // TODO2 get from the config
             )
         } catch (e: Throwable) {
             throw CryptoServiceLibraryException(
