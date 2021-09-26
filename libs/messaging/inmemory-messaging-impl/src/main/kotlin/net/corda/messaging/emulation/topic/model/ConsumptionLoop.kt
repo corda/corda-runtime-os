@@ -9,6 +9,7 @@ internal class ConsumptionLoop(
     private val consumer: Consumer,
     private val group: ConsumerGroup,
 ) : Runnable {
+
     companion object {
         private val logger: Logger = contextLogger()
     }
@@ -17,11 +18,12 @@ internal class ConsumptionLoop(
     private fun readRecords(): Map<Partition, Collection<RecordMetadata>> {
         return group.lock.read {
             partitionToLastReadOffset.asSequence()
-        }.map { (partition, offset) ->
-            partition to partition.getRecordsFrom(offset, group.pollSizePerPartition)
-        }.filter {
-            it.second.isNotEmpty()
-        }.toMap()
+                .map { (partition, offset) ->
+                    partition to partition.getRecordsFrom(offset, group.pollSizePerPartition)
+                }.filter {
+                    it.second.isNotEmpty()
+                }.toMap()
+        }
     }
 
     private fun commitRecords(records: Map<Partition, Collection<RecordMetadata>>) {
@@ -65,7 +67,8 @@ internal class ConsumptionLoop(
 
     override fun run() {
         while (group.isConsuming(consumer)) {
-            processRecords(readRecords())
+            val records = readRecords()
+            processRecords(records)
         }
     }
 

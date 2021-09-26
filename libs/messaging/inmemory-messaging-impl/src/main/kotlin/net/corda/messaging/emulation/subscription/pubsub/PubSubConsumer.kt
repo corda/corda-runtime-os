@@ -9,8 +9,8 @@ import net.corda.messaging.emulation.topic.model.RecordMetadata
 class PubSubConsumer<K : Any, V : Any>(
     private val subscription: PubSubSubscription<K, V>,
 ) : Consumer {
-    override val groupName: String = subscription.groupName
-    override val topicName: String = subscription.topic
+    override val groupName = subscription.subscriptionConfig.groupName
+    override val topicName = subscription.subscriptionConfig.eventTopic
     override val offsetStrategy = OffsetStrategy.LATEST
     override val partitionAssignmentListener = null
     override val commitStrategy = CommitStrategy.COMMIT_AFTER_PROCESSING

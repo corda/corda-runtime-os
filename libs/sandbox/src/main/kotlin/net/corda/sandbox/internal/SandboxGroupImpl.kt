@@ -13,9 +13,9 @@ import net.corda.sandbox.internal.utilities.BundleUtils
 /**
  * An implementation of the [SandboxGroup] interface.
  *
- * @param bundleUtils The [BundleUtils] that all OSGi activity is delegated to for testing purposes
- * @param sandboxesById The [CpkSandboxInternal]s in this sandbox group, keyed by the identifier of their CPK
- * @param platformSandbox The sandbox containing all the platform (i.e. non CPK) bundles
+ * @param bundleUtils The [BundleUtils] that all OSGi activity is delegated to for testing purposes.
+ * @param sandboxesById The [CpkSandboxInternal]s in this sandbox group, keyed by the identifier of their CPK.
+ * @param platformSandbox The sandbox containing all the platform bundles.
  */
 internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils,
@@ -62,13 +62,12 @@ internal class SandboxGroupImpl(
             when (classTag) {
                 is StaticTag -> sandboxes.find { sandbox -> sandbox.cpk.cpkHash == classTag.cpkFileHash }
                 is EvolvableTag -> sandboxes.find { sandbox ->
-                    sandbox.cpk.id.signers == classTag.cpkPublicKeyHashes
+                    sandbox.cpk.id.signerSummaryHash == classTag.cpkSignerSummaryHash
                             && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
                 }
             }
         } ?: throw SandboxException(
-            "Class tag $className did not match any sandbox in the sandbox group or the " +
-                    "platform sandbox."
+            "Class tag $className did not match any sandbox in the sandbox group or the platform sandbox."
         )
 
         return sandbox.loadClass(className, classTag.classBundleName) ?: throw SandboxException(

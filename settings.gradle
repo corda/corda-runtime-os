@@ -1,36 +1,48 @@
 pluginManagement {
     repositories {
         mavenLocal()
-        maven {
-            url "$artifactoryContextUrl/corda-releases"
-            content {
-                includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
-            }
-        }
-        maven {
-            url "$artifactoryContextUrl/corda-os-maven"
-            content {
-                includeGroupByRegex 'net\\.corda\\.cordapp(\\..*)?'
-            }
-            credentials {
-                username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
-                password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
-            }
-        }
-        gradlePluginPortal()
-        maven {
-            url "$artifactoryContextUrl/engineering-tools-maven"
-            credentials {
-                if (settings.hasProperty("cordaArtifactoryUsername")) {
-                    username = settings.cordaArtifactoryUsername
-                } else {
-                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME')
+        def cordaUseCache = System.getenv("CORDA_USE_CACHE")
+        if (cordaUseCache != null) {
+            maven {
+                url = "${artifactoryContextUrl}/${cordaUseCache}"
+                name = "R3 Maven remote repositories"
+                authentication {
+                    basic(BasicAuthentication)
                 }
-
-                if (settings.hasProperty("cordaArtifactoryPassword")) {
-                    password = settings.cordaArtifactoryPassword
-                } else {
-                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+        } else {
+            maven {
+                url "${artifactoryContextUrl}/corda-releases"
+                content {
+                    includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
+                }
+            }
+            maven {
+                url "${artifactoryContextUrl}/corda-os-maven"
+                content {
+                    includeGroupByRegex 'net\\.corda\\.cordapp(\\..*)?'
+                }
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                }
+            }
+            gradlePluginPortal()
+            maven {
+                url "${artifactoryContextUrl}/engineering-tools-maven"
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
                 }
             }
         }
@@ -61,6 +73,7 @@ include 'applications:examples:goodbyeworld'
 include 'applications:tools:kafka-reader'
 include 'applications:tools:kafka-setup'
 include 'applications:tools:p2p-test:cryptoservice-key-creator'
+include 'applications:tools:p2p-test:network-map-creator'
 include 'components:configuration:configuration-read-service'
 include 'components:configuration:configuration-read-service-impl'
 include 'components:flow-service'
@@ -77,9 +90,9 @@ include 'components:examples:pubsub-sub'
 include 'components:examples:state-plus-event-sub'
 include 'libs:class-info'
 include 'libs:configuration:configuration-read'
+include 'libs:configuration:configuration-read-impl'
 include 'libs:configuration:configuration-write'
-include 'libs:configuration:kafka-configuration-read-impl'
-include 'libs:configuration:kafka-configuration-write-impl'
+include 'libs:configuration:configuration-write-impl'
 include 'libs:crypto:crypto-internal'
 include 'libs:crypto:crypto-impl'
 include 'libs:crypto:crypto-testkit'
@@ -137,6 +150,7 @@ include 'libs:serialization:serialization-amqp:serializable-cpk-three'
 include 'libs:serialization:serialization-amqp:serializable-cpk-four'
 include 'libs:serialization:serialization-encoding'
 include 'libs:serialization:serialization-kryo'
+include 'libs:serialization:serialization-kryo:serializable-cpk-one'
 include 'libs:utilities'
 include 'libs:virtual-node:virtual-node-cache'
 include 'libs:virtual-node:virtual-node-cache-impl'

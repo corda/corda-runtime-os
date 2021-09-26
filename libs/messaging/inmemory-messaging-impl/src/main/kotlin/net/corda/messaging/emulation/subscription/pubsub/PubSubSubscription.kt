@@ -1,10 +1,8 @@
 package net.corda.messaging.emulation.subscription.pubsub
 
-import com.typesafe.config.Config
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.EVENT_TOPIC
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.GROUP_NAME
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -18,13 +16,13 @@ import kotlin.concurrent.withLock
 
 /**
  * In-memory pub sub subscription.
- * @property config config for subscription
+ * @property subscriptionConfig config for subscription
  * @property processor processor to execute upon retrieved records from topic
  * @property executor processor is executed using this if it is not null
  * @property topicService retrieve records and commit offsets back to topics with this service
  */
 class PubSubSubscription<K : Any, V : Any>(
-    private val config: Config,
+    internal val subscriptionConfig: SubscriptionConfig,
     private val processor: PubSubProcessor<K, V>,
     private val executor: ExecutorService?,
     private val topicService: TopicService,
@@ -33,9 +31,6 @@ class PubSubSubscription<K : Any, V : Any>(
     companion object {
         private val log: Logger = contextLogger()
     }
-
-    internal val topic = config.getString(EVENT_TOPIC)
-    internal val groupName = config.getString(GROUP_NAME)
 
     private var currentConsumer: Consumption? = null
     private val lock = ReentrantLock()
@@ -52,11 +47,11 @@ class PubSubSubscription<K : Any, V : Any>(
      * with the given [processor].
      */
     override fun start() {
-        log.debug { "Starting subscription with config: $config" }
+        log.debug { "Starting subscription with config: $subscriptionConfig" }
         lock.withLock {
             if (currentConsumer == null) {
                 val consumer = PubSubConsumer(this)
-                currentConsumer = topicService.subscribe(consumer)
+                currentConsumer = topicService.createConsumption(consumer)
             }
         }
     }

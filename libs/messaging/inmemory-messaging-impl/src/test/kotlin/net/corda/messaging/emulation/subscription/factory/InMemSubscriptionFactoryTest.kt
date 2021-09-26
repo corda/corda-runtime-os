@@ -1,12 +1,16 @@
 package net.corda.messaging.emulation.subscription.factory
 
 import net.corda.messaging.api.processor.CompactedProcessor
+import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.subscription.compacted.InMemoryCompactedSubscription
+import net.corda.messaging.emulation.subscription.durable.DurableSubscription
 import net.corda.messaging.emulation.subscription.eventlog.EventLogSubscription
 import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
+import net.corda.messaging.emulation.subscription.stateandevent.InMemoryStateAndEventSubscription
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -48,5 +52,28 @@ class InMemSubscriptionFactoryTest {
                 mock(),
             )
         ).isInstanceOf(InMemoryCompactedSubscription::class.java)
+    }
+
+    @Test
+    fun `createStateAndEventSubscription creates InMemoryStateAndEventSubscription`() {
+        assertThat(
+            factory.createStateAndEventSubscription(
+                subscriptionConfig,
+                mock<StateAndEventProcessor<String, String, Long>>(),
+                mock(),
+            )
+        ).isInstanceOf(InMemoryStateAndEventSubscription::class.java)
+    }
+
+    @Test
+    fun `createDurableSubscription creates DurableSubscription`() {
+        assertThat(
+            factory.createDurableSubscription(
+                subscriptionConfig,
+                mock<DurableProcessor<String, Long>>(),
+                mock(),
+                mock(),
+            )
+        ).isInstanceOf(DurableSubscription::class.java)
     }
 }

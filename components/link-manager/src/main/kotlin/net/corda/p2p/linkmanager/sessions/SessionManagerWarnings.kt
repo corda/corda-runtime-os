@@ -20,9 +20,19 @@ class SessionManagerWarnings {
                     " to one of our holding identities is not in the network map. The message was discarded.")
         }
 
+        internal fun Logger.ourHashNotInNetworkOnReplay(messageName: String, sessionId: String, hash: String) {
+            this.warn("The received public key hash ($hash) corresponding to one of our holding identities is not in the" +
+                    " network map. We did not respond to replayed $messageName for sessionId $sessionId.")
+        }
+
         internal fun Logger.peerHashNotInNetworkMapWarning(messageName: String, sessionId: String, hash: String) {
             this.warn("Received $messageName with sessionId ${sessionId}. The received public key hash ($hash) corresponding" +
-                    " to one of the senders holding identities is not in the network map. The message was discarded.")
+                    " to one of the sender's holding identities is not in the network map. The message was discarded.")
+        }
+
+        internal fun Logger.peerHashNotInNetworkMapOnReplay(messageName: String, sessionId: String, hash: String) {
+            this.warn("The received public key hash ($hash) corresponding to one of the sender's holding identities is not" +
+                " in the network map. We did not respond to replayed $messageName for sessionId $sessionId.")
         }
 
         internal fun Logger.peerNotInTheNetworkMapWarning(messageName: String, sessionId: String, responderId: HoldingIdentity) {
@@ -33,6 +43,11 @@ class SessionManagerWarnings {
         internal fun Logger.couldNotFindNetworkType(messageName: String, sessionId: String, groupId: String) {
             this.warn("Could not find the network type in the NetworkMap for groupId $groupId." +
                     " The $messageName for sessionId $sessionId was discarded.")
+        }
+
+        internal fun Logger.couldNotFindNetworkTypeOnReplay(messageName: String, sessionId: String, groupId: String) {
+            this.warn("Could not find the network type in the NetworkMap for groupId $groupId." +
+                    " We did not respond to replayed $messageName for sessionId $sessionId.")
         }
 
         internal fun Logger.validationFailedWarning(messageName: String, sessionId: String, error: String?) {

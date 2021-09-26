@@ -8,7 +8,6 @@ import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.serialization.CheckpointInternalCustomSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 import java.util.concurrent.Executors
 
 internal class KryoCheckpointSerializerTest {
@@ -51,7 +50,15 @@ internal class KryoCheckpointSerializerTest {
 
     @Test
     fun `serialization of a simple object using the kryo default serialization`() {
-        val serializer = createCheckpointSerializer()
+        val sandboxGroup = mockSandboxGroup(setOf(TestClass::class.java))
+        val serializer = KryoCheckpointSerializer(
+            DefaultKryoCustomizer.customize(
+                Kryo(),
+                emptyMap(),
+                CordaClassResolver(sandboxGroup),
+                ClassSerializer(sandboxGroup)
+            )
+        )
         val tester = TestClass(TEST_INT, TEST_STRING)
 
         val bytes = serializer.serialize(tester)
@@ -59,18 +66,5 @@ internal class KryoCheckpointSerializerTest {
 
         assertThat(tested.someInt).isEqualTo(tester.someInt)
         assertThat(tested.someString).isEqualTo(tester.someString)
-    }
-
-    private fun createCheckpointSerializer(
-        serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>> = emptyMap()
-    ): KryoCheckpointSerializer {
-        return KryoCheckpointSerializer(
-            DefaultKryoCustomizer.customize(
-                Kryo(),
-                serializers,
-                CordaClassResolver(mock(), mock(), mock()),
-                ClassSerializer(mock(), mock(), mock())
-            )
-        )
     }
 }

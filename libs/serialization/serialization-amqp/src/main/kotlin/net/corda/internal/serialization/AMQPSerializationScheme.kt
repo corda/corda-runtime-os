@@ -14,6 +14,7 @@ import net.corda.internal.serialization.custom.PublicKeySerializer
 import net.corda.sandbox.SandboxGroup
 import net.corda.utilities.toSynchronised
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -38,8 +39,10 @@ fun SerializerFactory.addToWhitelist(types: Collection<Class<*>>) {
         types.toSet().forEach { duplicates -= it }
         "Cannot add duplicate classes to the whitelist ($duplicates)."
     }
+    val mutableClassWhitelist = this.whitelist as? MutableClassWhitelist
+        ?: throw CordaRuntimeException("whitelist is not an instance of MutableClassWhitelist, cannot whitelist types")
     for (type in types) {
-        (this.whitelist as? MutableClassWhitelist)?.add(type)
+        mutableClassWhitelist.add(type)
     }
 }
 
@@ -97,7 +100,7 @@ abstract class AbstractAMQPSerializationScheme private constructor(
 
         val serializersToRegister = context.customSerializers ?: cordappCustomSerializers
         serializersToRegister.forEach { customSerializer ->
-            factory.registerExternal(CorDappCustomSerializer(customSerializer, factory))
+            factory.registerExternal(CorDappCustomSerializer(customSerializer))
         }
 
         context.properties[ContextPropertyKeys.SERIALIZERS]?.apply {
