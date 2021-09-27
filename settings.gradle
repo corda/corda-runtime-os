@@ -1,6 +1,8 @@
 pluginManagement {
     repositories {
         def cordaUseCache = System.getenv("CORDA_USE_CACHE")
+
+        mavenLocal()
         if (cordaUseCache != null) {
             maven {
                 url = "${artifactoryContextUrl}/${cordaUseCache}"
@@ -163,21 +165,3 @@ include 'testing:test-utilities'
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
 // This is intended for local use only. The checks in place should prevent this from being triggered on a Jenkins server where we would always want to use the Binaries.
-
-if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
-    includeBuild('../corda-api') {
-        dependencySubstitution {
-            substitute module('net.corda:corda-application') using project(':application')
-            substitute module('net.corda:corda-base') using project(':base')
-            substitute module('net.corda:corda-cipher-suite') using project(':cipher-suite')
-            substitute module('net.corda:corda-api') using project(':corda-api')
-            substitute module('net.corda:corda-crypto') using project(':crypto')
-            substitute module('net.corda:avro-schema') using project(':data:avro-schema')
-            substitute module('net.corda:topic-schema') using project(':data:topic-schema')
-            substitute module('net.corda:corda-ledger') using project(':ledger')
-            substitute module('net.corda:corda-packaging') using project(':packaging')
-            substitute module('net.corda:corda-persistence') using project(':persistence')
-            substitute module('net.corda:corda-serialization') using project(':serialization')
-        }
-    }
-}
