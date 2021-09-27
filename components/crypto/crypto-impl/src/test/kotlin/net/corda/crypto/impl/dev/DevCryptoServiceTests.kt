@@ -1,11 +1,11 @@
 package net.corda.crypto.impl.dev
 
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.MockCryptoFactory
 import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCache
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
-import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.WrappedPrivateKey
@@ -50,7 +50,7 @@ class DevCryptoServiceTests {
         )
 
         private lateinit var memberId: String
-        private lateinit var cryptoMocks: CryptoMocks
+        private lateinit var mockFactory: MockCryptoFactory
         private lateinit var devCryptoServiceProvider: DevCryptoServiceProvider
         private lateinit var signatureVerifier: SignatureVerificationService
         private lateinit var schemeMetadata: CipherSchemeMetadata
@@ -62,15 +62,15 @@ class DevCryptoServiceTests {
         @BeforeAll
         fun setup() {
             memberId = UUID.randomUUID().toString()
-            cryptoMocks = CryptoMocks()
-            schemeMetadata = cryptoMocks.schemeMetadata
-            signatureVerifier = cryptoMocks.factories.cryptoLibrary.getSignatureVerificationService()
+            mockFactory = MockCryptoFactory()
+            schemeMetadata = mockFactory.schemeMetadata
+            signatureVerifier = mockFactory.createVerificationService()
             devCryptoServiceProvider = DevCryptoServiceProvider()
             cryptoService = devCryptoServiceProvider.getInstance(
                 CryptoServiceContext(
                     sandboxId = memberId,
                     category = CryptoCategories.LEDGER,
-                    cipherSuiteFactory = cryptoMocks.factories.cipherSuite,
+                    cipherSuiteFactory = mockFactory.cipherSuiteFactory,
                     config = DevCryptoServiceConfiguration()
                 )
             ) as DevCryptoService

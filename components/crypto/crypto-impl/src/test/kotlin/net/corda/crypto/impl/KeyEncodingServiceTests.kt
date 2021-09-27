@@ -1,10 +1,10 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.MockCryptoFactory
 import net.corda.crypto.SigningService
 import net.corda.crypto.createDevCertificate
 import net.corda.crypto.getSigner
-import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
@@ -27,7 +27,6 @@ import kotlin.test.assertTrue
 class KeyEncodingServiceTests {
     companion object {
         private lateinit var memberId: String
-        private lateinit var  cryptoMocks: CryptoMocks
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var keyEncoder: KeyEncodingService
 
@@ -36,32 +35,32 @@ class KeyEncodingServiceTests {
         lateinit var tempDir: Path
 
         @JvmStatic
+        @BeforeAll
+        fun setup() {
+            memberId = UUID.randomUUID().toString()
+            schemeMetadata = CipherSchemeMetadataProviderImpl().getInstance()
+            keyEncoder = schemeMetadata
+        }
+
+        @JvmStatic
         fun signatureSchemes(): Array<SignatureScheme> = schemeMetadata.schemes.filter {
             it.codeName != COMPOSITE_KEY_CODE_NAME
         }.toTypedArray()
 
-        @JvmStatic
-        @BeforeAll
-        fun setup() {
-            memberId = UUID.randomUUID().toString()
-            cryptoMocks = CryptoMocks()
-            schemeMetadata = cryptoMocks.schemeMetadata
-            keyEncoder = schemeMetadata
-        }
-
         private fun getServices(
             defaultSignatureSchemeCodeName: String
         ): Pair<SigningService, SignatureVerificationService> {
-            val factories = cryptoMocks.factories(
-                defaultSignatureSchemeCodeName,
-                defaultSignatureSchemeCodeName
+            val factories = MockCryptoFactory(
+                defaultSignatureSchemeCodeName = defaultSignatureSchemeCodeName,
+                defaultFreshKeySignatureSchemeCodeName = defaultSignatureSchemeCodeName,
+                schemeMetadataOverride = schemeMetadata
             )
             return Pair(
-                factories.cryptoServices.getSigningService(
+                factories.createSigningService(
                     memberId = memberId,
                     category = CryptoCategories.LEDGER
                 ),
-                factories.cryptoLibrary.getSignatureVerificationService()
+                factories.createVerificationService()
             )
         }
     }

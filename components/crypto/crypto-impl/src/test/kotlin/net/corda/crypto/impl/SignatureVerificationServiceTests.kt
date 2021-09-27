@@ -1,8 +1,8 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.MockCryptoFactory
 import net.corda.crypto.SigningService
-import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.SignatureVerificationServiceProvider
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
@@ -28,7 +28,6 @@ class SignatureVerificationServiceTests {
         private val testData = UUID.randomUUID().toString().toByteArray()
         private val badVerifyData = UUID.randomUUID().toString().toByteArray()
         private lateinit var memberId: String
-        private lateinit var cryptoMocks: CryptoMocks
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var signatureVerificationServiceProvider: SignatureVerificationServiceProvider
 
@@ -41,8 +40,7 @@ class SignatureVerificationServiceTests {
         @BeforeAll
         fun setup() {
             memberId = UUID.randomUUID().toString()
-            cryptoMocks = CryptoMocks()
-            schemeMetadata = cryptoMocks.schemeMetadata
+            schemeMetadata = CipherSchemeMetadataProviderImpl().getInstance()
             signatureVerificationServiceProvider = SignatureVerificationServiceProviderImpl()
         }
 
@@ -78,17 +76,18 @@ class SignatureVerificationServiceTests {
         private fun getServices(
             defaultSignatureSchemeCodeName: String
         ): Pair<SigningService, SignatureVerificationService> {
-            val factories = cryptoMocks.factories(
-                defaultSignatureSchemeCodeName,
-                defaultSignatureSchemeCodeName
+            val factories = MockCryptoFactory(
+                defaultSignatureSchemeCodeName = defaultSignatureSchemeCodeName,
+                defaultFreshKeySignatureSchemeCodeName = defaultSignatureSchemeCodeName,
+                schemeMetadataOverride = schemeMetadata
             )
             return Pair(
-                factories.cryptoServices.getSigningService(
+                factories.createSigningService(
                     memberId = memberId,
                     category = CryptoCategories.LEDGER
                 ),
                 signatureVerificationServiceProvider.getInstance(
-                    cryptoMocks.factories.cipherSuite
+                    factories.cipherSuiteFactory
                 )
             )
         }

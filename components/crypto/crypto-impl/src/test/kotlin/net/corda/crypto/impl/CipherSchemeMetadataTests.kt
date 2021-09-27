@@ -1,13 +1,13 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.MockCryptoFactory
 import net.corda.crypto.SigningService
-import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
-import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.ASN1EncodableVector
 import org.bouncycastle.asn1.ASN1Encoding
@@ -32,7 +32,6 @@ import kotlin.test.assertNotEquals
 class CipherSchemeMetadataTests {
     companion object {
         private lateinit var memberId: String
-        private lateinit var cryptoMocks: CryptoMocks
         private lateinit var schemeMetadataProvider: CipherSchemeMetadataProviderImpl
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var unknownSignatureSpec: SignatureSpec
@@ -44,7 +43,6 @@ class CipherSchemeMetadataTests {
             memberId = UUID.randomUUID().toString()
             schemeMetadataProvider = CipherSchemeMetadataProviderImpl()
             schemeMetadata = schemeMetadataProvider.getInstance()
-            cryptoMocks = CryptoMocks(schemeMetadataOverride = schemeMetadata)
             unknownSignatureSpec = SignatureSpec(
                 signatureName = "na",
                 signatureOID = AlgorithmIdentifier(PKCSObjectIdentifiers.RC2_CBC, null)
@@ -66,14 +64,15 @@ class CipherSchemeMetadataTests {
         fun schemes(): Array<SignatureScheme> = schemeMetadata.schemes
 
         private fun getSigner(defaultSignatureSchemeCodeName: String): SigningService {
-            val factories = cryptoMocks.factories(
-                defaultSignatureSchemeCodeName,
-                defaultSignatureSchemeCodeName
+            val mockFactory = MockCryptoFactory(
+                defaultSignatureSchemeCodeName = defaultSignatureSchemeCodeName,
+                defaultFreshKeySignatureSchemeCodeName = defaultSignatureSchemeCodeName,
+                schemeMetadataOverride = schemeMetadata
             )
-            return factories.cryptoServices.getSigningService(
-                    memberId = memberId,
-                    category = CryptoCategories.LEDGER
-                )
+            return mockFactory.createSigningService(
+                memberId = memberId,
+                category = CryptoCategories.LEDGER
+            )
         }
     }
 
@@ -92,7 +91,7 @@ class CipherSchemeMetadataTests {
         schemeMetadata.secureRandom.nextBytes(data2)
         var equal = 0
         for (i in 0..36) {
-            if(data1[i] == data2[i]) {
+            if (data1[i] == data2[i]) {
                 equal++
             }
         }
@@ -197,19 +196,19 @@ class CipherSchemeMetadataTests {
     fun `Should find schemes for all supported public keys`(
         signatureScheme: SignatureScheme
     ) {
-        val publicKey = if(signatureScheme.codeName == COMPOSITE_KEY_CODE_NAME) {
+        val publicKey = if (signatureScheme.codeName == COMPOSITE_KEY_CODE_NAME) {
             val signer = getSigner(EDDSA_ED25519_CODE_NAME)
             val alicePublicKey = signer.generateKeyPair(newAlias())
             val bobPublicKey = signer.generateKeyPair(newAlias())
             val charliePublicKey = signer.generateKeyPair(newAlias())
             val aliceAndBob = CompositeKey.Builder()
-                    .addKey(alicePublicKey, 2)
-                    .addKey(bobPublicKey, 1)
-                    .build(threshold = 2)
+                .addKey(alicePublicKey, 2)
+                .addKey(bobPublicKey, 1)
+                .build(threshold = 2)
             CompositeKey.Builder()
-                    .addKey(aliceAndBob, 3)
-                    .addKey(charliePublicKey, 2)
-                    .build(threshold = 3)
+                .addKey(aliceAndBob, 3)
+                .addKey(charliePublicKey, 2)
+                .build(threshold = 3)
         } else {
             val signer = getSigner(signatureScheme.codeName)
             signer.generateKeyPair(newAlias())
@@ -238,7 +237,7 @@ class CipherSchemeMetadataTests {
 
     private fun newAlias() = UUID.randomUUID().toString()
 
-    class UnsupportedPublicKey : PublicKey{
+    class UnsupportedPublicKey : PublicKey {
         override fun getAlgorithm(): String = "MOCK"
 
         override fun getFormat(): String = ASN1Encoding.DER
@@ -247,8 +246,10 @@ class CipherSchemeMetadataTests {
             val keyVector = ASN1EncodableVector()
             val childrenVector = ASN1EncodableVector()
             keyVector.add(DERSequence(childrenVector))
-            return SubjectPublicKeyInfo(AlgorithmIdentifier(
-                PKCSObjectIdentifiers.RC2_CBC, null),
+            return SubjectPublicKeyInfo(
+                AlgorithmIdentifier(
+                    PKCSObjectIdentifiers.RC2_CBC, null
+                ),
                 DERSequence(keyVector)
             ).encoded
         }

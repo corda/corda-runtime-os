@@ -1,9 +1,9 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.MockCryptoFactory
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
-import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
@@ -20,16 +20,16 @@ import kotlin.test.assertTrue
 class DefaultCryptoServiceProviderTests {
     private val masterKeyAlias = "wrapping-key-alias"
     private lateinit var memberId: String
-    private lateinit var cryptoMocks: CryptoMocks
+    private lateinit var mockFactory: MockCryptoFactory
     private lateinit var schemeMetadata: CipherSchemeMetadata
     private lateinit var signatureVerifier: SignatureVerificationService
 
     @BeforeEach
     fun setup() {
         memberId = UUID.randomUUID().toString()
-        cryptoMocks = CryptoMocks()
-        schemeMetadata = cryptoMocks.schemeMetadata
-        signatureVerifier = cryptoMocks.factories.cryptoLibrary.getSignatureVerificationService()
+        mockFactory = MockCryptoFactory()
+        schemeMetadata = mockFactory.schemeMetadata
+        signatureVerifier = mockFactory.createVerificationService()
     }
 
     @Test
@@ -99,7 +99,7 @@ class DefaultCryptoServiceProviderTests {
         CryptoServiceContext(
             sandboxId = memberId,
             category = category,
-            cipherSuiteFactory = cryptoMocks.factories.cipherSuite,
+            cipherSuiteFactory = mockFactory.cipherSuiteFactory,
             config = DefaultCryptoServiceConfig(
                 passphrase = "PASSPHRASE",
                 salt = "SALT"

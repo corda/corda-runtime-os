@@ -1,8 +1,8 @@
 package net.corda.crypto.impl
 
+import net.corda.crypto.MockCryptoFactory
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
-import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
@@ -79,7 +79,7 @@ class DefaultCryptoServiceTests {
         )
 
         private lateinit var memberId: String
-        private lateinit var cryptoMocks: CryptoMocks
+        private lateinit var mockFactory: MockCryptoFactory
         private lateinit var signatureVerifier: SignatureVerificationService
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var cryptoServiceCache: DefaultCryptoKeyCache
@@ -89,20 +89,20 @@ class DefaultCryptoServiceTests {
         @BeforeAll
         fun setup() {
             memberId = UUID.randomUUID().toString()
-            cryptoMocks = CryptoMocks()
-            schemeMetadata = cryptoMocks.schemeMetadata
-            signatureVerifier = cryptoMocks.factories.cryptoLibrary.getSignatureVerificationService()
+            mockFactory = MockCryptoFactory()
+            schemeMetadata = mockFactory.schemeMetadata
+            signatureVerifier = mockFactory.createVerificationService()
             cryptoServiceCache = DefaultCryptoKeyCacheImpl(
                 memberId = memberId,
                 passphrase = "PASSPHRASE",
                 salt = "SALT",
-                schemeMetadata = cryptoMocks.schemeMetadata,
-                persistence = cryptoMocks.defaultPersistentKeyCache
+                schemeMetadata = mockFactory.schemeMetadata,
+                persistence = mockFactory.defaultPersistentKeyCache
             )
             cryptoService = DefaultCryptoService(
                 cache = cryptoServiceCache,
                 schemeMetadata = schemeMetadata,
-                hashingService = cryptoMocks.factories.cryptoLibrary.getDigestService()
+                hashingService = mockFactory.createDigestService()
             )
             cryptoServiceCache = cryptoService.cache
             cryptoService.createWrappingKey(wrappingKeyAlias, true)
@@ -748,13 +748,13 @@ class DefaultCryptoServiceTests {
             memberId = UUID.randomUUID().toString(),
             passphrase = "PASSPHRASE",
             salt = "SALT",
-            schemeMetadata = cryptoMocks.schemeMetadata,
-            persistence = cryptoMocks.defaultPersistentKeyCache
+            schemeMetadata = mockFactory.schemeMetadata,
+            persistence = mockFactory.defaultPersistentKeyCache
         )
         return DefaultCryptoService(
             cache = cache,
             schemeMetadata = schemeMetadata,
-            hashingService = cryptoMocks.factories.cryptoLibrary.getDigestService()
+            hashingService = mockFactory.createDigestService()
         )
     }
 

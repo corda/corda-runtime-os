@@ -1,6 +1,6 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.testkit.CryptoMocks
+import net.corda.crypto.MockCryptoFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.CompositeKey
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -15,7 +15,7 @@ class CordaSecurityProviderTests {
         @BeforeAll
         @JvmStatic
         fun setup() {
-            schemeMetadata = CryptoMocks().schemeMetadata
+            schemeMetadata = MockCryptoFactory().schemeMetadata
         }
     }
 

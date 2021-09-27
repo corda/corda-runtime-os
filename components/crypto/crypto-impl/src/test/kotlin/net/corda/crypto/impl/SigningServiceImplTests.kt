@@ -5,8 +5,8 @@ import net.corda.crypto.impl.persistence.SigningKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCacheImpl
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.FreshKeySigningService
+import net.corda.crypto.MockCryptoFactory
 import net.corda.crypto.SigningService
-import net.corda.crypto.testkit.CryptoMocks
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
@@ -37,7 +37,7 @@ class SigningServiceImplTests {
     companion object {
         private const val wrappingKeyAlias = "test-wrapping-key-alias-42"
         private lateinit var memberId: String
-        private lateinit var cryptoMocks: CryptoMocks
+        private lateinit var mockFactory: MockCryptoFactory
         private lateinit var signatureVerifier: SignatureVerificationService
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var cryptoServiceCache: DefaultCryptoKeyCacheImpl
@@ -48,27 +48,27 @@ class SigningServiceImplTests {
         @BeforeAll
         fun setup() {
             memberId = UUID.randomUUID().toString()
-            cryptoMocks = CryptoMocks()
-            schemeMetadata = cryptoMocks.schemeMetadata
+            mockFactory = MockCryptoFactory()
+            schemeMetadata = mockFactory.schemeMetadata
             signatureVerifier =
-                cryptoMocks.factories.cryptoLibrary.getSignatureVerificationService()
+                mockFactory.createVerificationService()
             cryptoServiceCache = DefaultCryptoKeyCacheImpl(
                 memberId = memberId,
                 passphrase = "PASSPHRASE",
                 salt = "SALT",
-                schemeMetadata = cryptoMocks.schemeMetadata,
-                persistence = cryptoMocks.defaultPersistentKeyCache
+                schemeMetadata = mockFactory.schemeMetadata,
+                persistence = mockFactory.defaultPersistentKeyCache
             )
             cryptoService = DefaultCryptoService(
                 cache = cryptoServiceCache,
                 schemeMetadata = schemeMetadata,
-                hashingService = cryptoMocks.factories.cryptoLibrary.getDigestService()
+                hashingService = mockFactory.createDigestService()
             )
             cryptoService.createWrappingKey(wrappingKeyAlias, true)
             signingKeyCache = SigningKeyCacheImpl(
                 memberId = memberId,
                 keyEncoder = schemeMetadata,
-                persistence = cryptoMocks.signingPersistentKeyCache
+                persistence = mockFactory.signingPersistentKeyCache
             )
         }
 
@@ -309,7 +309,7 @@ class SigningServiceImplTests {
         val cache = SigningKeyCacheImpl(
             memberId = UUID.randomUUID().toString(),
             keyEncoder = schemeMetadata,
-            persistence = cryptoMocks.signingPersistentKeyCache
+            persistence = mockFactory.signingPersistentKeyCache
         )
         return SigningServiceImpl(
             cache = cache,
@@ -333,7 +333,7 @@ class SigningServiceImplTests {
     }
 
     private fun get(publicKey: PublicKey): SigningPersistentKeyInfo {
-        return cryptoMocks.signingPersistentKeyCache.data.values.first {
+        return mockFactory.signingPersistentKeyCache.data.values.first {
             it.first.publicKeyHash == "$memberId:${publicKey.sha256Bytes().toHexString()}"
         }.first
     }

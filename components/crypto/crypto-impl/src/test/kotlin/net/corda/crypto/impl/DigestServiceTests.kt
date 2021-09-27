@@ -1,6 +1,6 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.testkit.CryptoMocks
+import net.corda.crypto.MockCryptoFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
@@ -32,10 +32,10 @@ class DigestServiceTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            val cryptoMocks = CryptoMocks()
-            schemeMetadata = cryptoMocks.schemeMetadata
+            val mockFactory = MockCryptoFactory()
+            schemeMetadata = mockFactory.schemeMetadata
             digestService = DigestServiceImpl(
-                cryptoMocks.schemeMetadata,
+                mockFactory.schemeMetadata,
                 listOf(DoubleSHA256DigestFactory())
             )
         }
