@@ -11,13 +11,13 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 @ExtendWith(ServiceExtension::class)
@@ -145,13 +145,12 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
     }
 
     @Test
-    @Timeout(10)
     fun `test events log subscription`() {
         consume()
         publish()
 
         publishedLatch.await()
-        consumerLatch.await()
+        assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue
 
         subscriptions.forEach {
             it.stop()

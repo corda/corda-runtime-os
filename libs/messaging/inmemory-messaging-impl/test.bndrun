@@ -49,6 +49,7 @@ java: ${project.javaExecutable}
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.lifecycle;version='[5.0.0,5.0.1)',\
 	net.corda.messaging;version='[5.0.0,5.0.1)',\
+	net.corda.test-utilities;version='[5.0.0,5.0.1)',\
 	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
 	org.assertj.core;version='[3.12.2,3.12.3)',\
 	org.jetbrains.kotlin.osgi-bundle;version='[1.4.32,1.4.33)',\
