@@ -1,5 +1,6 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
+import net.corda.httprpc.durablestream.DurableStreamContext
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.httprpc.api.annotations.HttpRpcGET
 import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
@@ -12,7 +13,6 @@ import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.httprpc.server.impl.apigen.models.ResponseBody
 import net.corda.httprpc.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
-import net.corda.httprpc.server.stream.DurableStreamContext
 import net.corda.v5.httprpc.tools.annotations.validation.HttpRpcInterfaceValidator
 import net.corda.v5.base.util.Try
 import net.corda.v5.base.util.debug

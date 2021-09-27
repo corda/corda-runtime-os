@@ -1,13 +1,13 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
-import net.corda.httprpc.server.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.durablestream.DurableStreamContext
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.server.impl.apigen.models.InvocationMethod
 import net.corda.httprpc.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
 import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.stream.Cursor
-import net.corda.httprpc.server.stream.DurableStreamContext
 import net.corda.v5.base.util.contextLogger
 import java.lang.IllegalArgumentException
 import net.corda.v5.base.util.trace

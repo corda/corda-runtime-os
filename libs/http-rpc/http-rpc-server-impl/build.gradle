@@ -15,6 +15,7 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(":libs:http-rpc:http-rpc-tools")
     implementation project(':libs:http-rpc:http-rpc-security-read')
+    implementation project(':libs:http-rpc:json-serialization')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
@@ -31,6 +32,7 @@ dependencies {
     implementation "org.eclipse.jetty.http2:http2-server:$jettyVersion"
     implementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation project(":libs:http-rpc:http-rpc-common")
 
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
 
@@ -46,4 +48,27 @@ dependencies {
     runtimeOnly "io.github.classgraph:classgraph:$classgraphVersion"
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
+
+    integrationTestImplementation project(':libs:http-rpc:http-rpc-stubs-impl')
+    integrationTestImplementation "com.konghq:unirest-java:$unirestVersion"
+
+    integrationTestImplementation "org.mockito:mockito-core:$mockitoVersion"
+    integrationTestImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+
+}
+
+sourceSets {
+    integrationTest {
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+tasks.register('integrationTest', Test) {
+    description = "Runs integration tests."
+
+    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
+    classpath = project.sourceSets["integrationTest"].runtimeClasspath
 }
