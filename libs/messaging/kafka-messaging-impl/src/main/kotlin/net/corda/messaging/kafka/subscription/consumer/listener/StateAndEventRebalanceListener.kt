@@ -70,12 +70,12 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
             val partitionId = topicPartition.partition()
             partitionsToSync.remove(partitionId)
 
-            currentStates[partitionId]?.let { partitionStates ->
-                mapFactory.destroyMap(partitionStates)
-            }
-
             stateAndEventListener?.let { listener ->
                 listener.onPartitionLost(getStatesForPartition(partitionId))
+            }
+
+            currentStates[partitionId]?.let { partitionStates ->
+                mapFactory.destroyMap(partitionStates)
             }
         }
     }
