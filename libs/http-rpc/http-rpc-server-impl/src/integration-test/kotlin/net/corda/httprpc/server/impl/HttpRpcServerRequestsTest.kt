@@ -30,7 +30,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  serverPort), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
+            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
             server = HttpRpcServerImpl(listOf(TestHealthCheckAPIImpl(), TestJavaPrimitivesRPCopsImpl(), CustomSerializationAPIImpl()), securityManager, httpRpcSettings, true, classLoader).apply { start() }
             client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
