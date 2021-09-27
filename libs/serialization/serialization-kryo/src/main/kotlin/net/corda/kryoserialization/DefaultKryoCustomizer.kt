@@ -24,18 +24,7 @@ import net.corda.kryoserialization.serializers.LoggerSerializer
 import net.corda.kryoserialization.serializers.StackTraceSerializer
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
-import net.corda.serializers.PrivateKeySerializer
-import net.corda.serializers.PublicKeySerializer
 import net.corda.utilities.LazyMappedList
-import net.corda.v5.crypto.CompositeKey
-import org.bouncycastle.jcajce.interfaces.EdDSAPrivateKey
-import org.bouncycastle.jcajce.interfaces.EdDSAPublicKey
-import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey
-import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
-import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPrivateCrtKey
-import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey
-import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PrivateKey
-import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PublicKey
 import org.objenesis.instantiator.ObjectInstantiator
 import org.objenesis.strategy.InstantiatorStrategy
 import org.objenesis.strategy.StdInstantiatorStrategy
@@ -44,8 +33,6 @@ import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Modifier.isPublic
-import java.security.PrivateKey
-import java.security.PublicKey
 import java.security.cert.CertPath
 import java.security.cert.X509Certificate
 import java.util.*
@@ -81,21 +68,6 @@ class DefaultKryoCustomizer {
                 fieldSerializerConfig.isIgnoreSyntheticFields = false
 
                 instantiatorStrategy = CustomInstantiatorStrategy()
-
-                // These probably should go somewhere else, but they're meant to be right before building as,
-                // for security purposes, we don't want someone overriding them
-                listOf(
-                    PublicKey::class.java, EdDSAPublicKey::class.java, CompositeKey::class.java,
-                    BCECPublicKey::class.java, BCRSAPublicKey::class.java, BCSphincs256PublicKey::class.java
-                ).forEach {
-                    addDefaultSerializer(it, KryoCheckpointSerializerAdapter(PublicKeySerializer()).adapt())
-                }
-                listOf(
-                    PrivateKey::class.java, EdDSAPrivateKey::class.java, BCECPrivateKey::class.java,
-                    BCRSAPrivateCrtKey::class.java, BCSphincs256PrivateKey::class.java
-                ).forEach {
-                    addDefaultSerializer(it, KryoCheckpointSerializerAdapter(PrivateKeySerializer()).adapt())
-                }
 
                 addDefaultSerializer(Logger::class.java, LoggerSerializer)
                 addDefaultSerializer(X509Certificate::class.java, X509CertificateSerializer)
