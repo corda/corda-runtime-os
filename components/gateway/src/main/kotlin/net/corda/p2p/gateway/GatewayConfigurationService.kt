@@ -58,9 +58,12 @@ class GatewayConfigurationService(
                     }
                     logger.info("Gateway reconfigured")
                 } else {
-                    state = State.Up
+                    if (state != State.Initialized) {
+                        state = State.Up
+                    }
                 }
             } catch (e: Throwable) {
+                configurationHolder.set(null)
                 gotError(e)
             }
         }
@@ -129,5 +132,8 @@ class GatewayConfigurationService(
     }
 
     override fun resumeSequence() {
+        if (configurationHolder.get() != null) {
+            state = State.Up
+        }
     }
 }

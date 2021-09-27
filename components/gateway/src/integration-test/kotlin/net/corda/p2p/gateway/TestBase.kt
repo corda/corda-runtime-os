@@ -23,6 +23,7 @@ import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import java.io.ByteArrayOutputStream
@@ -163,7 +164,7 @@ open class TestBase {
 
     fun Lifecycle.startAndWaitForStarted() {
         this.start()
-        eventually(duration = Duration.ofSeconds(20)) {
+        eventually(duration = 20.seconds) {
             assertThat(this.isRunning).isTrue
         }
     }
