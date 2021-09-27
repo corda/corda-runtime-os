@@ -36,7 +36,7 @@ class CryptoMocks(
         Factories(this, defaultSignatureSchemeCodeName, defaultFreshKeySignatureSchemeCodeName)
 
     class Factories(
-        mocks: CryptoMocks,
+        private val mocks: CryptoMocks,
         defaultSignatureSchemeCodeName: String = ECDSA_SECP256R1_CODE_NAME,
         defaultFreshKeySignatureSchemeCodeName: String = ECDSA_SECP256R1_CODE_NAME,
     ) {
@@ -50,6 +50,7 @@ class CryptoMocks(
 
         val cryptoServices = MockCryptoFactory(mocks, defaultSignatureScheme, defaultFreshKeySignatureScheme)
 
-        val cryptoClients = MockCryptoLibraryFactory(mocks)
+        fun cryptoClients(memberId: String): MockCryptoLibraryFactory =
+            MockCryptoLibraryFactory(mocks, memberId)
     }
 }

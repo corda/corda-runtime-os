@@ -1,5 +1,7 @@
 package net.corda.crypto.impl.rpc
 
+import net.corda.crypto.FreshKeySigningService
+import net.corda.crypto.impl.CryptoFactory
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.data.WireKeyValuePair
@@ -35,6 +37,8 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
@@ -53,6 +57,7 @@ class FreshKeysServiceRpcProcessorTests {
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var verifier: SignatureVerificationService
         private lateinit var processor: FreshKeysServiceRpcProcessor
+        private lateinit var cryptoFactory: CryptoFactory
 
         @JvmStatic
         @BeforeAll
@@ -60,9 +65,17 @@ class FreshKeysServiceRpcProcessorTests {
             memberId = UUID.randomUUID().toString()
             cryptoMocks = CryptoMocks()
             schemeMetadata = cryptoMocks.schemeMetadata
-            verifier = cryptoMocks.factories.cryptoClients.getSignatureVerificationService()
+            val clients = cryptoMocks.factories.cryptoClients(memberId)
+            verifier = clients.getSignatureVerificationService()
+            cryptoFactory = mock()
+            whenever(
+                cryptoFactory.getFreshKeySigningService(memberId)
+            ).thenReturn(clients.getFreshKeySigningService())
+            whenever(
+                cryptoFactory.cipherSchemeMetadata
+            ).thenReturn(schemeMetadata)
             processor = FreshKeysServiceRpcProcessor(
-                cryptoMocks.factories.cryptoServices
+                cryptoFactory
             )
             val context = getWireRequestContext()
             val future = CompletableFuture<WireFreshKeysResponse>()

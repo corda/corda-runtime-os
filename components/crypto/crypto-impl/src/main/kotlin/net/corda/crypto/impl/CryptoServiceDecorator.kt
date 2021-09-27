@@ -15,7 +15,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeoutException
 
-class CryptoServiceCircuitBreaker(
+class CryptoServiceDecorator(
     private val cryptoService: CryptoService,
     private val timeout: Duration,
     private val retries: Long

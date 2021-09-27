@@ -29,7 +29,7 @@ class DefaultCryptoServiceProviderTests {
         memberId = UUID.randomUUID().toString()
         cryptoMocks = CryptoMocks()
         schemeMetadata = cryptoMocks.schemeMetadata
-        signatureVerifier = cryptoMocks.factories.cryptoClients.getSignatureVerificationService()
+        signatureVerifier = cryptoMocks.factories.cryptoClients(memberId).getSignatureVerificationService()
     }
 
     @Test

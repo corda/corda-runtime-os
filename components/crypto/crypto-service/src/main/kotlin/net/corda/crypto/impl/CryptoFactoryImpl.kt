@@ -152,7 +152,7 @@ class CryptoFactoryImpl @Activate constructor(
                 cipherSuiteFactory = cipherSuiteFactory,
                 config = objectMapper.convertValue(config.serviceConfig, provider.configType)
             )
-            return CryptoServiceCircuitBreaker(
+            return CryptoServiceDecorator(
                 cryptoService = provider.getInstance(context),
                 timeout = config.timeout,
                 retries = 0 // TODO2 get from the config

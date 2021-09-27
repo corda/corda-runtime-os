@@ -1,6 +1,5 @@
 package net.corda.crypto.testkit
 
-import net.corda.crypto.impl.CryptoFactory
 import net.corda.crypto.impl.DefaultCryptoService
 import net.corda.crypto.impl.FreshKeySigningServiceImpl
 import net.corda.crypto.impl.SigningServiceImpl
@@ -18,15 +17,15 @@ class MockCryptoFactory(
     private val mocks: CryptoMocks,
     private val defaultSignatureScheme: SignatureScheme,
     private val defaultFreshKeySignatureScheme: SignatureScheme
-) : CryptoFactory {
+) {
     private val freshKeyServices = ConcurrentHashMap<String, FreshKeySigningService>()
     private val signingServices = ConcurrentHashMap<String, SigningService>()
     private val cryptoServices = ConcurrentHashMap<String, CryptoService>()
 
-    override val cipherSchemeMetadata: CipherSchemeMetadata
+    val cipherSchemeMetadata: CipherSchemeMetadata
         get() = mocks.schemeMetadata
 
-    override fun getFreshKeySigningService(memberId: String): FreshKeySigningService =
+    fun getFreshKeySigningService(memberId: String): FreshKeySigningService =
         freshKeyServices.getOrPut(memberId) {
             FreshKeySigningServiceImpl(
                 cache = SigningKeyCacheImpl(
@@ -41,7 +40,7 @@ class MockCryptoFactory(
             )
         }
 
-    override fun getSigningService(memberId: String, category: String): SigningService =
+    fun getSigningService(memberId: String, category: String): SigningService =
         signingServices.getOrPut("$memberId:$category") {
             SigningServiceImpl(
                 cache = SigningKeyCacheImpl(
@@ -55,7 +54,7 @@ class MockCryptoFactory(
             )
         }
 
-    private fun getCryptoService(memberId: String, category: String): CryptoService =
+    fun getCryptoService(memberId: String, category: String): CryptoService =
         cryptoServices.getOrPut("$memberId:$category") {
             DefaultCryptoService(
                 DefaultCryptoKeyCacheImpl(

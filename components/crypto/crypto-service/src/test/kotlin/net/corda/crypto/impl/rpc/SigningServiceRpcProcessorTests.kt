@@ -2,6 +2,7 @@ package net.corda.crypto.impl.rpc
 
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.impl.CryptoFactory
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.data.WireKeyValuePair
 import net.corda.data.crypto.wire.WireNoContentValue
@@ -40,6 +41,9 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
@@ -49,6 +53,7 @@ import java.util.concurrent.ExecutionException
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.test.fail
 
 class SigningServiceRpcProcessorTests {
     companion object {
@@ -57,6 +62,7 @@ class SigningServiceRpcProcessorTests {
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var verifier: SignatureVerificationService
         private lateinit var processor: SigningServiceRpcProcessor
+        private lateinit var cryptoFactory: CryptoFactory
 
         @JvmStatic
         @BeforeAll
@@ -64,9 +70,24 @@ class SigningServiceRpcProcessorTests {
             memberId = UUID.randomUUID().toString()
             cryptoMocks = CryptoMocks()
             schemeMetadata = cryptoMocks.schemeMetadata
-            verifier = cryptoMocks.factories.cryptoClients.getSignatureVerificationService()
+            val clients = cryptoMocks.factories.cryptoClients(memberId)
+            verifier = clients.getSignatureVerificationService()
+            cryptoFactory = mock()
+            whenever(
+                cryptoFactory.getSigningService(any(), any())
+            ).then {
+                val memberIdArg = it.arguments[0].toString()
+                if(memberIdArg != memberId) {
+                    fail("The member id in getSigningService invocation does not match")
+                }
+                val categoryArg = it.arguments[1].toString()
+                clients.getSigningService(categoryArg)
+            }
+            whenever(
+                cryptoFactory.cipherSchemeMetadata
+            ).thenReturn(schemeMetadata)
             processor = SigningServiceRpcProcessor(
-                cryptoMocks.factories.cryptoServices
+                cryptoFactory
             )
         }
 

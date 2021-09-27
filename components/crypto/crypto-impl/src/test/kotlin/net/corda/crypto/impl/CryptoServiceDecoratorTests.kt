@@ -27,7 +27,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-class CryptoServiceCircuitBreakerTests {
+class CryptoServiceDecoratorTests {
 
     private interface CryptoServiceStub: CryptoService, AutoCloseable
 
@@ -684,8 +684,8 @@ class CryptoServiceCircuitBreakerTests {
         assertFalse(circuitBreaker.containsKey(alias))
     }
 
-    private fun createCircuitBreaker(retries: Long = 0): CryptoServiceCircuitBreaker {
-        return CryptoServiceCircuitBreaker(
+    private fun createCircuitBreaker(retries: Long = 0): CryptoServiceDecorator {
+        return CryptoServiceDecorator(
             cryptoService,
             Duration.ofMillis(500),
             retries = retries
