@@ -6,13 +6,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-base"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 }
 
 description 'Test Utilities'
-
-// This is needed, because `SharedMemoryIncrementalPortAllocation` makes use of `DirectBuffer`
-tasks.named('compileJava', JavaCompile) {
-    options.compilerArgs << "--add-exports" << "java.base/sun.nio.ch=ALL-UNNAMED"
-}
