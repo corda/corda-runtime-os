@@ -48,23 +48,27 @@ class GatewayConfigurationService(
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
         if (changedKeys.contains(CONFIG_KEY)) {
             try {
-                val configuration = toGatewayConfig(config[CONFIG_KEY])
-                logger.info("Got for ${name.instanceId} Gateway configuration ${configuration.hostAddress}:${configuration.hostPort}")
-                val oldConfiguration = configurationHolder.getAndSet(configuration)
-                if ((oldConfiguration != configuration) && (oldConfiguration != null)) {
-                    logger.info("Reconfiguring gateway")
-                    listeners.onEach {
-                        it.gotNewConfiguration(configuration, oldConfiguration)
-                    }
-                    logger.info("Gateway reconfigured")
-                } else {
-                    if (state != State.Initialized) {
-                        state = State.Up
-                    }
-                }
+                applyNewConfiguration(config[CONFIG_KEY])
             } catch (e: Throwable) {
                 configurationHolder.set(null)
                 gotError(e)
+            }
+        }
+    }
+
+    private fun applyNewConfiguration(newConfiguration: Config?) {
+        val configuration = toGatewayConfig(newConfiguration)
+        logger.info("Got for ${name.instanceId} Gateway configuration ${configuration.hostAddress}:${configuration.hostPort}")
+        val oldConfiguration = configurationHolder.getAndSet(configuration)
+        if ((oldConfiguration != configuration) && (oldConfiguration != null)) {
+            logger.info("Reconfiguring gateway")
+            listeners.onEach {
+                it.gotNewConfiguration(configuration, oldConfiguration)
+            }
+            logger.info("Gateway reconfigured")
+        } else {
+            if (state != State.Initialized) {
+                state = State.Up
             }
         }
     }
