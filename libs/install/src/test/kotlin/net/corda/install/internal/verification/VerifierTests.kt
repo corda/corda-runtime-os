@@ -30,7 +30,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.PublicKey
 import java.security.cert.Certificate
-import java.util.NavigableSet
 import java.util.TreeSet
 
 class VerifierTests {
@@ -77,6 +76,7 @@ class VerifierTests {
     /** Creates a mock [Certificate] that returns the provided [certificatePublicKey]. */
     private fun createMockCertificate(certificatePublicKey: PublicKey) = mock(Certificate::class.java).apply {
         `when`(publicKey).thenReturn(certificatePublicKey)
+        `when`(encoded).thenReturn(ByteArray(16))
     }
 
     /** Checks that the [cpks] passes all the verifiers, initialised with the provided [configAdmin]. */
@@ -301,11 +301,18 @@ class VerifierTests {
 
     @Test
     fun `a CPK with satisfied circular dependencies passes verification`() {
-        val publicKeyHashes: NavigableSet<SecureHash> = sequenceOf(dummySigningKeyOne, dummySigningKeyTwo)
-            .map { key -> key.encoded.sha256() }.toCollection(TreeSet())
-
         val cpkSymbolicNames = (0..1).map { idx -> "symbolicName$idx" }
         val cpkVersions = (0..1).map { idx -> "version$idx" }
+
+        // We temporarily create the second CPK to grab its ID, so we can set it as a dependency of the first CPK.
+        val cpkTwoId = createDummyCpk(
+            cordappManifest = createDummyParsedCordappManifest(
+                bundleSymbolicName = cpkSymbolicNames[1],
+                bundleVersion = cpkVersions[1]
+            ),
+            cordappCertificates = dummyCertificates,
+            dependencies = TreeSet()
+        ).id
 
         val cpkOne = createDummyCpk(
             cordappManifest = createDummyParsedCordappManifest(
@@ -313,13 +320,7 @@ class VerifierTests {
                 bundleVersion = cpkVersions[0]
             ),
             cordappCertificates = dummyCertificates,
-            dependencies = sequenceOf(
-                Cpk.Identifier(
-                    cpkSymbolicNames[1],
-                    cpkVersions[1],
-                    publicKeyHashes
-                )
-            ).toCollection(TreeSet())
+            dependencies = sequenceOf(cpkTwoId).toCollection(TreeSet())
         )
 
         val cpkTwo = createDummyCpk(
@@ -343,7 +344,7 @@ class VerifierTests {
             )
 
         // We create a dependency that exists, other than for an invalid symbolic name.
-        val badSymbolicNameDependency = Cpk.Identifier("badSymbolicName", cpkOne.id.version, cpkOne.id.signers)
+        val badSymbolicNameDependency = Cpk.Identifier("badSymbolicName", cpkOne.id.version, cpkOne.id.signerSummaryHash)
         val cpkTwo =
             createDummyCpk(dependencies = sequenceOf(badSymbolicNameDependency).toCollection(TreeSet()))
         doesNotVerify(cpks = listOf(cpkOne, cpkTwo))
@@ -358,7 +359,7 @@ class VerifierTests {
             )
 
         // We create a dependency that exists, other than for an invalid version.
-        val badVersionDependency = Cpk.Identifier(cpkOne.id.symbolicName, "badVersion", cpkOne.id.signers)
+        val badVersionDependency = Cpk.Identifier(cpkOne.id.symbolicName, "badVersion", cpkOne.id.signerSummaryHash)
         val cpkTwo = createDummyCpk(dependencies = sequenceOf(badVersionDependency).toCollection(TreeSet()))
 
         doesNotVerify(cpks = listOf(cpkOne, cpkTwo))
@@ -373,11 +374,11 @@ class VerifierTests {
         )
 
         // We create a dependency that exists, other than for an invalid set of public key hashes.
-        val invalidSignature = SecureHash("MD5", ByteArray(16))
+        val invalidSignerSummaryHash = SecureHash("MD5", ByteArray(16))
         val badSignersDependency = Cpk.Identifier(
             cpkOne.id.symbolicName,
             cpkOne.id.version,
-            TreeSet<SecureHash>().also { it.add(invalidSignature) })
+            invalidSignerSummaryHash)
         val cpkTwo = createDummyCpk(dependencies = sequenceOf(badSignersDependency).toCollection(TreeSet()))
 
         doesNotVerify(cpks = listOf(cpkOne, cpkTwo))

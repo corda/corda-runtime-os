@@ -11,7 +11,7 @@ import net.corda.v5.cipher.suite.WrappedKeyPair
 import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException

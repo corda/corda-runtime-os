@@ -27,7 +27,9 @@ internal open class SandboxImpl(
 
     override fun containsBundle(bundle: Bundle) = bundle in allBundles
 
-    override fun containsClass(klass: Class<*>) = bundleUtils.getBundle(klass) in allBundles
+    override fun containsClass(klass: Class<*>): Boolean {
+        return bundleUtils.getBundle(klass) in allBundles
+    }
 
     override fun hasVisibility(otherSandbox: Sandbox) = otherSandbox in visibleSandboxes
 
