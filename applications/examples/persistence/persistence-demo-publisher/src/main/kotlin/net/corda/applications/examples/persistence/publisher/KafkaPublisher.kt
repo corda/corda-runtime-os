@@ -7,6 +7,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.CompletableFuture
 
 class KafkaPublisher(
     private val brokerAddress: String,
@@ -34,7 +35,7 @@ class KafkaPublisher(
         publisherFactory.createPublisher(pubConfig, config)
     }
 
-    fun publish(topic: String, key: String, message: Any) {
-        publisher.publish(listOf(Record(topic, key, message)))
+    fun publish(topic: String, key: String, message: Any): CompletableFuture<Unit> {
+        return publisher.publish(listOf(Record(topic, key, message))).get(0)
     }
 }
