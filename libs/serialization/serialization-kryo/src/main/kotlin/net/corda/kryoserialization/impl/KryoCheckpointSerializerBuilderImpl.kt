@@ -3,6 +3,7 @@ package net.corda.kryoserialization.impl
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.io.serialization.kryo.KryoSerializer
 import com.esotericsoftware.kryo.Serializer
+import net.corda.kryoserialization.CordaKryoException
 import net.corda.kryoserialization.DefaultKryoCustomizer
 import net.corda.kryoserialization.KryoCheckpointSerializer
 import net.corda.kryoserialization.KryoCheckpointSerializerAdapter
@@ -12,7 +13,6 @@ import net.corda.kryoserialization.serializers.SingletonSerializeAsTokenSerializ
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.CheckpointInternalCustomSerializer
 import net.corda.serialization.CheckpointSerializerBuilder
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import java.security.PublicKey
@@ -41,7 +41,7 @@ class KryoCheckpointSerializerBuilderImpl(
     ): CheckpointSerializerBuilder {
         for (clazz in classes) {
             if (PublicKey::class.java.isAssignableFrom(clazz)) {
-                throw CordaRuntimeException("Custom serializers for public keys are not allowed")
+                throw CordaKryoException("Custom serializers for public keys are not allowed")
             }
             serializers[clazz] = KryoCheckpointSerializerAdapter(serializer).adapt()
         }

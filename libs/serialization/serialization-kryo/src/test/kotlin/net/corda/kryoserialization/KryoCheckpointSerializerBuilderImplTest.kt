@@ -5,9 +5,12 @@ import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
 import net.corda.kryoserialization.impl.KryoCheckpointSerializerBuilderImpl
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.CheckpointSerializerBuilder
+import net.corda.serializers.PublicKeySerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
+import java.security.PublicKey
 
 internal class KryoCheckpointSerializerBuilderImplTest {
 
@@ -44,5 +47,17 @@ internal class KryoCheckpointSerializerBuilderImplTest {
         val tested = serializer.deserialize(bytes, instance::class.java)
 
         assertThat(tested).isSameAs(instance)
+    }
+
+    @Test
+    fun `serializers of public keys cannot be added`() {
+        val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(
+            mockSandboxGroup(emptySet())
+        )
+
+        assertThatExceptionOfType(CordaKryoException::class.java).isThrownBy {
+            builder.addSerializer(PublicKey::class.java, PublicKeySerializer())
+        }.withMessage("Custom serializers for public keys are not allowed")
+
     }
 }
