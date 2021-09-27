@@ -43,7 +43,7 @@ import kotlin.math.min
  * - [generateOurHandshakeMessage]
  * - [getSession]
  *
- * This class is idempotent. So, if a method is invoked multiple times, no side-effects will be executed and cached results will be returned.
+ * This class is idempotent. If a method is invoked multiple times, no side-effects will be executed and cached results will be returned.
  * This is in order to assist scenarios, where messages might be replayed safely without complicated logic on clients of the class.
  *
  * However, if methods are called out of sequence (e.g. [generateHandshakeSecrets] without the previous methods having ever been called),
@@ -270,7 +270,9 @@ class AuthenticationProtocolResponder(private val sessionId: String,
 
     private fun <R> transition(fromStep: Step, toStep: Step, cachedValueFn: () -> R, fn: () -> R): R {
         if (step < fromStep) {
-            throw IncorrectAPIUsageException("This method must be invoked when the protocol is at least in step $fromStep, but it was in step $step.")
+            throw IncorrectAPIUsageException(
+                "This method must be invoked when the protocol is at least in step $fromStep, but it was in step $step."
+            )
         }
         if (step >= toStep) {
             return cachedValueFn()

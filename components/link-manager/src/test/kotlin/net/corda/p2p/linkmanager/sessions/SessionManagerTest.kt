@@ -995,7 +995,8 @@ class SessionManagerTest {
         assertNull(secondResponse)
 
         val keyHash = hashKeyToBase64(netMapOutbound.getKeyPair().public)
-        loggingInterceptor.assertSingleWarning("Received InitiatorHandshakeMessage with sessionId SessionId. The received public key hash ($keyHash) corresponding to one of the sender's holding" +
+        loggingInterceptor.assertSingleWarning("Received InitiatorHandshakeMessage with sessionId SessionId. " +
+            "The received public key hash ($keyHash) corresponding to one of the sender's holding" +
             " identities is not in the network map. The message was discarded.")
     }
 
