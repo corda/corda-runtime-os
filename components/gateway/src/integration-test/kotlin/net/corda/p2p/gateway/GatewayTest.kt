@@ -31,6 +31,9 @@ import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.fail
@@ -56,6 +59,10 @@ class GatewayTest : TestBase() {
         val subscriptionFactory = InMemSubscriptionFactory(topicService)
         val publisherFactory = CordaPublisherFactory(topicService)
         val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id"))
+
+        fun stop() {
+            publisher.close()
+        }
 
         fun publish(vararg records: Record<Any, Any>): List<CompletableFuture<Unit>> {
             return publisher.publish(records.toList())
@@ -90,6 +97,12 @@ class GatewayTest : TestBase() {
     }
     private val alice = Node("alice")
     private val bob = Node("bob")
+
+    @AfterEach
+    fun setup() {
+        alice.stop()
+        bob.stop()
+    }
 
     @Test
     @Timeout(30)
@@ -256,21 +269,20 @@ class GatewayTest : TestBase() {
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
         bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
         // Produce messages for each Gateway
-        val producedMessages = mutableListOf<CompletableFuture<Unit>>()
-        repeat(messageCount) {
+        (1..messageCount).flatMap {
             var msg = LinkOutMessage.newBuilder().apply {
                 header = LinkOutHeader("", NetworkType.CORDA_5, bobGatewayAddress.toString())
                 payload = authenticatedP2PMessage("Target-$bobGatewayAddress")
             }.build()
-            producedMessages.addAll(alice.publish(Record(LINK_OUT_TOPIC, "key", msg)))
+            val aliceMsgfuture = alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
 
             msg = LinkOutMessage.newBuilder().apply {
                 header = LinkOutHeader("", NetworkType.CORDA_5, aliceGatewayAddress.toString())
                 payload = authenticatedP2PMessage("Target-$aliceGatewayAddress")
             }.build()
-            producedMessages.addAll(bob.publish(Record(LINK_OUT_TOPIC, "key", msg)))
-        }
-        producedMessages.forEach { it.get() }
+            val bobMsgFuture = bob.publish(Record(LINK_OUT_TOPIC, "key", msg))
+            (aliceMsgfuture + bobMsgFuture)
+        }.forEach { it.get() }
 
         val receivedLatch = CountDownLatch(messageCount * 2)
         var bobReceivedMessages = 0
