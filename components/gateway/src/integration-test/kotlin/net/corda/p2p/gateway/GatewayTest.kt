@@ -31,12 +31,17 @@ import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.fail
 import java.net.InetSocketAddress
 import java.net.URI
 import java.nio.ByteBuffer
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -53,11 +58,14 @@ class GatewayTest : TestBase() {
         private val topicService = TopicServiceImpl()
         val subscriptionFactory = InMemSubscriptionFactory(topicService)
         val publisherFactory = CordaPublisherFactory(topicService)
+        val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id"))
 
-        fun publish(vararg records: Record<Any, Any>) {
-            publisherFactory.createPublisher(PublisherConfig("$name.id")).use {
-                it.publish(records.toList())
-            }
+        fun stop() {
+            publisher.close()
+        }
+
+        fun publish(vararg records: Record<Any, Any>): List<CompletableFuture<Unit>> {
+            return publisher.publish(records.toList())
         }
 
         fun getRecords(topic: String, size: Int): Collection<EventLogRecord<Any, Any>> {
@@ -89,6 +97,12 @@ class GatewayTest : TestBase() {
     }
     private val alice = Node("alice")
     private val bob = Node("bob")
+
+    @AfterEach
+    fun setup() {
+        alice.stop()
+        bob.stop()
+    }
 
     @Test
     @Timeout(30)
@@ -252,29 +266,33 @@ class GatewayTest : TestBase() {
         val aliceGatewayAddress = URI.create("http://www.chip.net:10003")
         val bobGatewayAddress = URI.create("http://www.dale.net:10004")
         val messageCount = 100
-        alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
-        bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+        alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
+        bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
         // Produce messages for each Gateway
-        repeat(messageCount) {
+        (1..messageCount).flatMap {
             var msg = LinkOutMessage.newBuilder().apply {
                 header = LinkOutHeader("", NetworkType.CORDA_5, bobGatewayAddress.toString())
                 payload = authenticatedP2PMessage("Target-$bobGatewayAddress")
             }.build()
-            alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
+            val aliceMsgfuture = alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
 
             msg = LinkOutMessage.newBuilder().apply {
                 header = LinkOutHeader("", NetworkType.CORDA_5, aliceGatewayAddress.toString())
                 payload = authenticatedP2PMessage("Target-$aliceGatewayAddress")
             }.build()
-            bob.publish(Record(LINK_OUT_TOPIC, "key", msg))
-        }
+            val bobMsgFuture = bob.publish(Record(LINK_OUT_TOPIC, "key", msg))
+            (aliceMsgfuture + bobMsgFuture)
+        }.forEach { it.get() }
 
         val receivedLatch = CountDownLatch(messageCount * 2)
+        var bobReceivedMessages = 0
+        var aliceReceivedMessages = 0
         val bobSubscription = bob.subscriptionFactory.createEventLogSubscription(
             subscriptionConfig = SubscriptionConfig("bob.intest", LINK_IN_TOPIC),
             processor = object : EventLogProcessor<Any, Any> {
                 override fun onNext(events: List<EventLogRecord<Any, Any>>): List<Record<*, *>> {
                     repeat(events.size) {
+                        bobReceivedMessages += events.size
                         receivedLatch.countDown()
                     }
 
@@ -293,6 +311,7 @@ class GatewayTest : TestBase() {
             processor = object : EventLogProcessor<Any, Any> {
                 override fun onNext(events: List<EventLogRecord<Any, Any>>): List<Record<*, *>> {
                     repeat(events.size) {
+                        aliceReceivedMessages += events.size
                         receivedLatch.countDown()
                     }
 
@@ -332,10 +351,14 @@ class GatewayTest : TestBase() {
             }
         }
 
-        receivedLatch.await()
+        val allMessagesDelivered = receivedLatch.await(30, TimeUnit.SECONDS)
+        if (!allMessagesDelivered) {
+            fail("Not all messages were delivered successfully. Bob received $bobReceivedMessages messages (expected $messageCount), " +
+                    "Alice received $aliceReceivedMessages (expected $messageCount)")
+        }
+
         val endTime = Instant.now().toEpochMilli()
         logger.info("Done processing ${messageCount * 2} in ${endTime - startTime} milliseconds.")
-
         t1.join()
         t2.join()
     }
