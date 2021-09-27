@@ -65,12 +65,11 @@ class FreshKeysServiceRpcProcessorTests {
             memberId = UUID.randomUUID().toString()
             cryptoMocks = CryptoMocks()
             schemeMetadata = cryptoMocks.schemeMetadata
-            val clients = cryptoMocks.factories.cryptoClients(memberId)
-            verifier = clients.getSignatureVerificationService()
+            verifier = cryptoMocks.factories.cryptoLibrary.getSignatureVerificationService()
             cryptoFactory = mock()
             whenever(
                 cryptoFactory.getFreshKeySigningService(memberId)
-            ).thenReturn(clients.getFreshKeySigningService())
+            ).thenReturn(cryptoMocks.factories.cryptoClients(memberId).getFreshKeySigningService())
             whenever(
                 cryptoFactory.cipherSchemeMetadata
             ).thenReturn(schemeMetadata)

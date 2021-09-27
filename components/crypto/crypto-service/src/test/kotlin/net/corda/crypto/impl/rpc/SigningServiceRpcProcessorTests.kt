@@ -70,8 +70,7 @@ class SigningServiceRpcProcessorTests {
             memberId = UUID.randomUUID().toString()
             cryptoMocks = CryptoMocks()
             schemeMetadata = cryptoMocks.schemeMetadata
-            val clients = cryptoMocks.factories.cryptoClients(memberId)
-            verifier = clients.getSignatureVerificationService()
+            verifier = cryptoMocks.factories.cryptoLibrary.getSignatureVerificationService()
             cryptoFactory = mock()
             whenever(
                 cryptoFactory.getSigningService(any(), any())
@@ -81,7 +80,7 @@ class SigningServiceRpcProcessorTests {
                     fail("The member id in getSigningService invocation does not match")
                 }
                 val categoryArg = it.arguments[1].toString()
-                clients.getSigningService(categoryArg)
+                cryptoMocks.factories.cryptoClients(memberId).getSigningService(categoryArg)
             }
             whenever(
                 cryptoFactory.cipherSchemeMetadata

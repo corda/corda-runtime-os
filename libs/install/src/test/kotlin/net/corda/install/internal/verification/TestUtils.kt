@@ -64,7 +64,7 @@ internal object TestUtils {
     private const val DUMMY_BASE_DIRECTORY = "base_directory"
 
     private val cryptoMocks = CryptoMocks()
-    private val cryptoLibraryFactory = cryptoMocks.factories.cryptoClients
+    private val cryptoLibraryFactory = cryptoMocks.factories.cryptoLibrary
     private val hashingService = cryptoLibraryFactory.getDigestService()
 
     /** Creates a dummy [Manifest] containing the CPK-specific values provided. */

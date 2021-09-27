@@ -1,7 +1,7 @@
 package net.corda.crypto.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoLibraryFactoryProvider
+import net.corda.crypto.CryptoLibraryClientsFactoryProvider
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.dev.DevCryptoServiceProvider
 import net.corda.crypto.impl.lifecycle.AbstractCryptoCoordinator
@@ -22,8 +22,8 @@ open class CryptoLibraryCoordinator @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = CipherSuiteFactory::class)
     private val cipherSuiteFactory: CipherSuiteFactory,
-    @Reference(service = CryptoLibraryFactoryProvider::class)
-    private val cryptoFactoryProvider: CryptoLibraryFactoryProvider
+    @Reference(service = CryptoLibraryClientsFactoryProvider::class)
+    private val cryptoFactoryProvider: CryptoLibraryClientsFactoryProvider
 ) : AbstractCryptoCoordinator(
     coordinatorFactory,
     configurationReadService,

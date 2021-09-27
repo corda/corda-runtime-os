@@ -91,7 +91,7 @@ class DefaultCryptoServiceTests {
             memberId = UUID.randomUUID().toString()
             cryptoMocks = CryptoMocks()
             schemeMetadata = cryptoMocks.schemeMetadata
-            signatureVerifier = cryptoMocks.factories.cryptoClients(memberId).getSignatureVerificationService()
+            signatureVerifier = cryptoMocks.factories.cryptoLibrary.getSignatureVerificationService()
             cryptoServiceCache = DefaultCryptoKeyCacheImpl(
                 memberId = memberId,
                 passphrase = "PASSPHRASE",
@@ -102,7 +102,7 @@ class DefaultCryptoServiceTests {
             cryptoService = DefaultCryptoService(
                 cache = cryptoServiceCache,
                 schemeMetadata = schemeMetadata,
-                hashingService = cryptoMocks.factories.cryptoClients(memberId).getDigestService()
+                hashingService = cryptoMocks.factories.cryptoLibrary.getDigestService()
             )
             cryptoServiceCache = cryptoService.cache
             cryptoService.createWrappingKey(wrappingKeyAlias, true)
@@ -754,7 +754,7 @@ class DefaultCryptoServiceTests {
         return DefaultCryptoService(
             cache = cache,
             schemeMetadata = schemeMetadata,
-            hashingService = cryptoMocks.factories.cryptoClients(memberId).getDigestService()
+            hashingService = cryptoMocks.factories.cryptoLibrary.getDigestService()
         )
     }
 

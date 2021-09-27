@@ -52,7 +52,7 @@ class CordaPackagePersistenceTests {
     private lateinit var cordaPackagePersistence : CordaPackagePersistence
 
     private val cryptoMocks = CryptoMocks()
-    private val cryptoLibraryFactory = cryptoMocks.factories.cryptoClients
+    private val cryptoLibraryFactory = cryptoMocks.factories.cryptoLibrary
     private val hashingService = cryptoLibraryFactory.getDigestService()
 
 

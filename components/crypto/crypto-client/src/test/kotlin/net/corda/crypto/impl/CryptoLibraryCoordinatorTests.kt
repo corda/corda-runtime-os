@@ -3,7 +3,7 @@ package net.corda.crypto.impl
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoLibraryFactoryProvider
+import net.corda.crypto.CryptoLibraryClientsFactoryProvider
 import net.corda.crypto.impl.config.isDev
 import net.corda.crypto.impl.config.keyCache
 import net.corda.crypto.impl.config.mngCache
@@ -38,7 +38,7 @@ class CryptoLibraryCoordinatorTests {
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
     private lateinit var configurationReadService: ConfigurationReadService
     private lateinit var cipherSuiteFactory: CipherSuiteFactoryStub
-    private lateinit var cryptoFactoryProvider: CryptoLibraryFactoryProviderStub
+    private lateinit var cryptoFactoryProvider: CryptoLibraryClientsFactoryProviderStub
     private lateinit var configChangeHandler: ConfigurationHandler
     private lateinit var registrationHandle: AutoCloseable
     private var coordinatorIsRunning = false
@@ -168,14 +168,14 @@ class CryptoLibraryCoordinatorTests {
 
     private interface CipherSuiteFactoryStub: CipherSuiteFactory, Lifecycle, CryptoLifecycleComponent
 
-    private interface CryptoLibraryFactoryProviderStub: CryptoLibraryFactoryProvider, Lifecycle, CryptoLifecycleComponent
+    private interface CryptoLibraryClientsFactoryProviderStub: CryptoLibraryClientsFactoryProvider, Lifecycle, CryptoLifecycleComponent
 
     @Suppress("LongParameterList")
     private class CryptoLibraryCoordinatorStub(
         coordinatorFactory: LifecycleCoordinatorFactory,
         configurationReadService: ConfigurationReadService,
         cipherSuiteFactory: CipherSuiteFactory,
-        cryptoFactoryProvider: CryptoLibraryFactoryProvider
+        cryptoFactoryProvider: CryptoLibraryClientsFactoryProvider
     ) : CryptoLibraryCoordinator(
         coordinatorFactory,
         configurationReadService,

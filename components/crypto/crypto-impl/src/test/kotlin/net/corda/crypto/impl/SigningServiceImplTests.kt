@@ -51,7 +51,7 @@ class SigningServiceImplTests {
             cryptoMocks = CryptoMocks()
             schemeMetadata = cryptoMocks.schemeMetadata
             signatureVerifier =
-                cryptoMocks.factories.cryptoClients(memberId).getSignatureVerificationService()
+                cryptoMocks.factories.cryptoLibrary.getSignatureVerificationService()
             cryptoServiceCache = DefaultCryptoKeyCacheImpl(
                 memberId = memberId,
                 passphrase = "PASSPHRASE",
@@ -62,7 +62,7 @@ class SigningServiceImplTests {
             cryptoService = DefaultCryptoService(
                 cache = cryptoServiceCache,
                 schemeMetadata = schemeMetadata,
-                hashingService = cryptoMocks.factories.cryptoClients(memberId).getDigestService()
+                hashingService = cryptoMocks.factories.cryptoLibrary.getDigestService()
             )
             cryptoService.createWrappingKey(wrappingKeyAlias, true)
             signingKeyCache = SigningKeyCacheImpl(

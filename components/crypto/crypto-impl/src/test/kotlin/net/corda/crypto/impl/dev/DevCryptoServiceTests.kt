@@ -64,7 +64,7 @@ class DevCryptoServiceTests {
             memberId = UUID.randomUUID().toString()
             cryptoMocks = CryptoMocks()
             schemeMetadata = cryptoMocks.schemeMetadata
-            signatureVerifier = cryptoMocks.factories.cryptoClients(memberId).getSignatureVerificationService()
+            signatureVerifier = cryptoMocks.factories.cryptoLibrary.getSignatureVerificationService()
             devCryptoServiceProvider = DevCryptoServiceProvider()
             cryptoService = devCryptoServiceProvider.getInstance(
                 CryptoServiceContext(

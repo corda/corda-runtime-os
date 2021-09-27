@@ -1,9 +1,9 @@
 package net.corda.crypto.impl
 
+import net.corda.crypto.CryptoLibraryClientsFactory
 import net.corda.crypto.impl.lifecycle.clearCache
 import net.corda.crypto.impl.lifecycle.closeGracefully
-import net.corda.crypto.CryptoLibraryFactory
-import net.corda.crypto.CryptoLibraryFactoryProvider
+import net.corda.crypto.CryptoLibraryClientsFactoryProvider
 import net.corda.crypto.impl.config.isDev
 import net.corda.crypto.impl.config.rpc
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
@@ -25,15 +25,15 @@ import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-@Component(service = [CryptoLibraryFactoryProvider::class])
-class CryptoLibraryFactoryProviderImpl @Activate constructor(
+@Component(service = [CryptoLibraryClientsFactoryProvider::class])
+class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
     @Reference(service = CipherSuiteFactory::class)
     private val cipherSuiteFactory: CipherSuiteFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = MemberIdProvider::class)
     private val memberIdProvider: MemberIdProvider
-) : Lifecycle, CryptoLifecycleComponent, CryptoLibraryFactoryProvider {
+) : Lifecycle, CryptoLifecycleComponent, CryptoLibraryClientsFactoryProvider {
     companion object {
         private val logger: Logger = contextLogger()
     }
@@ -49,7 +49,7 @@ class CryptoLibraryFactoryProviderImpl @Activate constructor(
 
     private var freshKeysServiceSender: RPCSender<WireFreshKeysRequest, WireFreshKeysResponse>? = null
 
-    private val factories = HashMap<String, CryptoLibraryFactory>()
+    private val factories = HashMap<String, CryptoLibraryClientsFactory>()
 
     override var isRunning: Boolean = false
 
@@ -71,22 +71,22 @@ class CryptoLibraryFactoryProviderImpl @Activate constructor(
         libraryConfig = config
     }
 
-    override fun create(requestingComponent: String): CryptoLibraryFactory = lock.withLock {
+    override fun create(requestingComponent: String): CryptoLibraryClientsFactory = lock.withLock {
         if (!isConfigured) {
             throw IllegalStateException("The provider is not configured.")
         }
         val memberId = memberIdProvider.memberId
         if(libraryConfig!!.isDev) {
-            createDevCryptoLibraryFactory(memberId, requestingComponent)
+            createDevFactory(memberId, requestingComponent)
         } else {
-            createProductionCryptoLibraryFactory(memberId, requestingComponent)
+            createProductionFactory(memberId, requestingComponent)
         }
     }
 
-    private fun createProductionCryptoLibraryFactory(
+    private fun createProductionFactory(
         memberId: String,
         requestingComponent: String
-    ): CryptoLibraryFactory {
+    ): CryptoLibraryClientsFactory {
         val rpcConfig = libraryConfig!!.rpc
         if (signingServiceSender == null) {
             signingServiceSender = publisherFactory.createRPCSender(rpcConfig.signingRpcConfig)
@@ -95,24 +95,24 @@ class CryptoLibraryFactoryProviderImpl @Activate constructor(
             freshKeysServiceSender = publisherFactory.createRPCSender(rpcConfig.freshKeysRpcConfig)
         }
         return factories.getOrPut(makeFactoryKey(memberId, requestingComponent)) {
-            CryptoLibraryFactoryImpl(
+            CryptoLibraryClientsFactoryImpl(
                 memberId = memberId,
                 requestingComponent = requestingComponent,
                 clientTimeout = Duration.ofSeconds(rpcConfig.clientTimeout),
                 clientRetries = rpcConfig.clientRetries,
-                cipherSuiteFactory = cipherSuiteFactory,
+                schemeMetadata = cipherSuiteFactory.getSchemeMap(),
                 signingServiceSender = signingServiceSender!!,
                 freshKeysServiceSender = freshKeysServiceSender!!
             )
         }
     }
 
-    private fun createDevCryptoLibraryFactory(
+    private fun createDevFactory(
         memberId: String,
         requestingComponent: String
-    ): CryptoLibraryFactory {
+    ): CryptoLibraryClientsFactory {
         return factories.getOrPut(makeFactoryKey(memberId, requestingComponent)) {
-            CryptoLibraryFactoryDevImpl(
+            CryptoLibraryClientsFactoryDevImpl(
                 memberId = memberId,
                 cipherSuiteFactory = cipherSuiteFactory
             )

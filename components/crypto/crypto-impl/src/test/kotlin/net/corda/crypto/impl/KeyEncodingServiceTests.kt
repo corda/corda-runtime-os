@@ -61,7 +61,7 @@ class KeyEncodingServiceTests {
                     memberId = memberId,
                     category = CryptoCategories.LEDGER
                 ),
-                factories.cryptoClients(memberId).getSignatureVerificationService()
+                factories.cryptoLibrary.getSignatureVerificationService()
             )
         }
     }

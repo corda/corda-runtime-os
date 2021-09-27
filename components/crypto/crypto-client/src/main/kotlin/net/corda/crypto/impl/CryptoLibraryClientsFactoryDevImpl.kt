@@ -1,26 +1,21 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.CryptoCategories
-import net.corda.crypto.CryptoLibraryFactory
+import net.corda.crypto.CryptoLibraryClientsFactory
 import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.SigningService
 import net.corda.crypto.impl.dev.DevCryptoService
 import net.corda.crypto.impl.dev.DevCryptoServiceConfiguration
 import net.corda.crypto.impl.dev.DevCryptoServiceProvider
 import net.corda.crypto.impl.lifecycle.closeGracefully
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoServiceContext
-import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.SignatureVerificationService
-import org.osgi.service.component.annotations.Activate
 import java.util.concurrent.ConcurrentHashMap
 
-class CryptoLibraryFactoryDevImpl @Activate constructor(
+class CryptoLibraryClientsFactoryDevImpl(
     private val memberId: String,
     private val cipherSuiteFactory: CipherSuiteFactory
-) : CryptoLibraryFactory, AutoCloseable {
+) : CryptoLibraryClientsFactory, AutoCloseable {
 
     private val schemeMetadata = cipherSuiteFactory.getSchemeMap()
 
@@ -29,18 +24,6 @@ class CryptoLibraryFactoryDevImpl @Activate constructor(
     }
 
     private val cryptoServices = ConcurrentHashMap<String, DevCryptoService>()
-
-    override fun getSignatureVerificationService(): SignatureVerificationService =
-        cipherSuiteFactory.getSignatureVerificationService()
-
-    override fun getKeyEncodingService(): KeyEncodingService =
-        cipherSuiteFactory.getSchemeMap()
-
-    override fun getCipherSchemeMetadata(): CipherSchemeMetadata =
-        cipherSuiteFactory.getSchemeMap()
-
-    override fun getDigestService(): DigestService =
-        cipherSuiteFactory.getDigestService()
 
     override fun getFreshKeySigningService(): FreshKeySigningService {
         val cryptoService = getCryptoService(memberId, CryptoCategories.LEDGER)

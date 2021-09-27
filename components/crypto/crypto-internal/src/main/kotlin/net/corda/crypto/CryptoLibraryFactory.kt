@@ -36,20 +36,4 @@ interface CryptoLibraryFactory {
      *
      */
     fun getDigestService(): DigestService
-
-    /**
-     * Returns a client instance of the [FreshKeySigningService].
-     *
-     * @throws [IllegalStateException] if the factory haven't been started yet
-     * @throws [CryptoServiceLibraryException] for general cryptographic exceptions.
-     */
-    fun getFreshKeySigningService(): FreshKeySigningService
-
-    /**
-     * Returns a client instance of the [SigningService].
-     *
-     * @throws [IllegalStateException] if the factory haven't been started yet
-     * @throws [CryptoServiceLibraryException] for general cryptographic exceptions.
-     */
-    fun getSigningService(category: String): SigningService
 }

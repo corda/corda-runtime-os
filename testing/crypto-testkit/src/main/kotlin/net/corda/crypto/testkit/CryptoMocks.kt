@@ -50,7 +50,9 @@ class CryptoMocks(
 
         val cryptoServices = MockCryptoFactory(mocks, defaultSignatureScheme, defaultFreshKeySignatureScheme)
 
-        fun cryptoClients(memberId: String): MockCryptoLibraryFactory =
-            MockCryptoLibraryFactory(mocks, memberId)
+        val cryptoLibrary = MockCryptoLibraryFactory(mocks)
+
+        fun cryptoClients(memberId: String): MockCryptoLibraryClientsFactory =
+            MockCryptoLibraryClientsFactory(mocks, memberId)
     }
 }

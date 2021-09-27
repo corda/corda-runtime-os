@@ -155,7 +155,7 @@ class CryptoFactoryImpl @Activate constructor(
             return CryptoServiceDecorator(
                 cryptoService = provider.getInstance(context),
                 timeout = config.timeout,
-                retries = 0 // TODO2 get from the config
+                retries = config.retries
             )
         } catch (e: Throwable) {
             throw CryptoServiceLibraryException(
