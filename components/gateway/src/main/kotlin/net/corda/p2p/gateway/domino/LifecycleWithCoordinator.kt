@@ -127,7 +127,7 @@ abstract class LifecycleWithCoordinator(
                             coordinator.postEvent(TransitionEvents.Resume)
                         }
                         State.Pausing -> coordinator.postEvent(TransitionEvents.Pause)
-                        else -> logger.warn("Unexpected start event, my stae is $state")
+                        else -> logger.warn("Unexpected start event, my state is $state")
                     }
                 }
                 is StopEvent -> {

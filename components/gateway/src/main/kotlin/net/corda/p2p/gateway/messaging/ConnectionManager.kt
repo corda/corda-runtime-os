@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap
 class ConnectionManager(
     parent: LifecycleWithCoordinator,
     private val configurationService: GatewayConfigurationService,
+    private val listener: HttpEventListener,
 ) : LifecycleWithCoordinatorAndResources(parent),
     GatewayConfigurationService.ReconfigurationListener {
 
@@ -38,18 +39,6 @@ class ConnectionManager(
     private var writeGroup: EventLoopGroup? = null
     private var nettyGroup: EventLoopGroup? = null
 
-    private val eventListeners = ConcurrentHashMap.newKeySet<HttpEventListener>()
-
-    fun addListener(eventListener: HttpEventListener) {
-        eventListeners.add(eventListener)
-        clientPool.forEach { it.value.addListener(eventListener) }
-    }
-
-    fun removeListener(eventListener: HttpEventListener) {
-        eventListeners.remove(eventListener)
-        clientPool.forEach { it.value.removeListener(eventListener) }
-    }
-
     /**
      * Return an existing or new [HttpClient].
      * @param destinationInfo the [DestinationInfo] object containing the destination's URI, SNI, and legal name
@@ -58,7 +47,7 @@ class ConnectionManager(
         return clientPool.computeIfAbsent(destinationInfo.uri) {
             val client = HttpClient(destinationInfo, configurationService.configuration.sslConfig, writeGroup!!, nettyGroup!!)
             executeBeforePause(client::close)
-            eventListeners.forEach { client.addListener(it) }
+            client.addListener(listener)
             client.start()
             client
         }

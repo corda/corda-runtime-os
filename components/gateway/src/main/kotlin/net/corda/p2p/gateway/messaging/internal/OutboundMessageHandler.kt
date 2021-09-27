@@ -51,7 +51,8 @@ internal class OutboundMessageHandler(
 
     private val connectionManager = ConnectionManager(
         this,
-        configurationService
+        configurationService,
+        this,
     )
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(Gateway.CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC),
@@ -86,11 +87,7 @@ internal class OutboundMessageHandler(
     override fun onStatusUp() {
         if ((connectionManager.state == State.Up) && (state != State.Up)) {
             p2pMessageSubscription.start()
-            executeBeforePause(p2pMessageSubscription::close)
-            connectionManager.addListener(this)
-            executeBeforePause {
-                connectionManager.removeListener(this)
-            }
+            executeBeforePause(p2pMessageSubscription::stop)
             state = State.Up
         }
     }

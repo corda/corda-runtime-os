@@ -30,7 +30,7 @@ class ConnectionManagerTest : TestBase() {
     @Test
     @Timeout(30)
     fun `acquire connection`() {
-        val manager = ConnectionManager(parent, configService)
+        val manager = ConnectionManager(parent, configService, object : HttpEventListener {})
         val listeners = mutableListOf<HttpEventListener>()
         manager.startAndWaitForStarted()
         HttpServer(listeners, configuration).use { server ->
@@ -60,7 +60,7 @@ class ConnectionManagerTest : TestBase() {
     @Test
     @Timeout(30)
     fun `reuse connection`() {
-        val manager = ConnectionManager(parent, configService)
+        val manager = ConnectionManager(parent, configService, object : HttpEventListener {})
         val remotePeers = mutableListOf<SocketAddress>()
         manager.startAndWaitForStarted()
         val requestReceived = CountDownLatch(2)
