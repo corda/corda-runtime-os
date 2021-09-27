@@ -145,13 +145,6 @@ class GatewayTest : TestBase() {
     @Timeout(30)
     fun `gateway reconfiguration`() {
         val configurationCount = 3
-        // TODO: YIFT
-        // WIP: Need to verify what happpens with good configuration -> bad configuration (invalid port, invalid message all together) -> Different good configuration
-        // Also test the outbound
-        // Good -> Good
-        // Bad->Bad->good
-        // Good->good->good
-        // Good -> bad -> bad -> good
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
         val outboundServerUrl = URI.create("http://www.alice.net:10000")
 
