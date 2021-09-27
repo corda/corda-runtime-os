@@ -1,8 +1,6 @@
 pluginManagement {
     repositories {
         def cordaUseCache = System.getenv("CORDA_USE_CACHE")
-
-        mavenLocal()
         if (cordaUseCache != null) {
             maven {
                 url = "${artifactoryContextUrl}/${cordaUseCache}"
@@ -161,7 +159,3 @@ include 'testing:apps:test-app'
 include 'testing:bundles:cats'
 include 'testing:bundles:dogs'
 include 'testing:test-utilities'
-
-// The following logic dictates if we use the composite build gradle functionality,
-// If this evaluates to true local source code will be used in place of binary dependencies.
-// This is intended for local use only. The checks in place should prevent this from being triggered on a Jenkins server where we would always want to use the Binaries.
