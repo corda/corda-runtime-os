@@ -6,6 +6,7 @@ import java.time.Duration
 class CryptoServiceConfig(
     val serviceName: String = DEFAULT_SERVICE_NAME,
     val timeout: Duration = Duration.ofSeconds(5),
+    val retries: Long = 0,
     val serviceConfig: Map<String, Any?> = mapOf(),
     val defaultSignatureScheme: String = ECDSA_SECP256R1_CODE_NAME
 ) {
