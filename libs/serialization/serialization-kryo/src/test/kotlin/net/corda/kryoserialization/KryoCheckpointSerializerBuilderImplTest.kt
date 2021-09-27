@@ -5,10 +5,24 @@ import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
 import net.corda.kryoserialization.impl.KryoCheckpointSerializerBuilderImpl
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.CheckpointSerializerBuilder
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import net.i2p.crypto.eddsa.EdDSAPrivateKey
+import net.i2p.crypto.eddsa.EdDSAPublicKey
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
+import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPrivateCrtKey
+import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey
+import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PrivateKey
+import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PublicKey
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.mock
+import java.security.PrivateKey
+import java.security.PublicKey
 
 internal class KryoCheckpointSerializerBuilderImplTest {
 
@@ -46,5 +60,35 @@ internal class KryoCheckpointSerializerBuilderImplTest {
         val tested = serializer.deserialize(bytes, instance::class.java)
 
         assertThat(tested).isSameAs(instance)
+    }
+
+    @ParameterizedTest
+    @ValueSource(classes = [
+        PublicKey::class, EdDSAPublicKey::class, CompositeKey::class,
+        BCECPublicKey::class, BCRSAPublicKey::class, BCSphincs256PublicKey::class
+    ])
+    fun `serializers of public keys cannot be added`(type: Class<*>) {
+        val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(
+            mock(), mockSandboxGroup(emptySet())
+        )
+
+        assertThatExceptionOfType(CordaKryoException::class.java).isThrownBy {
+            builder.addSerializer(type, mock())
+        }.withMessage("Custom serializers for public keys are not allowed")
+    }
+
+    @ParameterizedTest
+    @ValueSource(classes = [
+        PrivateKey::class, EdDSAPrivateKey::class, BCECPrivateKey::class,
+        BCRSAPrivateCrtKey::class, BCSphincs256PrivateKey::class
+    ])
+    fun `serializers of private keys cannot be added`(type: Class<*>) {
+        val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(
+            mock(), mockSandboxGroup(emptySet())
+        )
+
+        assertThatExceptionOfType(CordaKryoException::class.java).isThrownBy {
+            builder.addSerializer(type, mock())
+        }.withMessage("Custom serializers for private keys are not allowed")
     }
 }
