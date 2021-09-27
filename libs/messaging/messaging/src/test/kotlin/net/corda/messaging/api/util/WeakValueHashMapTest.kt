@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.util.concurrent.CompletableFuture
 
+@Suppress("ExplicitGarbageCollectionCall")
 class WeakValueHashMapTest {
 
     @Test
