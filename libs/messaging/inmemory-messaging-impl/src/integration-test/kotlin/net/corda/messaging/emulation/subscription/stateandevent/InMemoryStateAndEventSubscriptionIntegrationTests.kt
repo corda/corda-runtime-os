@@ -7,6 +7,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -225,10 +226,12 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
         }
         countDown.await(1, TimeUnit.MINUTES)
 
-        assertThat(latestStates[Key(4)]).isNull()
-        assertThat(latestStates[Key(2)]).isEqualTo(State(4))
-        assertThat(latestStates[Key(1)]).isEqualTo(State(1))
-        assertThat(latestStates[Key(3)]).isEqualTo(State(2))
+        eventually {
+            assertThat(latestStates[Key(4)]).isNull()
+            assertThat(latestStates[Key(2)]).isEqualTo(State(4))
+            assertThat(latestStates[Key(1)]).isEqualTo(State(1))
+            assertThat(latestStates[Key(3)]).isEqualTo(State(2))
+        }
 
         subscription.close()
     }
