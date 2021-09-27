@@ -8,7 +8,7 @@ plugins {
 description "Corda CorDapp Installer"
 
 ext {
-    cordaDevPreviewVersion = '5.0.0-DevPreview--beta-1631256347020'
+    cordaDevPreviewVersion = '5.0.0-DevPreview-1.0'
 }
 
 configurations {
