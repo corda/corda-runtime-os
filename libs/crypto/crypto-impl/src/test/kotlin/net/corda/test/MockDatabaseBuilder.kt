@@ -1,4 +1,4 @@
-package net.corda.impl.test
+package net.corda.test
 
 import net.corda.cipher.suite.impl.DefaultCryptoPersistentKey
 import net.corda.crypto.impl.SigningPersistentKey
@@ -18,7 +18,7 @@ class MockDatabaseBuilder {
             }
         }
 
-        private fun dbSettings() : Properties = h2Settings()
+        private fun dbSettings() : Properties =  h2Settings()
 
         private fun h2Settings(databaseName: String = UUID.randomUUID().toString()) = Properties().apply {
             setProperty("hibernate.dialect", "org.hibernate.dialect.H2Dialect")

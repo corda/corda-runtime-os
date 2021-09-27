@@ -37,7 +37,7 @@ dependencies {
     testImplementation "com.h2database:h2:$h2Version"
 
     testImplementation project(":libs:crypto:crypto-testkit")
-    integrationTestImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }
 
 description 'Crypto Implementation'
