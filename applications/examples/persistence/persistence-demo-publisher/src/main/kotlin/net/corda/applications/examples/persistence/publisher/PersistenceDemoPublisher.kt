@@ -30,10 +30,6 @@ class PersistenceDemoPublisher @Activate constructor(
     }
 }
 
-@CommandLine.Command(
-    name = "publisher",
-    mixinStandardHelpOptions = true,
-)
 class CliParameters(shutDownService: Shutdown) : CommandBase(shutDownService), Runnable {
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false
