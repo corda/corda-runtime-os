@@ -3,52 +3,36 @@ package net.corda.kryoserialization.impl
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.io.serialization.kryo.KryoSerializer
 import com.esotericsoftware.kryo.Serializer
-import net.corda.classinfo.ClassInfoService
+import net.corda.kryoserialization.CordaKryoException
 import net.corda.kryoserialization.DefaultKryoCustomizer
 import net.corda.kryoserialization.KryoCheckpointSerializer
 import net.corda.kryoserialization.KryoCheckpointSerializerAdapter
 import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.ClassSerializer
+import net.corda.kryoserialization.serializers.PublicKeySerializer
 import net.corda.kryoserialization.serializers.SingletonSerializeAsTokenSerializer
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.CheckpointInternalCustomSerializer
 import net.corda.serialization.CheckpointSerializerBuilder
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
-import net.corda.v5.crypto.BasicHashingService
+import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
+import org.bouncycastle.jcajce.interfaces.EdDSAPublicKey
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
+import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey
+import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PublicKey
+import java.security.PrivateKey
 import java.security.PublicKey
 
-@Component(immediate = true, service = [CheckpointSerializerBuilder::class])
-class KryoCheckpointSerializerBuilderImpl @Activate constructor(
-    @Reference
-    private val classInfoService: ClassInfoService,
-    @Reference
-    private val hashingService: BasicHashingService
+class KryoCheckpointSerializerBuilderImpl(
+    private val keyEncodingService: KeyEncodingService,
+    private val sandboxGroup: SandboxGroup
 ) : CheckpointSerializerBuilder {
-
-    companion object {
-        val log = contextLogger()
-    }
 
     private val serializers: MutableMap<Class<*>, Serializer<*>> = mutableMapOf()
     private val singletonInstances: MutableMap<String, SingletonSerializeAsToken> = mutableMapOf()
-    private var sandboxGroup: SandboxGroup? = null
 
     private val kryoFromQuasar = (Fiber.getFiberSerializer(false) as KryoSerializer).kryo
-
-    override fun newCheckpointSerializer(sandboxGroup: SandboxGroup): CheckpointSerializerBuilder {
-        if (this.sandboxGroup != null) {
-            log.warn("Checkpoint serializer build was already in progress!  Restarting checkpoint build. " +
-                    "Previous build information will be lost.")
-            serializers.clear()
-        }
-        this.sandboxGroup = sandboxGroup
-        return this
-    }
 
     override fun addSerializer(
         clazz: Class<*>,
@@ -61,7 +45,10 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
     ): CheckpointSerializerBuilder {
         for (clazz in classes) {
             if (PublicKey::class.java.isAssignableFrom(clazz)) {
-                throw CordaRuntimeException("Custom serializers for public keys are not allowed")
+                throw CordaKryoException("Custom serializers for public keys are not allowed")
+            }
+            if (PrivateKey::class.java.isAssignableFrom(clazz)) {
+                throw CordaKryoException("Custom serializers for private keys are not allowed")
             }
             serializers[clazz] = KryoCheckpointSerializerAdapter(serializer).adapt()
         }
@@ -76,36 +63,27 @@ class KryoCheckpointSerializerBuilderImpl @Activate constructor(
     }
 
     override fun build(): KryoCheckpointSerializer {
-        // The exception doesn't quite match what we're checking, but this will only exist here if
-        // newCheckpointSerializer was called.
-        val sandboxGroup = sandboxGroup ?:
-            throw CordaRuntimeException("Cannot build a Checkpoint Serializer without first calling " +
-                    "`newCheckpointSerializer`.")
+        val classResolver = CordaClassResolver(sandboxGroup)
+        val classSerializer = ClassSerializer(sandboxGroup)
 
-        val classResolver = CordaClassResolver(
-            classInfoService,
-            sandboxGroup,
-            hashingService
+        val singletonSerializeAsTokenSerializer = mapOf(
+            SingletonSerializeAsToken::class.java to SingletonSerializeAsTokenSerializer(singletonInstances.toMap())
         )
 
-        val classSerializer = ClassSerializer(
-            classInfoService,
-            sandboxGroup,
-            hashingService
-        )
-
-        val singletonSerializeAsTokenSerializer = SingletonSerializeAsTokenSerializer(singletonInstances.toMap())
+        val publicKeySerializers = listOf(
+            PublicKey::class.java, EdDSAPublicKey::class.java, CompositeKey::class.java,
+            BCECPublicKey::class.java, BCRSAPublicKey::class.java, BCSphincs256PublicKey::class.java
+        ).associateWith { PublicKeySerializer(keyEncodingService) }
 
         val kryo = DefaultKryoCustomizer.customize(
             kryoFromQuasar,
-            serializers + mapOf(SingletonSerializeAsToken::class.java to singletonSerializeAsTokenSerializer),
+            serializers + singletonSerializeAsTokenSerializer + publicKeySerializers,
             classResolver,
             classSerializer,
         )
 
         return KryoCheckpointSerializer(kryo).also {
             // Clear the builder state
-            this.sandboxGroup = null
             serializers.clear()
             singletonInstances.clear()
         }

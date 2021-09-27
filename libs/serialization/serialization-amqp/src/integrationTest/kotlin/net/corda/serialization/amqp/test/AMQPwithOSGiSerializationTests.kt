@@ -129,7 +129,7 @@ class AMQPwithOSGiSerializationTests {
         val cpks = installService.getCpb(cpb.identifier)!!.cpks
 
         // Create sandbox group
-        val sandboxGroup = sandboxCreationService.createSandboxes(cpks.map(Cpk::cpkHash))
+        val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks.map(Cpk::cpkHash))
         assertThat(sandboxGroup).isNotNull
         assertThat(sandboxGroup.sandboxes).hasSize(4)
 

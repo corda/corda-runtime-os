@@ -138,6 +138,7 @@ allprojects {
                     }
                 }
                 filter {
+                    includeGroup 'org.mule.distributions'
                     includeGroup 'antlr'
                 }
             }
