@@ -158,27 +158,27 @@ class TopicTemplates {
                 ]"""
 
         const val RPC_TOPIC  = "RPCTopic"
-        const val RPC_TOPIC_TEMPLATE = "topics = [" +
-                "    {\n" +
-                "        topicName = \"$RPC_TOPIC\"\n" +
-                "        numPartitions = 1\n" +
-                "        replicationFactor = 3\n" +
-                "        config {\n" +
-                "            cleanup.policy=compact\n" +
-                "        }\n" +
-                "    }\n" +
-                "]"
+        const val RPC_TOPIC_TEMPLATE = """topics = [
+                    {
+                        topicName = "$RPC_TOPIC" 
+                        numPartitions = 1
+                        replicationFactor = 3
+                        config {
+                            cleanup.policy=compact
+                        }
+                    }
+                ]"""
 
         const val RPC_RESPONSE_TOPIC  = "RPCTopic.resp"
-        const val RPC_RESPONSE_TOPIC_TEMPLATE = "topics = [" +
-                "    {\n" +
-                "        topicName = \"$RPC_RESPONSE_TOPIC\"\n" +
-                "        numPartitions = 1\n" +
-                "        replicationFactor = 3\n" +
-                "        config {\n" +
-                "            cleanup.policy=compact\n" +
-                "        }\n" +
-                "    }\n" +
-                "]"
+        const val RPC_RESPONSE_TOPIC_TEMPLATE = """topics = [
+                    { 
+                        topicName = "$RPC_RESPONSE_TOPIC"
+                        numPartitions = 1
+                        replicationFactor = 3
+                        config { 
+                            cleanup.policy=compact
+                        } 
+                    } 
+                ]"""
     }
 }

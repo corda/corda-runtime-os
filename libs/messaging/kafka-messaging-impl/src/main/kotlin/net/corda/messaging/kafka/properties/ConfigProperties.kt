@@ -46,7 +46,6 @@ class ConfigProperties {
         const val COMMIT_OFFSET_MAX_RETRIES = "commit.retries"
 
         const val GROUP_INSTANCE_ID = CommonClientConfigs.GROUP_INSTANCE_ID_CONFIG
-        const val LISTENER_TIMEOUT = "listener.timeout"
         const val PRODUCER_CLIENT_ID = "producer.${CommonClientConfigs.CLIENT_ID_CONFIG}"
         const val CONSUMER_GROUP_ID = "consumer.${CommonClientConfigs.GROUP_ID_CONFIG}"
         const val CONSUMER_MAX_POLL_INTERVAL = "consumer.${CommonClientConfigs.MAX_POLL_INTERVAL_MS_CONFIG}"

@@ -17,7 +17,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.types.StateAndEventConfig
 import net.corda.messaging.kafka.types.Topic
 import net.corda.messaging.kafka.utils.getEventsByBatch
-import net.corda.messaging.kafka.utils.tryGetFutureResult
+import net.corda.messaging.kafka.utils.tryGetResult
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -225,7 +225,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private fun getUpdatesForEvent(state: S?, event: ConsumerRecordAndMeta<K, E>): StateAndEventProcessor.Response<S>? {
         val future = stateAndEventConsumer.waitForFunctionToFinish({ processor.onNext(state, event.asRecord()) }, processorTimeout,
             "Failed to finish within the time limit for state: $state and event: $event")
-        return uncheckedCast(tryGetFutureResult(future))
+        return uncheckedCast(future.tryGetResult())
     }
 
     private fun generateDeadLetterRecord(event: ConsumerRecord<K, E>, state: S?): Record<*, *> {

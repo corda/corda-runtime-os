@@ -21,7 +21,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class)
 class RPCSubscriptionIntegrationTest {

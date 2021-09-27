@@ -16,7 +16,6 @@ data class StateAndEventConfig(
     val producerCloseTimeout: Duration,
     val consumerPollAndProcessMaxRetries: Long,
     val maxPollInterval: Long,
-    val listenerTimeout: Long,
     val processorTimeout: Long,
     val deadLetterQueueSuffix: String,
     val stateConsumerConfig: Config,
@@ -36,7 +35,6 @@ data class StateAndEventConfig(
             val producerCloseTimeout = Duration.ofMillis(config.getLong(ConfigProperties.PRODUCER_CLOSE_TIMEOUT))
             val consumerPollAndProcessMaxRetries = config.getLong(ConfigProperties.EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES)
             val maxPollInterval = config.getLong(ConfigProperties.CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"))
-            val listenerTimeout = config.getLong(ConfigProperties.LISTENER_TIMEOUT)
             val processorTimeout = config.getLong(ConfigProperties.CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"))
             val deadLetterQueueSuffix = config.getString(ConfigProperties.DEAD_LETTER_QUEUE_SUFFIX)
             val eventConsumerConfig = config.getConfig(ConfigProperties.EVENT_CONSUMER)
@@ -55,7 +53,6 @@ data class StateAndEventConfig(
                 producerCloseTimeout,
                 consumerPollAndProcessMaxRetries,
                 maxPollInterval,
-                listenerTimeout,
                 processorTimeout,
                 deadLetterQueueSuffix,
                 stateConsumerConfig,

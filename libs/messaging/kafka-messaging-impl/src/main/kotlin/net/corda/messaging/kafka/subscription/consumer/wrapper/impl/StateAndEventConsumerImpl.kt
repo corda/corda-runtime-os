@@ -1,6 +1,5 @@
 package net.corda.messaging.kafka.subscription.consumer.wrapper.impl
 
-import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -8,7 +7,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventCons
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
 import net.corda.messaging.kafka.types.StateAndEventConfig
 import net.corda.messaging.kafka.types.Topic
-import net.corda.messaging.kafka.utils.tryGetFutureResult
+import net.corda.messaging.kafka.utils.tryGetResult
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -33,7 +32,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     //single threaded executor per state and event consumer
-    private val executor = Executors.newSingleThreadScheduledExecutor() { runnable ->
+    private val executor = Executors.newSingleThreadScheduledExecutor { runnable ->
         val thread = Thread(runnable)
         thread.isDaemon = true
         thread
@@ -45,7 +44,6 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val topicPrefix = config.topicPrefix
     private val maxPollInterval = config.maxPollInterval
     private val initialProcessorTimeout = maxPollInterval / 4
-    private val listenerTimeout = config.listenerTimeout
 
     private val eventTopic = Topic(topicPrefix, config.eventTopic)
     private val stateTopic = Topic(topicPrefix, config.stateTopic)
@@ -119,18 +117,14 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         stateAndEventListener?.let { listener ->
             for (partition in partitionsSynced) {
-                waitForFunctionToFinish(
-                    { listener.onPartitionSynced(getStatesForPartition(partition.partition())) },
-                    listenerTimeout,
-                    "StateAndEventListener timed out for onPartitionSynced operation on partition $partition"
-                )
+                listener.onPartitionSynced(getStatesForPartition(partition.partition()))
             }
         }
     }
 
     override fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String): CompletableFuture<Any> {
         val future: CompletableFuture<Any> = CompletableFuture.supplyAsync({ function() }, executor)
-        tryGetFutureResult(future, getInitialConsumerTimeout())
+        future.tryGetResult(getInitialConsumerTimeout())
 
         if (!future.isDone) {
             pauseEventConsumerAndWaitForFutureToFinish(future, maxTimeout)
@@ -185,7 +179,8 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 val value = entry.value
                 //will never be null, created on assignment in rebalance listener
                 val currentStatesByPartition = currentStates[partitionId]
-                    ?: throw CordaMessageAPIFatalException("Current State map for group $groupName on topic $stateTopic[$partitionId] is null.")
+                    ?: throw CordaMessageAPIFatalException("Current State map for " +
+                            "group $groupName on topic $stateTopic[$partitionId] is null.")
                 updatedStatesByKey[key] = value
                 if (value != null) {
                     currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)

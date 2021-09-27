@@ -25,7 +25,6 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
     private val topicPrefix = config.topicPrefix
     private val eventTopic = Topic(topicPrefix, config.eventTopic)
     private val stateTopic = Topic(topicPrefix, config.stateTopic)
-    private val listenerTimeout = config.listenerTimeout
 
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = partitionState.partitionsToSync
@@ -52,7 +51,9 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
         eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) })
 
         statePartitions.forEach {
-            currentStates.computeIfAbsent(it.partition()) { mapFactory.createMap() }
+            currentStates.computeIfAbsent(it.partition()) {
+                mapFactory.createMap()
+            }
         }
     }
 
@@ -70,15 +71,11 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
             partitionsToSync.remove(partitionId)
 
             currentStates[partitionId]?.let { partitionStates ->
-                stateAndEventListener?.let { listener ->
-                    stateAndEventConsumer.waitForFunctionToFinish(
-                        { listener.onPartitionLost(getStatesForPartition(partitionId)) },
-                        listenerTimeout,
-                        "StateAndEventListener timed out for onPartitionLost operation on partition $topicPartition"
-                    )
-                }
-
                 mapFactory.destroyMap(partitionStates)
+            }
+
+            stateAndEventListener?.let { listener ->
+                listener.onPartitionLost(getStatesForPartition(partitionId))
             }
         }
     }

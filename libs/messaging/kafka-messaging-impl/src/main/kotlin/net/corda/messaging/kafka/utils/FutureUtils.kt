@@ -8,25 +8,25 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 @Suppress("TooGenericExceptionCaught")
-fun tryGetFutureResult(future: CompletableFuture<*>, timeout: Long, cancelOnTimeout: Boolean = false): Any? {
+fun CompletableFuture<*>.tryGetResult(timeout: Long, cancelOnTimeout: Boolean = false): Any? {
     return try {
-        future.get(timeout, TimeUnit.MILLISECONDS)
+        get(timeout, TimeUnit.MILLISECONDS)
     } catch (ex: Exception) {
-        return handleFutureException(ex, future, cancelOnTimeout)
+        return handleFutureException(ex, this, cancelOnTimeout)
     }
 }
 
 @Suppress("TooGenericExceptionCaught")
-fun tryGetFutureResult(future: CompletableFuture<*>): Any? {
+fun CompletableFuture<*>.tryGetResult(): Any? {
     return try {
-        future.get()
+        get()
     } catch (ex: Exception) {
-        return handleFutureException(ex, future)
+        return handleFutureException(ex, this)
     }
 }
 
 @Suppress("ThrowsCount")
-fun handleFutureException(ex: Exception, future: CompletableFuture<*>, cancelOnTimeout: Boolean = false): Any? {
+private fun handleFutureException(ex: Exception, future: CompletableFuture<*>, cancelOnTimeout: Boolean = false): Any? {
     when (ex) {
         is TimeoutException -> {
             if (cancelOnTimeout) {
