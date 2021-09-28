@@ -69,7 +69,7 @@ class HttpRpcGateway(
         }
 
         val listener = { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
-            log.info("Gateway component received lifecycle event")
+            log.info("Gateway component received lifecycle event, changedKeys: $changedKeys")
             if (MESSAGING_CONFIG in changedKeys) {
                 if (receivedSnapshot) {
                     log.info("Config update received")
@@ -117,7 +117,9 @@ class HttpRpcGateway(
         }
         sub = configurationReadService.registerForUpdates(listener)
 
+        log.info("About to start configurationReadService $configurationReadService")
         configurationReadService.start()
+        log.info("Started configurationReadService $configurationReadService")
     }
 
     override fun stop() {

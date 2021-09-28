@@ -41,6 +41,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
     private val callbackHandles = ConfigurationHandlerStorage()
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        logger.info("eventHandler with event: $event")
         when (event) {
             is StartEvent -> {
                 logger.debug { "Configuration read service starting up." }
@@ -90,6 +91,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
     }
 
     override fun bootstrapConfig(config: Config) {
+        logger.info("bootstrapConfig called with $config")
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
     }
 
@@ -101,10 +103,12 @@ class ConfigurationReadServiceImpl @Activate constructor(
         get() = lifecycleCoordinator.isRunning
 
     override fun start() {
+        logger.info("start invoked")
         lifecycleCoordinator.start()
     }
 
     override fun stop() {
+        logger.info("stop invoked")
         lifecycleCoordinator.stop()
     }
 }

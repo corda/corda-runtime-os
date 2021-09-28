@@ -2,6 +2,7 @@ package net.corda.applications.rpc
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValue
 import com.typesafe.config.ConfigValueFactory
 import net.corda.components.rpc.ConfigReceivedEvent
 import net.corda.components.rpc.HttpRpcGateway
@@ -107,13 +108,20 @@ class HttpRpcGatewayApp @Activate constructor(
                         }
                     }
                 }
+
             httpRpcGateway = HttpRpcGateway(lifeCycleCoordinator!!, configurationReadService, httpRpcServerFactory, rpcSecurityManagerFactory)
-            httpRpcGateway.start(bootstrapConfig)
+
+            //log.info("About to start httpRpcGateway $httpRpcGateway")
+            //httpRpcGateway.start(bootstrapConfig)
+            //log.info("Started httpRpcGateway $httpRpcGateway")
 
 
             log.info("Starting life cycle coordinator")
             lifeCycleCoordinator!!.start()
             consoleLogger.info("HTTP RPC Gateway application started")
+
+            Thread.sleep(1000)
+            configurationReadService.bootstrapConfig(bootstrapConfig)
         }
     }
 
@@ -133,6 +141,7 @@ class HttpRpcGatewayApp @Activate constructor(
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
             .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
+                .withValue("config.file", ConfigValueFactory.fromAnyRef("test.conf"))
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
