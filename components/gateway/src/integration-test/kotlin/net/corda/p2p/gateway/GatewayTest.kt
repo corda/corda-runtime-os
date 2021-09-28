@@ -32,8 +32,6 @@ import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.fail
@@ -263,26 +261,11 @@ class GatewayTest : TestBase() {
     @Test
     @Timeout(60)
     fun `gateway to gateway - dual stream`() {
-        val aliceGatewayAddress = URI.create("http://www.chip.net:10003")
-        val bobGatewayAddress = URI.create("http://www.dale.net:10004")
+        val aliceGatewayAddress = URI.create("http://www.chip.net:11003")
+        val bobGatewayAddress = URI.create("http://www.dale.net:11004")
         val messageCount = 100
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
         bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
-        // Produce messages for each Gateway
-        (1..messageCount).flatMap {
-            var msg = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("", NetworkType.CORDA_5, bobGatewayAddress.toString())
-                payload = authenticatedP2PMessage("Target-$bobGatewayAddress")
-            }.build()
-            val aliceMsgfuture = alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
-
-            msg = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("", NetworkType.CORDA_5, aliceGatewayAddress.toString())
-                payload = authenticatedP2PMessage("Target-$aliceGatewayAddress")
-            }.build()
-            val bobMsgFuture = bob.publish(Record(LINK_OUT_TOPIC, "key", msg))
-            (aliceMsgfuture + bobMsgFuture)
-        }.forEach { it.get() }
 
         val receivedLatch = CountDownLatch(messageCount * 2)
         var bobReceivedMessages = 0
@@ -326,6 +309,8 @@ class GatewayTest : TestBase() {
         )
         aliceSubscription.start()
 
+        val startedCountDown = CountDownLatch(2)
+
         val startTime = Instant.now().toEpochMilli()
         // Start the gateways and let them run until all messages have been processed
         val t1 = thread {
@@ -335,6 +320,7 @@ class GatewayTest : TestBase() {
                 alice.publisherFactory
             ).also {
                 it.start()
+                startedCountDown.countDown()
             }.use {
                 receivedLatch.await()
             }
@@ -346,15 +332,37 @@ class GatewayTest : TestBase() {
                 bob.publisherFactory
             ).also {
                 it.start()
+                startedCountDown.countDown()
             }.use {
                 receivedLatch.await()
+                it.close()
             }
+        }
+
+        // Produce messages for each Gateway
+        startedCountDown.await()
+        val messages = (1..messageCount).flatMap {
+            listOf(
+                bobGatewayAddress.toString() to alice,
+                aliceGatewayAddress.toString() to bob
+            )
+        }.flatMap { (address, node) ->
+            val msg = LinkOutMessage.newBuilder().apply {
+                header = LinkOutHeader("", NetworkType.CORDA_5, address)
+                payload = authenticatedP2PMessage("Target-$address")
+            }.build()
+            node.publish(Record(LINK_OUT_TOPIC, "key", msg))
+        }
+        messages.forEach {
+            it.join()
         }
 
         val allMessagesDelivered = receivedLatch.await(30, TimeUnit.SECONDS)
         if (!allMessagesDelivered) {
-            fail("Not all messages were delivered successfully. Bob received $bobReceivedMessages messages (expected $messageCount), " +
-                    "Alice received $aliceReceivedMessages (expected $messageCount)")
+            fail(
+                "Not all messages were delivered successfully. Bob received $bobReceivedMessages messages (expected $messageCount), " +
+                    "Alice received $aliceReceivedMessages (expected $messageCount)"
+            )
         }
 
         val endTime = Instant.now().toEpochMilli()
