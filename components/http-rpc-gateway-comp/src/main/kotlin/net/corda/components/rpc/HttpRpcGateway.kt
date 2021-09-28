@@ -108,7 +108,7 @@ class HttpRpcGateway(
                     rpcOpsImpls = emptyList(),
                     rpcSecurityManager = securityManager,
                     httpRpcSettings = httpRpcSettings,
-                    devMode = false,
+                    devMode = true,
                     cordappClassLoader = this::class.java.classLoader
                 )
                 server?.start()
@@ -117,8 +117,10 @@ class HttpRpcGateway(
         }
         sub = configurationReadService.registerForUpdates(listener)
 
+
         log.info("About to start configurationReadService $configurationReadService")
         configurationReadService.start()
+        configurationReadService.bootstrapConfig(bootstrapConfig!!)
         log.info("Started configurationReadService $configurationReadService")
     }
 

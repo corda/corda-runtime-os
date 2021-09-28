@@ -9,6 +9,7 @@ import net.corda.libs.configuration.read.ConfigReader
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import java.io.File
 import java.io.IOException
 import java.util.Collections
 import java.util.concurrent.locks.ReentrantLock
@@ -79,12 +80,8 @@ class FileConfigReaderImpl(
         return try {
             val parseOptions = ConfigParseOptions.defaults().setAllowMissing(false)
             val configFilePath = bootstrapConfig.getString(CONFIG_FILE_NAME)
-            //ConfigFactory.parseURL(File(configFilePath).toURI().toURL(), parseOptions).resolve()
+            ConfigFactory.parseURL(File(configFilePath).toURI().toURL(), parseOptions).resolve()
 
-            val fileRes = FileConfigReaderImpl::class.java.getResource("/$configFilePath")
-                    ?: throw CordaRuntimeException("File $configFilePath not found in resources.")
-
-            ConfigFactory.parseURL(fileRes, parseOptions).resolve()
         } catch (e: ConfigException) {
             log.error(e.message, e)
             ConfigFactory.empty()
