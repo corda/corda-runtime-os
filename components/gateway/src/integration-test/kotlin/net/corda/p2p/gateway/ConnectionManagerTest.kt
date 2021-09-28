@@ -8,6 +8,7 @@ import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
+import net.corda.p2p.gateway.messaging.http.ListenerWithServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -30,27 +31,27 @@ class ConnectionManagerTest : TestBase() {
     @Test
     @Timeout(30)
     fun `acquire connection`() {
-        val manager = ConnectionManager(parent, configService, object : HttpEventListener {})
-        val listeners = mutableListOf<HttpEventListener>()
+        val responseReceived = CountDownLatch(1)
+        val manager = ConnectionManager(
+            parent, configService,
+            object : HttpEventListener {
+                override fun onMessage(message: HttpMessage) {
+                    assertEquals(serverResponseContent, String(message.payload))
+                    responseReceived.countDown()
+                }
+            }
+        )
+        val listener = object : ListenerWithServer() {
+            override fun onMessage(message: HttpMessage) {
+                assertEquals(clientMessageContent, String(message.payload))
+                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), message.source)
+            }
+        }
         manager.startAndWaitForStarted()
-        HttpServer(listeners, configuration).use { server ->
-            listeners.add(
-                object : HttpEventListener {
-                    override fun onMessage(message: HttpMessage) {
-                        assertEquals(clientMessageContent, String(message.payload))
-                        server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), message.source)
-                    }
-                })
+        HttpServer(listener, configuration).use { server ->
+            listener.server = server
             server.start()
             manager.acquire(destination).use { client ->
-                // Client is connected at this point
-                val responseReceived = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onMessage(message: HttpMessage) {
-                        assertEquals(serverResponseContent, String(message.payload))
-                        responseReceived.countDown()
-                    }
-                })
                 client.write(clientMessageContent.toByteArray())
                 responseReceived.await()
             }
@@ -72,7 +73,7 @@ class ConnectionManagerTest : TestBase() {
                 requestReceived.countDown()
             }
         }
-        HttpServer(listOf(listener), configuration).use { server ->
+        HttpServer(listener, configuration).use { server ->
             server.start()
             manager.acquire(destination).write(clientMessageContent.toByteArray())
             manager.acquire(destination).write(clientMessageContent.toByteArray())

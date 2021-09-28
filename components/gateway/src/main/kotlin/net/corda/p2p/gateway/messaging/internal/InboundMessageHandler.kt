@@ -51,10 +51,6 @@ internal class InboundMessageHandler(
             publisher.close()
         }
         p2pInPublisher = publisher
-        server.addListener(this)
-        executeBeforePause {
-            server.removeListener(this@InboundMessageHandler)
-        }
 
         logger.info("Started P2P message receiver")
         state = State.Up

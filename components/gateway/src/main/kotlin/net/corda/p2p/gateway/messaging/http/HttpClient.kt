@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory
 import java.lang.IllegalStateException
 import java.net.URI
 import java.util.LinkedList
-import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.TrustManagerFactory
 import kotlin.concurrent.withLock
@@ -43,7 +42,8 @@ class HttpClient(
     private val destinationInfo: DestinationInfo,
     private val sslConfiguration: SslConfiguration,
     private val writeGroup: EventLoopGroup,
-    private val nettyGroup: EventLoopGroup
+    private val nettyGroup: EventLoopGroup,
+    private val listener: HttpEventListener,
 ) : Lifecycle, HttpEventListener {
 
     companion object {
@@ -76,8 +76,6 @@ class HttpClient(
     override val isRunning: Boolean
         get() = (writeProcessor != null)
 
-    private val eventListeners = CopyOnWriteArrayList<HttpEventListener>()
-
     private val connectListener = ChannelFutureListener { future ->
         if (!future.isSuccess) {
             logger.warn("Failed to connect to ${destinationInfo.uri}: ${future.cause().message}")
@@ -104,17 +102,6 @@ class HttpClient(
             writeProcessor = null
             logger.info("Stopped HTTP client ${destinationInfo.uri}")
         }
-    }
-
-    /**
-     * Adds an [HttpEventListener] which upstream services can provide to receive updates on important events.
-     */
-    fun addListener(eventListener: HttpEventListener) {
-        eventListeners.add(eventListener)
-    }
-
-    fun removeListener(eventListener: HttpEventListener) {
-        eventListeners.remove(eventListener)
     }
 
     /**
@@ -161,7 +148,7 @@ class HttpClient(
             // Resend all undelivered messages.
             requestQueue.forEach { write(it, addToQueue = false) }
         }
-        eventListeners.forEach { it.onOpen(event) }
+        listener.onOpen(event)
     }
 
     override fun onClose(event: HttpConnectionEvent) {
@@ -177,7 +164,7 @@ class HttpClient(
                 connect()
             }
         }
-        eventListeners.forEach { it.onClose(event) }
+        listener.onClose(event)
     }
 
     override fun onMessage(message: HttpMessage) {
@@ -187,7 +174,7 @@ class HttpClient(
                 requestQueue.poll()
             }
         }
-        eventListeners.forEach { it.onMessage(message) }
+        listener.onMessage(message)
     }
 
     private inner class ClientChannelInitializer : ChannelInitializer<SocketChannel>() {

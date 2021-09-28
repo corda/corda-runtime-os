@@ -26,6 +26,7 @@ import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.HttpServer
+import net.corda.p2p.gateway.messaging.http.ListenerWithServer
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
@@ -122,19 +123,18 @@ class GatewayTest : TestBase() {
         ).use {
             it.startAndWaitForStarted()
             val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null)
-            HttpClient(serverInfo, bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                val responseReceived = CountDownLatch(1)
-                val clientListener = object : HttpEventListener {
-                    override fun onMessage(message: HttpMessage) {
-                        assertSoftly {
-                            it.assertThat(message.source).isEqualTo(InetSocketAddress(serverAddress.host, serverAddress.port))
-                            it.assertThat(message.statusCode).isEqualTo(HttpResponseStatus.OK)
-                            it.assertThat(message.payload).isEmpty()
-                        }
-                        responseReceived.countDown()
+            val responseReceived = CountDownLatch(1)
+            val clientListener = object : HttpEventListener {
+                override fun onMessage(message: HttpMessage) {
+                    assertSoftly {
+                        it.assertThat(message.source).isEqualTo(InetSocketAddress(serverAddress.host, serverAddress.port))
+                        it.assertThat(message.statusCode).isEqualTo(HttpResponseStatus.OK)
+                        it.assertThat(message.payload).isEmpty()
                     }
+                    responseReceived.countDown()
                 }
-                client.addListener(clientListener)
+            }
+            HttpClient(serverInfo, bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1),clientListener).use { client ->
                 client.start()
                 client.write(linkInMessage.toByteBuffer().array())
                 responseReceived.await()
@@ -168,15 +168,35 @@ class GatewayTest : TestBase() {
 
         val configPublisher = ConfigPublisher()
 
-        val outboundServerListeners = mutableSetOf<HttpEventListener>()
+        val outboundCountdownLatch = CountDownLatch(1)
+        val listenToOutboundMessages = object : ListenerWithServer() {
+            override fun onOpen(event: HttpConnectionEvent) {
+                assertThat(event.channel.localAddress()).isInstanceOfSatisfying(InetSocketAddress::class.java) {
+                    assertThat(it.port).isEqualTo(outboundServerUrl.port)
+                }
+            }
+
+            override fun onMessage(message: HttpMessage) {
+                val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
+                assertSoftly { softly ->
+                    softly.assertThat(message.statusCode).isEqualTo(HttpResponseStatus.OK)
+                    softly.assertThat(p2pMessage.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
+                        softly.assertThat(String(it.payload.array())).isEqualTo("link out")
+                    }
+                    server?.write(HttpResponseStatus.OK, ByteArray(0), message.source)
+                    outboundCountdownLatch.countDown()
+                }
+            }
+        }
         HttpServer(
-            outboundServerListeners,
+            listenToOutboundMessages,
             GatewayConfiguration(
                 outboundServerUrl.host,
                 outboundServerUrl.port,
                 aliceSslConfig,
             )
         ).use { outboundServer ->
+            listenToOutboundMessages.server = outboundServer
             outboundServer.startAndWaitForStarted()
             Gateway(
                 configPublisher.readerService,
@@ -191,27 +211,6 @@ class GatewayTest : TestBase() {
                 }.map {
                     URI.create("http://www.alice.net:$it")
                 }.forEach { url ->
-                    val outboundCountdownLatch = CountDownLatch(1)
-                    val listenToOutboundMessages = object : HttpEventListener {
-                        override fun onOpen(event: HttpConnectionEvent) {
-                            assertThat(event.channel.localAddress()).isInstanceOfSatisfying(InetSocketAddress::class.java) {
-                                assertThat(it.port).isEqualTo(outboundServerUrl.port)
-                            }
-                        }
-
-                        override fun onMessage(message: HttpMessage) {
-                            val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
-                            assertSoftly { softly ->
-                                softly.assertThat(message.statusCode).isEqualTo(HttpResponseStatus.OK)
-                                softly.assertThat(p2pMessage.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
-                                    softly.assertThat(String(it.payload.array())).isEqualTo("link out")
-                                }
-                                outboundServer.write(HttpResponseStatus.OK, ByteArray(0), message.source)
-                                outboundCountdownLatch.countDown()
-                            }
-                        }
-                    }
-                    outboundServerListeners.add(listenToOutboundMessages)
                     val inboundCountdownLatch = CountDownLatch(1)
                     val clientListener = object : HttpEventListener {
                         override fun onMessage(message: HttpMessage) {
@@ -240,9 +239,9 @@ class GatewayTest : TestBase() {
                         ),
                         aliceSslConfig,
                         NioEventLoopGroup(1),
-                        NioEventLoopGroup(1)
+                        NioEventLoopGroup(1),
+                        clientListener
                     ).use { secondInboundClient ->
-                        secondInboundClient.addListener(clientListener)
                         secondInboundClient.start()
 
                         secondInboundClient.write(linkInMessage.toByteBuffer().array())
@@ -274,7 +273,6 @@ class GatewayTest : TestBase() {
             val responseReceived = CountDownLatch(clientNumber)
             repeat(clientNumber) { index ->
                 val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null)
-                val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool)
                 val clientListener = object : HttpEventListener {
                     override fun onMessage(message: HttpMessage) {
                         assertSoftly {
@@ -285,7 +283,7 @@ class GatewayTest : TestBase() {
                         responseReceived.countDown()
                     }
                 }
-                client.addListener(clientListener)
+                val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool, clientListener)
                 client.start()
                 val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-${index + 1}"))
                 client.write(p2pOutMessage.toByteBuffer().array())
@@ -333,22 +331,23 @@ class GatewayTest : TestBase() {
         }.map { serverUrl ->
             URI.create(serverUrl)
         }.map { serverUri ->
-            val listeners = mutableListOf<HttpEventListener>()
+            val serverListener = object : ListenerWithServer() {
+                override fun onMessage(message: HttpMessage) {
+                    val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
+                    assertThat(
+                        String((p2pMessage.payload as AuthenticatedDataMessage).payload.array())
+                    )
+                        .isEqualTo("Target-$serverUri")
+                    server?.write(HttpResponseStatus.OK, ByteArray(0), message.source)
+                    deliveryLatch.countDown()
+                }
+
+            }
             HttpServer(
-                listeners,
+                serverListener,
                 GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig)
             ).also {
-                listeners.add(object : HttpEventListener {
-                    override fun onMessage(message: HttpMessage) {
-                        val p2pMessage = LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
-                        assertThat(
-                            String((p2pMessage.payload as AuthenticatedDataMessage).payload.array())
-                        )
-                            .isEqualTo("Target-$serverUri")
-                        it.write(HttpResponseStatus.OK, ByteArray(0), message.source)
-                        deliveryLatch.countDown()
-                    }
-                })
+                serverListener.server = it
             }
         }.onEach {
             it.startAndWaitForStarted()

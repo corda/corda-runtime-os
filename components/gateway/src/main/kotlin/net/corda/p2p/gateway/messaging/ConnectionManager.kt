@@ -45,9 +45,14 @@ class ConnectionManager(
      */
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
         return clientPool.computeIfAbsent(destinationInfo.uri) {
-            val client = HttpClient(destinationInfo, configurationService.configuration.sslConfig, writeGroup!!, nettyGroup!!)
+            val client = HttpClient(
+                destinationInfo,
+                configurationService.configuration.sslConfig,
+                writeGroup!!,
+                nettyGroup!!,
+                listener
+            )
             executeBeforePause(client::close)
-            client.addListener(listener)
             client.start()
             client
         }

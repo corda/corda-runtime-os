@@ -31,7 +31,7 @@ import kotlin.concurrent.withLock
  * in which case the body will contain additional information.
  */
 class HttpServer(
-    private val eventListeners: Collection<HttpEventListener>,
+    private val eventListener: HttpEventListener,
     private val configuration: GatewayConfiguration,
 ) : Lifecycle,
     HttpEventListener {
@@ -78,16 +78,16 @@ class HttpServer(
 
     override fun onOpen(event: HttpConnectionEvent) {
         clientChannels[event.channel.remoteAddress()] = event.channel
-        eventListeners.forEach { it.onOpen(event) }
+        eventListener.onOpen(event)
     }
 
     override fun onClose(event: HttpConnectionEvent) {
         clientChannels.remove(event.channel.remoteAddress())
-        eventListeners.forEach { it.onClose(event) }
+        eventListener.onClose(event)
     }
 
     override fun onMessage(message: HttpMessage) {
-        eventListeners.forEach { it.onMessage(message) }
+        eventListener.onMessage(message)
     }
 
     private inner class ServerChannelInitializer : ChannelInitializer<SocketChannel>() {

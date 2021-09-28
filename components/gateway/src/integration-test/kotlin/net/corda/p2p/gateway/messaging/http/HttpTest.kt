@@ -60,34 +60,38 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `simple client POST request`() {
-        val listeners = mutableListOf<HttpEventListener>()
-
+        val listener = object : ListenerWithServer() {
+            override fun onMessage(message: HttpMessage) {
+                assertEquals(clientMessageContent, String(message.payload))
+                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
+            }
+        }
         HttpServer(
-            listeners,
+            listener,
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
                 aliceSslConfig
             ),
         ).use { server ->
-            listeners.add(object : HttpEventListener {
-                override fun onMessage(message: HttpMessage) {
-                    assertEquals(clientMessageContent, String(message.payload))
-                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
-                }
-            })
+            listener.server = server
             server.startAndWaitForStarted()
-            HttpClient(DestinationInfo(serverAddress, aliceSNI[0], null), chipSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                val clientReceivedResponses = CountDownLatch(1)
-                var responseReceived = false
-                val clientListener = object : HttpEventListener {
-                    override fun onMessage(message: HttpMessage) {
-                        assertEquals(serverResponseContent, String(message.payload))
-                        responseReceived = true
-                        clientReceivedResponses.countDown()
-                    }
+            val clientReceivedResponses = CountDownLatch(1)
+            var responseReceived = false
+            val clientListener = object : HttpEventListener {
+                override fun onMessage(message: HttpMessage) {
+                    assertEquals(serverResponseContent, String(message.payload))
+                    responseReceived = true
+                    clientReceivedResponses.countDown()
                 }
-                client.addListener(clientListener)
+            }
+            HttpClient(
+                DestinationInfo(serverAddress, aliceSNI[0], null),
+                chipSslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                clientListener
+            ).use { client ->
                 client.start()
                 client.write(clientMessageContent.toByteArray(Charsets.UTF_8))
                 clientReceivedResponses.await()
@@ -103,9 +107,14 @@ class HttpTest : TestBase() {
         val threadNo = 2
         val threads = mutableListOf<Thread>()
         val times = mutableListOf<Long>()
-        val listeners = mutableListOf<HttpEventListener>()
+        val listener = object : ListenerWithServer() {
+            override fun onMessage(message: HttpMessage) {
+                assertEquals(clientMessageContent, String(message.payload))
+                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
+            }
+        }
         val httpServer = HttpServer(
-            listeners,
+            listener,
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
@@ -114,35 +123,35 @@ class HttpTest : TestBase() {
         )
         val threadPool = NioEventLoopGroup(threadNo)
         httpServer.use { server ->
-            listeners.add(object : HttpEventListener {
-                override fun onMessage(message: HttpMessage) {
-                    assertEquals(clientMessageContent, String(message.payload))
-                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
-                }
-            })
+            listener.server = server
             server.startAndWaitForStarted()
             repeat(threadNo) {
                 val t = thread {
                     var startTime: Long = 0
-                    val httpClient = HttpClient(DestinationInfo(serverAddress, aliceSNI[1], null), chipSslConfig, threadPool, threadPool)
                     val clientReceivedResponses = CountDownLatch(requestNo)
-                    httpClient.use {
-                        val clientListener = object : HttpEventListener {
-                            override fun onMessage(message: HttpMessage) {
-                                assertEquals(serverResponseContent, String(message.payload))
-                                clientReceivedResponses.countDown()
-                            }
-
-                            override fun onOpen(event: HttpConnectionEvent) {
-                                startTime = Instant.now().toEpochMilli()
-                            }
-
-                            override fun onClose(event: HttpConnectionEvent) {
-                                val endTime = Instant.now().toEpochMilli()
-                                times.add(endTime - startTime)
-                            }
+                    val clientListener = object : HttpEventListener {
+                        override fun onMessage(message: HttpMessage) {
+                            assertEquals(serverResponseContent, String(message.payload))
+                            clientReceivedResponses.countDown()
                         }
-                        httpClient.addListener(clientListener)
+
+                        override fun onOpen(event: HttpConnectionEvent) {
+                            startTime = Instant.now().toEpochMilli()
+                        }
+
+                        override fun onClose(event: HttpConnectionEvent) {
+                            val endTime = Instant.now().toEpochMilli()
+                            times.add(endTime - startTime)
+                        }
+                    }
+                    val httpClient = HttpClient(
+                        DestinationInfo(serverAddress, aliceSNI[1], null),
+                        chipSslConfig,
+                        threadPool,
+                        threadPool,
+                        clientListener
+                    )
+                    httpClient.use {
                         httpClient.start()
 
                         repeat(requestNo) {
@@ -166,34 +175,39 @@ class HttpTest : TestBase() {
     @Timeout(30)
     fun `large payload`() {
         val hugePayload = FileInputStream(javaClass.classLoader.getResource("10mb.txt")!!.file).readAllBytes()
-        val listeners = mutableListOf<HttpEventListener>()
+        val listener = object : ListenerWithServer() {
+            override fun onMessage(message: HttpMessage) {
+                assertTrue(Arrays.equals(hugePayload, message.payload))
+                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
+            }
+        }
 
         HttpServer(
-            listeners,
+            listener,
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
                 aliceSslConfig
             )
         ).use { server ->
-            listeners.add(object : HttpEventListener {
-                override fun onMessage(message: HttpMessage) {
-                    assertTrue(Arrays.equals(hugePayload, message.payload))
-                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
-                }
-            })
+            listener.server = server
             server.startAndWaitForStarted()
-            HttpClient(DestinationInfo(serverAddress, aliceSNI[0], null), bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                val clientReceivedResponses = CountDownLatch(1)
-                var responseReceived = false
-                val clientListener = object : HttpEventListener {
-                    override fun onMessage(message: HttpMessage) {
-                        assertEquals(serverResponseContent, String(message.payload))
-                        responseReceived = true
-                        clientReceivedResponses.countDown()
-                    }
+            val clientReceivedResponses = CountDownLatch(1)
+            var responseReceived = false
+            val clientListener = object : HttpEventListener {
+                override fun onMessage(message: HttpMessage) {
+                    assertEquals(serverResponseContent, String(message.payload))
+                    responseReceived = true
+                    clientReceivedResponses.countDown()
                 }
-                client.addListener(clientListener)
+            }
+            HttpClient(
+                DestinationInfo(serverAddress, aliceSNI[0], null),
+                bobSslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                clientListener
+            ).use { client ->
                 client.start()
                 client.write(hugePayload)
                 clientReceivedResponses.await()
@@ -206,7 +220,7 @@ class HttpTest : TestBase() {
     @Timeout(30)
     fun `tls handshake succeeds - revocation checking disabled C5`() {
         HttpServer(
-            emptyList(),
+            object : HttpEventListener {},
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
@@ -214,15 +228,21 @@ class HttpTest : TestBase() {
             )
         ).use { server ->
             server.startAndWaitForStarted()
-            HttpClient(DestinationInfo(serverAddress, bobSNI[0], null), aliceSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                var connected = false
-                val connectedLatch = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        connected = true
-                        connectedLatch.countDown()
-                    }
-                })
+            var connected = false
+            val connectedLatch = CountDownLatch(1)
+            val clientListener = object : HttpEventListener {
+                override fun onOpen(event: HttpConnectionEvent) {
+                    connected = true
+                    connectedLatch.countDown()
+                }
+            }
+            HttpClient(
+                DestinationInfo(serverAddress, bobSNI[0], null),
+                aliceSslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                clientListener
+            ).use { client ->
 
                 client.start()
                 client.write(ByteArray(0))
@@ -236,7 +256,7 @@ class HttpTest : TestBase() {
     @Timeout(30)
     fun `tls handshake succeeds - revocation checking disabled C4`() {
         HttpServer(
-            emptySet(),
+            object : HttpEventListener {},
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
@@ -244,15 +264,21 @@ class HttpTest : TestBase() {
             )
         ).use { server ->
             server.startAndWaitForStarted()
-            HttpClient(DestinationInfo(serverAddress, partyASNI, partyAx500Name), c4sslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                var connected = false
-                val connectedLatch = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        connected = true
-                        connectedLatch.countDown()
-                    }
-                })
+            var connected = false
+            val connectedLatch = CountDownLatch(1)
+            val clientListener = object : HttpEventListener {
+                override fun onOpen(event: HttpConnectionEvent) {
+                    connected = true
+                    connectedLatch.countDown()
+                }
+            }
+            HttpClient(
+                DestinationInfo(serverAddress, partyASNI, partyAx500Name),
+                c4sslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                clientListener
+            ).use { client ->
 
                 client.start()
                 client.write(ByteArray(0))
@@ -269,13 +295,19 @@ class HttpTest : TestBase() {
             server.start()
             val expectedX500Name = "O=Test,L=London,C=GB"
             val sni = SniCalculator.calculateSni("O=Test,L=London,C=GB", NetworkType.CORDA_4, serverAddress.host)
-            HttpClient(DestinationInfo(serverAddress, sni, X500Name(expectedX500Name)), c4sslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                val connectedLatch = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        connectedLatch.countDown()
-                    }
-                })
+            val connectedLatch = CountDownLatch(1)
+            val clientListener = object : HttpEventListener {
+                override fun onOpen(event: HttpConnectionEvent) {
+                    connectedLatch.countDown()
+                }
+            }
+            HttpClient(
+                DestinationInfo(serverAddress, sni, X500Name(expectedX500Name)),
+                c4sslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                clientListener
+            ).use { client ->
 
                 client.start()
                 client.write(ByteArray(0))
@@ -294,15 +326,20 @@ class HttpTest : TestBase() {
     @Timeout(30)
     fun `tls handshake fails - server identity check fails C5`() {
         MitmServer(serverAddress.host, serverAddress.port, chipSslConfig).use { server ->
+            val connectedLatch = CountDownLatch(1)
+            val clientListener = object : HttpEventListener {
+                override fun onOpen(event: HttpConnectionEvent) {
+                    connectedLatch.countDown()
+                }
+            }
             server.start()
-            HttpClient(DestinationInfo(serverAddress, aliceSNI[0], null), daleSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                val connectedLatch = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        connectedLatch.countDown()
-                    }
-                })
-
+            HttpClient(
+                DestinationInfo(serverAddress, aliceSNI[0], null),
+                daleSslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                clientListener
+            ).use { client ->
                 client.start()
                 client.write(ByteArray(0))
                 // Check the connection didn't actually succeed; latch times out
@@ -321,7 +358,7 @@ class HttpTest : TestBase() {
     fun `tls handshake fails - requested SNI is not recognized`() {
 
         HttpServer(
-            emptyList(),
+            object : HttpEventListener {},
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
@@ -329,14 +366,19 @@ class HttpTest : TestBase() {
             )
         ).use { server ->
             server.startAndWaitForStarted()
-            HttpClient(DestinationInfo(serverAddress, bobSNI[0], null), chipSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                val connectedLatch = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        connectedLatch.countDown()
-                    }
-                })
-
+            val connectedLatch = CountDownLatch(1)
+            val clientListener = object : HttpEventListener {
+                override fun onOpen(event: HttpConnectionEvent) {
+                    connectedLatch.countDown()
+                }
+            }
+            HttpClient(
+                DestinationInfo(serverAddress, bobSNI[0], null),
+                chipSslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                clientListener
+            ).use { client ->
                 client.start()
                 client.write(ByteArray(0))
                 connectedLatch.await(1, TimeUnit.SECONDS)
@@ -354,7 +396,7 @@ class HttpTest : TestBase() {
     fun `tls handshake fails - server presents revoked certificate`() {
 
         HttpServer(
-            emptyList(),
+            object : HttpEventListener {},
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
@@ -362,14 +404,19 @@ class HttpTest : TestBase() {
             )
         ).use { server ->
             server.startAndWaitForStarted()
-            HttpClient(DestinationInfo(serverAddress, bobSNI[0], null), chipSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                val connectedLatch = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        connectedLatch.countDown()
-                    }
-                })
-
+            val connectedLatch = CountDownLatch(1)
+            val clientListener = object : HttpEventListener {
+                override fun onOpen(event: HttpConnectionEvent) {
+                    connectedLatch.countDown()
+                }
+            }
+            HttpClient(
+                DestinationInfo(serverAddress, bobSNI[0], null),
+                chipSslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                clientListener
+            ).use { client ->
                 client.start()
                 client.write(ByteArray(0))
                 connectedLatch.await(1, TimeUnit.SECONDS)
