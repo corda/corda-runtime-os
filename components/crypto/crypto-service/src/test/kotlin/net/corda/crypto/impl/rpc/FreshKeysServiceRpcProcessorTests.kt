@@ -1,6 +1,5 @@
 package net.corda.crypto.impl.rpc
 
-import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.impl.CryptoFactory
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.testkit.CryptoMocks

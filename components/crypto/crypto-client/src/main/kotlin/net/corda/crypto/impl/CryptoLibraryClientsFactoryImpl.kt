@@ -1,7 +1,6 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.CryptoLibraryClientsFactory
-import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.SigningService
 import net.corda.crypto.impl.rpc.FreshKeySigningServiceClient
@@ -12,11 +11,6 @@ import net.corda.data.crypto.wire.signing.WireSigningRequest
 import net.corda.data.crypto.wire.signing.WireSigningResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CipherSuiteFactory
-import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.DigestService
-import net.corda.v5.crypto.SignatureVerificationService
-import org.osgi.service.component.annotations.Activate
 import java.time.Duration
 
 @Suppress("LongParameterList")
