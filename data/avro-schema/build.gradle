@@ -128,6 +128,8 @@ tasks.named('processResources', ProcessResources) {
  * all the classes from this bundle.
  */
 tasks.named('jar', Jar) {
+    archiveBaseName = "corda-" + project.name
+
     bnd """
 Bundle-Name: \${project.description}
 Bundle-SymbolicName: \${project.group}.\${project.name}
