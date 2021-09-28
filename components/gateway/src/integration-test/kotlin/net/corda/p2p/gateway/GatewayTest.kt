@@ -32,8 +32,6 @@ import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.fail
@@ -263,8 +261,10 @@ class GatewayTest : TestBase() {
     @Test
     @Timeout(60)
     fun `gateway to gateway - dual stream`() {
-        val aliceGatewayAddress = URI.create("http://www.chip.net:10003")
-        val bobGatewayAddress = URI.create("http://www.dale.net:10004")
+        println("QQQ Starting dual gateway to gateway test")
+        println("-----------------------------------------")
+        val aliceGatewayAddress = URI.create("http://www.chip.net:11003")
+        val bobGatewayAddress = URI.create("http://www.dale.net:11004")
         val messageCount = 100
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
         bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
@@ -352,6 +352,8 @@ class GatewayTest : TestBase() {
         }
 
         val allMessagesDelivered = receivedLatch.await(30, TimeUnit.SECONDS)
+        println("-----------------------------------------")
+        println("QQQ allMessagesDelivered = $allMessagesDelivered")
         if (!allMessagesDelivered) {
             fail("Not all messages were delivered successfully. Bob received $bobReceivedMessages messages (expected $messageCount), " +
                     "Alice received $aliceReceivedMessages (expected $messageCount)")
