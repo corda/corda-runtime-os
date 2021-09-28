@@ -124,12 +124,8 @@ class SessionManagerImpl(
         pendingInboundSessions.remove(sessionId)
     }
 
-    override fun destroyOutboundSession(sessionKey: SessionKey) {
-        val sessionId = activeOutboundSessions.remove(sessionKey)?.first
-        sessionId?.let { activeOutboundSessionsById.remove(it) }
-    }
-
-    private fun destroyPendingOutboundSession(sessionId: String) {
+    private fun destroyOutboundSession(sessionKey: SessionKey, sessionId: String) {
+        activeOutboundSessions.remove(sessionKey)
         pendingOutboundSessions.remove(sessionId)
     }
 
@@ -173,7 +169,7 @@ class SessionManagerImpl(
                     "The sessionInit message was not sent.")
             return null
         }
-        heartbeatManager.sessionMessageAdded(initiatorHelloUniqueId, ::destroyPendingOutboundSession)
+        heartbeatManager.sessionMessageSent(initiatorHelloUniqueId, sessionKey, sessionId, ::destroyOutboundSession)
 
         val message = createLinkOutMessage(sessionInitPayload, responderMemberInfo, networkType)
         return sessionId to message
@@ -218,11 +214,16 @@ class SessionManagerImpl(
 
         val initiatorHelloUniqueId = "${message.header.sessionId}_${InitiatorHelloMessage::class.java.simpleName}"
         sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId)
-        heartbeatManager.sessionMessageAcknowledged(initiatorHelloUniqueId)
+        heartbeatManager.messageAcknowledged(initiatorHelloUniqueId)
 
         val initiatorHandshakeUniqueId = "${message.header.sessionId}_${payload::class.java.simpleName}"
         sessionReplayer.addMessageForReplay(initiatorHandshakeUniqueId, SessionMessageReplay(payload, sessionInfo.responderId))
-        heartbeatManager.sessionMessageAdded(initiatorHandshakeUniqueId, ::destroyPendingOutboundSession)
+        heartbeatManager.sessionMessageSent(
+            initiatorHandshakeUniqueId,
+            SessionKey(ourMemberInfo.holdingIdentity, responderMemberInfo.holdingIdentity),
+            message.header.sessionId,
+            ::destroyOutboundSession
+        )
 
         val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
         if (networkType == null) {
@@ -255,8 +256,8 @@ class SessionManagerImpl(
         }
         val authenticatedSession = session.getSession()
         val initiatorHandshakeUniqueId = message.header.sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
-        sessionReplayer.removeMessageFromReplay(message.header.sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName)
-        heartbeatManager.sessionMessageAcknowledged(initiatorHandshakeUniqueId)
+        sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId)
+        heartbeatManager.messageAcknowledged(initiatorHandshakeUniqueId)
         sessionNegotiationLock.write {
             activeOutboundSessions[sessionInfo] = message.header.sessionId to authenticatedSession
             activeOutboundSessionsById[message.header.sessionId] = authenticatedSession

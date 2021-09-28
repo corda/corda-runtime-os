@@ -9,7 +9,6 @@ import net.corda.p2p.app.HoldingIdentity
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManager.Companion.generateKey
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromHeartbeat
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
 import net.corda.p2p.schema.Schema
@@ -20,7 +19,6 @@ import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -30,7 +28,7 @@ class HeartbeatManagerImpl(
     publisherFactory: PublisherFactory,
     private val networkMap: LinkManagerNetworkMap,
     private val heartbeatPeriod: Duration,
-    private val timeOutPeriods: Int,
+    private val sessionTimeout: Duration,
 ) : Lifecycle, HeartbeatManager {
 
     companion object {
@@ -44,19 +42,25 @@ class HeartbeatManagerImpl(
     private lateinit var executorService: ScheduledExecutorService
 
     private val sessionKeys = ConcurrentHashMap<String, SessionKey>()
-    private val trackedSessions = ConcurrentHashMap<SessionKey, SessionTracker>()
-
-    private val sessionNegotiationTimeoutFutures = ConcurrentHashMap<String, ScheduledFuture<*>>()
-    private val sessionNegotiationTimeoutTimestamps = ConcurrentHashMap<String, Long>()
+    private val trackedSessions = ConcurrentHashMap<SessionKey, TrackedSession>()
 
     private val config = PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID, 1)
     private val publisher = publisherFactory.createPublisher(config)
 
-    class SessionTracker(var heartbeatFuture: ScheduledFuture<*>, var lastAckTimestamp: Long) {
-        var sentMessageIds = mutableListOf<String>()
-        var nextSequenceNumber = 1L
-    }
-
+    /**
+     * For each Session we track the following.
+     * [lastSendTimestamp]: The last time we sent a message using this Session.
+     * [lastAckTimestamp]: The last time we acknowledged a message sent using this Session.
+     * [sentMessageIds]: The messageId's of each sent message.
+     * [nextSequenceNumber]: The next sequence number to add to the Heartbeat Message for debug purposes.
+     */
+    class TrackedSession(
+        var lastSendTimestamp: Long,
+        var lastAckTimestamp: Long,
+        val sentMessageIds: MutableSet<String> = mutableSetOf(),
+        var nextSequenceNumber: Long = 1L,
+        var sendingHeartbeats: Boolean = false
+    )
 
     override val isRunning: Boolean
         get() = running
@@ -81,59 +85,55 @@ class HeartbeatManagerImpl(
         }
     }
 
-    override fun sessionMessageAdded(uniqueId: String, destroyPendingSession: (sessionId: String) -> Any) {
+    override fun sessionMessageSent(
+        messageId: String,
+        key: SessionKey,
+        sessionId: String,
+        destroySession: (key: SessionKey, sessionId: String) -> Any
+    ) {
         startStopLock.read {
             if (!running) {
                 throw IllegalStateException("A session message was added before the HeartbeatManager was started.")
             }
-            sessionNegotiationTimeoutTimestamps[uniqueId] = timeStamp() + heartbeatPeriod.toMillis() * timeOutPeriods
-            sessionNegotiationTimeoutFutures.computeIfAbsent(uniqueId) {
-            executorService.schedule(
-                    { timeOutHeartbeat(it, destroyPendingSession) },
-                    heartbeatPeriod.toMillis() * timeOutPeriods,
-                    TimeUnit.MILLISECONDS
-                )
+            trackedSessions.compute(key) { _, initialTrackedSession ->
+                return@compute if (initialTrackedSession != null) {
+                    initialTrackedSession.lastSendTimestamp = timeStamp()
+                    initialTrackedSession.sentMessageIds.add(messageId)
+                    initialTrackedSession
+                } else {
+                    executorService.schedule({ sessionTimeout(key, sessionId, destroySession) }, sessionTimeout.toMillis(), TimeUnit.MILLISECONDS)
+                    val trackedSession = TrackedSession(timeStamp(), timeStamp())
+                    trackedSession.sentMessageIds.add(messageId)
+                    trackedSession
+                }
             }
         }
     }
 
-    override fun sessionMessageAcknowledged(uniqueId: String) {
-        startStopLock.read {
-            if (!running) {
-                throw IllegalStateException("A session message was acknowledged before the HeartbeatManager was started.")
-            }
-            sessionNegotiationTimeoutTimestamps[uniqueId] = timeStamp()
-            val future = sessionNegotiationTimeoutFutures.remove(uniqueId)
-            future?.cancel(false)
-        }
-    }
-
-    override fun messageSent(messageId: String,
-                             source: HoldingIdentity,
-                             dest: HoldingIdentity,
-                             session: Session,
-                             destroySession: (sessionKey: SessionKey) -> Any
-    ) {
+    override fun messageSent(messageId: String, key: SessionKey, session: Session) {
         startStopLock.read {
             if (!running) {
                 throw IllegalStateException("A message was sent before the HeartbeatManager was started.")
             }
-            val sessionKey = SessionKey(source.toHoldingIdentity(), dest.toHoldingIdentity())
-            trackedSessions.computeIfAbsent(sessionKey) {
-                val future = executorService.schedule(
-                    {sendHeartbeatOrTimeout(sessionKey, session, destroySession)},
-                    heartbeatPeriod.toMillis(),
-                    TimeUnit.MILLISECONDS
-                )
-                val tracker = SessionTracker(future, timeStamp())
-                tracker.sentMessageIds.add(messageId)
-                tracker
+            val trackedSession = trackedSessions.computeIfPresent(key) { _, trackedSession ->
+                trackedSession.lastSendTimestamp = timeStamp()
+                trackedSession.sentMessageIds.add(messageId)
+                if (!trackedSession.sendingHeartbeats) {
+                    executorService.schedule({ sendHeartbeat(key, session) }, heartbeatPeriod.toMillis(), TimeUnit.MILLISECONDS)
+                    trackedSession.sendingHeartbeats = true
+                }
+                trackedSession
             }
-            sessionKeys[messageId] = sessionKey
+            if (trackedSession != null) {
+                sessionKeys[messageId] = key
+            } else {
+                throw IllegalStateException("A message with ID $messageId, was sent on a session between ${key.ourId} and " +
+                    "${key.responderId}}, which is not tracked.")
+            }
         }
     }
 
-    override fun messageAcknowledged(messageId: String, session: Session, destroySession: (sessionKey: SessionKey) -> Any) {
+    override fun messageAcknowledged(messageId: String) {
         startStopLock.read {
             if (!running) {
                 throw IllegalStateException("A message was acknowledged before the HeartbeatManager was started.")
@@ -142,46 +142,35 @@ class HeartbeatManagerImpl(
             val sessionInfo = trackedSessions[sessionKey] ?: return
             logger.trace("Message acknowledged with Id $messageId.")
             sessionInfo.lastAckTimestamp = timeStamp()
-            sessionInfo.heartbeatFuture.cancel(false)
-            sessionInfo.heartbeatFuture = executorService.schedule(
-                { sendHeartbeatOrTimeout(sessionKey, session, destroySession) },
-                heartbeatPeriod.toMillis(),
-                TimeUnit.MILLISECONDS
-            )
             sessionInfo.sentMessageIds.remove(messageId)
         }
     }
 
-    private fun timeOutHeartbeat(sessionId: String, destroyPendingSession: (sessionId: String) -> Any) {
-        val timeNow = timeStamp()
-        val lastAckTimestamp = sessionNegotiationTimeoutTimestamps[sessionId] ?: return
-        if (timeNow - lastAckTimestamp >= timeOutPeriods * heartbeatPeriod.toMillis()) {
-            destroyPendingSession(sessionId)
-            sessionNegotiationTimeoutFutures.remove(sessionId)
-            sessionNegotiationTimeoutTimestamps.remove(sessionId)
-        }
-        sessionNegotiationTimeoutFutures[sessionId] = executorService.schedule(
-            { timeOutHeartbeat(sessionId, destroyPendingSession) },
-            heartbeatPeriod.toMillis() - timeNow,
-            TimeUnit.MILLISECONDS
-        )
-    }
-
-    private fun sendHeartbeatOrTimeout(
-        sessionKey: SessionKey,
-        session: Session,
-        destroySession: (sessionKey: SessionKey) -> Any,
-    ) {
-        val sessionInfo = trackedSessions[sessionKey] ?: return
-        val timeNow = timeStamp()
-        if (timeNow - sessionInfo.lastAckTimestamp >= timeOutPeriods * heartbeatPeriod.toMillis()) {
-            logger.info("Session between ${sessionKey.ourId} (our Identity) and ${sessionKey.responderId} timed out.")
-            destroySession(sessionKey)
+    private fun sessionTimeout(key: SessionKey, sessionId: String, destroySession: (key: SessionKey, sessionId: String) -> Any) {
+        val sessionInfo = trackedSessions[key] ?: return
+        val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
+        if (timeSinceLastAck >= sessionTimeout.toMillis()) {
+            destroySession(key, sessionId)
             for (messageId in sessionInfo.sentMessageIds) {
                 sessionKeys.remove(messageId)
             }
-            trackedSessions.remove(sessionKey)
-        } else if (timeNow - sessionInfo.lastAckTimestamp >= heartbeatPeriod.toMillis()) {
+            trackedSessions.remove(key)
+        } else {
+            executorService.schedule(
+                {sessionTimeout(key, sessionId, destroySession)},
+                sessionTimeout.toMillis() - timeSinceLastAck,
+                TimeUnit.MILLISECONDS
+            )
+        }
+    }
+
+    private fun sendHeartbeat(sessionKey: SessionKey, session: Session) {
+        val sessionInfo = trackedSessions[sessionKey] ?: return
+        val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
+        val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
+
+        if (timeSinceLastAck >= sessionTimeout.toMillis()) return
+        if (timeSinceLastSend >= heartbeatPeriod.toMillis()) {
             logger.trace("Sending heartbeat message between ${sessionKey.ourId} (our Identity) and ${sessionKey.responderId}.")
             val heartBeatMessageId = generateKey()
             sessionInfo.sentMessageIds.add(heartBeatMessageId)
@@ -197,14 +186,11 @@ class HeartbeatManagerImpl(
                 )
             } catch (exception: Exception) {
                 logger.error("An exception was thrown when sending a heartbeat message. The task will be retried again in" +
-                    " ${heartbeatPeriod.toMillis()} ms.\nException:", exception)
+                    " ${sessionTimeout.toMillis()} ms.\nException:", exception)
             }
-
-            sessionInfo.heartbeatFuture = executorService.schedule(
-                { sendHeartbeatOrTimeout(sessionKey, session, destroySession) },
-                heartbeatPeriod.toMillis(),
-                TimeUnit.MILLISECONDS
-            )
+            executorService.schedule({ sendHeartbeat(sessionKey, session) }, heartbeatPeriod.toMillis(), TimeUnit.MILLISECONDS)
+        } else {
+            executorService.schedule({ sendHeartbeat(sessionKey, session) }, heartbeatPeriod.toMillis() - timeSinceLastSend, TimeUnit.MILLISECONDS)
         }
     }
 

@@ -7,5 +7,5 @@ data class LinkManagerConfig(
     val protocolModes: Set<ProtocolMode>,
     val messageReplayPeriodSecs: Long,
     val heartbeatMessagePeriodSecs: Long,
-    val heartbeatTimeOutPeriods: Int = 2,
+    val sessionTimeoutSecs: Long,
 )

@@ -11,7 +11,6 @@ interface SessionManager {
     fun getSessionById(uuid: String): SessionDirection
     fun processSessionMessage(message: LinkInMessage): LinkOutMessage?
     fun inboundSessionEstablished(sessionId: String)
-    fun destroyOutboundSession(sessionKey: SessionKey)
 
     //On the Outbound side there is a single unique session per SessionKey.
     data class SessionKey(

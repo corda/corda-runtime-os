@@ -319,14 +319,14 @@ class LinkManagerTest {
         assertEquals(messageIds.size, heartbeatManager.addedMessages.size)
         for (i in 0 until 2) {
             assertTrue(heartbeatManager.addedMessages.keys.contains(messageIds[i]))
-            assertEquals(FIRST_SOURCE, heartbeatManager.addedMessages[messageIds[i]]!!.source)
-            assertEquals(FIRST_DEST, heartbeatManager.addedMessages[messageIds[i]]!!.dest)
+            assertEquals(FIRST_SOURCE.toHoldingIdentity(), heartbeatManager.addedMessages[messageIds[i]]!!.key.ourId)
+            assertEquals(FIRST_DEST.toHoldingIdentity(), heartbeatManager.addedMessages[messageIds[i]]!!.key.responderId)
         }
 
         for (i in 2 until 4) {
             assertTrue(heartbeatManager.addedMessages.keys.contains(messageIds[i]))
-            assertEquals(SECOND_SOURCE, heartbeatManager.addedMessages[messageIds[i]]!!.source)
-            assertEquals(SECOND_DEST, heartbeatManager.addedMessages[messageIds[i]]!!.dest)
+            assertEquals(SECOND_SOURCE.toHoldingIdentity(), heartbeatManager.addedMessages[messageIds[i]]!!.key.ourId)
+            assertEquals(SECOND_DEST.toHoldingIdentity(), heartbeatManager.addedMessages[messageIds[i]]!!.key.responderId)
         }
 
     }
@@ -553,8 +553,8 @@ class LinkManagerTest {
         assertEquals(messages.size, heartbeatManager.addedMessages.size)
         for (i in messages.indices) {
             assertTrue(heartbeatManager.addedMessages.keys.contains(messageIds[i]))
-            assertEquals(FIRST_SOURCE, heartbeatManager.addedMessages[messageIds[i]]!!.source)
-            assertEquals(FIRST_DEST, heartbeatManager.addedMessages[messageIds[i]]!!.dest)
+            assertEquals(FIRST_SOURCE.toHoldingIdentity(), heartbeatManager.addedMessages[messageIds[i]]!!.key.ourId)
+            assertEquals(FIRST_DEST.toHoldingIdentity(), heartbeatManager.addedMessages[messageIds[i]]!!.key.responderId)
         }
     }
 
@@ -611,8 +611,8 @@ class LinkManagerTest {
 
         assertEquals(1, heartbeatManager.addedMessages.size)
         assertTrue(heartbeatManager.addedMessages.keys.contains(MESSAGE_ID))
-        assertEquals(FIRST_SOURCE, heartbeatManager.addedMessages[MESSAGE_ID]!!.source)
-        assertEquals(FIRST_DEST, heartbeatManager.addedMessages[MESSAGE_ID]!!.dest)
+        assertEquals(FIRST_SOURCE.toHoldingIdentity(), heartbeatManager.addedMessages[MESSAGE_ID]!!.key.ourId)
+        assertEquals(FIRST_DEST.toHoldingIdentity(), heartbeatManager.addedMessages[MESSAGE_ID]!!.key.responderId)
     }
 
     @Test

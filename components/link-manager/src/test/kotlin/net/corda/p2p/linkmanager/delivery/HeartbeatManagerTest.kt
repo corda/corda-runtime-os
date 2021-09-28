@@ -19,6 +19,7 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerTest.Companion.createSessionPair
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses
 import net.corda.p2p.linkmanager.messaging.MessageConverter
+import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.p2p.schema.Schema
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.fail
 import org.mockito.Mockito
 import org.mockito.kotlin.anyOrNull
@@ -44,12 +46,14 @@ class HeartbeatManagerTest {
     companion object {
         private const val SESSION_MESSAGE_ID = "MySessionMessage"
         private const val MESSAGE_ID = "MyMessage"
+        private const val SESSION_ID = "MySession"
         private const val MY_GROUP = "testGroup"
         private val INBOUND_PARTY = LinkManagerNetworkMap.HoldingIdentity("In", "Group")
         private val OUTBOUND_PARTY = LinkManagerNetworkMap.HoldingIdentity("Out", "Group")
         lateinit var loggingInterceptor: LoggingInterceptor
-        private const val timeOutPeriods = 5
         private val heartbeatPeriod = Duration.ofMillis(200)
+        private const val heartbeatsBeforeTimeout = 4
+        private val sessionTimeoutPeriod =  Duration.ofMillis((heartbeatsBeforeTimeout + 1) * heartbeatPeriod.toMillis())
 
         @BeforeAll
         @JvmStatic
@@ -72,27 +76,15 @@ class HeartbeatManagerTest {
     fun `An added session message will eventually timeout`() {
         val timeoutLatch = CountDownLatch(1)
 
-        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, Duration.ofMillis(2), 2)
+        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, Duration.ofMillis(2), Duration.ofMillis(2))
         heartbeatManager.start()
-        heartbeatManager.sessionMessageAdded(SESSION_MESSAGE_ID) { timeoutLatch.countDown() }
+        heartbeatManager.sessionMessageSent(SESSION_MESSAGE_ID, SessionManager.SessionKey(OUTBOUND_PARTY, INBOUND_PARTY), SESSION_ID) { _, _ -> timeoutLatch.countDown() }
         assertTrue(timeoutLatch.await(20, TimeUnit.MILLISECONDS))
         heartbeatManager.stop()
     }
 
     @Test
-    fun `An added and acknowledged session message will not timeout`() {
-        val timeoutLatch = CountDownLatch(1)
-        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, Duration.ofMillis(2), 2)
-        heartbeatManager.start()
-        heartbeatManager.sessionMessageAdded(SESSION_MESSAGE_ID) { timeoutLatch.countDown() }
-        heartbeatManager.sessionMessageAcknowledged(SESSION_MESSAGE_ID)
-        assertFalse(timeoutLatch.await(20, TimeUnit.MILLISECONDS))
-        heartbeatManager.stop()
-    }
-
-    @Test
     fun `An added message will cause a heartbeat message to be sent periodically and will eventually timeout`() {
-
         val interceptingProcessor = InterceptingProcessor()
         val timeoutLatch = CountDownLatch(1)
         val (inboundSession, outboundSession) = createSessionPair()
@@ -104,16 +96,20 @@ class HeartbeatManagerTest {
         )
         subscription.start()
 
-        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, heartbeatPeriod, timeOutPeriods)
+        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, heartbeatPeriod, sessionTimeoutPeriod)
         heartbeatManager.start()
-        heartbeatManager.messageSent(
-            MESSAGE_ID,
-            OUTBOUND_PARTY.toHoldingIdentity(),
-            INBOUND_PARTY.toHoldingIdentity(),
+        heartbeatManager.sessionMessageSent(
+            SESSION_MESSAGE_ID,
+            SessionManager.SessionKey(OUTBOUND_PARTY, INBOUND_PARTY),
+            SESSION_ID
+        ) { _, _ -> timeoutLatch.countDown() }
+        heartbeatManager.messageSent(MESSAGE_ID,
+            SessionManager.SessionKey(OUTBOUND_PARTY, INBOUND_PARTY),
             outboundSession
-        ) { timeoutLatch.countDown() }
-        assertTrue(timeoutLatch.await(5 * heartbeatPeriod.toMillis() * timeOutPeriods, TimeUnit.MILLISECONDS))
-        assertEquals(timeOutPeriods - 1, interceptingProcessor.messages.size)
+        )
+        assertTrue(timeoutLatch.await(5 * sessionTimeoutPeriod.toMillis(), TimeUnit.MILLISECONDS))
+
+        assertEquals(heartbeatsBeforeTimeout, interceptingProcessor.messages.size)
 
         var sequenceNumber = 1L
         for (message in interceptingProcessor.messages) {
@@ -134,21 +130,24 @@ class HeartbeatManagerTest {
         val timeoutLatch = CountDownLatch(1)
         val (inboundSession, outboundSession) = createSessionPair()
 
-        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, heartbeatPeriod, timeOutPeriods)
+        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, heartbeatPeriod, sessionTimeoutPeriod)
         heartbeatManager.start()
-        heartbeatManager.messageSent(
-            MESSAGE_ID,
-            OUTBOUND_PARTY.toHoldingIdentity(),
-            INBOUND_PARTY.toHoldingIdentity(),
+        heartbeatManager.sessionMessageSent(
+            SESSION_MESSAGE_ID,
+            SessionManager.SessionKey(OUTBOUND_PARTY, INBOUND_PARTY),
+            SESSION_ID
+        ) { _, _ -> timeoutLatch.countDown() }
+        heartbeatManager.messageSent(MESSAGE_ID,
+            SessionManager.SessionKey(OUTBOUND_PARTY, INBOUND_PARTY),
             outboundSession
-        ) { timeoutLatch.countDown() }
+        )
 
         fun processorCallback(message: LinkOutMessage?) {
             val decryptedMessage = extractPayload(inboundSession, message!!)
             assertTrue(decryptedMessage is HeartbeatMessage)
             assertEquals(OUTBOUND_PARTY.toHoldingIdentity(), (decryptedMessage as HeartbeatMessage).source)
             assertEquals(INBOUND_PARTY.toHoldingIdentity(), decryptedMessage.destination)
-            heartbeatManager.messageAcknowledged(decryptedMessage.messageId, outboundSession) {}
+            heartbeatManager.messageAcknowledged(decryptedMessage.messageId)
         }
 
         val interceptingProcessor = InterceptingProcessor(::processorCallback)
@@ -160,8 +159,8 @@ class HeartbeatManagerTest {
         )
         subscription.start()
 
-        assertFalse(timeoutLatch.await(5 * heartbeatPeriod.toMillis() * timeOutPeriods, TimeUnit.MILLISECONDS))
-        assertTrue(interceptingProcessor.messages.size >= timeOutPeriods - 1)
+        assertFalse(timeoutLatch.await(5 * sessionTimeoutPeriod.toMillis(), TimeUnit.MILLISECONDS))
+        assertTrue(interceptingProcessor.messages.size >= heartbeatsBeforeTimeout)
 
         subscription.stop()
         heartbeatManager.stop()
@@ -173,15 +172,16 @@ class HeartbeatManagerTest {
         val timeoutLatch = CountDownLatch(1)
         val (_, outboundSession) = createSessionPair()
 
-        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, heartbeatPeriod, timeOutPeriods)
+        val heartbeatManager = HeartbeatManagerImpl(publisherFactory, netMap, heartbeatPeriod, sessionTimeoutPeriod)
         heartbeatManager.start()
-        heartbeatManager.messageSent(
-            MESSAGE_ID,
-            OUTBOUND_PARTY.toHoldingIdentity(),
-            INBOUND_PARTY.toHoldingIdentity(),
-            outboundSession
-        ) {  }
-        heartbeatManager.messageAcknowledged(MESSAGE_ID, outboundSession) { timeoutLatch.countDown() }
+        heartbeatManager.sessionMessageSent(
+            SESSION_MESSAGE_ID,
+            SessionManager.SessionKey(OUTBOUND_PARTY, INBOUND_PARTY),
+            SESSION_ID
+        ) { _, _ -> timeoutLatch.countDown() }
+        heartbeatManager.messageAcknowledged(SESSION_MESSAGE_ID)
+        heartbeatManager.messageSent(MESSAGE_ID, SessionManager.SessionKey(OUTBOUND_PARTY, INBOUND_PARTY), outboundSession)
+        heartbeatManager.messageAcknowledged(MESSAGE_ID)
 
         val interceptingProcessor = InterceptingProcessor()
         val subscriptionConfig = SubscriptionConfig(MY_GROUP, Schema.LINK_OUT_TOPIC, 1)
@@ -192,8 +192,8 @@ class HeartbeatManagerTest {
         )
         subscription.start()
 
-        assertTrue(timeoutLatch.await(5 * heartbeatPeriod.toMillis() * timeOutPeriods, TimeUnit.MILLISECONDS))
-        assertTrue(interceptingProcessor.messages.size >= timeOutPeriods - 1)
+        assertTrue(timeoutLatch.await(5 * sessionTimeoutPeriod.toMillis(), TimeUnit.MILLISECONDS))
+        assertTrue(interceptingProcessor.messages.size >= heartbeatsBeforeTimeout)
 
         subscription.stop()
         heartbeatManager.stop()
@@ -202,7 +202,8 @@ class HeartbeatManagerTest {
     @Test
     fun `If an exception is thrown when sending a heartbeat the task is rescheduled again`() {
         val mockPublisherFactory = Mockito.mock(PublisherFactory::class.java)
-        val publishLatch = CountDownLatch(timeOutPeriods - 2)
+        //First time we throw an exception so nothing gets published.
+        val publishLatch = CountDownLatch(heartbeatsBeforeTimeout - 1)
         val throwingPublisher = ThrowingPublisher(publishLatch)
 
         Mockito.`when`(mockPublisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(throwingPublisher)
@@ -210,16 +211,16 @@ class HeartbeatManagerTest {
         val timeoutLatch = CountDownLatch(1)
         val (_, outboundSession) = createSessionPair()
 
-        val heartbeatManager = HeartbeatManagerImpl(mockPublisherFactory, netMap, heartbeatPeriod, timeOutPeriods)
+        val heartbeatManager = HeartbeatManagerImpl(mockPublisherFactory, netMap, heartbeatPeriod, sessionTimeoutPeriod)
         heartbeatManager.start()
-        heartbeatManager.messageSent(
-            MESSAGE_ID,
-            OUTBOUND_PARTY.toHoldingIdentity(),
-            INBOUND_PARTY.toHoldingIdentity(),
-            outboundSession
-        ) { timeoutLatch.countDown() }
-        assertTrue(publishLatch.await(5 * heartbeatPeriod.toMillis() * (timeOutPeriods - 1), TimeUnit.MILLISECONDS))
-        assertTrue(timeoutLatch.await(5 * heartbeatPeriod.toMillis() * timeOutPeriods, TimeUnit.MILLISECONDS))
+        heartbeatManager.sessionMessageSent(
+            SESSION_MESSAGE_ID,
+            SessionManager.SessionKey(OUTBOUND_PARTY, INBOUND_PARTY),
+            SESSION_ID
+        ) { _, _ -> timeoutLatch.countDown() }
+        heartbeatManager.messageSent(MESSAGE_ID, SessionManager.SessionKey(OUTBOUND_PARTY, INBOUND_PARTY), outboundSession)
+        assertTrue(publishLatch.await(5 * sessionTimeoutPeriod.toMillis(), TimeUnit.MILLISECONDS))
+        assertTrue(timeoutLatch.await(5 * sessionTimeoutPeriod.toMillis(), TimeUnit.MILLISECONDS))
         loggingInterceptor.assertErrorContains("An exception was thrown when sending a heartbeat message.")
     }
 

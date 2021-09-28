@@ -90,7 +90,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         publisherFactory,
         linkManagerNetworkMap,
         Duration.ofSeconds(config.heartbeatMessagePeriodSecs),
-        config.heartbeatTimeOutPeriods,
+        Duration.ofSeconds(config.sessionTimeoutSecs)
     )
 
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory, heartbeatManager)
@@ -258,10 +258,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             val key = generateKey()
             heartbeatManager.messageSent(
                 messageAndKey.message.header.messageId,
-                messageAndKey.message.header.source,
-                messageAndKey.message.header.destination,
+                SessionKey(
+                    messageAndKey.message.header.source.toHoldingIdentity(),
+                    messageAndKey.message.header.destination.toHoldingIdentity()
+                ),
                 state.session,
-                sessionManager::destroyOutboundSession
             )
             linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, state.session, networkMap)?. let {
                 records.add(Record(Schema.LINK_OUT_TOPIC, key, it))
@@ -341,7 +342,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 is SessionDirection.Outbound -> {
                     extractPayload(sessionDirection.session, sessionId, message, MessageAck::fromByteBuffer)?.let {
                         messages.add(makeMarkerForAckMessage(it))
-                        heartbeatManager.messageAcknowledged(it.messageId, sessionDirection.session, sessionManager::destroyOutboundSession)
+                        heartbeatManager.messageAcknowledged(it.messageId)
                     }
                 }
                 is SessionDirection.NoSession -> {
@@ -457,13 +458,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     val message = queuedMessages.poll()
                     val dataMessage = linkOutMessageFromAuthenticatedMessageAndKey(message, session, networkMap)
                     records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), dataMessage))
-                    heartbeatManager.messageSent(
-                        message.message.header.messageId,
-                        message.message.header.source,
-                        message.message.header.destination,
-                        session,
-                        sessionManager::destroyOutboundSession
-                    )
+                    heartbeatManager.messageSent(message.message.header.messageId, key, session)
                 }
                 publisher.publish(records)
             }

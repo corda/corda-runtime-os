@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.utilities
 
-import net.corda.p2p.app.HoldingIdentity
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.delivery.HeartbeatManager
 import net.corda.p2p.linkmanager.sessions.SessionManager
@@ -8,33 +7,26 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 class MockHeartbeatManager: HeartbeatManager {
 
     val addedSessionMessages = HashSet<String>()
-    val ackedSessionMessages = HashSet<String>()
     val addedMessages = HashMap<String, MessageInfo>()
     val ackedMessages = HashSet<String>()
 
-    data class MessageInfo(val source: HoldingIdentity,
-                           val dest: HoldingIdentity,
+    data class MessageInfo(val key: SessionManager.SessionKey,
                            val session: Session)
 
-    override fun sessionMessageAdded(uniqueId: String, destroyPendingSession: (sessionId: String) -> Any) {
-        addedSessionMessages.add(uniqueId)
-    }
-
-    override fun sessionMessageAcknowledged(uniqueId: String) {
-        ackedSessionMessages.add(uniqueId)
-    }
-
-    override fun messageSent(
+    override fun sessionMessageSent(
         messageId: String,
-        source: HoldingIdentity,
-        dest: HoldingIdentity,
-        session: Session,
-        destroySession: (sessionKey: SessionManager.SessionKey) -> Any
+        key: SessionManager.SessionKey,
+        sessionId: String,
+        destroySession: (key: SessionManager.SessionKey, sessionId: String) -> Any
     ) {
-        addedMessages[messageId] = MessageInfo(source, dest, session)
+        addedSessionMessages.add(messageId)
     }
 
-    override fun messageAcknowledged(messageId: String, session: Session, destroySession: (sessionKey: SessionManager.SessionKey) -> Any) {
+    override fun messageSent(messageId: String, key: SessionManager.SessionKey, session: Session) {
+        addedMessages[messageId] = MessageInfo(key, session)
+    }
+
+    override fun messageAcknowledged(messageId: String) {
         ackedMessages.add(messageId)
     }
 }
