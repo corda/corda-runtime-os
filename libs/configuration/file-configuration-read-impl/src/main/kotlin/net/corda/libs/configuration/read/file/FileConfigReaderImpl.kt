@@ -9,8 +9,8 @@ import net.corda.libs.configuration.read.ConfigReader
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import java.io.File
 import java.io.IOException
+import java.util.Collections
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -31,6 +31,8 @@ class FileConfigReaderImpl(
 
     private val lock = ReentrantLock()
 
+    private val configUpdates = Collections.synchronizedMap(mutableMapOf<ConfigListenerSubscription, ConfigListener>())
+
     override val isRunning: Boolean
         get() {
             return !stopped
@@ -40,6 +42,8 @@ class FileConfigReaderImpl(
         lock.withLock {
             storeFileConfig()
             stopped = false
+            val configs = configurationRepository.getConfigurations()
+            configUpdates.forEach { it.value.onUpdate(configs.keys, configs) }
         }
     }
 
@@ -53,8 +57,11 @@ class FileConfigReaderImpl(
 
     override fun registerCallback(configListener: ConfigListener): AutoCloseable {
         val sub = ConfigListenerSubscription()
-        val configs = configurationRepository.getConfigurations()
-        configListener.onUpdate(configs.keys, configs)
+        configUpdates[sub] = configListener
+        if (isRunning) {
+            val configs = configurationRepository.getConfigurations()
+            configListener.onUpdate(configs.keys, configs)
+        }
         return sub
     }
 
