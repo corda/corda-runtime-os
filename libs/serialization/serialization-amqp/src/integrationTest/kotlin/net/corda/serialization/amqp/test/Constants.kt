@@ -1,5 +1,3 @@
-@file:JvmName("Constants")
-
 package net.corda.serialization.amqp.test
 
 // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
