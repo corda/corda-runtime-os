@@ -1,4 +1,3 @@
-@file:JvmName("EnvelopeHelpers")
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.SectionId

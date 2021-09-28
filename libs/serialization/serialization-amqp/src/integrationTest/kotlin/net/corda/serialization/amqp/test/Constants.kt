@@ -1,6 +1,4 @@
-@file:JvmName("Constants")
-
-package net.corda.serialization.amqp.test
+@package net.corda.serialization.amqp.test
 
 // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
 val PLATFORM_PUBLIC_BUNDLE_NAMES = listOf(
