@@ -35,7 +35,7 @@ import kotlin.concurrent.withLock
 @Component(service = [CryptoFactory::class])
 class CryptoFactoryImpl @Activate constructor(
     @Reference(service = PersistentCacheFactory::class)
-    private val persistenceFactory: PersistentCacheFactory,
+    private val persistenceFactories: List<PersistentCacheFactory>,
     @Reference(service = CipherSuiteFactory::class)
     private val cipherSuiteFactory: CipherSuiteFactory,
     @Reference(service = CryptoServiceProvider::class)
@@ -144,7 +144,10 @@ class CryptoFactoryImpl @Activate constructor(
         logger.debug("Getting the crypto service '${config.serviceName}' for '$memberId:$category'")
         val provider =
             cryptoServiceProviders.firstOrNull { it.name == config.serviceName } as? CryptoServiceProvider<Any>
-                ?: throw CryptoServiceLibraryException("Cannot find ${config.serviceName} for '$memberId:$category'}")
+                ?: throw CryptoServiceLibraryException(
+                    "Cannot find ${config.serviceName} for '$memberId:$category'",
+                    isRecoverable = false
+                )
         try {
             val context = CryptoServiceContext(
                 category = category,
@@ -166,6 +169,12 @@ class CryptoFactoryImpl @Activate constructor(
     }
 
     private fun getSigningKeyCache(memberId: String, config: CryptoCacheConfig): SigningKeyCache {
+        val persistenceFactory = persistenceFactories.firstOrNull {
+            it.name == config.cacheFactoryName
+        } ?: throw CryptoServiceLibraryException(
+            "Cannot find ${config.cacheFactoryName}",
+            isRecoverable = false
+        )
         return signingCaches.getOrPut(memberId) {
             SigningKeyCacheImpl(
                 memberId = memberId,

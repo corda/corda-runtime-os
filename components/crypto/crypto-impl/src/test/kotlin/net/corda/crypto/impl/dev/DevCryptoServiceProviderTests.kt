@@ -1,9 +1,7 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.dev
 
 import net.corda.crypto.CryptoCategories
 import net.corda.crypto.MockCryptoFactory
-import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
@@ -14,12 +12,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
 import java.util.UUID
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class DefaultCryptoServiceProviderTests {
+class DevCryptoServiceProviderTests {
     private val masterKeyAlias = "wrapping-key-alias"
     private lateinit var memberId: String
     private lateinit var mockFactory: MockCryptoFactory
@@ -81,18 +80,9 @@ class DefaultCryptoServiceProviderTests {
 
     @Test
     @Timeout(30)
-    fun `Should throw unrecoverable CryptoServiceLibraryException if configured factory is not found`() {
-        val provider = DefaultCryptoServiceProvider(
-            persistenceFactories = listOf(InMemoryPersistentCacheFactory())
-        )
-        provider.start()
-        provider.handleConfigEvent(
-            CryptoLibraryConfigImpl(
-                mapOf(
-                    "keyCache" to emptyMap<String, String>(),
-                    "mngCache" to emptyMap()
-                )
-            )
+    fun `Should throw unrecoverable CryptoServiceLibraryException if there is no InMemoryPersistentCacheFactory`() {
+        val provider = DevCryptoServiceProvider(
+            persistentCacheFactories = listOf(mock())
         )
         val exception = assertThrows<CryptoServiceLibraryException> {
             provider.createCryptoService(CryptoCategories.FRESH_KEYS)
@@ -102,33 +92,18 @@ class DefaultCryptoServiceProviderTests {
 
     private fun newAlias(): String = UUID.randomUUID().toString()
 
-    private fun createCryptoServiceProvider(): DefaultCryptoServiceProvider {
-        val provider = DefaultCryptoServiceProvider(
-            persistenceFactories = listOf(InMemoryPersistentCacheFactory())
+    private fun createCryptoServiceProvider(): DevCryptoServiceProvider {
+        return DevCryptoServiceProvider(
+            persistentCacheFactories = listOf(InMemoryPersistentCacheFactory())
         )
-        provider.start()
-        provider.handleConfigEvent(
-            CryptoLibraryConfigImpl(
-                mapOf(
-                    "keyCache" to mapOf(
-                        "cacheFactoryName" to InMemoryPersistentCacheFactory.NAME
-                    ),
-                    "mngCache" to emptyMap()
-                )
-            )
-        )
-        return provider
     }
 
-    private fun DefaultCryptoServiceProvider.createCryptoService(category: String): CryptoService = getInstance(
+    private fun DevCryptoServiceProvider.createCryptoService(category: String): CryptoService = getInstance(
         CryptoServiceContext(
             sandboxId = memberId,
             category = category,
             cipherSuiteFactory = mockFactory.cipherSuiteFactory,
-            config = DefaultCryptoServiceConfig(
-                passphrase = "PASSPHRASE",
-                salt = "SALT"
-            )
+            config = DevCryptoServiceConfiguration()
         )
     )
 }

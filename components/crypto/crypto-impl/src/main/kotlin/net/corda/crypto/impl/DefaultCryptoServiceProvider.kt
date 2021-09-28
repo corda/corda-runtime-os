@@ -13,6 +13,7 @@ import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
 import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
+import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -23,7 +24,7 @@ import kotlin.concurrent.withLock
 @Component(service = [CryptoServiceProvider::class, DefaultCryptoServiceProvider::class])
 open class DefaultCryptoServiceProvider @Activate constructor(
     @Reference(service = PersistentCacheFactory::class)
-    private val persistenceFactory: PersistentCacheFactory
+    private val persistenceFactories: List<PersistentCacheFactory>
 ) : Lifecycle, CryptoLifecycleComponent, CryptoServiceProvider<DefaultCryptoServiceConfig> {
     companion object {
         private val logger: Logger = contextLogger()
@@ -81,6 +82,12 @@ open class DefaultCryptoServiceProvider @Activate constructor(
         context: CryptoServiceContext<DefaultCryptoServiceConfig>,
         schemeMetadata: CipherSchemeMetadata
     ): DefaultCryptoKeyCache {
+        val persistenceFactory = persistenceFactories.firstOrNull {
+            it.name == libraryConfig!!.keyCache.cacheFactoryName
+        } ?: throw CryptoServiceLibraryException(
+            "Cannot find ${libraryConfig!!.keyCache.cacheFactoryName}",
+            isRecoverable = false
+        )
         return DefaultCryptoKeyCacheImpl(
             memberId = context.sandboxId,
             passphrase = context.config.passphrase,

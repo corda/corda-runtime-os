@@ -5,7 +5,11 @@ class CryptoCacheConfig(
 ) : CryptoConfigMap(map) {
     companion object {
         val default = CryptoCacheConfig(emptyMap())
+        const val DEFAULT_CACHE_FACTORY_NAME = "kafka"
     }
+
+    val cacheFactoryName: String
+        get() = getString(this::cacheFactoryName.name, DEFAULT_CACHE_FACTORY_NAME)
 
     val expireAfterAccessMins: Long
         get() = getLong(this::expireAfterAccessMins.name, 60)

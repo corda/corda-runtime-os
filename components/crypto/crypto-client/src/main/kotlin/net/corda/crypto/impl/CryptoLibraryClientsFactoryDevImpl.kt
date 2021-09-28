@@ -7,6 +7,7 @@ import net.corda.crypto.SigningService
 import net.corda.crypto.impl.dev.DevCryptoService
 import net.corda.crypto.impl.dev.DevCryptoServiceConfiguration
 import net.corda.crypto.impl.dev.DevCryptoServiceProvider
+import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
 import net.corda.crypto.impl.lifecycle.closeGracefully
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoServiceContext
@@ -20,7 +21,9 @@ class CryptoLibraryClientsFactoryDevImpl(
     private val schemeMetadata = cipherSuiteFactory.getSchemeMap()
 
     private val devCryptoServiceProvider: DevCryptoServiceProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        DevCryptoServiceProvider()
+        DevCryptoServiceProvider(
+            listOf(InMemoryPersistentCacheFactory())
+        )
     }
 
     private val cryptoServices = ConcurrentHashMap<String, DevCryptoService>()

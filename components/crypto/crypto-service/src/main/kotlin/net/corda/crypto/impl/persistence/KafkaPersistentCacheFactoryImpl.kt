@@ -14,6 +14,8 @@ class KafkaPersistentCacheFactoryImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory
 ) : PersistentCacheFactory {
+    override val name: String = CryptoCacheConfig.DEFAULT_CACHE_FACTORY_NAME
+
     override fun createSigningPersistentCache(
         config: CryptoCacheConfig
     ): PersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo> {
