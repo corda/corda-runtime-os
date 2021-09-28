@@ -126,9 +126,11 @@ open class CipherSuiteFactoryImpl @Activate constructor(
     }
 
     private fun getConfig(): CipherSuiteConfig {
-        if (!isConfigured) {
-            throw IllegalStateException("The factory is not configured.")
+        return if (!isConfigured) {
+            logger.warn("The factory is not yet configured, ...using the default values.")
+            CipherSuiteConfig(emptyMap())
+        } else {
+            libraryConfig!!.cipherSuite
         }
-        return libraryConfig!!.cipherSuite
     }
 }
