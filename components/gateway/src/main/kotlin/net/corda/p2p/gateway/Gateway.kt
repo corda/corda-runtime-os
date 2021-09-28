@@ -5,6 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
+import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
@@ -44,11 +45,11 @@ class Gateway(
 
     private val configurationService = GatewayConfigurationService(this, configurationReaderService)
 
-    private val server = Server(
+    private val inboundMessageHandler = InboundMessageHandler(
         this,
         configurationService,
+        publisherFactory,
         subscriptionFactory,
-        publisherFactory
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         this,
@@ -58,7 +59,7 @@ class Gateway(
     )
 
     override fun openSequence() {
-        followStatusChanges(server, outboundMessageProcessor).also {
+        followStatusChanges(inboundMessageHandler, outboundMessageProcessor).also {
             executeBeforeClose(it::close)
         }
     }
@@ -66,8 +67,8 @@ class Gateway(
     override fun resumeSequence() {
         logger.info("Starting Gateway service")
         configurationService.start()
-        server.start()
-        executeBeforePause(server::stop)
+        inboundMessageHandler.start()
+        executeBeforePause(inboundMessageHandler::stop)
         outboundMessageProcessor.start()
         executeBeforePause(outboundMessageProcessor::stop)
         onStatusUp()
@@ -76,7 +77,7 @@ class Gateway(
 
     override fun onStatusUp() {
         if ((configurationService.state == State.Up) &&
-            (server.state == State.Up) &&
+            (inboundMessageHandler.state == State.Up) &&
             (outboundMessageProcessor.state == State.Up)
         ) {
             logger.info("Gateway is running")
@@ -86,6 +87,6 @@ class Gateway(
 
     override fun onStatusDown() {
         outboundMessageProcessor.stop()
-        server.stop()
+        inboundMessageHandler.stop()
     }
 }
