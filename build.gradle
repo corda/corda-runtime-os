@@ -225,7 +225,6 @@ logger.quiet("Corda API dependency version spec: {}", cordaApiVersion)
 logger.quiet("Old Corda dependencies version spec: {}", cordaVersion)
 //logger.quiet("Release Type: {}", releaseType)
 
-
 subprojects {
     buildscript {
         configurations.all {
