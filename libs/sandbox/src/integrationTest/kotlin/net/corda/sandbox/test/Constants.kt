@@ -1,4 +1,4 @@
-@file:JvmName("Constants")
+@file:JvmName("SandboxTestConstants")
 
 package net.corda.sandbox.test
 
