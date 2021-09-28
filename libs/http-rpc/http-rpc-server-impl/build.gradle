@@ -24,7 +24,7 @@ dependencies {
     implementation project(":libs:http-rpc:http-rpc-server")
 
     implementation "net.corda:corda-crypto"
-    implementation "net.corda.osgi.bundles:javalin-osgi:$javalinVersion"
+    implementation "io.javalin:javalin-osgi:$javalinVersion"
     implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.jcip-annotations:1.0_1"
     implementation "org.eclipse.jetty.websocket:websocket-servlet:$jettyVersion"
