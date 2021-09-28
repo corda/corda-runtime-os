@@ -50,6 +50,7 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "net.i2p.crypto:eddsa:$eddsaVersion"
+    testImplementation 'org.slf4j:slf4j-api'
 
     integrationTestImplementation project(":libs:install")
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
