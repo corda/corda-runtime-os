@@ -113,14 +113,12 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         assertThat(responseTitle).doesNotContain("\n")
     }
 
-    @Disabled("enable this after CORE-2404 case2 fix")
     @Test
-    fun `passing 3 backslashes as UUID should be handled properly (CORE-2404 case #2)`() {
+    fun `passing 3 backslashes as UUID should be handled properly`() {
 
         val parseUuidResponse = client.call(HttpVerb.POST, WebRequest<String>("health/parseuuid/%5C%5C%5C"), userName, password)
         assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, parseUuidResponse.responseStatus)
         assertNotNull(parseUuidResponse.body)
-        assertDoesNotThrow(parseUuidResponse.body) { JsonParser.parseString(parseUuidResponse.body) } //exception thrown here now because of the 3 backslashes
+        assertDoesNotThrow(parseUuidResponse.body) { JsonParser.parseString(parseUuidResponse.body) }
     }
-
 }
