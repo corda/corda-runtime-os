@@ -48,6 +48,7 @@ configurations {
     systemPackages {
         transitive = false
         canBeConsumed = false
+
         alignToRuntimeClasspath(it)
     }
     bootstrapClasspath {
@@ -83,7 +84,9 @@ configurations {
 dependencies {
     bootstrapClasspath project(":osgi-framework-bootstrap")
 
-    systemPackages "org.jetbrains.kotlin:kotlin-osgi-bundle"
+    systemPackages "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    systemPackages "net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion"
+    systemPackages "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
     systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
     systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
