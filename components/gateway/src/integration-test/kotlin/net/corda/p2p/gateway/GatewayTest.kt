@@ -134,7 +134,7 @@ class GatewayTest : TestBase() {
                     responseReceived.countDown()
                 }
             }
-            HttpClient(serverInfo, bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1),clientListener).use { client ->
+            HttpClient(serverInfo, bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1), clientListener).use { client ->
                 client.start()
                 client.write(linkInMessage.toByteBuffer().array())
                 responseReceived.await()
@@ -341,7 +341,6 @@ class GatewayTest : TestBase() {
                     server?.write(HttpResponseStatus.OK, ByteArray(0), message.source)
                     deliveryLatch.countDown()
                 }
-
             }
             HttpServer(
                 serverListener,
@@ -376,8 +375,8 @@ class GatewayTest : TestBase() {
     @Test
     @Timeout(60)
     fun `gateway to gateway - dual stream`() {
-        val aliceGatewayAddress = URI.create("http://www.chip.net:10003")
-        val bobGatewayAddress = URI.create("http://www.dale.net:10004")
+        val aliceGatewayAddress = URI.create("http://www.chip.net:11003")
+        val bobGatewayAddress = URI.create("http://www.dale.net:11004")
         val messageCount = 100
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
         bob.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
@@ -444,21 +443,20 @@ class GatewayTest : TestBase() {
         }
 
         // Produce messages for each Gateway
-        // Produce messages for each Gateway
         (1..messageCount).flatMap {
-            var msg = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("", NetworkType.CORDA_5, bobGatewayAddress.toString())
-                payload = authenticatedP2PMessage("Target-$bobGatewayAddress")
+            listOf(
+                bobGatewayAddress.toString() to alice,
+                aliceGatewayAddress.toString() to bob
+            )
+        }.flatMap { (address, node) ->
+            val msg = LinkOutMessage.newBuilder().apply {
+                header = LinkOutHeader("", NetworkType.CORDA_5, address)
+                payload = authenticatedP2PMessage("Target-$address")
             }.build()
-            val aliceMsgfuture = alice.publish(Record(LINK_OUT_TOPIC, "key", msg))
-
-            msg = LinkOutMessage.newBuilder().apply {
-                header = LinkOutHeader("", NetworkType.CORDA_5, aliceGatewayAddress.toString())
-                payload = authenticatedP2PMessage("Target-$aliceGatewayAddress")
-            }.build()
-            val bobMsgFuture = bob.publish(Record(LINK_OUT_TOPIC, "key", msg))
-            (aliceMsgfuture + bobMsgFuture)
-        }.forEach { it.get() }
+            node.publish(Record(LINK_OUT_TOPIC, "key", msg))
+        }.forEach {
+            it.join()
+        }
 
         val threads = gateways.map {
             thread {

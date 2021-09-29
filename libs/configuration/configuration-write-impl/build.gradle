@@ -14,7 +14,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:avro-schema"
+    implementation "net.corda:corda-avro-schema"
 
     implementation project(":libs:configuration:configuration-write")
     implementation project(":libs:messaging:messaging")
