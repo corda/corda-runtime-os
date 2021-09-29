@@ -16,9 +16,6 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
 class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
@@ -116,12 +113,8 @@ class HttpRpcGateway(
             }
         }
         sub = configurationReadService.registerForUpdates(listener)
-
-
-        log.info("About to start configurationReadService $configurationReadService")
         configurationReadService.start()
         configurationReadService.bootstrapConfig(bootstrapConfig!!)
-        log.info("Started configurationReadService $configurationReadService")
     }
 
     override fun stop() {

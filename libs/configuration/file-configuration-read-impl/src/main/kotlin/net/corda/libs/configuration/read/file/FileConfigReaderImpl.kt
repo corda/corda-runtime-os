@@ -7,7 +7,6 @@ import com.typesafe.config.ConfigParseOptions
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import java.io.File
 import java.io.IOException

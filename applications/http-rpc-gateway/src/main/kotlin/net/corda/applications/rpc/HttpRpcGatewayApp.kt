@@ -18,9 +18,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -80,7 +78,6 @@ class HttpRpcGatewayApp @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
-//            val instanceId = parameters.instanceId.toInt()
             val kafkaProperties = getKafkaPropertiesFromFile(parameters.kafkaProperties)
             val bootstrapConfig = getBootstrapConfig(kafkaProperties)
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
@@ -124,8 +121,6 @@ class HttpRpcGatewayApp @Activate constructor(
             lifeCycleCoordinator!!.start()
             consoleLogger.info("HTTP RPC Gateway application started")
 
-            //Thread.sleep(1000)
-
         }
     }
 
@@ -144,23 +139,16 @@ class HttpRpcGatewayApp @Activate constructor(
      */
     private fun createConfigFile(): String {
         tempDirectoryPath = Files.createTempDirectory(TEMP_DIRECTORY_PREFIX)
-//        val configFileURI = this::class.java.classLoader.getResource(CONFIG_FILE)?.toURI()?:throw CordaRuntimeException("$CONFIG_FILE not found in resources")
-//        log.info("configFileURI $configFileURI")
         val bundleContext = FrameworkUtil.getBundle(HttpRpcGatewayApp::class.java).bundleContext
         val configFileURL = bundleContext.bundle.getResource(CONFIG_FILE)
-        log.info("configFileURL $configFileURL")
-
-
         val configFileContent = configFileURL.openStream().readAllBytes()
         val configFilePath = Path.of(tempDirectoryPath.toString(), CONFIG_FILE)
         configFilePath.toFile().writeBytes(configFileContent)
-        log.info("configFilePath $configFilePath")
         return configFilePath.toString()
     }
 
 
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
-
 
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
         return ConfigFactory.empty()
