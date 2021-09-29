@@ -9,7 +9,6 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import java.io.NotSerializableException
-import java.lang.IllegalStateException
 import kotlin.test.assertFailsWith
 
 class SingletonSerializeAsTokenTest {
@@ -46,6 +45,7 @@ class SingletonSerializeAsTokenTest {
         }
     }
 
+    @Suppress("EqualsWithHashCodeExist")
     class Service(val i: Int) : SingletonSerializeAsToken {
 
         override fun equals(other: Any?): Boolean {

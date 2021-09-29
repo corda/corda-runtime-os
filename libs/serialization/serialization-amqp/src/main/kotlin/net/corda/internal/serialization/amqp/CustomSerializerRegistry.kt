@@ -148,6 +148,7 @@ class CachingCustomSerializerRegistry(
         }.serializerIfFound
     }
 
+    @Suppress("ThrowsCount", "ComplexMethod")
     private fun doFindCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? {
         val declaredSuperClass = declaredType.asClass().superclass
 
