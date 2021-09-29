@@ -29,8 +29,6 @@ class DuplicateCustomSerializerException(serializers: List<AMQPSerializer<*>>, c
         Exception("Multiple custom serializers " + serializers.map { it::class.qualifiedName } +
                 " registered to serialize type $clazz")
 
-class SingletonSerializeAsTokenSerializerException(): Exception("Attempt to serialise SingletonSerializeAsToken")
-
 interface CustomSerializerRegistry {
 
     /**
