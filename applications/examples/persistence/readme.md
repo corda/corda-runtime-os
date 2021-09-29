@@ -47,3 +47,19 @@ Start the demo app (from `applications/examples/persistence/persistence-demo`):
 gradle clean assemble 
 java -jar build/bin/corda-persistence-demo-5.0.0.0-SNAPSHOT.jar
 ```
+
+## Demo Publisher
+
+There is another, small, CLI to publish messages on Kafka that are needed to drive the demo.
+
+To compile the app:
+
+```shell
+gradle clean assemble
+```
+
+### Cluster Admin Message
+
+```shell
+java -jar persistence-demo-publisher/build/bin/corda-persistence-demo-publisher-5.0.0.0-SNAPSHOT.jar cluster-admin --kafka localhost:9093
+```
