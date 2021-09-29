@@ -117,7 +117,7 @@ private def addSystemPackagesExtra(
             "sun.security.x509",
             "sun.security.ssl",
             "javax.servlet",
-            "javax.transaction.xa;version=1.1.0",
+            "javax.transaction;version=1.2.0",
             "javax.xml.stream;version=1.0",
             "javax.xml.stream.events;version=1.0",
             "javax.xml.stream.util;version=1.0"

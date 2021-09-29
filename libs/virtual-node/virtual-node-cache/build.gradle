@@ -14,5 +14,5 @@ dependencies {
     implementation project(":libs:install")
     implementation "net.corda:corda-packaging"
     implementation project(":libs:sandbox")
-    implementation "net.corda:avro-schema"
+    implementation "net.corda:corda-avro-schema"
 }
