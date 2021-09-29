@@ -245,17 +245,17 @@ class AuthenticationProtocolInitiator(private val sessionId: String,
         }
     }
 
-    private fun <R> transition(fromStep: Step, toStep: Step, cachedValueFn: () -> R, fn: () -> R): R {
+    private fun <R> transition(fromStep: Step, toStep: Step, getCachedValue: () -> R, calculateValue: () -> R): R {
         if (step < fromStep) {
             throw IncorrectAPIUsageException(
                 "This method must be invoked when the protocol is at least in step $fromStep, but it was in step $step."
             )
         }
         if (step >= toStep) {
-            return cachedValueFn()
+            return getCachedValue()
         }
 
-        val value = fn()
+        val value = calculateValue()
         step = toStep
         return value
     }

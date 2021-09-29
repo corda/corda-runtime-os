@@ -340,7 +340,7 @@ open class SessionManagerImpl(
 
         activeInboundSessions[message.header.sessionId] = session.getSession()
         /**
-         * We delay removing the session from pendingInboundSessions only after we receive the first data message as before this point
+         * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
          * */
         return createLinkOutMessage(response, peer, networkType)
