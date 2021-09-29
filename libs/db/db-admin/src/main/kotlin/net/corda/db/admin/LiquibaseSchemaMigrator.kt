@@ -8,7 +8,7 @@ import java.sql.Connection
  *
  * @constructor Create Liquibase schema migrator
  */
-interface LiquibaseSchemaMigrator {
+interface   LiquibaseSchemaMigrator {
     /**
      * Update [datasource] using [changeLog] file.
      *
