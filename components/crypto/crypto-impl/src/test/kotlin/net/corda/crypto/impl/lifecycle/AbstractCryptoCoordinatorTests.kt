@@ -6,6 +6,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -316,6 +317,7 @@ class AbstractCryptoCoordinatorTests {
         configurationReadService: ConfigurationReadService,
         subcomponents: List<Any>
     ): AbstractCryptoCoordinator(
+        LifecycleCoordinatorName.forComponent<CryptoCoordinatorStub>(),
         coordinatorFactory,
         configurationReadService,
         subcomponents

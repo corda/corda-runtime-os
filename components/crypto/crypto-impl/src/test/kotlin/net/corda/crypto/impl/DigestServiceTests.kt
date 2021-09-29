@@ -1,6 +1,6 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.MockCryptoFactory
+import net.corda.crypto.impl.stubs.MockCryptoFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService

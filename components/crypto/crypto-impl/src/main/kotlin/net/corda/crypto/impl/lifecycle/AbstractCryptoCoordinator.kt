@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -15,6 +16,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 abstract class AbstractCryptoCoordinator(
+    coordinatorName: LifecycleCoordinatorName,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReadService: ConfigurationReadService,
     private val subcomponents: List<Any>
@@ -28,7 +30,7 @@ abstract class AbstractCryptoCoordinator(
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
-    private var coordinator = coordinatorFactory.createCoordinator<AbstractCryptoCoordinator> { event, _ ->
+    private var coordinator = coordinatorFactory.createCoordinator(coordinatorName) { event, _ ->
         handleEvent(event)
     }
 

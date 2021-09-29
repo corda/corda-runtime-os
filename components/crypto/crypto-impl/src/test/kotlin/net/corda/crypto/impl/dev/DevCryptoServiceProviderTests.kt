@@ -1,7 +1,7 @@
 package net.corda.crypto.impl.dev
 
 import net.corda.crypto.CryptoCategories
-import net.corda.crypto.MockCryptoFactory
+import net.corda.crypto.impl.stubs.MockCryptoFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext

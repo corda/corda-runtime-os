@@ -1,8 +1,8 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.CryptoCategories
-import net.corda.crypto.MockCryptoFactory
 import net.corda.crypto.SigningService
+import net.corda.crypto.impl.stubs.MockCryptoFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME

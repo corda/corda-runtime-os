@@ -82,7 +82,12 @@ open class SigningServiceImpl(
                 ?: throw CryptoServiceBadRequestException("The entry for public key '${publicKey.toStringShort()}' is not found")
             val signatureScheme = schemeMetadata.findSignatureScheme(keyData.schemeCodeName)
             val signedBytes = if (keyData.alias != null) {
-                cryptoService.sign(keyData.alias!!, signatureScheme, signatureSpec ?: signatureScheme.signatureSpec, data)
+                cryptoService.sign(
+                    keyData.alias!!,
+                    signatureScheme,
+                    signatureSpec ?: signatureScheme.signatureSpec,
+                    data
+                )
             } else {
                 if (keyData.privateKeyMaterial == null || keyData.masterKeyAlias.isNullOrBlank()) {
                     throw IllegalArgumentException(
@@ -95,7 +100,11 @@ open class SigningServiceImpl(
                     signatureScheme = signatureScheme,
                     encodingVersion = keyData.version
                 )
-                cryptoService.sign(wrappedPrivateKey, signatureScheme.signatureSpec, data)
+                cryptoService.sign(
+                    wrappedPrivateKey,
+                    signatureSpec ?: signatureScheme.signatureSpec,
+                    data
+                )
             }
             DigitalSignature.WithKey(signingPublicKey, signedBytes)
         } catch (e: CryptoServiceException) {
@@ -112,7 +121,12 @@ open class SigningServiceImpl(
             val keyData = cache.find(alias)
                 ?: throw CryptoServiceBadRequestException("The entry for alias '$alias' is not found")
             val signatureScheme = schemeMetadata.findSignatureScheme(keyData.schemeCodeName)
-            cryptoService.sign(alias, signatureScheme, signatureSpec ?: signatureScheme.signatureSpec, data)
+            cryptoService.sign(
+                alias,
+                signatureScheme,
+                signatureSpec ?: signatureScheme.signatureSpec,
+                data
+            )
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Throwable) {

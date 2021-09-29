@@ -6,6 +6,7 @@ import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.dev.DevCryptoServiceProvider
 import net.corda.crypto.impl.lifecycle.AbstractCryptoCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
@@ -25,6 +26,7 @@ open class CryptoLibraryCoordinator @Activate constructor(
     @Reference(service = CryptoLibraryClientsFactoryProvider::class)
     private val cryptoFactoryProvider: CryptoLibraryClientsFactoryProvider
 ) : AbstractCryptoCoordinator(
+    LifecycleCoordinatorName.forComponent<CryptoLibraryCoordinator>(),
     coordinatorFactory,
     configurationReadService,
     listOf(

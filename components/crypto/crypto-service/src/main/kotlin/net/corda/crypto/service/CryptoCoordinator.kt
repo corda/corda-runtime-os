@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.impl.DefaultCryptoServiceProvider
 import net.corda.crypto.impl.lifecycle.AbstractCryptoCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -26,6 +27,7 @@ open class CryptoCoordinator @Activate constructor(
     @Reference(service = CryptoRpcSub::class)
     private val rpcSubs: List<CryptoRpcSub>
 ) : AbstractCryptoCoordinator(
+    LifecycleCoordinatorName.forComponent<CryptoCoordinator>(),
     coordinatorFactory,
     configurationReadService,
     listOf(

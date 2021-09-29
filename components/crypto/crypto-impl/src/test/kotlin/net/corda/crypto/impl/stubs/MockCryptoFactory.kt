@@ -1,5 +1,8 @@
-package net.corda.crypto
+package net.corda.crypto.impl.stubs
 
+import net.corda.crypto.CryptoCategories
+import net.corda.crypto.FreshKeySigningService
+import net.corda.crypto.SigningService
 import net.corda.crypto.impl.CipherSchemeMetadataProviderImpl
 import net.corda.crypto.impl.DefaultCryptoService
 import net.corda.crypto.impl.DigestServiceProviderImpl
