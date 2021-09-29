@@ -39,18 +39,18 @@ enum class LifeCycleState {
 @Component(service = [Application::class], immediate = true)
 @Suppress("LongParameterList")
 class HttpRpcGatewayApp @Activate constructor(
-        @Reference(service = SubscriptionFactory::class)
-        private val subscriptionFactory: SubscriptionFactory,
-        @Reference(service = Shutdown::class)
-        private val shutDownService: Shutdown,
-        @Reference(service = ConfigurationReadService::class)
-        private val configurationReadService: ConfigurationReadService,
-        @Reference(service = LifecycleCoordinatorFactory::class)
-        private val coordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = HttpRpcServerFactory::class)
-        private val httpRpcServerFactory: HttpRpcServerFactory,
-        @Reference(service = RPCSecurityManagerFactory::class)
-        private val rpcSecurityManagerFactory: RPCSecurityManagerFactory
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = Shutdown::class)
+    private val shutDownService: Shutdown,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService,
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = HttpRpcServerFactory::class)
+    private val httpRpcServerFactory: HttpRpcServerFactory,
+    @Reference(service = RPCSecurityManagerFactory::class)
+    private val rpcSecurityManagerFactory: RPCSecurityManagerFactory
 ) : Application {
 
     private companion object {
@@ -84,38 +84,42 @@ class HttpRpcGatewayApp @Activate constructor(
             var httpRpcGateway: HttpRpcGateway? = null
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
-                    coordinatorFactory.createCoordinator<HttpRpcGatewayApp> { event: LifecycleEvent, _: LifecycleCoordinator ->
-                        log.info("LifecycleEvent received: $event")
-                        when (event) {
-                            is StartEvent -> {
-                                consoleLogger.info("Starting HTTP RPC Gateway")
-                                state = LifeCycleState.STARTING
-                                httpRpcGateway?.start(bootstrapConfig)
-                            }
-                            is ConfigReceivedEvent -> {
-                                if (state == LifeCycleState.STARTING) {
-                                    state = LifeCycleState.STARTINGMESSAGING
-                                    //val config = bootstrapConfig.withFallback(event.currentConfigurationSnapshot[MESSAGING_CONFIG]!!)
-                                    consoleLogger.info("Received config from Kafka, started subscriptions")
-                                }
-                            }
-                            is MessagingConfigUpdateEvent -> {
-                                state = LifeCycleState.REINITMESSAGING
+                coordinatorFactory.createCoordinator<HttpRpcGatewayApp> { event: LifecycleEvent, _: LifecycleCoordinator ->
+                    log.info("LifecycleEvent received: $event")
+                    when (event) {
+                        is StartEvent -> {
+                            consoleLogger.info("Starting HTTP RPC Gateway")
+                            state = LifeCycleState.STARTING
+                            httpRpcGateway?.start(bootstrapConfig)
+                        }
+                        is ConfigReceivedEvent -> {
+                            if (state == LifeCycleState.STARTING) {
+                                state = LifeCycleState.STARTINGMESSAGING
                                 //val config = bootstrapConfig.withFallback(event.currentConfigurationSnapshot[MESSAGING_CONFIG]!!)
-                                consoleLogger.info("Received config update from kafka, restarted subscriptions")
-                            }
-                            is StopEvent -> {
-                                consoleLogger.info("Stopping HTTP RPC Gateway")
-                                httpRpcGateway?.stop()
-                            }
-                            else -> {
-                                log.error("$event unexpected!")
+                                consoleLogger.info("Received config from Kafka, started subscriptions")
                             }
                         }
+                        is MessagingConfigUpdateEvent -> {
+                            state = LifeCycleState.REINITMESSAGING
+                            //val config = bootstrapConfig.withFallback(event.currentConfigurationSnapshot[MESSAGING_CONFIG]!!)
+                            consoleLogger.info("Received config update from kafka, restarted subscriptions")
+                        }
+                        is StopEvent -> {
+                            consoleLogger.info("Stopping HTTP RPC Gateway")
+                            httpRpcGateway?.stop()
+                        }
+                        else -> {
+                            log.error("$event unexpected!")
+                        }
                     }
+                }
 
             httpRpcGateway = HttpRpcGateway(
-                    lifeCycleCoordinator!!, configurationReadService, httpRpcServerFactory, rpcSecurityManagerFactory)
+                lifeCycleCoordinator!!,
+                configurationReadService,
+                httpRpcServerFactory,
+                rpcSecurityManagerFactory
+            )
 
 
             log.info("Starting life cycle coordinator")
@@ -151,10 +155,10 @@ class HttpRpcGatewayApp @Activate constructor(
 
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
         return ConfigFactory.empty()
-                .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
-                .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
-                .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
-                .withValue("config.file", ConfigValueFactory.fromAnyRef(createConfigFile()))
+            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
+            .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
+            .withValue("config.file", ConfigValueFactory.fromAnyRef(createConfigFile()))
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
@@ -167,10 +171,7 @@ class HttpRpcGatewayApp @Activate constructor(
             if (default != null) {
                 return default
             }
-            log.error(
-                    "No $path property found! " +
-                            "Pass property in via --kafka properties file or via -D$path"
-            )
+            log.error("No $path property found! Pass property in via --kafka properties file or via -D$path")
             shutdown()
         }
         return configValue
