@@ -34,7 +34,7 @@ class HttpRpcServerImpl(
     private companion object {
         private val log = contextLogger()
     }
-    
+
     @Volatile
     private var running = false
     private val startStopLock = ReentrantReadWriteLock()
