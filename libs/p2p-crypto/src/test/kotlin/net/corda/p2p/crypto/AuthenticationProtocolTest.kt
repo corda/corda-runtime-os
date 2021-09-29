@@ -46,9 +46,20 @@ class AuthenticationProtocolTest {
         executeProtocol(partyAIdentityKey, partyBIdentityKey, signature, KeyAlgorithm.RSA)
     }
 
+    @Test
+    fun `authentication protocol methods are idempotent`() {
+        val signature = Signature.getInstance(ECDSA_SIGNATURE_ALGO, provider)
+        val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
+        val partyAIdentityKey = keyPairGenerator.generateKeyPair()
+        val partyBIdentityKey = keyPairGenerator.generateKeyPair()
+
+        executeProtocol(partyAIdentityKey, partyBIdentityKey, signature, KeyAlgorithm.ECDSA, true)
+    }
+
     private fun executeProtocol(partyAIdentityKey: KeyPair,
                                 partyBIdentityKey: KeyPair,
-                                signature: Signature, keyAlgo: KeyAlgorithm) {
+                                signature: Signature, keyAlgo: KeyAlgorithm,
+                                duplicateInvocations: Boolean = false) {
         val protocolInitiator = AuthenticationProtocolInitiator(
             sessionId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
@@ -62,15 +73,27 @@ class AuthenticationProtocolTest {
         val initiatorHelloMsg = protocolInitiator.generateInitiatorHello()
         assertThat(initiatorHelloMsg.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
         protocolResponder.receiveInitiatorHello(initiatorHelloMsg)
+        if (duplicateInvocations) {
+            assertThat(protocolInitiator.generateInitiatorHello()).isEqualTo(initiatorHelloMsg)
+            protocolResponder.receiveInitiatorHello(initiatorHelloMsg)
+        }
 
         // Step 2: responder sending hello message to initiator.
         val responderHelloMsg = protocolResponder.generateResponderHello()
         assertThat(responderHelloMsg.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
         protocolInitiator.receiveResponderHello(responderHelloMsg)
+        if (duplicateInvocations) {
+            assertThat(protocolResponder.generateResponderHello()).isEqualTo(responderHelloMsg)
+            protocolInitiator.receiveResponderHello(responderHelloMsg)
+        }
 
         // Both sides generate handshake secrets.
         protocolInitiator.generateHandshakeSecrets()
         protocolResponder.generateHandshakeSecrets()
+        if (duplicateInvocations) {
+            protocolInitiator.generateInitiatorHello()
+            protocolResponder.generateHandshakeSecrets()
+        }
 
         // Step 3: initiator sending handshake message and responder validating it.
         val signingCallbackForA = { data: ByteArray ->
@@ -81,6 +104,11 @@ class AuthenticationProtocolTest {
         val initiatorHandshakeMessage = protocolInitiator.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA)
         assertThat(initiatorHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
         protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, keyAlgo)
+        if (duplicateInvocations) {
+            assertThat(protocolInitiator.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForA))
+                .isEqualTo(initiatorHandshakeMessage)
+            protocolResponder.validatePeerHandshakeMessage(initiatorHandshakeMessage, partyAIdentityKey.public, keyAlgo)
+        }
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
@@ -91,5 +119,10 @@ class AuthenticationProtocolTest {
         val responderHandshakeMessage = protocolResponder.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB)
         assertThat(responderHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
         protocolInitiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, keyAlgo)
+        if (duplicateInvocations) {
+            assertThat(protocolResponder.generateOurHandshakeMessage(partyBIdentityKey.public, signingCallbackForB))
+                .isEqualTo(responderHandshakeMessage)
+            protocolInitiator.validatePeerHandshakeMessage(responderHandshakeMessage, partyBIdentityKey.public, keyAlgo)
+        }
     }
 }
