@@ -36,7 +36,7 @@ dependencies {
     implementation project(":libs:schema-registry:schema-registry")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:avro-schema"
+    implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     
@@ -46,7 +46,7 @@ dependencies {
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "net.corda:avro-schema"
+    testImplementation "net.corda:corda-avro-schema"
 
     testRuntimeOnly 'org.osgi:osgi.core'
 
