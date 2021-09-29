@@ -62,7 +62,7 @@ class HttpRpcGatewayApp @Activate constructor(
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
 
         const val TEMP_DIRECTORY_PREFIX = "http-rpc-gateway-app-temp-dir"
-        const val CONFIG_FILE = "test.conf"
+        const val CONFIG_FILE = "local_http_rpc_gateway.conf"
     }
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
