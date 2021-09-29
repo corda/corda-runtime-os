@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.server.SslConnectionFactory
 import org.eclipse.jetty.util.ssl.SslContextFactory
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
@@ -295,7 +296,16 @@ internal class HttpRpcServerInternal(
             // via the service loader mechanism. This mechanism is not appropriate for OSGi. The logging
             // implementation is found correctly in practice.
             System.setErr(PrintStream(OutputStream.nullOutputStream()))
-            server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
+
+            // We need to set thread context classloader here as
+            // `org.eclipse.jetty.websocket.servlet.WebSocketServletFactory.Loader.load` relies on it to perform
+            // classloading during `start` method invocation.
+            executeWithThreadContextClassLoader(
+                FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
+                    .loadClass(WebSocketServletFactory::class.java.name).classLoader
+            ) {
+                server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
+            }
             log.trace { "Starting the Javalin server completed." }
         } catch (e: Exception) {
             "Error when starting the Javalin server".let {
