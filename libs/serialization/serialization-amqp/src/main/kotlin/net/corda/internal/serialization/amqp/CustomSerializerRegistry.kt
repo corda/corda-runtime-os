@@ -8,6 +8,8 @@ import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.v5.serialization.SingletonSerializeAsToken
+import java.io.NotSerializableException
 import java.lang.reflect.Type
 
 /**
@@ -26,6 +28,8 @@ class IllegalCustomSerializerException(customSerializer: AMQPSerializer<*>, claz
 class DuplicateCustomSerializerException(serializers: List<AMQPSerializer<*>>, clazz: Class<*>) :
         Exception("Multiple custom serializers " + serializers.map { it::class.qualifiedName } +
                 " registered to serialize type $clazz")
+
+class SingletonSerializeAsTokenSerializerException(): Exception("Attempt to serialise SingletonSerializeAsToken")
 
 interface CustomSerializerRegistry {
 
@@ -166,7 +170,13 @@ class CachingCustomSerializerRegistry(
             }
         }
 
-        if (declaredSerializers.isEmpty()) return null
+        if (declaredSerializers.isEmpty()) {
+            if (SingletonSerializeAsToken::class.java.isAssignableFrom(clazz)) {
+                throw NotSerializableException("Attempt to serialise SingletonSerializeAsToken")
+            } else {
+                return null
+            }
+        }
         if (declaredSerializers.size > 1) {
             logger.warn("Duplicate custom serializers detected for $clazz: ${declaredSerializers.map { it::class.qualifiedName }}")
             throw DuplicateCustomSerializerException(declaredSerializers, clazz)
