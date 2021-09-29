@@ -337,21 +337,6 @@ The classpath or executable JAR has the following structure.
   \___ system_packages_extra
 ```
 
-## Common Flask Plugin 
-
-The **Common Flask** plugin wraps the bootable JAR built by the **Common App** plugin to make a new bootable JAR
-instrumented with [Quasar](https://docs.paralleluniverse.co/quasar/).
-
-To build the *Flask* bootable jar instrumented with *Quasar* apply the plugin in the `build.gradle`
-of application module with
-
-```groovy
-plugins {
-    id 'corda.publish'
-    id 'corda.common-flask'
-}
-```
-
 ## Common Library Plugin
 
 The **Common Library** plugin will specify the set of common configurations and dependencies that a library developer
