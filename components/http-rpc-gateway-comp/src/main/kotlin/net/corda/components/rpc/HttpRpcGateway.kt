@@ -21,9 +21,6 @@ import org.slf4j.Logger
 class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 
-// Should this become a component with a factory so that all its dependencies, other than the
-// LifecycleCoordinator and injected. The LifecycleCoordinator can then be passed into the
-// create method
 class HttpRpcGateway(
     private val lifeCycleCoordinator: LifecycleCoordinator,
     private val configurationReadService: ConfigurationReadService,

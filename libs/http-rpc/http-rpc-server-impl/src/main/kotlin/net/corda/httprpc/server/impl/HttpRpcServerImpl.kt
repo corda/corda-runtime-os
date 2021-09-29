@@ -34,11 +34,7 @@ class HttpRpcServerImpl(
     private companion object {
         private val log = contextLogger()
     }
-
-    init {
-        log.info("Creating rpc server")
-    }
-
+    
     @Volatile
     private var running = false
     private val startStopLock = ReentrantReadWriteLock()
