@@ -300,10 +300,15 @@ internal class HttpRpcServerInternal(
             // We need to set thread context classloader here as
             // `org.eclipse.jetty.websocket.servlet.WebSocketServletFactory.Loader.load` relies on it to perform
             // classloading during `start` method invocation.
-            executeWithThreadContextClassLoader(
-                FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
-                    .loadClass(WebSocketServletFactory::class.java.name).classLoader
-            ) {
+            val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
+            if (bundle != null) {
+                executeWithThreadContextClassLoader(
+                        bundle
+                                .loadClass(WebSocketServletFactory::class.java.name).classLoader
+                ) {
+                    server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
+                }
+            } else {
                 server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
             }
             log.trace { "Starting the Javalin server completed." }
