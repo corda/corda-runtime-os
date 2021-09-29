@@ -341,7 +341,7 @@ class GatewayTest : TestBase() {
 
         // Produce messages for each Gateway
         startedCountDown.await()
-        val messages = (1..messageCount).flatMap {
+        (1..messageCount).flatMap {
             listOf(
                 bobGatewayAddress.toString() to alice,
                 aliceGatewayAddress.toString() to bob
@@ -352,8 +352,7 @@ class GatewayTest : TestBase() {
                 payload = authenticatedP2PMessage("Target-$address")
             }.build()
             node.publish(Record(LINK_OUT_TOPIC, "key", msg))
-        }
-        messages.forEach {
+        }.forEach {
             it.join()
         }
 
