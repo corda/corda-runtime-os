@@ -33,6 +33,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSession
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.v5.base.util.toBase64
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -495,14 +496,8 @@ class SessionManagerTest {
         val responderHelloMessage = LinkInMessage(protocolResponder.generateResponderHello())
         val initiatorHandshakeMessage = outboundManager.processSessionMessage(responderHelloMessage)
 
-        // Duplicate Responder Hello message (second time the SessionManager should return null).
-        assertNull(outboundManager.processSessionMessage(responderHelloMessage))
-        loggingInterceptor.assertSingleWarning(
-            "Already received a ${ResponderHelloMessage::class.java.simpleName} for " +
-                "$sessionId. The message was discarded."
-        )
-        loggingInterceptor.reset()
-
+        // Duplicate Responder Hello message (same initiator handshake returned idempotently).
+        assertThat(outboundManager.processSessionMessage(responderHelloMessage)).isEqualTo(initiatorHandshakeMessage)
         assertTrue(initiatorHandshakeMessage!!.payload is InitiatorHandshakeMessage)
 
         protocolResponder.generateHandshakeSecrets()
@@ -516,8 +511,8 @@ class SessionManagerTest {
             signDataWithKey(netMapInbound.getKeyPair().private, it)
         }
 
-        // Duplicate ResponderHandshakeMessage
         assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHandshakeMessage)))
+        // Duplicate ResponderHandshakeMessage
         assertNull(outboundManager.processSessionMessage(LinkInMessage(responderHandshakeMessage)))
         loggingInterceptor.assertSingleWarning(
             "Received ${ResponderHandshakeMessage::class.java.simpleName} with sessionId " +
@@ -588,8 +583,8 @@ class SessionManagerTest {
         val responderHandshakeMessage = inboundManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
         assertTrue(responderHandshakeMessage?.payload is ResponderHandshakeMessage)
 
-        //Duplicate InitiatorHandshakeMessage
-        assertNull(inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage)))
+        // Same message returned (idempotently)
+        assertThat(inboundManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))).isEqualTo(responderHelloMessage)
     }
 
     @Test
@@ -972,90 +967,6 @@ class SessionManagerTest {
             "Could not find the network type in the NetworkMap for groupId" +
                 " $GROUP_ID. The InitiatorHandshakeMessage for sessionId $sessionId was discarded."
         )
-    }
-
-    @Test
-    fun `Replayed Initiator handshake message does not cause a response if the sender public key hash is not in the network map`() {
-        val sessionId = "SessionId"
-
-        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
-        Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
-
-        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
-            .thenReturn(netMapInbound.getOurMemberInfo())
-
-        //Called first inside processInitiatorHello, then makeResponderHandshake and then resendResponderHandshake
-        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
-            .thenReturn(netMapOutbound.getOurMemberInfo())
-            .thenReturn(netMapOutbound.getOurMemberInfo())
-            .thenReturn(null)
-
-        val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
-        val message = negotiateToInitiatorHandshake(inboundManager, sessionId)
-        val response = inboundManager.processSessionMessage(LinkInMessage(message))
-        assertTrue(response?.payload is ResponderHandshakeMessage)
-        val secondResponse = inboundManager.processSessionMessage(LinkInMessage(message))
-        assertNull(secondResponse)
-
-        val keyHash = hashKeyToBase64(netMapOutbound.getKeyPair().public)
-        loggingInterceptor.assertSingleWarning("The received public key hash ($keyHash) corresponding to one of the sender's holding" +
-            " identities is not in the network map. We did not respond to replayed InitiatorHandshakeMessage for sessionId SessionId.")
-    }
-
-    @Test
-    fun `Replayed Initiator handshake message does not cause a response if the receiver public key hash is not in the network map`() {
-        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        val sessionId = "SessionId"
-
-        Mockito.`when`(netMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
-        Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
-            .thenReturn(netMapInbound.getOurMemberInfo())
-            .thenReturn(null)
-        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
-            .thenReturn(netMapOutbound.getOurMemberInfo())
-
-        val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
-        val message = negotiateToInitiatorHandshake(inboundManager, sessionId)
-        val response = inboundManager.processSessionMessage(LinkInMessage(message))
-        assertTrue(response?.payload is ResponderHandshakeMessage)
-        val secondResponse = inboundManager.processSessionMessage(LinkInMessage(message))
-        assertNull(secondResponse)
-
-        val keyHash = hashKeyToBase64(netMapInbound.getKeyPair().public)
-        loggingInterceptor.assertSingleWarning("The received public key hash ($keyHash) corresponding to one of our holding" +
-            " identities is not in the network map. We did not respond to replayed InitiatorHandshakeMessage for" +
-            " sessionId $sessionId.")
-    }
-
-    @Test
-    fun `Replayed Initiator handshake does not cause a response if our network type is not in the network map`() {
-        val netMap = Mockito.mock(LinkManagerNetworkMap::class.java)
-        val sessionId = "SessionId"
-
-        Mockito.`when`(netMap.getNetworkType(any()))
-            .thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
-            .thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
-            .thenReturn(null)
-        Mockito.`when`(netMap.getMemberInfo(OUTBOUND_PARTY)).thenReturn(netMapOutbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfo(INBOUND_PARTY)).thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapInbound.getKeyPair().public), GROUP_ID))
-            .thenReturn(netMapInbound.getOurMemberInfo())
-        Mockito.`when`(netMap.getMemberInfo(hashKey(netMapOutbound.getKeyPair().public), GROUP_ID))
-            .thenReturn(netMapOutbound.getOurMemberInfo())
-        val inboundManager = sessionManagerWithNetMap(netMap, MockCryptoService(netMapInbound))
-
-        val message = negotiateToInitiatorHandshake(inboundManager, sessionId)
-        val response = inboundManager.processSessionMessage(LinkInMessage(message))
-        assertTrue(response?.payload is ResponderHandshakeMessage)
-        val secondResponse = inboundManager.processSessionMessage(LinkInMessage(message))
-        assertNull(secondResponse)
-
-        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId myGroup. " +
-            "We did not respond to replayed InitiatorHandshakeMessage for sessionId $sessionId.")
     }
 
     @Test

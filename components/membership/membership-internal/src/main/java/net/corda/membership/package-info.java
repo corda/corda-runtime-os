@@ -1,4 +1,4 @@
 @Export
-package net.corda.serializers;
+package net.corda.membership;
 
 import org.osgi.annotation.bundle.Export;
