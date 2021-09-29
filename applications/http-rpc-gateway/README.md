@@ -1,3 +1,7 @@
+# HTTP RPC Gateway Application
+
+An entry point to demonstrate use of HTTP RPC functionality.
+
 Build:
 `gradlew clean appJar`
 

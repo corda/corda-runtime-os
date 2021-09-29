@@ -1,3 +1,3 @@
 # HTTP RPC Server
 
-Defines common interfaces for HTTP Server
+Defines common interfaces for HTTP Server.
