@@ -18,7 +18,6 @@ import org.apache.avro.specific.SpecificData
 import org.apache.avro.specific.SpecificDatumReader
 import org.apache.avro.specific.SpecificDatumWriter
 import org.apache.avro.specific.SpecificRecord
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer

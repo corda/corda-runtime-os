@@ -37,6 +37,7 @@ enum class LifeCycleState {
 }
 
 @Component(service = [Application::class], immediate = true)
+@Suppress("LongParameterList")
 class HttpRpcGatewayApp @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
@@ -114,7 +115,8 @@ class HttpRpcGatewayApp @Activate constructor(
                     }
                 }
 
-            httpRpcGateway = HttpRpcGateway(lifeCycleCoordinator!!, configurationReadService, httpRpcServerFactory, rpcSecurityManagerFactory)
+            httpRpcGateway = HttpRpcGateway(
+                    lifeCycleCoordinator!!, configurationReadService, httpRpcServerFactory, rpcSecurityManagerFactory)
 
 
             log.info("Starting life cycle coordinator")
