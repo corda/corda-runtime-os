@@ -17,6 +17,8 @@ internal class LoggerSerializerTest {
         LoggerSerializer.write(kryo, output, log)
         val tested = LoggerSerializer.read(kryo, Input(output.buffer), Logger::class.java)
 
+        assertThat(Input(output.buffer).readString()).isEqualTo(log.name)
         assertThat(tested).isInstanceOf(Logger::class.java)
+        assertThat(tested.name).isEqualTo(log.name)
     }
 }

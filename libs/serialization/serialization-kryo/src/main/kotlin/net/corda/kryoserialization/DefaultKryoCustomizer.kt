@@ -11,7 +11,7 @@ import de.javakaffee.kryoserializers.ArraysAsListSerializer
 import de.javakaffee.kryoserializers.BitSetSerializer
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
 import net.corda.kryoserialization.resolver.CordaClassResolver
-import net.corda.kryoserialization.serializers.AutoCloseableSerialisationDetector
+import net.corda.kryoserialization.serializers.AutoCloseableSerializer
 import net.corda.kryoserialization.serializers.CertPathSerializer
 import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.CordaClosureSerializer
@@ -104,7 +104,7 @@ class DefaultKryoCustomizer {
                 register(LoggerFactory.getLogger("ROOT")::class.java, LOGGER_ID)
                 register(LoggerFactory.getLogger(this::class.java)::class.java, LOGGER_ID)
 
-                addDefaultSerializer(AutoCloseable::class.java, AutoCloseableSerialisationDetector)
+                addDefaultSerializer(AutoCloseable::class.java, AutoCloseableSerializer)
 
                 //Add external serializers
                 for ((clazz, serializer) in serializers.toSortedMap(compareBy { it.name })) {
