@@ -109,7 +109,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private val deliveryTracker: DeliveryTracker
 
     init {
-        messagesPendingSession.sessionManager = sessionManager
         val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, 1)
         val outboundMessageProcessor = OutboundMessageProcessor(
             sessionManager,
@@ -421,7 +420,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
         private val config = PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, 1)
         private val publisher = publisherFactory.createPublisher(config)
-        lateinit var sessionManager: SessionManager
 
         @Volatile
         private var running = false
@@ -449,8 +447,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             startStopLock.read {
                 if (!running) {
                     throw IllegalStateException("sessionNegotiatedCallback was called before the PendingSessionMessageQueues was started.")
-                } else if (!this::sessionManager.isInitialized) {
-                    throw IllegalStateException("sessionNegotiatedCallback was called before sessionManager was initialized.")
                 }
                 val queuedMessages = queuedMessagesPendingSession[key] ?: return
                 val records = mutableListOf<Record<String, LinkOutMessage>>()

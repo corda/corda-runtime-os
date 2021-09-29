@@ -287,11 +287,9 @@ class LinkManagerTest {
         Mockito.`when`(mockNetworkMap.getMemberInfo(any())).thenReturn(FIRST_DEST_MEMBER_INFO)
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
 
-        val mockSessionManager = Mockito.mock(SessionManager::class.java)
         val heartbeatManager = MockHeartbeatManager()
 
         val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, heartbeatManager)
-        queue.sessionManager = mockSessionManager
 
         assertTrue(queue.queueMessage(message1, key1))
         assertFalse(queue.queueMessage(message2, key1))
