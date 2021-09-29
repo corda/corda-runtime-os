@@ -10,10 +10,10 @@ import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.v5.base.util.base64ToByteArray
 import net.corda.v5.base.util.contextLogger
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
-import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
@@ -76,8 +76,8 @@ class GatewayConfigurationService(
     private fun readKeyStore(config: Config, name: String): Pair<String, KeyStore> {
         val password = config.getString("${name}Password")
         val keyStore = KeyStore.getInstance("JKS").also {
-            val base64KeyStore = config.getString(name)
-            ByteArrayInputStream(Base64.getDecoder().decode(base64KeyStore)).use { keySoreInputStream ->
+            val base64KeyStore = config.getString(name).base64ToByteArray()
+            ByteArrayInputStream(base64KeyStore).use { keySoreInputStream ->
                 it.load(keySoreInputStream, password.toCharArray())
             }
         }

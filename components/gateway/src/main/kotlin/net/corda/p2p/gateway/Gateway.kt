@@ -10,6 +10,7 @@ import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * The Gateway is a light component which facilitates the sending and receiving of P2P messages.
@@ -34,13 +35,15 @@ class Gateway(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : LifecycleWithCoordinatorAndResources(
     lifecycleCoordinatorFactory,
-    UUID.randomUUID().toString().replace("-", "")
+    "${instanceId.incrementAndGet()}"
 ) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(Gateway::class.java)
         const val CONSUMER_GROUP_ID = "gateway"
         const val PUBLISHER_ID = "gateway"
+
+        private val instanceId = AtomicInteger(0)
     }
 
     private val configurationService = GatewayConfigurationService(this, configurationReaderService)

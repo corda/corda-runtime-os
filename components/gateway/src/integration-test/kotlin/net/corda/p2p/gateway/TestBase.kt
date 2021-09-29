@@ -24,13 +24,12 @@ import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
+import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.security.KeyStore
-import java.time.Duration
-import java.util.Base64
 import java.util.UUID
 
 open class TestBase {
@@ -42,7 +41,7 @@ open class TestBase {
     private fun saveKeyStore(keyStore: KeyStore, password: String): String {
         return ByteArrayOutputStream().use {
             keyStore.store(it, password.toCharArray())
-            Base64.getEncoder().encodeToString(it.toByteArray())
+            it.toByteArray().toBase64()
         }
     }
 

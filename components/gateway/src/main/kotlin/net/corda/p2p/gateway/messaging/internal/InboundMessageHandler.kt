@@ -124,10 +124,9 @@ internal class InboundMessageHandler(
 
     private fun writeResponse(status: HttpResponseStatus, address: SocketAddress) {
         serverLock.read {
-            val server= httpServer ?: throw IllegalStateException("Server is not ready")
+            val server = httpServer ?: throw IllegalStateException("Server is not ready")
             server.write(status, ByteArray(0), address)
         }
-
     }
 
     /**
