@@ -1,5 +1,6 @@
-package net.corda.messaging.api.util
+package net.corda.messaging.kafka.utils
 
+import net.corda.v5.base.util.uncheckedCast
 import java.lang.ref.ReferenceQueue
 import java.lang.ref.WeakReference
 import java.util.*
@@ -12,17 +13,17 @@ import java.util.*
 class WeakValueHashMap<K, V>: MutableMap<K, V> {
 
     /* Hash table mapping Keys to WeakValues */
-    private var map = HashMap<K, WeakValueRef<K,V>>()
+    private val map = HashMap<K, WeakValueRef<K, V>>()
 
     /* Reference queue for cleared WeakValues */
     private val queue = ReferenceQueue<V>()
 
-    private class WeakValueRef<K, V> private constructor(var key: K, value: V, queue: ReferenceQueue<V>) :
+    private class WeakValueRef<K, V> private constructor(val key: K, value: V, queue: ReferenceQueue<V>) :
         WeakReference<V>(value, queue) {
 
         companion object {
-            internal fun <K, V> create(key: K, value: V, queue: ReferenceQueue<V>): WeakValueRef<K, V>? {
-                return if (value == null) null else WeakValueRef(key, value, queue)
+            internal fun <K, V> create(key: K, value: V, queue: ReferenceQueue<V>): WeakValueRef<K, V> {
+                return WeakValueRef(key, value, queue)
             }
         }
     }
@@ -30,13 +31,7 @@ class WeakValueHashMap<K, V>: MutableMap<K, V> {
     override fun put(key: K, value: V): V? {
         processQueue()
         val reference = WeakValueRef.create(key, value, queue)
-        val rtn = map.put(key, reference!!)
-        var result: V? = null
-
-        if (rtn != null) {
-            result = rtn.get()
-        }
-        return result
+        return map.put(key, reference)?.get()
     }
 
     override fun isEmpty(): Boolean {
@@ -45,12 +40,10 @@ class WeakValueHashMap<K, V>: MutableMap<K, V> {
     }
 
     override val size: Int
-        get() = computeSize()
-
-    private fun computeSize(): Int{
-        processQueue()
-        return map.size
-    }
+        get() {
+            processQueue()
+            return map.size
+        }
 
     override fun clear() {
         processQueue()
@@ -92,10 +85,9 @@ class WeakValueHashMap<K, V>: MutableMap<K, V> {
     /* Remove all invalidated entries from the map, that is, remove all entries
        whose values have been discarded.
      */
-    @Suppress("UNCHECKED_CAST")
     private fun processQueue() {
         var ref: WeakValueRef<K, V>?
-        while ((queue.poll() as WeakValueRef<K, V>?).also { ref = it } != null) {
+        while (queue.poll().also { ref = uncheckedCast(it) } != null) {
             if (ref === map[ref!!.key]) {
                 // only remove if it is the *exact* same WeakValueRef
                 map.remove(ref!!.key)
