@@ -17,9 +17,12 @@ class ClusterAdminCommand(
     private val publisherFactory: PublisherFactory,
     shutDownService: Shutdown
 ) : CommandBase(shutDownService), Runnable {
+    companion object {
+        const val TOPIC_NAME = "cluster-admin-event"
+    }
     override fun run() {
         call {
-            println("Publishing cluster-admin event to ${kafka}")
+            println("Publishing cluster-admin event to $kafka/${ConfigConstants.TOPIC_PREFIX}$TOPIC_NAME")
             val publisher = KafkaPublisher(kafka, publisherFactory)
             val key = UUID.randomUUID().toString()
             val msg = ClusterAdminEvent(AdminEventType.DB_SCHEMA_UPDATE)
