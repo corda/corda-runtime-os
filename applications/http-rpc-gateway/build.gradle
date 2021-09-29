@@ -30,8 +30,6 @@ dependencies {
     implementation project(":components:http-rpc-gateway-comp")
     implementation project(":components:configuration:configuration-read-service")
 
-    runtimeOnly project(":components:configuration:configuration-read-service-impl")
-
     // Implementations (needs revision!)
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
 
