@@ -9,6 +9,7 @@ import net.corda.components.rpc.MessagingConfigUpdateEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.security.read.RPCSecurityManagerFactory
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
+import net.corda.httprpc.ssl.SslCertReadServiceFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -50,7 +51,9 @@ class HttpRpcGatewayApp @Activate constructor(
     @Reference(service = HttpRpcServerFactory::class)
     private val httpRpcServerFactory: HttpRpcServerFactory,
     @Reference(service = RPCSecurityManagerFactory::class)
-    private val rpcSecurityManagerFactory: RPCSecurityManagerFactory
+    private val rpcSecurityManagerFactory: RPCSecurityManagerFactory,
+    @Reference(service = SslCertReadServiceFactory::class)
+    private val sslCertReadServiceFactory: SslCertReadServiceFactory
 ) : Application {
 
     private companion object {
@@ -117,7 +120,7 @@ class HttpRpcGatewayApp @Activate constructor(
 
             httpRpcGateway = HttpRpcGateway(
                 localLifeCycleCoordinator, configurationReadService, httpRpcServerFactory,
-                rpcSecurityManagerFactory
+                rpcSecurityManagerFactory, sslCertReadServiceFactory
             )
 
             log.info("Starting life cycle coordinator")

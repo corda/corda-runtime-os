@@ -3,6 +3,7 @@ package net.corda.httprpc.ssl.impl
 import net.corda.httprpc.ssl.KeyStoreInfo
 import net.corda.httprpc.ssl.SslCertReadService
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -52,6 +53,8 @@ class SslCertReadServiceStubImpl(private val createDirectory: () -> Path) : SslC
     }
 
     private fun loadKeystoreFromResources(): ByteArray {
-        return File(this::class.java.classLoader.getResource(KEYSTORE_NAME)!!.toURI()).inputStream().readAllBytes()
+        val inputStream = this::class.java.classLoader.getResourceAsStream(KEYSTORE_NAME)
+            ?: throw CordaRuntimeException("$KEYSTORE_NAME cannot be loaded")
+        return inputStream.readAllBytes()
     }
 }
