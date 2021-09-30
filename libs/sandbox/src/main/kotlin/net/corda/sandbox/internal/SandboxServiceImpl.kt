@@ -56,9 +56,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
         val publicSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
-
         sandboxes[publicSandbox.id] = publicSandbox
-
         publicSandboxes.add(publicSandbox)
     }
 

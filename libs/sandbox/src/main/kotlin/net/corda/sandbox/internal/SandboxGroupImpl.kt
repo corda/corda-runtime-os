@@ -63,10 +63,9 @@ internal class SandboxGroupImpl(
                     sandbox.cpk.id.signerSummaryHash == classTag.cpkSignerSummaryHash
                             && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
                 }
-            }
-                ?: throw SandboxException(
-                    "Class tag $className did not match any sandbox in the sandbox group or a public sandboxe."
-                )
+            } ?: throw SandboxException(
+                "Class tag $className did not match any sandbox in the sandbox group or a public sandboxe."
+            )
             return sandbox.loadClass(className, classTag.classBundleName) ?: throw SandboxException(
                 "Class $className could not be loaded from bundle ${classTag.classBundleName} in sandbox ${sandbox.id}."
             )
@@ -77,7 +76,7 @@ internal class SandboxGroupImpl(
                 if (klass != null) return klass
             }
             throw SandboxException(
-                "Class $className could not be loaded from bundle ${classTag.classBundleName} in any of the public " +
+                "Class $className from bundle ${classTag.classBundleName} could not be loaded from any of the public " +
                         "sandboxes."
             )
         }
@@ -97,13 +96,16 @@ internal class SandboxGroupImpl(
         val bundle = bundleUtils.getBundle(klass)
             ?: throw SandboxException("Class ${klass.name} was not loaded from any bundle.")
 
-        val sandbox = (sandboxes + publicSandboxes).find { sandbox -> sandbox.containsBundle(bundle) }
-            ?: throw SandboxException(
+        val publicSandbox = publicSandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
+
+        return if (publicSandbox != null) {
+            classTagFactory.createSerialised(isStaticTag, true, bundle, publicSandbox)
+        } else {
+            val sandbox = sandboxes.find { sandbox -> sandbox.containsBundle(bundle) } ?: throw SandboxException(
                 "Bundle ${bundle.symbolicName} was not found in the sandbox group or in a public sandbox."
             )
 
-        val isPublicBundle = publicSandboxes.any { publicSandbox -> publicSandbox.containsBundle(bundle) }
-
-        return classTagFactory.createSerialised(isStaticTag, isPublicBundle, bundle, sandbox)
+            classTagFactory.createSerialised(isStaticTag, false, bundle, sandbox)
+        }
     }
 }
