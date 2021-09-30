@@ -197,7 +197,7 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(OffsetDateTimeSerializer(), true)
         register(OptionalSerializer(), true)
         register(YearSerializer(this))
-        register(YearMonthSerializer(this))
+        register(YearMonthSerializer(), true)
         register(MonthDaySerializer(), true)
         register(PeriodSerializer(), true)
         register(ClassSerializer(), true)
