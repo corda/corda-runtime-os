@@ -186,7 +186,7 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(BigIntegerSerializer, false)
         register(CurrencySerializer, false)
         register(OpaqueBytesSubSequenceSerializer(), true)
-        register(InstantSerializer(this))
+        register(InstantSerializer(), true)
         register(DurationSerializer(), true)
         register(LocalDateSerializer(), true)
         register(LocalDateTimeSerializer(), true)
