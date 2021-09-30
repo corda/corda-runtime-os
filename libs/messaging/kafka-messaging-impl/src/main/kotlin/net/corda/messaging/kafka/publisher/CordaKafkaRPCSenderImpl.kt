@@ -6,6 +6,8 @@ import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.messaging.api.exception.CordaRPCAPIResponderException
+import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
@@ -170,7 +172,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                     ResponseStatus.FAILED -> {
                         val responseBytes = it.record.value().payload
                         val response = errorDeserializer.deserialize("$responseTopic", responseBytes.array())
-                        future.completeExceptionally(CordaMessageAPIFatalException(response))
+                        future.completeExceptionally(CordaRPCAPIResponderException(response))
                     }
                     ResponseStatus.CANCELLED -> {
                         future.cancel(true)
@@ -188,7 +190,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         val future = CompletableFuture<TRESP>()
 
         if (partitionListener.partitions.size == 0) {
-            future.completeExceptionally(CordaMessageAPIFatalException("No partitions. Couldn't send"))
+            future.completeExceptionally(CordaRPCAPISenderException("No partitions. Couldn't send"))
         } else {
             val request = RPCRequest(
                 uuid,
@@ -203,7 +205,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
             try {
                 publisher.publish(listOf(record))
             } catch (ex: Exception) {
-                future.completeExceptionally(CordaMessageAPIFatalException("Failed to publish", ex))
+                future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
             }
         }
 
