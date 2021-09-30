@@ -45,17 +45,7 @@ class SingletonSerializeAsTokenTest {
         }
     }
 
-    @Suppress("EqualsWithHashCodeExist")
-    class Service(val i: Int) : SingletonSerializeAsToken {
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-
-            other as Service
-            if (this.i == other.i) return true
-            return false
-        }
-    }
+    data class Service(val i: Int) : SingletonSerializeAsToken
 
     class ServiceProxy(val i: Int)
 
