@@ -1,21 +1,20 @@
 package net.corda.sandbox
 
 import net.corda.v5.crypto.SecureHash
+import org.osgi.framework.Bundle
 
 /**
- * A service for creating sandboxes.
+ * A service for creating sandboxes. There are two types of sandbox:
  *
- * The service is initialised with a single [Sandbox], the platform sandbox. This sandbox contains the public and
- * private bundles named by the `PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY` and `PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY`
- * configuration admin properties. This sandbox is initialised lazily; the named bundles must be installed and the
- * configuration admin properties set before this service is first interacted with.
- *
- * Sandboxes thereafter are created from CPKs. Every CPK sandbox is granted visibility of the platform sandbox.
- *
- * The platform sandbox receives special treatment in terms of visibility; its public bundles have visibility of even
- * private bundles in the CPK sandboxes.
+ * * Public sandboxes have visibility of, and are visible to, all other sandboxes
+ * * CPK sandboxes are created from the previously-installed CPKs
  */
 interface SandboxCreationService {
+    /**
+     * Creates a new public sandbox.
+     */
+    fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>)
+
     /**
      * Creates a new [SandboxGroup] containing a sandbox for each of the CPKs identified by the [cpkFileHashes].
      * Duplicate [cpkFileHashes] are discarded (i.e. if two hashes are identical, only one sandbox will be created).
