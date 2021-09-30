@@ -200,7 +200,7 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(YearMonthSerializer(this))
         register(MonthDaySerializer(this))
         register(PeriodSerializer(this))
-        register(ClassSerializer(this))
+        register(ClassSerializer(), true)
         register(X509CertificateSerializer, true)
         register(X509CRLSerializer, true)
         register(CertPathSerializer(), true)
