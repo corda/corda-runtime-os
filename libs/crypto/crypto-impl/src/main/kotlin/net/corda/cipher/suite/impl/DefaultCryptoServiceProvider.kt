@@ -8,7 +8,6 @@ import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
 import net.corda.v5.crypto.exceptions.CryptoServiceException
-import org.hibernate.SessionFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 
@@ -20,7 +19,7 @@ class DefaultCryptoServiceProvider @Activate constructor(
 ) : CryptoServiceProvider<DefaultCryptoServiceConfig> {
     companion object {
         // temporary solution until the persistence is OSGi ready
-        internal var sessionFactory: (() -> SessionFactory)? = null
+        internal var sessionFactory: (() -> Any)? = null
     }
 
     override val name: String = CryptoServiceConfig.DEFAULT_SERVICE_NAME
@@ -48,9 +47,9 @@ class DefaultCryptoServiceProvider @Activate constructor(
             partition = context.config.partition,
             passphrase = context.config.passphrase,
             salt = context.config.salt,
-            cacheFactory = object : SimplePersistentCacheFactory<DefaultCachedKey, DefaultCryptoPersistentKey> {
-                override fun create() = SimplePersistentCacheImpl<DefaultCachedKey, DefaultCryptoPersistentKey>(
-                    DefaultCryptoPersistentKey::class.java,
+            cacheFactory = object : SimplePersistentCacheFactory<DefaultCachedKey, Any> {
+                override fun create() = SimplePersistentCacheImpl<DefaultCachedKey, Any>(
+                    Any::class.java,
                     sessionFactory!!()
                 )
             },

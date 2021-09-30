@@ -3,7 +3,6 @@ package net.corda.crypto.impl.caching
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.v5.crypto.exceptions.CryptoServiceException
-import org.hibernate.SessionFactory
 import java.io.Serializable
 import java.util.concurrent.TimeUnit
 
@@ -15,7 +14,7 @@ import java.util.concurrent.TimeUnit
  */
 open class SimplePersistentCacheImpl<V, E>(
     private val entityClazz: Class<E>,
-    protected val sessionFactory: SessionFactory,
+    protected val sessionFactory: Any,
     expireInMinutes: Long = 60,
     maxSize: Long = 1000
 ) : SimplePersistentCache<V, E>, AutoCloseable {
@@ -26,11 +25,7 @@ open class SimplePersistentCacheImpl<V, E>(
 
     @Suppress("NULLABLE_TYPE_PARAMETER_AGAINST_NOT_NULL_TYPE_PARAMETER")
     override fun put(key: Any, entity: E, mutator: (entity: E) -> V): V {
-        sessionFactory.openSession().use { session ->
-            session.transaction.begin()
-            session.merge(entity)
-            session.transaction.commit()
-        }
+
         val cached = mutator(entity)
         cache.put(key, cached)
         return cached
@@ -41,19 +36,12 @@ open class SimplePersistentCacheImpl<V, E>(
         if (key !is Serializable) {
             throw CryptoServiceException("The key must implement ${Serializable::class.java.name} interface.")
         }
-        return cache.get(key) {
-            sessionFactory.openSession().use { session ->
-                session.get(entityClazz, key)
-            }?.let { value ->
-                mutator(value)
-            }
-        }
+        return null
     }
 
     @Suppress("TooGenericExceptionCaught")
     override fun close() {
         try {
-            sessionFactory.close()
         } catch (e: Exception) {
             // intentional
         }

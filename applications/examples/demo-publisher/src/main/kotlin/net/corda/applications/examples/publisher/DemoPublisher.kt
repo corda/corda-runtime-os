@@ -80,8 +80,6 @@ class DemoPublisher @Activate constructor(
                 lifeCycleCoordinator!!,
                 publisherFactory,
                 instanceId,
-                parameters.numberOfRecords.toInt(),
-                parameters.numberOfKeys.toInt(),
                 getBootstrapConfig(getKafkaPropertiesFromFile(parameters.kafkaProperties))
             )
 

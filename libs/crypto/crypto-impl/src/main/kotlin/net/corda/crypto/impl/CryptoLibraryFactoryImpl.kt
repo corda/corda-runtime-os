@@ -22,7 +22,6 @@ import net.corda.v5.cipher.suite.config.CryptoServiceConfigInfo
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
-import org.hibernate.SessionFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -39,7 +38,7 @@ class CryptoLibraryFactoryImpl @Activate constructor(
 ) : CryptoLibraryFactory {
     companion object {
         // temporary solution until the persistence is OSGi ready
-        fun setup(factory: (() -> SessionFactory)?) {
+        fun setup(factory: (() -> Any)?) {
             if (factory == null) {
                 sessionFactory = null
                 DefaultCryptoServiceProvider.sessionFactory
@@ -53,7 +52,7 @@ class CryptoLibraryFactoryImpl @Activate constructor(
             }
         }
 
-        internal var sessionFactory: (() -> SessionFactory)? = null
+        internal var sessionFactory: (() -> Any)? = null
     }
 
     private val objectMapper = ObjectMapper()

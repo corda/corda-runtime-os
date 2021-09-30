@@ -2,7 +2,6 @@ package net.corda.crypto.testkit
 
 import net.corda.crypto.impl.caching.SimplePersistentCacheFactory
 import net.corda.cipher.suite.impl.DefaultCachedKey
-import net.corda.cipher.suite.impl.DefaultCryptoPersistentKey
 import net.corda.cipher.suite.impl.DefaultKeyCacheImpl
 import net.corda.cipher.suite.impl.dev.InMemorySimplePersistentCache
 

@@ -18,7 +18,7 @@ open class DefaultKeyCacheImpl(
     passphrase: String?,
     salt: String?,
     private val schemeMetadata: CipherSchemeMetadata,
-    private val cacheFactory: SimplePersistentCacheFactory<DefaultCachedKey, DefaultCryptoPersistentKey>
+    private val cacheFactory: SimplePersistentCacheFactory<DefaultCachedKey, Any>
 ) : DefaultKeyCache, AutoCloseable {
     companion object {
         private val logger = contextLogger()
@@ -27,7 +27,7 @@ open class DefaultKeyCacheImpl(
     // to avoid creating cache when closing if it still wasn't created
     private var cacheCreated = false
 
-    private val cache: SimplePersistentCache<DefaultCachedKey, DefaultCryptoPersistentKey> by lazy {
+    private val cache: SimplePersistentCache<DefaultCachedKey, Any> by lazy {
         cacheCreated = true
         cacheFactory.create()
     }
@@ -57,16 +57,8 @@ open class DefaultKeyCacheImpl(
     override fun save(alias: String, keyPair: KeyPair, scheme: SignatureScheme) {
         logger.debug("Saving key with alias={} in partition={}", alias, partition)
         val partitionedAlias = effectiveAlias(alias)
-        val entity = DefaultCryptoPersistentKey(
-            sandboxId = sandboxId,
-            partition = partition,
-            alias = partitionedAlias,
-            publicKey = schemeMetadata.encodeAsByteArray(keyPair.public),
-            privateKey = masterKey.wrap(keyPair.private),
-            algorithmName = scheme.algorithmName,
-            version = 1
-        )
-        cache.put(partitionedAlias, entity) {
+
+        cache.put(partitionedAlias, "entity") {
             DefaultCachedKey(
                 publicKey = keyPair.public,
                 privateKey = keyPair.private
@@ -77,16 +69,8 @@ open class DefaultKeyCacheImpl(
     override fun save(alias: String, key: WrappingKey) {
         logger.debug("Saving wrapping key with alias={} in partition={}", alias, partition)
         val partitionedAlias = effectiveAlias(alias)
-        val entity = DefaultCryptoPersistentKey(
-            sandboxId = sandboxId,
-            partition = partition,
-            alias = partitionedAlias,
-            publicKey = null,
-            privateKey = masterKey.wrap(key),
-            algorithmName = WrappingKey.WRAPPING_KEY_ALGORITHM,
-            version = 1
-        )
-        cache.put(partitionedAlias, entity) {
+
+        cache.put(partitionedAlias, "entity") {
             DefaultCachedKey(
                 wrappingKey = key
             )
@@ -97,21 +81,11 @@ open class DefaultKeyCacheImpl(
     override fun find(alias: String): DefaultCachedKey? {
         logger.debug("Looking for public key with alias={} in partition={}", alias, partition)
         val partitionedAlias = effectiveAlias(alias)
-        return cache.get(partitionedAlias, ::mutator)
+        return null
     }
 
     private fun effectiveAlias(alias: String) = "$sandboxId:$partition:$alias"
 
-    private fun mutator(entity: DefaultCryptoPersistentKey): DefaultCachedKey = if (entity.publicKey != null) {
-        DefaultCachedKey(
-            publicKey = schemeMetadata.decodePublicKey(entity.publicKey!!),
-            privateKey = masterKey.unwrap(entity.privateKey)
-        )
-    } else {
-        DefaultCachedKey(
-            wrappingKey = masterKey.unwrapWrappingKey(entity.privateKey)
-        )
-    }
 
     @Suppress("TooGenericExceptionCaught")
     override fun close() {

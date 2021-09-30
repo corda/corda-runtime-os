@@ -12,8 +12,9 @@ import net.corda.dependency.injection.DependencyInjectionService
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.flow.statemachine.factory.FlowStateMachineFactory
 import net.corda.sandbox.SandboxGroup
-import net.corda.virtual.node.cache.FlowMetadata
-import net.corda.virtual.node.cache.VirtualNodeCache
+import net.corda.serialization.CheckpointSerializer
+import net.corda.serialization.CheckpointSerializerBuilder
+import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.serialization.SerializedBytes
@@ -36,8 +37,9 @@ class FlowManagerImplTest {
     fun `start an initiating flow`() {
 
         val sandboxGroup: SandboxGroup = mock()
-        val virtualNodeCache: VirtualNodeCache = mock()
-        val checkpointSerialisationService: SerializationService = mock()
+        val checkpointSerializerBuilder: CheckpointSerializerBuilder = mock()
+        val checkpointSerializer: CheckpointSerializer = mock()
+        val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory = mock()
         val dependencyInjector: DependencyInjectionService = mock()
         val flowStateMachineFactory: FlowStateMachineFactory = mock()
         val stateMachine: FlowStateMachine<*> = mock()
@@ -61,25 +63,27 @@ class FlowManagerImplTest {
         )
         val checkpoint = Checkpoint(flowKey, ByteBuffer.allocate(1), stateMachineState)
         val eventsOut = listOf(FlowEvent(flowKey, rpcFlowResult))
-        val flowMetadata = FlowMetadata(flowName, flowKey)
         val serialized = SerializedBytes<String>("Test".toByteArray())
 
-        doReturn(sandboxGroup).`when`(virtualNodeCache).getSandboxGroupFor(any(), any())
         doReturn(TestFlow::class.java).`when`(sandboxGroup).loadClassFromCordappBundle(any(), eq(Flow::class.java))
         doReturn(stateMachine).`when`(flowStateMachineFactory).createStateMachine(any(), any(), any(), any())
         doReturn(Pair(checkpoint, eventsOut)).`when`(stateMachine).waitForCheckpoint()
-        doReturn(serialized).`when`(checkpointSerialisationService).serialize(any())
+        doReturn(checkpointSerializerBuilder).`when`(checkpointSerializerBuilderFactory).createCheckpointSerializerBuilder(any())
+        doReturn(checkpointSerializer).`when`(checkpointSerializerBuilder).build()
+        doReturn(serialized).`when`(checkpointSerializer).serialize(any())
 
         val flowManager = FlowManagerImpl(
-            virtualNodeCache,
-            checkpointSerialisationService,
+            checkpointSerializerBuilderFactory,
             dependencyInjector,
             flowStateMachineFactory
         )
 
         val result = flowManager.startInitiatingFlow(
-            flowMetadata,
+            mock(),
+            flowName,
+            flowKey,
             "",
+            mock(),
             emptyList()
         )
 

@@ -1,6 +1,7 @@
 package net.corda.flow.worker
 
 import com.typesafe.config.Config
+import net.corda.component.sandbox.SandboxService
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
@@ -21,7 +22,8 @@ class FlowExecutor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val config: Config,
     private val subscriptionFactory: SubscriptionFactory,
-    private val flowManager: FlowManager
+    private val flowManager: FlowManager,
+    private val sandboxService: SandboxService,
 ) : Lifecycle {
 
     companion object {
@@ -40,12 +42,12 @@ class FlowExecutor(
         when (event) {
             is StartEvent -> {
                 logger.debug { "Starting the flow executor" }
-                val processor = FlowMessageProcessor(flowManager)
-                val groupName = config.getString(GROUP_NAME_KEY)
-                val topic = config.getString(TOPIC_KEY)
-                val instanceId = config.getInt(INSTANCE_ID_KEY)
+                val processor = FlowMessageProcessor(flowManager, sandboxService)
+               // val groupName = config.getString(GROUP_NAME_KEY)
+               // val topic = config.getString(TOPIC_KEY)
+               // val instanceId = config.getInt(INSTANCE_ID_KEY)
                 messagingSubscription = subscriptionFactory.createStateAndEventSubscription(
-                    SubscriptionConfig(groupName, topic, instanceId),
+                    SubscriptionConfig("groupName", "StartRPCFlowTopic", 1),
                     processor,
                     config
                 )
@@ -53,7 +55,7 @@ class FlowExecutor(
             }
             is StopEvent -> {
                 logger.debug { "Flow executor terminating" }
-                messagingSubscription?.close()
+                messagingSubscription?.stop()
             }
         }
     }

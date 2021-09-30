@@ -19,8 +19,8 @@ internal class IsolatingFindBundleHook @Activate constructor(
         private val sandboxService: SandboxServiceInternal) : FindHook {
 
     override fun find(context: BundleContext, bundles: MutableCollection<Bundle>) {
-        bundles.removeIf { bundle ->
+       /* bundles.removeIf { bundle ->
             !sandboxService.hasVisibility(context.bundle, bundle)
-        }
+        }*/
     }
 }

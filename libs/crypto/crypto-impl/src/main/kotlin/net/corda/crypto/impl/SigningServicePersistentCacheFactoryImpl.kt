@@ -1,9 +1,7 @@
 package net.corda.crypto.impl
 
-import org.hibernate.SessionFactory
-
 class SigningServicePersistentCacheFactoryImpl(
-    private val sessionFactory: () -> SessionFactory
+    private val sessionFactory: () -> Any
 ) : SigningServicePersistentCacheFactory {
     override fun create(): SigningServicePersistentCache = SigningServicePersistentCacheImpl(
         sessionFactory()

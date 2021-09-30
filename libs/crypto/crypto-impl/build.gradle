@@ -21,9 +21,7 @@ dependencies {
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
     implementation "net.i2p.crypto:eddsa:$eddsaVersion"
 
-    implementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
-        exclude group: 'org.osgi'
-    }
+
     implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"

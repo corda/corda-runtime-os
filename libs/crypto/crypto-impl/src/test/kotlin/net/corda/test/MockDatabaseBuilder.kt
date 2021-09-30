@@ -1,6 +1,5 @@
 package net.corda.test
 
-import net.corda.cipher.suite.impl.DefaultCryptoPersistentKey
 import net.corda.crypto.impl.SigningPersistentKey
 import org.hibernate.SessionFactory
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder

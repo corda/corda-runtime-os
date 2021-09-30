@@ -164,8 +164,8 @@ class FlowStateMachineImpl<R>(
                 return uncheckedCast(ret)
             }
             parkAndSerialize { _, _ ->
-                val fiberState = nonSerializableState.checkpointSerializationService.serialize(this)
-                nonSerializableState.suspended.complete(fiberState.bytes)
+                val fiberState = nonSerializableState.checkpointSerializer.serialize(this)
+                nonSerializableState.suspended.complete(fiberState)
             }
             setLoggingContext()
         }

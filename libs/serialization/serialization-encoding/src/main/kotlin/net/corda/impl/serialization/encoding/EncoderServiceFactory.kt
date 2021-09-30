@@ -1,12 +1,12 @@
 package net.corda.impl.serialization.encoding
 
-import aQute.bnd.annotation.spi.ServiceProvider
 import net.corda.internal.serialization.encoding.Encoder
 import net.corda.internal.serialization.encoding.EncoderService
 import net.corda.internal.serialization.encoding.EncoderType
+import org.osgi.service.component.annotations.Component
 
 @Suppress("unused")
-@ServiceProvider(EncoderService::class)
+@Component(service = [EncoderService::class])
 class EncoderServiceFactory : EncoderService {
     override fun get(encoderType: EncoderType): Encoder {
         return when (encoderType) {

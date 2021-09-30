@@ -1,9 +1,11 @@
 package net.corda.flow.manager
 
 import net.corda.data.flow.Checkpoint
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowSessionMessage
 import net.corda.messaging.api.records.Record
-import net.corda.virtual.node.cache.FlowMetadata
+import net.corda.sandbox.SandboxGroup
+import net.corda.v5.application.flows.Flow
 
 data class FlowResult(
     val checkpoint: Checkpoint?,
@@ -12,13 +14,16 @@ data class FlowResult(
 
 interface FlowManager {
     fun startInitiatingFlow(
-        newFlowMetadata: FlowMetadata,
+        flow: Flow<*>,
+        flowName: String,
+        flowKey: FlowKey,
         clientId: String,
+        sandboxGroup: SandboxGroup,
         args: List<Any?>,
     ): FlowResult
 
     fun startRemoteInitiatedFlow(
-        newFlowMetadata: FlowMetadata,
+        flow: Flow<*>,
         flowSessionMessage: FlowSessionMessage,
     ): FlowResult
 

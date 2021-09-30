@@ -5,7 +5,6 @@ import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.WrappedKeyPair
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.sha256Bytes
-import org.hibernate.SessionFactory
 import java.security.PublicKey
 import java.util.UUID
 
@@ -17,7 +16,7 @@ open class SigningKeyCacheImpl(
     constructor(
         sandboxId: String,
         keyEncoder: KeyEncodingService,
-        sessionFactory: () -> SessionFactory
+        sessionFactory: () -> Any
     ) : this(
         sandboxId,
         keyEncoder,

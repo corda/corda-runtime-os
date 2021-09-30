@@ -1,6 +1,9 @@
 package net.corda.flow.worker
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import net.corda.component.sandbox.SandboxService
+import net.corda.component.sandbox.SandboxServiceCoordinator
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.manager.FlowManager
 import net.corda.lifecycle.Lifecycle
@@ -20,6 +23,8 @@ import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * This component is a sketch of how the flow service might be structured using the configuration service and the flow
@@ -35,13 +40,16 @@ class FlowService @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = FlowManager::class)
-    private val flowManager: FlowManager
+    private val flowManager: FlowManager,
+    @Reference(service = SandboxService::class)
+    private val sandboxService: SandboxService
 ) : Lifecycle {
 
     private companion object {
         private val logger = contextLogger()
+        val consoleLogger: Logger = LoggerFactory.getLogger("Console")
 
-        private const val MESSAGING_KEY = "MESSAGING"
+        private const val MESSAGING_KEY = "corda.messaging"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowService>(::eventHandler)
@@ -53,6 +61,7 @@ class FlowService @Activate constructor(
     private var executor: FlowExecutor? = null
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        consoleLogger.info("FlowService received: $event")
         when (event) {
             is StartEvent -> {
                 logger.debug { "Starting flow runner component." }
@@ -60,7 +69,9 @@ class FlowService @Activate constructor(
                 registration =
                     coordinator.followStatusChangesByName(
                         setOf(
-                            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                            LifecycleCoordinatorName.forComponent<SandboxServiceCoordinator>()
+                            //LifecycleCoordinatorName.forComponent<CPIService>()
                         )
                     )
             }
@@ -74,11 +85,12 @@ class FlowService @Activate constructor(
             }
             is NewConfigurationReceived -> {
                 executor?.stop()
-                val newExecutor = FlowExecutor(coordinatorFactory, event.config, subscriptionFactory, flowManager)
+                val newExecutor = FlowExecutor(coordinatorFactory, event.config, subscriptionFactory, flowManager, sandboxService)
                 newExecutor.start()
                 executor = newExecutor
             }
             is StopEvent -> {
+                executor?.stop()
                 logger.debug { "Stopping flow runner component." }
                 registration?.close()
                 registration = null
