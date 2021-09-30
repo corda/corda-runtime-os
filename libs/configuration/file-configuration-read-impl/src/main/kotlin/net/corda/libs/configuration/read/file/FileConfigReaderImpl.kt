@@ -56,7 +56,7 @@ class FileConfigReaderImpl(
     }
 
     override fun registerCallback(configListener: ConfigListener): AutoCloseable {
-        val sub = ConfigListenerSubscription()
+        val sub = ConfigListenerSubscription(configUpdates)
         configUpdates[sub] = configListener
         if (isRunning) {
             val configs = configurationRepository.getConfigurations()
@@ -90,9 +90,10 @@ class FileConfigReaderImpl(
         }
     }
 
-    private class ConfigListenerSubscription : AutoCloseable {
+    private class ConfigListenerSubscription(private val configUpdates: MutableMap<ConfigListenerSubscription, ConfigListener>) :
+        AutoCloseable {
         override fun close() {
-            // do nothing
+            configUpdates.remove(this)
         }
     }
 }
