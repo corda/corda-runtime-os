@@ -11,28 +11,13 @@ import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.fail
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
-import org.osgi.service.cm.ConfigurationAdmin
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import java.io.InputStream
 import java.net.URI
 import java.nio.file.Paths
 import java.security.DigestInputStream
 import java.security.MessageDigest
-import java.util.*
 
-@Component(service = [SandboxManagementService::class])
-class SandboxManagementService @Activate constructor(
-    @Reference
-    configAdmin: ConfigurationAdmin,
-
-    @Reference
-    private val installService: InstallService,
-
-    @Reference
-    private val sandboxCreationService: SandboxCreationService
-) {
+class SandboxManagementService {
     companion object {
 
         // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
@@ -81,29 +66,17 @@ class SandboxManagementService @Activate constructor(
         }
     }
 
-    val cpk1: Cpk
+    private val installService: InstallService = ServiceLocator.getInstallService()
+    private val sandboxCreationService: SandboxCreationService = ServiceLocator.getSandboxCreationService()
 
-    val group1: SandboxGroup
+    val cpk1: Cpk = loadCPK(resourceName = CPK_ONE)
+    val group1: SandboxGroup = createSandboxGroupFor(cpk1)
 
-    init {
-        configAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
-            val properties = Properties()
-            properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()
-            properties[BLACKLISTED_KEYS_KEY] = emptyList<String>()
-            properties[PLATFORM_VERSION_KEY] = 999
-            @Suppress("unchecked_cast")
-            config.update(properties as Dictionary<String, Any>)
-        }
-
-        val allBundles = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles
-        val (publicBundles, privateBundles) = allBundles.partition { bundle ->
-            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
-        }
-        sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
-
-        cpk1 = loadCPK(resourceName = CPK_ONE)
-        group1 = createSandboxGroupFor(cpk1)
-    }
+//        val allBundles = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles
+//        val (publicBundles, privateBundles) = allBundles.partition { bundle ->
+//            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
+//        }
+//        sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
 
     /** Runs the flow with [className] in sandbox group [group] and casts the return value to [T]. */
     internal fun <T: Any> runFlow(className: String, group: SandboxGroup): T {
