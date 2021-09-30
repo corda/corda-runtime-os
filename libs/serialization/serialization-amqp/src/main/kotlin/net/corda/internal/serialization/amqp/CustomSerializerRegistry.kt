@@ -155,17 +155,17 @@ class CachingCustomSerializerRegistry(
         val declaredSerializers = customSerializers.mapNotNull { customSerializer ->
             when {
                 !customSerializer.isSerializerFor(clazz) -> null
-                (declaredSuperClass == null
+                declaredSuperClass == null
                         || !customSerializer.isSerializerFor(declaredSuperClass)
-                        || !customSerializer.revealSubclassesInSchema) -> {
+                        || !customSerializer.revealSubclassesInSchema -> {
                     logger.debug { "action=\"Using custom serializer\", class=${clazz.typeName}, declaredType=${declaredType.typeName}" }
 
                     @Suppress("UNCHECKED_CAST")
                     customSerializer as? AMQPSerializer<Any>
                 }
-                else ->
-                    // Make a subclass serializer for the subclass and return that...
-                    CustomSerializer.SubClass(clazz, uncheckedCast(customSerializer))
+                // Make a subclass serializer for the subclass and return that...
+                customSerializer is CustomSerializer<*> -> SubClass(clazz, customSerializer)
+                else -> null
             }
         }
 

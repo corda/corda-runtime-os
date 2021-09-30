@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CustomSerializer
+import net.corda.internal.serialization.amqp.Proxy
 import net.corda.internal.serialization.amqp.SerializerFactory
 import java.time.ZoneId
 
@@ -9,7 +9,7 @@ import java.time.ZoneId
  */
 class ZoneIdSerializer(
         factory: SerializerFactory
-) : CustomSerializer.Proxy<ZoneId, ZoneIdSerializer.ZoneIdProxy>(
+) : Proxy<ZoneId, ZoneIdSerializer.ZoneIdProxy>(
                 ZoneId::class.java,
                 ZoneIdProxy::class.java,
                 factory
