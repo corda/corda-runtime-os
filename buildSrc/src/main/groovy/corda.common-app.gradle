@@ -42,10 +42,7 @@ configurations {
     compileOnly {
         extendsFrom(systemPackages)
     }
-    bundles {
-        transitive = true
-        canBeConsumed = false
-        extendsFrom(runtimeClasspath)
+    runtimeClasspath {
         //This is to ensure that, when you add a project dependency to the configuration, you add the project's jar artifact,
         // otherwise Gradle adds the project's classes directory as that is usually enough to compile/run
         attributes { attrs ->
@@ -54,12 +51,11 @@ configurations {
     }
     applyDependencySubstitution(systemPackages)
     applyDependencySubstitution(bootstrapClasspath)
-    applyDependencySubstitution(bundles)
+    applyDependencySubstitution(runtimeClasspath)
 
     compileClassPath.shouldResolveConsistentlyWith(runtimeClasspath)
     systemPackages.shouldResolveConsistentlyWith(runtimeClasspath)
     bootstrapClasspath.shouldResolveConsistentlyWith(runtimeClasspath)
-    bundles.shouldResolveConsistentlyWith(runtimeClasspath)
 }
 
 dependencies {
@@ -139,13 +135,13 @@ private def addSystemPackagesExtra(
 
 Provider<DefaultTask> createSystemBundlesFile = tasks.register("createSystemBundleFile") {
     inputs.files(jarTask)
-    inputs.files(configurations.bundles)
+    inputs.files(configurations.runtimeClasspath)
     File systemBundlesFile = new File(temporaryDir, "system_bundles")
     outputs.file(systemBundlesFile)
     doLast {
         systemBundlesFile.withWriter { writer ->
             writer.writeLine("bundles/${jarTask.flatMap {it.archiveFile }.map(RegularFile.&getAsFile).map(File.&getName).get()}")
-            (configurations.bundles - configurations.systemPackages).files.grep { File file -> isJar(file) && isBundle(new JarFile(file)) }.each { File file ->
+            (configurations.runtimeClasspath - configurations.systemPackages).files.grep { File file -> isJar(file) && isBundle(new JarFile(file)) }.each { File file ->
                 writer.writeLine("bundles/${file.name}")
             }
         }
@@ -252,7 +248,7 @@ Provider<JavaAgentFile> javaAgentFileTask =  tasks.register("javaAgentFile", Jav
 
 def appJar = tasks.register('appJar', Jar) {
     inputs.files(configurations.bootstrapClasspath)
-    inputs.files(configurations.bundles)
+    inputs.files(configurations.runtimeClasspath)
     inputs.files(configurations.systemPackages)
     inputs.files(jarTask)
 
@@ -286,7 +282,7 @@ def appJar = tasks.register('appJar', Jar) {
     from(writeFrameworkPropertyFile)
     into("bundles") {
         from(jarTask)
-        from(configurations.bundles - configurations.systemPackages) {
+        from(configurations.runtimeClasspath - configurations.systemPackages) {
             eachFile { FileCopyDetails fileCopyDetails ->
                 if(!isJar(new File(fileCopyDetails.sourcePath))) fileCopyDetails.exclude()
             }
