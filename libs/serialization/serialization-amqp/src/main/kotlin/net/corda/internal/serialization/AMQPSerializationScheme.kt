@@ -181,7 +181,7 @@ abstract class AbstractAMQPSerializationScheme private constructor(
 fun registerCustomSerializers(factory: SerializerFactory) {
     with(factory) {
         register(ThrowableSerializer(this))
-        register(StackTraceElementSerializer(factory))
+        register(StackTraceElementSerializer(), true)
         register(BigDecimalSerializer, false)
         register(BigIntegerSerializer, false)
         register(CurrencySerializer, false)
