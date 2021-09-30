@@ -130,6 +130,7 @@ class HttpServer(
             shutdownSequence.clear()
         }
     }
+
     override fun start() {
         lock.withLock {
             if (shutdownSequence.isEmpty()) {

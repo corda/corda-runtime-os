@@ -38,7 +38,6 @@ class GatewayConfigurationService(
             try {
                 applyNewConfiguration(config[CONFIG_KEY])
             } catch (e: Throwable) {
-                configurationHolder.set(null)
                 gotError(e)
             }
         }
@@ -46,13 +45,18 @@ class GatewayConfigurationService(
 
     private fun applyNewConfiguration(newConfiguration: Config?) {
         val configuration = toGatewayConfig(newConfiguration)
-        logger.info("Got for ${name.instanceId} Gateway configuration ${configuration.hostAddress}:${configuration.hostPort}")
+        logger.info("Got for $name Gateway configuration ${configuration.hostAddress}:${configuration.hostPort}")
         val oldConfiguration = configurationHolder.getAndSet(configuration)
-        if ((oldConfiguration != configuration) && (oldConfiguration != null)) {
+        if (oldConfiguration == configuration) {
+            logger.info("Configuration of $name had not changed")
+            return
+        }
+        if ((state != State.Created) && (oldConfiguration != null)) {
             logger.info("Reconfiguring gateway")
             listener.gotNewConfiguration(configuration, oldConfiguration)
             logger.info("Gateway reconfigured")
-        } else {
+        }
+        if ((state == State.Created) || (state == State.StoppedDueToError)) {
             state = State.Started
         }
     }

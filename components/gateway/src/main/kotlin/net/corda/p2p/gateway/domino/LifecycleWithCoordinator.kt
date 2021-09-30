@@ -104,8 +104,19 @@ abstract class LifecycleWithCoordinator(
     }
 
     private fun onStart() {
+        children.filter {
+            it.state == State.StoppedByParent
+        }.forEach {
+            it.start()
+        }
+
         if (children.all { it.isRunning }) {
-            startSequence()
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                startSequence()
+            } catch (e: Throwable) {
+                gotError(e)
+            }
         }
     }
 
@@ -129,7 +140,9 @@ abstract class LifecycleWithCoordinator(
             }
             State.Started -> {
                 children.forEach {
-                    it.stop()
+                    if (it.state != State.StoppedDueToError) {
+                        it.stop()
+                    }
                 }
                 stopSequence()
                 state = State.StoppedByParent
@@ -151,10 +164,17 @@ abstract class LifecycleWithCoordinator(
             }
             State.Started -> {
                 stopSequence()
+                children.forEach {
+                    it.stop()
+                }
                 state = State.StoppedDueToError
             }
             State.StoppedByParent -> {
-                // Nothing to do
+                stopSequence()
+                children.forEach {
+                    it.stop()
+                }
+                state = State.StoppedDueToError
             }
             State.StoppedDueToError -> {
                 // Nothing to do
@@ -187,7 +207,9 @@ abstract class LifecycleWithCoordinator(
                         onStart()
                     } else {
                         // A child went down, stop my self
-                        stop()
+                        if (state == State.Started) {
+                            stop()
+                        }
                     }
                 }
                 else -> {
@@ -214,5 +236,9 @@ abstract class LifecycleWithCoordinator(
             it.close()
         }
         coordinator.close()
+    }
+
+    override fun toString(): String {
+        return "$name: $state: $children"
     }
 }

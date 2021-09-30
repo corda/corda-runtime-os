@@ -70,9 +70,9 @@ internal class InboundMessageHandler(
         }
         p2pInPublisher = publisher
 
-        if (httpServer == null) {
+        if (httpServer?.isRunning != true) {
             serverLock.write {
-                if (httpServer == null) {
+                if (httpServer?.isRunning != true) {
                     logger.info(
                         "Starting HTTP server for $name to " +
                             "${configurationService.configuration.hostAddress}:${configurationService.configuration.hostPort}"
