@@ -22,7 +22,7 @@ internal class DefaultCredentialResolver : CredentialResolver {
                 log.trace { "Get bearer token auth credentials." }
                 val match =
                     TOKEN_PATTERN.matchEntire(authorization) ?: throw FailedLoginException("Malformed Bearer token.")
-                BearerTokenAuthenticationCredentials(match.groups["token"]!!.value)
+                BearerTokenAuthenticationCredentials(match.groupValues[1])
             }
             context.basicAuthCredentialsExist() -> {
                 log.trace { "Get basic auth credentials." }

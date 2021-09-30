@@ -20,6 +20,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.httprpc.api.PluggableRPCOps
 import net.corda.v5.httprpc.api.RpcOps
 import org.osgi.framework.FrameworkUtil
@@ -164,11 +165,19 @@ class HttpRpcGatewayApp @Activate constructor(
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
 
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
+        val configFile = createConfigFile()
+        log.debug { "Config file saved to: $configFile" }
         return ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
-            .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
-            .withValue("config.file", ConfigValueFactory.fromAnyRef(createConfigFile()))
+            .withValue(
+                CONFIG_TOPIC_NAME,
+                ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME))
+            )
+            .withValue(
+                TOPIC_PREFIX,
+                ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))
+            )
+            .withValue("config.file", ConfigValueFactory.fromAnyRef(configFile))
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
