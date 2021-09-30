@@ -71,62 +71,63 @@ class HttpRpcGateway(
             throw CordaRuntimeException(message)
         }
 
-        val listener = { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
-            log.info("Gateway component received lifecycle event, changedKeys: $changedKeys")
-            if (MESSAGING_CONFIG in changedKeys) {
-                if (receivedSnapshot) {
-                    log.info("Config update received")
-                    log.info("Config update contains kafka config")
-                    lifeCycleCoordinator.postEvent(MessagingConfigUpdateEvent(currentConfigurationSnapshot))
-                } else {
-                    receivedSnapshot = true
-                    log.info("Config snapshot received")
-                    lifeCycleCoordinator.postEvent(ConfigReceivedEvent(currentConfigurationSnapshot))
-                }
-            }
-            if (RPC_CONFIG in changedKeys) {
-                log.info("Config update received")
-                log.info("Config update contains RPC config")
-
-                server?.stop()
-                securityManager?.stop()
-                val securityManager = rpcSecurityManagerFactory.createRPCSecurityManager().also {
-                    this.securityManager = it
-                    it.start()
-                }
-
-                sslCertReadService?.stop()
-                val keyStoreInfo = sslCertReadServiceFactory.create().let {
-                    this.sslCertReadService = it
-                    it.start()
-                    it.getOrCreateKeyStore()
-                }
-
-                val httpRpcSettings = HttpRpcSettings(
-                    address = NetworkHostAndPort.parse(currentConfigurationSnapshot[RPC_CONFIG]!!.getString(RPC_ADDRESS_CONFIG)),
-                    context = HttpRpcContext(
-                        version = "1",
-                        basePath = "/api",
-                        description = currentConfigurationSnapshot[RPC_CONFIG]!!.getString(RPC_DESCRIPTION_CONFIG),
-                        title = currentConfigurationSnapshot[RPC_CONFIG]!!.getString(RPC_TITLE_CONFIG)
-                    ),
-                    ssl = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password),
-                    sso = null,
-                    maxContentLength = MAX_CONTENT_LENGTH_DEFAULT_VALUE
-                )
-
-                server = httpRpcServerFactory.createHttpRpcServer(
-                    rpcOpsImpls = rpcOps,
-                    rpcSecurityManager = securityManager,
-                    httpRpcSettings = httpRpcSettings,
-                    devMode = true,
-                    cordappClassLoader = this::class.java.classLoader
-                ).also { it.start() }
-            }
-        }
-        sub = configurationReadService.registerForUpdates(listener)
+        sub = configurationReadService.registerForUpdates(::onConfigurationUpdated)
         configurationReadService.start()
         configurationReadService.bootstrapConfig(bootstrapConfig!!)
+    }
+
+    private fun onConfigurationUpdated(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config>) {
+        log.info("Gateway component received lifecycle event, changedKeys: $changedKeys")
+        if (MESSAGING_CONFIG in changedKeys) {
+            if (receivedSnapshot) {
+                log.info("Config update received")
+                log.info("Config update contains kafka config")
+                lifeCycleCoordinator.postEvent(MessagingConfigUpdateEvent(currentConfigurationSnapshot))
+            } else {
+                receivedSnapshot = true
+                log.info("Config snapshot received")
+                lifeCycleCoordinator.postEvent(ConfigReceivedEvent(currentConfigurationSnapshot))
+            }
+        }
+        if (RPC_CONFIG in changedKeys) {
+            log.info("Config update received")
+            log.info("Config update contains RPC config")
+
+            server?.stop()
+            securityManager?.stop()
+            val securityManager = rpcSecurityManagerFactory.createRPCSecurityManager().also {
+                this.securityManager = it
+                it.start()
+            }
+
+            sslCertReadService?.stop()
+            val keyStoreInfo = sslCertReadServiceFactory.create().let {
+                this.sslCertReadService = it
+                it.start()
+                it.getOrCreateKeyStore()
+            }
+
+            val httpRpcSettings = HttpRpcSettings(
+                address = NetworkHostAndPort.parse(currentConfigurationSnapshot[RPC_CONFIG]!!.getString(RPC_ADDRESS_CONFIG)),
+                context = HttpRpcContext(
+                    version = "1",
+                    basePath = "/api",
+                    description = currentConfigurationSnapshot[RPC_CONFIG]!!.getString(RPC_DESCRIPTION_CONFIG),
+                    title = currentConfigurationSnapshot[RPC_CONFIG]!!.getString(RPC_TITLE_CONFIG)
+                ),
+                ssl = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password),
+                sso = null,
+                maxContentLength = MAX_CONTENT_LENGTH_DEFAULT_VALUE
+            )
+
+            server = httpRpcServerFactory.createHttpRpcServer(
+                rpcOpsImpls = rpcOps,
+                rpcSecurityManager = securityManager,
+                httpRpcSettings = httpRpcSettings,
+                devMode = true,
+                cordappClassLoader = this::class.java.classLoader
+            ).also { it.start() }
+        }
     }
 
     override fun stop() {
