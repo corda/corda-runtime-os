@@ -96,6 +96,10 @@ internal class Registration(
         }
     }
 
+    override fun toString(): String {
+        return "Registration ${registeringCoordinator.name} -> ${coordinators.map { it.name }} (open -> $isOpen)"
+    }
+
     internal val isOpen: Boolean
         get() = !isClosed.get()
 }

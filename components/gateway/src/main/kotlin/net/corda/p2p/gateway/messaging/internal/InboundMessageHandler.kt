@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.internal
 
 import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -18,7 +19,7 @@ import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.GatewayConfigurationService
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
@@ -38,14 +39,14 @@ import kotlin.concurrent.write
  * This class implements a simple message processor for p2p messages received from other Gateways.
  */
 internal class InboundMessageHandler(
-    parent: LifecycleWithCoordinatorAndResources,
-    private val configurationService: GatewayConfigurationService,
+    parent: LifecycleWithCoordinator,
+    configurationReaderService: ConfigurationReadService,
     private val publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
 ) : GatewayConfigurationService.ReconfigurationListener,
     Lifecycle,
     HttpEventListener,
-    LifecycleWithCoordinatorAndResources(parent) {
+    LifecycleWithCoordinator(parent) {
 
     companion object {
         private val logger = contextLogger()
@@ -53,73 +54,39 @@ internal class InboundMessageHandler(
 
     private var p2pInPublisher: Publisher? = null
     private val sessionPartitionMapper = SessionPartitionMapperImpl(this, subscriptionFactory)
+    private val configurationService = GatewayConfigurationService(this, configurationReaderService, this)
 
     @Volatile
     private var httpServer: HttpServer? = null
     private val serverLock = ReentrantReadWriteLock()
 
-    override fun resumeSequence() {
+    override fun startSequence() {
         logger.info("Starting P2P message receiver")
 
         val publisherConfig = PublisherConfig(PUBLISHER_ID)
         val publisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty())
-        executeBeforePause {
+        executeBeforeStop {
             publisher.close()
         }
         p2pInPublisher = publisher
 
-        configurationService.start()
-
-        if (sessionPartitionMapper.state != State.Up) {
-            sessionPartitionMapper.start()
-            executeBeforePause {
-                sessionPartitionMapper.stop()
+        if (httpServer == null) {
+            serverLock.write {
+                if (httpServer == null) {
+                    logger.info(
+                        "Starting HTTP server for $name to " +
+                            "${configurationService.configuration.hostAddress}:${configurationService.configuration.hostPort}"
+                    )
+                    val newServer = HttpServer(this, configurationService.configuration)
+                    newServer.start()
+                    executeBeforeStop(newServer::stop)
+                    httpServer = newServer
+                }
             }
-            return
         }
 
         logger.info("Started P2P message receiver")
-        state = State.Up
-    }
-
-    override fun openSequence() {
-        followStatusChanges(sessionPartitionMapper).also {
-            executeBeforeClose(it::close)
-        }
-        followStatusChanges(configurationService).also {
-            executeBeforeClose(it::close)
-        }
-        configurationService.listenToReconfigurations(this)
-        executeBeforeClose {
-            configurationService.stopListenToReconfigurations(this)
-        }
-    }
-
-    override fun onStatusUp() {
-        if (configurationService.state != State.Up) {
-            return
-        }
-        if ((p2pInPublisher != null) && (sessionPartitionMapper.state == State.Up)) {
-            if (httpServer == null) {
-                serverLock.write {
-                    if (httpServer == null) {
-                        logger.info(
-                            "Starting HTTP server for $name to " +
-                                "${configurationService.configuration.hostAddress}:${configurationService.configuration.hostPort}"
-                        )
-                        val newServer = HttpServer(this, configurationService.configuration)
-                        newServer.start()
-                        executeBeforePause(newServer::stop)
-                        httpServer = newServer
-                    }
-                }
-            }
-            state = State.Up
-        }
-    }
-
-    override fun onStatusDown() {
-        stop()
+        state = State.Started
     }
 
     private fun writeResponse(status: HttpResponseStatus, address: SocketAddress) {
@@ -217,14 +184,14 @@ internal class InboundMessageHandler(
                 oldServer?.stop()
                 val newServer = HttpServer(this, newConfiguration)
                 newServer.start()
-                executeBeforePause(newServer::stop)
+                executeBeforeStop(newServer::stop)
                 httpServer = newServer
             }
         } else {
             logger.info("New server configuration, $name will be connected to ${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
             val newServer = HttpServer(this, newConfiguration)
             newServer.start()
-            executeBeforePause(newServer::stop)
+            executeBeforeStop(newServer::stop)
             serverLock.write {
                 val oldServer = httpServer
                 httpServer = null
@@ -233,4 +200,6 @@ internal class InboundMessageHandler(
             }
         }
     }
+
+    override val children = listOf(configurationService, sessionPartitionMapper)
 }

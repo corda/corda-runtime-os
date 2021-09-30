@@ -4,12 +4,10 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.LoggerFactory
-import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -33,63 +31,34 @@ class Gateway(
     publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-) : LifecycleWithCoordinatorAndResources(
+) : LifecycleWithCoordinator(
     lifecycleCoordinatorFactory,
-    "${instanceId.incrementAndGet()}"
+    instanceId.incrementAndGet().toString(),
 ) {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(Gateway::class.java)
         const val CONSUMER_GROUP_ID = "gateway"
         const val PUBLISHER_ID = "gateway"
 
         private val instanceId = AtomicInteger(0)
     }
 
-    private val configurationService = GatewayConfigurationService(this, configurationReaderService)
-
     private val inboundMessageHandler = InboundMessageHandler(
         this,
-        configurationService,
+        configurationReaderService,
         publisherFactory,
         subscriptionFactory,
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         this,
-        configurationService,
+        configurationReaderService,
         subscriptionFactory,
         publisherFactory,
     )
 
-    override fun openSequence() {
-        followStatusChanges(inboundMessageHandler, outboundMessageProcessor).also {
-            executeBeforeClose(it::close)
-        }
-    }
+    override val children: Collection<LifecycleWithCoordinator> = listOf(inboundMessageHandler, outboundMessageProcessor)
 
-    override fun resumeSequence() {
-        logger.info("Starting Gateway service")
-        configurationService.start()
-        inboundMessageHandler.start()
-        executeBeforePause(inboundMessageHandler::stop)
-        outboundMessageProcessor.start()
-        executeBeforePause(outboundMessageProcessor::stop)
-        onStatusUp()
-        logger.info("Gateway started")
-    }
-
-    override fun onStatusUp() {
-        if ((configurationService.state == State.Up) &&
-            (inboundMessageHandler.state == State.Up) &&
-            (outboundMessageProcessor.state == State.Up)
-        ) {
-            logger.info("Gateway is running")
-            state = State.Up
-        }
-    }
-
-    override fun onStatusDown() {
-        outboundMessageProcessor.stop()
-        inboundMessageHandler.stop()
+    override fun startSequence() {
+        state = State.Started
     }
 }

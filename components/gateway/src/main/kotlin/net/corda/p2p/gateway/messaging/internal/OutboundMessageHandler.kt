@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.internal
 
 import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -16,9 +17,7 @@ import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.GatewayConfigurationService
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
@@ -38,20 +37,20 @@ import java.nio.ByteBuffer
  */
 internal class OutboundMessageHandler(
     parent: LifecycleWithCoordinator,
-    configurationService: GatewayConfigurationService,
+    configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
 ) : EventLogProcessor<String, LinkOutMessage>,
     Lifecycle,
     HttpEventListener,
-    LifecycleWithCoordinatorAndResources(parent) {
+    LifecycleWithCoordinator(parent) {
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
     }
 
     private val connectionManager = ConnectionManager(
         this,
-        configurationService,
+        configurationReaderService,
         this,
     )
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
@@ -63,33 +62,15 @@ internal class OutboundMessageHandler(
 
     private var p2pInPublisher: Publisher? = null
 
-    override fun openSequence() {
-        followStatusChanges(connectionManager).also {
-            executeBeforeClose(it::close)
-        }
-    }
-
-    override fun resumeSequence() {
+    override fun startSequence() {
         logger.info("Starting P2P message sender")
         p2pInPublisher = publisherFactory.createPublisher(PublisherConfig(PUBLISHER_ID), ConfigFactory.empty()).also {
-            executeBeforePause(it::close)
+            executeBeforeStop(it::close)
         }
+        p2pMessageSubscription.start()
+        executeBeforeStop(p2pMessageSubscription::stop)
 
-        connectionManager.start()
-
-        onStatusUp()
-    }
-
-    override fun onStatusDown() {
-        stop()
-    }
-
-    override fun onStatusUp() {
-        if ((connectionManager.state == State.Up) && (state != State.Up)) {
-            p2pMessageSubscription.start()
-            executeBeforePause(p2pMessageSubscription::stop)
-            state = State.Up
-        }
+        state = State.Started
     }
 
     @Suppress("NestedBlockDepth")
@@ -151,4 +132,6 @@ internal class OutboundMessageHandler(
         get() = String::class.java
     override val valueClass: Class<LinkOutMessage>
         get() = LinkOutMessage::class.java
+
+    override val children = listOf(connectionManager)
 }

@@ -8,110 +8,158 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.v5.base.util.contextLogger
+import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicReference
 
 abstract class LifecycleWithCoordinator(
-    internal val coordinatorFactory: LifecycleCoordinatorFactory,
-    instanceId: String?,
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    instanceId: String
 ) :
     Lifecycle {
+
+    constructor(parent: LifecycleWithCoordinator) : this(
+        parent.coordinatorFactory,
+        parent.name.toString()
+    )
+
     companion object {
         private val logger = contextLogger()
     }
 
     enum class State {
-        Initialized,
-        Starting,
-        Resuming,
-        Up,
-        Pausing,
-        Paused,
-        Closing,
-        Closed
+        Created,
+        Started,
+        StoppedDueToError,
+        StoppedByParent
     }
-    private val currentState = AtomicReference(State.Initialized)
-    enum class TransitionEvents : LifecycleEvent {
-        Pause,
-        Resume
-    }
+    private val currentState = AtomicReference(State.Created)
 
     val name: LifecycleCoordinatorName = LifecycleCoordinatorName(
-        javaClass.name,
+        javaClass.simpleName,
         instanceId
     )
 
     private val coordinator = coordinatorFactory.createCoordinator(name, EventHandler())
 
     override val isRunning: Boolean
-        get() = coordinator.status == LifecycleStatus.UP
+        get() = state == State.Started
 
     var state: State
-        get() = currentState.get()
+        get() =
+            currentState.get()
         set(newState) {
             val oldState = currentState.getAndSet(newState)
-            if ((oldState == State.Up) && (oldState != State.Up)) {
+            if ((newState != State.Started) && (oldState == State.Started)) {
                 coordinator.updateStatus(LifecycleStatus.DOWN)
-            } else if ((oldState != State.Up) && (newState == State.Up)) {
+            } else if ((oldState != State.Started) && (newState == State.Started)) {
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             logger.info("State of $name is $newState")
         }
 
-    open fun openSequence() {}
+    abstract val children: Collection<LifecycleWithCoordinator>
+
+    private val closeActions = ConcurrentLinkedDeque<()->Unit>()
+    fun executeBeforeClose(action: () -> Unit) {
+        closeActions.addFirst(action)
+    }
+    private val stopActions = ConcurrentLinkedDeque<()->Unit>()
+    fun executeBeforeStop(action: () -> Unit) {
+        stopActions.addFirst(action)
+    }
+
+    open fun startSequence() {}
 
     override fun start() {
         logger.info("Starting $name")
         when (state) {
-            State.Initialized -> {
-                openSequence()
-                state = State.Starting
+            State.Created -> {
                 coordinator.start()
+                children.map {
+                    it.name
+                }
+                    .map {
+                        coordinator.followStatusChangesByName(setOf(it))
+                    }.forEach {
+                        executeBeforeClose(it::close)
+                    }
             }
-            State.Pausing, State.Paused -> {
-                state = State.Resuming
-                coordinator.postEvent(TransitionEvents.Resume)
+            State.Started -> {
+                // Do nothing
             }
-            State.Starting, State.Resuming, State.Up -> {}
-            State.Closing, State.Closed -> throw IllegalStateException("Can not revive the dead")
+            State.StoppedByParent -> {
+                children.forEach {
+                    it.start()
+                }
+                onStart()
+            }
+            State.StoppedDueToError -> {
+                logger.info("Can not start $name, it was stopped due to an error")
+            }
         }
     }
-    abstract fun resumeSequence()
+
+    private fun onStart() {
+        if (children.all { it.isRunning }) {
+            startSequence()
+        }
+    }
+
+    private fun stopSequence() {
+        stopActions.onEach {
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                it.invoke()
+            } catch (e: Throwable) {
+                logger.warn("Fail to stop", e)
+            }
+        }
+        stopActions.clear()
+    }
 
     override fun stop() {
         logger.info("Stopping $name")
         when (state) {
-            State.Initialized -> {
-                state = State.Pausing
-                coordinator.start()
+            State.Created -> {
+                state = State.StoppedByParent
             }
-            State.Starting, State.Resuming, State.Up -> {
-                state = State.Pausing
-                coordinator.postEvent(TransitionEvents.Pause)
+            State.Started -> {
+                children.forEach {
+                    it.stop()
+                }
+                stopSequence()
+                state = State.StoppedByParent
             }
-            State.Pausing, State.Paused, State.Closing, State.Closed -> {
+            State.StoppedByParent -> {
+                // Nothing to do
+            }
+            State.StoppedDueToError -> {
+                state = State.StoppedByParent
             }
         }
     }
-    abstract fun pauseSequence()
-    open fun closeSequence() {}
 
     fun gotError(error: Throwable) {
         logger.info("Got error in $name", error)
-        stop()
-    }
-
-    fun followStatusChanges(vararg lifecycles: LifecycleWithCoordinator): RegistrationHandle {
-        return coordinator.followStatusChangesByName(lifecycles.map { it.name }.toSet())
-    }
-
-    open fun onStatusUp() {
-    }
-    open fun onStatusDown() {
+        when (state) {
+            State.Created -> {
+                state = State.StoppedDueToError
+            }
+            State.Started -> {
+                stopSequence()
+                state = State.StoppedDueToError
+            }
+            State.StoppedByParent -> {
+                // Nothing to do
+            }
+            State.StoppedDueToError -> {
+                // Nothing to do
+            }
+        }
     }
 
     private inner class EventHandler : LifecycleEventHandler {
@@ -122,11 +170,12 @@ abstract class LifecycleWithCoordinator(
                 }
                 is StartEvent -> {
                     when (state) {
-                        State.Starting -> {
-                            state = State.Resuming
-                            coordinator.postEvent(TransitionEvents.Resume)
+                        State.Created -> {
+                            children.forEach {
+                                it.start()
+                            }
+                            onStart()
                         }
-                        State.Pausing -> coordinator.postEvent(TransitionEvents.Pause)
                         else -> logger.warn("Unexpected start event, my state is $state")
                     }
                 }
@@ -135,18 +184,11 @@ abstract class LifecycleWithCoordinator(
                 }
                 is RegistrationStatusChangeEvent -> {
                     if (event.status == LifecycleStatus.UP) {
-                        onStatusUp()
+                        onStart()
                     } else {
-                        onStatusDown()
+                        // A child went down, stop my self
+                        stop()
                     }
-                }
-                TransitionEvents.Resume -> {
-                    resumeSequence()
-                }
-                TransitionEvents.Pause -> {
-                    pauseSequence()
-                    logger.info("Stopped $name")
-                    state = State.Paused
                 }
                 else -> {
                     logger.warn("Unexpected event $event")
@@ -156,10 +198,21 @@ abstract class LifecycleWithCoordinator(
     }
 
     override fun close() {
-        state = State.Closing
-        pauseSequence()
-        closeSequence()
+        stopSequence()
+
+        closeActions.onEach {
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                it.invoke()
+            } catch (e: Throwable) {
+                logger.warn("Fail to close", e)
+            }
+        }
+        closeActions.clear()
+
+        children.reversed().forEach {
+            it.close()
+        }
         coordinator.close()
-        state = State.Closed
     }
 }

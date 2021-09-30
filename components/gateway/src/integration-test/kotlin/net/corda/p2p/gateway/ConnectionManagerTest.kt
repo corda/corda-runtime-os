@@ -26,7 +26,7 @@ class ConnectionManagerTest : TestBase() {
         sslConfig = aliceSslConfig
     )
     private val parent = createParentCoordinator()
-    private val configService = createGatewayConfigService(configuration)
+    private val configService = createConfigurationServiceFor(configuration)
 
     @Test
     @Timeout(30)

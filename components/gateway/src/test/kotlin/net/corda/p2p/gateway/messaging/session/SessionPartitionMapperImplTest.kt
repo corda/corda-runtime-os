@@ -2,13 +2,12 @@ package net.corda.p2p.gateway.messaging.session
 
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.SessionPartitions
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -24,7 +23,7 @@ class SessionPartitionMapperImplTest {
 
     private var processor: CompactedProcessor<String, SessionPartitions>? = null
     private val coordinator = mock<LifecycleCoordinator>()
-    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
+    private val factory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
 
@@ -35,9 +34,8 @@ class SessionPartitionMapperImplTest {
             mock()
         }
     }
-    private val parent = mock<LifecycleWithCoordinatorAndResources> {
-        on { coordinatorFactory } doReturn lifecycleCoordinatorFactory
-        on { name } doReturn LifecycleCoordinatorName("name", "instance")
+    private val parent = object : LifecycleWithCoordinator(factory, "") {
+        override val children = emptyList<LifecycleWithCoordinator>()
     }
 
     @Test
@@ -70,11 +68,11 @@ class SessionPartitionMapperImplTest {
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)
 
-        doReturn(LifecycleStatus.UP).whenever(coordinator).status
+        processor!!.onSnapshot(emptyMap())
 
         assertThat(sessionPartitionMapper.getPartitions(sessionId)).isNull()
 
-        doReturn(LifecycleStatus.DOWN).whenever(coordinator).status
+        sessionPartitionMapper.stop()
 
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)

@@ -2,9 +2,9 @@ package net.corda.p2p.gateway.messaging
 
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.p2p.gateway.GatewayConfigurationService
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
@@ -23,9 +23,9 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class ConnectionManager(
     parent: LifecycleWithCoordinator,
-    private val configurationService: GatewayConfigurationService,
+    configurationReaderService: ConfigurationReadService,
     private val listener: HttpEventListener,
-) : LifecycleWithCoordinatorAndResources(parent),
+) : LifecycleWithCoordinator(parent),
     GatewayConfigurationService.ReconfigurationListener {
 
     companion object {
@@ -34,6 +34,7 @@ class ConnectionManager(
         private const val NUM_CLIENT_WRITE_THREADS = 2
         private const val NUM_CLIENT_NETTY_THREADS = 2
     }
+    private val configurationService = GatewayConfigurationService(this, configurationReaderService, this)
 
     private val clientPool = ConcurrentHashMap<URI, HttpClient>()
     private var writeGroup: EventLoopGroup? = null
@@ -52,54 +53,32 @@ class ConnectionManager(
                 nettyGroup!!,
                 listener
             )
-            executeBeforePause(client::close)
+            executeBeforeStop(client::close)
             client.start()
             client
         }
     }
 
-    override fun openSequence() {
-        followStatusChanges(configurationService).also {
-            executeBeforeClose(it::close)
-        }
-        configurationService.listenToReconfigurations(this)
-        executeBeforeClose {
-            configurationService.stopListenToReconfigurations(this)
-        }
-    }
-
-    override fun resumeSequence() {
-        logger.info("Starting connection manager")
-        configurationService.start()
-        onStatusUp()
-    }
-
-    override fun onStatusUp() {
-        if ((configurationService.state == State.Up) && (state != State.Up)) {
-            NioEventLoopGroup(NUM_CLIENT_WRITE_THREADS).also {
-                executeBeforePause {
-                    it.shutdownGracefully()
-                    it.terminationFuture().sync()
-                }
-            }.also { writeGroup = it }
-            nettyGroup = NioEventLoopGroup(NUM_CLIENT_NETTY_THREADS).also {
-                executeBeforePause {
-                    it.shutdownGracefully()
-                    it.terminationFuture().sync()
-                }
+    override fun startSequence() {
+        NioEventLoopGroup(NUM_CLIENT_WRITE_THREADS).also {
+            executeBeforeStop {
+                it.shutdownGracefully()
+                it.terminationFuture().sync()
             }
-            executeBeforePause(clientPool::clear)
-            state = State.Up
+        }.also { writeGroup = it }
+        nettyGroup = NioEventLoopGroup(NUM_CLIENT_NETTY_THREADS).also {
+            executeBeforeStop {
+                it.shutdownGracefully()
+                it.terminationFuture().sync()
+            }
         }
-    }
-
-    override fun onStatusDown() {
-        stop()
+        executeBeforeStop(clientPool::clear)
+        state = State.Started
     }
 
     override fun gotNewConfiguration(newConfiguration: GatewayConfiguration, oldConfiguration: GatewayConfiguration) {
         if (newConfiguration.sslConfig != oldConfiguration.sslConfig) {
-            logger.info("Got new SSL configuraion, recreating the clients pool")
+            logger.info("Got new SSL configuration, recreating the clients pool")
             val oldClients = clientPool.toMap()
             clientPool.clear()
             oldClients.values.forEach {
@@ -107,4 +86,6 @@ class ConnectionManager(
             }
         }
     }
+
+    override val children = listOf(configurationService)
 }

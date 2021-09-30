@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging
 
+import java.io.ByteArrayInputStream
 import java.security.KeyStore
 
 /**
@@ -9,20 +10,14 @@ import java.security.KeyStore
  * by the client to validate the received certificate.
  */
 data class SslConfiguration(
-    /**
-     * The key store used for TLS connections
-     */
-    val keyStore: KeyStore,
+    val rawKeyStore: ByteArray,
 
     /**
      * The password for the key store
      */
     val keyStorePassword: String,
 
-    /**
-     * The trust root key store used to validate the peer certificate
-     */
-    val trustStore: KeyStore,
+    val rawTrustStore: ByteArray,
 
     /**
      * The trust store password
@@ -34,4 +29,47 @@ data class SslConfiguration(
      * Property determining how the revocation check will be made for the server certificate
      */
     val revocationCheck: RevocationConfig,
-)
+) {
+    /**
+     * The key store used for TLS connections
+     */
+    val keyStore: KeyStore by lazy {
+        readKeyStore(rawKeyStore, keyStorePassword)
+    }
+    /**
+     * The trust root key store used to validate the peer certificate
+     */
+    val trustStore: KeyStore by lazy {
+        readKeyStore(rawTrustStore, trustStorePassword)
+    }
+
+    private fun readKeyStore(rawData: ByteArray, password: String): KeyStore {
+        return KeyStore.getInstance("JKS").also {
+            ByteArrayInputStream(rawData).use { keySoreInputStream ->
+                it.load(keySoreInputStream, password.toCharArray())
+            }
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is SslConfiguration) return false
+
+        if (!rawKeyStore.contentEquals(other.rawKeyStore)) return false
+        if (keyStorePassword != other.keyStorePassword) return false
+        if (!rawTrustStore.contentEquals(other.rawTrustStore)) return false
+        if (trustStorePassword != other.trustStorePassword) return false
+        if (revocationCheck != other.revocationCheck) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = rawKeyStore.contentHashCode()
+        result = 31 * result + keyStorePassword.hashCode()
+        result = 31 * result + rawTrustStore.contentHashCode()
+        result = 31 * result + trustStorePassword.hashCode()
+        result = 31 * result + revocationCheck.hashCode()
+        return result
+    }
+}

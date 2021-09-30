@@ -16,7 +16,6 @@ import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFacto
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinatorAndResources
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
@@ -27,22 +26,12 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
-import java.io.ByteArrayOutputStream
-import java.io.FileInputStream
-import java.security.KeyStore
+import java.io.File
 import java.util.UUID
 
 open class TestBase {
-    private fun readKeyStore(fileName: String, password: String): KeyStore {
-        return KeyStore.getInstance("JKS").also {
-            it.load(FileInputStream(javaClass.classLoader.getResource("$fileName.jks")!!.file), password.toCharArray())
-        }
-    }
-    private fun saveKeyStore(keyStore: KeyStore, password: String): String {
-        return ByteArrayOutputStream().use {
-            keyStore.store(it, password.toCharArray())
-            it.toByteArray().toBase64()
-        }
+    private fun readKeyStore(fileName: String): ByteArray {
+        return File(javaClass.classLoader.getResource("$fileName.jks")!!.file).readBytes()
     }
 
     protected val clientMessageContent = "PING"
@@ -57,41 +46,40 @@ open class TestBase {
     protected val partyASNI = SniCalculator.calculateSni("O=PartyA, L=London, C=GB", NetworkType.CORDA_4, "")
     protected val aliceSslConfig = SslConfiguration(
         keyStorePassword = keystorePass,
-        keyStore = readKeyStore("sslkeystore_alice", keystorePass),
+        rawKeyStore = readKeyStore("sslkeystore_alice"),
         trustStorePassword = truststorePass,
-        trustStore = readKeyStore("truststore", truststorePass),
+        rawTrustStore = readKeyStore("truststore"),
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
-
     )
     protected val bobSslConfig = SslConfiguration(
         keyStorePassword = keystorePass,
-        keyStore = readKeyStore("sslkeystore_bob", keystorePass),
+        rawKeyStore = readKeyStore("sslkeystore_bob"),
         trustStorePassword = truststorePass,
-        trustStore = readKeyStore("truststore", truststorePass),
+        rawTrustStore = readKeyStore("truststore"),
         revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
 
     )
     protected val chipSslConfig = SslConfiguration(
         keyStorePassword = keystorePass,
-        keyStore = readKeyStore("sslkeystore_chip", keystorePass),
+        rawKeyStore = readKeyStore("sslkeystore_chip"),
         trustStorePassword = truststorePass,
-        trustStore = readKeyStore("truststore", truststorePass),
+        rawTrustStore = readKeyStore("truststore"),
         revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
 
     )
     protected val daleSslConfig = SslConfiguration(
         keyStorePassword = keystorePass,
-        keyStore = readKeyStore("sslkeystore_dale", keystorePass),
+        rawKeyStore = readKeyStore("sslkeystore_dale"),
         trustStorePassword = truststorePass,
-        trustStore = readKeyStore("truststore", truststorePass),
+        rawTrustStore = readKeyStore("truststore"),
         revocationCheck = RevocationConfig(RevocationConfigMode.SOFT_FAIL)
 
     )
     protected val c4sslConfig = SslConfiguration(
         keyStorePassword = keystorePass_c4,
-        keyStore = readKeyStore("sslkeystore_c4", keystorePass_c4),
+        rawKeyStore = readKeyStore("sslkeystore_c4"),
         trustStorePassword = truststorePass_c4,
-        trustStore = readKeyStore("truststore_c4", truststorePass_c4),
+        rawTrustStore = readKeyStore("truststore_c4"),
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
 
@@ -121,9 +109,9 @@ open class TestBase {
                 .withValue("hostPort", ConfigValueFactory.fromAnyRef(configuration.hostPort))
                 .withValue("traceLogging", ConfigValueFactory.fromAnyRef(configuration.traceLogging))
                 .withValue("sslConfig.keyStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.keyStorePassword))
-                .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(saveKeyStore(configuration.sslConfig.keyStore, configuration.sslConfig.keyStorePassword)))
+                .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(configuration.sslConfig.rawKeyStore.toBase64()))
                 .withValue("sslConfig.trustStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.trustStorePassword))
-                .withValue("sslConfig.trustStore", ConfigValueFactory.fromAnyRef(saveKeyStore(configuration.sslConfig.trustStore, configuration.sslConfig.trustStorePassword)))
+                .withValue("sslConfig.trustStore", ConfigValueFactory.fromAnyRef(configuration.sslConfig.rawTrustStore.toBase64()))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
                 .withValue("connectionConfig.connectionIdleTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
                 .withValue("connectionConfig.maxClientConnections", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
@@ -151,14 +139,10 @@ open class TestBase {
     }
 
     fun createParentCoordinator(): LifecycleWithCoordinator {
-        return object : LifecycleWithCoordinatorAndResources(lifecycleCoordinatorFactory, UUID.randomUUID().toString()) {
-            override fun resumeSequence() {
-            }
+        return object : LifecycleWithCoordinator(lifecycleCoordinatorFactory, UUID.randomUUID().toString()) {
+            override val children: Collection<LifecycleWithCoordinator>
+                get() = emptyList()
         }
-    }
-
-    fun createGatewayConfigService(configuration: GatewayConfiguration): GatewayConfigurationService {
-        return GatewayConfigurationService(createParentCoordinator(), createConfigurationServiceFor(configuration))
     }
 
     fun Lifecycle.startAndWaitForStarted() {
