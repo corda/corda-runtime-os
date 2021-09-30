@@ -21,10 +21,10 @@ import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaCo
 import net.corda.messaging.kafka.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
+import net.corda.messaging.kafka.utils.WeakValueHashMap
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import org.infinispan.commons.util.WeakValueHashMap
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import java.nio.ByteBuffer

@@ -44,16 +44,15 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
 
         val partitionState = StateAndEventPartitionState(mutableMapOf<Int, MutableMap<K, Pair<Long, S>>>(), mutableMapOf())
 
+        val stateAndEventConsumer =
+            StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
         val rebalanceListener = StateAndEventRebalanceListener(
             config,
             mapFactory,
-            eventConsumer,
-            stateConsumer,
+            stateAndEventConsumer,
             partitionState,
             stateAndEventListener
         )
-        val stateAndEventConsumer =
-            StateAndEventConsumerImpl(config, mapFactory, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
         return Pair(stateAndEventConsumer, rebalanceListener)
     }
 
