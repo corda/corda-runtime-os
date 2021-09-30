@@ -1,13 +1,16 @@
 package net.corda.db.test.osgi
 
+import net.corda.db.admin.impl.ClassloaderChangeLog
+import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.db.core.PostgresDataSourceFactory
+import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.impl.InMemoryEntityManagerConfiguration
-import net.corda.orm.impl.PostgresEntityManagerConfiguration
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotSame
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -17,6 +20,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.io.StringWriter
 import java.time.LocalDate
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
@@ -46,7 +50,7 @@ class EntitiesInBundlesTest {
 
         private val dogBundle = run {
             val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
-                bundle.symbolicName == "net.corda.dogs"
+                bundle.symbolicName == "net.corda.testing-dogs"
             }
             logger.info("Dog bundle $bundle".emphasise())
             bundle
@@ -54,7 +58,7 @@ class EntitiesInBundlesTest {
 
         private val catBundle = run {
             val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
-                bundle.symbolicName == "net.corda.cats"
+                bundle.symbolicName == "net.corda.testing-cats"
             }
             logger.info("Cat bundle $bundle".emphasise())
             bundle
@@ -78,14 +82,11 @@ class EntitiesInBundlesTest {
         private val dbConfig = run {
             if (null != System.getProperty("postgresPort").toIntOrNull()) {
                 logger.info("Using Postgres on port ${System.getProperty("postgresPort")}".emphasise())
-                PostgresEntityManagerConfiguration(
+                val ds = PostgresDataSourceFactory().create(
                     "jdbc:postgresql://localhost:${System.getProperty("postgresPort")}/postgres",
                     "postgres",
-                    "password",
-                    DdlManage.UPDATE,
-                    formatSql = true,
-                    showSql = true
-                )
+                    "password")
+                DbEntityManagerConfiguration(ds, true, true, DdlManage.UPDATE)
             } else {
                 logger.info("Using in-memory (HSQL) DB".emphasise())
                 InMemoryEntityManagerConfiguration("pets")
@@ -96,6 +97,21 @@ class EntitiesInBundlesTest {
         @JvmStatic
         @BeforeAll
         fun setupEntities() {
+            logger.info("Create Schema for ${dbConfig.dataSource.connection.metaData.url}".emphasise())
+            val lbm = LiquibaseSchemaMigratorImpl()
+            val cl = ClassloaderChangeLog(
+                linkedSetOf(
+                    ClassloaderChangeLog.ChangeLogResourceFiles(
+                        catClass.packageName, listOf("migration/db.changelog-master.xml"), classLoader = catClass.classLoader),
+                    ClassloaderChangeLog.ChangeLogResourceFiles(
+                        dogClass.packageName, listOf("migration/db.changelog-master.xml"), classLoader = dogClass.classLoader)
+            ))
+            StringWriter().use {
+                lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it)
+                logger.info("Schema creation SQL: $it")
+            }
+            lbm.updateDb(dbConfig.dataSource.connection, cl)
+
             logger.info("Create Entities".emphasise())
 
             emf = entityManagerFactoryFactory.create(

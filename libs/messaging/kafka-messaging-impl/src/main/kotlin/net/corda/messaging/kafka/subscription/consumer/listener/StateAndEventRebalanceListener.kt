@@ -2,6 +2,7 @@ package net.corda.messaging.kafka.subscription.consumer.listener
 
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
+import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.types.StateAndEventConfig
@@ -11,12 +12,10 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
 
-@Suppress("LongParameterList")
 class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
     private val config: StateAndEventConfig,
     private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
-    private val eventConsumer: CordaKafkaConsumer<K, E>,
-    private val stateConsumer: CordaKafkaConsumer<K, S>,
+    private val stateAndEventConsumer: StateAndEventConsumer<K, S, E>,
     private val partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
 ) : ConsumerRebalanceListener {
@@ -29,6 +28,9 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
 
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = partitionState.partitionsToSync
+
+    private val eventConsumer: CordaKafkaConsumer<K, E> = stateAndEventConsumer.eventConsumer
+    private val stateConsumer: CordaKafkaConsumer<K, S> = stateAndEventConsumer.stateConsumer
 
     /**
      *  This rebalance is called for the event consumer, though most of the work is to ensure the state consumer
@@ -49,7 +51,9 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
         eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) })
 
         statePartitions.forEach {
-            currentStates.computeIfAbsent(it.partition()) { mapFactory.createMap() }
+            currentStates.computeIfAbsent(it.partition()) {
+                mapFactory.createMap()
+            }
         }
     }
 
@@ -66,8 +70,11 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
             val partitionId = topicPartition.partition()
             partitionsToSync.remove(partitionId)
 
+            stateAndEventListener?.let { listener ->
+                listener.onPartitionLost(getStatesForPartition(partitionId))
+            }
+
             currentStates[partitionId]?.let { partitionStates ->
-                stateAndEventListener?.onPartitionLost(getStatesForPartition(partitionId))
                 mapFactory.destroyMap(partitionStates)
             }
         }

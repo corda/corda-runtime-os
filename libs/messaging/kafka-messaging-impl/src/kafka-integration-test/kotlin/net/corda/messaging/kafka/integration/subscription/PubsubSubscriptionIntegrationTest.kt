@@ -11,8 +11,8 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
-import net.corda.messaging.kafka.integration.TopicTemplates
-import net.corda.messaging.kafka.integration.getRecords
+import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
+import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.processors.TestPubsubProcessor
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -45,7 +45,7 @@ class PubsubSubscriptionIntegrationTest {
     fun beforeEach() {
         kafkaConfig = ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(BOOTSTRAP_SERVERS_VALUE))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
     @Test
@@ -64,7 +64,7 @@ class PubsubSubscriptionIntegrationTest {
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
 
         while (latch.count > 0) {
-            publisher.publish(getRecords(PUBSUB_TOPIC1, 10, 2))
+            publisher.publish(getDemoRecords(PUBSUB_TOPIC1, 10, 2))
         }
 
         publisher.close()

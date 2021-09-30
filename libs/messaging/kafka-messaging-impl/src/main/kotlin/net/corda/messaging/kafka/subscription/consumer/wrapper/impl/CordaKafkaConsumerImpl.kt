@@ -51,6 +51,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private val consumerCommitOffsetMaxRetries = config.getLong(COMMIT_OFFSET_MAX_RETRIES)
     private val topicPrefix = config.getString(TOPIC_PREFIX)
     private val topic = config.getString(TOPIC_NAME)
+    private val topicWithPrefix = "$topicPrefix$topic"
     private val groupName = config.getString(CommonClientConfigs.GROUP_ID_CONFIG)
 
     @Suppress("TooGenericExceptionCaught")
@@ -154,7 +155,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         var attemptSubscription = true
         while (attemptSubscription) {
             try {
-                consumer.subscribe(listOf(topicPrefix + topic), listener ?: defaultListener)
+                consumer.subscribe(listOf(topicWithPrefix), listener ?: defaultListener)
                 attemptSubscription = false
             } catch (ex: Exception) {
                 val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
@@ -205,7 +206,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
     override fun assignPartitionsManually(partitions: Set<Int>) {
-        val topicPartitions = partitions.map { TopicPartition(topic, it) }
+        val topicPartitions = partitions.map { TopicPartition(topicWithPrefix, it) }
         consumer.assign(topicPartitions)
     }
 
