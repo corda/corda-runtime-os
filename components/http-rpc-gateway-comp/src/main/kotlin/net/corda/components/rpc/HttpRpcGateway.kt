@@ -26,6 +26,7 @@ import org.slf4j.Logger
 class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 
+@Suppress("LongParameterList")
 class HttpRpcGateway(
     private val lifeCycleCoordinator: LifecycleCoordinator,
     private val configurationReadService: ConfigurationReadService,
