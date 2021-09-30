@@ -20,10 +20,13 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.httprpc.api.PluggableRPCOps
+import net.corda.v5.httprpc.api.RpcOps
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
@@ -31,7 +34,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.*
+import java.util.Properties
 
 enum class LifeCycleState {
     UNINITIALIZED, STARTING, STARTINGMESSAGING, REINITMESSAGING
@@ -53,7 +56,9 @@ class HttpRpcGatewayApp @Activate constructor(
     @Reference(service = RPCSecurityManagerFactory::class)
     private val rpcSecurityManagerFactory: RPCSecurityManagerFactory,
     @Reference(service = SslCertReadServiceFactory::class)
-    private val sslCertReadServiceFactory: SslCertReadServiceFactory
+    private val sslCertReadServiceFactory: SslCertReadServiceFactory,
+    @Reference(service = PluggableRPCOps::class, cardinality = ReferenceCardinality.MULTIPLE)
+    private val rpcOps: List<PluggableRPCOps<out RpcOps>>
 ) : Application {
 
     private companion object {
@@ -119,8 +124,12 @@ class HttpRpcGatewayApp @Activate constructor(
                 }
 
             httpRpcGateway = HttpRpcGateway(
-                localLifeCycleCoordinator, configurationReadService, httpRpcServerFactory,
-                rpcSecurityManagerFactory, sslCertReadServiceFactory
+                localLifeCycleCoordinator,
+                configurationReadService,
+                httpRpcServerFactory,
+                rpcSecurityManagerFactory,
+                sslCertReadServiceFactory,
+                rpcOps
             )
 
             log.info("Starting life cycle coordinator")

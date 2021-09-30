@@ -22,6 +22,7 @@ dependencies {
 
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:http-rpc:http-rpc')
     implementation project(':libs:http-rpc:http-rpc-security-read')
     implementation project(':libs:http-rpc:ssl-cert-read')
     implementation project(':libs:http-rpc:http-rpc-server')
@@ -47,5 +48,4 @@ dependencies {
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-
 }
