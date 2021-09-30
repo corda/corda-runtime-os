@@ -41,8 +41,8 @@ dependencies {
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
     // TODO: why do I need to specify these? (Not needed when running OSGi integration test)
-//    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
-//    runtimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
+    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
+    runtimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
     // huh?
     runtimeOnly "com.sun.activation:javax.activation:1.2.0"
     runtimeOnly "javax.interceptor:javax.interceptor-api:1.2"
