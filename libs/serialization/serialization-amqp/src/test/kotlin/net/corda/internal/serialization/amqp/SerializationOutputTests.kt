@@ -241,7 +241,6 @@ class SerializationOutputTests {
         }
         val des = DeserializationInput(freshDeserializationFactory)
         val desObj = des.deserialize(bytes, withSerializationContext.withEncodingWhitelist(encodingWhitelist))
-        assertEquals(obj, desObj)
         assertTrue(deepEquals(obj, desObj) == expectedEqual)
 
         // Now repeat with a re-used factory
