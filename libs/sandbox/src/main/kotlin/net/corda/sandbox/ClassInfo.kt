@@ -12,7 +12,7 @@ sealed class ClassInfo {
     abstract val classBundleVersion: Version
 }
 
-/** A [ClassInfo] for a class not loaded from a public sandbox. */
+/** A [ClassInfo] for a class loaded from a public sandbox. */
 data class PublicClassInfo(override val classBundleName: String, override val classBundleVersion: Version) : ClassInfo()
 
 /**
