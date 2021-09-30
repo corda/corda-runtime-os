@@ -8,6 +8,11 @@ import net.corda.messaging.api.records.Record
  *
  * If you want to receive updates from a [StateAndEventSubscription] you should implement this interface.
  *
+ * If the processor is slow and exceeds the timeout defined for the processor in the config, the event and state will be placed on dead
+ * letter queues. The state will be set to null for the given key.
+ * Note: The first state for any event will always be null for a key. If the state is null for any subsequent event records with the same
+ * key, then this key has been added to the state and event dead letter queues and should be handled by the processor as appropriate.
+ *
  * NOTE: Any exception thrown by the processor which isn't [CordaIntermittentException] will result in a
  * [CordaFatalException] and will cause the subscription to close.
  */

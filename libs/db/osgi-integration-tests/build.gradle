@@ -12,8 +12,11 @@ dependencies {
 
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
-    integrationTestImplementation project(":libs:db:orm")
-    integrationTestImplementation project(":libs:db:orm-impl")
+    integrationTestImplementation project(":libs:db:db-core")
+    integrationTestImplementation project(":libs:db:db-admin")
+    integrationTestImplementation project(":libs:db:db-admin-impl")
+    integrationTestImplementation project(":libs:db:db-orm")
+    integrationTestImplementation project(":libs:db:db-orm-impl")
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
@@ -21,8 +24,10 @@ dependencies {
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     // NOTE: these are needed for resolving bundle requirements
-    integrationTestRuntimeOnly project(":testing:bundles:cats")
-    integrationTestRuntimeOnly project(":testing:bundles:dogs")
+    integrationTestRuntimeOnly project(":testing:bundles:testing-cats")
+    integrationTestRuntimeOnly project(":testing:bundles:testing-dogs")
 
-    integrationTestImplementation "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
 }

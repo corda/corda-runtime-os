@@ -6,6 +6,7 @@ import org.apache.kafka.clients.producer.ProducerConfig
 class ConfigProperties {
     companion object {
         const val TOPIC = "topic"
+        const val DEAD_LETTER_QUEUE_SUFFIX = "topic.deadLetterQueueSuffix"
         const val GROUP = "group"
         const val INSTANCE_ID = "instanceId"
         const val CLIENT_ID_COUNTER = "clientIdCounter"
@@ -35,6 +36,7 @@ class ConfigProperties {
         const val PRODUCER_CLOSE_TIMEOUT = "producer.$CLOSE_TIMEOUT"
         const val CONSUMER_CLOSE_TIMEOUT = "consumer.$CLOSE_TIMEOUT"
         const val CONSUMER_THREAD_STOP_TIMEOUT = "consumer.thread.stop.timeout"
+        const val CONSUMER_PROCESSOR_TIMEOUT = "consumer.processor.timeout"
         const val CONSUMER_POLL_AND_PROCESS_RETRIES = "consumer.processor.retries"
         const val POLL_TIMEOUT = "poll.timeout"
         const val CONSUMER_POLL_TIMEOUT = "consumer.poll.timeout"
