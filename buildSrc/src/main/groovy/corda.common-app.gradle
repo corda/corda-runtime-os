@@ -24,32 +24,10 @@ pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
     throw new StopExecutionException('corda.common-app plugin is incompatible with building CPKs and CPBs')
 }
 
-void alignToRuntimeClasspath(Configuration conf) {
-    conf.withDependencies { DependencySet dependencySet ->
-        Map<Tuple2<String, String>, String> modules = new TreeMap<>()
-        configurations.runtimeClasspath.incoming.resolutionResult.allComponents.each {
-            ModuleVersionIdentifier moduleVersionIdentifier = it.getModuleVersion()
-            modules.put(new Tuple2<>(moduleVersionIdentifier.group, moduleVersionIdentifier.name), moduleVersionIdentifier.version)
-        }
-        dependencySet.configureEach { dependency ->
-            Tuple2<String, String> needle = new Tuple2(dependency.group, dependency.name)
-            modules.get(needle)?.with { constrainedVersion ->
-                if(dependency instanceof ExternalDependency) {
-                    dependency.version {
-                        require(constrainedVersion)
-                    }
-                }
-            }
-        }
-    }
-}
-
 configurations {
     systemPackages {
         transitive = false
         canBeConsumed = false
-
-        alignToRuntimeClasspath(it)
     }
     bootstrapClasspath {
         transitive = true
@@ -60,7 +38,6 @@ configurations {
         attributes { attrs ->
             attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR))
         }
-        alignToRuntimeClasspath(it)
     }
     compileOnly {
         extendsFrom(systemPackages)
@@ -74,11 +51,15 @@ configurations {
         attributes { attrs ->
             attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR))
         }
-        alignToRuntimeClasspath(it)
     }
     applyDependencySubstitution(systemPackages)
     applyDependencySubstitution(bootstrapClasspath)
     applyDependencySubstitution(bundles)
+
+    compileClassPath.shouldResolveConsistentlyWith(runtimeClasspath)
+    systemPackages.shouldResolveConsistentlyWith(runtimeClasspath)
+    bootstrapClasspath.shouldResolveConsistentlyWith(runtimeClasspath)
+    bundles.shouldResolveConsistentlyWith(runtimeClasspath)
 }
 
 dependencies {
