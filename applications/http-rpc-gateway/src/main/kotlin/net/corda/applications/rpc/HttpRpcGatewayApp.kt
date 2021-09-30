@@ -7,6 +7,8 @@ import net.corda.components.rpc.ConfigReceivedEvent
 import net.corda.components.rpc.HttpRpcGateway
 import net.corda.components.rpc.MessagingConfigUpdateEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.RpcOps
 import net.corda.httprpc.security.read.RPCSecurityManagerFactory
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
 import net.corda.httprpc.ssl.SslCertReadServiceFactory
@@ -21,8 +23,6 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.httprpc.api.PluggableRPCOps
-import net.corda.v5.httprpc.api.RpcOps
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

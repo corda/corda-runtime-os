@@ -5,7 +5,7 @@ import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.v5.base.util.NetworkHostAndPort
-import net.corda.v5.httprpc.tools.HttpVerb
+import net.corda.httprpc.tools.HttpVerb
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import kotlin.test.assertEquals
@@ -38,7 +38,7 @@ class HttpRpcServerMaxContentLengthTest : HttpRpcServerTestBase() {
     fun `Content length exceeding maxContentLength returns Bad Request`() {
 
         val dataExceedsMax="1".repeat(MAX_CONTENT_LENGTH + 5)
-        val pingResponse = client.call(HttpVerb.POST, WebRequest("health/ping", dataExceedsMax), userName, password)
+        val pingResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest("health/ping", dataExceedsMax), userName, password)
         assertEquals(HttpStatus.SC_BAD_REQUEST, pingResponse.responseStatus)
         assertNotNull(pingResponse.body)
         assertTrue(pingResponse.body.contains("Content length is ${MAX_CONTENT_LENGTH + 5} which exceeds the maximum limit of $MAX_CONTENT_LENGTH."))
@@ -47,7 +47,7 @@ class HttpRpcServerMaxContentLengthTest : HttpRpcServerTestBase() {
     @Test
     fun `Content length below maxContentLength returns 200`() {
 
-        val pingResponse = client.call(HttpVerb.POST, WebRequest("health/ping", """{"pingPongData": {"str": "stringdata"}}"""), userName, password)
+        val pingResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest("health/ping", """{"pingPongData": {"str": "stringdata"}}"""), userName, password)
         assertEquals(HttpStatus.SC_OK, pingResponse.responseStatus)
         assertEquals(""""Pong for str = stringdata"""", pingResponse.body)
     }

@@ -1,7 +1,12 @@
 package net.corda.httprpc.server.apigen.test;
 
-import net.corda.v5.httprpc.api.RpcOps;
-import net.corda.v5.httprpc.api.annotations.*;
+import net.corda.httprpc.RpcOps;
+import net.corda.httprpc.annotations.HttpRpcGET;
+import net.corda.httprpc.annotations.HttpRpcPOST;
+import net.corda.httprpc.annotations.HttpRpcPathParameter;
+import net.corda.httprpc.annotations.HttpRpcQueryParameter;
+import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter;
+import net.corda.httprpc.annotations.HttpRpcResource;
 
 @HttpRpcResource(
     name = "API",

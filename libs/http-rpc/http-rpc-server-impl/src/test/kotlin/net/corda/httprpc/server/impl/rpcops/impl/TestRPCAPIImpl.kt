@@ -2,7 +2,7 @@ package net.corda.httprpc.server.impl.rpcops.impl
 
 import net.corda.httprpc.server.impl.rpcops.TestRPCAPI
 import net.corda.httprpc.server.impl.rpcops.TestRPCAPIAnnotated
-import net.corda.v5.httprpc.api.PluggableRPCOps
+import net.corda.httprpc.PluggableRPCOps
 
 class TestRPCAPIImpl : TestRPCAPI, PluggableRPCOps<TestRPCAPI> {
 

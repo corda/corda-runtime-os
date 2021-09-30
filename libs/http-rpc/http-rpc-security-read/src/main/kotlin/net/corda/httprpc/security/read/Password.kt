@@ -1,6 +1,6 @@
 package net.corda.httprpc.security.read
 
-import java.util.*
+import java.util.Arrays
 
 class Password(valueRaw: CharArray) : AutoCloseable {
 

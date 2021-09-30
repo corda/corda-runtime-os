@@ -9,8 +9,8 @@ import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
-import net.corda.v5.httprpc.tools.annotations.validation.utils.pathParamRegex
-import net.corda.v5.httprpc.tools.staticExposedGetMethods
+import net.corda.httprpc.tools.annotations.validation.utils.pathParamRegex
+import net.corda.httprpc.tools.staticExposedGetMethods
 import java.lang.reflect.InvocationTargetException
 
 /**

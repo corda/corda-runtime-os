@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl.rpcops.impl
 
 import net.corda.httprpc.server.impl.rpcops.TestHealthCheckAPI
-import net.corda.v5.httprpc.api.PluggableRPCOps
+import net.corda.httprpc.PluggableRPCOps
 import java.util.Calendar
 import java.util.Calendar.DAY_OF_YEAR
 import java.util.GregorianCalendar

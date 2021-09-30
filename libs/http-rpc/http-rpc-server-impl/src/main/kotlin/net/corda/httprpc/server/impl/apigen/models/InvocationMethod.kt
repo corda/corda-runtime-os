@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.impl.apigen.models
 
-import net.corda.v5.httprpc.api.RpcOps
+import net.corda.httprpc.RpcOps
 import java.lang.reflect.Method
 
 @Suppress("SpreadOperator")

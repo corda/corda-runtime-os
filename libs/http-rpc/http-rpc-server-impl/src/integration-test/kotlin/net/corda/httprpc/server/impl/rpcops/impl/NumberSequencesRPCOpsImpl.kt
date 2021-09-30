@@ -4,7 +4,7 @@ import net.corda.httprpc.durablestream.DurableStreamHelper
 import net.corda.httprpc.server.impl.rpcops.NumberSequencesRPCOps
 import net.corda.httprpc.server.impl.rpcops.NumberTypeEnum
 import net.corda.v5.base.stream.DurableCursorBuilder
-import net.corda.v5.httprpc.api.PluggableRPCOps
+import net.corda.httprpc.PluggableRPCOps
 
 @Suppress("MagicNumber")
 class NumberSequencesRPCOpsImpl : NumberSequencesRPCOps, PluggableRPCOps<NumberSequencesRPCOps> {

@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.impl.rpcops
 
-import net.corda.v5.httprpc.api.RpcOps
+import net.corda.httprpc.RpcOps
 
 interface TestRPCAPI : RpcOps {
   fun void(): String

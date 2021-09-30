@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.apigen.test;
 
-import net.corda.v5.httprpc.api.PluggableRPCOps;
+import net.corda.httprpc.PluggableRPCOps;
 import org.jetbrains.annotations.NotNull;
 
 public class TestJavaPrimitivesRPCopsImpl implements TestJavaPrimitivesRpcOps, PluggableRPCOps<TestJavaPrimitivesRpcOps> {

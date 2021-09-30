@@ -11,7 +11,7 @@ import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.httprpc.server.impl.utils.compact
 
-import net.corda.v5.httprpc.tools.HttpVerb
+import net.corda.httprpc.tools.HttpVerb
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -46,7 +46,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     @Test
     fun `GET openapi should return the OpenApi spec json`() {
 
-        val apiSpec = client.call(HttpVerb.GET, WebRequest<Any>("swagger.json"))
+        val apiSpec = client.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("swagger.json"))
         assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
         assertEquals("application/json", apiSpec.headers["Content-Type"])
         val body = apiSpec.body!!.compact()
@@ -89,7 +89,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     @Test
     fun `GET swagger UI should return html with reference to swagger json`() {
 
-        val apiSpec = client.call(HttpVerb.GET, WebRequest<Any>("swagger"))
+        val apiSpec = client.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("swagger"))
         assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
         assertEquals("text/html", apiSpec.headers["Content-Type"])
         val expected = """url: "/${context.basePath}/v${context.version}/swagger.json""""
@@ -100,9 +100,9 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     fun `GET swagger UI dependencies should return non empty result`() {
         val baseClient = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/")
         val swaggerUIversion = OptionalDependency.SWAGGERUI.version
-        val swagger = baseClient.call(HttpVerb.GET, WebRequest<Any>("api/v1/swagger"))
-        val swaggerUIBundleJS = baseClient.call(HttpVerb.GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
-        val swaggerUIcss = baseClient.call(HttpVerb.GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
+        val swagger = baseClient.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("api/v1/swagger"))
+        val swaggerUIBundleJS = baseClient.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
+        val swaggerUIcss = baseClient.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
 
 
         assertEquals(HttpStatus.SC_OK, swagger.responseStatus)

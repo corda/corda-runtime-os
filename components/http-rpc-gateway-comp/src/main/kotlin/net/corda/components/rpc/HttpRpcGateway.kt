@@ -2,6 +2,8 @@ package net.corda.components.rpc
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.RpcOps
 import net.corda.httprpc.security.read.RPCSecurityManager
 import net.corda.httprpc.security.read.RPCSecurityManagerFactory
 import net.corda.httprpc.server.HttpRpcServer
@@ -14,15 +16,12 @@ import net.corda.httprpc.server.config.models.SsoSettings
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
 import net.corda.httprpc.ssl.SslCertReadService
 import net.corda.httprpc.ssl.SslCertReadServiceFactory
-
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.httprpc.api.PluggableRPCOps
-import net.corda.v5.httprpc.api.RpcOps
 
 class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
