@@ -11,6 +11,7 @@ import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.crypto.SecureHash
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -34,11 +35,7 @@ import java.util.TreeSet
 import java.util.UUID.randomUUID
 import kotlin.random.Random
 
-/**
- * Tests of [SandboxServiceImpl].
- *
- * Does not test whether the public sandboxes are set up correctly.
- */
+/** Tests of [SandboxServiceImpl]. */
 class SandboxServiceImplTests {
     companion object {
         private const val hashAlgorithm = "SHA-256"
@@ -58,6 +55,14 @@ class SandboxServiceImplTests {
 
     private val mockInstallService = createMockInstallService(setOf(cpkOne))
     private val sandboxService = createSandboxService()
+
+
+    // A list that is mutated to contain the list of bundles that have been started and uninstalled so far.
+    private val startedBundles = mutableListOf<Bundle>()
+    private val uninstalledBundles = mutableListOf<Bundle>()
+
+    @AfterEach
+    fun clearBundles() = setOf(startedBundles, uninstalledBundles).forEach(MutableList<Bundle>::clear)
 
     /**
      * Creates a dummy [CpkAndBundles], using mocks and random values where possible.
@@ -115,18 +120,14 @@ class SandboxServiceImplTests {
      * Creates a [SandboxServiceImpl].
      *
      * @param cpksAndBundles The [CpkAndBundles]s that the sandbox service's [InstallService] is aware of
-     * @param startedBundles A list that is mutated to contain the list of bundles that have been started so far
-     * @param uninstalledBundles A list that is mutated to contain the list of bundles that have been uninstalled so far
      */
     private fun createSandboxService(
-        cpksAndBundles: Set<CpkAndBundles> = setOf(cpkAndBundlesOne, cpkAndBundlesTwo),
-        startedBundles: MutableList<Bundle> = mutableListOf(),
-        uninstalledBundles: MutableList<Bundle> = mutableListOf()
+        cpksAndBundles: Set<CpkAndBundles> = setOf(cpkAndBundlesOne, cpkAndBundlesTwo)
     ): SandboxServiceInternal {
         val cpks = cpksAndBundles.mapTo(LinkedHashSet(), CpkAndBundles::cpk)
 
         val mockInstallService = createMockInstallService(cpks)
-        val mockBundleUtils = createMockBundleUtils(cpksAndBundles, startedBundles, uninstalledBundles)
+        val mockBundleUtils = createMockBundleUtils(cpksAndBundles)
 
         return SandboxServiceImpl(mockInstallService, mockBundleUtils)
     }
@@ -140,11 +141,7 @@ class SandboxServiceImplTests {
     }
 
     /** Creates a mock [BundleUtils] that tracks which bundles have been started and uninstalled so far. */
-    private fun createMockBundleUtils(
-        cpksAndBundles: Collection<CpkAndBundles>,
-        startedBundles: MutableList<Bundle> = mutableListOf(),
-        uninstalledBundles: MutableList<Bundle> = mutableListOf()
-    ) = mock<BundleUtils>().apply {
+    private fun createMockBundleUtils(cpksAndBundles: Collection<CpkAndBundles>) = mock<BundleUtils>().apply {
         cpksAndBundles.forEach { cpkAndBundles ->
             whenever(
                 installAsBundle(
@@ -195,37 +192,19 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `sandboxes created together have visibility of each other`() {
-        val sandboxes = sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash, cpkTwo.cpkHash)).sandboxes.toList()
-        assertEquals(2, sandboxes.size)
-
-        assertTrue((sandboxes[0] as SandboxInternal).hasVisibility(sandboxes[1]))
-        assertTrue((sandboxes[1] as SandboxInternal).hasVisibility(sandboxes[0]))
-    }
-
-    @Test
     fun `creating a sandbox installs and starts its bundles`() {
-        val startedBundles = mutableListOf<Bundle>()
-        val sandboxService = createSandboxService(startedBundles = startedBundles)
-
         sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash))
         assertEquals(2, startedBundles.size)
     }
 
     @Test
     fun `can create a sandbox without starting its bundles`() {
-        val startedBundles = mutableListOf<Bundle>()
-        val sandboxService = createSandboxService(startedBundles = startedBundles)
-
         sandboxService.createSandboxGroupWithoutStarting(listOf(cpkOne.cpkHash))
         assertEquals(0, startedBundles.size)
     }
 
     @Test
     fun `can retrieve a bundle's sandbox`() {
-        val startedBundles = mutableListOf<Bundle>()
-        val sandboxService = createSandboxService(startedBundles = startedBundles)
-
         val sandbox = sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash)).sandboxes.single()
         startedBundles.forEach { bundle ->
             assertEquals(sandbox, sandboxService.getSandbox(bundle) as Sandbox)
@@ -435,25 +414,29 @@ class SandboxServiceImplTests {
     }
 
     @Test
+    fun `two sandboxes in the same group have visibility of each other`() {
+        val sandboxes = sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash, cpkTwo.cpkHash)).sandboxes.toList()
+        assertEquals(2, sandboxes.size)
+
+        val sandboxOne = sandboxes[0] as SandboxInternal
+        val sandboxTwo = sandboxes[1] as SandboxInternal
+        assertTrue(sandboxOne.hasVisibility(sandboxTwo))
+    }
+
+    @Test
     fun `two unsandboxed bundles have visibility of one another`() {
         assertTrue(sandboxService.hasVisibility(mock(), mock()))
     }
 
     @Test
     fun `two bundles in the same sandbox have visibility of one another`() {
-        val startedBundles = mutableListOf<Bundle>()
-        val sandboxService = createSandboxService(startedBundles = startedBundles)
-
         sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash))
 
         assertTrue(sandboxService.hasVisibility(startedBundles[0], startedBundles[1]))
     }
 
     @Test
-    fun `a bundle outside a sandbox doesn't have visibility of a bundle in a sandbox, and vice-versa`() {
-        val startedBundles = mutableListOf<Bundle>()
-        val sandboxService = createSandboxService(startedBundles = startedBundles)
-
+    fun `an unsandboxed bundle and a sandboxed bundle do not have visibility of one another`() {
         sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash))
 
         // In this loop, we iterate over both CorDapp and other bundles, to ensure both are treated identically.
@@ -465,9 +448,6 @@ class SandboxServiceImplTests {
 
     @Test
     fun `a bundle doesn't have visibility of a bundle in another sandbox it doesn't have visibility of`() {
-        val startedBundles = mutableListOf<Bundle>()
-        val sandboxService = createSandboxService(startedBundles = startedBundles)
-
         // We create the two sandboxes separately so that they don't have visibility of one another.
         val sandboxOne = sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash)).sandboxes.single() as SandboxInternal
         val sandboxTwo = sandboxService.createSandboxGroup(listOf(cpkTwo.cpkHash)).sandboxes.single() as SandboxInternal
@@ -483,10 +463,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `a bundle can only see the public bundles in another sandbox it has visibility of`() {
-        val startedBundles = mutableListOf<Bundle>()
-        val sandboxService = createSandboxService(startedBundles = startedBundles)
-
+    fun `a bundle only has visibility of public bundles in another sandbox it has visibility of`() {
         val sandboxes = sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash, cpkTwo.cpkHash)).sandboxes.toList()
         val sandboxOne = sandboxes[0] as SandboxImpl
         val sandboxTwo = sandboxes[1] as SandboxImpl
@@ -507,10 +484,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `a bundle can only see the CorDapp bundle in another CPK sandbox it has visibility of`() {
-        val startedBundles = mutableListOf<Bundle>()
-        val sandboxService = createSandboxService(startedBundles = startedBundles)
-
+    fun `a bundle only has visibility of the CorDapp bundle in another CPK sandbox it has visibility of`() {
         val sandboxes = sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash, cpkTwo.cpkHash)).sandboxes.toList()
         val sandboxOne = sandboxes[0] as CpkSandboxImpl
         val sandboxTwo = sandboxes[1] as CpkSandboxImpl
@@ -525,6 +499,19 @@ class SandboxServiceImplTests {
             sandboxTwoPrivateBundles.forEach { sandboxTwoPrivateBundle ->
                 assertFalse(sandboxService.hasVisibility(sandboxOneBundle, sandboxTwoPrivateBundle))
             }
+        }
+    }
+
+    @Test
+    fun `a bundle only has visibility of public bundles in public sandboxes`() {
+        sandboxService.createPublicSandbox(setOf(cpkAndBundlesOne.cordappBundle), setOf(cpkAndBundlesOne.libraryBundle))
+
+        val sandbox = sandboxService.createSandboxGroup(setOf(cpkTwo.cpkHash)).sandboxes.single() as SandboxImpl
+        val sandboxBundles = startedBundles.filter { bundle -> sandbox.containsBundle(bundle) }
+
+        sandboxBundles.forEach { sandboxOneBundle ->
+            assertTrue(sandboxService.hasVisibility(sandboxOneBundle, cpkAndBundlesOne.cordappBundle))
+            assertFalse(sandboxService.hasVisibility(sandboxOneBundle, cpkAndBundlesOne.libraryBundle))
         }
     }
 

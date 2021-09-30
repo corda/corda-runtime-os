@@ -177,7 +177,6 @@ internal class SandboxServiceImpl @Activate constructor(
         // We force the lazy initialisation of these variables before any sandboxes are created.
         felixFrameworkBundle
         felixScrBundle
-        publicSandboxes
 
         val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
             installService.getCpk(cpkFileHash)
