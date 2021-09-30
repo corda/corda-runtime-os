@@ -6,6 +6,7 @@ import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.fail
 import org.osgi.framework.Bundle
@@ -33,6 +34,29 @@ class SandboxManagementService @Activate constructor(
     private val sandboxCreationService: SandboxCreationService
 ) {
     companion object {
+
+        // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
+        private val PLATFORM_PUBLIC_BUNDLE_NAMES = listOf(
+            "javax.persistence-api",
+            "jcl.over.slf4j",
+            "net.corda.application",
+            "net.corda.base",
+            "net.corda.crypto-api",
+            "net.corda.flows",
+            "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
+            "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
+            "net.corda.ledger",
+            "net.corda.legacy-api",
+            "net.corda.persistence",
+            "net.corda.serialization",
+            "org.apache.aries.spifly.dynamic.bundle",
+            "org.apache.felix.framework",
+            "org.apache.felix.scr",
+            "org.hibernate.orm.core",
+            "org.jetbrains.kotlin.osgi-bundle",
+            "slf4j.api"
+        )
+
         private val baseDirectory = Paths.get(
             URI.create(System.getProperty("base.directory") ?: fail("base.directory property not found"))
         ).toAbsolutePath()
@@ -84,11 +108,11 @@ class SandboxManagementService @Activate constructor(
     /** Runs the flow with [className] in sandbox group [group] and casts the return value to [T]. */
     internal fun <T: Any> runFlow(className: String, group: SandboxGroup): T {
         val workflowClass = group.loadClassFromCordappBundle(className, Flow::class.java)
-        @Suppress("unchecked_cast")
-        return getServiceFor(Flow::class.java, workflowClass).call() as? T
+        return uncheckedCast(getServiceFor(Flow::class.java, workflowClass).call())
             ?: fail("Workflow did not return the correct type.")
     }
 
+    @Suppress("SameParameterValue")
     private fun loadCPK(resourceName: String): Cpk {
         val location = loadResource(resourceName)
         return location.toURL().openStream().buffered().use { source ->
@@ -108,7 +132,6 @@ class SandboxManagementService @Activate constructor(
             .firstOrNull() ?: fail("No service for $bundleClass")
     }
 
-    @Suppress("SameParameterValue")
     private fun getBundle(className: String, sandbox: CpkSandbox): Bundle {
         return FrameworkUtil.getBundle(sandbox.loadClassFromCordappBundle(className))
     }
