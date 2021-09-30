@@ -49,7 +49,7 @@ internal class SandboxGroupImpl(
         sandbox.cordappBundleContainsClass(className)
     }
 
-    override fun  getStaticTag(klass: Class<*>) = getClassTag(klass, isStaticTag = true)
+    override fun getStaticTag(klass: Class<*>) = getClassTag(klass, isStaticTag = true)
 
     override fun getEvolvableTag(klass: Class<*>) = getClassTag(klass, isStaticTag = false)
 

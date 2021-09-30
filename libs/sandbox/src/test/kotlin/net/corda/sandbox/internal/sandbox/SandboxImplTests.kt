@@ -2,6 +2,7 @@ package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.utilities.BundleUtils
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -24,29 +25,33 @@ class SandboxImplTests {
     private val privateBundleClass = String::class.java
     private val nonSandboxClass = Boolean::class.java
 
-    private val publicBundle = mock(Bundle::class.java).apply {
-        whenever(symbolicName).thenReturn(PUBLIC_BUNDLE_NAME)
-        whenever(loadClass(publicBundleClass.name)).thenReturn(publicBundleClass)
-    }
-    private val privateBundle = mock(Bundle::class.java).apply {
-        whenever(symbolicName).thenReturn(PRIVATE_BUNDLE_NAME)
-        whenever(loadClass(privateBundleClass.name)).thenReturn(privateBundleClass)
-    }
-    private val nonSandboxBundle = mock(Bundle::class.java).apply {
-        whenever(loadClass(nonSandboxClass.name)).thenReturn(nonSandboxClass)
-    }
+    private val uninstalledBundles = mutableSetOf<Bundle>()
+
+    private val publicBundle = createMockBundle(PUBLIC_BUNDLE_NAME, publicBundleClass)
+    private val privateBundle = createMockBundle(PRIVATE_BUNDLE_NAME, privateBundleClass)
+    private val nonSandboxBundle = createMockBundle("", nonSandboxClass)
 
     private val mockBundleUtils = mock(BundleUtils::class.java).apply {
-        // `Int` is assigned to the public bundle, `String` is assigned to the private bundle, and `Boolean` is
-        // assigned to the excluded bundle.
         whenever(getBundle(publicBundleClass)).thenReturn(publicBundle)
         whenever(getBundle(privateBundleClass)).thenReturn(privateBundle)
         whenever(getBundle(nonSandboxClass)).thenReturn(nonSandboxBundle)
     }
 
+    /** Creates a mock [Bundle] for testing. */
+    private fun createMockBundle(bundleSymbolicName: String, klass: Class<*>) = mock(Bundle::class.java).apply {
+        whenever(symbolicName).thenReturn(bundleSymbolicName)
+        whenever(loadClass(klass.name)).thenReturn(klass)
+        whenever(uninstall()).then {
+            uninstalledBundles.add(this)
+        }
+    }
+
     /** Creates a [SandboxImpl] for testing. */
     private fun createSandboxImpl() =
         SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+
+    @AfterEach
+    fun resetUninstalledBundles() = uninstalledBundles.clear()
 
     @Test
     fun `correctly indicates whether bundles are in the sandbox`() {
@@ -135,5 +140,13 @@ class SandboxImplTests {
         assertThrows<SandboxException> {
             sandbox.loadClass(privateBundleClass.name, PUBLIC_BUNDLE_NAME)
         }
+    }
+
+    @Test
+    fun `sandbox can be unloaded`() {
+        val sandbox = createSandboxImpl()
+        sandbox.unload()
+
+        assertEquals(setOf(publicBundle, privateBundle), uninstalledBundles)
     }
 }

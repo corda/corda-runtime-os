@@ -696,6 +696,28 @@ class SandboxServiceImplTests {
             sandboxService.getCallingSandbox()
         }
     }
+
+    @Test
+    fun `sandbox group can be unloaded`() {
+        val uninstalledBundles = mutableListOf<Bundle>()
+        val sandboxService = createSandboxService(uninstalledBundles = uninstalledBundles)
+
+        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash, cpkTwo.cpkHash))
+        sandboxService.unloadSandboxGroup(sandboxGroup)
+
+        val bundles = setOf(
+            cpkAndBundlesOne.cordappBundle,
+            cpkAndBundlesOne.libraryBundle,
+            cpkAndBundlesTwo.cordappBundle,
+            cpkAndBundlesTwo.libraryBundle
+        )
+
+        bundles.forEach { bundle ->
+            assertNull(sandboxService.getSandbox(bundle))
+        }
+
+        assertEquals(bundles, uninstalledBundles.toSet())
+    }
 }
 
 /** For testing, associates a [Cpk] with its corresponding bundles, and the classes within those. */

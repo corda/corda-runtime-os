@@ -20,7 +20,11 @@ internal open class SandboxImpl(
     private val privateBundles: Set<Bundle>
 ) : SandboxInternal {
     // The other sandboxes whose services, bundles and events this sandbox can receive.
-    private val visibleSandboxes = ConcurrentHashMap.newKeySet<Sandbox>().also { hashMap -> hashMap.add(this) }
+    // We use the sandboxes' IDs, rather than the sandboxes, to allow unloaded sandboxes to be garbage-collected.
+    private val visibleSandboxes = ConcurrentHashMap.newKeySet<UUID>().also { hashMap ->
+        // All sandboxes have visibility of themselves.
+        hashMap.add(id)
+    }
 
     // All the bundles in the sandbox.
     private val allBundles = privateBundles + publicBundles
@@ -31,14 +35,14 @@ internal open class SandboxImpl(
         return bundleUtils.getBundle(klass) in allBundles
     }
 
-    override fun hasVisibility(otherSandbox: Sandbox) = otherSandbox in visibleSandboxes
+    override fun hasVisibility(otherSandbox: Sandbox) = otherSandbox.id in visibleSandboxes
 
     override fun grantVisibility(otherSandbox: Sandbox) {
-        visibleSandboxes.add(otherSandbox)
+        visibleSandboxes.add(otherSandbox.id)
     }
 
     override fun grantVisibility(otherSandboxes: List<Sandbox>) {
-        visibleSandboxes.addAll(otherSandboxes)
+        visibleSandboxes.addAll(otherSandboxes.map(Sandbox::id))
     }
 
     override fun getBundle(bundleName: String) = (publicBundles + privateBundles).find { bundle ->
@@ -56,6 +60,15 @@ internal open class SandboxImpl(
             throw SandboxException(
                 "The bundle ${bundle.symbolicName} in sandbox $id has been uninstalled.", e
             )
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun unload() = allBundles.forEach { bundle ->
+        try {
+            bundle.uninstall()
+        } catch (e: Exception) {
+            throw SandboxException("Bundle ${bundle.symbolicName} could not be uninstalled.", e)
         }
     }
 }
