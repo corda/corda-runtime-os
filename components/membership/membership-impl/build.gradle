@@ -9,5 +9,12 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-application"
+    implementation "net.corda:corda-cipher-suite"
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+
+    testImplementation project(":libs:crypto:crypto-impl")
+    testImplementation project(":libs:crypto:crypto-testkit")
 }
