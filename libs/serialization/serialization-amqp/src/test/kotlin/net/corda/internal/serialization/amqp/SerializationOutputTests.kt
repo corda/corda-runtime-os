@@ -840,30 +840,6 @@ class SerializationOutputTests {
         serdes(obj)
     }
 
-//    @Test
-//    fun `test X509 certificate serialize`() {
-//        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-//        factory.register(net.corda.internal.serialization.amqp.custom.X509CertificateSerializer)
-//
-//        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-//        factory2.register(net.corda.internal.serialization.amqp.custom.X509CertificateSerializer)
-//
-//        val obj = BOB_IDENTITY.certificate
-//        serdes(obj, factory, factory2)
-//    }
-
-//    @Test
-//    fun `test cert path serialize`() {
-//        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-//        factory.register(net.corda.internal.serialization.amqp.custom.CertPathSerializer(factory))
-//
-//        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-//        factory2.register(net.corda.internal.serialization.amqp.custom.CertPathSerializer(factory2))
-//
-//        val obj = BOB_IDENTITY.certPath
-//        serdes(obj, factory, factory2)
-//    }
-
     class OtherGeneric<T : Any>
 
     open class GenericSuperclass<T : Any>(val param: OtherGeneric<T>)
@@ -971,26 +947,6 @@ class SerializationOutputTests {
         val objCopy = serdes(obj, factory, factory2)
         assertEquals(objCopy.a, objCopy.b)
     }
-
-//    private fun emptyCrl(): X509CRL {
-//        val builder = X509v2CRLBuilder(X500Name("CN=Corda Root CA, O=R3 HoldCo LLC, L=New York, C=US"), Date())
-//        val provider = BouncyCastleProvider()
-//        val crlHolder = builder.build(ContentSignerBuilder.build(
-//        Crypto.RSA_SHA256, Crypto.generateKeyPair(Crypto.RSA_SHA256).private, provider))
-//        return JcaX509CRLConverter().setProvider(provider).getCRL(crlHolder)
-//    }
-//
-//    @Test
-//    fun `test X509CRL custom serializer`() {
-//        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-//        factory.register(net.corda.internal.serialization.amqp.custom.X509CRLSerializer)
-//
-//        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-//        factory2.register(net.corda.internal.serialization.amqp.custom.X509CRLSerializer)
-//
-//        val obj = emptyCrl()
-//        serdes(obj, factory, factory2)
-//    }
 
     class ByteArrays(val a: ByteArray, val b: ByteArray)
 
