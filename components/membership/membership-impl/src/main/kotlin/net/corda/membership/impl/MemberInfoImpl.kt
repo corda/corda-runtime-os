@@ -35,7 +35,6 @@ class MemberInfoImpl(
     override val party: Party get() = readParty()
 
     override val identityKeys: List<PublicKey> get() = readIdentityKeys()
-    //override val identityKeys: List<PublicKey> get() = memberProvidedContext.readAs(PLATFORM_VERSION)
 
     override val platformVersion: Int get() = memberProvidedContext.readAs(PLATFORM_VERSION)
 
