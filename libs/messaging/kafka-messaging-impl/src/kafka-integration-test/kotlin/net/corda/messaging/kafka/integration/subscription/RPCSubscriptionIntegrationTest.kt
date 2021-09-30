@@ -24,24 +24,39 @@ import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.CompletableFutureAssert
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class)
 class RPCSubscriptionIntegrationTest {
 
     private lateinit var rpcConfig: RPCConfig<String, String>
+    private lateinit var rpcConfig2: RPCConfig<String, String>
     private lateinit var rpcSender: RPCSender<String, String>
+    private lateinit var rpcSender2: RPCSender<String, String>
     private lateinit var kafkaConfig: Config
-    private val kafkaProperties = getKafkaProperties()
 
     private companion object {
         const val CLIENT_ID = "integrationTestRPCSender"
+
+        @InjectService(timeout = 4000)
+        lateinit var topicAdmin: KafkaTopicAdmin
+
+        private val kafkaProperties = getKafkaProperties()
+
+        @BeforeAll
+        @JvmStatic
+        fun beforeAll() {
+            topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC_TEMPLATE)
+            topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC_TEMPLATE)
+        }
     }
 
     @InjectService(timeout = 4000)
@@ -49,9 +64,6 @@ class RPCSubscriptionIntegrationTest {
 
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
-
-    @InjectService(timeout = 4000)
-    lateinit var topicAdmin: KafkaTopicAdmin
 
     @BeforeEach
     fun beforeEach() {
@@ -64,82 +76,73 @@ class RPCSubscriptionIntegrationTest {
             .withValue(IntegrationTestProperties.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
     }
 
-//    @Test
-//    fun `create rpc topics, send request, start rpc sub, respond to request`() {
-//        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC_TEMPLATE)
-//        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC_TEMPLATE)
-//
-//        rpcConfig = RPCConfig(CLIENT_ID, CLIENT_ID, TopicTemplates.RPC_TOPIC, String::class.java, String::class.java)
-//        rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
-//
-//        val rpcSub = subscriptionFactory.createRPCSubscription(
-//            rpcConfig, kafkaConfig, TestRPCResponderProcessor()
-//        )
-//
-//        rpcSender.start()
-//        rpcSub.start()
-//        var responseReceived = false
-//        var attempts = 5
-//        while (!responseReceived && attempts > 0) {
-//            attempts--
-//            try {
-//                val future = rpcSender.sendRequest("REQUEST")
-//                Assertions.assertThat(future.getOrThrow()).isEqualTo("RECEIVED and PROCESSED")
-//                responseReceived = true
-//            } catch (ex: CordaRPCAPISenderException) {
-//                Thread.sleep(2000)
-//            }
-//        }
-//
-//        if(!responseReceived) {
-//            fail("Failed to get a response for the request")
-//        }
-//
-//        rpcSender.close()
-//        rpcSub.stop()
-//    }
+    @Test
+    fun `start rpc sender and responder, send message, complete correctly`() {
+        rpcConfig = RPCConfig(CLIENT_ID, CLIENT_ID, TopicTemplates.RPC_TOPIC, String::class.java, String::class.java)
+        rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
 
-//    @Test
-//    fun `create rpc topics, send request, start rpc sub, respond with error`() {
-//        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC_TEMPLATE)
-//        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC_TEMPLATE)
-//
-//        rpcConfig = RPCConfig(CLIENT_ID, CLIENT_ID, TopicTemplates.RPC_TOPIC, String::class.java, String::class.java)
-//        rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
-//
-//        val rpcSub = subscriptionFactory.createRPCSubscription(
-//            rpcConfig, kafkaConfig, TestRPCErrorResponderProcessor()
-//        )
-//
-//        rpcSender.start()
-//        rpcSub.start()
-//        var responseReceived = false
-//        var attempts = 5
-//        while (!responseReceived && attempts > 0) {
-//            attempts--
-//            try {
-//                val future = rpcSender.sendRequest("REQUEST")
-//                future.getOrThrow()
-//            } catch (ex: CordaRPCAPIResponderException) {
-//                responseReceived = true
-//            } catch (ex: CordaRPCAPISenderException) {
-//                Thread.sleep(2000)
-//            }
-//        }
-//
-//        if (!responseReceived) {
-//            fail("Failed to get a response for the request")
-//        }
-//
-//        rpcSender.close()
-//        rpcSub.stop()
-//    }
+        val rpcSub = subscriptionFactory.createRPCSubscription(
+            rpcConfig, kafkaConfig, TestRPCResponderProcessor()
+        )
+
+        rpcSender.start()
+        rpcSub.start()
+        var responseReceived = false
+        var attempts = 5
+        while (!responseReceived && attempts > 0) {
+            attempts--
+            try {
+                val future = rpcSender.sendRequest("REQUEST")
+                Assertions.assertThat(future.getOrThrow()).isEqualTo("RECEIVED and PROCESSED")
+                responseReceived = true
+            } catch (ex: CordaRPCAPISenderException) {
+                Thread.sleep(2000)
+            }
+        }
+
+        if(!responseReceived) {
+            fail("Failed to get a response for the request")
+        }
+
+        rpcSender.close()
+        rpcSub.stop()
+    }
 
     @Test
-    fun `create rpc topics, send request, start rpc sub, respond with cancel`() {
-        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_TOPIC_TEMPLATE)
-        topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC_TEMPLATE)
+    fun `start rpc sender and responder, send message, complete exceptionally`() {
+        rpcConfig = RPCConfig(CLIENT_ID, CLIENT_ID, TopicTemplates.RPC_TOPIC, String::class.java, String::class.java)
+        rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
 
+        val rpcSub = subscriptionFactory.createRPCSubscription(
+            rpcConfig, kafkaConfig, TestRPCErrorResponderProcessor()
+        )
+
+        rpcSender.start()
+        rpcSub.start()
+        var responseReceived = false
+        var attempts = 5
+        while (!responseReceived && attempts > 0) {
+            attempts--
+            try {
+                val future = rpcSender.sendRequest("REQUEST")
+                future.getOrThrow()
+            } catch (ex: CordaRPCAPIResponderException) {
+                responseReceived = true
+            } catch (ex: CordaRPCAPISenderException) {
+                Thread.sleep(2000)
+            }
+        }
+
+        if (!responseReceived) {
+            fail("Failed to get a response for the request")
+        }
+
+        rpcSender.close()
+        rpcSub.stop()
+    }
+
+    @Test
+    fun `start rpc sender and responder, send message, complete with cancellation`() {
         rpcConfig = RPCConfig(CLIENT_ID, CLIENT_ID, TopicTemplates.RPC_TOPIC, String::class.java, String::class.java)
         rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
 
@@ -155,12 +158,11 @@ class RPCSubscriptionIntegrationTest {
             attempts--
             try {
                 val future = rpcSender.sendRequest("REQUEST")
-                eventually(5.seconds, 5.millis) {
-                    assertTrue(future.isCancelled)
-                    responseReceived = true
-                }
+                future.getOrThrow()
             } catch (ex: CordaRPCAPISenderException) {
                 Thread.sleep(2000)
+            } catch (ex: CancellationException) {
+                responseReceived = true
             }
         }
 
@@ -169,6 +171,50 @@ class RPCSubscriptionIntegrationTest {
         }
 
         rpcSender.close()
+        rpcSub.stop()
+    }
+
+    @Test
+    fun `start 2 rpc senders and responder, send message, force repartion`() {
+        rpcConfig = RPCConfig(CLIENT_ID, CLIENT_ID, TopicTemplates.RPC_TOPIC, String::class.java, String::class.java)
+        rpcConfig2 = RPCConfig(
+            "${CLIENT_ID}2",
+            "${CLIENT_ID}2",
+            TopicTemplates.RPC_TOPIC,
+            String::class.java,
+            String::class.java
+        )
+        rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
+        rpcSender2 = publisherFactory.createRPCSender(rpcConfig2, kafkaConfig)
+
+        val processor = TestRPCResponderProcessor()
+
+        val rpcSub = subscriptionFactory.createRPCSubscription(
+            rpcConfig, kafkaConfig, processor
+        )
+
+        rpcSender.start()
+        rpcSender2.start()
+        rpcSub.start()
+        var responseReceived = false
+        var attempts = 5
+        while (!responseReceived && attempts > 0) {
+            attempts--
+            try {
+                val future = rpcSender.sendRequest("REQUEST")
+                Assertions.assertThat(future.getOrThrow()).isEqualTo("RECEIVED and PROCESSED")
+                responseReceived = true
+            } catch (ex: CordaRPCAPISenderException) {
+                Thread.sleep(2000)
+            }
+        }
+
+        if(!responseReceived) {
+            fail("Failed to get a response for the request")
+        }
+
+        rpcSender.close()
+        rpcSender2.close()
         rpcSub.stop()
     }
 

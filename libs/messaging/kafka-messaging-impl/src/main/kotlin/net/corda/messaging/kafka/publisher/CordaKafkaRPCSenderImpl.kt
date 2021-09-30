@@ -159,9 +159,10 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         consumerRecords.forEach {
             val correlationKey = it.record.key()
             val future = futureMap[correlationKey]
+            val responseStatus = it.record.value().responseStatus!!
 
             if (future != null) {
-                when (it.record.value().responseStatus!!) {
+                when (responseStatus) {
                     ResponseStatus.OK -> {
                         val responseBytes = it.record.value().payload
                         val response = deserializer.deserialize("$responseTopic", responseBytes.array())
@@ -179,6 +180,12 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                     }
 
                 }
+            } else {
+                log.info(
+                    "Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}. " +
+                    "There is no future assigned for $correlationKey meaning that this request was orphaned during " +
+                    "a repartition event. The response status for it was $responseStatus"
+                )
             }
         }
     }

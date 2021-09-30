@@ -152,7 +152,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
             future.whenComplete { response, error ->
                 val record: Record<String, RPCResponse>?
                 when {
-                    //TODOs: convert error string to actual error object
+                    //TODOs: include exception type with the message
                     //the order of these is important due to how the futures api is
                     future.isCancelled -> {
                         record = buildRecord(
