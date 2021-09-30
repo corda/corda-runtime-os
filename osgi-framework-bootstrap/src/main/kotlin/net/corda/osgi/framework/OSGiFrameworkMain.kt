@@ -1,5 +1,6 @@
 package net.corda.osgi.framework
 
+import net.corda.osgi.framework.OSGiFrameworkMain.Companion.main
 import net.corda.v5.base.util.contextLogger
 import java.nio.file.Files
 

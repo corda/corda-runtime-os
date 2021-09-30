@@ -14,6 +14,7 @@ import org.osgi.framework.launch.Framework
 import org.osgi.framework.launch.FrameworkFactory
 import java.io.IOException
 import java.nio.file.Path
+import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -76,6 +77,11 @@ class OSGiFrameworkWrap(
          */
         private const val JAR_EXTENSION = ".jar"
 
+        private const val FRAMEWORK_PROPERTIES_RESOURCE = "framework.properties"
+
+        private fun Properties.toStringMap() : Map<String, String> =
+            this.asSequence().associateTo(HashMap()) { it.key.toString() to it.value.toString() }
+
         /**
          * Return a new configured [Framework] loaded from the classpath and having [frameworkFactoryFQN] as
          * Full Qualified Name of the [FrameworkFactory].
@@ -119,11 +125,26 @@ class OSGiFrameworkWrap(
                 Constants.FRAMEWORK_STORAGE to frameworkStorageDir.toString(),
                 Constants.FRAMEWORK_STORAGE_CLEAN to Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT,
                 Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA to systemPackagesExtra
-            )
+            ) + loadOSGiProperties(FRAMEWORK_PROPERTIES_RESOURCE).toStringMap() + System.getProperties().toStringMap()
             if (logger.isDebugEnabled) {
                 configurationMap.forEach { (key, value) -> logger.debug("OSGi property $key = $value.") }
             }
             return frameworkFactory.newFramework(configurationMap)
+        }
+
+        /**
+         * @param resource in the classpath containing a properties file.
+         * @return a [Properties] object.
+         * @throws IOException
+         */
+        private fun loadOSGiProperties(resource: String): Properties {
+            return OSGiFrameworkMain::class.java.classLoader.getResource(resource)?.let { resourceUrl ->
+                resourceUrl.openStream().buffered().use { input ->
+                    val properties = Properties()
+                    properties.load(input)
+                    properties
+                }
+            } ?: Properties()
         }
 
         /**
