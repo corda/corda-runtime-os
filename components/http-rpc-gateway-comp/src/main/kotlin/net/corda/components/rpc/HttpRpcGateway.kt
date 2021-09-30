@@ -19,17 +19,21 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.httprpc.api.PluggableRPCOps
+import net.corda.v5.httprpc.api.RpcOps
 import org.slf4j.Logger
 
 class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 
+@Suppress("LongParameterList")
 class HttpRpcGateway(
     private val lifeCycleCoordinator: LifecycleCoordinator,
     private val configurationReadService: ConfigurationReadService,
     private val httpRpcServerFactory: HttpRpcServerFactory,
     private val rpcSecurityManagerFactory: RPCSecurityManagerFactory,
-    private val sslCertReadServiceFactory: SslCertReadServiceFactory
+    private val sslCertReadServiceFactory: SslCertReadServiceFactory,
+    private val rpcOps: List<PluggableRPCOps<out RpcOps>>
 ) : Lifecycle {
 
     companion object {
@@ -112,7 +116,7 @@ class HttpRpcGateway(
                 )
 
                 server = httpRpcServerFactory.createHttpRpcServer(
-                    rpcOpsImpls = emptyList(),
+                    rpcOpsImpls = rpcOps,
                     rpcSecurityManager = securityManager,
                     httpRpcSettings = httpRpcSettings,
                     devMode = true,
