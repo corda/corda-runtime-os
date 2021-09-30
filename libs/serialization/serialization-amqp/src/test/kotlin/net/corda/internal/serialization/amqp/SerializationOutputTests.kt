@@ -40,14 +40,15 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
+import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.IOException
 import java.io.NotSerializableException
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.security.KeyPairGenerator
-import java.security.PublicKey
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
@@ -96,19 +97,6 @@ object PrivateAckWrapper {
 
 @Timeout(30)
 class SerializationOutputTests {
-
-    private companion object {
-        //val BOB_IDENTITY = TestIdentity(BOB_NAME, 80).identity
-//        val megaCorp = TestIdentity(CordaX500Name("MegaCorp", "London", "GB"))
-//        val miniCorp = TestIdentity(CordaX500Name("MiniCorp", "London", "GB"))
-//        val MEGA_CORP get() = megaCorp.party
-//        val MEGA_CORP_PUBKEY get() = megaCorp.publicKey
-//        val MINI_CORP get() = miniCorp.party
-//        val MINI_CORP_PUBKEY get() = miniCorp.publicKey
-
-        @JvmStatic
-        fun compression() = arrayOf<CordaSerializationEncoding?>(null) + CordaSerializationEncoding.values()
-    }
 
     data class Foo(val bar: String, val pub: Int)
 
@@ -253,6 +241,7 @@ class SerializationOutputTests {
         }
         val des = DeserializationInput(freshDeserializationFactory)
         val desObj = des.deserialize(bytes, withSerializationContext.withEncodingWhitelist(encodingWhitelist))
+        assertEquals(obj, desObj)
         assertTrue(deepEquals(obj, desObj) == expectedEqual)
 
         // Now repeat with a re-used factory
@@ -519,19 +508,25 @@ class SerializationOutputTests {
     @Test
     fun `test custom serializers on public key`() {
 
+        // Generate new key for testing
         val publicKey = KeyPairGenerator.getInstance("RSA").genKeyPair().public
-        val cipherSchemeMetadata: CipherSchemeMetadata = org.mockito.kotlin.mock<CipherSchemeMetadata>().also {
-            whenever(it.decodePublicKey(eq("1".encodeToByteArray()))).thenReturn(publicKey)
+
+        // Setup PublicKeySerializer with mock CipherSchemeMetadata
+        val cipherSchemeMetadata: CipherSchemeMetadata = mock<CipherSchemeMetadata>().also {
+            whenever(it.decodePublicKey(eq(publicKey.encoded))).thenReturn(publicKey)
         }
         val publicKeySerializer = PublicKeySerializer(cipherSchemeMetadata)
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(publicKeySerializer)
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(publicKeySerializer)
-        val obj = mock(PublicKey::class.java).also {
-            whenever(it.encoded).thenReturn("1".encodeToByteArray())
-        }
-        serdes(obj, factory, factory2)
+
+        // Build serialization factory
+        val serializerFactory = SerializerFactoryBuilder.build(AllWhitelist)
+        serializerFactory.register(publicKeySerializer)
+
+        // Build deserialization factory
+        val freshDeserializationFactory = SerializerFactoryBuilder.build(AllWhitelist)
+        freshDeserializationFactory.register(publicKeySerializer)
+
+        // Run public key through serialization/deserialization and compare
+        serdes(publicKey, serializerFactory, freshDeserializationFactory)
     }
 
     @Test
