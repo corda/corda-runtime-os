@@ -13,6 +13,7 @@ import net.corda.internal.serialization.encodingNotPermittedFormat
 import net.corda.v5.application.flows.FlowException
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.serialization.EncodingWhitelist
 import net.corda.v5.serialization.SerializationContext
@@ -27,6 +28,7 @@ import org.apache.qpid.proton.amqp.UnsignedLong
 import org.apache.qpid.proton.amqp.UnsignedShort
 import org.apache.qpid.proton.codec.DecoderImpl
 import org.apache.qpid.proton.codec.EncoderImpl
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -475,33 +477,32 @@ class SerializationOutputTests {
         }
     }
 
-//    @Test
-//    fun `class constructor is invoked on deserialisation`() {
-//        compression == null || return // Manipulation of serialized bytes is invalid if they're compressed.
-//        val serializerFactory = SerializerFactoryBuilder.build(AllWhitelist)
-//        val ser = SerializationOutput(serializerFactory)
-//        val des = DeserializationInput(serializerFactory)
-//        val serialisedOne = ser.serialize(NonZeroByte(1), compression).bytes
-//        val serialisedTwo = ser.serialize(NonZeroByte(2), compression).bytes
-//
-//        // Find the index that holds the value byte
-//        val valueIndex = serialisedOne.zip(serialisedTwo).mapIndexedNotNull { index, (oneByte, twoByte) ->
-//            if (oneByte.toInt() == 1 && twoByte.toInt() == 2) index else null
-//        }.single()
-//
-//        val copy = serialisedTwo.clone()
-//
-//        // Double check
-//        copy[valueIndex] = 0x03
-//        assertThat(des.deserialize(OpaqueBytes(copy),
-//        NonZeroByte::class.java, testSerializationContext.withEncodingWhitelist(encodingWhitelist)).value).isEqualTo(3)
-//
-//        // Now use the forbidden value
-//        copy[valueIndex] = 0x00
-//        assertThatExceptionOfType(NotSerializableException::class.java).isThrownBy {
-//            des.deserialize(OpaqueBytes(copy), NonZeroByte::class.java, testSerializationContext.withEncodingWhitelist(encodingWhitelist))
-//        }.withStackTraceContaining("Zero not allowed")
-//    }
+    @Test
+    fun `class constructor is invoked on deserialisation`() {
+        val serializerFactory = SerializerFactoryBuilder.build(AllWhitelist)
+        val ser = SerializationOutput(serializerFactory)
+        val des = DeserializationInput(serializerFactory)
+        val serialisedOne = ser.serialize(NonZeroByte(1)).bytes
+        val serialisedTwo = ser.serialize(NonZeroByte(2)).bytes
+
+        // Find the index that holds the value byte
+        val valueIndex = serialisedOne.zip(serialisedTwo).mapIndexedNotNull { index, (oneByte, twoByte) ->
+            if (oneByte.toInt() == 1 && twoByte.toInt() == 2) index else null
+        }.single()
+
+        val copy = serialisedTwo.clone()
+
+        // Double check
+        copy[valueIndex] = 0x03
+        assertThat(des.deserialize(OpaqueBytes(copy),
+        NonZeroByte::class.java, testSerializationContext.withEncodingWhitelist(encodingWhitelist)).value).isEqualTo(3)
+
+        // Now use the forbidden value
+        copy[valueIndex] = 0x00
+        assertThatExceptionOfType(NotSerializableException::class.java).isThrownBy {
+            des.deserialize(OpaqueBytes(copy), NonZeroByte::class.java, testSerializationContext.withEncodingWhitelist(encodingWhitelist))
+        }.withStackTraceContaining("Zero not allowed")
+    }
 
     @Test
     fun `test custom serializers on public key`() {
