@@ -12,16 +12,23 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
 
+    implementation "info.picocli:picocli:$picocliVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
     implementation project(":osgi-framework-api")
 
+    implementation project(":libs:db:db-core")
+    implementation project(":libs:db:db-admin")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
 
+    implementation project(":components:examples:persistence:cluster-admin")
+
+    runtimeOnly project(":libs:db:db-admin-impl")
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
@@ -30,5 +37,15 @@ dependencies {
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    // TODO: why do I need to specify these? (Not needed when running OSGi integration test)
+//    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
+//    runtimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
+    // huh?
+    runtimeOnly "com.sun.activation:javax.activation:1.2.0"
+    runtimeOnly "javax.interceptor:javax.interceptor-api:1.2"
+
 }
 

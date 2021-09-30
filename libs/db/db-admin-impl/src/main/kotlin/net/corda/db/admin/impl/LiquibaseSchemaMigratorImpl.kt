@@ -9,10 +9,12 @@ import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.v5.base.util.contextLogger
+import org.osgi.service.component.annotations.Component
 import java.io.Writer
 import java.sql.Connection
 import java.util.UUID
 
+@Component(service = [LiquibaseSchemaMigrator::class])
 class LiquibaseSchemaMigratorImpl(
     private val liquibaseFactory: (
         changeLogFile: String,

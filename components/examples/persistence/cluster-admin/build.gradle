@@ -1,0 +1,23 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation 'net.corda:corda-base'
+    // TODO: remove snapshot
+    implementation 'net.corda:avro-schema:5.0.0.10-SNAPSHOT'
+
+    implementation project(":libs:db:db-admin")
+    implementation project(":libs:db:db-admin-impl")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:lifecycle:lifecycle")
+}
+
+description 'Cluster Admin Component'

@@ -1,5 +1,10 @@
 package net.corda.applications.examples.persistence
 
+import com.typesafe.config.ConfigFactory
+import net.corda.components.examples.persistence.cluster.admin.RunClusterAdminEventSubscription
+import net.corda.components.examples.persistence.cluster.admin.processor.ClusterAdminEventProcessor
+import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -26,7 +31,9 @@ class DemoApp @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-)  : Application {
+    @Reference(service = LiquibaseSchemaMigrator::class)
+    private val schemaMigrator: LiquibaseSchemaMigrator,
+) : Application {
 
     companion object {
         val log: Logger = contextLogger()
@@ -44,6 +51,19 @@ class DemoApp @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
+            var clusterAdminEventSub: RunClusterAdminEventSubscription? = null
+
+            val config = ConfigFactory.parseMap(
+                mapOf(
+                    ConfigConstants.KAFKA_BOOTSTRAP_SERVER to parameters.kafka,
+                    ConfigConstants.TOPIC_PREFIX_CONFIG_KEY to ConfigConstants.TOPIC_PREFIX
+                )
+            )
+            val dbSource = PostgresDataSourceFactory().create(
+                parameters.dbUrl,
+                parameters.dbUser,
+                parameters.dbPass)
+
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
                 coordinatorFactory.createCoordinator<DemoApp>(
@@ -52,9 +72,18 @@ class DemoApp @Activate constructor(
                     when (event) {
                         is StartEvent -> {
                             consoleLogger.info("Starting kafka subscriptions from ${parameters.kafka}")
-
+                            clusterAdminEventSub = RunClusterAdminEventSubscription(
+                                subscriptionFactory,
+                                config,
+                                1,
+                                dbSource.connection,
+                                schemaMigrator,
+                                consoleLogger,
+                            )
+                            clusterAdminEventSub?.start()
                         }
                         is StopEvent -> {
+                            clusterAdminEventSub?.stop()
                         }
                         else -> {
                             log.error("$event unexpected!")
@@ -62,7 +91,7 @@ class DemoApp @Activate constructor(
                     }
                 }
             log.info("Starting life cycle coordinator")
-            lifeCycleCoordinator!!.start()
+            lifeCycleCoordinator?.start()
             consoleLogger.info("Demo application started")
         }
     }
@@ -80,6 +109,26 @@ class CliParameters {
         description = ["Kafka broker"]
     )
     var kafka: String = "kafka:9092"
+
+    // TODO: cluster DB config should maybe be taken from the Kafka message instead of passed in?
+    @CommandLine.Option(
+        names = ["-j", "--jdbc-url"],
+        paramLabel = "JDBC URL",
+        description = ["JDBC URL for cluster db"]
+    )
+    var dbUrl: String = "jdbc:postgresql://cluster-db:5432/cordacluster"
+    @CommandLine.Option(
+        names = ["-u", "--db-user"],
+        paramLabel = "DB USER",
+        description = ["Cluster DB username"]
+    )
+    var dbUser: String = "user"
+    @CommandLine.Option(
+        names = ["-p", "--db-password"],
+        paramLabel = "DB PASSWORD",
+        description = ["Cluster DB password"]
+    )
+    var dbPass: String = "password"
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false
