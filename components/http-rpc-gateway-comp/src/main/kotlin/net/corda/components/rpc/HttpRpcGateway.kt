@@ -5,10 +5,12 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.security.read.RPCSecurityManager
 import net.corda.httprpc.security.read.RPCSecurityManagerFactory
 import net.corda.httprpc.server.HttpRpcServer
+import net.corda.httprpc.server.config.models.AzureAdSettings
 import net.corda.httprpc.server.config.models.HttpRpcContext
 import net.corda.httprpc.server.config.models.HttpRpcSSLSettings
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.config.models.HttpRpcSettings.Companion.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+import net.corda.httprpc.server.config.models.SsoSettings
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
 import net.corda.httprpc.ssl.SslCertReadService
 import net.corda.httprpc.ssl.SslCertReadServiceFactory
@@ -21,7 +23,6 @@ import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.httprpc.api.PluggableRPCOps
 import net.corda.v5.httprpc.api.RpcOps
-import org.slf4j.Logger
 
 class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
@@ -37,12 +38,16 @@ class HttpRpcGateway(
 ) : Lifecycle {
 
     companion object {
-        private val log: Logger = contextLogger()
-        const val MESSAGING_CONFIG: String = "corda.messaging"
-        const val RPC_CONFIG: String = "corda.rpc"
-        const val RPC_ADDRESS_CONFIG: String = "address"
-        const val RPC_DESCRIPTION_CONFIG: String = "context.description"
-        const val RPC_TITLE_CONFIG: String = "context.title"
+        private val log = contextLogger()
+        const val MESSAGING_CONFIG = "corda.messaging"
+        const val RPC_CONFIG = "corda.rpc"
+        const val RPC_ADDRESS_CONFIG = "address"
+        const val RPC_DESCRIPTION_CONFIG = "context.description"
+        const val RPC_TITLE_CONFIG = "context.title"
+        const val MAX_CONTENT_LENGTH_CONFIG = "maxContentLength"
+        const val AZURE_CLIENT_ID_CONFIG = "sso.azureAd.clientId"
+        const val AZURE_TENANT_ID_CONFIG = "sso.azureAd.tenantId"
+        const val AZURE_CLIENT_SECRET_CONFIG = "sso.azureAd.clientSecret"
     }
 
     private var receivedSnapshot = false
@@ -107,17 +112,18 @@ class HttpRpcGateway(
                 it.getOrCreateKeyStore()
             }
 
-            val httpRpcSettings = HttpRpcSettings(
-                address = NetworkHostAndPort.parse(currentConfigurationSnapshot[RPC_CONFIG]!!.getString(RPC_ADDRESS_CONFIG)),
+            val configSnapshot = currentConfigurationSnapshot[RPC_CONFIG]!!
+                val httpRpcSettings = HttpRpcSettings(
+                    address = NetworkHostAndPort.parse(configSnapshot.getString(RPC_ADDRESS_CONFIG)),
                 context = HttpRpcContext(
                     version = "1",
                     basePath = "/api",
-                    description = currentConfigurationSnapshot[RPC_CONFIG]!!.getString(RPC_DESCRIPTION_CONFIG),
-                    title = currentConfigurationSnapshot[RPC_CONFIG]!!.getString(RPC_TITLE_CONFIG)
+                    description = configSnapshot.getString(RPC_DESCRIPTION_CONFIG),
+                    title = configSnapshot.getString(RPC_TITLE_CONFIG)
                 ),
                 ssl = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password),
-                sso = null,
-                maxContentLength = MAX_CONTENT_LENGTH_DEFAULT_VALUE
+                sso = configSnapshot.retrieveSsoOptions(),
+                maxContentLength = configSnapshot.retrieveMaxContentLength()
             )
 
             server = httpRpcServerFactory.createHttpRpcServer(
@@ -130,10 +136,38 @@ class HttpRpcGateway(
         }
     }
 
+    private fun Config.retrieveSsoOptions(): SsoSettings? {
+        return if(!hasPath(AZURE_CLIENT_ID_CONFIG) || !hasPath(AZURE_TENANT_ID_CONFIG)) {
+            null
+        } else {
+            val clientId = getString(AZURE_CLIENT_ID_CONFIG)
+            val tenantId = getString(AZURE_TENANT_ID_CONFIG)
+            val clientSecret = AZURE_CLIENT_SECRET_CONFIG.let {
+                if (hasPath(it)) {
+                    getString(it)
+                } else null
+            }
+            SsoSettings(AzureAdSettings(clientId, clientSecret, tenantId))
+        }
+    }
+
+    private fun Config.retrieveMaxContentLength(): Int {
+        return if (hasPath(MAX_CONTENT_LENGTH_CONFIG)) {
+            getInt(MAX_CONTENT_LENGTH_CONFIG)
+        } else {
+            MAX_CONTENT_LENGTH_DEFAULT_VALUE
+        }
+    }
+
     override fun stop() {
         sub?.close()
         sub = null
         server?.close()
         server = null
+        configurationReadService.stop()
+        securityManager?.stop()
+        securityManager = null
+        sslCertReadService?.stop()
+        sslCertReadService = null
     }
 }

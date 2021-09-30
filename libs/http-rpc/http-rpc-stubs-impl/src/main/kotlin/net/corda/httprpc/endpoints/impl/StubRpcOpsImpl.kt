@@ -1,5 +1,6 @@
 package net.corda.httprpc.endpoints.impl
 
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.httprpc.api.PluggableRPCOps
 import net.corda.v5.httprpc.api.RpcOps
@@ -26,7 +27,8 @@ class StubRpcOpsImpl : StubRpcOps, PluggableRPCOps<StubRpcOps>, RpcOps {
     override val protocolVersion = 1
 
     override fun ping(): String {
-        log.info("Pinged")
-        return "Pinged"
+        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val principal = rpcContext.principal
+        return "Pinged by $principal".also { log.info(it) }
     }
 }
