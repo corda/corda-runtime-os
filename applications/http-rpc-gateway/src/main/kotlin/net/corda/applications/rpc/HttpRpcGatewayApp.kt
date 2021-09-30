@@ -83,7 +83,7 @@ class HttpRpcGatewayApp @Activate constructor(
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
             var httpRpcGateway: HttpRpcGateway? = null
             log.info("Creating life cycle coordinator")
-            lifeCycleCoordinator =
+            val localLifeCycleCoordinator =
                 coordinatorFactory.createCoordinator<HttpRpcGatewayApp> { event: LifecycleEvent, _: LifecycleCoordinator ->
                     log.info("LifecycleEvent received: $event")
                     when (event) {
@@ -91,6 +91,7 @@ class HttpRpcGatewayApp @Activate constructor(
                             consoleLogger.info("Starting HTTP RPC Gateway")
                             state = LifeCycleState.STARTING
                             httpRpcGateway?.start(bootstrapConfig)
+                            consoleLogger.info("HTTP RPC Gateway application started")
                         }
                         is ConfigReceivedEvent -> {
                             if (state == LifeCycleState.STARTING) {
@@ -115,16 +116,13 @@ class HttpRpcGatewayApp @Activate constructor(
                 }
 
             httpRpcGateway = HttpRpcGateway(
-                lifeCycleCoordinator!!,
-                configurationReadService,
-                httpRpcServerFactory,
+                localLifeCycleCoordinator, configurationReadService, httpRpcServerFactory,
                 rpcSecurityManagerFactory
             )
 
-
             log.info("Starting life cycle coordinator")
-            lifeCycleCoordinator!!.start()
-            consoleLogger.info("HTTP RPC Gateway application started")
+            localLifeCycleCoordinator.start()
+            lifeCycleCoordinator = localLifeCycleCoordinator
         }
     }
 
