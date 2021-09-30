@@ -28,18 +28,16 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.delivery.HeartbeatManagerImpl
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAuthenticatedMessageAndKey
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.Companion.getSessionKeyFromMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.p2p.linkmanager.utilities.MockHeartbeatManager
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
+import net.corda.p2p.linkmanager.utilities.MockSessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
@@ -53,7 +51,6 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -240,22 +237,22 @@ class LinkManagerTest {
         return listener
     }
 
-    @Test
-    fun `PendingSessionsMessageQueues queueMessage returns true if a new session is needed`() {
-        val message = AuthenticatedMessageAndKey(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0-0", MESSAGE_ID), KEY)
-
-        val key1 = SessionKey(FIRST_SOURCE.toHoldingIdentity(), FIRST_DEST.toHoldingIdentity())
-        val key2 = SessionKey(SECOND_SOURCE.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity())
-
-        val mockPublisherFactory = Mockito.mock(PublisherFactory::class.java)
-        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, Mockito.mock(HeartbeatManagerImpl::class.java))
-        assertTrue(queue.queueMessage(message, key1))
-        assertFalse(queue.queueMessage(message, key1))
-
-        assertTrue(queue.queueMessage(message, key2))
-        assertFalse(queue.queueMessage(message, key2))
-        assertFalse(queue.queueMessage(message, key2))
-    }
+//    @Test
+//    fun `PendingSessionsMessageQueues queueMessage returns true if a new session is needed`() {
+//        val message = AuthenticatedMessageAndKey(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0-0", MESSAGE_ID), KEY)
+//
+//        val key1 = SessionKey(FIRST_SOURCE.toHoldingIdentity(), FIRST_DEST.toHoldingIdentity())
+//        val key2 = SessionKey(SECOND_SOURCE.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity())
+//
+//        val mockPublisherFactory = Mockito.mock(PublisherFactory::class.java)
+//        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory)
+//        assertTrue(queue.queueMessage(message, key1))
+//        assertFalse(queue.queueMessage(message, key1))
+//
+//        assertTrue(queue.queueMessage(message, key2))
+//        assertFalse(queue.queueMessage(message, key2))
+//        assertFalse(queue.queueMessage(message, key2))
+//    }
 
     @Test
     fun `PendingSessionsMessageQueues sessionNegotiatedCallback sends the correct queued messages to the Publisher`() {
@@ -267,7 +264,6 @@ class LinkManagerTest {
         val payload5 = ByteBuffer.wrap("1-3".toByteArray())
 
         val messageIds = listOf("Id1", "Id2", "Id3", "Id4", "Id5")
-
 
         val message1 = authenticatedMessageAndKey(FIRST_SOURCE, FIRST_DEST, payload1, messageIds[0])
         val message2 = authenticatedMessageAndKey(FIRST_SOURCE, FIRST_DEST, payload2, messageIds[1])
@@ -287,46 +283,42 @@ class LinkManagerTest {
         Mockito.`when`(mockNetworkMap.getMemberInfo(any())).thenReturn(FIRST_DEST_MEMBER_INFO)
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
 
-        val heartbeatManager = MockHeartbeatManager()
+        val sessionManager = MockSessionManager()
 
-        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, heartbeatManager)
+        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory)
 
-        assertTrue(queue.queueMessage(message1, key1))
-        assertFalse(queue.queueMessage(message2, key1))
+        queue.queueMessage(message1, key1)
+        queue.queueMessage(message2, key1)
 
-        assertTrue(queue.queueMessage(message3, key2))
-        assertFalse(queue.queueMessage(message4, key2))
-        assertFalse(queue.queueMessage(message5, key2))
+        queue.queueMessage(message3, key2)
+        queue.queueMessage(message4, key2)
+        queue.queueMessage(message5, key2)
 
         queue.start()
         // Session is ready for messages 3, 4, 5
         val sessionPair = createSessionPair()
-        queue.sessionNegotiatedCallback(key2, sessionPair.initiatorSession, mockNetworkMap)
-        assertEquals(publisher.list.size, 3)
-        assertEquals(payload3, extractPayload(sessionPair.responderSession, publisher.list[0].value as LinkOutMessage))
-        assertEquals(payload4, extractPayload(sessionPair.responderSession, publisher.list[1].value as LinkOutMessage))
-        assertEquals(payload5, extractPayload(sessionPair.responderSession, publisher.list[2].value as LinkOutMessage))
+        queue.sessionNegotiatedCallback(sessionManager, key2, sessionPair.initiatorSession, mockNetworkMap)
+        assertThat(publisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
+            .hasSize(3).containsExactlyInAnyOrder(payload3, payload4, payload5)
+
         publisher.list = mutableListOf()
-
         // Session is ready for messages 1, 2
-        queue.sessionNegotiatedCallback(key1, sessionPair.initiatorSession, mockNetworkMap)
-        assertEquals(publisher.list.size, 2)
-        assertEquals(payload1, extractPayload(sessionPair.responderSession, publisher.list[0].value as LinkOutMessage))
-        assertEquals(payload2, extractPayload(sessionPair.responderSession, publisher.list[1].value as LinkOutMessage))
+        queue.sessionNegotiatedCallback(sessionManager, key1, sessionPair.initiatorSession, mockNetworkMap)
+        assertThat(publisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
+            .hasSize(2).containsExactlyInAnyOrder(payload1, payload2)
 
-        assertEquals(messageIds.size, heartbeatManager.addedMessages.size)
+        assertEquals(messageIds.size, sessionManager.addedMessages.size)
         for (i in 0 until 2) {
-            assertTrue(heartbeatManager.addedMessages.keys.contains(messageIds[i]))
-            assertEquals(FIRST_SOURCE.toHoldingIdentity(), heartbeatManager.addedMessages[messageIds[i]]!!.key.ourId)
-            assertEquals(FIRST_DEST.toHoldingIdentity(), heartbeatManager.addedMessages[messageIds[i]]!!.key.responderId)
+            assertTrue(sessionManager.addedMessages.keys.contains(messageIds[i]))
+            assertEquals(FIRST_SOURCE.toHoldingIdentity(), sessionManager.addedMessages[messageIds[i]]!!.key.ourId)
+            assertEquals(FIRST_DEST.toHoldingIdentity(), sessionManager.addedMessages[messageIds[i]]!!.key.responderId)
         }
 
         for (i in 2 until 4) {
-            assertTrue(heartbeatManager.addedMessages.keys.contains(messageIds[i]))
-            assertEquals(SECOND_SOURCE.toHoldingIdentity(), heartbeatManager.addedMessages[messageIds[i]]!!.key.ourId)
-            assertEquals(SECOND_DEST.toHoldingIdentity(), heartbeatManager.addedMessages[messageIds[i]]!!.key.responderId)
+            assertTrue(sessionManager.addedMessages.keys.contains(messageIds[i]))
+            assertEquals(SECOND_SOURCE.toHoldingIdentity(), sessionManager.addedMessages[messageIds[i]]!!.key.ourId)
+            assertEquals(SECOND_DEST.toHoldingIdentity(), sessionManager.addedMessages[messageIds[i]]!!.key.responderId)
         }
-
     }
 
     @Test
@@ -336,7 +328,6 @@ class LinkManagerTest {
             hostingMap,
             netMap,
             assignedListener(listOf(1)),
-            Mockito.mock(HeartbeatManagerImpl::class.java)
         )
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
@@ -373,7 +364,6 @@ class LinkManagerTest {
             hostingMap,
             netMap,
             assignedListener(listOf(1)),
-            Mockito.mock(HeartbeatManagerImpl::class.java)
         )
         val payload = "test"
         val unauthenticatedMsg = UnauthenticatedMessage(
@@ -396,7 +386,6 @@ class LinkManagerTest {
         val processor = LinkManager.OutboundMessageProcessor(
             Mockito.mock(SessionManagerImpl::class.java),
             hostingMap, netMap, assignedListener(listOf(1)),
-            Mockito.mock(HeartbeatManagerImpl::class.java)
         )
         val payload = "test"
         val unauthenticatedMsg = UnauthenticatedMessage(
@@ -424,7 +413,6 @@ class LinkManagerTest {
             hostingMap,
             netMap,
             assignedListener(listOf(1)),
-            Mockito.mock(HeartbeatManagerImpl::class.java)
         )
 
         val numberOfMessages = 3
@@ -460,7 +448,6 @@ class LinkManagerTest {
 
         val processor = LinkManager.OutboundMessageProcessor(
             mockSessionManager, hostingMap, netMap, assignedListener(inboundSubscribedTopics),
-            Mockito.mock(HeartbeatManagerImpl::class.java)
         )
         val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
         val records = processor.onNext(messages)
@@ -487,15 +474,13 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
 
         val state = SessionManager.SessionState.SessionEstablished(createSessionPair().initiatorSession)
-        Mockito.`when`(mockSessionManager.processOutboundFlowMessage(any())).thenReturn(state)
-        val heartbeatManager = MockHeartbeatManager()
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(state)
 
         val processor = LinkManager.OutboundMessageProcessor(
             mockSessionManager,
             hostingMap,
             netMap,
             assignedListener(listOf(1)),
-            heartbeatManager
         )
         val messageIds = listOf("Id1", "Id2", "Id3")
 
@@ -548,12 +533,6 @@ class LinkManagerTest {
         assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.extracting<String> { it.key as String }
             .containsExactly(*messageIds.toTypedArray())
 
-        assertEquals(messages.size, heartbeatManager.addedMessages.size)
-        for (i in messages.indices) {
-            assertTrue(heartbeatManager.addedMessages.keys.contains(messageIds[i]))
-            assertEquals(FIRST_SOURCE.toHoldingIdentity(), heartbeatManager.addedMessages[messageIds[i]]!!.key.ourId)
-            assertEquals(FIRST_DEST.toHoldingIdentity(), heartbeatManager.addedMessages[messageIds[i]]!!.key.responderId)
-        }
     }
 
     @Test
@@ -566,7 +545,6 @@ class LinkManagerTest {
             hostingMap,
             netMap,
             assignedListener(listOf(1)),
-            Mockito.mock(HeartbeatManagerImpl::class.java)
         )
         val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
         val records = processor.onNext(messages)
@@ -588,14 +566,12 @@ class LinkManagerTest {
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(mockNetworkMap.getMemberInfo(FIRST_SOURCE.toHoldingIdentity())).thenReturn(FIRST_DEST_MEMBER_INFO)
         Mockito.`when`(mockNetworkMap.getMemberInfo(FIRST_DEST.toHoldingIdentity())).thenReturn(null)
-        val heartbeatManager = MockHeartbeatManager()
 
         val processor = LinkManager.OutboundMessageProcessor(
             mockSessionManager,
             hostingMap,
             mockNetworkMap,
             assignedListener(listOf(1)),
-            heartbeatManager
         )
         val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0))
         val records = processor.onNext(messages)
@@ -606,11 +582,6 @@ class LinkManagerTest {
             .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
             .extracting<AppMessageMarker> { it.value as AppMessageMarker }
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
-
-        assertEquals(1, heartbeatManager.addedMessages.size)
-        assertTrue(heartbeatManager.addedMessages.keys.contains(MESSAGE_ID))
-        assertEquals(FIRST_SOURCE.toHoldingIdentity(), heartbeatManager.addedMessages[MESSAGE_ID]!!.key.ourId)
-        assertEquals(FIRST_DEST.toHoldingIdentity(), heartbeatManager.addedMessages[MESSAGE_ID]!!.key.responderId)
     }
 
     @Test
@@ -625,7 +596,6 @@ class LinkManagerTest {
         val processor = LinkManager.InboundMessageProcessor(
             mockSessionManager,
             Mockito.mock(LinkManagerNetworkMap::class.java),
-            Mockito.mock(HeartbeatManagerImpl::class.java)
         )
         val messages = listOf(
             EventLogRecord(TOPIC, KEY, LinkInMessage(mockMessage), 0, 0),
@@ -658,7 +628,7 @@ class LinkManagerTest {
             SessionManager.SessionDirection.Inbound(session.responderSession)
         )
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, Mockito.mock(HeartbeatManagerImpl::class.java))
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
 
         val records = processor.onNext(messages)
         assertThat(records).filteredOn { it.value is AppMessage }.hasSize(messages.size)
@@ -710,12 +680,11 @@ class LinkManagerTest {
         val linkOutMessage = linkOutMessageFromAck(MessageAck(MESSAGE_ID), FIRST_SOURCE, FIRST_DEST, session.initiatorSession, netMap)
         val message = LinkInMessage(linkOutMessage?.payload)
 
-        val heartbeatManager = MockHeartbeatManager()
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any()))
             .thenReturn(SessionManager.SessionDirection.Outbound(session.responderSession))
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, heartbeatManager)
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
         val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, message, 0, 0)))
 
         assertThat(records).hasSize(1)
@@ -724,9 +693,6 @@ class LinkManagerTest {
             .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
             .extracting<AppMessageMarker> { it.value as AppMessageMarker }
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerReceivedMarker::class.java) }
-
-        assertEquals(1, heartbeatManager.ackedMessages.size)
-        assertEquals(MESSAGE_ID, heartbeatManager.ackedMessages.single())
     }
 
     @Test
@@ -753,8 +719,7 @@ class LinkManagerTest {
         Mockito.`when`(networkMapAfterRemoval.getMemberInfo(FIRST_SOURCE.toHoldingIdentity())).thenReturn(null)
         val processor = LinkManager.InboundMessageProcessor(
             mockSessionManager,
-            networkMapAfterRemoval,
-            Mockito.mock(HeartbeatManagerImpl::class.java)
+            networkMapAfterRemoval
         )
 
         val records = processor.onNext(messages)
@@ -786,7 +751,7 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any())).thenReturn(SessionManager.SessionDirection.NoSession)
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, Mockito.mock(HeartbeatManagerImpl::class.java))
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
 
         val records = processor.onNext(messages)
         assertEquals(records.size, 0)
@@ -814,7 +779,7 @@ class LinkManagerTest {
             SessionManager.SessionDirection.Outbound(session.responderSession)
         )
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, Mockito.mock(HeartbeatManagerImpl::class.java))
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
 
         val records = processor.onNext(messages)
         assertEquals(records.size, 0)
@@ -828,13 +793,13 @@ class LinkManagerTest {
         val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val linkOutMessage = linkOutMessageFromAck(MessageAck(MESSAGE_ID), FIRST_SOURCE, FIRST_DEST, session.initiatorSession, netMap)
         val message = LinkInMessage(linkOutMessage?.payload)
-        val heartbeatManager = MockHeartbeatManager()
+        val heartbeatManager = MockSessionManager()
 
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any()))
             .thenReturn(SessionManager.SessionDirection.Inbound(session.responderSession))
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, heartbeatManager)
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
         val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, message, 0, 0)))
         assertEquals(records.size, 0)
 

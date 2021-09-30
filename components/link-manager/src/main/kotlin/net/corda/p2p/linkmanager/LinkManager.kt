@@ -27,8 +27,6 @@ import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
-import net.corda.p2p.linkmanager.delivery.HeartbeatManager
-import net.corda.p2p.linkmanager.delivery.HeartbeatManagerImpl
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
@@ -85,25 +83,17 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private val inboundMessageSubscription: Subscription<String, LinkInMessage>
     private val inboundAssignmentListener = InboundAssignmentListener()
 
-
-    private val heartbeatManager = HeartbeatManagerImpl(
-        publisherFactory,
-        linkManagerNetworkMap,
-        Duration.ofSeconds(config.heartbeatMessagePeriodSecs),
-        Duration.ofSeconds(config.sessionTimeoutSecs)
-    )
-
-    private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory, heartbeatManager)
+    private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory)
     private val sessionReplayer: InMemorySessionReplayer =
         InMemorySessionReplayer(Duration.ofSeconds(config.messageReplayPeriodSecs), publisherFactory, linkManagerNetworkMap)
 
     private val sessionManager: SessionManager = SessionManagerImpl(
-        SessionManagerImpl.ParametersForSessionNegotiation(config.maxMessageSize, config.protocolModes),
         linkManagerNetworkMap,
         linkManagerCryptoService,
         messagesPendingSession,
         sessionReplayer,
-        heartbeatManager
+        publisherFactory,
+        config
     )
 
     private val deliveryTracker: DeliveryTracker
@@ -115,7 +105,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             linkManagerHostingMap,
             linkManagerNetworkMap,
             inboundAssignmentListener,
-            heartbeatManager
         )
 
         outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
@@ -126,7 +115,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         val inboundMessageSubscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, 1)
         inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             inboundMessageSubscriptionConfig,
-            InboundMessageProcessor(sessionManager, linkManagerNetworkMap, heartbeatManager),
+            InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
             partitionAssignmentListener = inboundAssignmentListener
         )
         deliveryTracker = DeliveryTracker(
@@ -139,14 +128,15 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     override fun start() {
         startStopLock.withLock {
             if (!running) {
+                messagesPendingSession.start()
                 sessionReplayer.start()
+                sessionManager.start()
                 inboundMessageSubscription.start()
                 /*We must wait for partitions to be assigned to the inbound subscription before we can start the outbound
                 *subscription otherwise the gateway won't know which partition to route message back to.*/
                 inboundAssignmentListener.awaitFirstAssignment()
                 deliveryTracker.start()
                 outboundMessageSubscription.start()
-                heartbeatManager.start()
                 running = true
             }
         }
@@ -155,11 +145,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     override fun stop() {
         startStopLock.withLock {
             if (running) {
-                sessionReplayer.stop()
-                inboundMessageSubscription.stop()
                 outboundMessageSubscription.stop()
                 deliveryTracker.stop()
-                heartbeatManager.stop()
+                inboundMessageSubscription.stop()
+                sessionManager.stop()
+                sessionReplayer.stop()
+                messagesPendingSession.stop()
                 running = false
             }
         }
@@ -173,12 +164,28 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private val linkManagerHostingMap: LinkManagerHostingMap,
         private val networkMap: LinkManagerNetworkMap,
         private val inboundAssignmentListener: InboundAssignmentListener,
-        private val heartbeatManager: HeartbeatManager
     ) : EventLogProcessor<String, AppMessage> {
 
         override val keyClass = String::class.java
         override val valueClass = AppMessage::class.java
         private var logger = LoggerFactory.getLogger(this::class.java.name)
+
+        companion object {
+            fun recordsForSessionEstablished(
+                sessionManager: SessionManager,
+                networkMap: LinkManagerNetworkMap,
+                session: Session,
+                messageAndKey: AuthenticatedMessageAndKey
+            ): List<Record<String, *>> {
+                val records = mutableListOf<Record<String, *>>()
+                val key = generateKey()
+                sessionManager.messageSent(messageAndKey, session)
+                linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, networkMap)?. let {
+                    records.add(Record(Schema.LINK_OUT_TOPIC, key, it))
+                }
+                return records
+            }
+        }
 
         override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
             val records = mutableListOf<Record<String, *>>()
@@ -253,20 +260,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             state: SessionState.SessionEstablished,
             messageAndKey: AuthenticatedMessageAndKey
         ): List<Record<String, *>> {
-            val records = mutableListOf<Record<String, *>>()
-            val key = generateKey()
-            heartbeatManager.messageSent(
-                messageAndKey.message.header.messageId,
-                SessionKey(
-                    messageAndKey.message.header.source.toHoldingIdentity(),
-                    messageAndKey.message.header.destination.toHoldingIdentity()
-                ),
-                state.session,
-            )
-            linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, state.session, networkMap)?. let {
-                records.add(Record(Schema.LINK_OUT_TOPIC, key, it))
-            }
-            return records
+            return recordsForSessionEstablished(sessionManager, networkMap, state.session, messageAndKey)
         }
 
         private fun recordsForMarkers(messageAndKey: AuthenticatedMessageAndKey, isHostedLocally: Boolean): List<Record<String, *>> {
@@ -289,7 +283,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     class InboundMessageProcessor(
         private val sessionManager: SessionManager,
         private val networkMap: LinkManagerNetworkMap,
-        private val heartbeatManager: HeartbeatManager
     ) :
         EventLogProcessor<String, LinkInMessage> {
 
@@ -341,7 +334,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 is SessionDirection.Outbound -> {
                     extractPayload(sessionDirection.session, sessionId, message, MessageAck::fromByteBuffer)?.let {
                         messages.add(makeMarkerForAckMessage(it))
-                        heartbeatManager.messageAcknowledged(it.messageId)
+                        sessionManager.messageAcknowledged(it.messageId)
                     }
                 }
                 is SessionDirection.NoSession -> {
@@ -409,13 +402,17 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     }
 
     interface PendingSessionMessageQueues {
-        fun queueMessage(message: AuthenticatedMessageAndKey, key: SessionKey): Boolean
-        fun sessionNegotiatedCallback(key: SessionKey, session: Session, networkMap: LinkManagerNetworkMap)
+        fun queueMessage(message: AuthenticatedMessageAndKey, key: SessionKey)
+        fun sessionNegotiatedCallback(
+            sessionManager: SessionManager,
+            key: SessionKey,
+            session: Session,
+            networkMap: LinkManagerNetworkMap,
+        )
     }
 
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
-        private val heartbeatManager: HeartbeatManager
     ): PendingSessionMessageQueues, Lifecycle {
         private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
         private val config = PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, 1)
@@ -428,33 +425,35 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         /**
          * Either adds a [FlowMessage] to a queue for a session which is pending (has started but hasn't finished
          * negotiation with the destination) or adds the message to a new queue if we need to negotiate a new session.
-         * Returns [true] if we need to start session negotiation and [false] if we don't (if the session is pending).
         */
-        override fun queueMessage(message: AuthenticatedMessageAndKey, key: SessionKey): Boolean {
+        override fun queueMessage(message: AuthenticatedMessageAndKey, key: SessionKey) {
             val oldQueue = queuedMessagesPendingSession.putIfAbsent(key, LinkedList())
             if (oldQueue != null) {
                 oldQueue.add(message)
             } else {
                 queuedMessagesPendingSession[key]?.add(message)
             }
-            return oldQueue == null
         }
 
         /**
          * Publish all the queued [FlowMessage]s to the P2P_OUT_TOPIC.
          */
-        override fun sessionNegotiatedCallback(key: SessionKey, session: Session, networkMap: LinkManagerNetworkMap) {
+        override fun sessionNegotiatedCallback(
+            sessionManager: SessionManager,
+            key: SessionKey,
+            session: Session,
+            networkMap: LinkManagerNetworkMap,
+        ) {
             startStopLock.read {
                 if (!running) {
                     throw IllegalStateException("sessionNegotiatedCallback was called before the PendingSessionMessageQueues was started.")
                 }
                 val queuedMessages = queuedMessagesPendingSession[key] ?: return
-                val records = mutableListOf<Record<String, LinkOutMessage>>()
+                val records = mutableListOf<Record<String, *>>()
                 while (queuedMessages.isNotEmpty()) {
                     val message = queuedMessages.poll()
-                    val dataMessage = linkOutMessageFromAuthenticatedMessageAndKey(message, session, networkMap)
-                    records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), dataMessage))
-                    heartbeatManager.messageSent(message.message.header.messageId, key, session)
+                    records.addAll(OutboundMessageProcessor.recordsForSessionEstablished(sessionManager, networkMap, session, message))
+                    sessionManager.messageSent(message, session)
                 }
                 publisher.publish(records)
             }
