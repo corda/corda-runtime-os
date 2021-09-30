@@ -61,6 +61,7 @@ class HttpRpcServerImpl(
     override fun start() {
         startStopLock.write {
             if (!running) {
+                log.info("Started the server")
                 httpRpcServerInternal.start()
                 running = true
             }

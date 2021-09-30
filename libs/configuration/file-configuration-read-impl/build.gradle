@@ -14,6 +14,7 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation project(':libs:configuration:configuration-read')
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:messaging:messaging")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

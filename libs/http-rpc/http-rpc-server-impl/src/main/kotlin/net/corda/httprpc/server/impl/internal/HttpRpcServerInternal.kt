@@ -16,20 +16,20 @@ import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.InvocationContext
 import net.corda.httprpc.security.RpcAuthContext
-import net.corda.v5.application.flows.BadRpcStartFlowRequestException
+import net.corda.httprpc.server.config.HttpRpcSettingsProvider
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.apigen.processing.RouteProvider
 import net.corda.httprpc.server.impl.apigen.processing.openapi.OpenApiInfoProvider
-import net.corda.httprpc.server.config.HttpRpcSettingsProvider
 import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.server.impl.utils.addHeaderValues
 import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
-import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.utilities.rootCause
 import net.corda.utilities.rootMessage
+import net.corda.v5.application.flows.BadRpcStartFlowRequestException
 import net.corda.v5.application.identity.CordaX500Name
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.server.SslConnectionFactory
 import org.eclipse.jetty.util.ssl.SslContextFactory
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
@@ -148,8 +149,14 @@ internal class HttpRpcServerInternal(
 
         try {
             return securityManager.authenticate(credentials).also {
-                val rpcAuthContext = RpcAuthContext(InvocationContext.Rpc(Actor.service(this::javaClass.toString(),
-                        CordaX500Name.parse(CORDA_X500_NAME))), it)
+                val rpcAuthContext = RpcAuthContext(
+                    InvocationContext.Rpc(
+                        Actor.service(
+                            this::javaClass.toString(),
+                            CordaX500Name.parse(CORDA_X500_NAME)
+                        )
+                    ), it
+                )
                 CURRENT_RPC_CONTEXT.set(rpcAuthContext)
                 log.trace { """Authenticate user "${it.principal}" completed.""" }
             }
@@ -272,7 +279,7 @@ internal class HttpRpcServerInternal(
 //TODO restore these when possible
 //            is StartFlowPermissionException -> throw ForbiddenResponse(messageEscaped)
 //            is FlowNotFoundException -> throw NotFoundResponse(messageEscaped)
-              is MissingParameterException -> throw BadRequestResponse(messageEscaped)
+            is MissingParameterException -> throw BadRequestResponse(messageEscaped)
 //            is InvalidCordaX500NameException -> throw BadRequestResponse(messageEscaped)
 //            is MemberNotFoundException -> throw NotFoundResponse(messageEscaped)
 
@@ -295,7 +302,20 @@ internal class HttpRpcServerInternal(
             // via the service loader mechanism. This mechanism is not appropriate for OSGi. The logging
             // implementation is found correctly in practice.
             System.setErr(PrintStream(OutputStream.nullOutputStream()))
-            server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
+
+            // We need to set thread context classloader here as
+            // `org.eclipse.jetty.websocket.servlet.WebSocketServletFactory.Loader.load` relies on it to perform
+            // classloading during `start` method invocation.
+            val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
+            if (bundle != null) {
+                bundle.loadClass(WebSocketServletFactory::class.java.name).classLoader.let { classLoader ->
+                    executeWithThreadContextClassLoader(classLoader) {
+                        server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
+                    }
+                }
+            } else {
+                server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
+            }
             log.trace { "Starting the Javalin server completed." }
         } catch (e: Exception) {
             "Error when starting the Javalin server".let {
@@ -317,7 +337,8 @@ internal class HttpRpcServerInternal(
     private fun createSecureServer(): Server {
         log.trace { "Create secure (HTTPS) server." }
         require(configurationsProvider.getSSLKeyStorePath() != null) {
-            "SSL key store path must be present in order to start a secure server" }
+            "SSL key store path must be present in order to start a secure server"
+        }
         require(configurationsProvider.getSSLKeyStorePassword() != null) { SSL_PASSWORD_MISSING }
 
         log.trace { "Get SslContextFactory." }

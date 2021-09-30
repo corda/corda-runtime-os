@@ -7,6 +7,9 @@ import net.corda.components.rpc.ConfigReceivedEvent
 import net.corda.components.rpc.HttpRpcGateway
 import net.corda.components.rpc.MessagingConfigUpdateEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.httprpc.security.read.RPCSecurityManagerFactory
+import net.corda.httprpc.server.factory.HttpRpcServerFactory
+import net.corda.httprpc.ssl.SslCertReadServiceFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -26,13 +29,16 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.*
 
 enum class LifeCycleState {
     UNINITIALIZED, STARTING, STARTINGMESSAGING, REINITMESSAGING
 }
 
-@Component
+@Component(service = [Application::class], immediate = true)
+@Suppress("LongParameterList")
 class HttpRpcGatewayApp @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
@@ -42,6 +48,12 @@ class HttpRpcGatewayApp @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = HttpRpcServerFactory::class)
+    private val httpRpcServerFactory: HttpRpcServerFactory,
+    @Reference(service = RPCSecurityManagerFactory::class)
+    private val rpcSecurityManagerFactory: RPCSecurityManagerFactory,
+    @Reference(service = SslCertReadServiceFactory::class)
+    private val sslCertReadServiceFactory: SslCertReadServiceFactory
 ) : Application {
 
     private companion object {
@@ -51,9 +63,13 @@ class HttpRpcGatewayApp @Activate constructor(
         const val CONFIG_TOPIC_NAME = "config.topic.name"
         const val BOOTSTRAP_SERVERS = "bootstrap.servers"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
+
+        const val TEMP_DIRECTORY_PREFIX = "http-rpc-gateway-app-temp-dir"
+        const val CONFIG_FILE = "local_http_rpc_gateway.conf"
     }
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
+    private lateinit var tempDirectoryPath: Path
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
@@ -65,21 +81,20 @@ class HttpRpcGatewayApp @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
-            //val instanceId = parameters.instanceId.toInt()
             val kafkaProperties = getKafkaPropertiesFromFile(parameters.kafkaProperties)
             val bootstrapConfig = getBootstrapConfig(kafkaProperties)
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
             var httpRpcGateway: HttpRpcGateway? = null
             log.info("Creating life cycle coordinator")
-            lifeCycleCoordinator =
-                coordinatorFactory.createCoordinator<HttpRpcGatewayApp>(
-                ) { event: LifecycleEvent, _: LifecycleCoordinator ->
+            val localLifeCycleCoordinator =
+                coordinatorFactory.createCoordinator<HttpRpcGatewayApp> { event: LifecycleEvent, _: LifecycleCoordinator ->
                     log.info("LifecycleEvent received: $event")
                     when (event) {
                         is StartEvent -> {
                             consoleLogger.info("Starting HTTP RPC Gateway")
                             state = LifeCycleState.STARTING
                             httpRpcGateway?.start(bootstrapConfig)
+                            consoleLogger.info("HTTP RPC Gateway application started")
                         }
                         is ConfigReceivedEvent -> {
                             if (state == LifeCycleState.STARTING) {
@@ -102,11 +117,15 @@ class HttpRpcGatewayApp @Activate constructor(
                         }
                     }
                 }
-            httpRpcGateway = HttpRpcGateway(lifeCycleCoordinator!!, configurationReadService)
+
+            httpRpcGateway = HttpRpcGateway(
+                localLifeCycleCoordinator, configurationReadService, httpRpcServerFactory,
+                rpcSecurityManagerFactory, sslCertReadServiceFactory
+            )
 
             log.info("Starting life cycle coordinator")
-            lifeCycleCoordinator!!.start()
-            consoleLogger.info("HTTP RPC Gateway application started")
+            localLifeCycleCoordinator.start()
+            lifeCycleCoordinator = localLifeCycleCoordinator
         }
     }
 
@@ -120,12 +139,27 @@ class HttpRpcGatewayApp @Activate constructor(
         return kafkaConnectionProperties
     }
 
+    /**
+     * Create the config file found in resources in a temp folder and return the full path
+     */
+    private fun createConfigFile(): String {
+        tempDirectoryPath = Files.createTempDirectory(TEMP_DIRECTORY_PREFIX)
+        val bundleContext = FrameworkUtil.getBundle(HttpRpcGatewayApp::class.java).bundleContext
+        val configFileURL = bundleContext.bundle.getResource(CONFIG_FILE)
+        val configFileContent = configFileURL.openStream().readAllBytes()
+        val configFilePath = Path.of(tempDirectoryPath.toString(), CONFIG_FILE)
+        configFilePath.toFile().writeBytes(configFileContent)
+        return configFilePath.toString()
+    }
+
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
+
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
         return ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
             .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
+            .withValue("config.file", ConfigValueFactory.fromAnyRef(createConfigFile()))
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
@@ -138,10 +172,7 @@ class HttpRpcGatewayApp @Activate constructor(
             if (default != null) {
                 return default
             }
-            log.error(
-                "No $path property found! " +
-                        "Pass property in via --kafka properties file or via -D$path"
-            )
+            log.error("No $path property found! Pass property in via --kafka properties file or via -D$path")
             shutdown()
         }
         return configValue
@@ -150,6 +181,7 @@ class HttpRpcGatewayApp @Activate constructor(
     override fun shutdown() {
         consoleLogger.info("Stopping application")
         lifeCycleCoordinator?.stop()
+        File(tempDirectoryPath.toUri()).deleteRecursively()
         log.info("Stopping application")
     }
 }
