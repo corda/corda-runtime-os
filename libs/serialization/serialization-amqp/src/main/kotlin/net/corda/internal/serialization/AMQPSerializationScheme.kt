@@ -207,7 +207,7 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(StringBufferSerializer, false)
         register(InputStreamSerializer, true)
         register(BitSetSerializer(), true)
-        register(EnumSetSerializer(this))
+        register(EnumSetSerializer(), true)
         register(X500PrincipalSerializer(this))
         register(PrivateKeySerializer, true)
     }
