@@ -7,7 +7,7 @@ import org.osgi.framework.Bundle
  * A service for creating sandboxes. There are two types of sandbox:
  *
  * * Public sandboxes have visibility of, and are visible to, all other sandboxes
- * * CPK sandboxes are created from the previously-installed CPKs
+ * * CPK sandboxes are created from previously-installed CPKs
  */
 interface SandboxCreationService {
     /**
