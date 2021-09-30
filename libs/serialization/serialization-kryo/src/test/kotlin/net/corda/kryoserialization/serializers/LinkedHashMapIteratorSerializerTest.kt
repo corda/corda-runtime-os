@@ -12,19 +12,21 @@ internal class LinkedHashMapIteratorSerializerTest {
     @Test
     fun `LinkedHashMapIterator serializer returns correct iterator`() {
         val kryo = Kryo().also { it.instantiatorStrategy = StdInstantiatorStrategy() }
-        val output = Output(1024)
-        val iterator = mapOf(0 to "0", 1 to "1", 2 to "2", 3 to "boo").iterator()
-        iterator.next(); iterator.next()
+        val output = Output(25 * 1024)
+        val iterator = (0..1000).associateWith { "$it" }.iterator()
+        val index = 100
+        repeat(index) { iterator.next(); }
         LinkedHashMapIteratorSerializer.write(kryo, output, iterator)
         val tested = LinkedHashMapIteratorSerializer.read(kryo, Input(output.buffer), iterator.javaClass)
 
         assertThat(tested).isInstanceOf(iterator::class.java)
-        // Iterator should still be pointing to "2"
+        // Iterator should still be pointing to 'index'
         val next: Map.Entry<Int, String> = uncheckedCast(tested.next())
-        assertThat(next.key).isEqualTo(2)
-        assertThat(next.value).isEqualTo("2")
+        assertThat(next.key).isEqualTo(index)
+        assertThat(next.value).isEqualTo("$index")
         val otherNext: Map.Entry<Int, String> = uncheckedCast(tested.next())
-        assertThat(otherNext.key).isEqualTo(3)
-        assertThat(otherNext.value).isEqualTo("boo")
+        // Iterator should be pointing to 'index + 1'
+        assertThat(otherNext.key).isEqualTo(index+1)
+        assertThat(otherNext.value).isEqualTo("${index+1}")
     }
 }
