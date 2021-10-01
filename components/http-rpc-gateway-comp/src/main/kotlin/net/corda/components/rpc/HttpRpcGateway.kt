@@ -2,14 +2,11 @@ package net.corda.components.rpc
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.RpcOps
 import net.corda.httprpc.security.read.RPCSecurityManager
 import net.corda.httprpc.security.read.RPCSecurityManagerFactory
 import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.config.models.AzureAdSettings
 import net.corda.httprpc.server.config.models.HttpRpcContext
-import net.corda.httprpc.server.config.models.HttpRpcSSLSettings
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.config.models.HttpRpcSettings.Companion.MAX_CONTENT_LENGTH_DEFAULT_VALUE
 import net.corda.httprpc.server.config.models.SsoSettings
@@ -22,6 +19,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.httprpc.api.Controller
 
 class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
@@ -33,7 +31,7 @@ class HttpRpcGateway(
     private val httpRpcServerFactory: HttpRpcServerFactory,
     private val rpcSecurityManagerFactory: RPCSecurityManagerFactory,
     private val sslCertReadServiceFactory: SslCertReadServiceFactory,
-    private val rpcOps: List<PluggableRPCOps<out RpcOps>>
+    private val controllers: List<Controller>
 ) : Lifecycle {
 
     companion object {
@@ -105,28 +103,29 @@ class HttpRpcGateway(
             }
 
             sslCertReadService?.stop()
-            val keyStoreInfo = sslCertReadServiceFactory.create().let {
-                this.sslCertReadService = it
-                it.start()
-                it.getOrCreateKeyStore()
-            }
+//            val keyStoreInfo = sslCertReadServiceFactory.create().let {
+//                this.sslCertReadService = it
+//                it.start()
+//                it.getOrCreateKeyStore()
+//            }
 
             val configSnapshot = currentConfigurationSnapshot[RPC_CONFIG]!!
-                val httpRpcSettings = HttpRpcSettings(
-                    address = NetworkHostAndPort.parse(configSnapshot.getString(RPC_ADDRESS_CONFIG)),
+            val httpRpcSettings = HttpRpcSettings(
+                address = NetworkHostAndPort.parse(configSnapshot.getString(RPC_ADDRESS_CONFIG)),
                 context = HttpRpcContext(
                     version = "1",
                     basePath = "/api",
                     description = configSnapshot.getString(RPC_DESCRIPTION_CONFIG),
                     title = configSnapshot.getString(RPC_TITLE_CONFIG)
                 ),
-                ssl = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password),
+//                ssl = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password),
+                ssl = null,
                 sso = configSnapshot.retrieveSsoOptions(),
                 maxContentLength = configSnapshot.retrieveMaxContentLength()
             )
 
             server = httpRpcServerFactory.createHttpRpcServer(
-                rpcOpsImpls = rpcOps,
+                controllers = controllers,
                 rpcSecurityManager = securityManager,
                 httpRpcSettings = httpRpcSettings,
                 devMode = true

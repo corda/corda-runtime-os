@@ -48,4 +48,13 @@ dependencies {
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly "com.google.guava:guava:16.0"
+//    runtimeOnly "com.github.fge:jackson-coreutils:1.8"
+//    runtimeOnly "com.github.java-json-tools:json-schema-core:1.2.8"
+    runtimeOnly "org.mozilla:rhino:1.7R4"
+//    runtimeOnly group: 'org.mozilla.javascript', name: 'com.springsource.org.mozilla.javascript', version: '1.7.0.R2'
+
+//    runtimeOnly "org.xerial.snappy:snappy-java:1.1.8.1"
+
+    runtimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
 }

@@ -13,12 +13,11 @@ import org.osgi.service.component.annotations.Component
 class HttpRpcServerFactoryImpl : HttpRpcServerFactory {
 
     override fun createHttpRpcServer(
-        rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
+        controllers: List<Controller>,
         rpcSecurityManager: RPCSecurityManager,
         httpRpcSettings: HttpRpcSettings,
         devMode: Boolean
     ): HttpRpcServer {
-
-        return HttpRpcServerImpl(rpcOpsImpls, rpcSecurityManager, httpRpcSettings, devMode)
+        return HttpRpcServerImpl(controllers, rpcSecurityManager, httpRpcSettings, devMode)
     }
 }

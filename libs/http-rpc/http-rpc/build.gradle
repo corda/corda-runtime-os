@@ -8,4 +8,11 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    api ("io.javalin:javalin-openapi-osgi:$javalinVersion") {
+//        exclude group: "com.google.guava:guava"
+        exclude group: 'com.google.guava'
+    }
+    api "io.javalin:javalin-osgi:$javalinVersion"
+
+
 }

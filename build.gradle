@@ -108,6 +108,9 @@ allprojects {
         maven {
             url = "$artifactoryContextUrl/corda-dependencies"
         }
+//        maven {
+//            url = "https://mvnrepository.com/repos/springio-plugins-release"
+//        }
         //needed for C5 binaries
         maven {
             url = "$artifactoryContextUrl/corda-os-maven"

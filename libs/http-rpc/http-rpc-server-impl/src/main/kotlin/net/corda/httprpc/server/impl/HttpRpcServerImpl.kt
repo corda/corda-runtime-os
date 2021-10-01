@@ -17,14 +17,13 @@ import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAut
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.RpcOps
+import net.corda.v5.httprpc.api.Controller
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
 
 @SuppressWarnings("TooGenericExceptionThrown", "TooGenericExceptionCaught", "LongParameterList")
 class HttpRpcServerImpl(
-    rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
+    controllers: List<Controller>,
     rpcSecurityManager: RPCSecurityManager,
     httpRpcSettings: HttpRpcSettings,
     devMode: Boolean
@@ -42,17 +41,25 @@ class HttpRpcServerImpl(
         get() = running
 
 
-    private val resources = getResources(rpcOpsImpls)
     private val httpRpcObjectConfigProvider = HttpRpcObjectSettingsProvider(httpRpcSettings, devMode)
+//    private val httpRpcServerInternal = HttpRpcServerInternal(
+//        JavalinRouteProviderImpl(
+//            httpRpcSettings.context.basePath,
+//            httpRpcSettings.context.version,
+//            resources,
+//            cordappClassLoader
+//        ),
+//        SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManager)),
+//        httpRpcObjectConfigProvider,
+//        OpenApiInfoProvider(resources, httpRpcObjectConfigProvider)
+//    )
+
+    // remove the route provider
+    // register the controllers instead
     private val httpRpcServerInternal = HttpRpcServerInternal(
-        JavalinRouteProviderImpl(
-            httpRpcSettings.context.basePath,
-            httpRpcSettings.context.version,
-            resources
-        ),
         SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManager)),
         httpRpcObjectConfigProvider,
-        OpenApiInfoProvider(resources, httpRpcObjectConfigProvider)
+        controllers
     )
 
 
@@ -74,24 +81,6 @@ class HttpRpcServerImpl(
                 running = false
             }
         }
-    }
-
-    private fun getResources(rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>): List<Resource> {
-        log.debug { "Get resources for RPCOps implementations of ${rpcOpsImpls.joinToString()}." }
-        var resources = emptyList<Resource>()
-        log.trace { "Generating resource model for http rpc" }
-        APIStructureRetriever(rpcOpsImpls).structure.doOnFailure {
-            "Error during Get resources for RPCOps implementations of ${rpcOpsImpls.joinToString()}".let { msg ->
-                log.error("$msg: ${it.message}")
-                throw Exception(msg, it)
-            }
-        }.doOnSuccess { res ->
-            log.debug { "Http RPC resources count: ${res.size}" }
-            resources = res
-        }
-
-        log.debug { "Get resources for RPCOps implementations of ${rpcOpsImpls.joinToString()} completed." }
-        return resources
     }
 
     private fun createAuthenticationProviders(

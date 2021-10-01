@@ -21,6 +21,7 @@ dependencies {
 }
 
 private boolean isBundle(JarFile jarFile) {
+    logger.quiet(jarFile.name)
     return jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME) != null
 }
 

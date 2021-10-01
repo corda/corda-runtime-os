@@ -7,8 +7,6 @@ import net.corda.components.rpc.ConfigReceivedEvent
 import net.corda.components.rpc.HttpRpcGateway
 import net.corda.components.rpc.MessagingConfigUpdateEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.RpcOps
 import net.corda.httprpc.security.read.RPCSecurityManagerFactory
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
 import net.corda.httprpc.ssl.SslCertReadServiceFactory
@@ -23,6 +21,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.httprpc.api.Controller
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -58,8 +57,8 @@ class HttpRpcGatewayApp @Activate constructor(
     private val rpcSecurityManagerFactory: RPCSecurityManagerFactory,
     @Reference(service = SslCertReadServiceFactory::class)
     private val sslCertReadServiceFactory: SslCertReadServiceFactory,
-    @Reference(service = PluggableRPCOps::class, cardinality = ReferenceCardinality.MULTIPLE)
-    private val rpcOps: List<PluggableRPCOps<out RpcOps>>
+    @Reference(service = Controller::class, cardinality = ReferenceCardinality.MULTIPLE)
+    private val controllers: List<Controller>
 ) : Application {
 
     private companion object {
@@ -75,13 +74,15 @@ class HttpRpcGatewayApp @Activate constructor(
     }
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
-    private lateinit var tempDirectoryPath: Path
+    private var tempDirectoryPath: Path? = null
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
         consoleLogger.info("Starting HTTP RPC Gateway application...")
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
+
+        log.info("Received controllers - $controllers")
 
         if (parameters.helpRequested) {
             CommandLine.usage(CliParameters(), System.out)
@@ -130,7 +131,7 @@ class HttpRpcGatewayApp @Activate constructor(
                 httpRpcServerFactory,
                 rpcSecurityManagerFactory,
                 sslCertReadServiceFactory,
-                rpcOps
+                controllers
             )
 
             log.info("Starting life cycle coordinator")
@@ -199,7 +200,7 @@ class HttpRpcGatewayApp @Activate constructor(
     override fun shutdown() {
         consoleLogger.info("Stopping application")
         lifeCycleCoordinator?.stop()
-        File(tempDirectoryPath.toUri()).deleteRecursively()
+        tempDirectoryPath?.let { File(it.toUri()).deleteRecursively() }
         log.info("Stopping application")
     }
 }

@@ -6,11 +6,16 @@ import io.javalin.core.util.Header
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
-import io.javalin.http.HandlerType
 import io.javalin.http.HttpResponseException
 import io.javalin.http.UnauthorizedResponse
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
+import io.javalin.plugin.openapi.OpenApiOptions
+import io.javalin.plugin.openapi.OpenApiPlugin
+import io.javalin.plugin.openapi.ui.ReDocOptions
+import io.javalin.plugin.openapi.ui.SwaggerOptions
+import io.swagger.v3.oas.models.info.Contact
+import io.swagger.v3.oas.models.info.Info
 import net.corda.httprpc.security.Actor
 import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
@@ -18,8 +23,6 @@ import net.corda.httprpc.security.InvocationContext
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.httprpc.server.config.HttpRpcSettingsProvider
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
-import net.corda.httprpc.server.impl.apigen.processing.RouteProvider
-import net.corda.httprpc.server.impl.apigen.processing.openapi.OpenApiInfoProvider
 import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
@@ -33,6 +36,7 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.v5.httprpc.api.Controller
 import org.eclipse.jetty.http.HttpStatus
 import org.eclipse.jetty.http2.HTTP2Cipher
 import org.eclipse.jetty.server.HttpConfiguration
@@ -48,14 +52,24 @@ import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
 import java.io.PrintStream
 import javax.security.auth.login.FailedLoginException
+import kotlin.collections.List
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.find
+import kotlin.collections.forEach
+import kotlin.collections.joinToString
+import kotlin.collections.map
+import kotlin.collections.mutableMapOf
+import kotlin.collections.set
+import kotlin.collections.toTypedArray
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "TooGenericExceptionCaught")
 internal class HttpRpcServerInternal(
-    private val resourceProvider: RouteProvider,
+//    private val resourceProvider: RouteProvider,
     private val securityManager: HttpRpcSecurityManager,
     private val configurationsProvider: HttpRpcSettingsProvider,
-    private val openApiInfoProvider: OpenApiInfoProvider,
-
+//    private val openApiInfoProvider: OpenApiInfoProvider,
+    private val controllers: List<Controller>
     ) {
 
     internal companion object {
@@ -81,6 +95,7 @@ internal class HttpRpcServerInternal(
     private val credentialResolver = DefaultCredentialResolver()
     private val server = Javalin.create {
         it.registerPlugin(RedirectToLowercasePathPlugin())
+        it.registerPlugin(getConfiguredOpenApiPlugin())
         val rendererBundle = FrameworkUtil.getBundle(SwaggerUIRenderer::class.java)
         // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`. We load
         // Swagger UI's static files manually instead.
@@ -118,9 +133,29 @@ internal class HttpRpcServerInternal(
         }
         it.defaultContentType = contentTypeApplicationJson
     }.apply {
-        addRoutes()
-        addOpenApiRoute()
+        routes {
+            controllers.forEach(Controller::register)
+        }
+//        addRoutes()
+//        addOpenApiRoute()
     }
+
+    fun getConfiguredOpenApiPlugin() = OpenApiPlugin(
+        OpenApiOptions(
+            Info().apply {
+                version("1.0")
+                description("This is the description of my api")
+                title("This is the tile of my API")
+                contact(Contact().apply {
+                    name = "rpc team"
+                    url = "rpc@r3.com"
+                })
+            }
+        ).apply {
+            path("/swagger-docs") // endpoint for OpenAPI json
+            swagger(SwaggerOptions("/swagger-ui")) // endpoint for swagger-ui
+        }
+    )
 
     //https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
     //this allows the implementation of HTTP Digest or for example SPNEGO in the future
@@ -175,72 +210,6 @@ internal class HttpRpcServerInternal(
         if (!authorizingSubject.isPermitted(methodFullName))
             throw ForbiddenResponse("Method \"$methodFullName\" not allowed for: \"$principal\".")
         log.trace { "Authorize \"$principal\" for \"$methodFullName\" completed." }
-    }
-
-    @SuppressWarnings("ComplexMethod", "ThrowsCount")
-    private fun Javalin.addRoutes() {
-        fun registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
-            try {
-                log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
-                addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeMethod())
-                log.debug { "Add \"$handlerType\" handler for \"${routeInfo.fullPath}\" completed." }
-            } catch (e: Exception) {
-                "Error during Add GET and POST routes".let {
-                    log.error("$it: ${e.message}")
-                    throw Exception(it, e)
-                }
-            }
-        }
-        try {
-            log.trace { "Add GET and POST routes." }
-            resourceProvider.httpNoAuthRequiredGetRoutes.map { routeInfo ->
-                registerHandlerForRoute(routeInfo, HandlerType.GET)
-            }
-            resourceProvider.httpGetRoutes.map { routeInfo ->
-
-                before(routeInfo.fullPath) {
-                    authorize(authenticate(it), routeInfo.methodFullName)
-                }
-                registerHandlerForRoute(routeInfo, HandlerType.GET)
-            }
-            resourceProvider.httpPostRoutes.map { routeInfo ->
-                before(routeInfo.fullPath) {
-                    with(configurationsProvider.maxContentLength()) {
-                        if (it.contentLength() > this) throw BadRequestResponse(
-                            CONTENT_LENGTH_EXCEEEDS_LIMIT.format(
-                                it.contentLength(),
-                                this
-                            )
-                        )
-                    }
-                    authorize(authenticate(it), routeInfo.methodFullName)
-                }
-                registerHandlerForRoute(routeInfo, HandlerType.POST)
-            }
-            log.trace { "Add GET and POST routes completed." }
-        } catch (e: Exception) {
-            "Error during Add GET and POST routes".let {
-                log.error("$it: ${e.message}")
-                throw Exception(it, e)
-            }
-        }
-    }
-
-    private fun Javalin.addOpenApiRoute() {
-        try {
-            log.trace { "Add OpenApi route." }
-            get(openApiInfoProvider.pathForOpenApiJson)
-            { ctx -> ctx.result(openApiInfoProvider.openApiString).contentType(contentTypeApplicationJson) }
-
-            get(openApiInfoProvider.pathForOpenApiUI, openApiInfoProvider.swaggerUIRenderer)
-
-            log.trace { "Add OpenApi route completed." }
-        } catch (e: Exception) {
-            "Error during Add OpenApi route".let {
-                log.error("$it: ${e.message}")
-                throw Exception(it, e)
-            }
-        }
     }
 
     private fun RouteInfo.invokeMethod(): (Context) -> Unit {
