@@ -9,7 +9,7 @@ import org.osgi.framework.Version
 import java.security.MessageDigest
 import kotlin.random.Random
 
-const val PLATFORM_BUNDLE_NAME = "platform_bundle_symbolic_name"
+const val PUBLIC_BUNDLE_NAME = "public_bundle_symbolic_name"
 const val CPK_BUNDLE_NAME = "cpk_bundle_symbolic_name"
 const val CORDAPP_BUNDLE_NAME = "cordapp_bundle_symbolic_name"
 
