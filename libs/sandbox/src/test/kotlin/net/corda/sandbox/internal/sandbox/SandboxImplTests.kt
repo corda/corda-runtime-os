@@ -149,4 +149,18 @@ class SandboxImplTests {
 
         assertEquals(setOf(publicBundle, privateBundle), uninstalledBundles)
     }
+
+    @Test
+    fun `throws if sandbox bundle cannot be uninstalled`() {
+        val cantBeUninstalledBundle = mock(Bundle::class.java).apply {
+            whenever(uninstall()).then {
+                throw SandboxException("a")
+            }
+        }
+        val sandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(cantBeUninstalledBundle), setOf())
+
+        assertThrows<SandboxException> {
+            sandbox.unload()
+        }
+    }
 }

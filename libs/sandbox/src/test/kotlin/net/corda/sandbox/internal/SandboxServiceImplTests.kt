@@ -177,9 +177,7 @@ class SandboxServiceImplTests {
             )
         )
 
-        val bundles =
-            cpksAndBundles.flatMap { cpkAndBundles -> listOf(cpkAndBundles.cordappBundle, cpkAndBundles.libraryBundle) }
-        bundles.forEach { bundle ->
+        cpksAndBundles.flatMap(CpkAndBundles::bundles).forEach { bundle ->
             whenever(startBundle(bundle)).then { startedBundles.add(bundle) }
             whenever(bundle.uninstall()).then { uninstalledBundles.add(bundle) }
         }
@@ -705,12 +703,7 @@ class SandboxServiceImplTests {
         val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash, cpkTwo.cpkHash))
         sandboxService.unloadSandboxGroup(sandboxGroup)
 
-        val bundles = setOf(
-            cpkAndBundlesOne.cordappBundle,
-            cpkAndBundlesOne.libraryBundle,
-            cpkAndBundlesTwo.cordappBundle,
-            cpkAndBundlesTwo.libraryBundle
-        )
+        val bundles = cpkAndBundlesOne.bundles + cpkAndBundlesTwo.bundles
 
         bundles.forEach { bundle ->
             assertNull(sandboxService.getSandbox(bundle))
@@ -727,4 +720,6 @@ private data class CpkAndBundles(
     val libraryBundle: Bundle,
     val cordappClass: Class<*>,
     val libraryClass: Class<*>
-)
+) {
+    val bundles = setOf(cordappBundle, libraryBundle)
+}
