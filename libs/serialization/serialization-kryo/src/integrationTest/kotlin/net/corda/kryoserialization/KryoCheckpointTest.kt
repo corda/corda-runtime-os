@@ -3,13 +3,13 @@ package net.corda.kryoserialization
 import net.corda.bundle1.Cash
 import net.corda.sandbox.SandboxException
 import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
+import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
-import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.test.common.annotation.InjectService
@@ -32,22 +32,22 @@ class KryoCheckpointTest {
         @JvmStatic
         fun setUp() {
             val configurationAdmin = ServiceLocator.getConfigurationService()
-
             assertThat(configurationAdmin).isNotNull
 
-            val privateBundleNames = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.filter { bundle ->
-                bundle.symbolicName !in PLATFORM_PUBLIC_BUNDLE_NAMES
-            }.map(Bundle::getSymbolicName)
-
             // Initialise configurationAdmin
-            val properties = Hashtable<String, Any>()
-            properties["platformVersion"] = 999
-            properties["blacklistedKeys"] = emptyList<Any>()
-            properties["baseDirectory"] = testDirectory.toAbsolutePath().toString()
-            properties[PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] = PLATFORM_PUBLIC_BUNDLE_NAMES
-            properties[PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY] = privateBundleNames
-            val conf = configurationAdmin.getConfiguration(ConfigurationAdmin::class.java.name, null)
-            conf?.update(properties)
+            configurationAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
+                val properties = Properties()
+                properties[BASE_DIRECTORY_KEY] = testDirectory.toString()
+                properties[BLACKLISTED_KEYS_KEY] = emptyList<String>()
+                properties[PLATFORM_VERSION_KEY] = 999
+                config.update(uncheckedCast(properties))
+            }
+
+            val allBundles = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles
+            val (publicBundles, privateBundles) = allBundles.partition { bundle ->
+                bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
+            }
+            ServiceLocator.getSandboxCreationService().createPublicSandbox(publicBundles, privateBundles)
         }
     }
 
@@ -75,7 +75,8 @@ class KryoCheckpointTest {
     fun `cross sandbox serialization of a simple object`() {
         val sandboxManagementService = SandboxManagementService()
 
-        val builder1 = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group1)
+        val builder1 =
+            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group1)
         val serializerSandbox1 = builder1
             .addSerializer(TestClass::class.java, TestClass.Serializer())
             .build()
@@ -89,7 +90,8 @@ class KryoCheckpointTest {
 
         // Deserialize with serializerSandbox2
         Executors.newSingleThreadExecutor().submit {
-            val builder2 = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group2)
+            val builder2 =
+                checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group2)
             val serializerSandbox2 = builder2
                 .addSerializer(TestClass::class.java, TestClass.Serializer())
                 .build()

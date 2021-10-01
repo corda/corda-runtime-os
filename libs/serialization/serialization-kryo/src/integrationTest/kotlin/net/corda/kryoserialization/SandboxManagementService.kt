@@ -46,12 +46,6 @@ class SandboxManagementService {
     val group1: SandboxGroup = createSandboxGroupFor(cpk1)
     val group2: SandboxGroup = createSandboxGroupFor(cpk2)
 
-//        val allBundles = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles
-//        val (publicBundles, privateBundles) = allBundles.partition { bundle ->
-//            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
-//        }
-//        sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
-
     @Suppress("SameParameterValue")
     private fun loadCPK(resourceName: String): Cpk {
         val location = loadResource(resourceName)
