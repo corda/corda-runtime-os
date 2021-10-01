@@ -6,8 +6,6 @@ import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 abstract class AbstractCryptoRpcSub<TREQ: Any, TRESP: Any> : Lifecycle, CryptoLifecycleComponent {
 
@@ -17,22 +15,20 @@ abstract class AbstractCryptoRpcSub<TREQ: Any, TRESP: Any> : Lifecycle, CryptoLi
 
     abstract fun createSubscription(libraryConfig: CryptoLibraryConfig): RPCSubscription<TREQ, TRESP>
 
-    private val lock = ReentrantLock()
-
     override var isRunning: Boolean = false
 
-    override fun start() = lock.withLock {
+    override fun start() {
         logger.info("Starting...")
         isRunning = true
     }
 
-    override fun stop() = lock.withLock {
+    override fun stop() {
         logger.info("Stopping...")
         subscription?.stop()
         isRunning = false
     }
 
-    override fun handleConfigEvent(config: CryptoLibraryConfig): Unit = lock.withLock {
+    override fun handleConfigEvent(config: CryptoLibraryConfig) {
         subscription?.stop()
         logger.info("Creating durable subscription")
         subscription = createSubscription(config)

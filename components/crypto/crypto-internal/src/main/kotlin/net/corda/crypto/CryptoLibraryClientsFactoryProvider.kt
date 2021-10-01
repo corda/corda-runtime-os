@@ -1,5 +1,5 @@
 package net.corda.crypto
 
-interface CryptoLibraryClientsFactoryProvider {
+interface CryptoLibraryClientsFactoryProvider : AutoCloseable {
     fun create(requestingComponent: String): CryptoLibraryClientsFactory
 }

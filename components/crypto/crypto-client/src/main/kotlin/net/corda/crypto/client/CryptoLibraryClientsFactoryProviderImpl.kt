@@ -4,6 +4,7 @@ import net.corda.crypto.CryptoLibraryClientsFactory
 import net.corda.crypto.impl.lifecycle.clearCache
 import net.corda.crypto.impl.lifecycle.closeGracefully
 import net.corda.crypto.CryptoLibraryClientsFactoryProvider
+import net.corda.crypto.impl.config.CryptoRpcConfig
 import net.corda.crypto.impl.config.isDev
 import net.corda.crypto.impl.config.rpc
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
@@ -22,8 +23,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.time.Duration
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CryptoLibraryClientsFactoryProvider::class])
 class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
@@ -36,97 +36,125 @@ class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
 ) : Lifecycle, CryptoLifecycleComponent, CryptoLibraryClientsFactoryProvider {
     companion object {
         private val logger: Logger = contextLogger()
+
+        private fun makeFactoryKey(memberId: String, requestingComponent: String) =
+            "$memberId:$requestingComponent"
     }
 
-    private val lock = ReentrantLock()
-
-    private var libraryConfig: CryptoLibraryConfig? = null
-
-    private val isConfigured: Boolean
-        get() = libraryConfig != null
-
-    private var signingServiceSender: RPCSender<WireSigningRequest, WireSigningResponse>? = null
-
-    private var freshKeysServiceSender: RPCSender<WireFreshKeysRequest, WireFreshKeysResponse>? = null
-
-    private val factories = HashMap<String, CryptoLibraryClientsFactory>()
+    private var impl: CryptoLibraryClientsFactoryProvider = DevImpl(
+        cipherSuiteFactory,
+        memberIdProvider,
+        logger
+    )
 
     override var isRunning: Boolean = false
 
-    override fun start() = lock.withLock {
+    override fun start() {
         logger.info("Starting...")
         isRunning = true
     }
 
-    override fun stop() = lock.withLock {
+    override fun stop()  {
         logger.info("Stopping...")
-        reset()
-        libraryConfig = null
+        impl.closeGracefully()
         isRunning = false
     }
 
-    override fun handleConfigEvent(config: CryptoLibraryConfig) = lock.withLock {
+    override fun handleConfigEvent(config: CryptoLibraryConfig) {
         logger.info("Received new configuration...")
-        reset()
-        libraryConfig = config
-    }
-
-    override fun create(requestingComponent: String): CryptoLibraryClientsFactory = lock.withLock {
-        if (!isConfigured) {
-            logger.warn("The provider is not yet configured, ...using the dev factory.")
-        }
-        val memberId = memberIdProvider.memberId
-        if(libraryConfig == null || libraryConfig!!.isDev) {
-            createDevFactory(memberId, requestingComponent)
+        // thread safe, as another thread will go through the same sequence
+        val currentImpl = impl
+        impl = if(config.isDev) {
+            DevImpl(
+                cipherSuiteFactory,
+                memberIdProvider,
+                logger
+            )
         } else {
-            createProductionFactory(memberId, requestingComponent)
-        }
-    }
-
-    private fun createProductionFactory(
-        memberId: String,
-        requestingComponent: String
-    ): CryptoLibraryClientsFactory {
-        val rpcConfig = libraryConfig!!.rpc
-        if (signingServiceSender == null) {
-            signingServiceSender = publisherFactory.createRPCSender(rpcConfig.signingRpcConfig)
-        }
-        if (freshKeysServiceSender == null) {
-            freshKeysServiceSender = publisherFactory.createRPCSender(rpcConfig.freshKeysRpcConfig)
-        }
-        return factories.getOrPut(makeFactoryKey(memberId, requestingComponent)) {
-            CryptoLibraryClientsFactoryImpl(
-                memberId = memberId,
-                requestingComponent = requestingComponent,
-                clientTimeout = Duration.ofSeconds(rpcConfig.clientTimeout),
-                clientRetries = rpcConfig.clientRetries,
-                schemeMetadata = cipherSuiteFactory.getSchemeMap(),
-                signingServiceSender = signingServiceSender!!,
-                freshKeysServiceSender = freshKeysServiceSender!!
+            ProductionImpl(
+                cipherSuiteFactory,
+                memberIdProvider,
+                config.rpc,
+                publisherFactory,
+                logger
             )
         }
+        currentImpl.closeGracefully()
     }
 
-    private fun createDevFactory(
-        memberId: String,
-        requestingComponent: String
-    ): CryptoLibraryClientsFactory {
-        return factories.getOrPut(makeFactoryKey(memberId, requestingComponent)) {
-            CryptoLibraryClientsFactoryDevImpl(
-                memberId = memberId,
-                cipherSuiteFactory = cipherSuiteFactory
+    override fun create(requestingComponent: String): CryptoLibraryClientsFactory =
+        impl.create(requestingComponent)
+
+    private class DevImpl(
+        private val cipherSuiteFactory: CipherSuiteFactory,
+        private val memberIdProvider: MemberIdProvider,
+        private val logger: Logger
+    ) : CryptoLibraryClientsFactoryProvider, AutoCloseable {
+        private val factories = ConcurrentHashMap<String, CryptoLibraryClientsFactory>()
+
+        override fun create(requestingComponent: String): CryptoLibraryClientsFactory  {
+            val memberId = memberIdProvider.memberId
+            val key = makeFactoryKey(memberId, requestingComponent)
+            logger.warn(
+                "Using dev provider to get {} for {}",
+                CryptoLibraryClientsFactory::class.java.name,
+                key
             )
+            return factories.getOrPut(key) {
+                logger.warn(
+                    "Using dev provider to create {} for {}",
+                    CryptoLibraryClientsFactory::class.java.name,
+                    key
+                )
+                CryptoLibraryClientsFactoryDevImpl(
+                    memberId = memberId,
+                    cipherSuiteFactory = cipherSuiteFactory
+                )
+            }
+        }
+
+        override fun close() {
+            factories.clearCache()
         }
     }
 
-    private fun makeFactoryKey(memberId: String, requestingComponent: String) =
-        "$memberId:$requestingComponent"
+    private class ProductionImpl(
+        private val cipherSuiteFactory: CipherSuiteFactory,
+        private val memberIdProvider: MemberIdProvider,
+        private var config: CryptoRpcConfig,
+        publisherFactory: PublisherFactory,
+        private val logger: Logger
+    ) : CryptoLibraryClientsFactoryProvider, AutoCloseable {
+        private var signingServiceSender: RPCSender<WireSigningRequest, WireSigningResponse> =
+            publisherFactory.createRPCSender(config.signingRpcConfig)
 
-    private fun reset() {
-        factories.clearCache()
-        signingServiceSender?.closeGracefully()
-        freshKeysServiceSender?.closeGracefully()
-        signingServiceSender = null
-        freshKeysServiceSender = null
+        private var freshKeysServiceSender: RPCSender<WireFreshKeysRequest, WireFreshKeysResponse> =
+            publisherFactory.createRPCSender(config.freshKeysRpcConfig)
+
+        private val factories = ConcurrentHashMap<String, CryptoLibraryClientsFactory>()
+
+        override fun create(requestingComponent: String): CryptoLibraryClientsFactory {
+            val memberId = memberIdProvider.memberId
+            val key = makeFactoryKey(memberId, requestingComponent)
+            logger.debug("Getting {} for {}", CryptoLibraryClientsFactory::class.java.name, key)
+            return factories.getOrPut(key) {
+                logger.info("Creating {} for {}", CryptoLibraryClientsFactory::class.java.name, key)
+                CryptoLibraryClientsFactoryImpl(
+                    memberId = memberId,
+                    requestingComponent = requestingComponent,
+                    clientTimeout = Duration.ofSeconds(config.clientTimeout),
+                    clientRetries = config.clientRetries,
+                    schemeMetadata = cipherSuiteFactory.getSchemeMap(),
+                    signingServiceSender = signingServiceSender,
+                    freshKeysServiceSender = freshKeysServiceSender
+                )
+            }
+        }
+
+        override fun close() {
+            factories.clearCache()
+            signingServiceSender.closeGracefully()
+            freshKeysServiceSender.closeGracefully()
+        }
     }
 }
