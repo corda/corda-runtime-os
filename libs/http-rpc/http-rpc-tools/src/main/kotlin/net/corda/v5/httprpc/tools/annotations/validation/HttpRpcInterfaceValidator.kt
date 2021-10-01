@@ -1,6 +1,6 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
-import net.corda.v5.httprpc.api.RpcOps
+import net.corda.httprpc.RpcOps
 
 /**
  * This class is responsible for applying validations to an interface or list of interfaces that are expected to be exposed via HTTP RPC.
@@ -34,7 +34,7 @@ object HttpRpcInterfaceValidator {
     /**
      * Validates an interface
      *
-     * @param rpcOpsInterfaces A list of interface classes extending [RpcOps][net.corda.core.messaging.RpcOps]
+     * @param rpcOpsInterfaces A list of interface classes extending [RpcOps]
      * @return A validation result, containing a list of the errors. The validation was successful if the error list is empty.
      */
     @JvmStatic

@@ -1,7 +1,7 @@
 package net.corda.httprpc.server.impl.rpcops.impl
 
 import net.corda.httprpc.server.impl.rpcops.TestPingPongAPI
-import net.corda.v5.httprpc.api.PluggableRPCOps
+import net.corda.httprpc.PluggableRPCOps
 
 class TestPingPongAPIImpl : TestPingPongAPI, PluggableRPCOps<TestPingPongAPI> {
 

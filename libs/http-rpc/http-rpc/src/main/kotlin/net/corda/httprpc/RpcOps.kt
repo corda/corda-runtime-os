@@ -1,4 +1,4 @@
-package net.corda.v5.httprpc.api
+package net.corda.httprpc
 
 /**
  * [RpcOps] is a marker interface to indicate a class that contains HTTP endpoints. Any class that provides HTTP endpoints must implement

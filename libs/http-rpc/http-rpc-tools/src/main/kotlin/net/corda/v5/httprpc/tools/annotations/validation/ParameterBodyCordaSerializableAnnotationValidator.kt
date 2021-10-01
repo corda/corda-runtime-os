@@ -1,9 +1,9 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.httprpc.api.RpcOps
-import net.corda.v5.httprpc.api.annotations.HttpRpcGET
-import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
+import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcGET
+import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.v5.httprpc.tools.annotations.validation.utils.isBodyParameter
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter

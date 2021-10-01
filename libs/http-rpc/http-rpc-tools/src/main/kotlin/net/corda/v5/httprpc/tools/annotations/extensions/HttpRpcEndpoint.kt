@@ -1,7 +1,7 @@
 package net.corda.v5.httprpc.tools.annotations.extensions
 
-import net.corda.v5.httprpc.api.annotations.HttpRpcGET
-import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcGET
+import net.corda.httprpc.annotations.HttpRpcPOST
 import java.lang.reflect.Method
 
 fun HttpRpcPOST.title(annotated: Method): String = this.title.takeIf { it.isNotBlank() } ?: annotated.name

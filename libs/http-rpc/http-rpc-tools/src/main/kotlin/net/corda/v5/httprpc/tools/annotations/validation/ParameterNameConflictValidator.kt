@@ -1,10 +1,10 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
-import net.corda.v5.httprpc.api.RpcOps
-import net.corda.v5.httprpc.api.annotations.HttpRpcPathParameter
-import net.corda.v5.httprpc.api.annotations.HttpRpcQueryParameter
-import net.corda.v5.httprpc.api.annotations.HttpRpcRequestBodyParameter
-import net.corda.v5.httprpc.api.annotations.isHttpRpcParameterAnnotation
+import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.annotations.HttpRpcQueryParameter
+import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
+import net.corda.httprpc.annotations.isHttpRpcParameterAnnotation
 import net.corda.v5.httprpc.tools.annotations.validation.utils.endpoints
 import net.corda.v5.httprpc.tools.annotations.validation.utils.getParameterName
 import java.lang.reflect.Parameter

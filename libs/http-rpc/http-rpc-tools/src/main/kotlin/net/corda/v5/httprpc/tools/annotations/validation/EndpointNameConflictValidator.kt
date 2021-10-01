@@ -1,6 +1,6 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
-import net.corda.v5.httprpc.api.RpcOps
+import net.corda.httprpc.RpcOps
 import net.corda.v5.httprpc.tools.annotations.validation.utils.EndpointType
 import net.corda.v5.httprpc.tools.annotations.validation.utils.endpointPath
 import net.corda.v5.httprpc.tools.annotations.validation.utils.endpointType

@@ -1,4 +1,4 @@
-package net.corda.v5.httprpc.api.annotations
+package net.corda.httprpc.annotations
 
 /**
  * Marks a function parameter of HTTP POST annotated function as a nested body parameter

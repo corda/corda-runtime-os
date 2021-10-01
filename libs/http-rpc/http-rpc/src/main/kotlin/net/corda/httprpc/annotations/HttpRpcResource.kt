@@ -1,4 +1,4 @@
-package net.corda.v5.httprpc.api.annotations
+package net.corda.httprpc.annotations
 
 /**
  * Marks an interface extending `RpcOps` to be exposed as an HTTP resource.

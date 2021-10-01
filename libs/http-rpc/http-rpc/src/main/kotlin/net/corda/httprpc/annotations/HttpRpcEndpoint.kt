@@ -1,4 +1,4 @@
-package net.corda.v5.httprpc.api.annotations
+package net.corda.httprpc.annotations
 
 /**
  * Marks a function of an @[HttpRpcResource] annotated interface to be exposed as a POST endpoint by the HTTP RPC

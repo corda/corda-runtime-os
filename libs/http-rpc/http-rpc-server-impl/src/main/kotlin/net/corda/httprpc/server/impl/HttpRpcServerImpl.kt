@@ -17,8 +17,8 @@ import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAut
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.httprpc.api.PluggableRPCOps
-import net.corda.v5.httprpc.api.RpcOps
+import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.RpcOps
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
 

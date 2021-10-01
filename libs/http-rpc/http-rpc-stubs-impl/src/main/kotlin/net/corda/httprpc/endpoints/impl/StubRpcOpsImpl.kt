@@ -2,10 +2,10 @@ package net.corda.httprpc.endpoints.impl
 
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.httprpc.api.PluggableRPCOps
-import net.corda.v5.httprpc.api.RpcOps
-import net.corda.v5.httprpc.api.annotations.HttpRpcGET
-import net.corda.v5.httprpc.api.annotations.HttpRpcResource
+import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcGET
+import net.corda.httprpc.annotations.HttpRpcResource
 import org.osgi.service.component.annotations.Component
 
 @HttpRpcResource(name = "Stub rpc ops", description = "Stub rpc ops endpoints", path = "stubs")

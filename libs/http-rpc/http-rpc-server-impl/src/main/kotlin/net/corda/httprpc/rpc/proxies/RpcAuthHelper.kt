@@ -2,7 +2,7 @@
 
 package net.corda.httprpc.rpc.proxies
 
-import net.corda.v5.httprpc.api.RpcOps
+import net.corda.httprpc.RpcOps
 import java.lang.reflect.Method
 
 

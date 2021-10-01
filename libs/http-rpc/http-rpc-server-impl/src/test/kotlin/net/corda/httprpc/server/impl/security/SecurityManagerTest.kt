@@ -6,7 +6,7 @@ import net.corda.httprpc.server.impl.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.scheme.AuthenticationSchemeProvider
-import net.corda.v5.httprpc.api.RpcOps
+import net.corda.httprpc.RpcOps
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame

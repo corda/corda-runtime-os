@@ -1,4 +1,4 @@
-package net.corda.v5.httprpc.api
+package net.corda.httprpc
 
 
 /**

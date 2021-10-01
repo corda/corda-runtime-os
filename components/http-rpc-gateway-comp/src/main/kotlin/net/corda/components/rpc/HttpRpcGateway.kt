@@ -21,8 +21,8 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.httprpc.api.PluggableRPCOps
-import net.corda.v5.httprpc.api.RpcOps
+import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.RpcOps
 
 class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
 class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent

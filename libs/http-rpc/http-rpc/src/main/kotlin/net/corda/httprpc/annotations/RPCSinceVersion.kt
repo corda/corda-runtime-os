@@ -1,4 +1,4 @@
-package net.corda.v5.httprpc.api.annotations
+package net.corda.httprpc.annotations
 
 /** Records the protocol version in which this RPC was added. */
 @Target(AnnotationTarget.FUNCTION)

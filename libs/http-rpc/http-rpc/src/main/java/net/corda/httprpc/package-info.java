@@ -1,4 +1,4 @@
 @Export
-package net.corda.v5.httprpc.api;
+package net.corda.httprpc;
 
 import org.osgi.annotation.bundle.Export;

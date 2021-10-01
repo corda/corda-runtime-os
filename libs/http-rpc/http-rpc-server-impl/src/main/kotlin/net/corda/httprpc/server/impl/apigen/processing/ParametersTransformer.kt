@@ -1,15 +1,15 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
-import net.corda.v5.httprpc.api.annotations.HttpRpcPathParameter
-import net.corda.v5.httprpc.api.annotations.HttpRpcQueryParameter
-import net.corda.v5.httprpc.api.annotations.HttpRpcRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.annotations.HttpRpcQueryParameter
+import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
 import net.corda.httprpc.server.impl.apigen.models.ParameterType
 import net.corda.httprpc.server.impl.apigen.models.GenericParameterizedType
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
-import net.corda.v5.httprpc.api.annotations.isHttpRpcParameterAnnotation
+import net.corda.httprpc.annotations.isHttpRpcParameterAnnotation
 import net.corda.v5.httprpc.tools.annotations.extensions.name
 import java.lang.reflect.Parameter
 import kotlin.reflect.KParameter

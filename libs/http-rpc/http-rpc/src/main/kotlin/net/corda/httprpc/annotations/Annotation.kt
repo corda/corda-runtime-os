@@ -1,4 +1,4 @@
-package net.corda.v5.httprpc.api.annotations
+package net.corda.httprpc.annotations
 
 fun Annotation.isHttpRpcParameterAnnotation() =
                 this is HttpRpcPathParameter ||

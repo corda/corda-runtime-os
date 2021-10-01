@@ -1,7 +1,7 @@
 package net.corda.v5.httprpc.tools.annotations.validation
 
-import net.corda.v5.httprpc.api.RpcOps
-import net.corda.v5.httprpc.api.annotations.isHttpRpcParameterAnnotation
+import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.isHttpRpcParameterAnnotation
 import net.corda.v5.httprpc.tools.annotations.validation.utils.endpoints
 import java.lang.reflect.Method
 
