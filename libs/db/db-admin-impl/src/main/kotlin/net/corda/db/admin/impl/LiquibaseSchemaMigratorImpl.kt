@@ -20,9 +20,7 @@ class LiquibaseSchemaMigratorImpl(
         changeLogFile: String,
         resourceAccessor: ResourceAccessor,
         database: Database
-    ) -> Liquibase = { changeLogFile, resourceAccessor, database ->
-        Liquibase(changeLogFile, resourceAccessor, database)
-    },
+    ) -> Liquibase = ::Liquibase,
     private val databaseFactory: (connection: Connection) -> Database =
         { connection ->
             DatabaseFactory
@@ -39,11 +37,11 @@ class LiquibaseSchemaMigratorImpl(
     }
 
     /**
-     * Create update [sql] for [datasource] based on [changeLog]
+     * Create update [sql] for [datasource] based on [dbChange]
      * does not update the DB
      *
      * @param datasource
-     * @param changeLog
+     * @param dbChange
      * @param sql output
      */
     override fun createUpdateSql(datasource: Connection, dbChange: DbChange, sql: Writer) {
