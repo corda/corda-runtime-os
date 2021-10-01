@@ -8,18 +8,9 @@
         <File name="App" fileName="logs/app.log">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
         </File>
-
-        <File name="Publisher" fileName="logs/publisher.log">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-        </File>
-
     </appenders>
 
     <loggers>
-        <logger name="liquibase">
-            <appender-ref ref="Publisher" level="info"/>
-        </logger>
-
         <logger name="Console">
             <appender-ref ref="Console" level="info"/>
         </logger>
