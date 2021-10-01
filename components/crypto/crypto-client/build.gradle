@@ -15,11 +15,11 @@ dependencies {
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation project(":components:crypto:crypto-internal")
-    implementation project(':components:crypto:crypto-impl')
+    implementation project(":libs:crypto:crypto-internal")
+    implementation project(':libs:crypto:crypto-impl')
     implementation project(":libs:messaging:messaging")
-    implementation project(":components:configuration:configuration-read-service")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":components:configuration:configuration-read-service")
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
