@@ -16,7 +16,7 @@
     </appenders>
 
     <loggers>
-        <logger name="net.corda.components.examples.publisher">
+        <logger name="liquibase">
             <appender-ref ref="Publisher" level="info"/>
         </logger>
 

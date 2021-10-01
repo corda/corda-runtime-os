@@ -24,9 +24,9 @@ class ClusterAdminEventProcessor(
         // TODO: I don't think this should be taken from this package
         val dbChange = ClassloaderChangeLog(linkedSetOf(
             ClassloaderChangeLog.ChangeLogResourceFiles(
-                ClusterAdminEventProcessor::class.java.packageName,
+                this::class.java.packageName,
                 listOf("migration/db.changelog-master.xml"),
-                classLoader = ClusterAdminEventProcessor::class.java.classLoader)
+                classLoader = this::class.java.classLoader)
         ))
         schemaMigrator.updateDb(dbConnection, dbChange)
         return emptyList()
