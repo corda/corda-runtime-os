@@ -12,10 +12,16 @@ import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
 import io.javalin.plugin.openapi.OpenApiOptions
 import io.javalin.plugin.openapi.OpenApiPlugin
-import io.javalin.plugin.openapi.ui.ReDocOptions
 import io.javalin.plugin.openapi.ui.SwaggerOptions
+import io.swagger.v3.oas.models.Components
+import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Contact
 import io.swagger.v3.oas.models.info.Info
+import io.swagger.v3.oas.models.security.OAuthFlow
+import io.swagger.v3.oas.models.security.OAuthFlows
+import io.swagger.v3.oas.models.security.Scopes
+import io.swagger.v3.oas.models.security.SecurityRequirement
+import io.swagger.v3.oas.models.security.SecurityScheme
 import net.corda.httprpc.security.Actor
 import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
@@ -25,6 +31,7 @@ import net.corda.httprpc.server.config.HttpRpcSettingsProvider
 import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
+import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.server.impl.utils.addHeaderValues
 import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
@@ -52,16 +59,9 @@ import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
 import java.io.PrintStream
 import javax.security.auth.login.FailedLoginException
-import kotlin.collections.List
 import kotlin.collections.component1
 import kotlin.collections.component2
-import kotlin.collections.find
-import kotlin.collections.forEach
-import kotlin.collections.joinToString
-import kotlin.collections.map
-import kotlin.collections.mutableMapOf
 import kotlin.collections.set
-import kotlin.collections.toTypedArray
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "TooGenericExceptionCaught")
 internal class HttpRpcServerInternal(
@@ -141,21 +141,69 @@ internal class HttpRpcServerInternal(
     }
 
     fun getConfiguredOpenApiPlugin() = OpenApiPlugin(
-        OpenApiOptions(
-            Info().apply {
-                version("1.0")
-                description("This is the description of my api")
-                title("This is the tile of my API")
-                contact(Contact().apply {
-                    name = "rpc team"
-                    url = "rpc@r3.com"
+        OpenApiOptions {
+            // Use this method of setting up the OpenAPI options as it gives more customization
+            OpenAPI().also { openApi ->
+                openApi.info = Info().apply {
+                    version(configurationsProvider.getApiVersion())
+                    title(configurationsProvider.getApiTitle())
+                    description(configurationsProvider.getApiDescription())
+                    contact(Contact().apply {
+                        name = "rpc team"
+                        url = "rpc@r3.com"
+                    })
+                }
+                openApi.addServersItem(
+                    io.swagger.v3.oas.models.servers.Server().url(
+                        "/${configurationsProvider.getBasePath()}/v${configurationsProvider.getApiVersion()}".replace("/+".toRegex(), "/")
+                    )
+                )
+                // Set up the authorization code
+                openApi.components((openApi.components ?: Components()).apply {
+                    addSecuritySchemes(
+                        "basicAuth",
+                        SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("basic")
+                    )
+                    openApi.addSecurityItem(SecurityRequirement().addList("basicAuth"))
+                    addAzureAdIfNecessary(openApi, this)
                 })
             }
-        ).apply {
-            path("/swagger-docs") // endpoint for OpenAPI json
-            swagger(SwaggerOptions("/swagger-ui")) // endpoint for swagger-ui
+        }.apply {
+            val pathForOpenApiUI = "/v${configurationsProvider.getApiVersion()}/swagger"
+            val pathForOpenApiJson = "$pathForOpenApiUI.json"
+            path(pathForOpenApiJson) // endpoint for OpenAPI json
+            swagger(SwaggerOptions(pathForOpenApiUI)) // endpoint for swagger-ui
+//            path("/swagger-docs") // endpoint for OpenAPI json
+//            swagger(SwaggerOptions("/swagger-ui")) // endpoint for swagger-ui
         }
     )
+
+    private fun addAzureAdIfNecessary(openApi: OpenAPI, components: Components) {
+        val azureAd = configurationsProvider.getSsoSettings()?.azureAd()
+        if (azureAd != null) {
+            components.addSecuritySchemes(
+                "azuread", SecurityScheme()
+                    .type(SecurityScheme.Type.OAUTH2)
+                    .flows(
+                        OAuthFlows()
+                            .authorizationCode(
+                                OAuthFlow()
+                                .authorizationUrl(azureAd.getAuthorizeUrl())
+                                .tokenUrl(azureAd.getTokenUrl())
+                                .scopes(Scopes().apply {
+                                    AzureAdAuthenticationProvider.SCOPE.split(' ').forEach { scope ->
+                                        addString(scope, scope)
+                                    }
+                                })
+                            )
+                    )
+                    .extensions(mapOf("x-tokenName" to "id_token"))
+            )
+
+
+            openApi.addSecurityItem(SecurityRequirement().addList("azuread", "AzureAd authentication"))
+        }
+    }
 
     //https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
     //this allows the implementation of HTTP Digest or for example SPNEGO in the future
