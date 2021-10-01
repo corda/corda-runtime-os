@@ -13,6 +13,7 @@ import org.slf4j.Logger
 import java.sql.Connection
 
 @Component
+@Suppress("LongParameterList")
 class RunClusterAdminEventSubscription(
     private val subscriptionFactory: SubscriptionFactory,
     private var config: Config,

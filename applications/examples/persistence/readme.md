@@ -45,7 +45,7 @@ Start the demo app (from `applications/examples/persistence/persistence-demo`):
 
 ```shell
 gradle clean assemble 
-java -jar build/bin/corda-persistence-demo-5.0.0.0-SNAPSHOT.jar
+java -jar build/bin/corda-persistence-demo-5.0.0.0-SNAPSHOT.jar --kafka localhost:9093 --jdbc-url jdbc:postgresql://localhost:5433/cordacluster
 ```
 
 ## Demo Publisher

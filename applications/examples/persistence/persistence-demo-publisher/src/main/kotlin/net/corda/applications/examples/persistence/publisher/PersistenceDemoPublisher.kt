@@ -19,6 +19,7 @@ class PersistenceDemoPublisher @Activate constructor(
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
 ) : Application {
+    @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
         val parameters = CliParameters(shutDownService)
         val cli = CommandLine(parameters)

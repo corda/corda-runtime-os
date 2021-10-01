@@ -20,6 +20,7 @@ open class CommandBase(
     )
     var kafka: String = "kafka:9092"
 
+    @Suppress("TooGenericExceptionCaught")
     fun call(function: () -> (Unit)) {
         var exitCode = 0
         try {

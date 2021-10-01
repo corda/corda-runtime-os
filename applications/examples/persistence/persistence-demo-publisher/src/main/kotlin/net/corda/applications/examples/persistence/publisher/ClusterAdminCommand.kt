@@ -4,8 +4,6 @@ import net.corda.data.poc.persistence.AdminEventType
 import net.corda.data.poc.persistence.ClusterAdminEvent
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.osgi.api.Shutdown
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.util.UUID
 

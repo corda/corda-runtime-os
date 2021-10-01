@@ -2,7 +2,6 @@ package net.corda.applications.examples.persistence
 
 import com.typesafe.config.ConfigFactory
 import net.corda.components.examples.persistence.cluster.admin.RunClusterAdminEventSubscription
-import net.corda.components.examples.persistence.cluster.admin.processor.ClusterAdminEventProcessor
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -42,6 +41,7 @@ class DemoApp @Activate constructor(
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
 
+    @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
         consoleLogger.info("Starting persistence demo application...")
         val parameters = CliParameters()
