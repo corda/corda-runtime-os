@@ -9,6 +9,7 @@ class ConfigurationHandlerStorage {
     private val handlers: MutableMap<CallbackHandle, Unit> = ConcurrentHashMap()
 
     // YIFT: Temporary hack - see https://r3-cev.atlassian.net/browse/CORE-2703
+    @Volatile
     private var subscription: ConfigReader? = null
 
     private class CallbackHandle(
@@ -40,9 +41,11 @@ class ConfigurationHandlerStorage {
     }
 
     fun add(callback: ConfigurationHandler) : AutoCloseable {
-        val sub = subscription
         val handle = CallbackHandle(callback, this)
         handlers[handle] = Unit
+        // YIFT: Temporary hack - see https://r3-cev.atlassian.net/browse/CORE-2703 -
+        // we must add the handler before looking at the subscription
+        val sub = subscription
         if (sub != null) {
             handle.subscribe(sub)
         }
