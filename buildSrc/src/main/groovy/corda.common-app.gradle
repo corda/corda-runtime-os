@@ -20,10 +20,6 @@ def applyDependencySubstitution = { Configuration conf ->
     }
 }
 
-pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
-    throw new StopExecutionException('corda.common-app plugin is incompatible with building CPKs and CPBs')
-}
-
 configurations {
     systemPackages {
         transitive = false
@@ -65,8 +61,6 @@ dependencies {
     systemPackages "net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion"
     systemPackages "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
     systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
-    systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
-    systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
     systemPackages "net.corda:corda-base:$cordaApiVersion"
     systemPackages project(":osgi-framework-api")
 }

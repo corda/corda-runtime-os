@@ -21,7 +21,6 @@ quasar {
             'org.junit**',
             'org.slf4j**',
             'worker.org.gradle.**',
-            'com.nhaarman.mockito_kotlin**',
             'org.assertj**',
             'org.hamcrest**',
             'org.mockito**',
@@ -34,6 +33,7 @@ dependencies {
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     systemPackages files(configurations.quasarAgent)
+    systemPackages "com.esotericsoftware:reflectasm"
 }
 
 osgiRun {
