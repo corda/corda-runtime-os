@@ -29,11 +29,17 @@ quasar {
     ]
 }
 
+configurations {
+    runtimeClasspath {
+        exclude group: 'com.esotericsoftware', module: 'reflectasm'
+    }
+}
+
 dependencies {
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     systemPackages files(configurations.quasarAgent)
-    systemPackages "com.esotericsoftware:reflectasm"
+    systemPackages "com.esotericsoftware:reflectasm:$reflectAsmVersion"
 }
 
 osgiRun {
