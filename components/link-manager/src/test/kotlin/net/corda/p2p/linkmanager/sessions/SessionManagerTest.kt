@@ -45,7 +45,6 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
-import java.security.PublicKey
 import java.time.Instant
 
 class SessionManagerTest {
@@ -132,14 +131,6 @@ class SessionManagerTest {
         KEY
     )
 
-    private fun hashKey(key: PublicKey): ByteArray {
-        val provider = BouncyCastleProvider()
-        val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
-        messageDigest.reset()
-        messageDigest.update(key.encoded)
-        return messageDigest.digest()
-    }
-
     @Test
     fun `when no session exists, processing outbound message creates a new session`() {
         whenever(pendingSessionMessageQueues.queueMessage(eq(message), any())).thenReturn(true)
@@ -160,6 +151,8 @@ class SessionManagerTest {
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
         verify(sessionReplayer, never()).addMessageForReplay(any(), any())
+        loggingInterceptor.assertSingleWarning("Could not find the network type in the NetworkMap for groupId $GROUP_ID." +
+                " The sessionInit message was not sent.")
     }
 
     @Test
@@ -170,6 +163,8 @@ class SessionManagerTest {
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
         verify(sessionReplayer, never()).addMessageForReplay(any(), any())
+        loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PEER_PARTY " +
+                "but our identity $OUR_PARTY is not in the network map. The sessionInit message was not sent.")
     }
 
     @Test
@@ -182,6 +177,8 @@ class SessionManagerTest {
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
         verify(sessionReplayer).addMessageForReplay(any(), eq(SessionReplayer.SessionMessageReplay(initiatorHello, PEER_PARTY)))
+        loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PEER_PARTY " +
+                "which is not in the network map. The sessionInit message was not sent.")
     }
 
     @Test
@@ -380,7 +377,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when initiator handshake is received, a responder handshake is returned`() {
+    fun `when initiator handshake is received, a responder handshake is returned and session is established`() {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
@@ -468,6 +465,7 @@ class SessionManagerTest {
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
+        loggingInterceptor.assertErrorContains("The message was discarded.")
     }
 
     @Test

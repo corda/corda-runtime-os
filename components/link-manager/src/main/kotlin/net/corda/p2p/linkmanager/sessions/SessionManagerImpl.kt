@@ -44,7 +44,7 @@ class SessionManagerImpl(
     private val cryptoService: LinkManagerCryptoService,
     private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues,
     private val sessionReplayer: SessionReplayer,
-    private val protocolFactory: ProtocolFactory = SimpleProtocolFactory()
+    private val protocolFactory: ProtocolFactory = CryptoProtocolFactory()
     ): SessionManager {
 
     companion object {
@@ -304,7 +304,7 @@ class SessionManagerImpl(
         val ourIdentityData = try {
             session.validatePeerHandshakeMessage(message, peer.publicKey, peer.publicKeyAlgorithm)
         } catch (exception: WrongPublicKeyHashException) {
-            logger.error(exception.message)
+            logger.error("The message was discarded. ${exception.message}")
             return null
         } catch (exception: InvalidHandshakeMessageException) {
             logger.validationFailedWarning(
