@@ -38,7 +38,7 @@ class HttpRpcServerAzureAdTest {
                 HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description"),
                 null,
                 SsoSettings(AzureAdSettings(AzureAdMock.clientId, null, AzureAdMock.tenantId, trustedIssuers = listOf(AzureAdMock.issuer))), HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
-        httpRpcServer = HttpRpcServerImpl(listOf(TestHealthCheckAPIImpl()), securityManager, httpRpcSettings, true, ClassLoader.getSystemClassLoader()).apply { start() }
+        httpRpcServer = HttpRpcServerImpl(listOf(TestHealthCheckAPIImpl()), securityManager, httpRpcSettings, true).apply { start() }
         client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
     }
 

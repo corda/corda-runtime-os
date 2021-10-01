@@ -5,7 +5,6 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.server.impl.apigen.models.InvocationMethod
 import net.corda.httprpc.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
-import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.stream.Cursor
 import net.corda.v5.base.util.contextLogger
@@ -22,7 +21,7 @@ interface MethodInvoker {
     fun invoke(vararg args: Any?): Any?
 }
 
-internal open class DefaultMethodInvoker(private val invocationMethod: InvocationMethod, private val cl: ClassLoader) :
+internal open class DefaultMethodInvoker(private val invocationMethod: InvocationMethod) :
     MethodInvoker {
     private companion object {
         private val log = contextLogger()
@@ -34,14 +33,14 @@ internal open class DefaultMethodInvoker(private val invocationMethod: Invocatio
         val method = invocationMethod.method
         @Suppress("SpreadOperator")
         return when (args.size) {
-            0 -> executeWithThreadContextClassLoader(cl) { method.invoke(instance) }
-            else -> executeWithThreadContextClassLoader(cl) { method.invoke(instance, *args) }
+            0 -> method.invoke(instance)
+            else -> method.invoke(instance, *args)
         }.also { log.trace { "Invoke method \"${invocationMethod.method.name}\" with args size: ${args.size} completed." } }
     }
 }
 
-internal open class DurableStreamsMethodInvoker(private val invocationMethod: InvocationMethod, cl: ClassLoader) :
-    DefaultMethodInvoker(invocationMethod, cl) {
+internal open class DurableStreamsMethodInvoker(private val invocationMethod: InvocationMethod) :
+    DefaultMethodInvoker(invocationMethod) {
     private companion object {
         private val log = contextLogger()
     }
@@ -90,8 +89,8 @@ internal open class DurableStreamsMethodInvoker(private val invocationMethod: In
     }
 }
 
-internal class FiniteDurableStreamsMethodInvoker(private val invocationMethod: InvocationMethod, cl: ClassLoader) :
-    DurableStreamsMethodInvoker(invocationMethod, cl) {
+internal class FiniteDurableStreamsMethodInvoker(private val invocationMethod: InvocationMethod) :
+    DurableStreamsMethodInvoker(invocationMethod) {
     private companion object {
         private val log = contextLogger()
     }

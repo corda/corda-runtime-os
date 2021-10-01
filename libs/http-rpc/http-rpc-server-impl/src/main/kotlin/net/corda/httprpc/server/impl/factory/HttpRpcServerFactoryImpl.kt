@@ -16,10 +16,9 @@ class HttpRpcServerFactoryImpl : HttpRpcServerFactory {
         rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
         rpcSecurityManager: RPCSecurityManager,
         httpRpcSettings: HttpRpcSettings,
-        devMode: Boolean,
-        cordappClassLoader: ClassLoader
+        devMode: Boolean
     ): HttpRpcServer {
 
-        return HttpRpcServerImpl(rpcOpsImpls, rpcSecurityManager, httpRpcSettings, devMode, cordappClassLoader)
+        return HttpRpcServerImpl(rpcOpsImpls, rpcSecurityManager, httpRpcSettings, devMode)
     }
 }

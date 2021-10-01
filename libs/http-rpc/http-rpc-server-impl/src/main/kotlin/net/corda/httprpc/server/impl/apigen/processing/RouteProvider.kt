@@ -26,8 +26,7 @@ internal interface RouteProvider {
 internal class JavalinRouteProviderImpl(
     private val basePath: String,
     private val apiVersion: String,
-    private val resources: List<Resource>,
-    private val cl: ClassLoader
+    private val resources: List<Resource>
 ) : RouteProvider {
 
     private companion object {
@@ -53,7 +52,7 @@ internal class JavalinRouteProviderImpl(
         return resources.flatMap { resource ->
             resource.endpoints.filter { it.method == httpMethod }
                 .map { it.copy(path = replacePathParametersInEndpointPath(it.path)) }
-                .map { RouteInfo(basePath, resource.path, apiVersion, it, cl) }
+                .map { RouteInfo(basePath, resource.path, apiVersion, it) }
 
         }.also { log.trace { "Map resources to routes by http method completed." } }
     }
@@ -79,8 +78,7 @@ internal class RouteInfo(
     private val basePath: String,
     private val resourcePath: String,
     private val apiVersion: String,
-    private val endpoint: Endpoint,
-    private val cl: ClassLoader = ClassLoader.getSystemClassLoader()
+    private val endpoint: Endpoint
 ) {
     private companion object {
         private val log = contextLogger()
@@ -91,19 +89,14 @@ internal class RouteInfo(
     val method get() = endpoint.invocationMethod
     val methodFullName get() = RpcAuthHelper.methodFullName(endpoint.invocationMethod.method)
     private val methodInvoker = when {
-        endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() -> FiniteDurableStreamsMethodInvoker(
-                endpoint.invocationMethod,
-                cl
-        )
+        endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() ->
+            FiniteDurableStreamsMethodInvoker(endpoint.invocationMethod)
         endpoint.invocationMethod.method.returnsDurableCursorBuilder()
-        && !endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() ->
-            DurableStreamsMethodInvoker(
-                    endpoint.invocationMethod,
-                    cl
-            )
-        else -> DefaultMethodInvoker(endpoint.invocationMethod, cl)
+                && !endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() ->
+            DurableStreamsMethodInvoker(endpoint.invocationMethod
+        )
+        else -> DefaultMethodInvoker(endpoint.invocationMethod)
     }
-
 
     @Suppress("SpreadOperator")
     fun invokeDelegatedMethod(vararg args: Any?): Any? {

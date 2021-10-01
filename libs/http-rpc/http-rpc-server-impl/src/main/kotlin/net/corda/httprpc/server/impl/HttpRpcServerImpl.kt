@@ -27,8 +27,7 @@ class HttpRpcServerImpl(
     rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
     rpcSecurityManager: RPCSecurityManager,
     httpRpcSettings: HttpRpcSettings,
-    devMode: Boolean,
-    cordappClassLoader: ClassLoader
+    devMode: Boolean
 
 ) : HttpRpcServer {
     private companion object {
@@ -49,8 +48,7 @@ class HttpRpcServerImpl(
         JavalinRouteProviderImpl(
             httpRpcSettings.context.basePath,
             httpRpcSettings.context.version,
-            resources,
-            cordappClassLoader
+            resources
         ),
         SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManager)),
         httpRpcObjectConfigProvider,
