@@ -5,7 +5,7 @@ import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.v5.base.util.NetworkHostAndPort
-import net.corda.v5.httprpc.tools.HttpVerb
+import net.corda.httprpc.tools.HttpVerb
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import kotlin.test.assertEquals
@@ -33,7 +33,7 @@ class HttpRpcServerCaseSensitiveUrlTest: HttpRpcServerTestBase() {
     @Test
     fun `Uppercase GET will redirect the request`() {
 
-        val plusOneResponse = client.call(HttpVerb.GET, WebRequest<Any>("health/Plusone", queryParameters = mapOf("numbers" to listOf(1.0, 2.0))), List::class.java, userName, password)
+        val plusOneResponse = client.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("health/Plusone", queryParameters = mapOf("numbers" to listOf(1.0, 2.0))), List::class.java, userName, password)
         assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
         assertEquals(listOf(2.0, 3.0), plusOneResponse.body)
     }
@@ -41,7 +41,7 @@ class HttpRpcServerCaseSensitiveUrlTest: HttpRpcServerTestBase() {
     @Test
     fun `Uppercase POST will return 301 Moved Permanently`() {
 
-        val pingResponse = client.call(HttpVerb.POST, WebRequest("health/Ping", """{"pingPongData": {"str": "stringdata"}}"""), userName, password)
+        val pingResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest("health/Ping", """{"pingPongData": {"str": "stringdata"}}"""), userName, password)
         assertEquals(HttpStatus.SC_MOVED_PERMANENTLY, pingResponse.responseStatus)
     }
 }

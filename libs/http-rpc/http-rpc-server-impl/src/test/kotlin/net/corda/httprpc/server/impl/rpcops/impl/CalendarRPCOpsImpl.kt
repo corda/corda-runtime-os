@@ -3,7 +3,7 @@ package net.corda.httprpc.server.impl.rpcops.impl
 import net.corda.httprpc.durablestream.DurableStreamHelper
 import net.corda.httprpc.server.impl.rpcops.CalendarRPCOps
 import net.corda.v5.base.stream.FiniteDurableCursorBuilder
-import net.corda.v5.httprpc.api.PluggableRPCOps
+import net.corda.httprpc.PluggableRPCOps
 import java.time.DayOfWeek
 import java.time.format.DateTimeFormatter
 import java.util.Calendar

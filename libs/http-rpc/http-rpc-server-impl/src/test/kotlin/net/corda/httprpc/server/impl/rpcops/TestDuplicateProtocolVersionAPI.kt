@@ -1,8 +1,8 @@
 package net.corda.httprpc.server.impl.rpcops
 
-import net.corda.v5.httprpc.api.RpcOps
-import net.corda.v5.httprpc.api.annotations.HttpRpcGET
-import net.corda.v5.httprpc.api.annotations.HttpRpcResource
+import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcGET
+import net.corda.httprpc.annotations.HttpRpcResource
 
 @HttpRpcResource
 interface TestDuplicateProtocolVersionAPI : RpcOps {

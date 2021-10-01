@@ -5,7 +5,7 @@ import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.InvocationMethod
 import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.httprpc.server.impl.apigen.models.ResponseBody
-import net.corda.v5.httprpc.api.RpcOps
+import net.corda.httprpc.RpcOps
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.reflect.jvm.javaGetter

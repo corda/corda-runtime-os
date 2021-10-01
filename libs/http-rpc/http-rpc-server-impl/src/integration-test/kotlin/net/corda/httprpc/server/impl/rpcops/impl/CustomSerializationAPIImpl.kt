@@ -5,7 +5,7 @@ import net.corda.httprpc.server.impl.rpcops.CustomMarshalString
 import net.corda.httprpc.server.impl.rpcops.CustomSerializationAPI
 import net.corda.httprpc.server.impl.rpcops.CustomString
 import net.corda.httprpc.server.impl.rpcops.CustomUnsafeString
-import net.corda.v5.httprpc.api.PluggableRPCOps
+import net.corda.httprpc.PluggableRPCOps
 
 class CustomSerializationAPIImpl : CustomSerializationAPI, PluggableRPCOps<CustomSerializationAPI> {
     override val targetInterface: Class<CustomSerializationAPI>
