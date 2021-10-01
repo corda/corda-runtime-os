@@ -68,7 +68,7 @@ internal open class SandboxImpl(
         try {
             bundle.uninstall()
         } catch (e: Exception) {
-            throw SandboxException("Bundle ${bundle.symbolicName} could not be uninstalled.", e)
+            throw SandboxException("Bundle could not be uninstalled: ${bundle.symbolicName}.", e)
         }
     }
 }
