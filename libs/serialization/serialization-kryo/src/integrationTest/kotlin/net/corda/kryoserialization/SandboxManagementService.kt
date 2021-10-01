@@ -2,49 +2,21 @@ package net.corda.kryoserialization
 
 import net.corda.install.InstallService
 import net.corda.packaging.Cpk
-import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.application.flows.Flow
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.fail
-import org.osgi.framework.Bundle
-import org.osgi.framework.FrameworkUtil
 import java.io.InputStream
 import java.net.URI
-import java.nio.file.Paths
 import java.security.DigestInputStream
 import java.security.MessageDigest
 
 class SandboxManagementService {
     companion object {
 
-        // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
-        private val PLATFORM_PUBLIC_BUNDLE_NAMES = listOf(
-            "javax.persistence-api",
-            "jcl.over.slf4j",
-            "net.corda.application",
-            "net.corda.base",
-            "net.corda.crypto-api",
-            "net.corda.flows",
-            "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
-            "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
-            "net.corda.ledger",
-            "net.corda.legacy-api",
-            "net.corda.persistence",
-            "net.corda.serialization",
-            "org.apache.aries.spifly.dynamic.bundle",
-            "org.apache.felix.framework",
-            "org.apache.felix.scr",
-            "org.hibernate.orm.core",
-            "org.jetbrains.kotlin.osgi-bundle",
-            "slf4j.api"
-        )
-
-        private val baseDirectory = Paths.get(
-            URI.create(System.getProperty("base.directory") ?: fail("base.directory property not found"))
-        ).toAbsolutePath()
+//        private val baseDirectory = Paths.get(
+//            URI.create(System.getProperty("base.directory") ?: fail("base.directory property not found"))
+//        ).toAbsolutePath()
 
         private fun loadResource(resourceName: String): URI {
             return (this::class.java.classLoader.getResource(resourceName)
@@ -70,20 +42,15 @@ class SandboxManagementService {
     private val sandboxCreationService: SandboxCreationService = ServiceLocator.getSandboxCreationService()
 
     val cpk1: Cpk = loadCPK(resourceName = CPK_ONE)
+    val cpk2: Cpk = loadCPK(resourceName = CPK_TWO)
     val group1: SandboxGroup = createSandboxGroupFor(cpk1)
+    val group2: SandboxGroup = createSandboxGroupFor(cpk2)
 
 //        val allBundles = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles
 //        val (publicBundles, privateBundles) = allBundles.partition { bundle ->
 //            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
 //        }
 //        sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
-
-    /** Runs the flow with [className] in sandbox group [group] and casts the return value to [T]. */
-    internal fun <T: Any> runFlow(className: String, group: SandboxGroup): T {
-        val workflowClass = group.loadClassFromCordappBundle(className, Flow::class.java)
-        return uncheckedCast(getServiceFor(Flow::class.java, workflowClass).call())
-            ?: fail("Workflow did not return the correct type.")
-    }
 
     @Suppress("SameParameterValue")
     private fun loadCPK(resourceName: String): Cpk {
@@ -96,17 +63,4 @@ class SandboxManagementService {
     private fun createSandboxGroupFor(vararg cpks: Cpk): SandboxGroup {
         return sandboxCreationService.createSandboxGroup(cpks.map(Cpk::cpkHash))
     }
-
-    private fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {
-        val context = FrameworkUtil.getBundle(bundleClass).bundleContext
-        return context.getServiceReferences(serviceType, null)
-            .map(context::getService)
-            .filterIsInstance(bundleClass)
-            .firstOrNull() ?: fail("No service for $bundleClass")
-    }
-
-    private fun getBundle(className: String, sandbox: CpkSandbox): Bundle {
-        return FrameworkUtil.getBundle(sandbox.loadClassFromCordappBundle(className))
-    }
-
 }

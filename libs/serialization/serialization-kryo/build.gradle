@@ -43,7 +43,8 @@ dependencies {
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
     implementation project(":libs:utilities")
 
-    cpks project(path: 'serializable-cpk-one', configuration: 'cordaCPK')
+    cpks project(path: 'src:integrationTest:cpks:serializable-cpk-one', configuration: 'cordaCPK')
+    cpks project(path: 'src:integrationTest:cpks:serializable-cpk-two', configuration: 'cordaCPK')
 
     testImplementation 'org.osgi:osgi.core'
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
@@ -53,6 +54,7 @@ dependencies {
     testImplementation "net.i2p.crypto:eddsa:$eddsaVersion"
 
     integrationTestImplementation project(":libs:install")
+    integrationTestImplementation project("src:integrationTest:cpks:serializable-cpk-one")
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"

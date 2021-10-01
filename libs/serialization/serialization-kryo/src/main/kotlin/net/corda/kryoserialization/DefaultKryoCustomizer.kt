@@ -28,8 +28,6 @@ import net.corda.utilities.LazyMappedList
 import org.objenesis.instantiator.ObjectInstantiator
 import org.objenesis.strategy.InstantiatorStrategy
 import org.objenesis.strategy.StdInstantiatorStrategy
-import org.osgi.framework.FrameworkUtil
-import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Modifier.isPublic
@@ -50,8 +48,9 @@ class DefaultKryoCustomizer {
             ): Kryo {
             return kryo.apply {
 
-                classLoader = FrameworkUtil.getBundle(this::class.java)?.adapt(BundleWiring::class.java)?.classLoader
-                    ?: this::class.java.classLoader
+//                classLoader = null
+//                FrameworkUtil.getBundle(this::class.java)?.adapt(BundleWiring::class.java)?.classLoader
+//                    ?: this::class.java.classLoader
 
                 classResolver.setKryo(this)
 
