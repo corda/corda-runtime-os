@@ -660,8 +660,7 @@ class SandboxServiceImplTests {
 
     @Test
     fun `sandbox group can be unloaded`() {
-        val uninstalledBundles = mutableListOf<Bundle>()
-        val sandboxService = createSandboxService(uninstalledBundles = uninstalledBundles)
+        val sandboxService = createSandboxService()
 
         val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash, cpkTwo.cpkHash))
         sandboxService.unloadSandboxGroup(sandboxGroup)
