@@ -6,6 +6,8 @@ import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
 import net.corda.data.crypto.wire.signing.WireSigningRequest
 import net.corda.data.crypto.wire.signing.WireSigningResponse
+import net.corda.v5.cipher.suite.config.CryptoServiceConfig
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.exceptions.CryptoConfigurationException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -230,11 +232,13 @@ class CryptoLibraryConfigTests {
 
     @Test
     @Timeout(5)
-    fun `Should fail if neither the member id nor 'default' path is not supplied`() {
+    fun `Should use default values when neither the member id nor 'default' path is not supplied`() {
         val config = CryptoLibraryConfigImpl(emptyMap())
-        assertThrows<CryptoConfigurationException> {
-            config.getMember(UUID.randomUUID().toString())
-        }
+        val member = config.getMember(UUID.randomUUID().toString()).getCategory(CryptoCategories.LEDGER)
+        assertEquals(CryptoServiceConfig.DEFAULT_SERVICE_NAME, member.serviceName)
+        assertEquals(Duration.ofSeconds(5), member.timeout)
+        assertEquals(ECDSA_SECP256R1_CODE_NAME, member.defaultSignatureScheme)
+        assertTrue(member.serviceConfig.isEmpty())
     }
 
     @Test

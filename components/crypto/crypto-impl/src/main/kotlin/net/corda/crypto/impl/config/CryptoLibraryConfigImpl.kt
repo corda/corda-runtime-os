@@ -9,7 +9,7 @@ class CryptoLibraryConfigImpl(
 ) : CryptoConfigMap(map), CryptoLibraryConfig {
     override fun getMember(memberId: String): CryptoMemberConfig {
         return CryptoMemberConfigImpl(
-            getOptionalConfig(memberId) ?: getConfig(DEFAULT_MEMBER_KEY)
+            getOptionalConfig(memberId) ?: getOptionalConfig(DEFAULT_MEMBER_KEY) ?: emptyMap()
         )
     }
 }

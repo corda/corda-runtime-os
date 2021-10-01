@@ -3,6 +3,7 @@ package net.corda.crypto.impl.config
 import net.corda.v5.cipher.suite.config.CryptoMemberConfig
 import net.corda.v5.cipher.suite.config.CryptoMemberConfig.Companion.DEFAULT_CATEGORY_KEY
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
+import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import java.time.Duration
 
 /**
@@ -18,7 +19,7 @@ class CryptoMemberConfigImpl(
             return CryptoServiceConfig(
                 serviceName = map.getString(CryptoServiceConfig::serviceName.name, CryptoServiceConfig.DEFAULT_SERVICE_NAME),
                 timeout = Duration.ofSeconds(map.getLong(CryptoServiceConfig::timeout.name, 5)),
-                defaultSignatureScheme = map.getString(CryptoServiceConfig::defaultSignatureScheme.name),
+                defaultSignatureScheme = map.getString(CryptoServiceConfig::defaultSignatureScheme.name, ECDSA_SECP256R1_CODE_NAME),
                 serviceConfig = map.getOptionalConfig(CryptoServiceConfig::serviceConfig.name) ?: emptyMap()
             )
         }
@@ -28,7 +29,8 @@ class CryptoMemberConfigImpl(
 
     override fun getCategory(category: String): CryptoServiceConfig {
         val raw = getOptionalConfig(category)
-            ?: getConfig(DEFAULT_CATEGORY_KEY)
+            ?: getOptionalConfig(DEFAULT_CATEGORY_KEY)
+            ?: CryptoConfigMap(emptyMap())
         return getInstance(raw)
     }
 

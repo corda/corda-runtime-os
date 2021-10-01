@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import java.util.UUID
+import kotlin.concurrent.thread
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -98,6 +99,35 @@ class DefaultCryptoServiceProviderTests {
             provider.createCryptoService(CryptoCategories.FRESH_KEYS)
         }
         assertFalse(exception.isRecoverable)
+    }
+
+    @Test
+    @Timeout(30)
+    fun `Should be able to create instances concurrently`() {
+        val provider = createCryptoServiceProvider()
+        assertTrue(provider.isRunning)
+        val threads = mutableListOf<Thread>()
+        for (i in 1..100) {
+            val thread = thread(start = true) {
+                provider.handleConfigEvent(
+                    CryptoLibraryConfigImpl(
+                        mapOf(
+                            "keyCache" to mapOf(
+                                "cacheFactoryName" to InMemoryPersistentCacheFactory.NAME
+                            ),
+                            "mngCache" to emptyMap()
+                        )
+                    )
+                )
+                assertNotNull(provider.createCryptoService(CryptoCategories.LEDGER))
+            }
+            threads.add(thread)
+        }
+        threads.forEach {
+            it.join(5_000)
+        }
+        provider.stop()
+        assertFalse(provider.isRunning)
     }
 
     private fun newAlias(): String = UUID.randomUUID().toString()

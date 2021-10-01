@@ -119,7 +119,9 @@ open class CipherSuiteFactoryImpl @Activate constructor(
             return verifiers.getOrPut(name) {
                 logger.info("Creating {}", SignatureVerificationService::class.java.name)
                 val provider = verifierProviders.firstOrNull { it.name == name }
-                    ?: throw CryptoServiceLibraryException("Cannot find $name implementing ${SignatureVerificationServiceProvider::class.java.name}")
+                    ?: throw CryptoServiceLibraryException(
+                        "Cannot find $name implementing ${SignatureVerificationServiceProvider::class.java.name}"
+                    )
                 try {
                     provider.getInstance(this)
                 } catch (e: CryptoServiceLibraryException) {

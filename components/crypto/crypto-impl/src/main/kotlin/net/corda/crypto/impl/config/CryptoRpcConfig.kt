@@ -27,19 +27,23 @@ class CryptoRpcConfig(
     val clientRetries: Long
         get() = getLong(this::clientRetries.name, 1)
 
-    val signingRpcConfig get() = RPCConfig(
-        groupName = groupName,
-        clientName = clientName,
-        requestTopic = signingRequestTopic,
-        requestType = WireSigningRequest::class.java,
-        responseType = WireSigningResponse::class.java
-    )
+    val signingRpcConfig by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        RPCConfig(
+            groupName = groupName,
+            clientName = clientName,
+            requestTopic = signingRequestTopic,
+            requestType = WireSigningRequest::class.java,
+            responseType = WireSigningResponse::class.java
+        )
+    }
 
-    val freshKeysRpcConfig get() = RPCConfig(
-        groupName = groupName,
-        clientName = clientName,
-        requestTopic = freshKeysRequestTopic,
-        requestType = WireFreshKeysRequest::class.java,
-        responseType = WireFreshKeysResponse::class.java
-    )
+    val freshKeysRpcConfig by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        RPCConfig(
+            groupName = groupName,
+            clientName = clientName,
+            requestTopic = freshKeysRequestTopic,
+            requestType = WireFreshKeysRequest::class.java,
+            responseType = WireFreshKeysResponse::class.java
+        )
+    }
 }
