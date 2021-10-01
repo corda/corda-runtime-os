@@ -1,4 +1,4 @@
-package net.corda.crypto.impl.lifecycle
+package net.corda.crypto.impl
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -8,7 +8,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import kotlin.test.assertTrue
 
-class LifecycleUtilsTests {
+class CleanupUtilsTests {
     @Test
     @Timeout(5)
     fun `Should close gracefully`() {

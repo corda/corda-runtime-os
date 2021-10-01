@@ -2,8 +2,6 @@ package net.corda.crypto.impl
 
 import net.corda.crypto.impl.config.CipherSuiteConfig
 import net.corda.crypto.impl.config.cipherSuite
-import net.corda.crypto.impl.lifecycle.clearCache
-import net.corda.crypto.impl.lifecycle.closeGracefully
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata

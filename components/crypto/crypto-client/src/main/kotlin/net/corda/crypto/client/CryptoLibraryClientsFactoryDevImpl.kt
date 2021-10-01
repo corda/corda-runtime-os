@@ -6,11 +6,11 @@ import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.SigningService
 import net.corda.crypto.impl.FreshKeySigningServiceImpl
 import net.corda.crypto.impl.SigningServiceImpl
+import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.dev.DevCryptoService
 import net.corda.crypto.impl.dev.DevCryptoServiceConfiguration
 import net.corda.crypto.impl.dev.DevCryptoServiceProvider
 import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
-import net.corda.crypto.impl.lifecycle.closeGracefully
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import java.util.concurrent.ConcurrentHashMap

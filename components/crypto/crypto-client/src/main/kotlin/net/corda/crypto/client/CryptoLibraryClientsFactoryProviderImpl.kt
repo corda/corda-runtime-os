@@ -1,9 +1,9 @@
 package net.corda.crypto.client
 
 import net.corda.crypto.CryptoLibraryClientsFactory
-import net.corda.crypto.impl.lifecycle.clearCache
-import net.corda.crypto.impl.lifecycle.closeGracefully
 import net.corda.crypto.CryptoLibraryClientsFactoryProvider
+import net.corda.crypto.impl.clearCache
+import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoRpcConfig
 import net.corda.crypto.impl.config.isDev
 import net.corda.crypto.impl.config.rpc

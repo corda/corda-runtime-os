@@ -1,7 +1,8 @@
-package net.corda.crypto.impl.lifecycle
+package net.corda.crypto.lifecycle
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -9,7 +10,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.createCoordinator
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import org.slf4j.Logger

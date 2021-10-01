@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.crypto.impl.config.CryptoCacheConfig
-import net.corda.crypto.impl.lifecycle.clearCache
 import net.corda.crypto.impl.persistence.PersistentCacheFactory
 import net.corda.crypto.impl.persistence.SigningKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCacheImpl
@@ -16,9 +15,10 @@ import net.corda.crypto.SigningService
 import net.corda.crypto.impl.CryptoServiceDecorator
 import net.corda.crypto.impl.FreshKeySigningServiceImpl
 import net.corda.crypto.impl.SigningServiceImpl
+import net.corda.crypto.impl.clearCache
+import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.config.mngCache
-import net.corda.crypto.impl.lifecycle.closeGracefully
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata

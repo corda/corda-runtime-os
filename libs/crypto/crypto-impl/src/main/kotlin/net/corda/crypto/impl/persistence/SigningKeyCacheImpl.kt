@@ -1,6 +1,6 @@
 package net.corda.crypto.impl.persistence
 
-import net.corda.crypto.impl.lifecycle.closeGracefully
+import net.corda.crypto.impl.closeGracefully
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.WrappedKeyPair

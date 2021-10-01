@@ -1,4 +1,4 @@
-package net.corda.crypto.impl.lifecycle
+package net.corda.crypto.lifecycle
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationHandler

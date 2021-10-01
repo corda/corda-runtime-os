@@ -9,7 +9,7 @@ import net.corda.crypto.impl.config.keyCache
 import net.corda.crypto.impl.config.mngCache
 import net.corda.crypto.impl.config.rpc
 import net.corda.crypto.impl.dev.DevCryptoServiceProvider
-import net.corda.crypto.impl.lifecycle.AbstractCryptoCoordinator
+import net.corda.crypto.lifecycle.AbstractCryptoCoordinator
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
