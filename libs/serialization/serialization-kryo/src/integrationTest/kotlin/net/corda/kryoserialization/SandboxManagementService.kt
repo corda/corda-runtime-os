@@ -62,20 +62,20 @@ class SandboxManagementService @Activate constructor(
     val group1: SandboxGroup
 
     init {
-        val privateBundleNames = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.filter { bundle ->
-            bundle.symbolicName !in PLATFORM_PUBLIC_BUNDLE_NAMES
-        }.map(Bundle::getSymbolicName)
-
         configAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
             val properties = Properties()
             properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()
             properties[BLACKLISTED_KEYS_KEY] = emptyList<String>()
             properties[PLATFORM_VERSION_KEY] = 999
-            properties[PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] = PLATFORM_PUBLIC_BUNDLE_NAMES
-            properties[PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY] = privateBundleNames
             @Suppress("unchecked_cast")
             config.update(properties as Dictionary<String, Any>)
         }
+
+        val allBundles = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles
+        val (publicBundles, privateBundles) = allBundles.partition { bundle ->
+            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
+        }
+        sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
 
         cpk1 = loadCPK(resourceName = CPK_ONE)
         group1 = createSandboxGroupFor(cpk1)
