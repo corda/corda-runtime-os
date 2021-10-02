@@ -1,6 +1,5 @@
 package net.corda.httprpc.server.impl.security
 
-import net.corda.httprpc.rpc.proxies.RpcAuthHelper
 import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.server.impl.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.AuthenticationCredentials
@@ -8,13 +7,12 @@ import net.corda.httprpc.server.impl.security.provider.scheme.AuthenticationSche
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import java.lang.reflect.Method
 import javax.security.auth.login.FailedLoginException
 
 interface HttpRpcSecurityManager {
     fun authenticate(credential: AuthenticationCredentials): AuthorizingSubject
     fun getSchemeProviders(): Set<AuthenticationSchemeProvider>
-    fun authorize(authenticatedUser: AuthorizingSubject, method: Method): Boolean
+    fun authorize(authenticatedUser: AuthorizingSubject, path: String, httpVerb: String): Boolean
 }
 
 internal class SecurityManagerRPCImpl(private val providers: Set<AuthenticationProvider>) : HttpRpcSecurityManager {
@@ -41,21 +39,13 @@ internal class SecurityManagerRPCImpl(private val providers: Set<AuthenticationP
         return providers.filterIsInstance(AuthenticationSchemeProvider::class.java).toSet()
     }
 
-    override fun authorize(authenticatedUser: AuthorizingSubject, method: Method): Boolean {
+    override fun authorize(authenticatedUser: AuthorizingSubject, path: String, httpVerb: String): Boolean {
         log.debug {
-            """Authorizing user: "${authenticatedUser.principal}" on method: "${
-                RpcAuthHelper.methodFullName(
-                    method
-                )
-            }""""
+            """Authorizing user: "${authenticatedUser.principal}" for $httpVerb request to $path""""
         }
-        return authenticatedUser.isPermitted(RpcAuthHelper.methodFullName(method)).also {
+        return authenticatedUser.isPermitted(path, httpVerb).also {
             log.trace {
-                """Authorizing user: "${authenticatedUser.principal}" on method: "${
-                    RpcAuthHelper.methodFullName(
-                        method
-                    )
-                }" completed. Result: $it"""
+                """Authorizing user: "${authenticatedUser.principal}" for $httpVerb request to $path completed. Result: $it"""
             }
         }
     }

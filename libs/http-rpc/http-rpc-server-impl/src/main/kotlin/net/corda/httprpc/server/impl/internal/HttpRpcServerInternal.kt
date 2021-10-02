@@ -6,7 +6,6 @@ import io.javalin.core.util.Header
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
-import io.javalin.http.HandlerEntry
 import io.javalin.http.HandlerType
 import io.javalin.http.HttpResponseException
 import io.javalin.http.UnauthorizedResponse
@@ -36,7 +35,6 @@ import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAut
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.server.impl.utils.addHeaderValues
 import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
-import net.corda.utilities.reflection.declaredField
 import net.corda.utilities.rootCause
 import net.corda.utilities.rootMessage
 import net.corda.v5.application.flows.BadRpcStartFlowRequestException
@@ -60,7 +58,6 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
 import java.io.PrintStream
-import java.util.EnumMap
 import javax.security.auth.login.FailedLoginException
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -139,41 +136,25 @@ internal class HttpRpcServerInternal(
         routes {
             controllers.forEach(Controller::register)
         }
-//        addRoutes()
-//        addOpenApiRoute()
 
-
-        // We must go through each path individually because authorization is setup per path
-        // If authorization was less specific then we could use wildcards
-        // Go through all [HandlerType] and the paths they return and authenticate on their paths
-        // Unfortunately, reflection has to be used since this field is private and there and no methods to access it
-        // [PathMatcher.findEntries] is not suitable
-        // Calling [toList] to take a copy of the list otherwise concurrent modification errors occur due to adding extra handles by calling [before]
-        val handlerEntries = servlet().matcher.declaredField<EnumMap<HandlerType, ArrayList<HandlerEntry>>>("handlerEntries").value
-        val handlerTypes = HandlerType.values().toList() - HandlerType.BEFORE - HandlerType.AFTER
-        for (handlerType in handlerTypes) {
-            val handlers = handlerEntries[handlerType]!!.toList()
-            for (handler in handlers) {
-                // Literal translation of existing code but applying content length to all paths might be acceptable
-                if (handlerType == HandlerType.POST) {
-                    log.info("$handlerType => ${handler.path} - Adding max content length check")
-                    before(handler.path) {
-                        log.info("$handlerType => ${handler.path} - Checking max content length")
-                        if (it.contentLength() > configurationsProvider.maxContentLength()) throw BadRequestResponse(
-                            CONTENT_LENGTH_EXCEEEDS_LIMIT.format(
-                                it.contentLength(),
-                                configurationsProvider.maxContentLength()
-                            )
-                        )
-                    }
-                }
-                if ("swagger" !in handler.path) {
-                    log.info("$handlerType => ${handler.path} - Adding request authorization")
-                    before(handler.path) {
-                        log.info("$handlerType => ${handler.path} - Authorizing request")
-                        authorize(authenticate(it), handler.path)
-                    }
-                }
+        log.info("Adding max content checking to POST paths")
+        log.info("Adding authorization to all paths")
+        before {
+            val httpVerb = it.method()
+            val path = it.path()
+            // Literal translation of existing code but applying content length to all paths might be acceptable
+            if (httpVerb == "POST") {
+                log.info("POST => $path - Checking max content length")
+                if (it.contentLength() > configurationsProvider.maxContentLength()) throw BadRequestResponse(
+                    CONTENT_LENGTH_EXCEEEDS_LIMIT.format(
+                        it.contentLength(),
+                        configurationsProvider.maxContentLength()
+                    )
+                )
+            }
+            if ("swagger" !in path) {
+                log.info("$httpVerb => $path - Authorizing request")
+                authorize(authenticate(it), path, httpVerb)
             }
         }
 
@@ -300,10 +281,10 @@ internal class HttpRpcServerInternal(
     }
 
     // This changed from [methodFullName] to a [path] because there is no concept of a method name now.
-    private fun authorize(authorizingSubject: AuthorizingSubject, path: String) {
+    private fun authorize(authorizingSubject: AuthorizingSubject, path: String, httpVerb: String) {
         val principal = authorizingSubject.principal
         log.trace { "Authorize \"$principal\" for \"$path\"." }
-        if (!authorizingSubject.isPermitted(path))
+        if (!authorizingSubject.isPermitted(path, httpVerb))
             throw ForbiddenResponse("Method \"$path\" not allowed for: \"$principal\".")
         log.trace { "Authorize \"$principal\" for \"$path\" completed." }
     }

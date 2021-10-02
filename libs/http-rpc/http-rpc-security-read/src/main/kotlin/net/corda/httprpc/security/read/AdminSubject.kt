@@ -7,5 +7,5 @@ import net.corda.httprpc.security.AuthorizingSubject
  */
 class AdminSubject(override val principal: String) : AuthorizingSubject {
 
-    override fun isPermitted(action: String, vararg arguments: String) = true
+    override fun isPermitted(path: String, httpVerb: String) = true
 }

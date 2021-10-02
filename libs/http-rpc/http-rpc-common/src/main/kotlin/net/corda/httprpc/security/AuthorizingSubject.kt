@@ -15,5 +15,5 @@ interface AuthorizingSubject {
      * (e.g. an RPC invocation) represented by an [action] string followed by an
      * optional list of arguments.
      */
-    fun isPermitted(action: String, vararg arguments: String): Boolean
+    fun isPermitted(path: String, httpVerb: String): Boolean
 }
