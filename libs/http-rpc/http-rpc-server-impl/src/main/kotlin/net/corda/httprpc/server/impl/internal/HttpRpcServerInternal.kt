@@ -6,6 +6,8 @@ import io.javalin.core.util.Header
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
+import io.javalin.http.HandlerEntry
+import io.javalin.http.HandlerType
 import io.javalin.http.HttpResponseException
 import io.javalin.http.UnauthorizedResponse
 import io.javalin.http.util.RedirectToLowercasePathPlugin
@@ -28,13 +30,13 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.InvocationContext
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.httprpc.server.config.HttpRpcSettingsProvider
-import net.corda.httprpc.server.impl.apigen.processing.RouteInfo
 import net.corda.httprpc.server.impl.exception.MissingParameterException
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.server.impl.utils.addHeaderValues
 import net.corda.httprpc.server.impl.utils.executeWithThreadContextClassLoader
+import net.corda.utilities.reflection.declaredField
 import net.corda.utilities.rootCause
 import net.corda.utilities.rootMessage
 import net.corda.v5.application.flows.BadRpcStartFlowRequestException
@@ -58,6 +60,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
 import java.io.PrintStream
+import java.util.EnumMap
 import javax.security.auth.login.FailedLoginException
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -138,6 +141,50 @@ internal class HttpRpcServerInternal(
         }
 //        addRoutes()
 //        addOpenApiRoute()
+
+
+        // We must go through each path individually because authorization is setup per path
+        // If authorization was less specific then we could use wildcards
+        // Go through all [HandlerType] and the paths they return and authenticate on their paths
+        // Unfortunately, reflection has to be used since this field is private and there and no methods to access it
+        // [PathMatcher.findEntries] is not suitable
+        // Calling [toList] to take a copy of the list otherwise concurrent modification errors occur due to adding extra handles by calling [before]
+        val handlerEntries = servlet().matcher.declaredField<EnumMap<HandlerType, ArrayList<HandlerEntry>>>("handlerEntries").value
+        val handlerTypes = HandlerType.values().toList() - HandlerType.BEFORE - HandlerType.AFTER
+        for (handlerType in handlerTypes) {
+            val handlers = handlerEntries[handlerType]!!.toList()
+            for (handler in handlers) {
+                // Literal translation of existing code but applying content length to all paths might be acceptable
+                if (handlerType == HandlerType.POST) {
+                    log.info("$handlerType => ${handler.path} - Adding max content length check")
+                    before(handler.path) {
+                        log.info("$handlerType => ${handler.path} - Checking max content length")
+                        if (it.contentLength() > configurationsProvider.maxContentLength()) throw BadRequestResponse(
+                            CONTENT_LENGTH_EXCEEEDS_LIMIT.format(
+                                it.contentLength(),
+                                configurationsProvider.maxContentLength()
+                            )
+                        )
+                    }
+                }
+                if ("swagger" !in handler.path) {
+                    log.info("$handlerType => ${handler.path} - Adding request authorization")
+                    before(handler.path) {
+                        log.info("$handlerType => ${handler.path} - Authorizing request")
+                        authorize(authenticate(it), handler.path)
+                    }
+                }
+            }
+        }
+
+        // Intercept all exceptions and map to various responses/exception types
+        exception(Exception::class.java) { e, ctx ->
+            // handle general exceptions here
+            // will not trigger if more specific exception-mapper found
+            val message = """Error during invoking path "${ctx.path()}": ${e.rootMessage ?: e.rootCause}"""
+            log.error(message, e)
+            mapToResponse(/*ctx, */message, e)
+        }
     }
 
     fun getConfiguredOpenApiPlugin() = OpenApiPlugin(
@@ -252,41 +299,22 @@ internal class HttpRpcServerInternal(
         }
     }
 
-    private fun authorize(authorizingSubject: AuthorizingSubject, methodFullName: String) {
+    // This changed from [methodFullName] to a [path] because there is no concept of a method name now.
+    private fun authorize(authorizingSubject: AuthorizingSubject, path: String) {
         val principal = authorizingSubject.principal
-        log.trace { "Authorize \"$principal\" for \"$methodFullName\"." }
-        if (!authorizingSubject.isPermitted(methodFullName))
-            throw ForbiddenResponse("Method \"$methodFullName\" not allowed for: \"$principal\".")
-        log.trace { "Authorize \"$principal\" for \"$methodFullName\" completed." }
+        log.trace { "Authorize \"$principal\" for \"$path\"." }
+        if (!authorizingSubject.isPermitted(path))
+            throw ForbiddenResponse("Method \"$path\" not allowed for: \"$principal\".")
+        log.trace { "Authorize \"$principal\" for \"$path\" completed." }
     }
 
-    private fun RouteInfo.invokeMethod(): (Context) -> Unit {
-        return { ctx ->
-            log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
-            log.trace { "Get parameter values." }
-            try {
-                val paramValues = parameters.map { ParameterRetrieverFactory.create(it).get(ctx) }.toTypedArray()
-
-                log.debug { "Invoke method \"${method.method.name}\" with paramValues \"${paramValues.joinToString(",")}\"." }
-
-                @Suppress("SpreadOperator")
-                //TODO if one parameter is a list and it's exposed as a query parameter, we may need to cast list elements here
-                val result = invokeDelegatedMethod(*paramValues)
-                if (result != null) {
-                    ctx.json(result)
-                }
-                log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
-            } catch (e: Exception) {
-                """Error during invoking method "${this.method.method.name}": ${e.rootMessage ?: e.rootCause}""".let {
-                    log.error(it, e)
-                    mapToResponse(it, e)
-                }
-            }
-        }
-    }
-
+//    ""Error during invoking method "${this.method.method.name}": ${e.rootMessage ?: e.rootCause}""".let {
+//                    log.error(it, e)
+//                    mapToResponse(it, e)
+//                }
+    // Is rethrowing the exception ok or do I have to do something with the context?
     @Suppress("ThrowsCount", "ComplexMethod")
-    private fun mapToResponse(message: String, e: Exception) {
+    private fun mapToResponse(/*ctx: Context, */message: String, e: Exception) {
         val messageEscaped = message.replace("\n", " ")
         when (e) {
             is HttpResponseException -> throw e
@@ -301,6 +329,14 @@ internal class HttpRpcServerInternal(
 //            is MemberNotFoundException -> throw NotFoundResponse(messageEscaped)
 
             else -> {
+//                ctx.json(
+//                    with(mutableMapOf<String, String>()) {
+//                        this["exception"] = e.toString()
+//                        this["rootCause"] = e.rootCause.toString()
+//                        e.rootMessage?.let { this["rootMessage"] = it }
+//                        throw HttpResponseException(HttpStatus.INTERNAL_SERVER_ERROR_500, messageEscaped, this)
+//                    }
+//                )
                 with(mutableMapOf<String, String>()) {
                     this["exception"] = e.toString()
                     this["rootCause"] = e.rootCause.toString()
