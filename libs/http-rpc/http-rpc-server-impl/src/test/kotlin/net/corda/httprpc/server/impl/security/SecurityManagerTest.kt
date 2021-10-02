@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -89,29 +90,29 @@ class SecurityManagerTest {
         whenever(authenticationProvider1.authenticate(UsernamePasswordAuthenticationCredentials(userBob.username, password))).thenReturn(
             subject
         )
-        whenever(subject.isPermitted(RpcAuthHelper.methodFullName(TestRpcOps::class.java.getMethod("dummy2")))).thenReturn(true)
+        whenever(subject.isPermitted(path = "/another-path", httpVerb = "GET")).thenReturn(true)
 
         val authenticatedBob = securityManager.authenticate(UsernamePasswordAuthenticationCredentials(userBob.username, password))
 
-        val isBobAuthorizedToMethod = securityManager.authorize(authenticatedBob, TestRpcOps::class.java.getMethod("dummy"))
-        val isBobAuthorizedToMethod2 = securityManager.authorize(authenticatedBob, TestRpcOps::class.java.getMethod("dummy2"))
+        val isBobAuthorizedToMethod = securityManager.authorize(authenticatedBob, path = "/path", httpVerb = "GET")
+        val isBobAuthorizedToMethod2 = securityManager.authorize(authenticatedBob, path = "/another-path", httpVerb = "GET")
 
-        assert(isBobAuthorizedToMethod2)
+        assertTrue(isBobAuthorizedToMethod2)
         assertFalse(isBobAuthorizedToMethod)
     }
 
     @Test
     fun `isPermitted_authenticatedUserAndPermittedAll_shouldBeAuthorizedToEveryMethod`() {
-        whenever(subject.isPermitted(RpcAuthHelper.methodFullName(TestRpcOps::class.java.getMethod("dummy")))).thenReturn(true)
-        whenever(subject.isPermitted(RpcAuthHelper.methodFullName(TestRpcOps::class.java.getMethod("dummy2")))).thenReturn(true)
+        whenever(subject.isPermitted(path = "/path", httpVerb = "GET")).thenReturn(true)
+        whenever(subject.isPermitted(path = "/another-path", httpVerb = "GET")).thenReturn(true)
 
         val authenticatedAlice = securityManager.authenticate(UsernamePasswordAuthenticationCredentials(userAlice.username, password))
 
-        val isAliceAuthorizedToMethod = securityManager.authorize(authenticatedAlice, TestRpcOps::class.java.getMethod("dummy"))
-        val isAliceAuthorizedToMethod2 = securityManager.authorize(authenticatedAlice, TestRpcOps::class.java.getMethod("dummy2"))
+        val isAliceAuthorizedToMethod = securityManager.authorize(authenticatedAlice, path = "/path", httpVerb = "GET")
+        val isAliceAuthorizedToMethod2 = securityManager.authorize(authenticatedAlice, path = "/another-path", httpVerb = "GET")
 
-        assert(isAliceAuthorizedToMethod)
-        assert(isAliceAuthorizedToMethod2)
+        assertTrue(isAliceAuthorizedToMethod)
+        assertTrue(isAliceAuthorizedToMethod2)
     }
 
     @Test

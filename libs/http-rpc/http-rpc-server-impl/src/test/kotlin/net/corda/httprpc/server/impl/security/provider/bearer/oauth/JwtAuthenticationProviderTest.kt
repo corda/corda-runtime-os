@@ -4,11 +4,11 @@ import com.nimbusds.jose.proc.BadJOSEException
 import com.nimbusds.jwt.JWTParser
 import net.corda.httprpc.security.read.AdminSubject
 import net.corda.httprpc.security.read.RPCSecurityManager
-import net.corda.httprpc.server.impl.security.TestRpcOps
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
@@ -23,7 +23,6 @@ class JwtAuthenticationProviderTest {
     private val username = "user@test.com"
     private val jwtProcessor: JwtProcessor = mock()
     private val claimExtractor: JwtClaimExtractor = mock()
-    private val permission = "InvokeRpc:${TestRpcOps::class.java.name}#dummy2"
 
     private val rpcSecurityManager = mock<RPCSecurityManager>().apply {
         whenever(buildSubject(any())).thenReturn(AdminSubject(username))
@@ -38,7 +37,7 @@ class JwtAuthenticationProviderTest {
 
     @Test
     fun `supports_bearerTokenCredential_shouldReturnTrue`() {
-        assert(provider.supports(BearerTokenAuthenticationCredentials("")))
+        assertTrue(provider.supports(BearerTokenAuthenticationCredentials("")))
     }
 
     @Test
@@ -72,6 +71,6 @@ class JwtAuthenticationProviderTest {
 
         val subject = provider.authenticate(BearerTokenAuthenticationCredentials(token))
 
-        assert(subject.isPermitted(permission.replace("InvokeRpc:", "")))
+        assertTrue(subject.isPermitted(path = "/path", httpVerb = "GET"))
     }
 }
