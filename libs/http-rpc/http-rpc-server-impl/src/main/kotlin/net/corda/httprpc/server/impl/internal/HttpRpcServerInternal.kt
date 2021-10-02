@@ -2,6 +2,7 @@ package net.corda.httprpc.server.impl.internal
 
 import com.fasterxml.jackson.core.JsonProcessingException
 import io.javalin.Javalin
+import io.javalin.apibuilder.ApiBuilder.path
 import io.javalin.core.util.Header
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.Context
@@ -134,7 +135,9 @@ internal class HttpRpcServerInternal(
         it.defaultContentType = contentTypeApplicationJson
     }.apply {
         routes {
-            controllers.forEach(Controller::register)
+            path("${configurationsProvider.getBasePath()}/v${configurationsProvider.getApiVersion()}") {
+                controllers.forEach(Controller::register)
+            }
         }
 
         log.info("Adding max content checking to POST paths")

@@ -2,15 +2,15 @@ package net.corda.httprpc.server.impl
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
-import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.internal.OptionalDependency
+import net.corda.httprpc.server.impl.rpcops.impl.CalendarControllerImpl
+import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckControllerImpl
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.httprpc.server.impl.utils.compact
-import net.corda.httprpc.test.CalendarRPCOpsImpl
-import net.corda.httprpc.test.TestHealthCheckAPIImpl
-
+import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.v5.httprpc.tools.HttpVerb
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -25,17 +25,25 @@ import kotlin.test.assertTrue
 
 class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     companion object {
-        val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
+        val httpRpcSettings = HttpRpcSettings(
+            NetworkHostAndPort("localhost", findFreePort()),
+            context,
+            null,
+            null,
+            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+        )
+
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
             server = HttpRpcServerImpl(
-                listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl()),
+                listOf(CalendarControllerImpl(), TestHealthCheckControllerImpl()),
                 securityManager,
                 httpRpcSettings,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+            client =
+                TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 
         @AfterAll
@@ -50,7 +58,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     @Test
     fun `GET openapi should return the OpenApi spec json`() {
 
-        val apiSpec = client.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("swagger.json"))
+        val apiSpec = client.call(HttpVerb.GET, WebRequest<Any>("swagger.json"))
         assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
         assertEquals("application/json", apiSpec.headers["Content-Type"])
         val body = apiSpec.body!!.compact()
@@ -73,7 +81,10 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         val responseOk = path.post.responses["200"]
         assertNotNull(responseOk)
         //need to assert that FiniteDurableReturnResult is generated as a referenced schema rather than inline content
-        assertEquals("#/components/schemas/FiniteDurableReturnResult_of_CalendarDay", responseOk.content["application/json"]!!.schema.`$ref`)
+        assertEquals(
+            "#/components/schemas/FiniteDurableReturnResult_of_CalendarDay",
+            responseOk.content["application/json"]!!.schema.`$ref`
+        )
 
         // need to assert "items" by contains this way because when serializing the Schema is not delegated to ArraySchema
         assertThat(body.compact()).contains(finiteDurableReturnResultRef.compact())
@@ -93,7 +104,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     @Test
     fun `GET swagger UI should return html with reference to swagger json`() {
 
-        val apiSpec = client.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("swagger"))
+        val apiSpec = client.call(HttpVerb.GET, WebRequest<Any>("swagger"))
         assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
         assertEquals("text/html", apiSpec.headers["Content-Type"])
         val expected = """url: "/${context.basePath}/v${context.version}/swagger.json""""
@@ -104,9 +115,9 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     fun `GET swagger UI dependencies should return non empty result`() {
         val baseClient = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/")
         val swaggerUIversion = OptionalDependency.SWAGGERUI.version
-        val swagger = baseClient.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("api/v1/swagger"))
-        val swaggerUIBundleJS = baseClient.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
-        val swaggerUIcss = baseClient.call(net.corda.httprpc.tools.HttpVerb.GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
+        val swagger = baseClient.call(HttpVerb.GET, WebRequest<Any>("api/v1/swagger"))
+        val swaggerUIBundleJS = baseClient.call(HttpVerb.GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
+        val swaggerUIcss = baseClient.call(HttpVerb.GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
 
 
         assertEquals(HttpStatus.SC_OK, swagger.responseStatus)
@@ -116,7 +127,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         assertNotNull(swaggerUIcss.body)
     }
 
-    private val schemaDef =  """"CalendarDay" : {
+    private val schemaDef = """"CalendarDay" : {
         "required" : [ "dayOfWeek", "dayOfYear" ],
         "type" : "object",
         "properties" : {
@@ -134,7 +145,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         "nullable" : false
       }""".trimIndent()
 
-    private val finiteDurableReturnResultSchemaWithCalendarDayRef =  """"FiniteDurableReturnResult_of_CalendarDay" : {
+    private val finiteDurableReturnResultSchemaWithCalendarDayRef = """"FiniteDurableReturnResult_of_CalendarDay" : {
         "required" : [ "isLastResult", "positionedValues" ],
         "type" : "object",
         "properties" : {

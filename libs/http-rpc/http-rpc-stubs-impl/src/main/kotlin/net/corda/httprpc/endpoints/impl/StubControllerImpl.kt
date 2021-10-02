@@ -40,6 +40,10 @@ class StubControllerImpl : Controller {
         }
     }
 
+    private fun paths() {
+
+    }
+
     private fun all(ctx: Context) {
         println(ctx)
         log.info("ALL")

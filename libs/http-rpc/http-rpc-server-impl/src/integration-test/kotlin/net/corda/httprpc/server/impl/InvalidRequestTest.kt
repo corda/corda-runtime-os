@@ -2,13 +2,13 @@ package net.corda.httprpc.server.impl
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-
-import net.corda.v5.base.util.NetworkHostAndPort
-import net.corda.httprpc.server.apigen.test.TestJavaPrimitivesRPCopsImpl
 import net.corda.httprpc.server.config.models.HttpRpcSettings
+import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckControllerImpl
+import net.corda.httprpc.server.impl.rpcops.impl.TestJavaPrimitivesControllerImpl
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
-import net.corda.httprpc.test.TestHealthCheckAPIImpl
+import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.v5.httprpc.tools.HttpVerb
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -23,19 +23,26 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
     companion object {
         const val SERIALIZATION_ERROR = "Couldn't deserialize body to ObjectNode"
         const val MISSING_VALUE_ERROR = "value failed for JSON property str due to missing (therefore NULL) value"
-        const val DATE_PARSE_ERROR ="Cannot deserialize value of type `java.util.Date` from String"
+        const val DATE_PARSE_ERROR = "Cannot deserialize value of type `java.util.Date` from String"
 
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
+            val httpRpcSettings = HttpRpcSettings(
+                NetworkHostAndPort("localhost", findFreePort()),
+                context,
+                null,
+                null,
+                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+            )
             server = HttpRpcServerImpl(
-                listOf(TestHealthCheckAPIImpl(), TestJavaPrimitivesRPCopsImpl()),
+                listOf(TestHealthCheckControllerImpl(), TestJavaPrimitivesControllerImpl()),
                 securityManager,
                 httpRpcSettings,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
+            client =
+                TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 
         @AfterAll
@@ -48,7 +55,12 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
     @Test
     fun `POST ping with duplicate json key returns 400 BAD REQUEST`() {
 
-        val pingResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest("health/ping", """{"data": {"data": "stringdata","data": "duplicate"}}"""), userName, password)
+        val pingResponse = client.call(
+            HttpVerb.POST,
+            WebRequest("health/ping", """{"data": {"data": "stringdata","data": "duplicate"}}"""),
+            userName,
+            password
+        )
         assertEquals(HttpStatus.SC_BAD_REQUEST, pingResponse.responseStatus)
         assertNotNull(pingResponse.body)
         assertEquals("application/json", pingResponse.headers["Content-Type"])
@@ -58,57 +70,67 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
     @Test
     fun `POST plusdouble returns returns 400 BAD REQUEST`() {
 
-        val plusDoubleResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest<Any>("health/plusdouble", """{"number": 1,0}"""), userName, password)
+        val plusDoubleResponse = client.call(HttpVerb.POST, WebRequest<Any>("health/plusdouble", """{"number": 1,0}"""), userName, password)
         assertEquals(HttpStatus.SC_BAD_REQUEST, plusDoubleResponse.responseStatus)
         assertNotNull(plusDoubleResponse.body)
-        assertTrue (plusDoubleResponse.body.contains(SERIALIZATION_ERROR))
+        assertTrue(plusDoubleResponse.body.contains(SERIALIZATION_ERROR))
     }
 
     @Test
     fun `POST negateinteger over max size should return 400 BAD REQUEST`() {
 
-        val negateIntResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest("java/negateinteger", """{"number": 3147483647}"""), userName, password)
+        val negateIntResponse =
+            client.call(HttpVerb.POST, WebRequest("java/negateinteger", """{"number": 3147483647}"""), userName, password)
         assertEquals(HttpStatus.SC_BAD_REQUEST, negateIntResponse.responseStatus)
         assertNotNull(negateIntResponse.body)
-        assertTrue (negateIntResponse.body.contains("Numeric value (3147483647) out of range of int (-2147483648 - 2147483647)"))
-
+        assertTrue(negateIntResponse.body.contains("Numeric value (3147483647) out of range of int (-2147483648 - 2147483647)"))
     }
 
     @Test
     fun `POST ping null value for non-nullable String should return 400 BAD REQUEST`() {
 
-        val pingResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest("health/ping", """{"pingPongData": {"str": null}}"""), userName, password)
+        val pingResponse = client.call(HttpVerb.POST, WebRequest("health/ping", """{"pingPongData": {"str": null}}"""), userName, password)
         assertEquals(HttpStatus.SC_BAD_REQUEST, pingResponse.responseStatus)
         assertNotNull(pingResponse.body)
-        assertTrue (pingResponse.body.contains(MISSING_VALUE_ERROR))
+        assertTrue(pingResponse.body.contains(MISSING_VALUE_ERROR))
     }
 
     @Test
     fun `POST ping missing value for non-nullable String should return 400 BAD REQUEST`() {
 
-        val pingResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest("health/ping", """{"pingPongData": {}}"""), userName, password)
+        val pingResponse = client.call(HttpVerb.POST, WebRequest("health/ping", """{"pingPongData": {}}"""), userName, password)
         assertEquals(HttpStatus.SC_BAD_REQUEST, pingResponse.responseStatus)
         assertNotNull(pingResponse.body)
-        assertTrue (pingResponse.body.contains(MISSING_VALUE_ERROR))
+        assertTrue(pingResponse.body.contains(MISSING_VALUE_ERROR))
     }
 
     @Test
     fun `Timezone specified in date should return 400 BAD REQUEST`() {
 
-        val dateCallResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest<Any>("health/datecall", """ { "date": { "date": "2020-04-13T00:00:00.000+08:00[UTC]" } } """), userName, password)
+        val dateCallResponse = client.call(
+            HttpVerb.POST,
+            WebRequest<Any>("health/datecall", """ { "date": { "date": "2020-04-13T00:00:00.000+08:00[UTC]" } } """),
+            userName,
+            password
+        )
         assertEquals(HttpStatus.SC_BAD_REQUEST, dateCallResponse.responseStatus)
         assertNotNull(dateCallResponse.body)
-        assertTrue (dateCallResponse.body.contains(DATE_PARSE_ERROR))
+        assertTrue(dateCallResponse.body.contains(DATE_PARSE_ERROR))
     }
 
     @Test
     fun `Wrong date format should return 400 BAD REQUEST`() {
 
-        val dateCallResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest<Any>("health/datecall", """ { "date": { "date": "2020-04-13 00:00:00.000+08:00" } } """), userName, password)
+        val dateCallResponse = client.call(
+            HttpVerb.POST,
+            WebRequest<Any>("health/datecall", """ { "date": { "date": "2020-04-13 00:00:00.000+08:00" } } """),
+            userName,
+            password
+        )
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, dateCallResponse.responseStatus)
         assertNotNull(dateCallResponse.body)
-        assertTrue (dateCallResponse.body.contains(DATE_PARSE_ERROR))
+        assertTrue(dateCallResponse.body.contains(DATE_PARSE_ERROR))
 
         //CORE-2404 case #1 exception contains line break, this is invalid in a json string
         val json = JsonParser.parseString(dateCallResponse.body) as JsonObject
@@ -119,7 +141,7 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
     @Test
     fun `passing 3 backslashes as UUID should be handled properly`() {
 
-        val parseUuidResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest<String>("health/parseuuid/%5C%5C%5C"), userName, password)
+        val parseUuidResponse = client.call(HttpVerb.POST, WebRequest<String>("health/parseuuid/%5C%5C%5C"), userName, password)
         assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, parseUuidResponse.responseStatus)
         assertNotNull(parseUuidResponse.body)
         assertDoesNotThrow(parseUuidResponse.body) { JsonParser.parseString(parseUuidResponse.body) }
