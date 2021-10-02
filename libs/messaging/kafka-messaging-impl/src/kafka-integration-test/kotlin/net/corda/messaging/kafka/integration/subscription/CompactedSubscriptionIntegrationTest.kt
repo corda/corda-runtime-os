@@ -14,8 +14,9 @@ import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_TOPIC1
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_TOPIC1_TEMPLATE
+import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getKafkaProperties
-import net.corda.messaging.kafka.integration.getRecords
+import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.processors.TestCompactedProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -53,7 +54,7 @@ class CompactedSubscriptionIntegrationTest {
     fun beforeEach() {
         kafkaConfig = ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(BOOTSTRAP_SERVERS_VALUE))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
     @Test
@@ -62,7 +63,7 @@ class CompactedSubscriptionIntegrationTest {
 
         publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        publisher.publish(getRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
+        publisher.publish(getDemoRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
 
         val onNextLatch = CountDownLatch(5)
         val snapshotLatch = CountDownLatch(1)
@@ -75,7 +76,7 @@ class CompactedSubscriptionIntegrationTest {
 
         assertTrue(snapshotLatch.await(10, TimeUnit.SECONDS))
         assertThat(onNextLatch.count).isEqualTo(5)
-        publisher.publish(getRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
+        publisher.publish(getDemoRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
         publisher.close()
         assertTrue(onNextLatch.await(5, TimeUnit.SECONDS))
         assertThat(snapshotLatch.count).isEqualTo(0)

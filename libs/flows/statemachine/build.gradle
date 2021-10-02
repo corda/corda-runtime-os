@@ -13,7 +13,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
-    implementation "net.corda:avro-schema"
+    implementation "net.corda:corda-avro-schema"
 
     implementation project(':libs:flows:dependency-injection')
 }

@@ -6,10 +6,11 @@ import java.util.concurrent.CountDownLatch
 class TestStateAndEventListenerStrings(
     private val expectedCommitState: List<Map<String, String>>? = null,
     private val commitStateLatch: CountDownLatch? = null,
+    private val delayOnCommit: Long? = null,
     private val expectedSyncState: Map<String, String>? = null,
     private val syncPartitionLatch: CountDownLatch? = null,
     private val expectedPartitionLostState: Map<String, String>? = null,
-    private val losePartitionLatch: CountDownLatch? = null
+    private val losePartitionLatch: CountDownLatch? = null,
 ) : StateAndEventListener<String, String> {
 
     private var onCommitCount = 0
@@ -35,6 +36,10 @@ class TestStateAndEventListenerStrings(
     }
 
     override fun onPostCommit(updatedStates: Map<String, String?>) {
+        if (delayOnCommit != null) {
+            Thread.sleep(delayOnCommit)
+        }
+
         if (!expectedCommitState.isNullOrEmpty() && updatedStates == expectedCommitState[onCommitCount]) {
             commitStateLatch?.countDown()
         }

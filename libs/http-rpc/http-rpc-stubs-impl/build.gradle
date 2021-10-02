@@ -1,0 +1,20 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Corda HTTP RPC Stub Implementations'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+    implementation project(":libs:http-rpc:http-rpc")
+    implementation project(":libs:http-rpc:ssl-cert-read")
+    implementation project(":libs:http-rpc:http-rpc-security-read")
+    implementation project(":libs:http-rpc:http-rpc-common")
+
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+}

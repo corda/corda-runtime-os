@@ -40,3 +40,13 @@ internal fun Output.substitute(transform: (OutputStream) -> OutputStream) {
 internal fun Input.substitute(transform: (InputStream) -> InputStream) {
     inputStream = transform(SequenceInputStream(buffer.copyOfRange(position(), limit()).inputStream(), inputStream))
 }
+
+fun Output.writeBytesWithLength(byteArray: ByteArray) {
+    this.writeInt(byteArray.size, true)
+    this.writeBytes(byteArray)
+}
+
+fun Input.readBytesWithLength(): ByteArray {
+    val size = this.readInt(true)
+    return this.readBytes(size)
+}

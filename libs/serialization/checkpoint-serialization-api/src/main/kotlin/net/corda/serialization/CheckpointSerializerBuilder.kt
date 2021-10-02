@@ -1,24 +1,18 @@
 package net.corda.serialization
 
-import net.corda.sandbox.SandboxGroup
 import net.corda.v5.serialization.SingletonSerializeAsToken
 
 /**
  * This builder will be the entry point to creating a [CheckpointSerializer].
  * Expected use case would be:
  *     builder
- *         .newCheckpointSerializer(sandboxGroup)
  *         .addSerializer(MyClass::java.class, MyClassSerializer())
  *         .addSerializerForClasses(listOf(ClassOne::class.java, ClassTwo::class.java, OtherSerializer())
+ *         .addSingletonSerializableInstances(setOf(SingletonOne::class.java, SingletonTwo::class.java))
  *         .build()
  *
  */
 interface CheckpointSerializerBuilder {
-
-    /**
-     * This signals to the builder that a new [CheckpointSerializer] should be built.
-     */
-    fun newCheckpointSerializer(sandboxGroup: SandboxGroup): CheckpointSerializerBuilder
 
     /**
      * Used to add a custom serializer for a given class to the [CheckpointSerializer]

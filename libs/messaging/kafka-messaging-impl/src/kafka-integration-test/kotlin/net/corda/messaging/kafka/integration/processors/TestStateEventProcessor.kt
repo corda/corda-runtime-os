@@ -11,9 +11,9 @@ import java.util.concurrent.CountDownLatch
 class TestStateEventProcessor(
     private val onNextLatch: CountDownLatch,
     private val updateState: Boolean,
-    private val throwException: Boolean = false,
+    private var throwExceptionOnFirst: Boolean = false,
     private val outputTopic: String? = null,
-    private val delayProcessor: Long? = null,
+    private var delayProcessorOnFirst: Long? = null,
 ) :
     StateAndEventProcessor<String,
             DemoStateRecord,
@@ -26,17 +26,16 @@ class TestStateEventProcessor(
         get() = DemoRecord::class.java
 
 
-    private var exceptionThrown = false
-
     override fun onNext(state: DemoStateRecord?, event: Record<String, DemoRecord>): Response<DemoStateRecord> {
         onNextLatch.countDown()
 
-        if (delayProcessor != null) {
-            Thread.sleep(delayProcessor)
+        if (delayProcessorOnFirst != null) {
+            Thread.sleep(delayProcessorOnFirst!!)
+            delayProcessorOnFirst = null
         }
 
-        if (throwException && !exceptionThrown) {
-            exceptionThrown = true
+        if (throwExceptionOnFirst) {
+            throwExceptionOnFirst = false
             throw CordaMessageAPIIntermittentException("Test exception")
         }
 

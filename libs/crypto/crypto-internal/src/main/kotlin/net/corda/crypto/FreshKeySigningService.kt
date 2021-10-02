@@ -1,7 +1,7 @@
 package net.corda.crypto
 
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.cipher.suite.schemes.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import java.security.KeyPair

@@ -35,4 +35,11 @@ internal interface SandboxInternal : Sandbox {
      * Throws [SandboxException] if the bundle is uninstalled.
      */
     fun loadClass(className: String, bundleName: String): Class<*>?
+
+    /**
+     * Uninstalls all the sandbox's bundles.
+     *
+     * Throws [SandboxException] if one of the bundles cannot be uninstalled.
+     */
+    fun unload()
 }
