@@ -6,8 +6,8 @@ import io.javalin.core.util.Header
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
-import io.javalin.http.HandlerType
 import io.javalin.http.HttpResponseException
+import io.javalin.http.HttpResponseExceptionMapper
 import io.javalin.http.UnauthorizedResponse
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
@@ -164,7 +164,7 @@ internal class HttpRpcServerInternal(
             // will not trigger if more specific exception-mapper found
             val message = """Error during invoking path "${ctx.path()}": ${e.rootMessage ?: e.rootCause}"""
             log.error(message, e)
-            mapToResponse(/*ctx, */message, e)
+            mapToResponse(ctx, message, e)
         }
     }
 
@@ -289,43 +289,34 @@ internal class HttpRpcServerInternal(
         log.trace { "Authorize \"$principal\" for \"$path\" completed." }
     }
 
-//    ""Error during invoking method "${this.method.method.name}": ${e.rootMessage ?: e.rootCause}""".let {
-//                    log.error(it, e)
-//                    mapToResponse(it, e)
-//                }
-    // Is rethrowing the exception ok or do I have to do something with the context?
     @Suppress("ThrowsCount", "ComplexMethod")
-    private fun mapToResponse(/*ctx: Context, */message: String, e: Exception) {
+    private fun mapToResponse(ctx: Context, message: String, e: Exception) {
         val messageEscaped = message.replace("\n", " ")
-        when (e) {
-            is HttpResponseException -> throw e
+        val mappedException = when (e) {
+            is HttpResponseException -> e
 
-            is BadRpcStartFlowRequestException -> throw BadRequestResponse(messageEscaped)
-            is JsonProcessingException -> throw BadRequestResponse(messageEscaped)
+            is BadRpcStartFlowRequestException -> BadRequestResponse(messageEscaped)
+            is JsonProcessingException -> BadRequestResponse(messageEscaped)
 //TODO restore these when possible
 //            is StartFlowPermissionException -> throw ForbiddenResponse(messageEscaped)
 //            is FlowNotFoundException -> throw NotFoundResponse(messageEscaped)
-            is MissingParameterException -> throw BadRequestResponse(messageEscaped)
+            is MissingParameterException -> BadRequestResponse(messageEscaped)
 //            is InvalidCordaX500NameException -> throw BadRequestResponse(messageEscaped)
 //            is MemberNotFoundException -> throw NotFoundResponse(messageEscaped)
 
             else -> {
-//                ctx.json(
-//                    with(mutableMapOf<String, String>()) {
-//                        this["exception"] = e.toString()
-//                        this["rootCause"] = e.rootCause.toString()
-//                        e.rootMessage?.let { this["rootMessage"] = it }
-//                        throw HttpResponseException(HttpStatus.INTERNAL_SERVER_ERROR_500, messageEscaped, this)
-//                    }
-//                )
                 with(mutableMapOf<String, String>()) {
                     this["exception"] = e.toString()
                     this["rootCause"] = e.rootCause.toString()
                     e.rootMessage?.let { this["rootMessage"] = it }
-                    throw HttpResponseException(HttpStatus.INTERNAL_SERVER_ERROR_500, messageEscaped, this)
+                    HttpResponseException(HttpStatus.INTERNAL_SERVER_ERROR_500, messageEscaped, this)
                 }
             }
         }
+        // Call Javalin's exception message mapping code
+        // The mapped exception must be of type [HttpResponseException]
+        // Can't rethrow exceptions from this method as we are already in the exception handling code path
+        HttpResponseExceptionMapper.handle(mappedException, ctx)
     }
 
     fun start() {

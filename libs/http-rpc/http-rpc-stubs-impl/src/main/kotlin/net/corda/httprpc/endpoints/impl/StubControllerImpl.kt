@@ -83,13 +83,13 @@ class StubControllerImpl : Controller {
 
     private fun put(ctx: Context) {
         val id = ctx.pathParam("id")
-        log.info("PUT - id")
-        ctx.result(id)
+        log.info("PUT - $id")
+        throw IllegalStateException("This is an exception and I am breaking")
     }
 
     private fun delete(ctx: Context) {
         val id = ctx.pathParam("id")
-        log.info("DELETE - id")
+        log.info("DELETE - $id")
         ctx.result(id)
     }
 
