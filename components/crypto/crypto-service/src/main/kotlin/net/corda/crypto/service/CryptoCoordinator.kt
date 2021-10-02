@@ -3,7 +3,7 @@ package net.corda.crypto.service
 import net.corda.crypto.service.rpc.CryptoRpcSub
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.impl.DefaultCryptoServiceProvider
-import net.corda.crypto.lifecycle.AbstractCryptoCoordinator
+import net.corda.crypto.component.lifecycle.AbstractCryptoCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.cipher.suite.CipherSuiteFactory

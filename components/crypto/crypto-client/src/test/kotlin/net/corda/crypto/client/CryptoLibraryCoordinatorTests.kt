@@ -4,12 +4,12 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoLibraryClientsFactoryProvider
+import net.corda.crypto.component.config.rpc
 import net.corda.crypto.impl.config.isDev
 import net.corda.crypto.impl.config.keyCache
 import net.corda.crypto.impl.config.mngCache
-import net.corda.crypto.impl.config.rpc
 import net.corda.crypto.impl.dev.DevCryptoServiceProvider
-import net.corda.crypto.lifecycle.AbstractCryptoCoordinator
+import net.corda.crypto.component.lifecycle.AbstractCryptoCoordinator
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory

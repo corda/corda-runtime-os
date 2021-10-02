@@ -2,16 +2,10 @@ package net.corda.crypto.impl.config
 
 import net.corda.crypto.CryptoCategories
 import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
-import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
-import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
-import net.corda.data.crypto.wire.signing.WireSigningRequest
-import net.corda.data.crypto.wire.signing.WireSigningResponse
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.exceptions.CryptoConfigurationException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import org.junit.jupiter.api.assertThrows
 import java.time.Duration
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -23,14 +17,6 @@ class CryptoLibraryConfigTests {
     @Timeout(5)
     fun `Should be able to use all helper properties`() {
         val raw = mapOf<String, Any?>(
-            "rpc" to mapOf(
-                "groupName" to "rpcGroupName",
-                "clientName" to "rpcClientName",
-                "signingRequestTopic" to "rpcSigningRequestTopic",
-                "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic",
-                "clientTimeout" to "11",
-                "clientRetries" to "77"
-            ),
             "keyCache" to mapOf(
                 "expireAfterAccessMins" to "90",
                 "maximumSize" to "25",
@@ -84,12 +70,6 @@ class CryptoLibraryConfigTests {
         )
         val config = CryptoLibraryConfigImpl(raw)
         assertFalse(config.isDev)
-        assertEquals("rpcGroupName", config.rpc.groupName)
-        assertEquals("rpcClientName", config.rpc.clientName)
-        assertEquals("rpcSigningRequestTopic", config.rpc.signingRequestTopic)
-        assertEquals("rpcFreshKeysRequestTopic", config.rpc.freshKeysRequestTopic)
-        assertEquals(11, config.rpc.clientTimeout)
-        assertEquals(77, config.rpc.clientRetries)
         assertEquals(CryptoCacheConfig.DEFAULT_CACHE_FACTORY_NAME, config.keyCache.cacheFactoryName)
         assertEquals(90, config.keyCache.expireAfterAccessMins)
         assertEquals(25, config.keyCache.maximumSize)
@@ -126,56 +106,6 @@ class CryptoLibraryConfigTests {
 
     @Test
     @Timeout(5)
-    fun `CryptoRpcConfig should return default values if the value is not provided`() {
-        val config = CryptoRpcConfig(emptyMap())
-        assertEquals("crypto.rpc", config.groupName)
-        assertEquals("crypto.rpc", config.clientName)
-        assertEquals("crypto.rpc.signing", config.signingRequestTopic)
-        assertEquals("crypto.rpc.freshKeys", config.freshKeysRequestTopic)
-        assertEquals(15, config.clientTimeout)
-        assertEquals(1, config.clientRetries)
-    }
-
-    @Test
-    @Timeout(5)
-    fun `CryptoRpcConfig should create RPC config for signing service`() {
-        val raw = mapOf(
-            "groupName" to "rpcGroupName",
-            "clientName" to "rpcClientName",
-            "signingRequestTopic" to "rpcSigningRequestTopic",
-            "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic"
-
-        )
-        val config = CryptoRpcConfig(raw)
-        val rpc = config.signingRpcConfig
-        assertEquals("rpcGroupName", rpc.groupName)
-        assertEquals("rpcClientName", rpc.clientName)
-        assertEquals("rpcSigningRequestTopic", rpc.requestTopic)
-        assertEquals(WireSigningRequest::class.java, rpc.requestType)
-        assertEquals(WireSigningResponse::class.java, rpc.responseType)
-    }
-
-    @Test
-    @Timeout(5)
-    fun `CryptoRpcConfig should create RPC config for fresh keys service`() {
-        val raw = mapOf(
-            "groupName" to "rpcGroupName",
-            "clientName" to "rpcClientName",
-            "signingRequestTopic" to "rpcSigningRequestTopic",
-            "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic"
-
-        )
-        val config = CryptoRpcConfig(raw)
-        val rpc = config.freshKeysRpcConfig
-        assertEquals("rpcGroupName", rpc.groupName)
-        assertEquals("rpcClientName", rpc.clientName)
-        assertEquals("rpcFreshKeysRequestTopic", rpc.requestTopic)
-        assertEquals(WireFreshKeysRequest::class.java, rpc.requestType)
-        assertEquals(WireFreshKeysResponse::class.java, rpc.responseType)
-    }
-
-    @Test
-    @Timeout(5)
     fun `CryptoCacheConfig should return default values if the value is not provided`() {
         val config = CryptoCacheConfig(emptyMap())
         assertEquals(CryptoCacheConfig.DEFAULT_CACHE_FACTORY_NAME, config.cacheFactoryName)
@@ -205,29 +135,21 @@ class CryptoLibraryConfigTests {
 
     @Test
     @Timeout(5)
-    fun `Should fail if the 'rpc' path is not supplied`() {
+    fun `Should use default values if the 'keyCache' path is not supplied`() {
         val config = CryptoLibraryConfigImpl(emptyMap())
-        assertThrows<CryptoConfigurationException> {
-            config.rpc
-        }
-    }
+        assertEquals(CryptoCacheConfig.DEFAULT_CACHE_FACTORY_NAME, config.keyCache.cacheFactoryName)
+        assertEquals(60, config.keyCache.expireAfterAccessMins)
+        assertEquals(100, config.keyCache.maximumSize)
+        assertTrue(config.keyCache.persistenceConfig.isEmpty())    }
 
     @Test
     @Timeout(5)
-    fun `Should fail if the 'keyCache' path is not supplied`() {
+    fun `Should use default values if the 'mngCache' path is not supplied`() {
         val config = CryptoLibraryConfigImpl(emptyMap())
-        assertThrows<CryptoConfigurationException> {
-            config.keyCache
-        }
-    }
-
-    @Test
-    @Timeout(5)
-    fun `Should fail if the 'mngCache' path is not supplied`() {
-        val config = CryptoLibraryConfigImpl(emptyMap())
-        assertThrows<CryptoConfigurationException> {
-            config.mngCache
-        }
+        assertEquals(CryptoCacheConfig.DEFAULT_CACHE_FACTORY_NAME, config.mngCache.cacheFactoryName)
+        assertEquals(60, config.mngCache.expireAfterAccessMins)
+        assertEquals(100, config.mngCache.maximumSize)
+        assertTrue(config.mngCache.persistenceConfig.isEmpty())
     }
 
     @Test

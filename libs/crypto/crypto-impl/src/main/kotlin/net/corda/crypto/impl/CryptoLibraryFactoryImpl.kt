@@ -1,4 +1,4 @@
-package net.corda.crypto.client
+package net.corda.crypto.impl
 
 import net.corda.crypto.CryptoLibraryFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata

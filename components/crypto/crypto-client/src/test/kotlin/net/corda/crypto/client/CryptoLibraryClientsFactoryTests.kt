@@ -1,8 +1,8 @@
 package net.corda.crypto.client
 
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.component.config.rpc
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.impl.config.rpc
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse

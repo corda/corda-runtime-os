@@ -1,4 +1,4 @@
-package net.corda.crypto.lifecycle
+package net.corda.crypto.component.lifecycle
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService

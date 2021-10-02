@@ -1,7 +1,7 @@
 package net.corda.crypto.service.rpc
 
+import net.corda.crypto.component.config.rpc
 import net.corda.crypto.service.CryptoFactory
-import net.corda.crypto.impl.config.rpc
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
 import net.corda.messaging.api.subscription.RPCSubscription

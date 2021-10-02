@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.CryptoLibraryClientsFactoryProvider
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.dev.DevCryptoServiceProvider
-import net.corda.crypto.lifecycle.AbstractCryptoCoordinator
+import net.corda.crypto.component.lifecycle.AbstractCryptoCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.cipher.suite.CipherSuiteFactory
@@ -39,9 +39,6 @@ open class CryptoLibraryCoordinator @Activate constructor(
             CryptoLibraryConfigImpl(
                 mapOf(
                     "isDev" to "true",
-                    "keyCache" to emptyMap<String, Any?>(),
-                    "mngCache" to emptyMap<String, Any?>(),
-                    "rpc" to emptyMap<String, Any?>(),
                     "default" to mapOf<String, Any?>(
                         "default" to mapOf<String, Any?>(
                             "serviceName" to DevCryptoServiceProvider.SERVICE_NAME,

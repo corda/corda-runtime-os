@@ -12,7 +12,6 @@ dependencies {
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
     implementation "net.i2p.crypto:eddsa:$eddsaVersion"
-    implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
@@ -20,15 +19,14 @@ dependencies {
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
     implementation project(":libs:crypto:crypto-internal")
     implementation project(":libs:utilities")
+    implementation project(":libs:lifecycle:lifecycle")
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(":libs:lifecycle:lifecycle")
-    testImplementation project(":libs:messaging:messaging")
 }
 
-description 'Common across client and service crypto implementation'
+description 'Common crypto implementation'
 
 tasks.named('jar', Jar) {
     bnd """\
