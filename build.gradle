@@ -256,6 +256,13 @@ subprojects {
     version rootProject.version
     group 'net.corda'
 
+    idea{
+        module {
+            downloadJavadoc = true
+            downloadSources = true
+        }
+    }
+
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")
         config.setFrom(files("$rootDir/detekt-config.yml"))
