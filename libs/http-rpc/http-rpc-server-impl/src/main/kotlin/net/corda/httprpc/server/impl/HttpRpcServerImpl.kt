@@ -2,10 +2,6 @@ package net.corda.httprpc.server.impl
 
 import net.corda.httprpc.security.read.RPCSecurityManager
 import net.corda.httprpc.server.HttpRpcServer
-import net.corda.httprpc.server.impl.apigen.models.Resource
-import net.corda.httprpc.server.impl.apigen.processing.APIStructureRetriever
-import net.corda.httprpc.server.impl.apigen.processing.JavalinRouteProviderImpl
-import net.corda.httprpc.server.impl.apigen.processing.openapi.OpenApiInfoProvider
 import net.corda.httprpc.server.config.HttpRpcSettingsProvider
 import net.corda.httprpc.server.config.impl.HttpRpcObjectSettingsProvider
 import net.corda.httprpc.server.config.models.HttpRpcSettings
@@ -15,8 +11,6 @@ import net.corda.httprpc.server.impl.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.basic.UsernamePasswordAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAuthenticationProvider
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import net.corda.v5.httprpc.api.Controller
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
