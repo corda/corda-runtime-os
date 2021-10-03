@@ -12,6 +12,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceReference
 import org.osgi.framework.launch.Framework
 import org.osgi.framework.launch.FrameworkFactory
+import org.osgi.framework.wiring.FrameworkWiring
 import java.io.IOException
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
@@ -237,17 +238,33 @@ class OSGiFrameworkWrap(
         BundleException::class
     )
     fun activate(): OSGiFrameworkWrap {
-        bundleDescriptorMap.values.forEach { bundleDescriptor: OSGiBundleDescriptor ->
-            if (isFragment(bundleDescriptor.bundle)) {
-                logger.info(
-                    "OSGi bundle ${bundleDescriptor.bundle.location}" +
-                            " ID = ${bundleDescriptor.bundle.bundleId} ${bundleDescriptor.bundle.symbolicName ?: "\b"}" +
-                            " ${bundleDescriptor.bundle.version} ${bundleStateMap[bundleDescriptor.bundle.state]} fragment."
-                )
-            } else {
-                bundleDescriptor.bundle.start()
-            }
+        framework.adapt(FrameworkWiring::class.java).apply {
+            // Resolve every installed bundle together, as a unit.
+            resolveBundles(null)
         }
+
+        /**
+         * OSGi MADNESS!!!
+         * The framework must start org.apache.aries.spifly.dynamic.bundle
+         * before org.liquibase.core so that their Bundle Activators execute
+         * in the correct order.
+         *
+         * I CAN FIND NO BETTER REASON FOR BND'S LAUNCHER GETTING THIS RIGHT
+         * THAN BECAUSE WE SORT ITS BUNDLES' SYMBOLIC NAMES ALPHABETICALLY!
+         */
+        bundleDescriptorMap.values.map(OSGiBundleDescriptor::bundle)
+            .sortedBy(Bundle::getSymbolicName)
+            .forEach { bundle ->
+                if (isFragment(bundle)) {
+                    logger.info(
+                        "OSGi bundle ${bundle.location}" +
+                            " ID = ${bundle.bundleId} ${bundle.symbolicName ?: "\b"}" +
+                            " ${bundle.version} ${bundleStateMap[bundle.state]} fragment."
+                    )
+                } else {
+                    bundle.start(Bundle.START_ACTIVATION_POLICY)
+                }
+            }
         return this
     }
 

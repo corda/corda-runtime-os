@@ -1,6 +1,7 @@
 package net.corda.osgi.framework
 
 import net.corda.v5.base.util.contextLogger
+import org.slf4j.bridge.SLF4JBridgeHandler
 import java.nio.file.Files
 
 /**
@@ -87,6 +88,21 @@ class OSGiFrameworkMain {
         @JvmStatic
         @Suppress("TooGenericExceptionCaught")
         fun main(args: Array<String>) {
+            /**
+             * `java.util.logging` logs directly to the console for Apache Aries and Liquibase (at least),
+             *  but we can intercept and redirect that here to use our logger.
+             *
+             * Add the following logger to log4j2.xml, to (re)enable the Apache Aries messages if you want them,
+             * for example
+             * ```
+             * <Logger name="org.apache.aries.spifly" level="info" additivity="false">-->
+             *     <AppenderRef ref="Console-ErrorCode-Appender-Println"/>-->
+             * </Logger>
+             * ```
+             */
+            SLF4JBridgeHandler.removeHandlersForRootLogger()
+            SLF4JBridgeHandler.install()
+
             val logger = contextLogger()
             try {
                 val frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX)
@@ -131,5 +147,4 @@ class OSGiFrameworkMain {
         }
 
     } //~ companion object
-
 }

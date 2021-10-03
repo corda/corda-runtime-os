@@ -1,5 +1,6 @@
 package net.corda.db.test.osgi
 
+import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.PostgresDataSourceFactory
@@ -45,6 +46,8 @@ class EntitiesInBundlesTest {
 
         @InjectService
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
+        @InjectService
+        lateinit var lbm: LiquibaseSchemaMigrator
 
         lateinit var emf: EntityManagerFactory
 
@@ -98,7 +101,6 @@ class EntitiesInBundlesTest {
         @BeforeAll
         fun setupEntities() {
             logger.info("Create Schema for ${dbConfig.dataSource.connection.metaData.url}".emphasise())
-            val lbm = LiquibaseSchemaMigratorImpl()
             val cl = ClassloaderChangeLog(
                 linkedSetOf(
                     ClassloaderChangeLog.ChangeLogResourceFiles(

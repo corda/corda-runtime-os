@@ -33,7 +33,7 @@ java: ${project.javaExecutable}
 	javassist;version='[3.27.0,3.27.1)',\
 	javax.interceptor-api;version='[1.2.0,1.2.1)',\
 	javax.persistence-api;version='[2.2.0,2.2.1)',\
-	jaxb-api;version='[2.3.1,2.3.2)',\
+	jaxb-api;version='[2.3.0,2.3.1)',\
 	junit-jupiter-api;version='[5.7.2,5.7.3)',\
 	junit-jupiter-engine;version='[5.7.2,5.7.3)',\
 	junit-jupiter-params;version='[5.7.2,5.7.3)',\
