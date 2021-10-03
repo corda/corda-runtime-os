@@ -184,12 +184,12 @@ def appJarBaseName = "corda-" + project.name
 
 def appJar = tasks.register('appJar', Jar) {
     dependsOn cordaAssembleSystemPackagesExtraTask
+    destinationDirectory = layout.buildDirectory.dir("bin")
 
     doFirst{
         archivesBaseName = appJarBaseName
-        destinationDirectory = layout.buildDirectory.dir("bin")
         from(
-                 configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) },
+                configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) },
                 configurations.systemPackages.collect { it.isDirectory() ? it : zipTree(it) },
                 new File(project.buildDir, "resources/main")
         )
