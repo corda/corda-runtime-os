@@ -14,8 +14,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
-    // TODO: remove snapshot
-    implementation 'net.corda:avro-schema:5.0.0.10-SNAPSHOT'
+    implementation 'net.corda:corda-avro-schema'
 
     implementation project(":osgi-framework-api")
 
