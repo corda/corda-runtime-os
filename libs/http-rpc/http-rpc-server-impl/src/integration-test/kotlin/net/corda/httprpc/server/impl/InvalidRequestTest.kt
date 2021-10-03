@@ -7,8 +7,8 @@ import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckControllerImpl
 import net.corda.httprpc.server.impl.rpcops.impl.TestJavaPrimitivesControllerImpl
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
+import net.corda.httprpc.tools.HttpVerb
 import net.corda.v5.base.util.NetworkHostAndPort
-import net.corda.v5.httprpc.tools.HttpVerb
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll

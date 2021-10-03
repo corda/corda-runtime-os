@@ -10,7 +10,7 @@ import io.javalin.plugin.openapi.annotations.OpenApiResponse
 import net.corda.httprpc.durablestream.DurableStreamContext
 import net.corda.httprpc.durablestream.DurableStreamHelper
 import net.corda.v5.base.stream.Cursor
-import net.corda.v5.httprpc.api.Controller
+import net.corda.httprpc.Controller
 import java.time.DayOfWeek
 import java.time.format.DateTimeFormatter
 import java.util.Calendar

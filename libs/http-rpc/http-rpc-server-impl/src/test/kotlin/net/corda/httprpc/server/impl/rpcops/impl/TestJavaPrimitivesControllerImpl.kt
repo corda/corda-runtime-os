@@ -6,7 +6,7 @@ import io.javalin.apibuilder.ApiBuilder.path
 import io.javalin.apibuilder.ApiBuilder.post
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.Context
-import net.corda.v5.httprpc.api.Controller
+import net.corda.httprpc.Controller
 import java.lang.NumberFormatException
 
 class TestJavaPrimitivesControllerImpl : Controller {

@@ -44,7 +44,7 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.httprpc.api.Controller
+import net.corda.httprpc.Controller
 import org.eclipse.jetty.http.HttpStatus
 import org.eclipse.jetty.http2.HTTP2Cipher
 import org.eclipse.jetty.server.HttpConfiguration

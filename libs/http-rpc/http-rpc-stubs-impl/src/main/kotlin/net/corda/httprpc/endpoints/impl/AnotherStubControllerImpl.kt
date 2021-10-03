@@ -1,7 +1,7 @@
 package net.corda.httprpc.endpoints.impl
 
 import io.javalin.apibuilder.ApiBuilder
-import net.corda.v5.httprpc.api.Controller
+import net.corda.httprpc.Controller
 import io.javalin.apibuilder.ApiBuilder.path
 import io.javalin.apibuilder.ApiBuilder.get
 import io.javalin.apibuilder.ApiBuilder.post

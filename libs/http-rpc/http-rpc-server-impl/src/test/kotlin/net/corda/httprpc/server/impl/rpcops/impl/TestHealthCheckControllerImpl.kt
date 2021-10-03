@@ -14,7 +14,7 @@ import io.javalin.http.Context
 import io.javalin.plugin.openapi.annotations.OpenApi
 import io.javalin.plugin.openapi.annotations.OpenApiContent
 import io.javalin.plugin.openapi.annotations.OpenApiRequestBody
-import net.corda.v5.httprpc.api.Controller
+import net.corda.httprpc.Controller
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.util.Calendar

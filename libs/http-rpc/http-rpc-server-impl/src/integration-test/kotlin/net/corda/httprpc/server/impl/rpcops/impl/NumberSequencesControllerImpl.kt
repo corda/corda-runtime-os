@@ -5,7 +5,7 @@ import io.javalin.apibuilder.ApiBuilder.post
 import io.javalin.http.Context
 import net.corda.httprpc.durablestream.DurableStreamContext
 import net.corda.httprpc.durablestream.DurableStreamHelper
-import net.corda.v5.httprpc.api.Controller
+import net.corda.httprpc.Controller
 
 class NumberSequencesControllerImpl : Controller {
 

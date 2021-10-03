@@ -5,8 +5,7 @@ import net.corda.httprpc.server.impl.HttpRpcServerImpl
 import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
-import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.RpcOps
+import net.corda.httprpc.Controller
 import org.osgi.service.component.annotations.Component
 
 @Component(immediate = true, service = [HttpRpcServerFactory::class])

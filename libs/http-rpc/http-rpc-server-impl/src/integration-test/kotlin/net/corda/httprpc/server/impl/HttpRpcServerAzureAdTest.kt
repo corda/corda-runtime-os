@@ -14,8 +14,8 @@ import net.corda.httprpc.server.impl.utils.AzureAdMock
 import net.corda.httprpc.server.impl.utils.TestHttpClient
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
+import net.corda.httprpc.tools.HttpVerb
 import net.corda.v5.base.util.NetworkHostAndPort
-import net.corda.v5.httprpc.tools.HttpVerb
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

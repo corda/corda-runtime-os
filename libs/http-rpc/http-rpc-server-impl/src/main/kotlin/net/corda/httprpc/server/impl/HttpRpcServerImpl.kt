@@ -11,7 +11,7 @@ import net.corda.httprpc.server.impl.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.basic.UsernamePasswordAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAuthenticationProvider
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.httprpc.api.Controller
+import net.corda.httprpc.Controller
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
 

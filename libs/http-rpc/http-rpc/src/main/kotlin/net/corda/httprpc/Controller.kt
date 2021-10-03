@@ -1,6 +1,4 @@
-package net.corda.v5.httprpc.api
-
-import io.javalin.apibuilder.EndpointGroup
+package net.corda.httprpc
 
 interface Controller {
 
