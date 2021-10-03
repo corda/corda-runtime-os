@@ -1,5 +1,6 @@
 package net.corda.osgi.framework
 
+import org.mockito.Mockito.mock
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleEvent
@@ -412,7 +413,7 @@ class OSGiFrameworkMock(
     }
 
     override fun <A : Any?> adapt(type: Class<A>): A {
-        TODO("Not yet implemented")
+        return mock(type)
     }
 
     override fun getDataFile(filename: String): File {
