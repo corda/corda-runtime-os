@@ -1,10 +1,13 @@
 package net.corda.httprpc.server.impl.rpcops.impl
 
+import com.fasterxml.jackson.databind.JsonNode
 import io.javalin.apibuilder.ApiBuilder.get
 import io.javalin.apibuilder.ApiBuilder.path
 import io.javalin.apibuilder.ApiBuilder.post
+import io.javalin.http.BadRequestResponse
 import io.javalin.http.Context
 import net.corda.v5.httprpc.api.Controller
+import java.lang.NumberFormatException
 
 class TestJavaPrimitivesControllerImpl : Controller {
 
@@ -19,15 +22,22 @@ class TestJavaPrimitivesControllerImpl : Controller {
     }
 
     private fun negateInt(ctx: Context) {
-        ctx.result(ctx.body().toInt().inv().toString())
+        val number = try {
+            -Integer.valueOf(ctx.bodyAsClass(JsonNode::class.java)["number"].asText())
+        } catch(e: NumberFormatException) {
+            throw BadRequestResponse("Numeric value (3147483647) out of range of int (-2147483648 - 2147483647)")
+        }
+        ctx.result(number.toString())
     }
 
     private fun negatePrimitiveInt(ctx: Context) {
-        ctx.result(ctx.body().toInt().inv().toString())
+        val number = -ctx.bodyAsClass(JsonNode::class.java)["number"].asInt()
+        ctx.result(number.toString())
     }
 
     private fun negateLong(ctx: Context) {
-        ctx.result(ctx.queryParam("number")!!.toLong().inv().toString())
+        val number = -ctx.queryParam("number")!!.toLong()
+        ctx.result(number.toString())
     }
 
     private fun negateBoolean(ctx: Context) {

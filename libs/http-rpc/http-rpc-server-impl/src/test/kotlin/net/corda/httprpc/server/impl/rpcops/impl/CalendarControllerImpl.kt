@@ -3,7 +3,13 @@ package net.corda.httprpc.server.impl.rpcops.impl
 import io.javalin.apibuilder.ApiBuilder.path
 import io.javalin.apibuilder.ApiBuilder.post
 import io.javalin.http.Context
+import io.javalin.plugin.openapi.annotations.OpenApi
+import io.javalin.plugin.openapi.annotations.OpenApiContent
+import io.javalin.plugin.openapi.annotations.OpenApiRequestBody
+import io.javalin.plugin.openapi.annotations.OpenApiResponse
+import net.corda.httprpc.durablestream.DurableStreamContext
 import net.corda.httprpc.durablestream.DurableStreamHelper
+import net.corda.v5.base.stream.Cursor
 import net.corda.v5.httprpc.api.Controller
 import java.time.DayOfWeek
 import java.time.format.DateTimeFormatter
@@ -18,9 +24,21 @@ class CalendarControllerImpl : Controller {
         }
     }
 
+    @OpenApi(
+        requestBody = OpenApiRequestBody(
+            content = [OpenApiContent(from = CalendarDaysOfTheYearRequest::class, type = "application/json")]
+        ),
+        responses = [
+            OpenApiResponse(
+                content = [OpenApiContent(from = CalendarDaysOfTheYearPollResultResponse::class, type = "application/json")],
+                status = "200"
+            )
+        ]
+    )
     private fun daysOfTheYear(ctx: Context) {
-        val year = ctx.queryParam("year")!!.toInt()
-        val cursor = DurableStreamHelper.withDurableStreamContext {
+        val json = ctx.bodyAsClass(CalendarDaysOfTheYearRequest::class.java)
+        val year = json.year
+        val pollResult = DurableStreamHelper.withDurableStreamContext(json.context) {
 
             val calendar = GregorianCalendar().apply {
                 set(Calendar.YEAR, year)
@@ -45,9 +63,18 @@ class CalendarControllerImpl : Controller {
             val remainingElementsCountEstimate = daysPerYear - longRange.last - 1
             DurableStreamHelper.outcome(remainingElementsCountEstimate, remainingElementsCountEstimate == 0L, positionedValues)
         }
-
-        ctx.json(cursor)
+        ctx.json(pollResult)
     }
+
+    data class CalendarDaysOfTheYearRequest(val year: Int, val context: DurableStreamContext)
+
+    // Having to manually define the response compared to the generated version we had is a downside
+    // However, it is simple to create this mapping ourselves using the annotations
+    data class CalendarDaysOfTheYearPollResultResponse(
+        val positionedValues: List<Cursor.PollResult.PositionedValue<CalendarDay>>,
+        val remainingElementsCountEstimate: Long?,
+        val isLastResult: Boolean
+    )
 
     data class CalendarDay(val dayOfWeek: DayOfWeek, val dayOfYear: String)
 }

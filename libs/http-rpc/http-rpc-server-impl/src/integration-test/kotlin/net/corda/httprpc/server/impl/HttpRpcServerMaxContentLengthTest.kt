@@ -48,8 +48,8 @@ class HttpRpcServerMaxContentLengthTest : HttpRpcServerTestBase() {
     @Test
     fun `Content length below maxContentLength returns 200`() {
         val pingResponse =
-            client.call(HttpVerb.POST, WebRequest("health/ping", """{"pingPongData": {"str": "stringdata"}}"""), userName, password)
+            client.call(HttpVerb.POST, WebRequest("health/ping", """{"str": "stringdata"}"""), userName, password)
         assertEquals(HttpStatus.SC_OK, pingResponse.responseStatus)
-        assertEquals(""""Pong for str = stringdata"""", pingResponse.body)
+        assertEquals("Pong for str = stringdata", pingResponse.body)
     }
 }

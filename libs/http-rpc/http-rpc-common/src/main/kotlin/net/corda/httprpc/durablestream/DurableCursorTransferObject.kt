@@ -22,6 +22,13 @@ class DurableCursorTransferObject<T>
             override val isLastResult: Boolean
         ) : Cursor.PollResult<T>
 
+        data class InfinitePollResultImpl<T>(
+            override val positionedValues: List<Cursor.PollResult.PositionedValue<T>>,
+            override val remainingElementsCountEstimate: Long?,
+        ) : Cursor.PollResult<T> {
+            override val isLastResult: Boolean = false
+        }
+
         data class PositionedValueImpl<T>(override val value: T, override val position: Long) : Cursor.PollResult.PositionedValue<T>
     }
 

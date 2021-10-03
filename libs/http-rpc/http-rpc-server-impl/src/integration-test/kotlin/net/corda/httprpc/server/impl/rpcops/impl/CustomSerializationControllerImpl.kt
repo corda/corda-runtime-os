@@ -4,12 +4,11 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import com.fasterxml.jackson.databind.module.SimpleModule
 import io.javalin.apibuilder.ApiBuilder.path
 import io.javalin.apibuilder.ApiBuilder.post
 import io.javalin.http.Context
@@ -25,23 +24,11 @@ class CustomSerializationControllerImpl : Controller {
         }
     }
 
-    private val mapper = ObjectMapper().apply {
-        this.registerModule(
-            object : SimpleModule("my-module") {
-                init {
-                    addDeserializer(CustomMarshalString::class.java, CustomMarshalStringDeserializer())
-                }
-            }
-        )
-    }
-
     private fun print(ctx: Context) {
         ctx.json(ctx.bodyAsClass(CustomString::class.java))
     }
 
     private fun printCustomMarshalString(ctx: Context) {
-//        val string = ctx.body()
-//        mapper.readValue(string, CustomMarshalString::class.java)
         ctx.json(ctx.bodyAsClass(CustomMarshalString::class.java))
     }
 
@@ -99,9 +86,15 @@ class CustomMarshalStringSerializer: JsonSerializer<CustomMarshalString>() {
     }
 }
 
+// The original code maps the input request body to each parameter of the method
+// Thus extracting the actual value out rather than relying on the actual json by
+// the time it gets to the deserializer
+// I have altered the deserializer to get the existing test to work, however I think the original behaviour
+// was making this test a bit odd
 class CustomMarshalStringDeserializer: JsonDeserializer<CustomMarshalString>() {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): CustomMarshalString {
-        val s = p.valueAsString
+//        val s = p.valueAsString
+        val s = p.readValueAsTree<JsonNode>()["s"].asText()
         return CustomMarshalString(s)
     }
 }

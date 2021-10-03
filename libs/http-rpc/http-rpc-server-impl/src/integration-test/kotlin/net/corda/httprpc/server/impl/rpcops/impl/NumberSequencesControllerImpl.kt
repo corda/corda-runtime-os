@@ -3,6 +3,7 @@ package net.corda.httprpc.server.impl.rpcops.impl
 import io.javalin.apibuilder.ApiBuilder.path
 import io.javalin.apibuilder.ApiBuilder.post
 import io.javalin.http.Context
+import net.corda.httprpc.durablestream.DurableStreamContext
 import net.corda.httprpc.durablestream.DurableStreamHelper
 import net.corda.v5.httprpc.api.Controller
 
@@ -15,8 +16,9 @@ class NumberSequencesControllerImpl : Controller {
     }
 
     private fun retrieve(ctx: Context) {
-        val cursor = DurableStreamHelper.withDurableStreamContext {
-            val pad = when (NumberTypeEnum.valueOf(ctx.queryParam("type")!!)) {
+        val json = ctx.bodyAsClass(NumberSequenceJson::class.java)
+        val cursor = DurableStreamHelper.withInfiniteDurableStreamContext(json.context) {
+            val pad = when (NumberTypeEnum.valueOf(json.type)) {
                 NumberTypeEnum.EVEN -> 0
                 NumberTypeEnum.ODD -> 1
             }
@@ -28,6 +30,8 @@ class NumberSequencesControllerImpl : Controller {
         ctx.json(cursor)
     }
 }
+
+data class NumberSequenceJson(val type: String, val context: DurableStreamContext)
 
 enum class NumberTypeEnum {
     EVEN, ODD

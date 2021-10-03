@@ -200,8 +200,10 @@ internal class HttpRpcServerInternal(
                 })
             }
         }.apply {
-            val pathForOpenApiUI = "/v${configurationsProvider.getApiVersion()}/swagger"
+            val pathForOpenApiUI = "${configurationsProvider.getBasePath()}/v${configurationsProvider.getApiVersion()}/swagger"
             val pathForOpenApiJson = "$pathForOpenApiUI.json"
+            log.info("Running Swagger UI at /$pathForOpenApiUI")
+            log.info("Hosting OpenAPI JSON at /$pathForOpenApiJson")
             path(pathForOpenApiJson) // endpoint for OpenAPI json
             swagger(SwaggerOptions(pathForOpenApiUI)) // endpoint for swagger-ui
 //            path("/swagger-docs") // endpoint for OpenAPI json

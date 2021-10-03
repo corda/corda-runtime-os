@@ -32,6 +32,23 @@ object DurableStreamHelper {
     }
 
     @JvmStatic
+    fun <T> withDurableStreamContext(
+        context: DurableStreamContext,
+        block: DurableStreamContext.() -> DurableStreamContextExecutionOutcome<T>
+    ): Cursor.PollResult<T> {
+        val (positionedValues, remainingElementsCountEstimate, isLastResult) = block(context)
+        return pollResult(positionedValues, remainingElementsCountEstimate, isLastResult)
+    }
+
+    fun <T> withInfiniteDurableStreamContext(
+        context: DurableStreamContext,
+        block: DurableStreamContext.() -> DurableStreamContextExecutionOutcome<T>
+    ): Cursor.PollResult<T> {
+        val (positionedValues, remainingElementsCountEstimate) = block(context)
+        return infinitePollResult(positionedValues, remainingElementsCountEstimate)
+    }
+
+    @JvmStatic
     fun <T> positionedValue(value: T, position: Long): Cursor.PollResult.PositionedValue<T> {
         return DurableCursorTransferObject.Companion.PositionedValueImpl(value, position)
     }
@@ -43,6 +60,13 @@ object DurableStreamHelper {
         isLastResult: Boolean
     ): Cursor.PollResult<T> {
         return DurableCursorTransferObject.Companion.PollResultImpl(positionedValues, remainingElementsCountEstimate, isLastResult)
+    }
+
+    fun <T> infinitePollResult(
+        positionedValues: List<Cursor.PollResult.PositionedValue<T>>,
+        remainingElementsCountEstimate: Long?
+    ): Cursor.PollResult<T> {
+        return DurableCursorTransferObject.Companion.InfinitePollResultImpl(positionedValues, remainingElementsCountEstimate)
     }
 
     @JvmStatic

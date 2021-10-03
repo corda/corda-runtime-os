@@ -3,11 +3,17 @@ package net.corda.httprpc.server.impl.rpcops.impl
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.node.ObjectNode
 import io.javalin.apibuilder.ApiBuilder.get
 import io.javalin.apibuilder.ApiBuilder.path
 import io.javalin.apibuilder.ApiBuilder.post
+import io.javalin.http.BadRequestResponse
 import io.javalin.http.Context
+import io.javalin.plugin.openapi.annotations.OpenApi
+import io.javalin.plugin.openapi.annotations.OpenApiContent
+import io.javalin.plugin.openapi.annotations.OpenApiRequestBody
 import net.corda.v5.httprpc.api.Controller
 import java.time.Instant
 import java.time.ZonedDateTime
@@ -19,16 +25,17 @@ import java.util.UUID
 class TestHealthCheckControllerImpl : Controller {
 
     override fun register() {
-        path("health") {
+        path("/health") {
             get("/sanity", ::void)
             get("/void", ::voidResponse)
             get("/hello/:name", ::hello)
             get("/hello2/:name", ::hello2)
             post("/ping", ::ping)
-            get("/plusone/:numbers", ::plusOne)
-            post("/plusone", ::plus)
+            post("/plusone/:number", ::plusOne)
+            get("/plusone", ::plus)
             post("/plusdouble", ::plusDouble)
             post("/bodyplayground", ::bodyPlayground)
+            post("/bodyplayground2", ::bodyPlayground2)
             post("/timecall", ::timeCall)
             post("/datecall", ::dateCall)
             post("/instantcall", ::instantCall)
@@ -36,6 +43,7 @@ class TestHealthCheckControllerImpl : Controller {
             get("/lateraddedcall", ::laterAddedCall)
             get("/firstdaysoftheyear", ::firstDaysOfTheYear)
             post("/parseuuid", ::parseUuid)
+            get("/getprotocolversion", ::protocolVersion)
         }
     }
 
@@ -48,33 +56,48 @@ class TestHealthCheckControllerImpl : Controller {
     }
 
     private fun hello(ctx: Context) {
-        ctx.result("Hello pathParam : ${ctx.pathParam("pathParam")}")
+        ctx.result("Hello ${ctx.queryParam("id")} : ${ctx.pathParam("name")}")
     }
 
     private fun hello2(ctx: Context) {
-        ctx.result("Hello queryParam: ${ctx.queryParam("queryParam")}, pathParam : ${ctx.pathParam("pathParam")}")
+        ctx.result("Hello queryParam: ${ctx.queryParam("id")}, pathParam : ${ctx.pathParam("name")}")
     }
 
     private fun ping(ctx: Context) {
-        ctx.result("Pong for ${ctx.bodyAsClass(PingPongData::class.java).str}")
+        if (ctx.body().isNotBlank()) {
+            ctx.result("Pong for ${ctx.bodyAsClass(PingPongData::class.java).str}")
+        } else {
+            ctx.result("Pong for ")
+        }
     }
 
     private fun plusOne(ctx: Context) {
-        ctx.result(ctx.queryParam("numbers")!!.split(",").map { it.toDouble() + 1 }.toString())
+        ctx.result((ctx.pathParam("number").toLong() + 1).toString())
     }
 
     private fun plus(ctx: Context) {
-        ctx.result((ctx.queryParam("number")!!.toInt() + 1).toString())
+        ctx.result(ctx.queryParams("numbers").map { it.toDouble() + 1 }.toString())
     }
 
     private fun plusDouble(ctx: Context) {
-        ctx.result((ctx.queryParam("number")!!.toDouble() + 1).toString())
+        ctx.result((ctx.bodyAsClass(ObjectNode::class.java)["number"].asDouble() + 1).toString())
     }
 
     private fun bodyPlayground(ctx: Context) {
-        println(ctx.body())
+        val json = ctx.bodyAsClass(JsonNode::class.java)
+        val s1 = json["s1"]?.asText()
+        val s2 = json["s2"]?.asText()
+        ctx.result("$s1 $s2")
     }
 
+    private fun bodyPlayground2(ctx: Context) {
+        val json = ctx.bodyAsClass(JsonNode::class.java)
+        val s1 = json["s1"]?.asText() ?: throw BadRequestResponse("s1 must be defined")
+        val s2 = json["s2"]?.asText()
+        ctx.result("$s1 $s2")
+    }
+
+    @OpenApi(requestBody = OpenApiRequestBody(content = [OpenApiContent(from = TimeCallDto::class, type = "application/json")]))
     private fun timeCall(ctx: Context) {
         ctx.result(ctx.bodyAsClass(TimeCallDto::class.java).time.toString())
     }
@@ -112,6 +135,10 @@ class TestHealthCheckControllerImpl : Controller {
 
     private fun parseUuid(ctx: Context) {
         ctx.json(UUID.fromString(ctx.pathParam("uuid")))
+    }
+
+    private fun protocolVersion(ctx: Context) {
+        ctx.result("2")
     }
 
     data class TimeCallDto(val time: ZonedDateTime)
