@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
@@ -133,9 +135,11 @@ class CipherSuiteFactoryTests {
     fun `Should concurrently create services`() {
         factory.start()
         assertTrue(factory.isRunning)
+        val latch = CountDownLatch(1)
         val threads = mutableListOf<Thread>()
         for (i in 1..100) {
             val thread = thread(start = true) {
+                latch.await(20, TimeUnit.SECONDS)
                 val expected: Int
                 val config = when(i % 3) {
                     1 -> {
@@ -190,6 +194,7 @@ class CipherSuiteFactoryTests {
             }
             threads.add(thread)
         }
+        latch.countDown()
         threads.forEach {
             it.join(5_000)
         }

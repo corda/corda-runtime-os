@@ -15,6 +15,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -106,9 +108,11 @@ class DefaultCryptoServiceProviderTests {
     fun `Should be able to create instances concurrently`() {
         val provider = createCryptoServiceProvider()
         assertTrue(provider.isRunning)
+        val latch = CountDownLatch(1)
         val threads = mutableListOf<Thread>()
         for (i in 1..100) {
             val thread = thread(start = true) {
+                latch.await(20, TimeUnit.SECONDS)
                 provider.handleConfigEvent(
                     CryptoLibraryConfigImpl(
                         mapOf(
@@ -123,6 +127,7 @@ class DefaultCryptoServiceProviderTests {
             }
             threads.add(thread)
         }
+        latch.countDown()
         threads.forEach {
             it.join(5_000)
         }

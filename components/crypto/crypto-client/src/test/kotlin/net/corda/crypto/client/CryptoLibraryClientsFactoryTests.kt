@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -86,9 +88,11 @@ class CryptoLibraryClientsFactoryTests {
         factory = provider.create(
             "testComponent"
         )
+        val latch = CountDownLatch(1)
         val threads = mutableListOf<Thread>()
         for (i in 1..100) {
             val thread = thread(start = true) {
+                latch.await(20, TimeUnit.SECONDS)
                 if(i % 3 == 2) {
                     provider.handleConfigEvent(config)
                     factory = provider.create(
@@ -101,6 +105,7 @@ class CryptoLibraryClientsFactoryTests {
             }
             threads.add(thread)
         }
+        latch.countDown()
         threads.forEach {
             it.join(5_000)
         }
@@ -129,9 +134,11 @@ class CryptoLibraryClientsFactoryTests {
         factory = provider.create(
             "testComponent"
         )
+        val latch = CountDownLatch(1)
         val threads = mutableListOf<Thread>()
         for (i in 1..100) {
             val thread = thread(start = true) {
+                latch.await(20, TimeUnit.SECONDS)
                 if(i % 3 == 2) {
                     provider.handleConfigEvent(config)
                     factory = provider.create(
@@ -143,6 +150,7 @@ class CryptoLibraryClientsFactoryTests {
             }
             threads.add(thread)
         }
+        latch.countDown()
         threads.forEach {
             it.join(5_000)
         }
