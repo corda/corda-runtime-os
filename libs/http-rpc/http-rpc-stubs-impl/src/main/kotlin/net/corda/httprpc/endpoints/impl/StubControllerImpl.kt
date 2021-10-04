@@ -1,15 +1,10 @@
 package net.corda.httprpc.endpoints.impl
 
-import com.fasterxml.jackson.annotation.JsonFormat
-import com.fasterxml.jackson.annotation.JsonGetter
-import com.fasterxml.jackson.annotation.JsonValue
-import io.javalin.apibuilder.ApiBuilder
-import net.corda.httprpc.Controller
-import io.javalin.apibuilder.ApiBuilder.path
+import io.javalin.apibuilder.ApiBuilder.delete
 import io.javalin.apibuilder.ApiBuilder.get
+import io.javalin.apibuilder.ApiBuilder.path
 import io.javalin.apibuilder.ApiBuilder.post
 import io.javalin.apibuilder.ApiBuilder.put
-import io.javalin.apibuilder.ApiBuilder.delete
 import io.javalin.http.Context
 import io.javalin.plugin.openapi.annotations.ContentType
 import io.javalin.plugin.openapi.annotations.OpenApi
@@ -17,6 +12,7 @@ import io.javalin.plugin.openapi.annotations.OpenApiContent
 import io.javalin.plugin.openapi.annotations.OpenApiParam
 import io.javalin.plugin.openapi.annotations.OpenApiRequestBody
 import io.javalin.plugin.openapi.annotations.OpenApiResponse
+import net.corda.httprpc.Controller
 import net.corda.httprpc.durablestream.DurableStreamContext
 import net.corda.httprpc.durablestream.DurableStreamHelper
 import net.corda.v5.base.stream.Cursor
@@ -44,14 +40,13 @@ class StubControllerImpl : Controller {
 //                delete(::delete)
 //            }
             // this is the javalin 3 syntax, which will change when we move to v4
-                get("/:id", ::get)
-                put("/:id", ::put)
-                delete("/:id", ::delete)
+            get("/:id", ::get)
+            put("/:id", ::put)
+            delete("/:id", ::delete)
         }
     }
 
     private fun paths() {
-
     }
 
     private fun all(ctx: Context) {
@@ -79,7 +74,10 @@ class StubControllerImpl : Controller {
 
     @OpenApi(
         summary = "Save some json",
-        requestBody = OpenApiRequestBody(content = [OpenApiContent(SomeJson::class, type = ContentType.JSON)], description = "The json to save"),
+        requestBody = OpenApiRequestBody(
+            content = [OpenApiContent(SomeJson::class, type = ContentType.JSON)],
+            description = "The json to save"
+        ),
         operationId = "post",
         tags = ["Stub API"],
         responses = [
@@ -120,6 +118,9 @@ class CalendarControllerImpl : Controller {
     }
 
     @OpenApi(
+        summary = "Get the days of the year",
+        operationId = "getDaysOfTheYear",
+        tags = [ "Calendar" ],
         requestBody = OpenApiRequestBody(
             content = [OpenApiContent(from = CalendarDaysOfTheYearRequest::class, type = "application/json")]
         ),
@@ -127,7 +128,9 @@ class CalendarControllerImpl : Controller {
             OpenApiResponse(
                 content = [OpenApiContent(from = CalendarDaysOfTheYearPollResultResponse::class, type = "application/json")],
                 status = "200"
-            )
+            ),
+            OpenApiResponse(status = "404"),
+            OpenApiResponse(status = "500")
         ]
     )
     private fun daysOfTheYear(ctx: Context) {
