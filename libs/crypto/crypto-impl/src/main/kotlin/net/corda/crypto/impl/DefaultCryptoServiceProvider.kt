@@ -72,7 +72,7 @@ open class DefaultCryptoServiceProvider @Activate constructor(
             logger.info(
                 "Creating instance of the {} for member {} and category",
                 DefaultCryptoService::class.java.name,
-                context.sandboxId,
+                context.memberId,
                 context.category
             )
             val schemeMetadata = context.cipherSuiteFactory.getSchemeMap()
@@ -94,7 +94,7 @@ open class DefaultCryptoServiceProvider @Activate constructor(
                 isRecoverable = false
             )
             return DefaultCryptoKeyCacheImpl(
-                memberId = context.sandboxId,
+                memberId = context.memberId,
                 passphrase = context.config.passphrase,
                 salt = context.config.salt,
                 persistence = persistenceFactory.createDefaultCryptoPersistentCache(config),

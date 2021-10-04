@@ -124,7 +124,7 @@ class SigningServiceRpcProcessor(
         private val cipherSchemeMetadata: CipherSchemeMetadata
     ) : CryptoRpcHandler<WireRequestContext, WireSigningGenerateKeyPair> {
         override fun handle(context: WireRequestContext, request: WireSigningGenerateKeyPair): Any {
-            val publicKey = signingService.generateKeyPair(request.alias)
+            val publicKey = signingService.generateKeyPair(request.alias, request.context.toMap())
             return WirePublicKey(ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(publicKey)))
         }
     }
@@ -135,7 +135,7 @@ class SigningServiceRpcProcessor(
     ) : CryptoRpcHandler<WireRequestContext, WireSigningSign> {
         override fun handle(context: WireRequestContext, request: WireSigningSign): Any {
             val publicKey = cipherSchemeMetadata.decodePublicKey(request.publicKey.array())
-            val signature = signingService.sign(publicKey, request.bytes.array())
+            val signature = signingService.sign(publicKey, request.bytes.array(), request.context.toMap())
             return WireSignatureWithKey(
                 ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(signature.by)),
                 ByteBuffer.wrap(signature.bytes)
@@ -157,7 +157,7 @@ class SigningServiceRpcProcessor(
                     DigestAlgorithmName(request.signatureSpec.customDigestName)
                 }
             )
-            val signature = signingService.sign(publicKey, spec, request.bytes.array())
+            val signature = signingService.sign(publicKey, spec, request.bytes.array(), request.context.toMap())
             return WireSignatureWithKey(
                 ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(signature.by)),
                 ByteBuffer.wrap(signature.bytes)
@@ -169,7 +169,7 @@ class SigningServiceRpcProcessor(
         private val signingService: SigningService
     ) : CryptoRpcHandler<WireRequestContext, WireSigningSignWithAlias> {
         override fun handle(context: WireRequestContext, request: WireSigningSignWithAlias): Any {
-            val signature = signingService.sign(request.alias, request.bytes.array())
+            val signature = signingService.sign(request.alias, request.bytes.array(), request.context.toMap())
             return WireSignature(ByteBuffer.wrap(signature))
         }
     }
@@ -186,7 +186,7 @@ class SigningServiceRpcProcessor(
                     DigestAlgorithmName(request.signatureSpec.customDigestName)
                 }
             )
-            val signature = signingService.sign(request.alias, spec, request.bytes.array())
+            val signature = signingService.sign(request.alias, spec, request.bytes.array(), request.context.toMap())
             return WireSignature(ByteBuffer.wrap(signature))
         }
     }

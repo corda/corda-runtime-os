@@ -28,7 +28,8 @@ open class SigningServiceImpl(
     override val supportedSchemes: Array<SignatureScheme>
         get() = cryptoService.supportedSchemes()
 
-    private val defaultSignatureScheme: SignatureScheme = schemeMetadata.findSignatureScheme(defaultSignatureSchemeCodeName)
+    private val defaultSignatureScheme: SignatureScheme =
+        schemeMetadata.findSignatureScheme(defaultSignatureSchemeCodeName)
 
     init {
         logger.info("Initializing with default scheme $defaultSignatureSchemeCodeName")
@@ -45,10 +46,10 @@ open class SigningServiceImpl(
         cryptoService.findPublicKey(alias)
 
     @Suppress("TooGenericExceptionCaught")
-    override fun generateKeyPair(alias: String): PublicKey =
+    override fun generateKeyPair(alias: String, context: Map<String, String>): PublicKey =
         try {
             logger.info("Generating key pair for alias={}", alias)
-            val publicKey = cryptoService.generateKeyPair(alias, defaultSignatureScheme)
+            val publicKey = cryptoService.generateKeyPair(alias, defaultSignatureScheme, context)
             cache.save(publicKey, defaultSignatureScheme, alias)
             publicKey
         } catch (e: CryptoServiceException) {
@@ -57,36 +58,58 @@ open class SigningServiceImpl(
             throw CryptoServiceException("Cannot generate key pair for alias $alias", e)
         }
 
-    override fun sign(publicKey: PublicKey, data: ByteArray): DigitalSignature.WithKey =
-        doSign(publicKey, null, data)
+    override fun sign(publicKey: PublicKey, data: ByteArray, context: Map<String, String>): DigitalSignature.WithKey =
+        doSign(publicKey, null, data, context)
 
-    override fun sign(publicKey: PublicKey, signatureSpec: SignatureSpec, data: ByteArray): DigitalSignature.WithKey =
-        doSign(publicKey, signatureSpec, data)
+    override fun sign(
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec,
+        data: ByteArray,
+        context: Map<String, String>
+    ): DigitalSignature.WithKey =
+        doSign(publicKey, signatureSpec, data, context)
 
-    override fun sign(alias: String, data: ByteArray): ByteArray =
-        doSign(alias, null, data)
+    override fun sign(alias: String, data: ByteArray, context: Map<String, String>): ByteArray =
+        doSign(alias, null, data, context)
 
-    override fun sign(alias: String, signatureSpec: SignatureSpec, data: ByteArray): ByteArray =
-        doSign(alias, signatureSpec, data)
+    override fun sign(
+        alias: String,
+        signatureSpec: SignatureSpec,
+        data: ByteArray,
+        context: Map<String, String>
+    ): ByteArray =
+        doSign(alias, signatureSpec, data, context)
 
     private fun getSigningPublicKey(publicKey: PublicKey): PublicKey =
         publicKey.keys.firstOrNull { cache.find(it) != null }
-            ?: throw CryptoServiceBadRequestException("The member doesn't own public key '${publicKey.toStringShort()}'.")
+            ?: throw CryptoServiceBadRequestException(
+                "The member doesn't own public key '${publicKey.toStringShort()}'."
+            )
 
     @Suppress("TooGenericExceptionCaught")
-    private fun doSign(publicKey: PublicKey, signatureSpec: SignatureSpec?, data: ByteArray): DigitalSignature.WithKey =
+    private fun doSign(
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec?,
+        data: ByteArray,
+        context: Map<String, String>
+    ): DigitalSignature.WithKey =
         try {
             logger.info("Signing using public key={}", publicKey.toStringShort())
             val signingPublicKey = getSigningPublicKey(publicKey)
             val keyData = cache.find(signingPublicKey)
-                ?: throw CryptoServiceBadRequestException("The entry for public key '${publicKey.toStringShort()}' is not found")
-            val signatureScheme = schemeMetadata.findSignatureScheme(keyData.schemeCodeName)
+                ?: throw CryptoServiceBadRequestException(
+                    "The entry for public key '${publicKey.toStringShort()}' is not found"
+                )
+            var signatureScheme = schemeMetadata.findSignatureScheme(keyData.schemeCodeName)
+            if(signatureSpec != null) {
+                signatureScheme = signatureScheme.copy(signatureSpec = signatureSpec)
+            }
             val signedBytes = if (keyData.alias != null) {
                 cryptoService.sign(
                     keyData.alias!!,
                     signatureScheme,
-                    signatureSpec ?: signatureScheme.signatureSpec,
-                    data
+                    data,
+                    context
                 )
             } else {
                 if (keyData.privateKeyMaterial == null || keyData.masterKeyAlias.isNullOrBlank()) {
@@ -102,8 +125,8 @@ open class SigningServiceImpl(
                 )
                 cryptoService.sign(
                     wrappedPrivateKey,
-                    signatureSpec ?: signatureScheme.signatureSpec,
-                    data
+                    data,
+                    context
                 )
             }
             DigitalSignature.WithKey(signingPublicKey, signedBytes)
@@ -115,17 +138,25 @@ open class SigningServiceImpl(
 
 
     @Suppress("TooGenericExceptionCaught")
-    private fun doSign(alias: String, signatureSpec: SignatureSpec?, data: ByteArray): ByteArray =
+    private fun doSign(
+        alias: String,
+        signatureSpec: SignatureSpec?,
+        data: ByteArray,
+        context: Map<String, String>
+    ): ByteArray =
         try {
             logger.info("Signing using alias={}", alias)
             val keyData = cache.find(alias)
                 ?: throw CryptoServiceBadRequestException("The entry for alias '$alias' is not found")
-            val signatureScheme = schemeMetadata.findSignatureScheme(keyData.schemeCodeName)
+            var signatureScheme = schemeMetadata.findSignatureScheme(keyData.schemeCodeName)
+            if(signatureSpec != null) {
+                signatureScheme = signatureScheme.copy(signatureSpec = signatureSpec)
+            }
             cryptoService.sign(
                 alias,
                 signatureScheme,
-                signatureSpec ?: signatureScheme.signatureSpec,
-                data
+                data,
+                context
             )
         } catch (e: CryptoServiceException) {
             throw e

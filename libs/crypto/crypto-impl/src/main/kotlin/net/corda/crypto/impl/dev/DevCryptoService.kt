@@ -11,7 +11,6 @@ import net.corda.v5.cipher.suite.WrappedKeyPair
 import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
@@ -73,7 +72,9 @@ class DevCryptoService(
             schemes.add(schemeMetadata.findSignatureScheme(SUPPORTED_SCHEME_CODE_NAME))
         }
         require(schemes.isNotEmpty()) {
-            throw CryptoServiceException("The default crypto service doesn't support $SUPPORTED_SCHEME_CODE_NAME scheme")
+            throw CryptoServiceException("" +
+                    "The default crypto service doesn't support $SUPPORTED_SCHEME_CODE_NAME scheme"
+            )
         }
         supportedSchemes = schemes.toTypedArray()
     }
@@ -111,53 +112,83 @@ class DevCryptoService(
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean) =
         defaultCryptoService.createWrappingKey(masterKeyAlias, failIfExists)
 
-    override fun generateKeyPair(alias: String, signatureScheme: SignatureScheme): PublicKey =
+    override fun generateKeyPair(
+        alias: String,
+        signatureScheme: SignatureScheme,
+        context: Map<String, String>
+    ): PublicKey =
         generateKeyPair(alias, signatureScheme, false)
 
-    override fun generateWrappedKeyPair(masterKeyAlias: String, wrappedSignatureScheme: SignatureScheme): WrappedKeyPair {
-        logger.debug("generateWrappedKeyPair(masterKeyAlias={}, wrappedSignatureScheme={})", masterKeyAlias, wrappedSignatureScheme)
+    override fun generateWrappedKeyPair(
+        masterKeyAlias: String,
+        wrappedSignatureScheme: SignatureScheme,
+        context: Map<String, String>
+    ): WrappedKeyPair {
+        logger.debug(
+            "generateWrappedKeyPair(masterKeyAlias={}, wrappedSignatureScheme={})",
+            masterKeyAlias,
+            wrappedSignatureScheme
+        )
         if (!isSupported(wrappedSignatureScheme)) {
             throw CryptoServiceBadRequestException("Unsupported signature scheme: ${wrappedSignatureScheme.codeName}")
         }
-        return defaultCryptoService.generateWrappedKeyPair(masterKeyAlias, wrappedSignatureScheme)
+        return defaultCryptoService.generateWrappedKeyPair(masterKeyAlias, wrappedSignatureScheme, context)
     }
 
-    override fun sign(alias: String, signatureScheme: SignatureScheme, data: ByteArray): ByteArray =
-        sign(alias, signatureScheme, signatureScheme.signatureSpec, data)
-
     @Suppress("TooGenericExceptionCaught")
-    override fun sign(alias: String, signatureScheme: SignatureScheme, signatureSpec: SignatureSpec, data: ByteArray): ByteArray {
-        logger.debug("sign(alias={}, signatureScheme={}, signatureSpec={})", alias, signatureScheme, signatureSpec)
+    override fun sign(
+        alias: String,
+        signatureScheme: SignatureScheme,
+        data: ByteArray,
+        context: Map<String, String>
+    ): ByteArray {
+        logger.debug("sign(alias={}, signatureScheme={})", alias, signatureScheme)
         if (!isSupported(signatureScheme)) {
             throw CryptoServiceBadRequestException("Unsupported signature scheme: ${signatureScheme.codeName}")
         }
         if (findPublicKey(alias) == null) {
             throw CryptoServiceBadRequestException("Unable to sign: There is no private key under the alias: $alias")
         }
-        return defaultCryptoService.sign(alias, signatureScheme, signatureSpec, data)
+        return defaultCryptoService.sign(alias, signatureScheme, data, context)
     }
 
-    override fun sign(wrappedKey: WrappedPrivateKey, signatureSpec: SignatureSpec, data: ByteArray): ByteArray {
+    override fun sign(
+        wrappedKey: WrappedPrivateKey,
+        data: ByteArray,
+        context: Map<String, String>
+    ): ByteArray {
         logger.debug(
-            "sign(wrappedKey.masterKeyAlias={}, wrappedKey.signatureScheme={}, signatureSpec={})",
+            "sign(wrappedKey.masterKeyAlias={}, wrappedKey.signatureScheme={})",
             wrappedKey.masterKeyAlias,
-            wrappedKey.signatureScheme,
-            signatureSpec
+            wrappedKey.signatureScheme
         )
         if (!isSupported(wrappedKey.signatureScheme)) {
-            throw CryptoServiceBadRequestException("Unsupported signature scheme: ${wrappedKey.signatureScheme.codeName}")
+            throw CryptoServiceBadRequestException(
+                "Unsupported signature scheme: ${wrappedKey.signatureScheme.codeName}"
+            )
         }
-        return defaultCryptoService.sign(wrappedKey, signatureSpec, data)
+        return defaultCryptoService.sign(wrappedKey, data, context)
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")
-    private fun generateKeyPair(alias: String, signatureScheme: SignatureScheme, storeInSigningCache: Boolean): PublicKey {
-        logger.debug("generateKeyPair(alias={}, scheme={}, storeInSigningCache={})", alias, signatureScheme, storeInSigningCache)
+    private fun generateKeyPair(
+        alias: String,
+        signatureScheme: SignatureScheme,
+        storeInSigningCache: Boolean
+    ): PublicKey {
+        logger.debug(
+            "generateKeyPair(alias={}, scheme={}, storeInSigningCache={})",
+            alias,
+            signatureScheme,
+            storeInSigningCache
+        )
         return try {
             val entropy = alias.toBigIntegerEntropy()
             val keyPair = when(signatureScheme.codeName) {
                 EDDSA_ED25519_CODE_NAME -> deriveEDDSAKeyPairFromEntropy(signatureScheme, entropy)
-                else -> throw CryptoServiceBadRequestException("Unsupported signature scheme: ${signatureScheme.codeName}")
+                else -> throw CryptoServiceBadRequestException(
+                    "Unsupported signature scheme: ${signatureScheme.codeName}"
+                )
             }
             keyCache.save(alias, keyPair, signatureScheme)
             if(storeInSigningCache) {
@@ -167,7 +198,10 @@ class DevCryptoService(
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Exception) {
-            throw CryptoServiceException("Cannot generate key for alias $alias and signature scheme ${signatureScheme.codeName}", e)
+            throw CryptoServiceException(
+                "Cannot generate key for alias $alias and signature scheme ${signatureScheme.codeName}",
+                e
+            )
         }
     }
 
@@ -180,7 +214,8 @@ class DevCryptoService(
             throw CryptoServiceBadRequestException("Unsupported signature scheme: ${signatureScheme.codeName}")
         }
         val params = signatureScheme.algSpec as EdDSANamedCurveSpec
-        val bytes = entropy.toByteArray().copyOf(params.curve.field.getb() / 8) // Need to pad the entropy to the valid seed length.
+        // Need to pad the entropy to the valid seed length.
+        val bytes = entropy.toByteArray().copyOf(params.curve.field.getb() / 8)
         val priv = EdDSAPrivateKeySpec(bytes, params)
         val pub = EdDSAPublicKeySpec(priv.a, params)
         return KeyPair(EdDSAPublicKey(pub), EdDSAPrivateKey(priv))
