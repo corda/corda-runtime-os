@@ -7,7 +7,6 @@ import net.corda.httprpc.server.impl.apigen.models.InvocationMethod
 import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 import javax.security.auth.login.FailedLoginException
 import kotlin.reflect.jvm.javaMethod
 
@@ -17,7 +16,7 @@ internal class MethodInvokerTest {
         InvocationMethod(
             TestHealthCheckAPI::bodyPlayground.javaMethod!!,
             TestHealthCheckAPIImpl()
-        ), mock()
+        )
     )
 
     @Test
