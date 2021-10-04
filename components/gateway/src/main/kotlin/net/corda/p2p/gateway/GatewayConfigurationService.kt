@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 class GatewayConfigurationService(
     parent: LifecycleWithCoordinator,
-    configurationReaderService: ConfigurationReadService,
+    private val configurationReaderService: ConfigurationReadService,
     private val listener: ReconfigurationListener,
 ) : LifecycleWithCoordinator(parent),
     ConfigurationHandler {
@@ -104,13 +104,12 @@ class GatewayConfigurationService(
             return configurationHolder.get() ?: throw IllegalStateException("Configuration is not ready")
         }
 
-    init {
-        configurationReaderService.registerForUpdates(this).also {
-            executeBeforeClose(it::close)
-        }
-    }
-
     override fun startSequence() {
+        if (state == State.Created) {
+            configurationReaderService.registerForUpdates(this).also {
+                executeBeforeClose(it::close)
+            }
+        }
         if (configurationHolder.get() != null) {
             state = State.Started
         }
