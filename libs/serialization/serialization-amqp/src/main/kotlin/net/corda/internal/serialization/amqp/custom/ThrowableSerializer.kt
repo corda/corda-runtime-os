@@ -10,23 +10,18 @@ import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.exceptions.CordaThrowable
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializationFactory
 import java.io.NotSerializableException
 
 @Suppress("LongParameterList")
 class ThrowableSerializer(
-    factory: LocalSerializerFactory
-) : Proxy<Throwable, ThrowableSerializer.ThrowableProxy>(
-    Throwable::class.java,
-    ThrowableProxy::class.java,
-    factory
-) {
+    private val factory: LocalSerializerFactory
+) : SerializationCustomSerializer<Throwable, ThrowableSerializer.ThrowableProxy> {
 
     companion object {
         private val logger = contextLogger()
     }
-
-    override val revealSubclassesInSchema: Boolean = true
 
     private val LocalTypeInformation.constructor: LocalConstructorInformation get() = when (this) {
         is LocalTypeInformation.NonComposable ->

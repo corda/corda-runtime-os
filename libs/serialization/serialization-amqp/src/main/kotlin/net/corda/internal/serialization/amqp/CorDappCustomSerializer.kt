@@ -45,7 +45,8 @@ const val PROXY_TYPE = 1
 class CorDappCustomSerializer @JvmOverloads constructor(
     private val serializer: SerializationCustomSerializer<*, *>,
     private val withInheritance: Boolean = false,
-    override val revealSubclassesInSchema: Boolean = false
+    override val revealSubclassesInSchema: Boolean = false,
+    factory: SerializerFactory
 ) : AMQPSerializer<Any>, SerializerFor {
 
     private val types = serializer::class.supertypes.filter { it.jvmErasure == SerializationCustomSerializer::class }
@@ -64,6 +65,16 @@ class CorDappCustomSerializer @JvmOverloads constructor(
     val proxyType = types[PROXY_TYPE]
     override val typeDescriptor: Symbol = typeDescriptorFor(type)
     val descriptor: Descriptor = Descriptor(typeDescriptor)
+    private val proxySerializer: AMQPSerializer<Any> by lazy {
+
+//        val s = factory.get(proxyType)
+//        println(s)
+//        return@lazy s
+//        return@lazy if (s is AMQPPrimitiveSerializer)
+//            s
+//        else
+            ObjectSerializer.make(factory.getTypeInformation(proxyType), factory)
+    }
 
     override fun writeClassInfo(output: SerializationOutput) {}
 
@@ -74,15 +85,39 @@ class CorDappCustomSerializer @JvmOverloads constructor(
                 SerializationCustomSerializer<Any?, Any?>>(serializer).toProxy(obj)
             ?: throw NotSerializableException("proxy object is null")
 
-        data.withDescribed(descriptor) {
-            output.writeObject(proxy, data, proxyType, context)
+//            output.writeObject(proxy, data, proxyType, context)
+
+        if (revealSubclassesInSchema) {
+            val amqpSerializer = proxySerializer
+            if (amqpSerializer is ObjectSerializer) {
+                data.withList {
+                    amqpSerializer.propertySerializers.forEach { (_, serializer) ->
+                        serializer.writeProperty(proxy, this, output, context, 0)
+                    }
+                }
+            } else {
+                data.withDescribed(descriptor) {
+                    output.writeObject(proxy, data, proxyType, context)
+                }
+            }
+        } else {
+            data.withDescribed(descriptor) {
+                output.writeObject(proxy, data, proxyType, context)
+            }
         }
     }
 
     override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
                             input: DeserializationInput, context: SerializationContext
-    ) = uncheckedCast<SerializationCustomSerializer<*, *>, SerializationCustomSerializer<Any?, Any?>>(
-        serializer).fromProxy(uncheckedCast(input.readObject(obj, serializationSchemas, metadata, proxyType, context)))!!
+    ): Any {
+        val proxy = if (revealSubclassesInSchema)
+            proxySerializer.readObject(obj, serializationSchemas, metadata, input, context)
+        else {
+            input.readObject(obj, serializationSchemas, metadata, proxyType, context)
+        }
+        return uncheckedCast<SerializationCustomSerializer<*, *>,
+                SerializationCustomSerializer<Any?, Any?>>(serializer).fromProxy(proxy)!!
+    }
 
     /**
      * For 3rd party plugin serializers we are going to exist on exact type matching. i.e. we will

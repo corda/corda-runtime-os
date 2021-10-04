@@ -4,7 +4,6 @@ import net.corda.internal.serialization.model.DefaultCacheProvider
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaThrowable
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -42,9 +41,14 @@ interface CustomSerializerRegistry {
      * that expects to find getters and a constructor with a parameter for each property.
      */
     fun register(customSerializer: CustomSerializer<out Any>)
-    fun register(customSerializer: SerializationCustomSerializer<*, *>, withInheritance: Boolean, revealSubclassesInSchema: Boolean = false)
+    fun register(
+        customSerializer: SerializationCustomSerializer<*, *>,
+        withInheritance: Boolean,
+        revealSubclassesInSchema: Boolean = false,
+        factory: SerializerFactory
+    )
     fun registerExternal(customSerializer: CorDappCustomSerializer)
-    fun registerExternal(customSerializer: SerializationCustomSerializer<*,*>)
+    fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory)
 
     /**
      * Try to find a custom serializer for the actual class, and declared type, of a value.
@@ -104,8 +108,13 @@ class CachingCustomSerializerRegistry(
         storeCustomSerializer(customSerializer)
     }
 
-    override fun register(customSerializer: SerializationCustomSerializer<*, *>, withInheritance: Boolean, revealSubclassesInSchema: Boolean) {
-        val serializer = CorDappCustomSerializer(customSerializer, withInheritance, revealSubclassesInSchema)
+    override fun register(
+        customSerializer: SerializationCustomSerializer<*, *>,
+        withInheritance: Boolean,
+        revealSubclassesInSchema: Boolean,
+        factory: SerializerFactory
+    ) {
+        val serializer = CorDappCustomSerializer(customSerializer, withInheritance, revealSubclassesInSchema, factory = factory)
         logger.trace { "action=\"Registering custom serializer\", class=\"${serializer.type}\"" }
         storeCustomSerializer(serializer)
     }
@@ -115,8 +124,8 @@ class CachingCustomSerializerRegistry(
         storeCustomSerializer(customSerializer)
     }
 
-    override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>) {
-        registerExternal(CorDappCustomSerializer(customSerializer, false))
+    override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {
+        registerExternal(CorDappCustomSerializer(customSerializer, false, factory = factory))
     }
 
     private fun storeCustomSerializer(customSerializer: AMQPSerializer<Any>) {
@@ -164,7 +173,8 @@ class CachingCustomSerializerRegistry(
                     customSerializer as? AMQPSerializer<Any>
                 }
                 // Make a subclass serializer for the subclass and return that...
-                customSerializer is CustomSerializer<*> -> SubClass(clazz, customSerializer)
+//                customSerializer is CustomSerializer<*> -> SubClass(clazz, customSerializer)
+                customSerializer is CorDappCustomSerializer -> SubClass(clazz, customSerializer)
                 else -> null
             }
         }

@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.FingerprintWriter
+import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
@@ -12,7 +13,7 @@ import java.lang.reflect.Type
  * subclass in the schema, so that we can distinguish between subclasses.
  */
 // TODO: should this be a custom serializer at all, or should it just be a plain AMQPSerializer?
-class SubClass<T : Any>(private val clazz: Class<*>, private val superClassSerializer: CustomSerializer<T>) :
+class SubClass<T : Any>(private val clazz: Class<*>, private val superClassSerializer: CorDappCustomSerializer) :
     CustomSerializer<T>() {
     // TODO: should this be empty or contain the schema of the super?
     override val schemaForDocumentation = Schema(emptyList())
@@ -48,13 +49,13 @@ class SubClass<T : Any>(private val clazz: Class<*>, private val superClassSeria
         obj: T, data: Data, type: Type, output: SerializationOutput,
         context: SerializationContext
     ) {
-        superClassSerializer.writeDescribedObject(obj, data, type, output, context)
+        superClassSerializer.writeObject(obj, data, type, output, context)
     }
 
     override fun readObject(
         obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
         input: DeserializationInput, context: SerializationContext
     ): T {
-        return superClassSerializer.readObject(obj, serializationSchemas, metadata, input, context)
+        return uncheckedCast(superClassSerializer.readObject(obj, serializationSchemas, metadata, input, context))
     }
 }
