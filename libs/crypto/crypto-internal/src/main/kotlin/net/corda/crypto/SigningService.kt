@@ -28,7 +28,7 @@ interface SigningService {
     fun generateKeyPair(alias: String): PublicKey
 
     /**
-     * Using the provided signing public key internally looks up the matching private key and signs the data.
+     * Using the provided signing public key internally looks up the matching private key information and signs the data.
      * If the [PublicKey] is actually a [CompositeKey] the first leaf signing key hosted by the node is used.
      * Default signature scheme for the key scheme is used.
      */
@@ -37,6 +37,7 @@ interface SigningService {
     /**
      * Using the provided signing public key internally looks up the matching private key and signs the data.
      * If the [PublicKey] is actually a [CompositeKey] the first leaf signing key hosted by the node is used.
+     * The [signatureSpec] is used to override the default signature scheme
      */
     fun sign(publicKey: PublicKey, signatureSpec: SignatureSpec, data: ByteArray): DigitalSignature.WithKey
 
@@ -50,6 +51,7 @@ interface SigningService {
     /**
      * Sign a byte array using the private key identified by the input alias.
      * Returns the signature bytes formatted according to the signature scheme (signAlgorithm).
+     * The [signatureSpec] is used to override the default signature scheme
      */
     fun sign(alias: String, signatureSpec: SignatureSpec, data: ByteArray): ByteArray
 }

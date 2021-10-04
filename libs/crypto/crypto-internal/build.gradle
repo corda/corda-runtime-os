@@ -5,20 +5,24 @@ plugins {
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
-
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-crypto"
-    implementation "net.corda:corda-cipher-suite"
-    implementation project(":libs:utilities")
-
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-
-    implementation 'org.slf4j:slf4j-api'
-
     implementation "org.bouncycastle:bcprov-jdk15on:${bouncyCastleVersion}"
     implementation "org.bouncycastle:bcpkix-jdk15on:${bouncyCastleVersion}"
     implementation "net.i2p.crypto:eddsa:$eddsaVersion"
+    implementation "net.corda:corda-crypto"
+    implementation "net.corda:corda-cipher-suite"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
 }
 
 description 'Crypto Internal API'
 
+tasks.named('jar', Jar) {
+    bnd """\
+Import-Package:\
+    net.i2p.crypto.eddsa.math;resolution:=optional,\
+    *
+"""
+}

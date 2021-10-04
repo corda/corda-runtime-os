@@ -1,6 +1,5 @@
 package net.corda.install.internal.verification
 
-import net.corda.cipher.suite.impl.CipherSchemeMetadataProviderImpl
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.install.internal.CONFIG_ADMIN_BASE_DIRECTORY
 import net.corda.install.internal.CONFIG_ADMIN_BLACKLISTED_KEYS
@@ -64,7 +63,8 @@ internal object TestUtils {
     private const val DUMMY_CORDAPP_MIN_PLATFORM_VERSION = DEFAULT_MIN_PLATFORM_VERSION
     private const val DUMMY_BASE_DIRECTORY = "base_directory"
 
-    private val cryptoLibraryFactory = CryptoMocks().cryptoLibraryFactory()
+    private val cryptoMocks = CryptoMocks()
+    private val cryptoLibraryFactory = cryptoMocks.factories.cryptoLibrary
     private val hashingService = cryptoLibraryFactory.getDigestService()
 
     /** Creates a dummy [Manifest] containing the CPK-specific values provided. */
@@ -109,7 +109,7 @@ internal object TestUtils {
         )
     )
 
-    private val cipherSchemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataProviderImpl().getInstance()
+    private val cipherSchemeMetadata: CipherSchemeMetadata = cryptoMocks.schemeMetadata
 
     @Throws(NoSuchAlgorithmException::class)
     fun newSecureRandom(): SecureRandom = cipherSchemeMetadata.secureRandom
