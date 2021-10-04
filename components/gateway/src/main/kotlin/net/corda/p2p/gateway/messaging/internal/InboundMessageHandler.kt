@@ -19,7 +19,7 @@ import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.GatewayConfigurationService
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
@@ -39,14 +39,14 @@ import kotlin.concurrent.write
  * This class implements a simple message processor for p2p messages received from other Gateways.
  */
 internal class InboundMessageHandler(
-    parent: LifecycleWithCoordinator,
+    parent: DominoTile,
     configurationReaderService: ConfigurationReadService,
     private val publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
 ) : GatewayConfigurationService.ReconfigurationListener,
     Lifecycle,
     HttpEventListener,
-    LifecycleWithCoordinator(parent) {
+    DominoTile(parent) {
 
     companion object {
         private val logger = contextLogger()
@@ -86,7 +86,7 @@ internal class InboundMessageHandler(
         }
 
         logger.info("Started P2P message receiver")
-        state = State.Started
+        state = State.Running
     }
 
     private fun writeResponse(status: HttpResponseStatus, address: SocketAddress) {

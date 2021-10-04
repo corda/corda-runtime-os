@@ -5,16 +5,17 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.SessionPartitions
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.DominoTile
+import net.corda.p2p.gateway.domino.LeafDominoTile
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import java.lang.IllegalStateException
 import java.util.concurrent.ConcurrentHashMap
 
 class SessionPartitionMapperImpl(
-    parent: LifecycleWithCoordinator,
+    parent: DominoTile,
     subscriptionFactory: SubscriptionFactory,
 ) : SessionPartitionMapper,
-    LifecycleWithCoordinator(
+    LeafDominoTile(
         parent
     ) {
     companion object {
@@ -45,7 +46,7 @@ class SessionPartitionMapperImpl(
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
-            state = State.Started
+            state = State.Running
         }
 
         override fun onNext(
@@ -67,6 +68,4 @@ class SessionPartitionMapperImpl(
             sessionPartitionSubscription.stop()
         }
     }
-
-    override val children = emptyList<LifecycleWithCoordinator>()
 }

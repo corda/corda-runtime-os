@@ -3,7 +3,8 @@ package net.corda.p2p.gateway
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.DominoTile
+import net.corda.p2p.gateway.domino.LeafDominoTile
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
@@ -14,11 +15,12 @@ import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.atomic.AtomicReference
 
 class GatewayConfigurationService(
-    parent: LifecycleWithCoordinator,
-    configurationReaderService: ConfigurationReadService,
+    parent: DominoTile,
+    private val configurationReaderService: ConfigurationReadService,
     private val listener: ReconfigurationListener,
-) : LifecycleWithCoordinator(parent),
+) : LeafDominoTile(parent),
     ConfigurationHandler {
+
     companion object {
         const val CONFIG_KEY = "p2p.gateway"
         private val logger = contextLogger()
@@ -56,8 +58,8 @@ class GatewayConfigurationService(
             listener.gotNewConfiguration(configuration, oldConfiguration)
             logger.info("Gateway reconfigured")
         }
-        if ((state == State.Created) || (state == State.StoppedDueToError)) {
-            state = State.Started
+        if ((state == State.Created) || (state == State.Error)) {
+            state = State.Running
         }
     }
 
@@ -104,17 +106,14 @@ class GatewayConfigurationService(
             return configurationHolder.get() ?: throw IllegalStateException("Configuration is not ready")
         }
 
-    init {
-        configurationReaderService.registerForUpdates(this).also {
-            executeBeforeClose(it::close)
-        }
-    }
-
     override fun startSequence() {
+        if (state == State.Created) {
+            configurationReaderService.registerForUpdates(this).also {
+                executeBeforeClose(it::close)
+            }
+        }
         if (configurationHolder.get() != null) {
-            state = State.Started
+            state = State.Running
         }
     }
-
-    override val children = emptyList<LifecycleWithCoordinator>()
 }

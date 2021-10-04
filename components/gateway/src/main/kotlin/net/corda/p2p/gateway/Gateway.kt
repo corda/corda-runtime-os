@@ -1,14 +1,13 @@
 package net.corda.p2p.gateway
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.DominoTile
+import net.corda.p2p.gateway.domino.OrphanDominoTile
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * The Gateway is a light component which facilitates the sending and receiving of P2P messages.
@@ -29,18 +28,11 @@ class Gateway(
     subscriptionFactory: SubscriptionFactory,
     @Reference(service = PublisherFactory::class)
     publisherFactory: PublisherFactory,
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-) : LifecycleWithCoordinator(
-    lifecycleCoordinatorFactory,
-    instanceId.incrementAndGet().toString(),
-) {
+) : OrphanDominoTile() {
 
     companion object {
         const val CONSUMER_GROUP_ID = "gateway"
         const val PUBLISHER_ID = "gateway"
-
-        private val instanceId = AtomicInteger(0)
     }
 
     private val inboundMessageHandler = InboundMessageHandler(
@@ -56,9 +48,9 @@ class Gateway(
         publisherFactory,
     )
 
-    override val children: Collection<LifecycleWithCoordinator> = listOf(inboundMessageHandler, outboundMessageProcessor)
+    override val children: Collection<DominoTile> = listOf(inboundMessageHandler, outboundMessageProcessor)
 
     override fun startSequence() {
-        state = State.Started
+        state = State.Running
     }
 }

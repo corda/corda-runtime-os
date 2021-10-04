@@ -119,7 +119,6 @@ class GatewayTest : TestBase() {
             createConfigurationServiceFor(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),),
             alice.subscriptionFactory,
             alice.publisherFactory,
-            lifecycleCoordinatorFactory,
         ).use {
             it.startAndWaitForStarted()
             val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null)
@@ -202,7 +201,6 @@ class GatewayTest : TestBase() {
                 configPublisher.readerService,
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                lifecycleCoordinatorFactory,
             ).use { gateway ->
                 gateway.start()
 
@@ -267,7 +265,6 @@ class GatewayTest : TestBase() {
             createConfigurationServiceFor(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig)),
             alice.subscriptionFactory,
             alice.publisherFactory,
-            lifecycleCoordinatorFactory,
         ).use {
             it.startAndWaitForStarted()
             val responseReceived = CountDownLatch(clientNumber)
@@ -359,7 +356,6 @@ class GatewayTest : TestBase() {
             createConfigurationServiceFor(GatewayConfiguration(gatewayAddress.first, gatewayAddress.second, aliceSslConfig)),
             alice.subscriptionFactory,
             alice.publisherFactory,
-            lifecycleCoordinatorFactory,
         ).use {
             startTime = Instant.now().toEpochMilli()
             it.startAndWaitForStarted()
@@ -430,13 +426,11 @@ class GatewayTest : TestBase() {
                 createConfigurationServiceFor(GatewayConfiguration(aliceGatewayAddress.host, aliceGatewayAddress.port, chipSslConfig)),
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                lifecycleCoordinatorFactory
             ),
             Gateway(
                 createConfigurationServiceFor(GatewayConfiguration(bobGatewayAddress.host, bobGatewayAddress.port, daleSslConfig)),
                 bob.subscriptionFactory,
                 bob.publisherFactory,
-                lifecycleCoordinatorFactory
             )
         ).onEach {
             it.startAndWaitForStarted()

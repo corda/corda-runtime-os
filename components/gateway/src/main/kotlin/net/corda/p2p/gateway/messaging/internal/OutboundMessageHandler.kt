@@ -17,7 +17,7 @@ import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
@@ -36,14 +36,14 @@ import java.nio.ByteBuffer
  * events are processed and fed into the HTTP pipeline. No records will be produced by this processor as a result.
  */
 internal class OutboundMessageHandler(
-    parent: LifecycleWithCoordinator,
+    parent: DominoTile,
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
 ) : EventLogProcessor<String, LinkOutMessage>,
     Lifecycle,
     HttpEventListener,
-    LifecycleWithCoordinator(parent) {
+    DominoTile(parent) {
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
     }
@@ -53,6 +53,8 @@ internal class OutboundMessageHandler(
         configurationReaderService,
         this,
     )
+    override val children = listOf(connectionManager)
+
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(Gateway.CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC),
         this,
@@ -70,7 +72,7 @@ internal class OutboundMessageHandler(
         p2pMessageSubscription.start()
         executeBeforeStop(p2pMessageSubscription::stop)
 
-        state = State.Started
+        state = State.Running
     }
 
     @Suppress("NestedBlockDepth")
@@ -132,6 +134,4 @@ internal class OutboundMessageHandler(
         get() = String::class.java
     override val valueClass: Class<LinkOutMessage>
         get() = LinkOutMessage::class.java
-
-    override val children = listOf(connectionManager)
 }

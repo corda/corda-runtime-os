@@ -4,7 +4,7 @@ import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.p2p.gateway.GatewayConfigurationService
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
@@ -22,10 +22,10 @@ import java.util.concurrent.ConcurrentHashMap
  *
  */
 class ConnectionManager(
-    parent: LifecycleWithCoordinator,
+    parent: DominoTile,
     configurationReaderService: ConfigurationReadService,
     private val listener: HttpEventListener,
-) : LifecycleWithCoordinator(parent),
+) : DominoTile(parent),
     GatewayConfigurationService.ReconfigurationListener {
 
     companion object {
@@ -35,6 +35,7 @@ class ConnectionManager(
         private const val NUM_CLIENT_NETTY_THREADS = 2
     }
     private val configurationService = GatewayConfigurationService(this, configurationReaderService, this)
+    override val children = listOf(configurationService)
 
     private val clientPool = ConcurrentHashMap<URI, HttpClient>()
     private var writeGroup: EventLoopGroup? = null
@@ -73,7 +74,7 @@ class ConnectionManager(
             }
         }
         executeBeforeStop(clientPool::clear)
-        state = State.Started
+        state = State.Running
     }
 
     override fun gotNewConfiguration(newConfiguration: GatewayConfiguration, oldConfiguration: GatewayConfiguration) {
@@ -86,6 +87,4 @@ class ConnectionManager(
             }
         }
     }
-
-    override val children = listOf(configurationService)
 }

@@ -7,7 +7,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.SessionPartitions
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -34,8 +34,8 @@ class SessionPartitionMapperImplTest {
             mock()
         }
     }
-    private val parent = object : LifecycleWithCoordinator(factory, "") {
-        override val children = emptyList<LifecycleWithCoordinator>()
+    private val parent = object : DominoTile(null) {
+        override val children = emptyList<DominoTile>()
     }
 
     @Test
