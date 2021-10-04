@@ -4,7 +4,6 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
@@ -17,13 +16,8 @@ import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.processors.TestRPCCancelResponderProcessor
 import net.corda.messaging.kafka.integration.processors.TestRPCErrorResponderProcessor
 import net.corda.messaging.kafka.integration.processors.TestRPCResponderProcessor
-import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
-import net.corda.v5.base.util.millis
-import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions
-import org.assertj.core.api.CompletableFutureAssert
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -32,15 +26,12 @@ import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CancellationException
-import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class)
 class RPCSubscriptionIntegrationTest {
 
     private lateinit var rpcConfig: RPCConfig<String, String>
-    private lateinit var rpcConfig2: RPCConfig<String, String>
     private lateinit var rpcSender: RPCSender<String, String>
-    private lateinit var rpcSender2: RPCSender<String, String>
     private lateinit var kafkaConfig: Config
 
     private companion object {
@@ -173,49 +164,4 @@ class RPCSubscriptionIntegrationTest {
         rpcSender.close()
         rpcSub.stop()
     }
-
-    @Test
-    fun `start 2 rpc senders and responder, send message, force repartion`() {
-        rpcConfig = RPCConfig(CLIENT_ID, CLIENT_ID, TopicTemplates.RPC_TOPIC, String::class.java, String::class.java)
-        rpcConfig2 = RPCConfig(
-            "${CLIENT_ID}2",
-            "${CLIENT_ID}2",
-            TopicTemplates.RPC_TOPIC,
-            String::class.java,
-            String::class.java
-        )
-        rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
-        rpcSender2 = publisherFactory.createRPCSender(rpcConfig2, kafkaConfig)
-
-        val processor = TestRPCResponderProcessor()
-
-        val rpcSub = subscriptionFactory.createRPCSubscription(
-            rpcConfig, kafkaConfig, processor
-        )
-
-        rpcSender.start()
-        rpcSender2.start()
-        rpcSub.start()
-        var responseReceived = false
-        var attempts = 5
-        while (!responseReceived && attempts > 0) {
-            attempts--
-            try {
-                val future = rpcSender.sendRequest("REQUEST")
-                Assertions.assertThat(future.getOrThrow()).isEqualTo("RECEIVED and PROCESSED")
-                responseReceived = true
-            } catch (ex: CordaRPCAPISenderException) {
-                Thread.sleep(2000)
-            }
-        }
-
-        if(!responseReceived) {
-            fail("Failed to get a response for the request")
-        }
-
-        rpcSender.close()
-        rpcSender2.close()
-        rpcSub.stop()
-    }
-
 }
