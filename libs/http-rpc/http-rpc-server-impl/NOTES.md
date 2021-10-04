@@ -1,4 +1,36 @@
-## `MethodInvoker.kt`
+# Relying more on Javalin
+
+## Reasoning
+
+- Reduce the amount of code we have to maintain by relying on Javalin for more functionality. Most of our code maps from class methods to HTTP endpoints and feeding input requests to these methods.
+- Allow extra functionality in the future, without us having to write more code. For example, sending files over HTTP is handled by Javalin already.
+- Allows us to focus on Corda related functionality rather than on the HTTP functionality.
+
+## Assumptions
+
+- All implementations of HTTP endpoints are internal (done by R3/Corda). 
+  - Need to confirm whether this is true or not.
+  - If it is not true, then either the proposed idea cannot work, or, we need to provide a thin layer over Javalin.
+- That the RPC client is removed. This is because we can't maintain the mapping to interfaces that the client currently relies on.
+
+## Outcome of POC
+
+- Around 7.5k lines of code removed and 1.5k added (80% less code? But I think I did the maths wrong...).
+- Very similar functionality. 
+  - Dynamic endpoint registration.
+  - Authentication.
+  - Swagger UI.
+  - Some of the generated OpenAPI information is lacking. We could address this by contributing back to Javalin.
+
+## Notes
+
+### Thin layer over Javalin
+
+If we need to hide Javalin, then we can provide a thin layer to hide its `Context` and `ApiBuilder` classes. We can delegate down to them underneath. 
+
+We would need to see how this would affect the OpenAPI generation though. We might have to use the DSL rather than the annotation method in this scenario.
+
+### `MethodInvoker.kt`
 
 Converts endpoints that return `DurableCursor`s into `DurableReturnResult`s (if the cursor is infinite). We could replace this with an extension function on Javalin's `Context` class or do it manually in each method as it ultimately is doing this so it can return it as JSON.
 
@@ -80,7 +112,9 @@ internal class FiniteDurableStreamsMethodInvoker(private val invocationMethod: I
 
 For now these invokers have been removed.
 
-## `ResourceToOpenApiSpecMapper` and all schema related classes
+Ended up replacing this functionality by having a infinite and non-infinite `PollResult` class that is returned from some endpoints. This is then mapped directly to JSON without further code. It did require some Jackson Mixin's to remove some unwanted fields.
+
+### `ResourceToOpenApiSpecMapper` and all schema related classes
 
 This class takes the discovered objects used as inputs and returned from methods (pretty sure that's what it does) and coverts them to OpenAPI (JSON) schemas. 
 
@@ -112,7 +146,7 @@ defaultDocumentation { doc ->
 
 For now schema related classes have been removed.
 
-## `SwaggerUIRenderer` OSGI related code
+### `SwaggerUIRenderer` OSGI related code
 
 There is some code in `SwaggerUIRenderer` that is OSGI specific around loading the Swagger webjars. If this is handled by Javalin, then there could potentially be some issues if we cannot replicate this behaviour:
 
@@ -150,7 +184,7 @@ internal class SwaggerUIRenderer(private val configurationProvider: HttpRpcSetti
 
 Not currently sure what to do with this and it seems like something that needs to be addressed.
 
-## Authorization on paths
+### Authorization on paths
 
 The existing RPC code authorizes on method names of the `RpcOps` implementations. This cannot remain because their is no concept of method names when relying on Javalin. Instead we should authenticate paths, which makes sense in a RESTful setting.
 
@@ -227,7 +261,7 @@ app.exception(Exception::class.java) { e, ctx ->
 
 This can leverage the existing `HttpRpcServerINternal.mapToResponse` method (with a few changes) to map exceptions to responses.
 
-## OpenAPI
+### OpenAPI
 
 - Cannot seem to document at the tag/resource level (can't put a description). You can't add an annotation to a `path` it seems.
 
@@ -259,6 +293,6 @@ This can leverage the existing `HttpRpcServerINternal.mapToResponse` method (wit
 
 - Javalin does not have a way to define a property as optional. Possibly could be contributed to Javalin by adding an annotation that you put on a response class's properties.
 
-## Error messages
+### Error messages
 
 - Existing RPC code currently provides more user friendly errors. However we _should_ be able work around that without as much framework code. For example, missing parameters from a JSON request body or number conversions.
