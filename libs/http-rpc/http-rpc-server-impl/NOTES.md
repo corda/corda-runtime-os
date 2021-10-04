@@ -1,5 +1,21 @@
 # Relying more on Javalin
 
+## Running the POC
+
+- Clone - [https://github.com/lankydan/javalin/tree/dan/osgify-javalin-openapi](https://github.com/lankydan/javalin/tree/dan/osgify-javalin-openapi).
+
+- Run `mvn install` in the `javalin-openapi-osgi` module. This will install it into your maven local repository.
+
+- In `corda-runtime-os` run the following commands:
+  
+  ```shell
+  gradlew clean :applications:http-rpc-gateway:appJar 
+  ```
+
+  ```shell
+  java -jar applications/http-rpc-gateway/build/bin/corda-http-rpc-gateway-5.0.0.0-SNAPSHOT.jar --instanceId 1 --kafka applications/http-rpc-gateway/kafka.properties
+  ```
+
 ## Reasoning
 
 - Reduce the amount of code we have to maintain by relying on Javalin for more functionality. Most of our code maps from class methods to HTTP endpoints and feeding input requests to these methods.
