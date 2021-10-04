@@ -8,6 +8,8 @@ import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import net.corda.v5.serialization.SingletonSerializeAsToken
+import java.io.NotSerializableException
 import java.lang.reflect.Type
 
 /**
@@ -146,6 +148,7 @@ class CachingCustomSerializerRegistry(
         }.serializerIfFound
     }
 
+    @Suppress("ThrowsCount", "ComplexMethod")
     private fun doFindCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? {
         val declaredSuperClass = declaredType.asClass().superclass
 
@@ -166,7 +169,13 @@ class CachingCustomSerializerRegistry(
             }
         }
 
-        if (declaredSerializers.isEmpty()) return null
+        if (declaredSerializers.isEmpty()) {
+            if (SingletonSerializeAsToken::class.java.isAssignableFrom(clazz)) {
+                throw NotSerializableException("Attempt to serialise SingletonSerializeAsToken")
+            } else {
+                return null
+            }
+        }
         if (declaredSerializers.size > 1) {
             logger.warn("Duplicate custom serializers detected for $clazz: ${declaredSerializers.map { it::class.qualifiedName }}")
             throw DuplicateCustomSerializerException(declaredSerializers, clazz)

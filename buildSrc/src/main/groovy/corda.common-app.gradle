@@ -117,7 +117,7 @@ private def addSystemPackagesExtra(
             "sun.security.x509",
             "sun.security.ssl",
             "javax.servlet",
-            "javax.transaction.xa;version=1.1.0",
+            "javax.transaction;version=1.2.0",
             "javax.xml.stream;version=1.0",
             "javax.xml.stream.events;version=1.0",
             "javax.xml.stream.util;version=1.0"
@@ -184,21 +184,24 @@ def appJarBaseName = "corda-" + project.name
 
 def appJar = tasks.register('appJar', Jar) {
     dependsOn cordaAssembleSystemPackagesExtraTask
-    archivesBaseName = appJarBaseName
     destinationDirectory = layout.buildDirectory.dir("bin")
-    from(
-            configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) },
-            configurations.systemPackages.collect { it.isDirectory() ? it : zipTree(it) },
-            new File(project.buildDir, "resources/main")
-    )
-    exclude "META-INF/*.SF"
-    exclude "META-INF/*.DSA"
-    exclude "META-INF/*.RSA"
-    exclude "META-INF/*.EC"
-    exclude "**/module-info.class"
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    manifest {
-        attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
+    archivesBaseName = appJarBaseName
+
+    doFirst{
+        from(
+                configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) },
+                configurations.systemPackages.collect { it.isDirectory() ? it : zipTree(it) },
+                new File(project.buildDir, "resources/main")
+        )
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        exclude "META-INF/*.EC"
+        exclude "**/module-info.class"
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        manifest {
+            attributes 'Main-Class': 'net.corda.osgi.framework.OSGiFrameworkMain'
+        }
     }
 }
 

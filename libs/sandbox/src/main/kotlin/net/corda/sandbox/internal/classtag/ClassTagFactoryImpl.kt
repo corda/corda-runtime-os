@@ -13,38 +13,38 @@ import org.osgi.framework.Bundle
 internal class ClassTagFactoryImpl : ClassTagFactory {
     override fun createSerialised(
         isStaticClassTag: Boolean,
-        isPlatformBundle: Boolean,
+        isPublicBundle: Boolean,
         bundle: Bundle,
         sandbox: Sandbox
     ): String {
         val bundleSymbolicName = bundle.symbolicName ?: throw SandboxException(
             "Bundle at ${bundle.location} does not have a symbolic name, preventing serialisation.")
 
-        if (isPlatformBundle) {
+        if (isPublicBundle) {
             return if (isStaticClassTag) {
-                StaticTagImplV1(isPlatformClass = true, bundleSymbolicName, ClassTagV1.PLACEHOLDER_CPK_FILE_HASH)
+                StaticTagImplV1(isPublicClass = true, bundleSymbolicName, ClassTagV1.PLACEHOLDER_HASH)
             } else {
                 EvolvableTagImplV1(
-                    isPlatformClass = true,
+                    isPublicClass = true,
                     bundleSymbolicName,
                     ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME,
-                    ClassTagV1.PLACEHOLDER_CPK_PUBLIC_KEY_HASHES
+                    ClassTagV1.PLACEHOLDER_HASH
                 )
             }.serialise()
 
         }
 
-        if (sandbox !is CpkSandboxInternal) throw SandboxException("Sandbox was neither a platform sandbox nor a CPK " +
-                "sandbox. A valid class tag cannot be constructed.")
+        if (sandbox !is CpkSandboxInternal) throw SandboxException("Sandbox was neither a public sandbox nor a " +
+                "CPK sandbox. A valid class tag cannot be constructed.")
 
         return if (isStaticClassTag) {
-            StaticTagImplV1(isPlatformClass = false, bundleSymbolicName, sandbox.cpk.cpkHash)
+            StaticTagImplV1(isPublicClass = false, bundleSymbolicName, sandbox.cpk.cpkHash)
         } else {
             EvolvableTagImplV1(
-                isPlatformClass = false,
+                isPublicClass = false,
                 bundleSymbolicName,
                 sandbox.cordappBundle.symbolicName,
-                sandbox.cpk.id.signers
+                sandbox.cpk.id.signerSummaryHash
             )
         }.serialise()
     }

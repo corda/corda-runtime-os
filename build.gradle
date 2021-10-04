@@ -124,8 +124,8 @@ allprojects {
                     basic(BasicAuthentication)
                 }
                 credentials {
-                    username = System.getenv('CORDA_ARTIFACTORY_USERNAME') ?: cordaArtifactoryUsername
-                    password = System.getenv('CORDA_ARTIFACTORY_PASSWORD') ?: cordaArtifactoryPassword
+                    username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                    password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
                 }
             }
         } else {
@@ -138,7 +138,21 @@ allprojects {
                     }
                 }
                 filter {
+                    includeGroup 'org.mule.distributions'
                     includeGroup 'antlr'
+                }
+            }
+
+            // temporarily for the Liquibase patch
+            // TODO: REMOVE when patched merged https://r3-cev.atlassian.net/browse/CORE-2723
+            exclusiveContent {
+                forRepository {
+                    maven {
+                        url "$artifactoryContextUrl/corda-dependencies-dev"
+                    }
+                }
+                filter {
+                    includeGroup 'org.liquibase'
                 }
             }
         }
@@ -223,6 +237,9 @@ logger.quiet("Corda runtime OS release version: {}", version)
 logger.quiet("Corda API dependency version spec: {}", cordaApiVersion)
 logger.quiet("Old Corda dependencies version spec: {}", cordaVersion)
 //logger.quiet("Release Type: {}", releaseType)
+if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
+    logger.quiet( "Corda-Api project exists on disk in the expected location and Gradle composite build is enabled, corda-api binaries will be substituted with source code")
+}
 
 subprojects {
     buildscript {

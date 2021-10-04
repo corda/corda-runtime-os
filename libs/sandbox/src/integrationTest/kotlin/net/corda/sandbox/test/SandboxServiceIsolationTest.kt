@@ -1,7 +1,6 @@
 package net.corda.sandbox.test
 
 import net.corda.sandbox.SandboxGroup
-import net.corda.sandbox.test.SandboxLoader.Companion.QUERY_CLASS
 import org.assertj.core.api.AbstractListAssert
 import org.assertj.core.api.ObjectAssert
 import org.junit.jupiter.api.Test
@@ -57,8 +56,8 @@ class SandboxServiceIsolationTest {
         // services inside CPK2's "main" jar, but nothing from CPK3.
         assertThat(serviceClasses)
             .hasNoServiceFromGroup(otherGroup)
-            .hasNoService(sandbox2.loadClassFromCordappBundle(QUERY_CLASS))
-            .hasService(sandbox1.loadClassFromCordappBundle(QUERY_CLASS))
+            .hasNoService(sandbox2.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
+            .hasService(sandbox1.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
             .hasService(ServiceComponentRuntime::class.java)
             .hasService(Resolver::class.java)
             .hasService(sandbox1.loadClassFromCordappBundle(SERVICES1_FLOW_CLASS))
@@ -77,8 +76,8 @@ class SandboxServiceIsolationTest {
         // services inside CPK1's "main" jar, but nothing from CPK3.
         assertThat(serviceClasses)
             .hasNoServiceFromGroup(otherGroup)
-            .hasNoService(sandbox1.loadClassFromCordappBundle(QUERY_CLASS))
-            .hasService(sandbox2.loadClassFromCordappBundle(QUERY_CLASS))
+            .hasNoService(sandbox1.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
+            .hasService(sandbox2.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
             .hasService(ServiceComponentRuntime::class.java)
             .hasService(Resolver::class.java)
             .hasService(sandbox1.loadClassFromCordappBundle(SERVICES1_FLOW_CLASS))
@@ -96,7 +95,7 @@ class SandboxServiceIsolationTest {
         // no service belonging to either CPK1 or CPK2.
         assertThat(serviceClasses)
             .hasNoServiceFromGroup(otherGroup)
-            .hasService(sandbox3.loadClassFromCordappBundle(QUERY_CLASS))
+            .hasService(sandbox3.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
             .hasService(ServiceComponentRuntime::class.java)
             .hasService(Resolver::class.java)
             .hasService(sandbox3.loadClassFromCordappBundle(SERVICES3_FLOW_CLASS))

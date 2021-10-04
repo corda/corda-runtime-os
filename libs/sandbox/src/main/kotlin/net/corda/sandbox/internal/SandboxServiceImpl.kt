@@ -5,7 +5,7 @@ import net.corda.packaging.Cpk
 import net.corda.sandbox.ClassInfo
 import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.CpkSandbox
-import net.corda.sandbox.NonCpkClassInfo
+import net.corda.sandbox.PublicClassInfo
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
@@ -30,9 +30,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
 
-/**
- * An implementation of the [SandboxCreationService] and [SandboxContextService] OSGi service interfaces.
- */
+/** An implementation of [SandboxCreationService] and [SandboxContextService]. */
 @Component(service = [SandboxCreationService::class, SandboxContextService::class, SandboxServiceInternal::class])
 @Suppress("TooManyFunctions")
 internal class SandboxServiceImpl @Activate constructor(
@@ -41,6 +39,9 @@ internal class SandboxServiceImpl @Activate constructor(
     @Reference
     private val bundleUtils: BundleUtils
 ) : SandboxServiceInternal, SingletonSerializeAsToken {
+    // These two framework bundles require full visibility.
+    private val felixFrameworkBundle by lazy { getBundle(FELIX_FRAMEWORK_BUNDLE) }
+    private val felixScrBundle by lazy { getBundle(FELIX_SCR_BUNDLE) }
 
     // These sandboxes are not persisted in any way; they are recreated on node startup.
     private val sandboxes = ConcurrentHashMap<UUID, SandboxInternal>()
@@ -48,16 +49,30 @@ internal class SandboxServiceImpl @Activate constructor(
     // Maps each sandbox ID to the sandbox group that the sandbox is part of.
     private val sandboxGroups = ConcurrentHashMap<UUID, SandboxGroup>()
 
+    // A list of the public sandboxes.
+    private val publicSandboxes = mutableListOf<SandboxInternal>()
+
     private val logger = loggerFor<SandboxServiceImpl>()
 
-    // Made lazy because we only want to create the platform sandbox once all the platform bundles are installed.
-    private val platformSandbox by lazy(::createPlatformSandbox)
+    override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
+        val publicSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
+        sandboxes[publicSandbox.id] = publicSandbox
+        publicSandboxes.add(publicSandbox)
+    }
 
-    override fun createSandboxes(cpkFileHashes: Iterable<SecureHash>) =
+    override fun createSandboxGroup(cpkFileHashes: Iterable<SecureHash>) =
         createSandboxes(cpkFileHashes, startBundles = true)
 
-    override fun createSandboxesWithoutStarting(cpkFileHashes: Iterable<SecureHash>) =
+    override fun createSandboxGroupWithoutStarting(cpkFileHashes: Iterable<SecureHash>) =
         createSandboxes(cpkFileHashes, startBundles = false)
+
+    override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
+        sandboxGroup.sandboxes.forEach { sandbox ->
+            sandboxes.remove(sandbox.id)
+            sandboxGroups.remove(sandbox.id)
+            (sandbox as SandboxInternal).unload()
+        }
+    }
 
     override fun getClassInfo(klass: Class<*>): ClassInfo {
         val sandbox = sandboxes.values.find { sandbox -> sandbox.containsClass(klass) }
@@ -83,23 +98,21 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun getSandbox(bundle: Bundle) = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundle) }
 
-    override fun isPlatformSandbox(sandbox: Sandbox) = sandbox === platformSandbox
-
     override fun hasVisibility(lookingBundle: Bundle, lookedAtBundle: Bundle): Boolean {
         val lookingSandbox = getSandbox(lookingBundle)
         val lookedAtSandbox = getSandbox(lookedAtBundle)
 
         return when {
+            // These two framework bundles require full visibility.
+            lookingBundle in listOf(felixFrameworkBundle, felixScrBundle) -> true
             // Do both bundles belong to the same sandbox, or is neither bundle in a sandbox?
             lookedAtSandbox === lookingSandbox -> true
             // Does only one of the bundles belong to a sandbox?
             lookedAtSandbox == null || lookingSandbox == null -> false
             // Does the looking sandbox not have visibility of the looked at sandbox?
             !lookingSandbox.hasVisibility(lookedAtSandbox) -> false
-            // Is the looking bundle a public bundle in the platform sandbox?
-            lookingSandbox === platformSandbox && lookingBundle in lookingSandbox.publicBundles -> true
             // Is the looked-at bundle a public bundle in the looked-at sandbox?
-            lookedAtSandbox.publicBundles.any { bundle -> bundle == lookedAtBundle } -> true
+            lookedAtBundle in lookedAtSandbox.publicBundles -> true
 
             else -> false
         }
@@ -141,14 +154,38 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     /**
+     * Returns the installed bundle with the [symbolicName].
+     *
+     * Throws [SandboxException] if there is not exactly one match.
+     */
+    private fun getBundle(symbolicName: String): Bundle {
+        val matchingBundles = bundleUtils.allBundles.filter { bundle ->
+            bundle.symbolicName == symbolicName
+        }
+
+        return when (matchingBundles.size) {
+            0 -> throw SandboxException("Bundle $symbolicName, required by the sandbox service, is not installed.")
+            1 -> matchingBundles.single()
+            else -> throw SandboxException(
+                "Multiple $symbolicName bundles were installed. We cannot identify the bundle required by the " +
+                        "sandbox service."
+            )
+        }
+    }
+
+    /**
      * Retrieves the CPKs from the [installService] based on their [cpkFileHashes], and verifies the CPKs.
      *
-     * Creates a [SandboxGroup], containing a [Sandbox] for each of the CPKs. On the first run, also initialises the
-     * platform sandbox. [startBundles] controls whether the CPK bundles are also started.
+     * Creates a [SandboxGroup], containing a [Sandbox] for each of the CPKs. On the first run, also initialises a
+     * public sandbox. [startBundles] controls whether the CPK bundles are also started.
      *
-     * Grants each sandbox visibility of the platform sandbox and of the other sandboxes in the group.
+     * Grants each sandbox visibility of the public sandboxes and of the other sandboxes in the group.
      */
     private fun createSandboxes(cpkFileHashes: Iterable<SecureHash>, startBundles: Boolean): SandboxGroup {
+        // We force the lazy initialisation of these variables before any sandboxes are created.
+        felixFrameworkBundle
+        felixScrBundle
+
         val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
             installService.getCpk(cpkFileHash)
                 ?: throw SandboxException("No CPK is installed for CPK file hash $cpkFileHash.")
@@ -174,13 +211,14 @@ internal class SandboxServiceImpl @Activate constructor(
             sandbox
         }
 
-        newSandboxes.forEach { sandbox ->
-            // The "platform" sandbox contains the OSGi framework itself,
-            // and so it must be allowed to "see" every sandbox too.
-            platformSandbox.grantVisibility(sandbox)
+        newSandboxes.forEach { newSandbox ->
+            // The public sandboxes have visibility of all sandboxes.
+            publicSandboxes.forEach { publicSandbox ->
+                publicSandbox.grantVisibility(newSandbox)
+            }
 
-            // Each sandbox requires visibility of the sandboxes of the other CPKs and of the platform sandbox.
-            sandbox.grantVisibility(newSandboxes + platformSandbox)
+            // Each sandbox requires visibility of the sandboxes of the other CPKs and of the public sandboxes.
+            newSandbox.grantVisibility(newSandboxes + publicSandboxes)
         }
 
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
@@ -192,7 +230,7 @@ internal class SandboxServiceImpl @Activate constructor(
         val sandboxGroup = SandboxGroupImpl(
             bundleUtils,
             newSandboxes.associateBy { sandbox -> sandbox.cpk.id },
-            platformSandbox,
+            publicSandboxes,
             ClassTagFactoryImpl()
         )
 
@@ -201,22 +239,6 @@ internal class SandboxServiceImpl @Activate constructor(
         }
 
         return sandboxGroup
-    }
-
-    /**
-     * Creates the platform sandbox. This sandbox's public bundles are those bundles that CPKs require visibility of
-     * (including the public Corda API). The sandbox's private bundles are all other platform bundles.
-     */
-    private fun createPlatformSandbox(): SandboxImpl {
-        val (publicBundles, privateBundles) = bundleUtils.allBundles.partition { bundle ->
-            bundle.symbolicName in PUBLIC_PLATFORM_BUNDLE_NAMES
-        }
-
-        val platformSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
-
-        sandboxes[platformSandbox.id] = platformSandbox
-
-        return platformSandbox
     }
 
     /**
@@ -237,8 +259,8 @@ internal class SandboxServiceImpl @Activate constructor(
 
         if (bundle.symbolicName == null)
             throw SandboxException(
-                "Bundle at $jarLocation could not be installed as it does not have a symbolic name, preventing " +
-                        "serialisation.")
+                "Bundle at $jarLocation does not have a symbolic name, which would prevent serialisation."
+            )
 
         return bundle
     }
@@ -265,7 +287,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
         val cpk = when (sandbox) {
             is CpkSandboxInternal -> sandbox.cpk
-            else -> return NonCpkClassInfo(bundle.symbolicName, bundle.version)
+            else -> return PublicClassInfo(bundle.symbolicName, bundle.version)
         }
 
         // This lookup is required because a CPK's dependencies are only given as <name, version, public key hashes>
@@ -282,7 +304,7 @@ internal class SandboxServiceImpl @Activate constructor(
             sandbox.cordappBundle.symbolicName,
             sandbox.cordappBundle.version,
             cpk.cpkHash,
-            cpk.id.signers,
+            cpk.id.signerSummaryHash,
             cpkDependencyHashes
         )
     }

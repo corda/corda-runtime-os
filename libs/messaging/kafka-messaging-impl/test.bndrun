@@ -42,7 +42,9 @@ java: ${project.javaExecutable}
 	com.fasterxml.jackson.core.jackson-annotations;version='[2.11.3,2.11.4)',\
 	com.fasterxml.jackson.core.jackson-core;version='[2.11.3,2.11.4)',\
 	com.fasterxml.jackson.core.jackson-databind;version='[2.11.3,2.11.4)',\
+	com.github.ben-manes.caffeine;version='[2.6.2,2.6.3)',\
 	com.typesafe.config;version='[1.4.1,1.4.2)',\
+	javax.interceptor-api;version='[1.2.0,1.2.1)',\
 	junit-jupiter-api;version='[5.7.2,5.7.3)',\
 	junit-jupiter-engine;version='[5.7.2,5.7.3)',\
 	junit-jupiter-params;version='[5.7.2,5.7.3)',\
@@ -50,7 +52,7 @@ java: ${project.javaExecutable}
 	junit-platform-engine;version='[1.7.2,1.7.3)',\
 	junit-platform-launcher;version='[1.7.2,1.7.3)',\
 	kafka-messaging-impl-tests;version='[5.0.0,5.0.1)',\
-	net.corda.avro-schema;version='[5.0.0,5.0.1)',\
+	net.corda.corda-avro-schema;version='[5.0.0,5.0.1)',\
 	net.corda.base;version='[5.0.0,5.0.1)',\
 	net.corda.kafka-messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.kafka-topic-admin;version='[5.0.0,5.0.1)',\
@@ -65,8 +67,11 @@ java: ${project.javaExecutable}
 	net.corda.topic-admin-impl;version='[5.0.0,5.0.1)',\
 	org.apache.commons.commons-compress;version='[1.20.0,1.20.1)',\
 	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
-	org.apache.servicemix.bundles.kafka-clients;version='[2.7.0,2.7.1)',\
+	org.apache.servicemix.bundles.kafka-clients;version='[2.8.0,2.8.1)',\
 	org.assertj.core;version='[3.12.2,3.12.3)',\
+	org.infinispan.commons;version='[9.4.18,9.4.19)',\
+	org.jboss.logging.jboss-logging;version='[3.4.2,3.4.3)',\
+	org.jboss.spec.javax.transaction.jboss-transaction-api_1.2_spec;version='[1.1.1,1.1.2)',\
 	org.jetbrains.kotlin.osgi-bundle;version='[1.4.32,1.4.33)',\
 	org.opentest4j;version='[1.2.0,1.2.1)',\
 	org.osgi.test.common;version='[1.0.0,1.0.1)',\

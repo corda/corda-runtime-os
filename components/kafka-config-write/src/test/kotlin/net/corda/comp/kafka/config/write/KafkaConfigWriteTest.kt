@@ -1,10 +1,10 @@
 package net.corda.comp.kafka.config.write
 
 import com.typesafe.config.Config
-import net.corda.libs.configuration.write.ConfigWriteService
+import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
-import net.corda.libs.configuration.write.factory.ConfigWriteServiceFactory
+import net.corda.libs.configuration.write.factory.ConfigWriterFactory
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -21,8 +21,8 @@ import java.io.BufferedReader
 class KafkaConfigWriteTest {
 
     private lateinit var kafkaConfigWrite: KafkaConfigWrite
-    private val configWriteServiceFactory: ConfigWriteServiceFactory = mock()
-    private val configWriteService: ConfigWriteService = mock()
+    private val configWriterFactory: ConfigWriterFactory = mock()
+    private val configWriter: ConfigWriter = mock()
     private val config: Config = mock()
 
     @Captor
@@ -30,9 +30,9 @@ class KafkaConfigWriteTest {
 
     @BeforeEach
     fun beforeEach() {
-        kafkaConfigWrite = KafkaConfigWrite(configWriteServiceFactory)
-        Mockito.`when`(configWriteServiceFactory.createWriteService(any(), any()))
-            .thenReturn(configWriteService)
+        kafkaConfigWrite = KafkaConfigWrite(configWriterFactory)
+        Mockito.`when`(configWriterFactory.createWriter(any(), any()))
+            .thenReturn(configWriter)
     }
 
     @Test
@@ -53,7 +53,7 @@ class KafkaConfigWriteTest {
             CordaConfigurationVersion("security", 5, 3)
         )
 
-        verify(configWriteService, times(2)).updateConfiguration(capture(keyCaptor), any())
+        verify(configWriter, times(2)).updateConfiguration(capture(keyCaptor), any())
         Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
         Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
     }
@@ -75,7 +75,7 @@ class KafkaConfigWriteTest {
             CordaConfigurationVersion("security", 5, 3)
         )
 
-        verify(configWriteService, times(2)).updateConfiguration(capture(keyCaptor), any())
+        verify(configWriter, times(2)).updateConfiguration(capture(keyCaptor), any())
         Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
         Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
     }
@@ -109,7 +109,7 @@ class KafkaConfigWriteTest {
             CordaConfigurationVersion("security", 5, 3)
         )
 
-        verify(configWriteService, times(4)).updateConfiguration(capture(keyCaptor), any())
+        verify(configWriter, times(4)).updateConfiguration(capture(keyCaptor), any())
         Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
         Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
         Assertions.assertEquals(improvedCordaDatabaseKey, keyCaptor.allValues[2])
@@ -133,7 +133,7 @@ class KafkaConfigWriteTest {
             CordaConfigurationVersion("security", 5, 3)
         )
 
-        verify(configWriteService, times(2)).updateConfiguration(capture(keyCaptor), any())
+        verify(configWriter, times(2)).updateConfiguration(capture(keyCaptor), any())
         Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
         Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
     }

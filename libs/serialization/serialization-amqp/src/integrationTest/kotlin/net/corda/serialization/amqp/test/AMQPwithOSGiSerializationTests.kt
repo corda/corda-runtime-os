@@ -67,6 +67,12 @@ class AMQPwithOSGiSerializationTests {
             properties["baseDirectory"] = testDirectory.toAbsolutePath().toString()
             val conf = configurationAdmin.getConfiguration(ConfigurationAdmin::class.java.name, null)
             conf?.update(properties)
+
+            val allBundles = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles
+            val (publicBundles, privateBundles) = allBundles.partition { bundle ->
+                bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
+            }
+            sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
         }
 
         private fun assembleCpb(cpkUrls: List<URL>): Cpb {
@@ -122,7 +128,7 @@ class AMQPwithOSGiSerializationTests {
         val cpks = installService.getCpb(cpb.identifier)!!.cpks
 
         // Create sandbox group
-        val sandboxGroup = sandboxCreationService.createSandboxes(cpks.map(Cpk::cpkHash))
+        val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks.map(Cpk::cpkHash))
         assertThat(sandboxGroup).isNotNull
         assertThat(sandboxGroup.sandboxes).hasSize(4)
 

@@ -3,33 +3,9 @@
 package net.corda.sandbox.internal
 
 import net.corda.v5.crypto.SecureHash
-import java.util.Collections
-import java.util.Collections.unmodifiableList
 
-// The symbolic names of the bundles that should be public in the platform sandbox.
-// Wrapped inside an unmodifiable list to forbid any tampering.
-internal val PUBLIC_PLATFORM_BUNDLE_NAMES: List<String> = unmodifiableList(
-    listOf(
-        "javax.persistence-api",
-        "jcl.over.slf4j",
-        "net.corda.application",
-        "net.corda.base",
-        "net.corda.crypto-api",
-        "net.corda.flows",
-        "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
-        "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
-        "net.corda.ledger",
-        "net.corda.legacy-api",
-        "net.corda.persistence",
-        "net.corda.serialization",
-        "org.apache.aries.spifly.dynamic.bundle",
-        "org.apache.felix.framework",
-        "org.apache.felix.scr",
-        "org.hibernate.orm.core",
-        "org.jetbrains.kotlin.osgi-bundle",
-        "slf4j.api"
-    )
-)
+internal const val FELIX_FRAMEWORK_BUNDLE = "org.apache.felix.framework"
+internal const val FELIX_SCR_BUNDLE = "org.apache.felix.scr"
 
 // The index of the class tag identifier and version in all serialised class tags.
 internal const val CLASS_TAG_IDENTIFIER_IDX = 0
@@ -44,10 +20,10 @@ internal const val CLASS_TAG_DELIMITER = "$"
 internal object ClassTagV1 {
     internal const val STATIC_IDENTIFIER = "S"
     internal const val EVOLVABLE_IDENTIFIER = "E"
-    internal const val COLLECTION_DELIMITER = ","
 
-    // Used as placeholders when generating class tags for platform classes.
-    internal const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "PLATFORM_BUNDLE"
-    internal val PLACEHOLDER_CPK_FILE_HASH = SecureHash.create("SHA-256:0000000000000000")
-    internal val PLACEHOLDER_CPK_PUBLIC_KEY_HASHES = Collections.emptyNavigableSet<SecureHash>()
+    // Used as placeholders when generating class tags for public sandbox classes.
+    internal const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "PUBLIC_BUNDLE"
+    internal val PLACEHOLDER_HASH = SecureHash.create("SHA-256:0000000000000000")
 }
+
+internal const val HASH_ALGORITHM = "SHA-256"

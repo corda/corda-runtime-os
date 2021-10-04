@@ -1,18 +1,27 @@
 package net.corda.sandbox
 
 import net.corda.v5.crypto.SecureHash
+import org.osgi.framework.Bundle
 
 /**
- * OSGi service interface for creating sandboxes.
+ * A service for creating sandboxes. There are two types of sandbox:
+ *
+ * * Public sandboxes have visibility of, and are visible to, all other sandboxes
+ * * CPK sandboxes are created from previously-installed CPKs
  */
 interface SandboxCreationService {
+    /**
+     * Creates a new public sandbox.
+     */
+    fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>)
+
     /**
      * Creates a new [SandboxGroup] containing a sandbox for each of the CPKs identified by the [cpkFileHashes].
      * Duplicate [cpkFileHashes] are discarded (i.e. if two hashes are identical, only one sandbox will be created).
      *
      * A [SandboxException] is thrown if the sandbox creation fails.
      */
-    fun createSandboxes(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
+    fun createSandboxGroup(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
 
     /**
      * Creates a new [SandboxGroup] containing a sandbox for each of the CPKs identified by the [cpkFileHashes].
@@ -24,5 +33,12 @@ interface SandboxCreationService {
      *
      * A [SandboxException] is thrown if the sandbox creation fails.
      */
-    fun createSandboxesWithoutStarting(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
+    fun createSandboxGroupWithoutStarting(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
+
+    /**
+     * Uninstalls all the sandbox group's bundles. Removes the sandbox group from the service's cache.
+     *
+     * Throws [SandboxException] if one of the bundles cannot be uninstalled.
+     */
+    fun unloadSandboxGroup(sandboxGroup: SandboxGroup)
 }

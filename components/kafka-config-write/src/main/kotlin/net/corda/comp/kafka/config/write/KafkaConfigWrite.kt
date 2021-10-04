@@ -3,10 +3,10 @@ package net.corda.comp.kafka.config.write
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
-import net.corda.libs.configuration.write.ConfigWriteService
+import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
-import net.corda.libs.configuration.write.factory.ConfigWriteServiceFactory
+import net.corda.libs.configuration.write.factory.ConfigWriterFactory
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -15,17 +15,17 @@ import org.slf4j.Logger
 
 @Component(immediate = true, service = [KafkaConfigWrite::class])
 class KafkaConfigWrite @Activate constructor(
-    @Reference(service = ConfigWriteServiceFactory::class)
-    private val configWriteServiceFactory: ConfigWriteServiceFactory
+    @Reference(service = ConfigWriterFactory::class)
+    private val configWriterFactory: ConfigWriterFactory
 ) {
-    private lateinit var writer: ConfigWriteService
+    private lateinit var writer: ConfigWriter
 
     private companion object {
         private val log: Logger = contextLogger()
     }
 
     fun updateConfig(destination: String, appConfig: Config, configurationFile: String) {
-        writer = configWriteServiceFactory.createWriteService(destination, appConfig)
+        writer = configWriterFactory.createWriter(destination, appConfig)
         val configuration = ConfigFactory.parseString(configurationFile)
 
         for (packageKey in configuration.root().keys) {

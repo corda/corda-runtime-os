@@ -14,11 +14,12 @@ import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DURABLE_TOPIC1
+import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getKafkaProperties
-import net.corda.messaging.kafka.integration.getRecords
+import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
-import net.corda.messaging.kafka.properties.KafkaProperties
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.MESSAGING_KAFKA
+import net.corda.messaging.kafka.properties.ConfigProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -57,16 +58,16 @@ class DurableSubscriptionIntegrationTest {
     fun beforeEach() {
         kafkaConfig = ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(BOOTSTRAP_SERVERS_VALUE))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
     @Test
     fun `asynch publish records and then start 2 durable subscriptions, delay 1 sub, trigger rebalance`() {
         topicAdmin.createTopics(kafkaProperties, TopicTemplates.DURABLE_TOPIC1_TEMPLATE)
 
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        val futures = publisher.publish(getRecords(DURABLE_TOPIC1, 5, 3))
+        val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC1, 5, 3))
         assertThat(futures.size).isEqualTo(15)
         publisher.close()
 
@@ -79,7 +80,7 @@ class DurableSubscriptionIntegrationTest {
         )
 
         val triggerRebalanceQuicklyConfig = kafkaConfig
-            .withValue("$MESSAGING_KAFKA.${KafkaProperties.CONSUMER_MAX_POLL_INTERVAL}", ConfigValueFactory.fromAnyRef(1000))
+            .withValue("$MESSAGING_KAFKA.${ConfigProperties.CONSUMER_MAX_POLL_INTERVAL}", ConfigValueFactory.fromAnyRef(1000))
         //long delay to not allow sub to to try rejoin group after rebalance
         val durableSub2 = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1, 2),
@@ -97,9 +98,9 @@ class DurableSubscriptionIntegrationTest {
 
     @Test
     fun `asynch publish records and then start durable subscription`() {
-        publisherConfig = PublisherConfig(CLIENT_ID)
+        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC2)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        val futures = publisher.publish(getRecords(DURABLE_TOPIC2, 5, 2))
+        val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC2, 5, 2))
         assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
         publisher.close()
@@ -119,9 +120,9 @@ class DurableSubscriptionIntegrationTest {
 
     @Test
     fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
-        publisherConfig = PublisherConfig(CLIENT_ID, 1)
+        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        val futures = publisher.publish(getRecords(DURABLE_TOPIC3, 5, 2))
+        val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC3, 5, 2))
         assertThat(futures.size).isEqualTo(1)
         futures[0].get()
 
@@ -145,7 +146,7 @@ class DurableSubscriptionIntegrationTest {
         durableSub1.stop()
         durableSub2.stop()
 
-        publisher.publish(getRecords(DURABLE_TOPIC3, 10, 2)).forEach { it.get() }
+        publisher.publish(getDemoRecords(DURABLE_TOPIC3, 10, 2)).forEach { it.get() }
 
         durableSub1.start()
         durableSub2.start()

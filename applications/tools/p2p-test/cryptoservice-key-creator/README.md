@@ -22,7 +22,7 @@ bootstrap.servers=localhost:9092
 The file provided on the `--keys-config` CLI parameter should have the following structure:
 ```json
 {
-    "keys": [
+    "entries": [
         {
           "alias": "key1",
           "keystoreFile": "<path_to_the_keystore_file>",
@@ -41,7 +41,7 @@ The file provided on the `--keys-config` CLI parameter should have the following
 
 Key files are expected to be `.jks` files. You can create them using Java's `keytool`, e.g.:
 ```
-keytool -genkeypair -alias ec -keyalg EC -keysize 256 -sigalg SHA256withECDSA  -validity 365 -storetype JKS -keystore ec_key.jks -storepass 123456
+keytool -genkeypair -alias ec -keyalg EC -storetype JKS -keystore ec_key.jks -storepass 123456
 ```
 
 ### Populating a custom topic

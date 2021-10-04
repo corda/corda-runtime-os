@@ -10,7 +10,7 @@ import net.corda.components.examples.config.reader.MessagingConfigUpdateEvent
 import net.corda.components.examples.durable.RunDurableSub
 import net.corda.components.examples.pubsub.RunPubSub
 import net.corda.components.examples.stateevent.RunStateEventSub
-import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
+import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -42,8 +42,8 @@ class DemoApp @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = ConfigReadServiceFactory::class)
-    private var configReadServiceFactory: ConfigReadServiceFactory,
+    @Reference(service = ConfigReaderFactory::class)
+    private var configReaderFactory: ConfigReaderFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
 ) : Application {
@@ -135,7 +135,7 @@ class DemoApp @Activate constructor(
                         }
                     }
                 }
-            configReader = ConfigReader(lifeCycleCoordinator!!, configReadServiceFactory)
+            configReader = ConfigReader(lifeCycleCoordinator!!, configReaderFactory)
 
             log.info("Starting life cycle coordinator")
             lifeCycleCoordinator!!.start()

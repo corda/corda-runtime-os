@@ -31,19 +31,21 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:schema-registry:schema-registry")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation project(":libs:lifecycle:lifecycle")
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "net.corda:avro-schema"
+    testImplementation project(":testing:test-utilities")
 
     testRuntimeOnly 'org.osgi:osgi.core'
 

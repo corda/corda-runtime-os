@@ -9,9 +9,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.test.util.eventually
-import net.corda.v5.base.util.millis
-import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -20,6 +17,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 @ExtendWith(ServiceExtension::class)
@@ -43,6 +41,12 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
     private val consumed = ConcurrentHashMap<String, MutableMap<Record<String, String>, EventLogRecord<String, String>>>()
     private val subscriptions = ConcurrentHashMap.newKeySet<Lifecycle>()
     private val publishedLatch = CountDownLatch(numberOfPublisher)
+    private val consumerLatch = CountDownLatch(
+        numberOfPublisher *
+            sizeOfBatch *
+            numberOfBatchesRecordsToPublish *
+            numberOfConsumerGroups
+    )
 
     private val issues = CopyOnWriteArrayList<Exception>()
 
@@ -89,6 +93,7 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
                         events.forEach {
                             val record = it.toRecord()
                             val oldEvent = groupConsumed.put(record, it)
+                            consumerLatch.countDown()
                             if (oldEvent != null) {
                                 issues.add(Exception("Got the same event twice ($oldEvent and $it)."))
                             }
@@ -145,11 +150,7 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
         publish()
 
         publishedLatch.await()
-        eventually(2.seconds, 10.millis) {
-            val consumeCount = consumed.values.sumOf { it.size }
-            val expectedConsumed = numberOfConsumerGroups * published.size
-            assertThat(consumeCount).isGreaterThanOrEqualTo(expectedConsumed)
-        }
+        assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue
 
         subscriptions.forEach {
             it.stop()

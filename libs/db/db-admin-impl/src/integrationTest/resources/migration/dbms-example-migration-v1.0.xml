@@ -1,0 +1,26 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <!--
+    Example of a DB specific changeset
+    List of DBs: https://www.liquibase.org/get-started/databases?_ga=2.89667163.1554106465.1631635367-1762864281.1630587927
+    -->
+    <changeSet author="R3.Corda" id="test-migrations-v1.0" dbms="postgresql">
+        <createTable tableName="postgres_table">
+            <column name="id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="R3.Corda" id="test-migrations-v1.0" dbms="!postgresql">
+        <createTable tableName="generic_table">
+            <column name="id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

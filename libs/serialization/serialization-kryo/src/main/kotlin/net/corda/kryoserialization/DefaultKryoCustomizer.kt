@@ -3,6 +3,7 @@
 package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.serializers.ClosureSerializer
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
 import com.esotericsoftware.kryo.serializers.FieldSerializer
@@ -23,19 +24,7 @@ import net.corda.kryoserialization.serializers.LoggerSerializer
 import net.corda.kryoserialization.serializers.StackTraceSerializer
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
-import net.corda.serialization.CheckpointInternalCustomSerializer
-import net.corda.serializers.PrivateKeySerializer
-import net.corda.serializers.PublicKeySerializer
 import net.corda.utilities.LazyMappedList
-import net.corda.v5.crypto.CompositeKey
-import org.bouncycastle.jcajce.interfaces.EdDSAPrivateKey
-import org.bouncycastle.jcajce.interfaces.EdDSAPublicKey
-import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey
-import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
-import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPrivateCrtKey
-import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey
-import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PrivateKey
-import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PublicKey
 import org.objenesis.instantiator.ObjectInstantiator
 import org.objenesis.strategy.InstantiatorStrategy
 import org.objenesis.strategy.StdInstantiatorStrategy
@@ -44,8 +33,6 @@ import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Modifier.isPublic
-import java.security.PrivateKey
-import java.security.PublicKey
 import java.security.cert.CertPath
 import java.security.cert.X509Certificate
 import java.util.*
@@ -55,9 +42,9 @@ class DefaultKryoCustomizer {
     companion object {
         private const val LOGGER_ID = Int.MAX_VALUE
 
-        fun customize(
+        internal fun customize(
             kryo: Kryo,
-            serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>>,
+            serializers: Map<Class<*>, Serializer<*>>,
             classResolver: CordaClassResolver,
             classSerializer: ClassSerializer,
             ): Kryo {
@@ -82,28 +69,8 @@ class DefaultKryoCustomizer {
 
                 instantiatorStrategy = CustomInstantiatorStrategy()
 
-                // These probably should go somewhere else, but they're meant to be right before building as,
-                // for security purposes, we don't want someone overriding them
-                listOf(
-                    PublicKey::class.java, EdDSAPublicKey::class.java, CompositeKey::class.java,
-                    BCECPublicKey::class.java, BCRSAPublicKey::class.java, BCSphincs256PublicKey::class.java
-                ).forEach {
-                    addDefaultSerializer(it, KryoCheckpointSerializerAdapter(PublicKeySerializer()).adapt())
-                }
-                listOf(
-                    PrivateKey::class.java, EdDSAPrivateKey::class.java, BCECPrivateKey::class.java,
-                    BCRSAPrivateCrtKey::class.java, BCSphincs256PrivateKey::class.java
-                ).forEach {
-                    addDefaultSerializer(it, KryoCheckpointSerializerAdapter(PrivateKeySerializer()).adapt())
-                }
-
                 addDefaultSerializer(Logger::class.java, LoggerSerializer)
                 addDefaultSerializer(X509Certificate::class.java, X509CertificateSerializer)
-
-                // WARNING: reordering the registrations here will cause a change in the serialized form, since classes
-                // with custom serializers get written as registration ids. This will break backwards-compatibility.
-                // Please add any new registrations to the end.
-
                 addDefaultSerializer(Class::class.java, classSerializer)
                 addDefaultSerializer(
                     LinkedHashMapIteratorSerializer.getIterator()::class.java.superclass,
@@ -140,8 +107,8 @@ class DefaultKryoCustomizer {
                 addDefaultSerializer(AutoCloseable::class.java, AutoCloseableSerialisationDetector)
 
                 //Add external serializers
-                for (serializer in serializers) {
-                    addDefaultSerializer(serializer.key, KryoCheckpointSerializerAdapter(serializer.value).adapt())
+                for ((clazz, serializer) in serializers.toSortedMap(compareBy { it.name })) {
+                    addDefaultSerializer(clazz, serializer)
                 }
             }
         }
@@ -155,7 +122,7 @@ class DefaultKryoCustomizer {
         private val defaultStrategy = Kryo.DefaultInstantiatorStrategy(fallbackStrategy)
 
         override fun <T> newInstantiatorOf(type: Class<T>): ObjectInstantiator<T> {
-            // However this doesn't work for non-public classes in the java. namespace
+            // However, this doesn't work for non-public classes in the java. namespace
             val strat =
                 if (type.name.startsWith("java.") && !isPublic(type.modifiers)) fallbackStrategy else defaultStrategy
             return strat.newInstantiatorOf(type)

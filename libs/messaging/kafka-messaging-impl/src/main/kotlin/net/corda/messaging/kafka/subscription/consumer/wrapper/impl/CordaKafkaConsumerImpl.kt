@@ -3,12 +3,12 @@ package net.corda.messaging.kafka.subscription.consumer.wrapper.impl
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CLOSE_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.COMMIT_OFFSET_MAX_RETRIES
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.POLL_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.SUBSCRIBE_MAX_RETRIES
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CLOSE_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.COMMIT_OFFSET_MAX_RETRIES
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.POLL_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.SUBSCRIBE_MAX_RETRIES
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.v5.base.util.contextLogger
@@ -38,7 +38,7 @@ import java.time.Duration
 class CordaKafkaConsumerImpl<K : Any, V : Any>(
     config: Config,
     private val consumer: Consumer<K, V>,
-    private val listener: ConsumerRebalanceListener?,
+    private val defaultListener: ConsumerRebalanceListener?,
 ) : CordaKafkaConsumer<K, V>, Consumer<K, V> by consumer {
 
     companion object {
@@ -51,6 +51,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private val consumerCommitOffsetMaxRetries = config.getLong(COMMIT_OFFSET_MAX_RETRIES)
     private val topicPrefix = config.getString(TOPIC_PREFIX)
     private val topic = config.getString(TOPIC_NAME)
+    private val topicWithPrefix = "$topicPrefix$topic"
     private val groupName = config.getString(CommonClientConfigs.GROUP_ID_CONFIG)
 
     @Suppress("TooGenericExceptionCaught")
@@ -149,12 +150,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun subscribeToTopic() {
+    override fun subscribeToTopic(listener: ConsumerRebalanceListener?) {
         var attempts = 0L
         var attemptSubscription = true
         while (attemptSubscription) {
             try {
-                consumer.subscribe(listOf(topicPrefix + topic), listener)
+                consumer.subscribe(listOf(topicWithPrefix), listener ?: defaultListener)
                 attemptSubscription = false
             } catch (ex: Exception) {
                 val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
@@ -205,7 +206,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
     override fun assignPartitionsManually(partitions: Set<Int>) {
-        val topicPartitions = partitions.map { TopicPartition(topic, it) }
+        val topicPartitions = partitions.map { TopicPartition(topicWithPrefix, it) }
         consumer.assign(topicPartitions)
     }
 

@@ -17,7 +17,6 @@ import java.lang.reflect.TypeVariable
 import java.lang.reflect.WildcardType
 import java.util.Arrays
 import java.util.Objects
-import java.util.TreeSet
 
 /**
  * Thrown if a [TypeIdentifier] is incompatible with the local [Type] to which it refers,
@@ -273,14 +272,14 @@ sealed class TypeIdentifier {
 
     protected fun loadTypeFromMetadata(context: SerializationContext, metadata: Metadata): Class<*> {
         return if (metadata.containsKey(name)) {
-            val classInfoParts = metadata.getValue(name) as List<*>
-            val classInfo = Cpk.Identifier(
-                    classInfoParts[0] as String,
-                    classInfoParts[1] as String,
-                    TreeSet((classInfoParts[4] as List<*>).map { SecureHash.create(it as String) }.toList())
+            val cpkIdentifierParts = metadata.getValue(name) as List<*>
+            val cpkIdentifier = Cpk.Identifier(
+                    cpkIdentifierParts[0] as String,
+                    cpkIdentifierParts[1] as String,
+                    SecureHash.create(cpkIdentifierParts[4] as String)
             )
             try {
-                (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(classInfo, name) as Class<*>
+                (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(cpkIdentifier, name) as Class<*>
             } catch (ex: SandboxException) {
                 throw ClassNotFoundException("Unable to load CPK type $name", ex)
             }
