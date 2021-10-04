@@ -66,10 +66,8 @@ import kotlin.collections.set
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "TooGenericExceptionCaught")
 internal class HttpRpcServerInternal(
-//    private val resourceProvider: RouteProvider,
     private val securityManager: HttpRpcSecurityManager,
     private val configurationsProvider: HttpRpcSettingsProvider,
-//    private val openApiInfoProvider: OpenApiInfoProvider,
     private val controllers: List<Controller>
     ) {
 

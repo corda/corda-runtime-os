@@ -36,20 +36,6 @@ class HttpRpcServerImpl(
 
 
     private val httpRpcObjectConfigProvider = HttpRpcObjectSettingsProvider(httpRpcSettings, devMode)
-//    private val httpRpcServerInternal = HttpRpcServerInternal(
-//        JavalinRouteProviderImpl(
-//            httpRpcSettings.context.basePath,
-//            httpRpcSettings.context.version,
-//            resources,
-//            cordappClassLoader
-//        ),
-//        SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManager)),
-//        httpRpcObjectConfigProvider,
-//        OpenApiInfoProvider(resources, httpRpcObjectConfigProvider)
-//    )
-
-    // remove the route provider
-    // register the controllers instead
     private val httpRpcServerInternal = HttpRpcServerInternal(
         SecurityManagerRPCImpl(createAuthenticationProviders(httpRpcObjectConfigProvider, rpcSecurityManager)),
         httpRpcObjectConfigProvider,
