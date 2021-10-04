@@ -13,6 +13,7 @@ dependencies {
     implementation "org.slf4j:slf4j-api"
     api "javax.persistence:javax.persistence-api"
 
+    runtimeOnly("org.hibernate:hibernate-core:$hibernateVersion")
     implementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
         // Need to exclude the org.osgi package as will use the BND ones at runtime
         //  org.osgi ones are added above as compileOnly
