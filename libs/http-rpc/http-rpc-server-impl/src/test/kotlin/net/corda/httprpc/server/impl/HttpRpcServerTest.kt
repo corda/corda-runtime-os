@@ -46,8 +46,7 @@ class HttpRpcServerTest {
                     JavalinRouteProviderImpl(
                         "/",
                         "1",
-                        APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure.getOrThrow(),
-                        ClassLoader.getSystemClassLoader()
+                        APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure.getOrThrow()
                     ),
                     SecurityManagerRPCImpl(emptySet()),
                     configProvider,
@@ -73,8 +72,7 @@ class HttpRpcServerTest {
                     JavalinRouteProviderImpl(
                         "/",
                         "1",
-                        APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure.getOrThrow(),
-                        ClassLoader.getSystemClassLoader()
+                        APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure.getOrThrow()
                     ),
                     SecurityManagerRPCImpl(emptySet()),
                     configProvider,
@@ -99,8 +97,7 @@ class HttpRpcServerTest {
                 JavalinRouteProviderImpl(
                     "/",
                     "1",
-                    APIStructureRetriever(listOf(NonCordaSerializableAPIImpl())).structure.getOrThrow(),
-                    ClassLoader.getSystemClassLoader()
+                    APIStructureRetriever(listOf(NonCordaSerializableAPIImpl())).structure.getOrThrow()
                 ),
                 SecurityManagerRPCImpl(emptySet()),
                 configProvider,
@@ -149,8 +146,7 @@ class HttpRpcServerTest {
                 JavalinRouteProviderImpl(
                     "/",
                     "1",
-                    APIStructureRetriever(listOf(MultipleParamAnnotationApiImpl())).structure.getOrThrow(),
-                    ClassLoader.getSystemClassLoader()
+                    APIStructureRetriever(listOf(MultipleParamAnnotationApiImpl())).structure.getOrThrow()
                 ),
                 SecurityManagerRPCImpl(emptySet()),
                 configProvider,

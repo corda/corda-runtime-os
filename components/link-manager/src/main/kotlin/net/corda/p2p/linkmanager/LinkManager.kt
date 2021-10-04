@@ -212,7 +212,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return if (isHostedLocally) {
                 mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
             } else {
-                when (val state = sessionManager.processOutboundFlowMessage(messageAndKey)) {
+                when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
                     is SessionState.NewSessionNeeded -> recordsForNewSession(state)
                     is SessionState.SessionEstablished -> recordsForSessionEstablished(state, messageAndKey)
                     is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> emptyList()

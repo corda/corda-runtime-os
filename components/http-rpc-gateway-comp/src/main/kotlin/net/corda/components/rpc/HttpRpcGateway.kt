@@ -129,8 +129,7 @@ class HttpRpcGateway(
                 rpcOpsImpls = rpcOps,
                 rpcSecurityManager = securityManager,
                 httpRpcSettings = httpRpcSettings,
-                devMode = true,
-                cordappClassLoader = this::class.java.classLoader
+                devMode = true
             ).also { it.start() }
         }
     }

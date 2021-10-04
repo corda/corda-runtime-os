@@ -11,7 +11,6 @@ import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.httprpc.server.impl.utils.compact
 
-import net.corda.httprpc.tools.HttpVerb
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -30,7 +29,12 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            server = HttpRpcServerImpl(listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl()), securityManager, httpRpcSettings, true, classLoader).apply { start() }
+            server = HttpRpcServerImpl(
+                listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl()),
+                securityManager,
+                httpRpcSettings,
+                true
+            ).apply { start() }
             client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 

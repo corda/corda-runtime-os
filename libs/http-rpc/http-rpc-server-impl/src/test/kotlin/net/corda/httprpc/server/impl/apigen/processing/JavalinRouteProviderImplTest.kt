@@ -37,7 +37,7 @@ class JavalinRouteProviderImplTest {
         )
 
         val testResource = Resource(resourceName, "", resourcePath, setOf(testEndpoint))
-        val provider = JavalinRouteProviderImpl(basePath, apiVersion, listOf(testResource), ClassLoader.getSystemClassLoader())
+        val provider = JavalinRouteProviderImpl(basePath, apiVersion, listOf(testResource))
         val expectedPath =
             "/${basePath}/v${apiVersion}/${testResource.path}/abc/${javalinPathParameterMarker}${testEndpointName}/def".toLowerCase()
 
@@ -66,7 +66,7 @@ class JavalinRouteProviderImplTest {
         )
 
         val testResource = Resource(resourceName, "", resourcePath, setOf(testEndpoint))
-        val provider = JavalinRouteProviderImpl(basePath, apiVersion, listOf(testResource), ClassLoader.getSystemClassLoader())
+        val provider = JavalinRouteProviderImpl(basePath, apiVersion, listOf(testResource))
         val expectedPath = "/${basePath}/v${apiVersion}/${testResource.path}/${testEndpointName}".toLowerCase()
 
         val getRoutes = provider.httpGetRoutes

@@ -6,7 +6,7 @@ import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.protocol.api.Session
 
 interface SessionManager {
-    fun processOutboundFlowMessage(message: AuthenticatedMessageAndKey): SessionState
+    fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState
     fun getSessionById(uuid: String): SessionDirection
     fun processSessionMessage(message: LinkInMessage): LinkOutMessage?
     fun inboundSessionEstablished(sessionId: String)
