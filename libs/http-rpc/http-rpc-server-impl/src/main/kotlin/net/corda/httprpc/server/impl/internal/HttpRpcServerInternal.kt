@@ -182,10 +182,14 @@ internal class HttpRpcServerInternal(
                         url = "rpc@r3.com"
                     })
                 }
+//                openApi.addServersItem(
+//                    io.swagger.v3.oas.models.servers.Server().url(
+//                        "/${configurationsProvider.getBasePath()}/v${configurationsProvider.getApiVersion()}".replace("/+".toRegex(), "/")
+//                    )
+//                )
+                // The version above adds "/api/v1/" to each web request in the swagger ui when using "try it out"
                 openApi.addServersItem(
-                    io.swagger.v3.oas.models.servers.Server().url(
-                        "/${configurationsProvider.getBasePath()}/v${configurationsProvider.getApiVersion()}".replace("/+".toRegex(), "/")
-                    )
+                    io.swagger.v3.oas.models.servers.Server().url("/")
                 )
                 // Set up the authorization code
                 openApi.components((openApi.components ?: Components()).apply {
