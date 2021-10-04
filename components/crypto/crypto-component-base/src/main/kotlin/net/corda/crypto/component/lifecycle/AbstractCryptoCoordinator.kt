@@ -72,6 +72,7 @@ abstract class AbstractCryptoCoordinator(
                         it.handleConfigEvent(event.config)
                     }
                 }
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
         }
     }
