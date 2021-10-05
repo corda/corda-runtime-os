@@ -2,8 +2,8 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.p2p.gateway.GatewayConfigurationService
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.p2p.gateway.domino.ConfigurationAwareTile
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.v5.base.util.contextLogger
 import java.net.SocketAddress
@@ -12,14 +12,11 @@ import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 class ReconfigurableHttpServer(
-    parent: LifecycleWithCoordinator,
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     private val listener: HttpEventListener,
 ) :
-    GatewayConfigurationService.ReconfigurationListener,
-    LifecycleWithCoordinator(parent) {
-
-    private val configurationService = GatewayConfigurationService(this, configurationReaderService, this)
+    ConfigurationAwareTile(lifecycleCoordinatorFactory, configurationReaderService) {
 
     @Volatile
     private var httpServer: HttpServer? = null
@@ -29,28 +26,6 @@ class ReconfigurableHttpServer(
         private val logger = contextLogger()
     }
 
-    override fun startSequence() {
-        if (httpServer?.isRunning != true) {
-            serverLock.write {
-                if (httpServer?.isRunning != true) {
-                    logger.info(
-                        "Starting HTTP server for $name to " +
-                            "${configurationService.configuration.hostAddress}:${configurationService.configuration.hostPort}"
-                    )
-                    val newServer = HttpServer(listener, configurationService.configuration)
-                    newServer.start()
-                    executeBeforeStop(newServer::stop)
-                    httpServer = newServer
-                }
-            }
-        }
-
-        logger.info("Started P2P message receiver")
-        state = State.Started
-    }
-
-    override val children = listOf(configurationService)
-
     fun writeResponse(status: HttpResponseStatus, address: SocketAddress) {
         serverLock.read {
             val server = httpServer ?: throw IllegalStateException("Server is not ready")
@@ -58,8 +33,8 @@ class ReconfigurableHttpServer(
         }
     }
 
-    override fun gotNewConfiguration(newConfiguration: GatewayConfiguration, oldConfiguration: GatewayConfiguration) {
-        if (newConfiguration.hostPort == oldConfiguration.hostPort) {
+    override fun applyNewConfiguration(newConfiguration: GatewayConfiguration, oldConfiguration: GatewayConfiguration?) {
+        if (newConfiguration.hostPort == oldConfiguration?.hostPort) {
             logger.info("New server configuration for $name on the same port, HTTP server will have to go down")
             serverLock.write {
                 val oldServer = httpServer

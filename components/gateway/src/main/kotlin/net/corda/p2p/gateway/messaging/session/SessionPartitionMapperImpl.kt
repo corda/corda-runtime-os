@@ -1,21 +1,21 @@
 package net.corda.p2p.gateway.messaging.session
 
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.SessionPartitions
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.LeafTile
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
-import java.lang.IllegalStateException
 import java.util.concurrent.ConcurrentHashMap
 
 class SessionPartitionMapperImpl(
-    parent: LifecycleWithCoordinator,
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
 ) : SessionPartitionMapper,
-    LifecycleWithCoordinator(
-        parent
+    LeafTile(
+        lifecycleCoordinatorFactory
     ) {
     companion object {
         const val CONSUMER_GROUP_ID = "session_partitions_mapper"
@@ -45,7 +45,7 @@ class SessionPartitionMapperImpl(
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
-            state = State.Started
+            updateState(State.Started)
         }
 
         override fun onNext(
@@ -61,12 +61,10 @@ class SessionPartitionMapperImpl(
         }
     }
 
-    override fun startSequence() {
+    override fun createResources() {
         sessionPartitionSubscription.start()
         executeBeforeStop {
             sessionPartitionSubscription.stop()
         }
     }
-
-    override val children = emptyList<LifecycleWithCoordinator>()
 }

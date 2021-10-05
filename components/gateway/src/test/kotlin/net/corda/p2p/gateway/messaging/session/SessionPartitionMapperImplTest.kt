@@ -7,7 +7,6 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.SessionPartitions
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -34,9 +33,6 @@ class SessionPartitionMapperImplTest {
             mock()
         }
     }
-    private val parent = object : LifecycleWithCoordinator(factory, "") {
-        override val children = emptyList<LifecycleWithCoordinator>()
-    }
 
     @Test
     fun `session partition mapping is calculated successfully`() {
@@ -46,7 +42,7 @@ class SessionPartitionMapperImplTest {
             "2" to SessionPartitions(listOf(3, 4))
         )
 
-        val sessionPartitionMapper = SessionPartitionMapperImpl(parent, subscriptionFactory)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory)
         sessionPartitionMapper.start()
 
         processor!!.onSnapshot(partitionsMapping)
@@ -63,7 +59,7 @@ class SessionPartitionMapperImplTest {
     @Test
     fun `getPartitions cannot be invoked, when component is not running`() {
         val sessionId = "test-session-id"
-        val sessionPartitionMapper = SessionPartitionMapperImpl(parent, subscriptionFactory)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory)
 
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)

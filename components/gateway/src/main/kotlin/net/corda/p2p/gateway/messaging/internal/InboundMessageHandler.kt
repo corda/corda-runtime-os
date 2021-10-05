@@ -3,7 +3,7 @@ package net.corda.p2p.gateway.messaging.internal
 import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.messaging.api.publisher.Publisher
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -17,7 +17,9 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.BranchTile
+import net.corda.p2p.gateway.domino.DominoTile
+import net.corda.p2p.gateway.domino.util.PublisherWithDominoLogic
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -32,35 +34,25 @@ import java.util.UUID
  * This class implements a simple message processor for p2p messages received from other Gateways.
  */
 internal class InboundMessageHandler(
-    parent: LifecycleWithCoordinator,
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     private val publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
 ) :
     HttpEventListener,
-    LifecycleWithCoordinator(parent) {
+    BranchTile(lifecycleCoordinatorFactory) {
 
     companion object {
         private val logger = contextLogger()
     }
 
-    private var p2pInPublisher: Publisher? = null
-    private val sessionPartitionMapper = SessionPartitionMapperImpl(this, subscriptionFactory)
-    private val server = ReconfigurableHttpServer(this, configurationReaderService, this)
-
-    override fun startSequence() {
-        logger.info("Starting P2P message receiver")
-
+    private var p2pInPublisher = let {
         val publisherConfig = PublisherConfig(PUBLISHER_ID)
         val publisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty())
-        executeBeforeStop {
-            publisher.close()
-        }
-        p2pInPublisher = publisher
-
-        logger.info("Started P2P message receiver")
-        state = State.Started
+        PublisherWithDominoLogic(publisher, lifecycleCoordinatorFactory)
     }
+    private val sessionPartitionMapper = SessionPartitionMapperImpl(lifecycleCoordinatorFactory, subscriptionFactory)
+    private val server = ReconfigurableHttpServer(lifecycleCoordinatorFactory, configurationReaderService, this)
 
     /**
      * Handler for direct P2P messages. The payload is deserialized and then published to the ingress topic.
@@ -92,7 +84,7 @@ internal class InboundMessageHandler(
         logger.debug("Received message of type ${p2pMessage.schema.name}")
         when (p2pMessage.payload) {
             is UnauthenticatedMessage -> {
-                p2pInPublisher!!.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
+                p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
                 server.writeResponse(HttpResponseStatus.OK, message.source)
             }
             else -> {
@@ -113,7 +105,7 @@ internal class InboundMessageHandler(
             // this is simplistic (stateless) load balancing amongst the partitions owned by the LM that "hosts" the session.
             val selectedPartition = partitions.random()
             val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
-            p2pInPublisher?.publishToPartition(listOf(selectedPartition to record))
+            p2pInPublisher.publishToPartition(listOf(selectedPartition to record))
             HttpResponseStatus.OK
         }
     }
@@ -141,5 +133,5 @@ internal class InboundMessageHandler(
         return UUID.randomUUID().toString()
     }
 
-    override val children = listOf(sessionPartitionMapper, server)
+    override val children: Collection<DominoTile> = listOf(sessionPartitionMapper, p2pInPublisher, server)
 }

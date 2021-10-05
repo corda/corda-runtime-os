@@ -1,9 +1,9 @@
-package net.corda.p2p.gateway
+package net.corda.p2p.gateway.domino
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
@@ -11,53 +11,57 @@ import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.v5.base.util.base64ToByteArray
 import net.corda.v5.base.util.contextLogger
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-class GatewayConfigurationService(
-    parent: LifecycleWithCoordinator,
-    private val configurationReaderService: ConfigurationReadService,
-    private val listener: ReconfigurationListener,
-) : LifecycleWithCoordinator(parent),
+abstract class ConfigurationAwareTile(
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    configurationReaderService: ConfigurationReadService,
+) :
+    LeafTile(coordinatorFactory),
     ConfigurationHandler {
+
     companion object {
         const val CONFIG_KEY = "p2p.gateway"
         private val logger = contextLogger()
     }
 
-    interface ReconfigurationListener {
-        fun gotNewConfiguration(newConfiguration: GatewayConfiguration, oldConfiguration: GatewayConfiguration)
+    private var configurationHolder = AtomicReference<GatewayConfiguration>()
+
+    private val registration = configurationReaderService.registerForUpdates(this)
+    private val canReceiveConfigurations = AtomicBoolean(false)
+
+    override fun close() {
+        registration.close()
+        super.close()
     }
 
-    private val configurationHolder = AtomicReference<GatewayConfiguration>()
-
-    private class ConfigurationError(msg: String) : Exception(msg)
-
-    @Suppress("TooGenericExceptionCaught")
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
         if (changedKeys.contains(CONFIG_KEY)) {
-            try {
-                applyNewConfiguration(config[CONFIG_KEY])
-            } catch (e: Throwable) {
-                gotError(e)
+            val newConfiguration = config[CONFIG_KEY]
+            if (newConfiguration != null) {
+                applyNewConfiguration(newConfiguration)
             }
         }
     }
 
-    private fun applyNewConfiguration(newConfiguration: Config?) {
+    private fun applyNewConfiguration(newConfiguration: Config) {
         val configuration = toGatewayConfig(newConfiguration)
-        logger.info("Got for $name Gateway configuration ${configuration.hostAddress}:${configuration.hostPort}")
+        logger.info("Got for Gateway configuration ${configuration.hostAddress}:${configuration.hostPort}")
         val oldConfiguration = configurationHolder.getAndSet(configuration)
         if (oldConfiguration == configuration) {
-            logger.info("Configuration of $name had not changed")
+            logger.info("Configuration had not changed")
             return
-        }
-        if ((state != State.Created) && (oldConfiguration != null)) {
-            logger.info("Reconfiguring gateway")
-            listener.gotNewConfiguration(configuration, oldConfiguration)
-            logger.info("Gateway reconfigured")
-        }
-        if ((state == State.Created) || (state == State.StoppedDueToError)) {
-            state = State.Started
+        } else if (canReceiveConfigurations.get()) {
+            logger.info("Reconfiguring gateway $name")
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                applyNewConfiguration(configuration, oldConfiguration)
+                updateState(State.Started)
+                logger.info("Gateway reconfigured $name")
+            } catch (e: Throwable) {
+                gotError(e)
+            }
         }
     }
 
@@ -81,10 +85,7 @@ class GatewayConfigurationService(
         )
     }
 
-    private fun toGatewayConfig(config: Config?): GatewayConfiguration {
-        if (config == null) {
-            throw ConfigurationError("Gateway configuration was removed!")
-        }
+    private fun toGatewayConfig(config: Config): GatewayConfiguration {
         val connectionConfig = if (config.hasPath("connectionConfig")) {
             toConnectionConfig(config.getConfig("connectionConfig"))
         } else {
@@ -99,21 +100,21 @@ class GatewayConfigurationService(
         )
     }
 
-    val configuration: GatewayConfiguration
-        get() {
-            return configurationHolder.get() ?: throw IllegalStateException("Configuration is not ready")
-        }
+    abstract fun applyNewConfiguration(newConfiguration: GatewayConfiguration, oldConfiguration: GatewayConfiguration?)
 
-    override fun startSequence() {
-        if (state == State.Created) {
-            configurationReaderService.registerForUpdates(this).also {
-                executeBeforeClose(it::close)
+    override fun createResources() {
+        if (configurationHolder.get() != null) {
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                applyNewConfiguration(configurationHolder.get(), null)
+                updateState(State.Started)
+            } catch (e: Throwable) {
+                gotError(e)
             }
         }
-        if (configurationHolder.get() != null) {
-            state = State.Started
+        canReceiveConfigurations.set(true)
+        executeBeforeStop {
+            canReceiveConfigurations.set(false)
         }
     }
-
-    override val children = emptyList<LifecycleWithCoordinator>()
 }

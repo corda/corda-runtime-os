@@ -4,11 +4,11 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
+import net.corda.p2p.gateway.domino.BranchTile
+import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * The Gateway is a light component which facilitates the sending and receiving of P2P messages.
@@ -31,34 +31,27 @@ class Gateway(
     publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-) : LifecycleWithCoordinator(
+) : BranchTile(
     lifecycleCoordinatorFactory,
-    instanceId.incrementAndGet().toString(),
 ) {
 
     companion object {
         const val CONSUMER_GROUP_ID = "gateway"
         const val PUBLISHER_ID = "gateway"
-
-        private val instanceId = AtomicInteger(0)
     }
 
     private val inboundMessageHandler = InboundMessageHandler(
-        this,
+        lifecycleCoordinatorFactory,
         configurationReaderService,
         publisherFactory,
         subscriptionFactory,
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
-        this,
+        lifecycleCoordinatorFactory,
         configurationReaderService,
         subscriptionFactory,
         publisherFactory,
     )
 
-    override val children: Collection<LifecycleWithCoordinator> = listOf(inboundMessageHandler, outboundMessageProcessor)
-
-    override fun startSequence() {
-        state = State.Started
-    }
+    override val children: Collection<DominoTile> = listOf(inboundMessageHandler, outboundMessageProcessor)
 }
