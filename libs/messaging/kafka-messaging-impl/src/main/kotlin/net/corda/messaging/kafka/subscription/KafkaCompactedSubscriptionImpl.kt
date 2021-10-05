@@ -126,7 +126,8 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
 
     private fun pollAndProcessSnapshot(consumer: CordaKafkaConsumer<K, V>) {
         val partitions = consumer.assignment()
-        val snapshotEnds = consumer.endOffsets(partitions).toMutableMap()
+        val endOffsets = consumer.endOffsets(partitions)
+        val snapshotEnds = endOffsets.toMutableMap()
         consumer.seekToBeginning(partitions)
 
         val currentData = getLatestValues()
@@ -143,7 +144,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                 }
             }
 
-            for (offsets in snapshotEnds.toMap()) {
+            for (offsets in endOffsets) {
                 val partition = offsets.key
                 if (consumer.position(partition) >= offsets.value) {
                     snapshotEnds.remove(partition)
