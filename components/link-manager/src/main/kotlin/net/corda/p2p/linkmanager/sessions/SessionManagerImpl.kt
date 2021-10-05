@@ -33,15 +33,18 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.valid
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
-open class SessionManagerImpl(
+@Suppress("LongParameterList")
+class SessionManagerImpl(
     private val sessionNegotiationParameters: ParametersForSessionNegotiation,
     private val networkMap: LinkManagerNetworkMap,
     private val cryptoService: LinkManagerCryptoService,
     private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues,
-    private val sessionReplayer: SessionReplayer
+    private val sessionReplayer: SessionReplayer,
+    private val protocolFactory: ProtocolFactory = CryptoProtocolFactory()
     ): SessionManager {
 
     companion object {
@@ -75,10 +78,10 @@ open class SessionManagerImpl(
 
     private val logger = LoggerFactory.getLogger(this::class.java.name)
 
-    private val sessionNegotiationLock = ReentrantLock()
+    private val sessionNegotiationLock = ReentrantReadWriteLock()
 
-    override fun processOutboundFlowMessage(message: AuthenticatedMessageAndKey): SessionState {
-        sessionNegotiationLock.withLock {
+    override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
+        sessionNegotiationLock.read {
             val key = getSessionKeyFromMessage(message.message)
 
             val activeSession = activeOutboundSessions[key]
@@ -141,7 +144,7 @@ open class SessionManagerImpl(
             return null
         }
 
-        val session = AuthenticationProtocolInitiator(
+        val session = protocolFactory.createInitiator(
             sessionId,
             sessionNegotiationParameters.supportedModes,
             sessionNegotiationParameters.maxMessageSize,
@@ -241,7 +244,7 @@ open class SessionManagerImpl(
         }
         val authenticatedSession = session.getSession()
         sessionReplayer.removeMessageFromReplay(message.header.sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName)
-        sessionNegotiationLock.withLock {
+        sessionNegotiationLock.write {
             activeOutboundSessions[sessionInfo] = authenticatedSession
             activeOutboundSessionsById[message.header.sessionId] = authenticatedSession
             pendingOutboundSessions.remove(message.header.sessionId)
@@ -252,7 +255,7 @@ open class SessionManagerImpl(
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
         val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
-            val session = AuthenticationProtocolResponder(
+            val session = protocolFactory.createResponder(
                 sessionId,
                 sessionNegotiationParameters.supportedModes,
                 sessionNegotiationParameters.maxMessageSize
@@ -301,7 +304,7 @@ open class SessionManagerImpl(
         val ourIdentityData = try {
             session.validatePeerHandshakeMessage(message, peer.publicKey, peer.publicKeyAlgorithm)
         } catch (exception: WrongPublicKeyHashException) {
-            logger.error(exception.message)
+            logger.error("The message was discarded. ${exception.message}")
             return null
         } catch (exception: InvalidHandshakeMessageException) {
             logger.validationFailedWarning(

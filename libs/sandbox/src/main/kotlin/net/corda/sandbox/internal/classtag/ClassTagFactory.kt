@@ -8,12 +8,12 @@ internal interface ClassTagFactory {
     /**
      * Creates and serialises a [ClassTag].
      *
-     * Throws `SandboxException` if the [bundle] does not have a symbolic name, or [sandbox] is neither the platform
+     * Throws `SandboxException` if the [bundle] does not have a symbolic name, or [sandbox] is neither a public
      * sandbox nor a CPK sandbox.
      */
     fun createSerialised(
         isStaticClassTag: Boolean,
-        isPlatformBundle: Boolean,
+        isPublicBundle: Boolean,
         bundle: Bundle,
         sandbox: Sandbox
     ): String
