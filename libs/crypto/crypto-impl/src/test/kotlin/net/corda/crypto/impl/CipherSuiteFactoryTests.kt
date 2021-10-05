@@ -1,6 +1,7 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
+import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSchemeMetadataProvider
 import net.corda.v5.cipher.suite.CipherSuiteFactory
@@ -11,14 +12,7 @@ import net.corda.v5.crypto.SignatureVerificationService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import org.junit.jupiter.api.fail
 import org.mockito.kotlin.mock
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.thread
-import kotlin.concurrent.withLock
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertSame
@@ -110,77 +104,62 @@ class CipherSuiteFactoryTests {
         assertSame(digestServices[2], factory.getDigestService())
     }
 
+
+
     @Test
     @Timeout(30)
     fun `Should concurrently create services`() {
         factory.start()
         assertTrue(factory.isRunning)
-        val lock = ReentrantLock()
-        val latch = CountDownLatch(1)
-        val exceptions = ConcurrentHashMap<Throwable, Unit>()
-        val threads = mutableListOf<Thread>()
-        for (i in 1..100) {
-            val thread = thread(start = true) {
-                latch.await(20, TimeUnit.SECONDS)
-                val config = when(i % 3) {
-                    1 -> {
-                        CryptoLibraryConfigImpl(
-                            mapOf(
-                                "isDev" to "false",
-                                "keyCache" to emptyMap<String, Any?>(),
-                                "mngCache" to emptyMap<String, Any?>(),
-                                "rpc" to emptyMap<String, Any?>(),
-                                "cipherSuite" to mapOf(
-                                    "schemeMetadataProvider" to "p0",
-                                    "signatureVerificationProvider" to "p0",
-                                    "digestProvider" to "p0"
-                                )
+        (1..100).createTestCase { i ->
+            val config = when(i % 3) {
+                1 -> {
+                    CryptoLibraryConfigImpl(
+                        mapOf(
+                            "isDev" to "false",
+                            "keyCache" to emptyMap<String, Any?>(),
+                            "mngCache" to emptyMap<String, Any?>(),
+                            "rpc" to emptyMap<String, Any?>(),
+                            "cipherSuite" to mapOf(
+                                "schemeMetadataProvider" to "p0",
+                                "signatureVerificationProvider" to "p0",
+                                "digestProvider" to "p0"
                             )
                         )
-                    }
-                    2 -> {
-                        CryptoLibraryConfigImpl(
-                            mapOf(
-                                "isDev" to "false",
-                                "keyCache" to emptyMap<String, Any?>(),
-                                "mngCache" to emptyMap<String, Any?>(),
-                                "rpc" to emptyMap<String, Any?>(),
-                                "cipherSuite" to mapOf(
-                                    "schemeMetadataProvider" to "p1",
-                                    "signatureVerificationProvider" to "p1",
-                                    "digestProvider" to "p1"
-                                )
-                            )
-                        )
-                    }
-                    else -> {
-                        CryptoLibraryConfigImpl(
-                            mapOf(
-                                "isDev" to "false",
-                                "keyCache" to emptyMap<String, Any?>(),
-                                "mngCache" to emptyMap<String, Any?>(),
-                                "rpc" to emptyMap<String, Any?>()
-                            )
-                        )
-                    }
+                    )
                 }
-                lock.withLock {
-                    factory.handleConfigEvent(config)
-                    assertTrue(factory.isRunning)
-                    assertNotNull(factory.getSchemeMap())
-                    assertNotNull(factory.getSignatureVerificationService())
-                    assertNotNull(factory.getDigestService())
+                2 -> {
+                    CryptoLibraryConfigImpl(
+                        mapOf(
+                            "isDev" to "false",
+                            "keyCache" to emptyMap<String, Any?>(),
+                            "mngCache" to emptyMap<String, Any?>(),
+                            "rpc" to emptyMap<String, Any?>(),
+                            "cipherSuite" to mapOf(
+                                "schemeMetadataProvider" to "p1",
+                                "signatureVerificationProvider" to "p1",
+                                "digestProvider" to "p1"
+                            )
+                        )
+                    )
                 }
-            }.also { it.setUncaughtExceptionHandler { _, e -> exceptions[e] = Unit } }
-            threads.add(thread)
-        }
-        latch.countDown()
-        threads.forEach {
-            it.join(5_000)
-        }
-        if(exceptions.isNotEmpty()) {
-            fail(exceptions.keys.map { it.message }.joinToString(System.lineSeparator()))
-        }
+                else -> {
+                    CryptoLibraryConfigImpl(
+                        mapOf(
+                            "isDev" to "false",
+                            "keyCache" to emptyMap<String, Any?>(),
+                            "mngCache" to emptyMap<String, Any?>(),
+                            "rpc" to emptyMap<String, Any?>()
+                        )
+                    )
+                }
+            }
+            factory.handleConfigEvent(config)
+            assertTrue(factory.isRunning)
+            assertNotNull(factory.getSchemeMap())
+            assertNotNull(factory.getSignatureVerificationService())
+            assertNotNull(factory.getDigestService())
+        }.runAndValidate()
         factory.stop()
         assertFalse(factory.isRunning)
     }

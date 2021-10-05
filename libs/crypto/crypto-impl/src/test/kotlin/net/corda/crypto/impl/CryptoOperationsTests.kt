@@ -2,6 +2,7 @@ package net.corda.crypto.impl
 
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
+import net.corda.test.util.createTestCase
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.WrappedPrivateKey
@@ -530,11 +531,11 @@ class CryptoOperationsTests {
         assertThrows<CryptoServiceException> {
             signingService.sign(alias, data)
         }
-        getAllCustomSignatureSpecs(signatureScheme).forEach { signatureSpec ->
+        getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
             assertThrows<CryptoServiceException> {
                 signingService.sign(alias, signatureSpec, data)
             }
-        }
+        }.runAndValidate()
     }
 
     @ParameterizedTest
@@ -562,7 +563,7 @@ class CryptoOperationsTests {
             assertThrows<CryptoServiceBadRequestException> {
                 otherMemberSigningService.sign(alias, data)
             }
-            getAllCustomSignatureSpecs(signatureScheme).forEach { signatureSpec ->
+            getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
                 val customSignatureByPublicKey = signingService.sign(publicKey, signatureSpec, data)
                 assertEquals(publicKey, customSignatureByPublicKey.by)
                 validateSignature(publicKey, signatureSpec, customSignatureByPublicKey.bytes, data)
@@ -574,7 +575,7 @@ class CryptoOperationsTests {
                 assertThrows<CryptoServiceBadRequestException> {
                     otherMemberSigningService.sign(alias, data)
                 }
-            }
+            }.runAndValidate()
         }
     }
 
@@ -592,11 +593,11 @@ class CryptoOperationsTests {
         val signatureByPublicKey = signingService.sign(publicKey, data)
         assertEquals(publicKey, signatureByPublicKey.by)
         validateSignature(publicKey, signatureByPublicKey.bytes, data)
-        getAllCustomSignatureSpecs(signatureScheme).forEach { signatureSpec ->
+        getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
             val customSignatureByPublicKey = signingService.sign(publicKey, signatureSpec, data)
             assertEquals(publicKey, customSignatureByPublicKey.by)
             validateSignature(publicKey, signatureSpec, customSignatureByPublicKey.bytes, data)
-        }
+        }.runAndValidate()
     }
 
     @ParameterizedTest
@@ -620,11 +621,11 @@ class CryptoOperationsTests {
         val signature = signingService.sign(aliceAndBob, data)
         assertEquals(bobPublicKey, signature.by)
         validateSignature(signature.by, signature.bytes, data)
-        getAllCustomSignatureSpecs(signatureScheme).forEach { signatureSpec ->
+        getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
             val customSignatureByPublicKey = signingService.sign(bobPublicKey, signatureSpec, data)
             assertEquals(bobPublicKey, customSignatureByPublicKey.by)
             validateSignature(bobPublicKey, signatureSpec, customSignatureByPublicKey.bytes, data)
-        }
+        }.runAndValidate()
     }
 
     @ParameterizedTest
@@ -646,7 +647,7 @@ class CryptoOperationsTests {
         assertThrows<CryptoServiceBadRequestException> {
             otherMemberCryptoService.sign(alias, signatureScheme, data, EMPTY_CONTEXT)
         }
-        getAllCustomSignatureSpecs(signatureScheme).forEach { signatureSpec ->
+        getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
             assertThrows<CryptoServiceBadRequestException> {
                 otherMemberCryptoService.sign(
                     alias,
@@ -655,7 +656,7 @@ class CryptoOperationsTests {
                     EMPTY_CONTEXT
                 )
             }
-        }
+        }.runAndValidate()
     }
 
     @ParameterizedTest
@@ -672,11 +673,11 @@ class CryptoOperationsTests {
             val signature = freshKeyService.sign(freshKey, data)
             assertEquals(freshKey, signature.by)
             validateSignature(freshKey, signature.bytes, data)
-            getAllCustomSignatureSpecs(signatureScheme).forEach { signatureSpec ->
+            getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
                 val customSignature = freshKeyService.sign(freshKey, signatureSpec, data)
                 assertEquals(freshKey, customSignature.by)
                 validateSignature(freshKey, signatureSpec, customSignature.bytes, data)
-            }
+            }.runAndValidate()
         }
     }
 
@@ -695,11 +696,11 @@ class CryptoOperationsTests {
             val signature = freshKeyService.sign(freshKey, data)
             assertEquals(freshKey, signature.by)
             validateSignature(freshKey, signature.bytes, data)
-            getAllCustomSignatureSpecs(signatureScheme).forEach { signatureSpec ->
+            getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
                 val customSignature = freshKeyService.sign(freshKey, signatureSpec, data)
                 assertEquals(freshKey, customSignature.by)
                 validateSignature(freshKey, signatureSpec, customSignature.bytes, data)
-            }
+            }.runAndValidate()
         }
     }
 
@@ -726,14 +727,14 @@ class CryptoOperationsTests {
         val signature2 = freshKeyService2.sign(freshKey2, data)
         assertEquals(freshKey2, signature2.by)
         validateSignature(freshKey2, signature2.bytes, data)
-        getAllCustomSignatureSpecs(signatureScheme).forEach { signatureSpec ->
+        getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
             val customSignature1 = freshKeyService2.sign(freshKey1, signatureSpec, data)
             assertEquals(freshKey1, customSignature1.by)
             validateSignature(freshKey1, signatureSpec, customSignature1.bytes, data)
             val customSignature2 = freshKeyService2.sign(freshKey2, signatureSpec, data)
             assertEquals(freshKey2, customSignature2.by)
             validateSignature(freshKey2, signatureSpec, customSignature2.bytes, data)
-        }
+        }.runAndValidate()
     }
 
     @ParameterizedTest
@@ -761,14 +762,14 @@ class CryptoOperationsTests {
         val signature2 = freshKeyService2.sign(freshKey2, data)
         assertEquals(freshKey2, signature2.by)
         validateSignature(freshKey2, signature2.bytes, data)
-        getAllCustomSignatureSpecs(signatureScheme).forEach { signatureSpec ->
+        getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
             val customSignature1 = freshKeyService2.sign(freshKey1, signatureSpec, data)
             assertEquals(freshKey1, customSignature1.by)
             validateSignature(freshKey1, signatureSpec, customSignature1.bytes, data)
             val customSignature2 = freshKeyService2.sign(freshKey2, signatureSpec, data)
             assertEquals(freshKey2, customSignature2.by)
             validateSignature(freshKey2, signatureSpec, customSignature2.bytes, data)
-        }
+        }.runAndValidate()
     }
 
     @ParameterizedTest
@@ -785,11 +786,11 @@ class CryptoOperationsTests {
         val signature = freshKeyService.sign(publicKey, data)
         assertEquals(publicKey, signature.by)
         validateSignature(publicKey, signature.bytes, data)
-        getAllCustomSignatureSpecs(signatureScheme).forEach { signatureSpec ->
+        getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
             val customSignature = freshKeyService.sign(publicKey, signatureSpec, data)
             assertEquals(publicKey, customSignature.by)
             validateSignature(publicKey, signatureSpec, customSignature.bytes, data)
-        }
+        }.runAndValidate()
     }
 
     @ParameterizedTest
@@ -812,11 +813,11 @@ class CryptoOperationsTests {
         val signature = freshKeyService.sign(aliceAndBob, data)
         assertEquals(bobPublicKey, signature.by)
         validateSignature(signature.by, signature.bytes, data)
-        getAllCustomSignatureSpecs(signatureScheme).forEach { signatureSpec ->
+        getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
             val customSignatureByPublicKey = freshKeyService.sign(bobPublicKey, signatureSpec, data)
             assertEquals(bobPublicKey, customSignatureByPublicKey.by)
             validateSignature(bobPublicKey, signatureSpec, customSignatureByPublicKey.bytes, data)
-        }
+        }.runAndValidate()
     }
 
     @ParameterizedTest
@@ -839,11 +840,11 @@ class CryptoOperationsTests {
         assertThrows<CryptoServiceBadRequestException> {
             otherMemberFreshKeyService.sign(freshKey, data)
         }
-        getAllCustomSignatureSpecs(signatureScheme).forEach { signatureSpec ->
+        getAllCustomSignatureSpecs(signatureScheme).createTestCase { signatureSpec ->
             assertThrows<CryptoServiceBadRequestException> {
                 otherMemberFreshKeyService.sign(freshKey, signatureSpec, data)
             }
-        }
+        }.runAndValidate()
     }
 
     @ParameterizedTest

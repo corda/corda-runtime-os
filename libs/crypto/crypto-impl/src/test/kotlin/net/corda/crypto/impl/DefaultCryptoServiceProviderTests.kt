@@ -4,6 +4,7 @@ import net.corda.crypto.CryptoCategories
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
 import net.corda.crypto.impl.stubs.MockCryptoFactory
+import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
@@ -14,12 +15,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.fail
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -110,33 +106,19 @@ class DefaultCryptoServiceProviderTests {
     fun `Should be able to create instances concurrently`() {
         val provider = createCryptoServiceProvider()
         assertTrue(provider.isRunning)
-        val latch = CountDownLatch(1)
-        val exceptions = ConcurrentHashMap<Throwable, Unit>()
-        val threads = mutableListOf<Thread>()
-        for (i in 1..100) {
-            val thread = thread(start = true) {
-                latch.await(20, TimeUnit.SECONDS)
-                provider.handleConfigEvent(
-                    CryptoLibraryConfigImpl(
-                        mapOf(
-                            "keyCache" to mapOf(
-                                "cacheFactoryName" to InMemoryPersistentCacheFactory.NAME
-                            ),
-                            "mngCache" to emptyMap()
-                        )
+        (1..100).createTestCase {
+            provider.handleConfigEvent(
+                CryptoLibraryConfigImpl(
+                    mapOf(
+                        "keyCache" to mapOf(
+                            "cacheFactoryName" to InMemoryPersistentCacheFactory.NAME
+                        ),
+                        "mngCache" to emptyMap()
                     )
                 )
-                assertNotNull(provider.createCryptoService(CryptoCategories.LEDGER))
-            }.also { it.setUncaughtExceptionHandler { _, e -> exceptions[e] = Unit } }
-            threads.add(thread)
-        }
-        latch.countDown()
-        threads.forEach {
-            it.join(5_000)
-        }
-        if(exceptions.isNotEmpty()) {
-            fail(exceptions.keys.map { it.message }.joinToString(System.lineSeparator()))
-        }
+            )
+            assertNotNull(provider.createCryptoService(CryptoCategories.LEDGER))
+        }.runAndValidate()
         provider.stop()
         assertFalse(provider.isRunning)
     }
