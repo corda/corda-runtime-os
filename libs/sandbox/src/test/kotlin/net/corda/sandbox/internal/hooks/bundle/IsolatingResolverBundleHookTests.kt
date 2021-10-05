@@ -38,6 +38,7 @@ class IsolatingResolverBundleHookTests {
     fun `a bundle can resolve against another bundle it has visibility of`() {
         val sandboxService = mock<SandboxServiceInternal>().apply {
             whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(true)
+            whenever(isStarted).thenReturn(true)
         }
 
         val isolatingResolverBundleHook = IsolatingResolverBundleHook(sandboxService)
@@ -49,6 +50,7 @@ class IsolatingResolverBundleHookTests {
     fun `a bundle cannot resolve against a bundle it doesn't have visibility of`() {
         val sandboxService = mock<SandboxServiceInternal>().apply {
             whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(false)
+            whenever(isStarted).thenReturn(true)
         }
 
         val isolatingResolverBundleHook = IsolatingResolverBundleHook(sandboxService)
@@ -68,6 +70,7 @@ class IsolatingResolverBundleHookTests {
             whenever(getSandbox(bundleOne)).thenReturn(sandboxOne)
             whenever(getSandbox(bundleTwo)).thenReturn(sandboxTwo)
             whenever(getSandbox(bundleThree)).thenReturn(sandboxOne)
+            whenever(isStarted).thenReturn(true)
         }
 
         val isolatingResolverBundleHook = IsolatingResolverBundleHook(sandboxService)
@@ -81,6 +84,7 @@ class IsolatingResolverBundleHookTests {
         val sandboxService = mock<SandboxServiceInternal>().apply {
             whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(false)
             whenever(hasVisibility(bundleTwo, bundleOne)).thenReturn(false)
+            whenever(isStarted).thenReturn(true)
         }
 
         val isolatingResolverBundleHook = IsolatingResolverBundleHook(sandboxService)
@@ -93,6 +97,7 @@ class IsolatingResolverBundleHookTests {
         val sandboxService = mock<SandboxServiceInternal>().apply {
             whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(true)
             whenever(hasVisibility(bundleTwo, bundleOne)).thenReturn(false)
+            whenever(isStarted).thenReturn(true)
         }
 
         val isolatingResolverBundleHook = IsolatingResolverBundleHook(sandboxService)
@@ -105,6 +110,7 @@ class IsolatingResolverBundleHookTests {
         val sandboxService = mock<SandboxServiceInternal>().apply {
             whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(true)
             whenever(hasVisibility(bundleTwo, bundleOne)).thenReturn(false)
+            whenever(isStarted).thenReturn(true)
         }
 
         val isolatingResolverBundleHook = IsolatingResolverBundleHook(sandboxService)

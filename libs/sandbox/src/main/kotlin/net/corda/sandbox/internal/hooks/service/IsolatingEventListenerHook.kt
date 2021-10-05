@@ -20,6 +20,8 @@ internal class IsolatingEventListenerHook @Activate constructor(
         private val sandboxService: SandboxServiceInternal) : EventListenerHook {
 
     override fun event(event: ServiceEvent, listeners: MutableMap<BundleContext, MutableCollection<ListenerHook.ListenerInfo>>) {
+        if (!sandboxService.isStarted) return
+
         val listenersToRemove = listeners.keys.filter { listener ->
             !sandboxService.hasVisibility(listener.bundle, event.serviceReference.bundle)
         }

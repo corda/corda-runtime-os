@@ -27,6 +27,7 @@ class IsolatingEventHookTests {
     fun `event is received if a bundle has visibility`() {
         val sandboxService = mock<SandboxServiceInternal>().apply {
             whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(true)
+            whenever(isStarted).thenReturn(true)
         }
 
         val isolatingEventHook = IsolatingEventHook(sandboxService)
@@ -38,6 +39,7 @@ class IsolatingEventHookTests {
     fun `event is not received if a bundle does not have visibility`() {
         val sandboxService = mock<SandboxServiceInternal>().apply {
             whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(false)
+            whenever(isStarted).thenReturn(true)
         }
 
         val isolatingEventHook = IsolatingEventHook(sandboxService)
