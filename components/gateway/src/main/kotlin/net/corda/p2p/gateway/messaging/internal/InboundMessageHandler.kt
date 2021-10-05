@@ -3,7 +3,6 @@ package net.corda.p2p.gateway.messaging.internal
 import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -18,22 +17,16 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.GatewayConfigurationService
 import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
-import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
-import net.corda.p2p.gateway.messaging.http.HttpServer
+import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.contextLogger
 import java.io.IOException
-import java.net.SocketAddress
 import java.nio.ByteBuffer
 import java.util.UUID
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
@@ -43,8 +36,7 @@ internal class InboundMessageHandler(
     configurationReaderService: ConfigurationReadService,
     private val publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
-) : GatewayConfigurationService.ReconfigurationListener,
-    Lifecycle,
+) :
     HttpEventListener,
     LifecycleWithCoordinator(parent) {
 
@@ -54,11 +46,7 @@ internal class InboundMessageHandler(
 
     private var p2pInPublisher: Publisher? = null
     private val sessionPartitionMapper = SessionPartitionMapperImpl(this, subscriptionFactory)
-    private val configurationService = GatewayConfigurationService(this, configurationReaderService, this)
-
-    @Volatile
-    private var httpServer: HttpServer? = null
-    private val serverLock = ReentrantReadWriteLock()
+    private val server = ReconfigurableHttpServer(this, configurationReaderService, this)
 
     override fun startSequence() {
         logger.info("Starting P2P message receiver")
@@ -70,30 +58,8 @@ internal class InboundMessageHandler(
         }
         p2pInPublisher = publisher
 
-        if (httpServer?.isRunning != true) {
-            serverLock.write {
-                if (httpServer?.isRunning != true) {
-                    logger.info(
-                        "Starting HTTP server for $name to " +
-                            "${configurationService.configuration.hostAddress}:${configurationService.configuration.hostPort}"
-                    )
-                    val newServer = HttpServer(this, configurationService.configuration)
-                    newServer.start()
-                    executeBeforeStop(newServer::stop)
-                    httpServer = newServer
-                }
-            }
-        }
-
         logger.info("Started P2P message receiver")
         state = State.Started
-    }
-
-    private fun writeResponse(status: HttpResponseStatus, address: SocketAddress) {
-        serverLock.read {
-            val server = httpServer ?: throw IllegalStateException("Server is not ready")
-            server.write(status, ByteArray(0), address)
-        }
     }
 
     /**
@@ -103,13 +69,13 @@ internal class InboundMessageHandler(
     override fun onMessage(message: HttpMessage) {
         if (!isRunning) {
             logger.error("Received message from ${message.source}, while handler is stopped. Discarding it and returning error code.")
-            writeResponse(HttpResponseStatus.SERVICE_UNAVAILABLE, message.source)
+            server.writeResponse(HttpResponseStatus.SERVICE_UNAVAILABLE, message.source)
             return
         }
 
         if (message.statusCode != HttpResponseStatus.OK) {
             logger.warn("Received invalid request from ${message.source}. Status code ${message.statusCode}")
-            writeResponse(message.statusCode, message.source)
+            server.writeResponse(message.statusCode, message.source)
             return
         }
 
@@ -119,7 +85,7 @@ internal class InboundMessageHandler(
         } catch (e: IOException) {
             logger.warn("Invalid message received. Cannot deserialize")
             logger.debug(e.stackTraceToString())
-            writeResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR, message.source)
+            server.writeResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR, message.source)
             return
         }
 
@@ -127,11 +93,11 @@ internal class InboundMessageHandler(
         when (p2pMessage.payload) {
             is UnauthenticatedMessage -> {
                 p2pInPublisher!!.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
-                writeResponse(HttpResponseStatus.OK, message.source)
+                server.writeResponse(HttpResponseStatus.OK, message.source)
             }
             else -> {
                 val statusCode = processSessionMessage(p2pMessage)
-                writeResponse(statusCode, message.source)
+                server.writeResponse(statusCode, message.source)
             }
         }
     }
@@ -175,31 +141,5 @@ internal class InboundMessageHandler(
         return UUID.randomUUID().toString()
     }
 
-    override fun gotNewConfiguration(newConfiguration: GatewayConfiguration, oldConfiguration: GatewayConfiguration) {
-        if (newConfiguration.hostPort == oldConfiguration.hostPort) {
-            logger.info("New server configuration for $name on the same port, HTTP server will have to go down")
-            serverLock.write {
-                val oldServer = httpServer
-                httpServer = null
-                oldServer?.stop()
-                val newServer = HttpServer(this, newConfiguration)
-                newServer.start()
-                executeBeforeStop(newServer::stop)
-                httpServer = newServer
-            }
-        } else {
-            logger.info("New server configuration, $name will be connected to ${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
-            val newServer = HttpServer(this, newConfiguration)
-            newServer.start()
-            executeBeforeStop(newServer::stop)
-            serverLock.write {
-                val oldServer = httpServer
-                httpServer = null
-                oldServer?.stop()
-                httpServer = newServer
-            }
-        }
-    }
-
-    override val children = listOf(configurationService, sessionPartitionMapper)
+    override val children = listOf(sessionPartitionMapper, server)
 }
