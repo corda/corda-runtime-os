@@ -9,6 +9,7 @@ import java.security.MessageDigest
 class DoubleSHA256Digest : DigestAlgorithm {
     companion object {
         const val ALGORITHM = "SHA-256D"
+        const val STREAM_BUFFER_SIZE = DEFAULT_BUFFER_SIZE
     }
 
     override val algorithm = ALGORITHM
@@ -16,7 +17,7 @@ class DoubleSHA256Digest : DigestAlgorithm {
     override fun digest(bytes: ByteArray): ByteArray = bytes.sha256Bytes().sha256Bytes()
     override fun digest(inputStream : InputStream): ByteArray {
         val messageDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
-        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        val buffer = ByteArray(STREAM_BUFFER_SIZE)
         while(true) {
             val read = inputStream.read(buffer)
             if(read <= 0) break

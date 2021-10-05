@@ -1,11 +1,13 @@
 package net.corda.crypto.client.rpc
 
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class WireUtilsTests {
     @Test
+    @Timeout(5)
     fun `Should transform non empty map`() {
         val map = mapOf(
             "key1" to "value1",
@@ -18,6 +20,7 @@ class WireUtilsTests {
     }
 
     @Test
+    @Timeout(5)
     fun `Should transform empty map`() {
         val map = emptyMap<String, String>()
         val result = map.toWire()

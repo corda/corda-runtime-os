@@ -2,9 +2,11 @@ package net.corda.crypto.impl
 
 import net.corda.crypto.impl.stubs.MockCryptoFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.schemes.DigestScheme
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.create
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
@@ -13,6 +15,9 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import java.io.ByteArrayInputStream
+import java.security.MessageDigest
+import kotlin.random.Random
 import kotlin.test.assertEquals
 
 class DigestServiceTests {
@@ -47,7 +52,7 @@ class DigestServiceTests {
         )
 
         @JvmStatic
-        fun digests() = schemeMetadata.digests.map { DigestAlgorithmName(it.algorithmName) }
+        fun digests() = schemeMetadata.digests
 
         @JvmStatic
         fun bannedDigests() = CipherSchemeMetadata.BANNED_DIGESTS.map { DigestAlgorithmName(it) }
@@ -71,23 +76,6 @@ class DigestServiceTests {
         algorithmName: DigestAlgorithmName
     ) {
         assertTrue(schemeMetadata.digests.any { it.algorithmName == algorithmName.name })
-        val message = "abc".toByteArray()
-        val hash = digestService.hash(message, algorithmName)
-        assertTrue(hash.bytes.isNotEmpty())
-        assertEquals(algorithmName.name, hash.algorithm)
-        assertTrue(digestService.digestLength(algorithmName) > 0)
-        assertEquals(digestService.digestLength(algorithmName), hash.size)
-        assertEquals(
-            digestService.hash(message, algorithmName),
-            digestService.hash(message, algorithmName))
-    }
-
-    @ParameterizedTest
-    @MethodSource("digests")
-    @Timeout(30)
-    fun `Should not retain state between same-thread invocations for all supported digests`(
-        algorithmName: DigestAlgorithmName
-    ) {
         val message = "abc".toByteArray()
         val hash = digestService.hash(message, algorithmName)
         assertTrue(hash.bytes.isNotEmpty())
@@ -214,6 +202,137 @@ class DigestServiceTests {
         )
     }
 
+    @ParameterizedTest
+    @MethodSource("digests")
+    @Timeout(30)
+    fun `Should not retain state between same-thread invocations for all supported digests`(
+        digestScheme: DigestScheme
+    ) {
+        val algorithmName = DigestAlgorithmName(digestScheme.algorithmName)
+        val message = "abc".toByteArray()
+        val hash = digestService.hash(message, algorithmName)
+        assertTrue(hash.bytes.isNotEmpty())
+        assertEquals(algorithmName.name, hash.algorithm)
+        assertTrue(digestService.digestLength(algorithmName) > 0)
+        assertEquals(digestService.digestLength(algorithmName), hash.size)
+        assertEquals(
+            digestService.hash(message, algorithmName),
+            digestService.hash(message, algorithmName))
+    }
+
+    @ParameterizedTest
+    @MethodSource("digests")
+    @Timeout(30)
+    fun `Should calculate hash for array for all supported digests`(
+        digestScheme: DigestScheme
+    ) {
+        val algorithmName = DigestAlgorithmName(digestScheme.algorithmName)
+        val random = Random(17)
+        for ( i in 1..100) {
+            val len = random.nextInt(127, 277)
+            val data = ByteArray(len)
+            random.nextBytes(data)
+            val actual = digestService.hash(data, algorithmName)
+            val expected = MessageDigest.getInstance(
+                algorithmName.name,
+                schemeMetadata.providers[digestScheme.providerName]
+            ).digest(data)
+            assertEquals(algorithmName.name, actual.algorithm)
+            assertArrayEquals(expected, actual.bytes)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("digests")
+    @Timeout(30)
+    fun `Should calculate hash for short input streams for all supported digests`(
+        digestScheme: DigestScheme
+    ) {
+        val algorithmName = DigestAlgorithmName(digestScheme.algorithmName)
+        val random = Random(17)
+        for ( i in 1..100) {
+            val len = random.nextInt(1, 100)
+            val data = ByteArray(len)
+            random.nextBytes(data)
+            val stream = ByteArrayInputStream(data)
+            val actual = digestService.hash(stream, algorithmName)
+            val expected = MessageDigest.getInstance(
+                algorithmName.name,
+                schemeMetadata.providers[digestScheme.providerName]
+            ).digest(data)
+            assertEquals(algorithmName.name, actual.algorithm)
+            assertArrayEquals(expected, actual.bytes)
+            assertArrayEquals(expected, actual.bytes)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("digests")
+    @Timeout(30)
+    fun `Should calculate hash for medium sized input streams for all supported digests`(
+        digestScheme: DigestScheme
+    ) {
+        val algorithmName = DigestAlgorithmName(digestScheme.algorithmName)
+        val random = Random(17)
+        for ( i in 1..100) {
+            val len = random.nextInt(375, 2074)
+            val data = ByteArray(len)
+            random.nextBytes(data)
+            val stream = ByteArrayInputStream(data)
+            val actual = digestService.hash(stream, algorithmName)
+            val expected = MessageDigest.getInstance(
+                algorithmName.name,
+                schemeMetadata.providers[digestScheme.providerName]
+            ).digest(data)
+            assertEquals(algorithmName.name, actual.algorithm)
+            assertArrayEquals(expected, actual.bytes)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("digests")
+    @Timeout(30)
+    fun `Should calculate hash for large sized input streams for all supported digests`(
+        digestScheme: DigestScheme
+    ) {
+        val algorithmName = DigestAlgorithmName(digestScheme.algorithmName)
+        val random = Random(17)
+        for ( i in 1..10) {
+            val len = random.nextInt(37_794, 63_987)
+            val data = ByteArray(len)
+            random.nextBytes(data)
+            val stream = ByteArrayInputStream(data)
+            val actual = digestService.hash(stream, algorithmName)
+            val expected = MessageDigest.getInstance(
+                algorithmName.name,
+                schemeMetadata.providers[digestScheme.providerName]
+            ).digest(data)
+            assertEquals(algorithmName.name, actual.algorithm)
+            assertArrayEquals(expected, actual.bytes)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("digests")
+    @Timeout(30)
+    fun `Should calculate hash for input streams with sizes around buffer size for all supported digests`(
+        digestScheme: DigestScheme
+    ) {
+        val algorithmName = DigestAlgorithmName(digestScheme.algorithmName)
+        val random = Random(17)
+        for ( len in (DEFAULT_BUFFER_SIZE - 5)..((DEFAULT_BUFFER_SIZE + 5))) {
+            val data = ByteArray(len)
+            random.nextBytes(data)
+            val stream = ByteArrayInputStream(data)
+            val actual = digestService.hash(stream, algorithmName)
+            val expected = MessageDigest.getInstance(
+                algorithmName.name,
+                schemeMetadata.providers[digestScheme.providerName]
+            ).digest(data)
+            assertEquals(algorithmName.name, actual.algorithm)
+            assertArrayEquals(expected, actual.bytes)
+        }
+    }
     enum class JavaVersion(val versionString: String) {
         JAVA_11("11");
 
