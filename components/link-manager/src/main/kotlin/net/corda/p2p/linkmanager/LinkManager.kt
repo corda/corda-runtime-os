@@ -9,10 +9,12 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.p2p.AuthenticatedMessageAck
 import net.corda.p2p.AuthenticatedMessageAndKey
+import net.corda.p2p.DataMessagePayload
 import net.corda.p2p.HeartbeatMessage
+import net.corda.p2p.HeartbeatMessageAck
 import net.corda.p2p.LinkInMessage
-import net.corda.p2p.LinkManagerPayload
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.MessageAck
 import net.corda.p2p.SessionPartitions
@@ -27,7 +29,6 @@ import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
-import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutFromUnauthenticatedMessage
@@ -84,16 +85,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private val inboundAssignmentListener = InboundAssignmentListener()
 
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory)
-    private val sessionReplayer: InMemorySessionReplayer =
-        InMemorySessionReplayer(Duration.ofSeconds(config.messageReplayPeriodSecs), publisherFactory, linkManagerNetworkMap)
 
-    private val sessionManager: SessionManager = SessionManagerImpl(
+
+    private val sessionManager = SessionManagerImpl(
+        config,
         linkManagerNetworkMap,
         linkManagerCryptoService,
         messagesPendingSession,
-        sessionReplayer,
         publisherFactory,
-        config
     )
 
     private val deliveryTracker: DeliveryTracker
@@ -129,7 +128,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         startStopLock.withLock {
             if (!running) {
                 messagesPendingSession.start()
-                sessionReplayer.start()
                 sessionManager.start()
                 inboundMessageSubscription.start()
                 /*We must wait for partitions to be assigned to the inbound subscription before we can start the outbound
@@ -149,7 +147,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 deliveryTracker.stop()
                 inboundMessageSubscription.stop()
                 sessionManager.stop()
-                sessionReplayer.stop()
                 messagesPendingSession.stop()
                 running = false
             }
@@ -169,23 +166,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         override val keyClass = String::class.java
         override val valueClass = AppMessage::class.java
         private var logger = LoggerFactory.getLogger(this::class.java.name)
-
-        companion object {
-            fun recordsForSessionEstablished(
-                sessionManager: SessionManager,
-                networkMap: LinkManagerNetworkMap,
-                session: Session,
-                messageAndKey: AuthenticatedMessageAndKey
-            ): List<Record<String, *>> {
-                val records = mutableListOf<Record<String, *>>()
-                val key = generateKey()
-                sessionManager.messageSent(messageAndKey, session)
-                linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, networkMap)?. let {
-                    records.add(Record(Schema.LINK_OUT_TOPIC, key, it))
-                }
-                return records
-            }
-        }
 
         override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
             val records = mutableListOf<Record<String, *>>()
@@ -329,12 +309,18 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             val messages = mutableListOf<Record<*, *>>()
             when (val sessionDirection = sessionManager.getSessionById(sessionId)) {
                 is SessionDirection.Inbound -> {
-                    messages.addAll(processLinkManagerPayload(sessionDirection.session, sessionId, message))
+                    messages.addAll(processLinkManagerPayload(sessionDirection.key, sessionDirection.session, sessionId, message))
                 }
                 is SessionDirection.Outbound -> {
                     extractPayload(sessionDirection.session, sessionId, message, MessageAck::fromByteBuffer)?.let {
-                        messages.add(makeMarkerForAckMessage(it))
-                        sessionManager.messageAcknowledged(it.messageId)
+                        when (val ack = it.ack) {
+                            is AuthenticatedMessageAck -> {
+                                sessionManager.messageAcknowledged(sessionDirection.key)
+                                messages.add(makeMarkerForAckMessage(ack))
+                            }
+                            is HeartbeatMessageAck -> sessionManager.messageAcknowledged(sessionDirection.key)
+                            else -> logger.warn("Received an inbound message with unexpected type for SessionId = $sessionId.")
+                        }
                     }
                 }
                 is SessionDirection.NoSession -> {
@@ -345,12 +331,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return messages
         }
 
-        private fun processLinkManagerPayload(session: Session, sessionId: String, message: DataMessage): MutableList<Record<*, *>> {
+        private fun processLinkManagerPayload(sessionKey: SessionKey, session: Session, sessionId: String, message: DataMessage): MutableList<Record<*, *>> {
             val messages = mutableListOf<Record<*, *>>()
-            extractPayload(session, sessionId, message, LinkManagerPayload::fromByteBuffer)?.let {
+            extractPayload(session, sessionId, message, DataMessagePayload::fromByteBuffer)?.let {
                 when (val innerMessage = it.message) {
                     is HeartbeatMessage -> {
-                        makeAckMessageForHeartbeatMessage(innerMessage, session)?.let { ack -> messages.add(ack) }
+                        makeAckMessageForHeartbeatMessage(sessionKey, session)?.let { ack -> messages.add(ack) }
                     }
                     is AuthenticatedMessageAndKey -> {
                         messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
@@ -364,12 +350,18 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun makeAckMessageForHeartbeatMessage(
-            message: HeartbeatMessage,
+            key: SessionKey,
             session: Session
         ): Record<String, LinkOutMessage>? {
-            val ackDest = message.source
-            val ackSource = message.destination
-            val ack = linkOutMessageFromAck(MessageAck(message.messageId), ackSource, ackDest, session, networkMap) ?: return null
+            val ackDest = key.responderId.toHoldingIdentity()
+            val ackSource = key.ourId.toHoldingIdentity()
+            val ack = linkOutMessageFromAck(
+                MessageAck(HeartbeatMessageAck()),
+                ackSource,
+                ackDest,
+                session,
+                networkMap
+            ) ?: return null
             return Record(
                 Schema.LINK_OUT_TOPIC,
                 generateKey(),
@@ -381,7 +373,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             //We route the ACK back to the original source
             val ackDest = message.header.source
             val ackSource = message.header.destination
-            val ack = linkOutMessageFromAck(MessageAck(message.header.messageId), ackSource, ackDest, session, networkMap) ?: return null
+            val ack = linkOutMessageFromAck(
+                MessageAck(AuthenticatedMessageAck(message.header.messageId)),
+                ackSource,
+                ackDest,
+                session,
+                networkMap
+            ) ?: return null
             return Record(
                 Schema.LINK_OUT_TOPIC,
                 generateKey(),
@@ -389,7 +387,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             )
         }
 
-        private fun makeMarkerForAckMessage(message: MessageAck): Record<String, AppMessageMarker> {
+        private fun makeMarkerForAckMessage(message: AuthenticatedMessageAck): Record<String, AppMessageMarker> {
             return Record(
                 Schema.P2P_OUT_MARKERS,
                 message.messageId,
@@ -452,8 +450,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 val records = mutableListOf<Record<String, *>>()
                 while (queuedMessages.isNotEmpty()) {
                     val message = queuedMessages.poll()
-                    records.addAll(OutboundMessageProcessor.recordsForSessionEstablished(sessionManager, networkMap, session, message))
-                    sessionManager.messageSent(message, session)
+                    records.addAll(recordsForSessionEstablished(sessionManager, networkMap, session, message))
+                    sessionManager.dataMessageSent(message, session)
                 }
                 publisher.publish(records)
             }
@@ -480,4 +478,19 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             }
         }
     }
+}
+
+fun recordsForSessionEstablished(
+    sessionManager: SessionManager,
+    networkMap: LinkManagerNetworkMap,
+    session: Session,
+    messageAndKey: AuthenticatedMessageAndKey
+): List<Record<String, *>> {
+    val records = mutableListOf<Record<String, *>>()
+    val key = LinkManager.generateKey()
+    sessionManager.dataMessageSent(messageAndKey, session)
+    linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, networkMap)?. let {
+        records.add(Record(Schema.LINK_OUT_TOPIC, key, it))
+    }
+    return records
 }

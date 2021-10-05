@@ -1,9 +1,7 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
@@ -12,6 +10,7 @@ import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.HeartbeatMessage
 import net.corda.p2p.LinkInMessage
+import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.crypto.CommonHeader
@@ -36,25 +35,17 @@ import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerConfig
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import org.junit.jupiter.api.Assertions.assertEquals
-import net.corda.p2p.linkmanager.delivery.SessionReplayer
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.p2p.linkmanager.messaging.AvroSealedClasses
-import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
-import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
-import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAuthenticatedMessageAndKey
 import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -72,8 +63,6 @@ import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.time.Instant
-import java.security.PrivateKey
-import java.security.PublicKey
 import java.security.Signature
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -137,7 +126,7 @@ class SessionManagerTest {
         on { signData(eq(OUR_KEY.public), any()) } doReturn "signature-from-A".toByteArray()
     }
     private val pendingSessionMessageQueues = Mockito.mock(LinkManager.PendingSessionMessageQueues::class.java)
-    private val sessionReplayer = Mockito.mock(SessionReplayer::class.java)
+    private val sessionReplayer = Mockito.mock(InMemorySessionReplayer::class.java)
     private val protocolInitiator = mock<AuthenticationProtocolInitiator>()
     private val protocolResponder = mock<AuthenticationProtocolResponder>()
     private val protocolFactory = mock<ProtocolFactory> {
@@ -147,13 +136,13 @@ class SessionManagerTest {
     private val publisherFactory = mock<PublisherFactory>()
     private val config = LinkManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), 10000L, 10000L, 10000L)
     private val sessionManager = SessionManagerImpl(
+        config,
         networkMap,
         cryptoService,
         pendingSessionMessageQueues,
-        sessionReplayer,
-        protocolFactory,
         publisherFactory,
-        config
+        protocolFactory,
+        sessionReplayer
     )
 
     private fun MessageDigest.hash(data: ByteArray): ByteArray {
@@ -185,7 +174,7 @@ class SessionManagerTest {
 
         val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
         assertThat(sessionState.sessionInitMessage.payload).isEqualTo(initiatorHello)
-        val replayedMessage = SessionReplayer.SessionMessageReplay(initiatorHello, PEER_PARTY)
+        val replayedMessage = InMemorySessionReplayer.SessionMessageReplay(initiatorHello, any(), OUR_PARTY, PEER_PARTY, any())
         verify(sessionReplayer).addMessageForReplay("${sessionState.sessionId}_${initiatorHello::class.java.simpleName}", replayedMessage)
     }
 
@@ -219,7 +208,10 @@ class SessionManagerTest {
 
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
-        verify(sessionReplayer).addMessageForReplay(any(), eq(SessionReplayer.SessionMessageReplay(initiatorHello, PEER_PARTY)))
+        verify(sessionReplayer).addMessageForReplay(
+            any(),
+            eq(InMemorySessionReplayer.SessionMessageReplay(initiatorHello, any(), OUR_PARTY, PEER_PARTY, any()))
+        )
         loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PEER_PARTY " +
                 "which is not in the network map. The sessionInit message was not sent.")
     }
@@ -237,7 +229,6 @@ class SessionManagerTest {
     fun `when session is established with a peer, it is returned when processing a new message for the same peer`() {
         val initiatorHello = mock<InitiatorHelloMessage>()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
-
         val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
 
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
@@ -337,7 +328,7 @@ class SessionManagerTest {
 
         assertThat(responseMessage!!.payload).isEqualTo(initiatorHandshakeMsg)
         verify(sessionReplayer).removeMessageFromReplay("${sessionState.sessionId}_${InitiatorHelloMessage::class.java.simpleName}")
-        val replayedMessage = SessionReplayer.SessionMessageReplay(initiatorHandshakeMsg, PEER_PARTY)
+        val replayedMessage = InMemorySessionReplayer.SessionMessageReplay(initiatorHandshakeMsg, any(), OUR_PARTY, PEER_PARTY, any())
         verify(sessionReplayer)
             .addMessageForReplay("${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}", replayedMessage)
     }
@@ -743,20 +734,16 @@ class SessionManagerTest {
         val state = sessionManager.processOutboundFlowMessage(message)
         assertTrue(state is SessionManager.SessionState.SessionEstablished)
         val outboundSession = (state as SessionManager.SessionState.SessionEstablished).session
-        sessionManager.messageSent(message, outboundSession)
+        sessionManager.dataMessageSent(message, outboundSession)
         Thread.sleep(2 * heartbeatManagerTimeout * 1000)
         assertTrue(sessionManager.processOutboundFlowMessage(message) is NewSessionNeeded)
         assertEquals(heartbeatsBeforeTimeout.toInt(), interceptingProcessor.messages.size)
         subscription.stop()
 
-        var sequenceNumber = 1L
         for (processorMessage in interceptingProcessor.messages) {
             assertNotNull(processorMessage)
             val decryptedMessage = extractPayload(inboundSession, processorMessage!!)
             assertTrue(decryptedMessage is HeartbeatMessage)
-            assertEquals(OUTBOUND_PARTY.toHoldingIdentity(), (decryptedMessage as HeartbeatMessage).source)
-            assertEquals(INBOUND_PARTY.toHoldingIdentity(), decryptedMessage.destination)
-            assertEquals(sequenceNumber++, decryptedMessage.sequenceNumber)
         }
         sessionManager.stop()
     }
@@ -800,9 +787,7 @@ class SessionManagerTest {
         fun processorCallback(message: LinkOutMessage?) {
             val decryptedMessage = extractPayload(inboundSession, message!!)
             assertTrue(decryptedMessage is HeartbeatMessage)
-            assertEquals(OUTBOUND_PARTY.toHoldingIdentity(), (decryptedMessage as HeartbeatMessage).source)
-            assertEquals(INBOUND_PARTY.toHoldingIdentity(), decryptedMessage.destination)
-            sessionManager.messageAcknowledged(decryptedMessage.messageId)
+            sessionManager.messageAcknowledged(SessionManager.SessionKey(OUTBOUND_PARTY, INBOUND_PARTY))
         }
 
         val interceptingProcessor = InterceptingProcessor(::processorCallback)
@@ -813,20 +798,16 @@ class SessionManagerTest {
         )
         subscription.start()
 
-        sessionManager.messageSent(message, outboundSession)
+        sessionManager.dataMessageSent(message, outboundSession)
         Thread.sleep(2 * heartbeatManagerTimeout * 1000)
         assertTrue(sessionManager.processOutboundFlowMessage(message) is SessionManager.SessionState.SessionEstablished)
         assertTrue(interceptingProcessor.messages.size >= heartbeatsBeforeTimeout.toInt())
         subscription.stop()
 
-        var sequenceNumber = 1L
         for (processorMessage in interceptingProcessor.messages) {
             assertNotNull(processorMessage)
             val decryptedMessage = extractPayload(inboundSession, processorMessage!!)
             assertTrue(decryptedMessage is HeartbeatMessage)
-            assertEquals(OUTBOUND_PARTY.toHoldingIdentity(), (decryptedMessage as HeartbeatMessage).source)
-            assertEquals(INBOUND_PARTY.toHoldingIdentity(), decryptedMessage.destination)
-            assertEquals(sequenceNumber++, decryptedMessage.sequenceNumber)
         }
         sessionManager.stop()
     }
@@ -869,7 +850,7 @@ class SessionManagerTest {
         val state = sessionManager.processOutboundFlowMessage(message)
         assertTrue(state is SessionManager.SessionState.SessionEstablished)
         val outboundSession = (state as SessionManager.SessionState.SessionEstablished).session
-        sessionManager.messageSent(message, outboundSession)
+        sessionManager.dataMessageSent(message, outboundSession)
 
         assertTrue(publishLatch.await(2 * heartbeatManagerTimeout, TimeUnit.SECONDS))
         loggingInterceptor.assertErrorContains("An exception was thrown when sending a heartbeat message.")

@@ -12,8 +12,8 @@ interface SessionManager: Lifecycle {
     fun getSessionById(uuid: String): SessionDirection
     fun processSessionMessage(message: LinkInMessage): LinkOutMessage?
     fun inboundSessionEstablished(sessionId: String)
-    fun messageSent(messageAndKey: AuthenticatedMessageAndKey, session: Session)
-    fun messageAcknowledged(messageId: String)
+    fun dataMessageSent(messageAndKey: AuthenticatedMessageAndKey, session: Session)
+    fun messageAcknowledged(sessionKey: SessionKey)
 
     //On the Outbound side there is a single unique session per SessionKey.
     data class SessionKey(
@@ -29,8 +29,8 @@ interface SessionManager: Lifecycle {
     }
 
     sealed class SessionDirection {
-        data class Inbound(val session: Session): SessionDirection()
-        data class Outbound(val session: Session): SessionDirection()
+        data class Inbound(val key: SessionKey, val session: Session): SessionDirection()
+        data class Outbound(val key: SessionKey, val session: Session): SessionDirection()
         object NoSession: SessionDirection()
     }
 }

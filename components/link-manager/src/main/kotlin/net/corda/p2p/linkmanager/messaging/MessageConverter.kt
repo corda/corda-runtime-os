@@ -1,9 +1,9 @@
 package net.corda.p2p.linkmanager.messaging
 
 import net.corda.p2p.AuthenticatedMessageAndKey
+import net.corda.p2p.DataMessagePayload
 import net.corda.p2p.HeartbeatMessage
 import net.corda.p2p.LinkInMessage
-import net.corda.p2p.LinkManagerPayload
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.MessageAck
@@ -82,7 +82,7 @@ class MessageConverter {
             networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
             val serializedMessage = try {
-                LinkManagerPayload(message).toByteBuffer()
+                DataMessagePayload(message).toByteBuffer()
             } catch (exception: IOException) {
                 logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
                 return null
@@ -104,7 +104,7 @@ class MessageConverter {
             networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
             val serializedMessage = try {
-                LinkManagerPayload(message).toByteBuffer()
+                DataMessagePayload(message).toByteBuffer()
             } catch (exception: IOException) {
                 logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
                 return null

@@ -25,8 +25,7 @@ import net.corda.p2p.linkmanager.LinkManagerConfig
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.delivery.SessionReplayer
-import net.corda.p2p.linkmanager.delivery.SessionReplayer.SessionMessageReplay
+import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
@@ -55,13 +54,17 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList", "TooManyFunctions")
 open class SessionManagerImpl(
+    private val config: LinkManagerConfig,
     private val networkMap: LinkManagerNetworkMap,
     private val cryptoService: LinkManagerCryptoService,
     private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues,
-    private val sessionReplayer: SessionReplayer,
-    private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     publisherFactory: PublisherFactory,
-    private val config: LinkManagerConfig
+    private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
+    private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
+        Duration.ofSeconds(config.messageReplayPeriodSecs),
+        publisherFactory,
+        networkMap,
+    )
     ): SessionManager {
 
     companion object {
@@ -72,13 +75,6 @@ open class SessionManagerImpl(
        }
     }
 
-    private val heartbeatManager = HeartbeatManager(
-        publisherFactory,
-        networkMap,
-        Duration.ofSeconds(config.heartbeatMessagePeriodSecs),
-        Duration.ofSeconds(config.sessionTimeoutSecs)
-    )
-
     @Volatile
     private var running = false
     private val startStopLock = ReentrantReadWriteLock()
@@ -86,14 +82,22 @@ open class SessionManagerImpl(
     private val pendingOutboundSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
     private val pendingOutboundSessionKeys = ConcurrentHashMap.newKeySet<SessionKey>()
     private val activeOutboundSessions = ConcurrentHashMap<SessionKey, Pair<String, Session>>()
-    private val activeOutboundSessionsById = ConcurrentHashMap<String, Session>()
+    private val activeOutboundSessionsById = ConcurrentHashMap<String, Pair<SessionKey, Session>>()
 
     private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
-    private val activeInboundSessions = ConcurrentHashMap<String, Session>()
+    private val activeInboundSessions = ConcurrentHashMap<String, Pair<SessionKey, Session>>()
 
     private val logger = LoggerFactory.getLogger(this::class.java.name)
 
     private val sessionNegotiationLock = ReentrantReadWriteLock()
+
+    private val heartbeatManager: HeartbeatManager = HeartbeatManager(
+        publisherFactory,
+        networkMap,
+        Duration.ofSeconds(config.heartbeatMessagePeriodSecs),
+        Duration.ofSeconds(config.sessionTimeoutSecs),
+        ::destroyOutboundSession
+    )
 
     override val isRunning: Boolean
         get() = running
@@ -102,6 +106,7 @@ open class SessionManagerImpl(
         startStopLock.write {
             if (!running) {
                 heartbeatManager.start()
+                sessionReplayer.start()
                 running = true
             }
         }
@@ -111,6 +116,7 @@ open class SessionManagerImpl(
         startStopLock.write {
             if (running) {
                 heartbeatManager.stop()
+                sessionReplayer.stop()
                 running = false
             }
         }
@@ -137,11 +143,11 @@ open class SessionManagerImpl(
     override fun getSessionById(uuid: String): SessionManager.SessionDirection {
         val inboundSession = activeInboundSessions[uuid]
         if (inboundSession != null) {
-            return SessionManager.SessionDirection.Inbound(inboundSession)
+            return SessionManager.SessionDirection.Inbound(inboundSession.first, inboundSession.second)
         }
         val outboundSession = activeOutboundSessionsById[uuid]
         return if (outboundSession != null) {
-            SessionManager.SessionDirection.Outbound(outboundSession)
+            SessionManager.SessionDirection.Outbound(outboundSession.first, outboundSession.second)
         } else {
             SessionManager.SessionDirection.NoSession
         }
@@ -166,10 +172,9 @@ open class SessionManagerImpl(
         pendingInboundSessions.remove(sessionId)
     }
 
-    override fun messageSent(messageAndKey: AuthenticatedMessageAndKey, session: Session) {
+    override fun dataMessageSent(messageAndKey: AuthenticatedMessageAndKey, session: Session) {
         startStopLock.read {
             heartbeatManager.messageSent(
-                messageAndKey.message.header.messageId,
                 SessionKey(
                     messageAndKey.message.header.source.toHoldingIdentity(),
                     messageAndKey.message.header.destination.toHoldingIdentity()
@@ -179,9 +184,9 @@ open class SessionManagerImpl(
         }
     }
 
-    override fun messageAcknowledged(messageId: String) {
+    override fun messageAcknowledged(sessionKey: SessionKey) {
         startStopLock.read {
-            heartbeatManager.messageAcknowledged(messageId)
+            heartbeatManager.messageAcknowledged(sessionKey)
         }
     }
 
@@ -225,7 +230,13 @@ open class SessionManagerImpl(
         val initiatorHelloUniqueId = "${sessionId}_${sessionInitPayload::class.java.simpleName}"
         sessionReplayer.addMessageForReplay(
             initiatorHelloUniqueId,
-            SessionMessageReplay(sessionInitPayload, sessionKey.responderId)
+            InMemorySessionReplayer.SessionMessageReplay(
+                sessionInitPayload,
+                sessionId,
+                sessionKey.ourId,
+                sessionKey.responderId,
+                heartbeatManager::sessionMessageSent
+            )
         )
 
         val responderMemberInfo = networkMap.getMemberInfo(sessionKey.responderId)
@@ -234,7 +245,7 @@ open class SessionManagerImpl(
                     "The sessionInit message was not sent.")
             return null
         }
-        heartbeatManager.sessionMessageSent(initiatorHelloUniqueId, sessionKey, sessionId, ::destroyOutboundSession)
+        heartbeatManager.sessionMessageSent(sessionKey, sessionId)
 
         val message = createLinkOutMessage(sessionInitPayload, responderMemberInfo, networkType)
         return sessionId to message
@@ -279,15 +290,18 @@ open class SessionManagerImpl(
 
         val initiatorHelloUniqueId = "${message.header.sessionId}_${InitiatorHelloMessage::class.java.simpleName}"
         sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId)
-        heartbeatManager.messageAcknowledged(initiatorHelloUniqueId)
+        heartbeatManager.messageAcknowledged(SessionKey(ourMemberInfo.holdingIdentity, responderMemberInfo.holdingIdentity))
 
         val initiatorHandshakeUniqueId = "${message.header.sessionId}_${payload::class.java.simpleName}"
-        sessionReplayer.addMessageForReplay(initiatorHandshakeUniqueId, SessionMessageReplay(payload, sessionInfo.responderId))
-        heartbeatManager.sessionMessageSent(
+        sessionReplayer.addMessageForReplay(
             initiatorHandshakeUniqueId,
-            SessionKey(ourMemberInfo.holdingIdentity, responderMemberInfo.holdingIdentity),
-            message.header.sessionId,
-            ::destroyOutboundSession
+            InMemorySessionReplayer.SessionMessageReplay(
+                payload,
+                message.header.sessionId,
+                sessionInfo.ourId,
+                sessionInfo.responderId,
+                heartbeatManager::sessionMessageSent
+            )
         )
 
         val networkType = networkMap.getNetworkType(ourMemberInfo.holdingIdentity.groupId)
@@ -295,6 +309,11 @@ open class SessionManagerImpl(
             logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, ourMemberInfo.holdingIdentity.groupId)
             return null
         }
+        heartbeatManager.sessionMessageSent(
+            SessionKey(ourMemberInfo.holdingIdentity, responderMemberInfo.holdingIdentity),
+            message.header.sessionId,
+        )
+
         return createLinkOutMessage(payload, responderMemberInfo, networkType)
     }
 
@@ -322,10 +341,10 @@ open class SessionManagerImpl(
         val authenticatedSession = session.getSession()
         val initiatorHandshakeUniqueId = message.header.sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
         sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId)
-        heartbeatManager.messageAcknowledged(initiatorHandshakeUniqueId)
+        heartbeatManager.messageAcknowledged(sessionInfo)
         sessionNegotiationLock.write {
             activeOutboundSessions[sessionInfo] = message.header.sessionId to authenticatedSession
-            activeOutboundSessionsById[message.header.sessionId] = authenticatedSession
+            activeOutboundSessionsById[message.header.sessionId] = Pair(sessionInfo, authenticatedSession)
             pendingOutboundSessions.remove(message.header.sessionId)
             pendingOutboundSessionKeys.remove(sessionInfo)
             pendingOutboundSessionMessageQueues.sessionNegotiatedCallback(this, sessionInfo, authenticatedSession, networkMap)
@@ -421,7 +440,7 @@ open class SessionManagerImpl(
             return null
         }
 
-        activeInboundSessions[message.header.sessionId] = session.getSession()
+        activeInboundSessions[message.header.sessionId] = Pair(SessionKey(ourMemberInfo.holdingIdentity, peer.holdingIdentity), session.getSession())
         /**
          * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
@@ -429,11 +448,12 @@ open class SessionManagerImpl(
         return createLinkOutMessage(response, peer, networkType)
     }
 
-    private class HeartbeatManager(
+    class HeartbeatManager(
         publisherFactory: PublisherFactory,
         private val networkMap: LinkManagerNetworkMap,
         private val heartbeatPeriod: Duration,
         private val sessionTimeout: Duration,
+        private val destroySession: (key: SessionKey, sessionId: String) -> Any
     ) : Lifecycle {
 
         companion object {
@@ -446,7 +466,6 @@ open class SessionManagerImpl(
         private val startStopLock = ReentrantReadWriteLock()
         private lateinit var executorService: ScheduledExecutorService
 
-        private val sessionKeys = ConcurrentHashMap<String, SessionKey>()
         private val trackedSessions = ConcurrentHashMap<SessionKey, TrackedSession>()
 
         private val config = PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID, 1)
@@ -455,15 +474,12 @@ open class SessionManagerImpl(
         /**
          * For each Session we track the following.
          * [lastSendTimestamp]: The last time we sent a message using this Session.
-         * [lastAckTimestamp]: The last time we acknowledged a message sent using this Session.
-         * [sentMessageIds]: The messageId's of each sent message.
-         * [nextSequenceNumber]: The next sequence number to add to the Heartbeat Message for debug purposes.
+         * [lastAckTimestamp]: The last time a message we sent via this Session was acknowledged by the other side.
+         * [sendingHeartbeats]: If true we send heartbeats to the counterparty (this happens after the session established).
          */
         class TrackedSession(
             var lastSendTimestamp: Long,
             var lastAckTimestamp: Long,
-            val sentMessageIds: MutableSet<String> = mutableSetOf(),
-            var nextSequenceNumber: Long = 1L,
             var sendingHeartbeats: Boolean = false
         )
 
@@ -491,19 +507,16 @@ open class SessionManagerImpl(
         }
 
         fun sessionMessageSent(
-            messageId: String,
             key: SessionKey,
-            sessionId: String,
-            destroySession: (key: SessionKey, sessionId: String) -> Any
+            sessionId: String
         ) {
             startStopLock.read {
                 if (!running) {
                     throw IllegalStateException("A session message was added before the HeartbeatManager was started.")
                 }
                 trackedSessions.compute(key) { _, initialTrackedSession ->
-                    return@compute if (initialTrackedSession != null) {
+                    if (initialTrackedSession != null) {
                         initialTrackedSession.lastSendTimestamp = timeStamp()
-                        initialTrackedSession.sentMessageIds.add(messageId)
                         initialTrackedSession
                     } else {
                         executorService.schedule(
@@ -511,47 +524,38 @@ open class SessionManagerImpl(
                             sessionTimeout.toMillis(),
                             TimeUnit.MILLISECONDS
                         )
-                        val trackedSession = TrackedSession(timeStamp(), timeStamp())
-                        trackedSession.sentMessageIds.add(messageId)
-                        trackedSession
+                        TrackedSession(timeStamp(), timeStamp())
                     }
                 }
             }
         }
 
-        fun messageSent(messageId: String, key: SessionKey, session: Session) {
+        fun messageSent(key: SessionKey, session: Session) {
             startStopLock.read {
                 if (!running) {
                     throw IllegalStateException("A message was sent before the HeartbeatManager was started.")
                 }
-                val trackedSession = trackedSessions.computeIfPresent(key) { _, trackedSession ->
+                trackedSessions.computeIfPresent(key) { _, trackedSession ->
                     trackedSession.lastSendTimestamp = timeStamp()
-                    trackedSession.sentMessageIds.add(messageId)
                     if (!trackedSession.sendingHeartbeats) {
                         executorService.schedule({ sendHeartbeat(key, session) }, heartbeatPeriod.toMillis(), TimeUnit.MILLISECONDS)
+                        trackedSession.lastAckTimestamp = timeStamp()
                         trackedSession.sendingHeartbeats = true
                     }
                     trackedSession
-                }
-                if (trackedSession != null) {
-                    sessionKeys[messageId] = key
-                } else {
-                    throw IllegalStateException("A message with ID $messageId, was sent on a session between ${key.ourId} and " +
-                            "${key.responderId}}, which is not tracked.")
-                }
+                } ?: throw IllegalStateException("A message was sent on a session between ${key.ourId} and ${key.responderId}}, which is" +
+                    " not tracked.")
             }
         }
 
-        fun messageAcknowledged(messageId: String) {
+        fun messageAcknowledged(key: SessionKey) {
             startStopLock.read {
                 if (!running) {
                     throw IllegalStateException("A message was acknowledged before the HeartbeatManager was started.")
                 }
-                val sessionKey = sessionKeys[messageId] ?: return
-                val sessionInfo = trackedSessions[sessionKey] ?: return
-                logger.trace("Message acknowledged with Id $messageId.")
+                val sessionInfo = trackedSessions[key] ?: return
+                logger.trace("Message acknowledged with on a session between ${key.ourId} and ${key.responderId}}.")
                 sessionInfo.lastAckTimestamp = timeStamp()
-                sessionInfo.sentMessageIds.remove(messageId)
             }
         }
 
@@ -560,9 +564,6 @@ open class SessionManagerImpl(
             val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
             if (timeSinceLastAck >= sessionTimeout.toMillis()) {
                 destroySession(key, sessionId)
-                for (messageId in sessionInfo.sentMessageIds) {
-                    sessionKeys.remove(messageId)
-                }
                 trackedSessions.remove(key)
             } else {
                 executorService.schedule(
@@ -581,17 +582,12 @@ open class SessionManagerImpl(
             if (timeSinceLastAck >= sessionTimeout.toMillis()) return
             if (timeSinceLastSend >= heartbeatPeriod.toMillis()) {
                 logger.trace("Sending heartbeat message between ${sessionKey.ourId} (our Identity) and ${sessionKey.responderId}.")
-                val heartBeatMessageId = LinkManager.generateKey()
-                sessionInfo.sentMessageIds.add(heartBeatMessageId)
-                sessionKeys[heartBeatMessageId] = sessionKey
                 @Suppress("TooGenericExceptionCaught")
                 try {
                     sendHeartbeatMessage(
-                        heartBeatMessageId,
                         sessionKey.ourId.toHoldingIdentity(),
                         sessionKey.responderId.toHoldingIdentity(),
                         session,
-                        sessionInfo.nextSequenceNumber++
                     )
                 } catch (exception: Exception) {
                     logger.error("An exception was thrown when sending a heartbeat message. The task will be retried again in" +
@@ -608,18 +604,16 @@ open class SessionManagerImpl(
         }
 
         private fun sendHeartbeatMessage(
-            messageId: String,
             source: HoldingIdentity,
             dest: HoldingIdentity,
             session: Session,
-            sequenceNumber: Long
         ) {
-            val heartbeatMessage = HeartbeatMessage(dest, source, messageId, sequenceNumber)
+            val heartbeatMessage = HeartbeatMessage()
             val future = publisher.publish(
                 listOf(
                     Record(
                         Schema.LINK_OUT_TOPIC,
-                        messageId,
+                        UUID.randomUUID().toString(),
                         MessageConverter.linkOutMessageFromHeartbeat(source, dest, heartbeatMessage, session, networkMap)
                     )
                 )

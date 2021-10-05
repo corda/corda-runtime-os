@@ -9,9 +9,8 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 
 class MockSessionManager: SessionManager {
 
-    val addedSessionMessages = HashSet<String>()
     val addedMessages = HashMap<String, MessageInfo>()
-    val ackedMessages = HashSet<String>()
+    val ackedMessages = HashSet<SessionManager.SessionKey>()
 
     data class MessageInfo(val key: SessionManager.SessionKey,
                            val session: Session)
@@ -32,7 +31,7 @@ class MockSessionManager: SessionManager {
         TODO("Not yet implemented")
     }
 
-    override fun messageSent(messageAndKey: AuthenticatedMessageAndKey, session: Session) {
+    override fun dataMessageSent(messageAndKey: AuthenticatedMessageAndKey, session: Session) {
         addedMessages[messageAndKey.message.header.messageId] = MessageInfo(
             SessionManager.SessionKey(
                 messageAndKey.message.header.source.toHoldingIdentity(),
@@ -40,9 +39,10 @@ class MockSessionManager: SessionManager {
             ), session)
     }
 
-    override fun messageAcknowledged(messageId: String) {
-        ackedMessages.add(messageId)
+    override fun messageAcknowledged(sessionKey: SessionManager.SessionKey) {
+        ackedMessages.add(sessionKey)
     }
+
 
     override val isRunning: Boolean
         get() = TODO("Not yet implemented")
