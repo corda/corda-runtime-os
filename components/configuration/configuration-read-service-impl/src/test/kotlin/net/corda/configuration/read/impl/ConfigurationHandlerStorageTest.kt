@@ -3,6 +3,8 @@ package net.corda.configuration.read.impl
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 
@@ -14,13 +16,16 @@ class ConfigurationHandlerStorageTest {
         val sub = ConfigReaderStub()
         val keys = setOf("foo", "bar")
         val configMap = buildConfigMap(keys)
+        var handlerCalled = false
         storage.add { changedKeys, newConfig ->
             assertEquals(keys, changedKeys)
             assertEquals(configMap, newConfig)
+            handlerCalled = true
         }
         sub.start()
         storage.addSubscription(sub)
         sub.postEvent(keys, configMap)
+        assertTrue(handlerCalled)
     }
 
     @Test
@@ -31,11 +36,15 @@ class ConfigurationHandlerStorageTest {
         storage.addSubscription(sub)
         val keys = setOf("foo", "bar")
         val configMap = buildConfigMap(keys)
+        var handlerCalled = false
         storage.add { changedKeys, newConfig ->
             assertEquals(keys, changedKeys)
             assertEquals(configMap, newConfig)
+            handlerCalled = true
+
         }
         sub.postEvent(keys, configMap)
+        assertTrue(handlerCalled)
     }
 
     @Test
@@ -46,9 +55,8 @@ class ConfigurationHandlerStorageTest {
         storage.addSubscription(sub)
         val keys = setOf("foo", "bar")
         val configMap = buildConfigMap(keys)
-        val handle = storage.add { changedKeys, newConfig ->
-            assertEquals(keys, changedKeys)
-            assertEquals(configMap, newConfig)
+        val handle = storage.add { _, _ ->
+            fail("Should not invoke this callback after handle is closed.")
         }
         handle.close()
         sub.postEvent(keys, configMap)
