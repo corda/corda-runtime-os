@@ -25,6 +25,8 @@ internal class IsolatingFindServiceHook @Activate constructor(
         allServices: Boolean,
         references: MutableCollection<ServiceReference<*>>) {
 
+        if (!sandboxService.isStarted) return
+
         references.removeIf { reference ->
             !sandboxService.hasVisibility(context.bundle, reference.bundle)
         }
