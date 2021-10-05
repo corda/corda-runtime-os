@@ -28,8 +28,8 @@ abstract class ConfigurationAwareTile(
 
     private var configurationHolder = AtomicReference<GatewayConfiguration>()
 
-    private val registration = configurationReaderService.registerForUpdates(this)
     private val canReceiveConfigurations = AtomicBoolean(false)
+    private val registration = configurationReaderService.registerForUpdates(this)
 
     override fun close() {
         registration.close()
