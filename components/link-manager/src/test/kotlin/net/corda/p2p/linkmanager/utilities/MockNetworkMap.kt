@@ -3,7 +3,6 @@ package net.corda.p2p.linkmanager.utilities
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
-import net.corda.p2p.linkmanager.sessions.SessionManagerTest
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions
 import java.security.KeyPair
@@ -13,6 +12,9 @@ import java.security.PrivateKey
 import java.security.PublicKey
 
 class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
+
+    private val FAKE_ENDPOINT = LinkManagerNetworkMap.EndPoint("http://10.0.0.1/")
+
     private val provider = BouncyCastleProvider()
     private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
     private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, provider)
@@ -55,12 +57,12 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
             }
 
             override fun getOurMemberInfo(): LinkManagerNetworkMap.MemberInfo {
-                return LinkManagerNetworkMap.MemberInfo(node, getKeyPair().public, KeyAlgorithm.ECDSA, SessionManagerTest.FAKE_ENDPOINT)
+                return LinkManagerNetworkMap.MemberInfo(node, getKeyPair().public, KeyAlgorithm.ECDSA, FAKE_ENDPOINT)
             }
 
             override fun getMemberInfo(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
                 val publicKey = keys[holdingIdentity]?.public ?: return null
-                return LinkManagerNetworkMap.MemberInfo(holdingIdentity, publicKey, KeyAlgorithm.ECDSA, SessionManagerTest.FAKE_ENDPOINT)
+                return LinkManagerNetworkMap.MemberInfo(holdingIdentity, publicKey, KeyAlgorithm.ECDSA, FAKE_ENDPOINT)
             }
 
             override fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerNetworkMap.MemberInfo? {

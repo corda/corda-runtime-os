@@ -9,7 +9,6 @@ import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
-import net.corda.httprpc.tools.HttpVerb
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -19,7 +18,6 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import org.junit.jupiter.api.Disabled
 
 class InvalidRequestTest : HttpRpcServerTestBase() {
     companion object {
@@ -31,7 +29,12 @@ class InvalidRequestTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun setUpBeforeClass() {
             val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
-            server = HttpRpcServerImpl(listOf(TestHealthCheckAPIImpl(), TestJavaPrimitivesRPCopsImpl()), securityManager, httpRpcSettings, true, classLoader).apply { start() }
+            server = HttpRpcServerImpl(
+                listOf(TestHealthCheckAPIImpl(), TestJavaPrimitivesRPCopsImpl()),
+                securityManager,
+                httpRpcSettings,
+                true
+            ).apply { start() }
             client = TestHttpClientUnirestImpl("http://${httpRpcSettings.address.host}:${httpRpcSettings.address.port}/${httpRpcSettings.context.basePath}/v${httpRpcSettings.context.version}/")
         }
 

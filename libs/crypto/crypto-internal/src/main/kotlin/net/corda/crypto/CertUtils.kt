@@ -4,6 +4,7 @@ package net.corda.crypto
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.x500.X500Name
@@ -46,7 +47,7 @@ fun createDevCertificate(
 fun SigningService.getSigner(schemeMetadata: CipherSchemeMetadata, alias: String): ContentSigner {
     return object : ContentSigner {
         private val publicKey: PublicKey = findPublicKey(alias)
-            ?: throw CryptoServiceException("No key found for alias $alias", isRecoverable = false)
+            ?: throw CryptoServiceBadRequestException("No key found for alias $alias")
         private val signatureScheme: SignatureScheme = schemeMetadata.findSignatureScheme(publicKey)
         private val sigAlgID: AlgorithmIdentifier = signatureScheme.signatureSpec.signatureOID
             ?: throw CryptoServiceException(

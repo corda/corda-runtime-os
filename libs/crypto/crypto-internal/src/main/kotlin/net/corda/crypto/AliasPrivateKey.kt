@@ -1,7 +1,6 @@
 package net.corda.crypto
 
 import net.corda.v5.crypto.OID_ALIAS_PRIVATE_KEY_IDENTIFIER
-import net.corda.v5.crypto.exceptions.CryptoServiceException
 import org.bouncycastle.asn1.ASN1EncodableVector
 import org.bouncycastle.asn1.ASN1Encoding
 import org.bouncycastle.asn1.DERSequence
@@ -28,7 +27,9 @@ fun decodeAliasPrivateKey(encodedKey: ByteArray): PrivateKey {
         val alias = (derutF8String as DERUTF8String).string
         return AliasPrivateKey(alias)
     } else {
-        throw CryptoServiceException("The key is not ${AliasPrivateKey::class.java.name}")
+        throw IllegalArgumentException(
+            "The key is not ${AliasPrivateKey::class.java.name}"
+        )
     }
 }
 

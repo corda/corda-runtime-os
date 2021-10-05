@@ -40,8 +40,8 @@ internal class SandboxServiceImpl @Activate constructor(
     private val bundleUtils: BundleUtils
 ) : SandboxServiceInternal, SingletonSerializeAsToken {
     // These two framework bundles require full visibility.
-    private val felixFrameworkBundle by lazy { getRequiredBundle(FELIX_FRAMEWORK_BUNDLE) }
-    private val felixScrBundle by lazy { getRequiredBundle(FELIX_SCR_BUNDLE) }
+    private val felixFrameworkBundle by lazy { getBundle(FELIX_FRAMEWORK_BUNDLE) }
+    private val felixScrBundle by lazy { getBundle(FELIX_SCR_BUNDLE) }
 
     // These sandboxes are not persisted in any way; they are recreated on node startup.
     private val sandboxes = ConcurrentHashMap<UUID, SandboxInternal>()
@@ -65,6 +65,14 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun createSandboxGroupWithoutStarting(cpkFileHashes: Iterable<SecureHash>) =
         createSandboxes(cpkFileHashes, startBundles = false)
+
+    override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
+        sandboxGroup.sandboxes.forEach { sandbox ->
+            sandboxes.remove(sandbox.id)
+            sandboxGroups.remove(sandbox.id)
+            (sandbox as SandboxInternal).unload()
+        }
+    }
 
     override fun getClassInfo(klass: Class<*>): ClassInfo {
         val sandbox = sandboxes.values.find { sandbox -> sandbox.containsClass(klass) }
@@ -150,7 +158,7 @@ internal class SandboxServiceImpl @Activate constructor(
      *
      * Throws [SandboxException] if there is not exactly one match.
      */
-    private fun getRequiredBundle(symbolicName: String): Bundle {
+    private fun getBundle(symbolicName: String): Bundle {
         val matchingBundles = bundleUtils.allBundles.filter { bundle ->
             bundle.symbolicName == symbolicName
         }
