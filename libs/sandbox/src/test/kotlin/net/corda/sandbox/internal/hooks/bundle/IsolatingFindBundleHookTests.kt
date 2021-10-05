@@ -25,6 +25,7 @@ class IsolatingFindBundleHookTests {
     fun `bundle is found if a bundle has visibility`() {
         val sandboxService = mock<SandboxServiceInternal>().apply {
             whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(true)
+            whenever(isStarted).thenReturn(true)
         }
 
         val isolatingFindBundleHook = IsolatingFindBundleHook(sandboxService)
@@ -36,6 +37,7 @@ class IsolatingFindBundleHookTests {
     fun `bundle is not found if a bundle does not have visibility`() {
         val sandboxService = mock<SandboxServiceInternal>().apply {
             whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(false)
+            whenever(isStarted).thenReturn(true)
         }
 
         val isolatingFindBundleHook = IsolatingFindBundleHook(sandboxService)
