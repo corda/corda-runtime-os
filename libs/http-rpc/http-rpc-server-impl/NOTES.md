@@ -2,7 +2,9 @@
 
 ## Running the POC
 
-- Clone - [https://github.com/lankydan/javalin/tree/dan/osgify-javalin-openapi](https://github.com/lankydan/javalin/tree/dan/osgify-javalin-openapi).
+- Clone - [https://github.com/lankydan/javalin/](https://github.com/lankydan/javalin/).
+
+- Change to the `osgify-javalin-openapi` branch.
 
 - Run `mvn install` in the `javalin-openapi-osgi` module. This will install it into your maven local repository.
 
