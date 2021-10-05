@@ -1,6 +1,5 @@
 package net.corda.install.internal.persistence
 
-import net.corda.cipher.suite.impl.CipherSchemeMetadataProviderImpl
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.install.CpkInstallationException
 import net.corda.install.internal.verification.TestUtils.createMockConfigurationAdmin
@@ -52,7 +51,8 @@ class CordaPackagePersistenceTests {
     private lateinit var contractCpk : Cpk.Expanded
     private lateinit var cordaPackagePersistence : CordaPackagePersistence
 
-    private val cryptoLibraryFactory = CryptoMocks().cryptoLibraryFactory()
+    private val cryptoMocks = CryptoMocks()
+    private val cryptoLibraryFactory = cryptoMocks.factories.cryptoLibrary
     private val hashingService = cryptoLibraryFactory.getDigestService()
 
 
@@ -109,7 +109,7 @@ class CordaPackagePersistenceTests {
         assertSame(workflowCpkFromCpb, cpkRetrievedById)
     }
 
-    private val cipherSchemeMetadata : CipherSchemeMetadata = CipherSchemeMetadataProviderImpl().getInstance()
+    private val cipherSchemeMetadata : CipherSchemeMetadata = cryptoMocks.schemeMetadata
 
     @Throws(NoSuchAlgorithmException::class)
     fun newSecureRandom(): SecureRandom = cipherSchemeMetadata.secureRandom

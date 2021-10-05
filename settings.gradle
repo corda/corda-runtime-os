@@ -72,6 +72,9 @@ include 'applications:examples:demo-publisher'
 include 'applications:examples:goodbyeworld'
 include 'applications:tools:kafka-reader'
 include 'applications:tools:kafka-setup'
+include 'components:crypto:crypto-client'
+include 'components:crypto:crypto-component-base'
+include 'components:crypto:crypto-service'
 include 'applications:tools:p2p-test:cryptoservice-key-creator'
 include 'applications:tools:p2p-test:network-map-creator'
 include 'applications:http-rpc-gateway'
@@ -101,7 +104,6 @@ include 'libs:configuration:configuration-write-impl'
 include 'libs:configuration:file-configuration-read-impl'
 include 'libs:crypto:crypto-internal'
 include 'libs:crypto:crypto-impl'
-include 'libs:crypto:crypto-testkit'
 include 'libs:db:db-admin'
 include 'libs:db:db-admin-impl'
 include 'libs:db:db-core'
@@ -171,6 +173,29 @@ include 'libs:virtual-node:virtual-node-cache-impl'
 include 'osgi-framework-api'
 include 'osgi-framework-bootstrap'
 include 'testing:apps:test-app'
+include 'testing:crypto-testkit'
 include 'testing:bundles:testing-cats'
 include 'testing:bundles:testing-dogs'
 include 'testing:test-utilities'
+
+// The following logic dictates if we use the composite build gradle functionality,
+// If this evaluates to true local source code will be used in place of binary dependencies.
+// This is intended for local use only. The checks in place should prevent this from being triggered on a Jenkins server where we would always want to use the Binaries.
+
+if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
+    includeBuild('../corda-api') {
+        dependencySubstitution {
+            substitute module('net.corda:corda-application') using project(':application')
+            substitute module('net.corda:corda-base') using project(':base')
+            substitute module('net.corda:corda-cipher-suite') using project(':cipher-suite')
+            substitute module('net.corda:corda-api') using project(':corda-api')
+            substitute module('net.corda:corda-crypto') using project(':crypto')
+            substitute module('net.corda:corda-avro-schema') using project(':data:avro-schema')
+            substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
+            substitute module('net.corda:corda-ledger') using project(':ledger')
+            substitute module('net.corda:corda-packaging') using project(':packaging')
+            substitute module('net.corda:corda-persistence') using project(':persistence')
+            substitute module('net.corda:corda-serialization') using project(':serialization')
+        }
+    }
+}

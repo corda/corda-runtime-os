@@ -73,4 +73,13 @@ interface FreshKeySigningService {
      * @throws [CryptoServiceException] for general cryptographic exceptions.
      */
     fun ensureWrappingKey()
+
+    /**
+     * Filters the input [PublicKey]s down to a collection of keys that this node owns (has private keys for).
+     *
+     * @param candidateKeys The [PublicKey]s to filter.
+     *
+     * @return A collection of [PublicKey]s that this node owns.
+     */
+    fun filterMyKeys(candidateKeys: Iterable<PublicKey>): Iterable<PublicKey>
 }
