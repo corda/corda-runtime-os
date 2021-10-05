@@ -187,7 +187,7 @@ internal class SandboxServiceImpl @Activate constructor(
         // We force the lazy initialisation of these variables before any sandboxes are created.
         felixFrameworkBundle
         felixScrBundle
-        // We indicate that the sandbox service as started, and thus that our OSGi hooks should be applied.
+        // We indicate that the sandbox service has started, and thus that our OSGi hooks should be applied.
         isStarted = true
 
         val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
