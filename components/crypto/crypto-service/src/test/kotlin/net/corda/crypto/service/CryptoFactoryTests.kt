@@ -9,8 +9,10 @@ import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.fail
 import org.mockito.kotlin.mock
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -70,6 +72,7 @@ class CryptoFactoryTests {
         factory.start()
         assertTrue(factory.isRunning)
         val latch = CountDownLatch(1)
+        val exceptions = ConcurrentHashMap<Throwable, Unit>()
         val threads = mutableListOf<Thread>()
         for (i in 1..100) {
             val thread = thread(start = true) {
@@ -78,12 +81,15 @@ class CryptoFactoryTests {
                 assertTrue(factory.isRunning)
                 assertNotNull(factory.getSigningService(UUID.randomUUID().toString(), CryptoCategories.LEDGER))
                 assertNotNull(factory.getFreshKeySigningService(UUID.randomUUID().toString()))
-            }
+            }.also { it.setUncaughtExceptionHandler { _, e -> exceptions[e] = Unit } }
             threads.add(thread)
         }
         latch.countDown()
         threads.forEach {
             it.join(5_000)
+        }
+        if(exceptions.isNotEmpty()) {
+            fail(exceptions.keys.map { it.message }.joinToString(System.lineSeparator()))
         }
         factory.stop()
         assertFalse(factory.isRunning)

@@ -13,9 +13,11 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.fail
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -135,6 +137,7 @@ class CryptoLibraryClientsFactoryTests {
             "testComponent"
         )
         val latch = CountDownLatch(1)
+        val exceptions = ConcurrentHashMap<Throwable, Unit>()
         val threads = mutableListOf<Thread>()
         for (i in 1..100) {
             val thread = thread(start = true) {
@@ -147,12 +150,15 @@ class CryptoLibraryClientsFactoryTests {
                 }
                 assertNotNull(factory.getFreshKeySigningService())
                 assertNotNull(factory.getSigningService(CryptoCategories.LEDGER))
-            }
+            }.also { it.setUncaughtExceptionHandler { _, e -> exceptions[e] = Unit } }
             threads.add(thread)
         }
         latch.countDown()
         threads.forEach {
             it.join(5_000)
+        }
+        if(exceptions.isNotEmpty()) {
+            fail(exceptions.keys.map { it.message }.joinToString(System.lineSeparator()))
         }
         provider.stop()
     }
