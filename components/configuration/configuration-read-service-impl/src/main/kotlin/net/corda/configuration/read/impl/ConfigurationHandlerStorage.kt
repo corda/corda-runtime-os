@@ -8,7 +8,7 @@ class ConfigurationHandlerStorage {
 
     private val handlers: MutableMap<CallbackHandle, Unit> = ConcurrentHashMap()
 
-    private val subscription: ConfigReader? = null
+    private var subscription: ConfigReader? = null
 
     private class CallbackHandle(
         private val callback: ConfigurationHandler,
@@ -49,12 +49,14 @@ class ConfigurationHandlerStorage {
     }
 
     fun addSubscription(subscription: ConfigReader) {
+        this.subscription = subscription
         handlers.keys.forEach {
             it.subscribe(subscription)
         }
     }
 
     fun removeSubscription() {
+        this.subscription = null
         handlers.keys.forEach {
             it.unregister()
         }

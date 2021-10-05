@@ -11,28 +11,6 @@ import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
  */
 interface CryptoLibraryFactory {
     /**
-     * Returns an instance of the [FreshKeySigningService].
-     *
-     * @throws [CryptoServiceLibraryException] for general cryptographic exceptions.
-     */
-    fun getFreshKeySigningService(
-        passphrase: String,
-        defaultSchemeCodeName: String,
-        freshKeysDefaultSchemeCodeName: String
-    ): FreshKeySigningService
-
-    /**
-     * Returns an instance of the [SigningService].
-     *
-     * @throws [CryptoServiceLibraryException] for general cryptographic exceptions.
-     */
-    fun getSigningService(
-        category: String,
-        passphrase: String,
-        defaultSchemeCodeName: String
-    ): SigningService
-
-    /**
      * Returns an instance of the [SignatureVerificationService].
      *
      * @throws [CryptoServiceLibraryException] for general cryptographic exceptions.
