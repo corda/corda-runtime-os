@@ -80,12 +80,12 @@ class EntitiesInBundlesTest {
         private val cat = catCtor.newInstance(catId, "Stray", "Tabby", owner)
 
         private val dbConfig = run {
-            if (null != System.getProperty("postgresPort").toIntOrNull()) {
+            if (!System.getProperty("postgresDb").isNullOrBlank()) {
                 logger.info("Using Postgres on port ${System.getProperty("postgresPort")}".emphasise())
                 val ds = PostgresDataSourceFactory().create(
-                    "jdbc:postgresql://localhost:${System.getProperty("postgresPort")}/postgres",
-                    "postgres",
-                    "password")
+                    "jdbc:postgresql://${System.getProperty("postgresHost")}:${System.getProperty("postgresPort")}/${System.getProperty("postgresDb")}",
+                    System.getProperty("postgresUser"),
+                    System.getProperty("postgresPassword"))
                 DbEntityManagerConfiguration(ds, true, true, DdlManage.UPDATE)
             } else {
                 logger.info("Using in-memory (HSQL) DB".emphasise())
