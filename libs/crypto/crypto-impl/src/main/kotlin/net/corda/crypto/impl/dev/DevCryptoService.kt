@@ -60,6 +60,8 @@ class DevCryptoService(
 
     private val supportedSchemes: Array<SignatureScheme>
 
+    private val supportedSchemeCodes: Set<String>
+
     private val defaultCryptoService: CryptoService = DefaultCryptoService(
         cache = keyCache,
         schemeMetadata = schemeMetadata,
@@ -77,6 +79,7 @@ class DevCryptoService(
             )
         }
         supportedSchemes = schemes.toTypedArray()
+        supportedSchemeCodes = supportedSchemes.map { it.codeName }.toSet()
     }
 
     override fun requiresWrappingKey(): Boolean = defaultCryptoService.requiresWrappingKey()
@@ -245,5 +248,5 @@ class DevCryptoService(
     }
      */
 
-    private fun isSupported(scheme: SignatureScheme): Boolean = scheme in supportedSchemes
+    private fun isSupported(scheme: SignatureScheme): Boolean = scheme.codeName in supportedSchemeCodes
 }

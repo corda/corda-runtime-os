@@ -38,6 +38,8 @@ open class DefaultCryptoService(
 
     private val supportedSchemes: Array<SignatureScheme>
 
+    private val supportedSchemeCodes: Set<String>
+
     init {
         val schemes = mutableListOf<SignatureScheme>()
         schemes.addIfSupported(RSA_CODE_NAME)
@@ -48,6 +50,7 @@ open class DefaultCryptoService(
         schemes.addIfSupported(SM2_CODE_NAME)
         schemes.addIfSupported(GOST3410_GOST3411_CODE_NAME)
         supportedSchemes = schemes.toTypedArray()
+        supportedSchemeCodes = supportedSchemes.map { it.codeName }.toSet()
     }
 
     override fun requiresWrappingKey(): Boolean = true
@@ -244,7 +247,7 @@ open class DefaultCryptoService(
         return signatureBytes
     }
 
-    private fun isSupported(scheme: SignatureScheme): Boolean = scheme in supportedSchemes
+    private fun isSupported(scheme: SignatureScheme): Boolean = scheme.codeName in supportedSchemeCodes
 
     private fun provider(scheme: SignatureScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
 

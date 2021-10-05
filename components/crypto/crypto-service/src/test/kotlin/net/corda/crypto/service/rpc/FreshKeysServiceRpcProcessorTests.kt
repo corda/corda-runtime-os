@@ -1,5 +1,6 @@
 package net.corda.crypto.service.rpc
 
+import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.service.CryptoFactory
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.testkit.CryptoMocks
@@ -22,6 +23,7 @@ import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
@@ -43,6 +45,7 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutionException
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -50,6 +53,59 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class FreshKeysServiceRpcProcessorTests {
+    private class FreshKeySigningServiceWrapper(
+        private val impl: FreshKeySigningService
+    ): FreshKeySigningService {
+        companion object {
+            val recordedContexts = ConcurrentHashMap<String, Map<String, String>>()
+        }
+
+        override fun freshKey(context: Map<String, String>): PublicKey {
+            if(context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.freshKey(context)
+        }
+
+        override fun freshKey(externalId: UUID, context: Map<String, String>): PublicKey {
+            if(context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.freshKey(externalId, context)
+        }
+
+        override fun sign(
+            publicKey: PublicKey,
+            data: ByteArray,
+            context: Map<String, String>
+        ): DigitalSignature.WithKey {
+            if(context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.sign(publicKey, data, context)
+        }
+
+        override fun sign(
+            publicKey: PublicKey,
+            signatureSpec: SignatureSpec,
+            data: ByteArray,
+            context: Map<String, String>
+        ): DigitalSignature.WithKey {
+            if(context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.sign(publicKey, signatureSpec, data, context)
+        }
+
+        override fun ensureWrappingKey() {
+            return impl.ensureWrappingKey()
+        }
+
+        override fun filterMyKeys(candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> {
+            return impl.filterMyKeys(candidateKeys)
+        }
+    }
+
     companion object {
         private lateinit var memberId: String
         private lateinit var cryptoMocks: CryptoMocks
@@ -57,6 +113,7 @@ class FreshKeysServiceRpcProcessorTests {
         private lateinit var verifier: SignatureVerificationService
         private lateinit var processor: FreshKeysServiceRpcProcessor
         private lateinit var cryptoFactory: CryptoFactory
+        private lateinit var freshKeySigningServiceWrapper: FreshKeySigningServiceWrapper
 
         @JvmStatic
         @BeforeAll
@@ -66,9 +123,12 @@ class FreshKeysServiceRpcProcessorTests {
             schemeMetadata = cryptoMocks.schemeMetadata
             verifier = cryptoMocks.factories.cryptoLibrary.getSignatureVerificationService()
             cryptoFactory = mock()
+            freshKeySigningServiceWrapper = FreshKeySigningServiceWrapper(
+                cryptoMocks.factories.cryptoClients(memberId).getFreshKeySigningService()
+            )
             whenever(
                 cryptoFactory.getFreshKeySigningService(memberId)
-            ).thenReturn(cryptoMocks.factories.cryptoClients(memberId).getFreshKeySigningService())
+            ).thenReturn(freshKeySigningServiceWrapper)
             whenever(
                 cryptoFactory.cipherSchemeMetadata
             ).thenReturn(schemeMetadata)
@@ -159,19 +219,29 @@ class FreshKeysServiceRpcProcessorTests {
     fun `Should generate fresh key with associating it with any id and be able to sign using default and custom schemes`() {
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
-        val context1 = getWireRequestContext()
-        val future1 = CompletableFuture<WireFreshKeysResponse>()
+        val context = getWireRequestContext()
+        val operationContext = listOf(
+            WireKeyValuePair("someId", UUID.randomUUID().toString()),
+            WireKeyValuePair("reason", "Hello World!")
+        )
+        val future = CompletableFuture<WireFreshKeysResponse>()
         processor.onNext(
             WireFreshKeysRequest(
-                context1,
-                WireFreshKeysFreshKey()
+                context,
+                WireFreshKeysFreshKey(null, operationContext)
             ),
-            future1
+            future
         )
-        val result1 = future1.get()
-        assertEquivalent(context1, result1.context)
-        assertThat(result1.response, instanceOf(WirePublicKey::class.java))
-        val publicKey = schemeMetadata.decodePublicKey((result1.response as WirePublicKey).key.array())
+        val result = future.get()
+        val operationContextMap = FreshKeySigningServiceWrapper.recordedContexts[operationContext[0].value]
+        assertNotNull(operationContextMap)
+        assertEquals(2, operationContext.size)
+        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquals(2, operationContext.size)
+        assertEquivalent(context, result.context)
+        assertThat(result.response, instanceOf(WirePublicKey::class.java))
+        val publicKey = schemeMetadata.decodePublicKey((result.response as WirePublicKey).key.array())
         val info = get(publicKey)
         assertNotNull(info)
         assertNull(info.externalId)
@@ -184,19 +254,28 @@ class FreshKeysServiceRpcProcessorTests {
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
         val externalId = UUID.randomUUID()
-        val context1 = getWireRequestContext()
-        val future1 = CompletableFuture<WireFreshKeysResponse>()
+        val context = getWireRequestContext()
+        val operationContext = listOf(
+            WireKeyValuePair("someId", UUID.randomUUID().toString()),
+            WireKeyValuePair("reason", "Hello World!")
+        )
+        val future = CompletableFuture<WireFreshKeysResponse>()
         processor.onNext(
             WireFreshKeysRequest(
-                context1,
-                WireFreshKeysFreshKey(externalId.toString())
+                context,
+                WireFreshKeysFreshKey(externalId.toString(), operationContext)
             ),
-            future1
+            future
         )
-        val result1 = future1.get()
-        assertEquivalent(context1, result1.context)
-        assertThat(result1.response, instanceOf(WirePublicKey::class.java))
-        val publicKey = schemeMetadata.decodePublicKey((result1.response as WirePublicKey).key.array())
+        val result = future.get()
+        val operationContextMap = FreshKeySigningServiceWrapper.recordedContexts[operationContext[0].value]
+        assertNotNull(operationContextMap)
+        assertEquals(2, operationContext.size)
+        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquivalent(context, result.context)
+        assertThat(result.response, instanceOf(WirePublicKey::class.java))
+        val publicKey = schemeMetadata.decodePublicKey((result.response as WirePublicKey).key.array())
         val info = get(publicKey)
         assertNotNull(info)
         assertEquals(externalId, info.externalId)
@@ -208,19 +287,28 @@ class FreshKeysServiceRpcProcessorTests {
     fun `Should complete future exceptionally in case of service failure`() {
         val data = UUID.randomUUID().toString().toByteArray()
         // generate
-        val context1 = getWireRequestContext()
-        val future1 = CompletableFuture<WireFreshKeysResponse>()
+        val context = getWireRequestContext()
+        val operationContext = listOf(
+            WireKeyValuePair("someId", UUID.randomUUID().toString()),
+            WireKeyValuePair("reason", "Hello World!")
+        )
+        val future = CompletableFuture<WireFreshKeysResponse>()
         processor.onNext(
             WireFreshKeysRequest(
-                context1,
-                WireFreshKeysFreshKey()
+                context,
+                WireFreshKeysFreshKey(null, operationContext)
             ),
-            future1
+            future
         )
-        val result1 = future1.get()
-        assertEquivalent(context1, result1.context)
-        assertThat(result1.response, instanceOf(WirePublicKey::class.java))
-        val publicKey = schemeMetadata.decodePublicKey((result1.response as WirePublicKey).key.array())
+        val result = future.get()
+        val operationContextMap = FreshKeySigningServiceWrapper.recordedContexts[operationContext[0].value]
+        assertNotNull(operationContextMap)
+        assertEquals(2, operationContext.size)
+        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(operationContext[1].value, operationContextMap["reason"])
+        assertEquivalent(context, result.context)
+        assertThat(result.response, instanceOf(WirePublicKey::class.java))
+        val publicKey = schemeMetadata.decodePublicKey((result.response as WirePublicKey).key.array())
         val info = get(publicKey)
         assertNotNull(info)
         assertNull(info.externalId)
@@ -235,7 +323,8 @@ class FreshKeysServiceRpcProcessorTests {
                     WireSignatureSpec(
                         "BAD-SIGNATURE-ALGORITHM",
                         "BAD-DIGEST-ALGORITHM"),
-                    ByteBuffer.wrap(data)
+                    ByteBuffer.wrap(data),
+                    emptyList()
                 )
             ),
             future3
@@ -292,18 +381,28 @@ class FreshKeysServiceRpcProcessorTests {
     private fun testSigning(publicKey: PublicKey, data: ByteArray) {
         // sign using default scheme
         val context2 = getWireRequestContext()
+        val operationContext = listOf(
+            WireKeyValuePair("someId", UUID.randomUUID().toString()),
+            WireKeyValuePair("reason", "Hello World!")
+        )
         val future2 = CompletableFuture<WireFreshKeysResponse>()
         processor.onNext(
             WireFreshKeysRequest(
                 context2,
                 WireFreshKeysSign(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    ByteBuffer.wrap(data)
+                    ByteBuffer.wrap(data),
+                    operationContext
                 )
             ),
             future2
         )
         val result2 = future2.get()
+        val operationContextMap = FreshKeySigningServiceWrapper.recordedContexts[operationContext[0].value]
+        assertNotNull(operationContextMap)
+        assertEquals(2, operationContext.size)
+        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertEquivalent(context2, result2.context)
         assertThat(result2.response, instanceOf(WireSignatureWithKey::class.java))
         val signature2 = result2.response as WireSignatureWithKey
@@ -319,7 +418,8 @@ class FreshKeysServiceRpcProcessorTests {
                 WireFreshKeysSignWithSpec(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     WireSignatureSpec(signatureSpec3.signatureName, signatureSpec3.customDigestName?.name),
-                    ByteBuffer.wrap(data)
+                    ByteBuffer.wrap(data),
+                    emptyList()
                 )
             ),
             future3
@@ -341,7 +441,8 @@ class FreshKeysServiceRpcProcessorTests {
                 WireFreshKeysSignWithSpec(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     WireSignatureSpec(signatureSpec4!!.signatureName, signatureSpec4.customDigestName?.name),
-                    ByteBuffer.wrap(data)
+                    ByteBuffer.wrap(data),
+                    emptyList()
                 )
             ),
             future4
