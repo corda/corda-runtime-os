@@ -45,6 +45,7 @@ internal class Registration(
      */
     private val lock = ReentrantLock()
 
+
     /**
      * Update this registration with the status of one of the coordinators.
      *
@@ -95,11 +96,4 @@ internal class Registration(
             coordinators.forEach { it.postEvent(CancelRegistration(this)) }
         }
     }
-
-    override fun toString(): String {
-        return "Registration ${registeringCoordinator.name} -> ${coordinators.map { it.name }} (open -> $isOpen)"
-    }
-
-    internal val isOpen: Boolean
-        get() = !isClosed.get()
 }

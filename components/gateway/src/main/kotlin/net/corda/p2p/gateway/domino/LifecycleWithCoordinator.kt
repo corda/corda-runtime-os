@@ -7,6 +7,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
@@ -235,7 +236,13 @@ abstract class LifecycleWithCoordinator(
         children.reversed().forEach {
             it.close()
         }
-        coordinator.close()
+
+        try {
+            coordinator.close()
+        } catch (e: LifecycleException) {
+            // This try-catch should be removed once CORE-2786 is fixed
+            logger.debug("Could not close coordinator", e)
+        }
     }
 
     override fun toString(): String {
