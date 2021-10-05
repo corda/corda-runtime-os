@@ -15,7 +15,6 @@ import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.NetworkType
-import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
@@ -90,7 +89,7 @@ open class TestBase {
 
         val readerService by lazy {
             ConfigurationReadServiceImpl(
-                lifecycleCoordinatorFactory,
+                LifecycleCoordinatorFactoryImpl(),
                 ConfigReaderFactoryImpl(InMemSubscriptionFactory(configurationTopicService)),
             ).also {
                 it.start()
@@ -136,13 +135,6 @@ open class TestBase {
         val publisher = ConfigPublisher()
         publisher.publishConfig(configuration)
         return publisher.readerService
-    }
-
-    fun createParentCoordinator(): LifecycleWithCoordinator {
-        return object : LifecycleWithCoordinator(lifecycleCoordinatorFactory, UUID.randomUUID().toString()) {
-            override val children: Collection<LifecycleWithCoordinator>
-                get() = emptyList()
-        }
     }
 
     fun Lifecycle.startAndWaitForStarted() {

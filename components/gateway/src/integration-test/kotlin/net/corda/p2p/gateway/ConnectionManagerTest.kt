@@ -1,6 +1,7 @@
 package net.corda.p2p.gateway
 
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.p2p.gateway.domino.LifecycleWithCoordinator
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
@@ -25,7 +26,10 @@ class ConnectionManagerTest : TestBase() {
         hostPort = serverAddress.port,
         sslConfig = aliceSslConfig
     )
-    private val parent = createParentCoordinator()
+    private val parent = object : LifecycleWithCoordinator(lifecycleCoordinatorFactory, "") {
+        override val children = emptyList<LifecycleWithCoordinator>()
+    }
+
     private val configService = createConfigurationServiceFor(configuration)
 
     @Test

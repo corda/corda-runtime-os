@@ -8,7 +8,6 @@ import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
@@ -19,7 +18,6 @@ import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.UUID
 
 @Component(service = [ConfigurationReadService::class])
 class ConfigurationReadServiceImpl @Activate constructor(
@@ -33,15 +31,8 @@ class ConfigurationReadServiceImpl @Activate constructor(
         private val logger = contextLogger()
     }
 
-    // YIFT: Need a solution for more than one configuration in the same machine?!
     private val lifecycleCoordinator =
-        lifecycleCoordinatorFactory.createCoordinator(
-            LifecycleCoordinatorName(
-                ConfigurationReadService::class.java.canonicalName,
-                UUID.randomUUID().toString(),
-            ),
-            ::eventHandler
-        )
+        lifecycleCoordinatorFactory.createCoordinator<ConfigurationReadService>(::eventHandler)
 
     private var bootstrapConfig: Config? = null
 
