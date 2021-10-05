@@ -178,8 +178,8 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                     ResponseStatus.CANCELLED -> {
                         future.cancel(true)
                     }
-
                 }
+                futureMap.remove(correlationKey)
             } else {
                 log.info(
                     "Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}. " +

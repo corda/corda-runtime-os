@@ -1,7 +1,7 @@
 package net.corda.messaging.kafka.integration.processors
 
-import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import java.lang.Exception
 import java.util.concurrent.CompletableFuture
 
 class TestRPCResponderProcessor : RPCResponderProcessor<String, String> {
@@ -12,7 +12,7 @@ class TestRPCResponderProcessor : RPCResponderProcessor<String, String> {
 
 class TestRPCErrorResponderProcessor: RPCResponderProcessor<String, String> {
     override fun onNext(request: String, respFuture: CompletableFuture<String>) {
-        respFuture.completeExceptionally(CordaRPCAPIResponderException("Responder exception"))
+        respFuture.completeExceptionally(ArbitraryException("Responder exception"))
     }
 }
 
@@ -21,3 +21,5 @@ class TestRPCCancelResponderProcessor: RPCResponderProcessor<String, String> {
         respFuture.cancel(true)
     }
 }
+
+private class ArbitraryException(message: String?, exception: Exception? = null): Exception(message, exception)
