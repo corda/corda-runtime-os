@@ -20,8 +20,8 @@ import kotlin.concurrent.thread
  *      }.runAndValidate()
  */
 class ConcurrentTests(
-    private val startTimeoutMilliseconds: Long = 20_000,
-    private val joinTimeoutMilliseconds: Long = 5_000
+    private val joinTimeoutMilliseconds: Long = 25_000,
+    private val startTimeoutMilliseconds: Long = 5_000,
 ) {
     private val latch = CountDownLatch(1)
     private val exceptions = ConcurrentHashMap<Throwable, Unit>()
@@ -66,8 +66,8 @@ fun <S> Iterable<S>.createTestCase(block: (state: S) -> Unit): ConcurrentTests {
 }
 
 fun <S> Iterable<S>.createTestCase(
-    startTimeoutMilliseconds: Long,
-    joinTimeoutMilliseconds: Long = 5_000,
+    joinTimeoutMilliseconds: Long,
+    startTimeoutMilliseconds: Long = 5_000,
     block: (state: S) -> Unit
 ): ConcurrentTests {
     val tests = ConcurrentTests(startTimeoutMilliseconds, joinTimeoutMilliseconds)
