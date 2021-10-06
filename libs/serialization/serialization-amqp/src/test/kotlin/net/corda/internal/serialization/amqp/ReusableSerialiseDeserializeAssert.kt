@@ -6,7 +6,6 @@ import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.v5.serialization.SerializationContext
-import java.io.File
 import kotlin.test.assertEquals
 
 class ReusableSerialiseDeserializeAssert {
@@ -17,7 +16,6 @@ class ReusableSerialiseDeserializeAssert {
         inline fun <reified T : Any> serializeDeserialize(instance: T, withFactory: SerializerFactory = factory): T {
             // Serialize
             val bytes = SerializationOutput(withFactory).serialize(instance)
-            File("/Users/josephzuniga-daly/Documents/git/corda-cpp-amqp/bin/blob-inspector/a").writeBytes(bytes.bytes)
 
             // Deserialize
             val deserialized = DeserializationInput(withFactory).deserialize(bytes)
