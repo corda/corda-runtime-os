@@ -3,14 +3,8 @@ package net.corda.p2p.linkmanager.sessions
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
-import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.AuthenticatedMessageAndKey
-import net.corda.p2p.HeartbeatMessage
 import net.corda.p2p.LinkInMessage
-import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.crypto.CommonHeader
@@ -22,9 +16,10 @@ import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
 import net.corda.p2p.crypto.protocol.ProtocolConstants
-import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
+import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
@@ -36,35 +31,32 @@ import net.corda.p2p.linkmanager.LinkManagerConfig
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
-import org.junit.jupiter.api.Assertions.assertEquals
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.extractPayload
-import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.mockito.kotlin.anyOrNull
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.time.Instant
-import java.security.Signature
-import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -86,9 +78,13 @@ class SessionManagerTest {
             longPeriodSec,
             longPeriodSec
         )
-        private val provider = BouncyCastleProvider()
-        private val signature = Signature.getInstance(ECDSA_SIGNATURE_ALGO, provider)
-
+        private val configWithHeartbeat = LinkManagerConfig(
+            MAX_MESSAGE_SIZE,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            longPeriodSec,
+            1,
+            10
+        )
         val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
         val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
@@ -110,8 +106,14 @@ class SessionManagerTest {
         }
     }
 
+    @BeforeEach
+    fun startSessionManager() {
+        sessionManager.start()
+    }
+
     @AfterEach
     fun resetLogging() {
+        sessionManager.stop()
         loggingInterceptor.reset()
     }
 
@@ -133,10 +135,12 @@ class SessionManagerTest {
         on { createInitiator(any(), any(), any(), any(), any()) } doReturn protocolInitiator
         on { createResponder(any(), any(), any()) } doReturn protocolResponder
     }
-    private val publisherFactory = mock<PublisherFactory>()
-    private val config = LinkManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), 10000L, 10000L, 10000L)
+    private val publisher = mock<Publisher>()
+    private val publisherFactory = mock<PublisherFactory> {
+        on {createPublisher(any(), any())} doReturn publisher
+    }
     private val sessionManager = SessionManagerImpl(
-        config,
+        configNoHeartbeat,
         networkMap,
         cryptoService,
         pendingSessionMessageQueues,
@@ -166,6 +170,28 @@ class SessionManagerTest {
         ),
         KEY
     )
+    private val authenticatedSession = mock<AuthenticatedSession> {
+        on { createMac(any()) } doReturn AuthenticationResult(Mockito.mock(CommonHeader::class.java), RANDOM_BYTES.array())
+    }
+
+    class CallbackPublisher(private val callback: (() -> Any)? = null, private var throwFirst: Boolean = false): Publisher {
+
+        override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
+            fail("This should not be called in this test.")
+        }
+
+        @Suppress("TooGenericExceptionThrown")
+        override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
+            if (throwFirst) {
+                throwFirst = false
+                throw RuntimeException("Ohh No something went wrong.")
+            }
+            callback?.let{ it() }
+            return listOf(CompletableFuture.completedFuture(Unit))
+        }
+
+        override fun close() {}
+    }
 
     @Test
     fun `when no session exists, processing outbound message creates a new session`() {
@@ -174,8 +200,17 @@ class SessionManagerTest {
 
         val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
         assertThat(sessionState.sessionInitMessage.payload).isEqualTo(initiatorHello)
-        val replayedMessage = InMemorySessionReplayer.SessionMessageReplay(initiatorHello, any(), OUR_PARTY, PEER_PARTY, any())
-        verify(sessionReplayer).addMessageForReplay("${sessionState.sessionId}_${initiatorHello::class.java.simpleName}", replayedMessage)
+
+        argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
+            verify(sessionReplayer).addMessageForReplay(
+                any(),
+                this.capture()
+            )
+            assertThat(this.allValues.size).isEqualTo(1)
+            assertThat(this.firstValue.source).isEqualTo(OUR_PARTY)
+            assertThat(this.firstValue.dest).isEqualTo(PEER_PARTY)
+            assertThat(this.firstValue.message).isEqualTo(initiatorHello)
+        }
     }
 
     @Test
@@ -208,21 +243,30 @@ class SessionManagerTest {
 
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
-        verify(sessionReplayer).addMessageForReplay(
-            any(),
-            eq(InMemorySessionReplayer.SessionMessageReplay(initiatorHello, any(), OUR_PARTY, PEER_PARTY, any()))
-        )
+
+        argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
+            verify(sessionReplayer).addMessageForReplay(
+                any(),
+                this.capture()
+            )
+            assertThat(this.allValues.size).isEqualTo(1)
+            assertThat(this.firstValue.source).isEqualTo(OUR_PARTY)
+            assertThat(this.firstValue.dest).isEqualTo(PEER_PARTY)
+            assertThat(this.firstValue.message).isEqualTo(initiatorHello)
+        }
+
         loggingInterceptor.assertSingleWarning("Attempted to start session negotiation with peer $PEER_PARTY " +
                 "which is not in the network map. The sessionInit message was not sent.")
     }
 
     @Test
     fun `when messages already queued for a peer, there is already a pending session`() {
-        //TODO: Check this
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
         sessionManager.processOutboundMessage(message)
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
-        verify(pendingSessionMessageQueues).queueMessage(message, SessionManager.SessionKey(OUR_PARTY, PEER_PARTY))
+        verify(pendingSessionMessageQueues, times(2)).queueMessage(message, SessionManager.SessionKey(OUR_PARTY, PEER_PARTY))
     }
 
     @Test
@@ -328,9 +372,16 @@ class SessionManagerTest {
 
         assertThat(responseMessage!!.payload).isEqualTo(initiatorHandshakeMsg)
         verify(sessionReplayer).removeMessageFromReplay("${sessionState.sessionId}_${InitiatorHelloMessage::class.java.simpleName}")
-        val replayedMessage = InMemorySessionReplayer.SessionMessageReplay(initiatorHandshakeMsg, any(), OUR_PARTY, PEER_PARTY, any())
-        verify(sessionReplayer)
-            .addMessageForReplay("${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}", replayedMessage)
+        argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
+            verify(sessionReplayer).addMessageForReplay(
+                eq("${sessionState.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}"),
+                this.capture()
+            )
+            assertThat(this.allValues.size).isEqualTo(1)
+            assertThat(this.firstValue.source).isEqualTo(OUR_PARTY)
+            assertThat(this.firstValue.dest).isEqualTo(PEER_PARTY)
+            assertThat(this.firstValue.message).isEqualTo(initiatorHandshakeMsg)
+        }
     }
 
     @Test
@@ -672,187 +723,108 @@ class SessionManagerTest {
         loggingInterceptor.assertSingleWarningContains("The message was discarded.")
     }
 
-    class ThrowingPublisher(val latch: CountDownLatch): Publisher {
-        var firstPublish = true
-
-        override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-            fail("This should not be called in this test.")
-        }
-
-        @Suppress("TooGenericExceptionThrown")
-        override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-            if (firstPublish) {
-                firstPublish = false
-                throw RuntimeException("Ohh No something went wrong.")
-            }
-            latch.countDown()
-            return listOf(CompletableFuture.completedFuture(Unit))
-        }
-
-        override fun close() {}
-    }
-
     @Test
-    fun `The session manager sends heartbeats once a session is negotiated the session eventually times out`() {
-        val messageId = "messageId"
-        val heartbeatsBeforeTimeout = 5L
-        val heartbeatPeriod = 1L
-        val heartbeatManagerTimeout = (heartbeatsBeforeTimeout + 1) * heartbeatPeriod
-
-        val interceptingProcessor = InterceptingProcessor()
-        val subscriptionConfig = SubscriptionConfig("testGroup", LINK_OUT_TOPIC, 1)
-        val topicService = TopicServiceImpl()
-        val subscriptionFactory = InMemSubscriptionFactory(topicService)
-        val subscription = subscriptionFactory.createEventLogSubscription(
-            subscriptionConfig,
-            interceptingProcessor,
-            partitionAssignmentListener = null
+    fun `when a data message is sent, heartbeats are sent, if these are not acknowledged the session times out`() {
+        val publisher = CallbackPublisher()
+        whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(publisher)
+        val sessionManager = SessionManagerImpl(
+            configWithHeartbeat,
+            networkMap,
+            cryptoService,
+            pendingSessionMessageQueues,
+            publisherFactory,
+            protocolFactory,
+            sessionReplayer
         )
-        subscription.start()
+        sessionManager.start()
 
-        val sessionManager = sessionManager(
-            OUTBOUND_PARTY,
-            publisherFactory = CordaPublisherFactory(topicService),
-            heartbeatPeriod = heartbeatPeriod,
-            sessionTimeout = heartbeatManagerTimeout
-        )
-        val message = AuthenticatedMessageAndKey(
-            AuthenticatedMessage(
-                AuthenticatedMessageHeader(
-                    INBOUND_PARTY.toHoldingIdentity(),
-                    OUTBOUND_PARTY.toHoldingIdentity(),
-                    null,
-                    messageId,
-                    "",
-                    "system-1"
-                ),
-                payload
-            ),
-            KEY
-        )
-        val inboundSession = negotiateOutboundSession(message, sessionManager)
-        val state = sessionManager.processOutboundFlowMessage(message)
-        assertTrue(state is SessionManager.SessionState.SessionEstablished)
-        val outboundSession = (state as SessionManager.SessionState.SessionEstablished).session
-        sessionManager.dataMessageSent(message, outboundSession)
-        Thread.sleep(2 * heartbeatManagerTimeout * 1000)
-        assertTrue(sessionManager.processOutboundFlowMessage(message) is NewSessionNeeded)
-        assertEquals(heartbeatsBeforeTimeout.toInt(), interceptingProcessor.messages.size)
-        subscription.stop()
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
 
-        for (processorMessage in interceptingProcessor.messages) {
-            assertNotNull(processorMessage)
-            val decryptedMessage = extractPayload(inboundSession, processorMessage!!)
-            assertTrue(decryptedMessage is HeartbeatMessage)
-        }
+        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        val session = mock<Session>()
+        whenever(protocolInitiator.getSession()).thenReturn(session)
+        sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
+
+        assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
+        sessionManager.dataMessageSent(message, authenticatedSession)
+        Thread.sleep(2 * configWithHeartbeat.sessionTimeoutSecs * 1000)
+
+        assertTrue(sessionManager.processOutboundMessage(message) is NewSessionNeeded)
+
         sessionManager.stop()
     }
 
     @Test
-    fun `The session manager sends heartbeats once a session is negotiated we acknowledge these`() {
-        val messageId = "messageId"
-        val heartbeatsBeforeTimeout = 5L
-        val heartbeatPeriod = 1L
-        val heartbeatManagerTimeout = (heartbeatsBeforeTimeout + 1) * heartbeatPeriod
+    fun `when a data message is sent, heartbeats are sent, if these are acknowledged the session does not time out`() {
+        val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeoutSecs / configWithHeartbeat.heartbeatMessagePeriodSecs - 1
+        val publishLatch = CountDownLatch(heartbeatsBeforeTimeout.toInt() - 1)
 
-        val subscriptionConfig = SubscriptionConfig("testGroup", LINK_OUT_TOPIC, 1)
-        val topicService = TopicServiceImpl()
-        val subscriptionFactory = InMemSubscriptionFactory(topicService)
-
-        val sessionManager = sessionManager(
-            OUTBOUND_PARTY,
-            publisherFactory = CordaPublisherFactory(topicService),
-            heartbeatPeriod = heartbeatPeriod,
-            sessionTimeout = heartbeatManagerTimeout
-        )
-        val message = AuthenticatedMessageAndKey(
-            AuthenticatedMessage(
-                AuthenticatedMessageHeader(
-                    INBOUND_PARTY.toHoldingIdentity(),
-                    OUTBOUND_PARTY.toHoldingIdentity(),
-                    null,
-                    messageId,
-                    "",
-                    "system-1"
-                ),
-                payload
-            ),
-            KEY
-        )
-        val inboundSession = negotiateOutboundSession(message, sessionManager)
-        val state = sessionManager.processOutboundFlowMessage(message)
-        assertTrue(state is SessionManager.SessionState.SessionEstablished)
-        val outboundSession = (state as SessionManager.SessionState.SessionEstablished).session
-
-        fun processorCallback(message: LinkOutMessage?) {
-            val decryptedMessage = extractPayload(inboundSession, message!!)
-            assertTrue(decryptedMessage is HeartbeatMessage)
-            sessionManager.messageAcknowledged(SessionManager.SessionKey(OUTBOUND_PARTY, INBOUND_PARTY))
+        fun callback() {
+            sessionManager.messageAcknowledged(SessionManager.SessionKey(OUR_PARTY, PEER_PARTY))
+            publishLatch.countDown()
         }
 
-        val interceptingProcessor = InterceptingProcessor(::processorCallback)
-        val subscription = subscriptionFactory.createEventLogSubscription(
-            subscriptionConfig,
-            interceptingProcessor,
-            partitionAssignmentListener = null
+        //First time we throw an exception so nothing gets published.
+        val publisher = CallbackPublisher(::callback)
+        whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(publisher)
+        val sessionManager = SessionManagerImpl(
+            configWithHeartbeat,
+            networkMap,
+            cryptoService,
+            pendingSessionMessageQueues,
+            publisherFactory,
+            protocolFactory,
+            sessionReplayer
         )
-        subscription.start()
+        sessionManager.start()
 
-        sessionManager.dataMessageSent(message, outboundSession)
-        Thread.sleep(2 * heartbeatManagerTimeout * 1000)
-        assertTrue(sessionManager.processOutboundFlowMessage(message) is SessionManager.SessionState.SessionEstablished)
-        assertTrue(interceptingProcessor.messages.size >= heartbeatsBeforeTimeout.toInt())
-        subscription.stop()
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
 
-        for (processorMessage in interceptingProcessor.messages) {
-            assertNotNull(processorMessage)
-            val decryptedMessage = extractPayload(inboundSession, processorMessage!!)
-            assertTrue(decryptedMessage is HeartbeatMessage)
-        }
+        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        val session = mock<Session>()
+        whenever(protocolInitiator.getSession()).thenReturn(session)
+        sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
+
+        assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
+        sessionManager.dataMessageSent(message, authenticatedSession)
+        assertTrue(publishLatch.await(2 * configWithHeartbeat.sessionTimeoutSecs, TimeUnit.SECONDS))
+
+        assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
+
         sessionManager.stop()
     }
 
     @Test
-    fun `If an exception is thrown when sending a heartbeat the task is rescheduled again`() {
-        val messageId = "messageId"
-        val heartbeatsBeforeTimeout = 5L
-        val heartbeatPeriod = 1L
-        val heartbeatManagerTimeout = (heartbeatsBeforeTimeout + 1) * heartbeatPeriod
-
-        val mockPublisherFactory = Mockito.mock(PublisherFactory::class.java)
+    fun `when sending a heartbeat, if an exception is thrown, the heartbeat is resent`() {
+        val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeoutSecs / configWithHeartbeat.heartbeatMessagePeriodSecs - 1
         //First time we throw an exception so nothing gets published.
         val publishLatch = CountDownLatch(heartbeatsBeforeTimeout.toInt() - 1)
-        val throwingPublisher = ThrowingPublisher(publishLatch)
-
-        Mockito.`when`(mockPublisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(throwingPublisher)
-
-        val sessionManager = sessionManager(
-            OUTBOUND_PARTY,
-            publisherFactory = mockPublisherFactory,
-            heartbeatPeriod = heartbeatPeriod,
-            sessionTimeout = heartbeatManagerTimeout
+        val throwingPublisher = CallbackPublisher({ publishLatch.countDown() }, true)
+        whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(throwingPublisher)
+        val sessionManager = SessionManagerImpl(
+            configWithHeartbeat,
+            networkMap,
+            cryptoService,
+            pendingSessionMessageQueues,
+            publisherFactory,
+            protocolFactory,
+            sessionReplayer
         )
-        val message = AuthenticatedMessageAndKey(
-            AuthenticatedMessage(
-                AuthenticatedMessageHeader(
-                    INBOUND_PARTY.toHoldingIdentity(),
-                    OUTBOUND_PARTY.toHoldingIdentity(),
-                    null,
-                    messageId,
-                    "",
-                    "system-1"
-                ),
-                payload
-            ),
-            KEY
-        )
-        negotiateOutboundSession(message, sessionManager)
-        val state = sessionManager.processOutboundFlowMessage(message)
-        assertTrue(state is SessionManager.SessionState.SessionEstablished)
-        val outboundSession = (state as SessionManager.SessionState.SessionEstablished).session
-        sessionManager.dataMessageSent(message, outboundSession)
+        sessionManager.start()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        sessionManager.processOutboundMessage(message)
 
-        assertTrue(publishLatch.await(2 * heartbeatManagerTimeout, TimeUnit.SECONDS))
+        sessionManager.dataMessageSent(message, authenticatedSession)
+
+        assertTrue(publishLatch.await(2 * configWithHeartbeat.sessionTimeoutSecs, TimeUnit.SECONDS))
         loggingInterceptor.assertErrorContains("An exception was thrown when sending a heartbeat message.")
         sessionManager.stop()
     }

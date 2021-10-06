@@ -48,8 +48,9 @@ class LoggingInterceptor private constructor(private val testAppender: TestAppen
     }
 
     fun assertSingleWarningContains(expectedMessagePart: String) {
-        assertEquals(Level.WARN, testAppender.levels.single())
-        assertThat(testAppender.messages.single()).contains(expectedMessagePart)
+        val warnings = testAppender.messages.filter { it.level == Level.WARN }
+        assertEquals(1, warnings.size)
+        assertThat(warnings.single().message).contains(expectedMessagePart)
     }
 
     fun assertSingleError(expectedMessage: String) {
@@ -61,7 +62,6 @@ class LoggingInterceptor private constructor(private val testAppender: TestAppen
     fun assertErrorContains(message: String) {
         val errors = testAppender.messages.filter { it.level == Level.ERROR }
         assertEquals(1, errors.size)
-        println("Str = ${errors.single().message}")
         assertThat(errors.single().message).contains(message)
     }
 

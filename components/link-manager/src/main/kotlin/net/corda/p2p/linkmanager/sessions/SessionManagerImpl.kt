@@ -609,12 +609,17 @@ open class SessionManagerImpl(
             session: Session,
         ) {
             val heartbeatMessage = HeartbeatMessage()
+            val message = MessageConverter.linkOutMessageFromHeartbeat(source, dest, heartbeatMessage, session, networkMap)
+            if (message == null) {
+                logger.warn("Failed to send a Heartbeat between $source and $dest.")
+                return
+            }
             val future = publisher.publish(
                 listOf(
                     Record(
                         Schema.LINK_OUT_TOPIC,
                         UUID.randomUUID().toString(),
-                        MessageConverter.linkOutMessageFromHeartbeat(source, dest, heartbeatMessage, session, networkMap)
+                        message
                     )
                 )
             )

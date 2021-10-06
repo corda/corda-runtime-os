@@ -15,7 +15,7 @@ class MockSessionManager: SessionManager {
     data class MessageInfo(val key: SessionManager.SessionKey,
                            val session: Session)
 
-    override fun processOutboundFlowMessage(message: AuthenticatedMessageAndKey): SessionManager.SessionState {
+    override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionManager.SessionState {
         TODO("Not yet implemented")
     }
 

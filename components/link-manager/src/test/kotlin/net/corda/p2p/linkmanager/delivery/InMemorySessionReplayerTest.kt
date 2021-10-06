@@ -100,7 +100,7 @@ class InMemorySessionReplayerTest {
                 fail("createRPCSender should not be used in this test.")
             }
         }
-        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, netMap) {_,_ ->}
+        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, netMap)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -111,7 +111,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         replayer.start()
-        replayer.addMessageForReplay(id, SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY, US, id))
+        replayer.addMessageForReplay(id, InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) {_, _ ->} )
 
         publisher.testWaitLatch.await()
         assertEquals(totalReplays, publisher.list.size)
@@ -178,7 +178,7 @@ class InMemorySessionReplayerTest {
                 fail("createRPCSender should not be used in this test.")
             }
         }
-        val replayer = InMemorySessionReplayer(Duration.ofMillis(50), publisherFactory, netMap) {_,_ ->}
+        val replayer = InMemorySessionReplayer(Duration.ofMillis(50), publisherFactory, netMap)
         val firstId = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             firstId,
@@ -201,11 +201,11 @@ class InMemorySessionReplayerTest {
 
         replayer.addMessageForReplay(
             firstId,
-            SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY, US, firstId)
+            InMemorySessionReplayer.SessionMessageReplay(helloMessage, firstId, US, COUNTER_PARTY) {_, _ ->}
         )
         replayer.addMessageForReplay(
             secondId,
-            SessionReplayer.SessionMessageReplay(secondHelloMessage, COUNTER_PARTY, US, secondId)
+            InMemorySessionReplayer.SessionMessageReplay(secondHelloMessage, secondId, US, COUNTER_PARTY) {_, _ ->}
         )
 
         publisher.testWaitLatch.await()
@@ -252,7 +252,7 @@ class InMemorySessionReplayerTest {
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(null).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(mockNetworkMap.getMemberInfo(COUNTER_PARTY)).thenReturn(netMap.getMemberInfo(COUNTER_PARTY))
 
-        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap) {_,_ ->}
+        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -263,7 +263,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         replayer.start()
-        replayer.addMessageForReplay(id, SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY, US, id))
+        replayer.addMessageForReplay(id, InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) {_, _ ->})
         publisher.testWaitLatch.await()
         assertEquals(1, publisher.list.size)
         val record = publisher.list.single()
@@ -299,7 +299,7 @@ class InMemorySessionReplayerTest {
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(mockNetworkMap.getMemberInfo(COUNTER_PARTY)).thenReturn(null).thenReturn(netMap.getMemberInfo(COUNTER_PARTY))
 
-        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap) {_,_ ->}
+        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -310,7 +310,7 @@ class InMemorySessionReplayerTest {
             ).generateInitiatorHello()
 
         replayer.start()
-        replayer.addMessageForReplay(id,  SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY, US, id))
+        replayer.addMessageForReplay(id, InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) {_,_ ->})
         publisher.testWaitLatch.await()
         assertEquals(1, publisher.list.size)
         val record = publisher.list.single()
@@ -348,9 +348,12 @@ class InMemorySessionReplayerTest {
             KEY_PAIR.public,
             GROUP_ID
         ).generateInitiatorHello()
-        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap) {_,_ ->}
+        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap)
         assertThrows<IllegalStateException> {
-            replayer.addMessageForReplay("",  SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY, US, ""))
+            replayer.addMessageForReplay(
+                "",
+                InMemorySessionReplayer.SessionMessageReplay(helloMessage, "", US, COUNTER_PARTY) {_, _->}
+            )
         }
     }
 }
