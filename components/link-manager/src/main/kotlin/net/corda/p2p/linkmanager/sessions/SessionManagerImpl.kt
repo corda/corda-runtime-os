@@ -81,7 +81,7 @@ open class SessionManagerImpl(
 
     private val pendingOutboundSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
     private val pendingOutboundSessionKeys = ConcurrentHashMap.newKeySet<SessionKey>()
-    private val activeOutboundSessions = ConcurrentHashMap<SessionKey, Pair<String, Session>>()
+    private val activeOutboundSessions = ConcurrentHashMap<SessionKey, Session>()
     private val activeOutboundSessionsById = ConcurrentHashMap<String, Pair<SessionKey, Session>>()
 
     private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
@@ -126,7 +126,7 @@ open class SessionManagerImpl(
         sessionNegotiationLock.read {
             val key = getSessionKeyFromMessage(message.message)
 
-            val activeSession = activeOutboundSessions[key]?.second
+            val activeSession = activeOutboundSessions[key]
             if (activeSession != null) {
                 return SessionState.SessionEstablished(activeSession)
             }
@@ -343,7 +343,7 @@ open class SessionManagerImpl(
         sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId)
         heartbeatManager.messageAcknowledged(sessionInfo)
         sessionNegotiationLock.write {
-            activeOutboundSessions[sessionInfo] = message.header.sessionId to authenticatedSession
+            activeOutboundSessions[sessionInfo] = authenticatedSession
             activeOutboundSessionsById[message.header.sessionId] = Pair(sessionInfo, authenticatedSession)
             pendingOutboundSessions.remove(message.header.sessionId)
             pendingOutboundSessionKeys.remove(sessionInfo)
