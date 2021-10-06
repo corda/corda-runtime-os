@@ -13,7 +13,7 @@ import java.io.NotSerializableException
 import java.lang.reflect.Type
 
 /**
- * Thrown when a [CustomSerializer] offers to serialize a type for which custom serialization is not permitted, because
+ * Thrown when a [SerializationCustomSerializer] offers to serialize a type for which custom serialization is not permitted, because
  * it should be handled by standard serialisation methods (or not serialised at all) and there is no valid use case for
  * a custom method.
  */
@@ -22,7 +22,7 @@ class IllegalCustomSerializerException(customSerializer: AMQPSerializer<*>, claz
                 "to serialize non-custom-serializable type $clazz")
 
 /**
- * Thrown when more than one [CustomSerializer] offers to serialize the same type, which may indicate a malicious attempt
+ * Thrown when more than one [SerializationCustomSerializer] offers to serialize the same type, which may indicate a malicious attempt
  * to override already-defined behaviour.
  */
 class DuplicateCustomSerializerException(serializers: List<AMQPSerializer<*>>, clazz: Class<*>) :
@@ -40,14 +40,12 @@ interface CustomSerializerRegistry {
      * Register a custom serializer for any type that cannot be serialized or deserialized by the default serializer
      * that expects to find getters and a constructor with a parameter for each property.
      */
-    fun register(customSerializer: CustomSerializer<out Any>)
     fun register(
         customSerializer: SerializationCustomSerializer<*, *>,
         withInheritance: Boolean,
         revealSubclassesInSchema: Boolean = false,
         factory: SerializerFactory
     )
-    fun registerExternal(customSerializer: CorDappCustomSerializer)
     fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory)
 
     /**
@@ -103,11 +101,6 @@ class CachingCustomSerializerRegistry(
      * Register a custom serializer for any type that cannot be serialized or deserialized by the default serializer
      * that expects to find getters and a constructor with a parameter for each property.
      */
-    override fun register(customSerializer: CustomSerializer<out Any>) {
-        logger.trace { "action=\"Registering custom serializer\", class=\"${customSerializer.type}\"" }
-        storeCustomSerializer(customSerializer)
-    }
-
     override fun register(
         customSerializer: SerializationCustomSerializer<*, *>,
         withInheritance: Boolean,
@@ -119,13 +112,10 @@ class CachingCustomSerializerRegistry(
         storeCustomSerializer(serializer)
     }
 
-    override fun registerExternal(customSerializer: CorDappCustomSerializer) {
-        logger.trace { "action=\"Registering external serializer\", class=\"${customSerializer.type}\"" }
-        storeCustomSerializer(customSerializer)
-    }
-
     override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {
-        registerExternal(CorDappCustomSerializer(customSerializer, false, factory = factory))
+        val serializer = CorDappCustomSerializer(customSerializer, false, factory = factory)
+        logger.trace { "action=\"Registering external serializer\", class=\"${serializer.type}\"" }
+        storeCustomSerializer(serializer)
     }
 
     private fun storeCustomSerializer(customSerializer: AMQPSerializer<Any>) {
@@ -194,13 +184,7 @@ class CachingCustomSerializerRegistry(
             throw IllegalCustomSerializerException(declaredSerializers.first(), clazz)
         }
 
-        return declaredSerializers.first().let {
-            if (it is CustomSerializer<Any>) {
-                it.specialiseFor(declaredType)
-            } else {
-                it
-            }
-        }
+        return declaredSerializers.first()
     }
 
     private val Class<*>.isCustomSerializationForbidden: Boolean get() = when {

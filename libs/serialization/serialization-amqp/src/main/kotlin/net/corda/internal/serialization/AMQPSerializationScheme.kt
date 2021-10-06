@@ -3,8 +3,6 @@
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.AccessOrderLinkedHashMap
-import net.corda.internal.serialization.amqp.CorDappCustomSerializer
-import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
@@ -45,10 +43,8 @@ import net.corda.utilities.toSynchronised
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.ByteSequence
-import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.serialization.ClassWhitelist
-import net.corda.v5.serialization.ContextPropertyKeys
 import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializationWhitelist
@@ -76,13 +72,19 @@ fun SerializerFactory.addToWhitelist(types: Collection<Class<*>>) {
     }
 }
 
+data class InternalCustomSerializerRegistrationData(
+    val customSerializer: SerializationCustomSerializer<*, *>,
+    val withInheritance: Boolean,
+    val revealSubclassesInSchema: Boolean = false
+)
+
 abstract class AbstractAMQPSerializationScheme private constructor(
         private val cordappCustomSerializers: Set<SerializationCustomSerializer<*, *>>,
         private val cordappSerializationWhitelists: Set<SerializationWhitelist>,
         maybeNotConcurrentSerializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory>,
         cipherSchemeMetadata: CipherSchemeMetadata,
         val sff: SerializerFactoryFactory = createSerializerFactoryFactory(),
-        internalCustomSerializerFactories: Set<(factory: SerializerFactory) -> CustomSerializer<out Any>> = emptySet()
+        internalCustomSerializerFactories: Set<(factory: SerializerFactory) -> InternalCustomSerializerRegistrationData> = emptySet()
 ) : SerializationScheme {
     constructor(cipherSchemeMetadata: CipherSchemeMetadata) : this(
         emptySet<SerializationCustomSerializer<*, *>>(),
@@ -91,8 +93,8 @@ abstract class AbstractAMQPSerializationScheme private constructor(
         cipherSchemeMetadata
     )
 
-    private val _internalCustomSerializerFactories: MutableSet<(factory: SerializerFactory) -> CustomSerializer<out Any>> = mutableSetOf()
-    val internalCustomSerializerFactories: Set<(factory: SerializerFactory) -> CustomSerializer<out Any>> = _internalCustomSerializerFactories
+    private val _internalCustomSerializerFactories: MutableSet<(factory: SerializerFactory) -> InternalCustomSerializerRegistrationData> = mutableSetOf()
+    private val internalCustomSerializerFactories: Set<(factory: SerializerFactory) -> InternalCustomSerializerRegistrationData> = _internalCustomSerializerFactories
 
     init {
         internalCustomSerializerFactories.forEach {
@@ -100,7 +102,7 @@ abstract class AbstractAMQPSerializationScheme private constructor(
         }
     }
 
-    fun registerInternalCustomSerializerFactory(factory: (factory: SerializerFactory) -> CustomSerializer<out Any>) {
+    private fun registerInternalCustomSerializerFactory(factory: (factory: SerializerFactory) -> InternalCustomSerializerRegistrationData) {
         _internalCustomSerializerFactories += factory
     }
 
@@ -125,20 +127,19 @@ abstract class AbstractAMQPSerializationScheme private constructor(
         registerCustomSerializers(factory)
 
         internalCustomSerializerFactories.forEach{
-            factory.register(it(factory))
+            val registrationData = it(factory)
+            factory.register(
+                registrationData.customSerializer,
+                registrationData.withInheritance,
+                registrationData.revealSubclassesInSchema,
+                factory
+            )
         }
 
         val serializersToRegister = context.customSerializers ?: cordappCustomSerializers
         serializersToRegister.forEach { customSerializer ->
-            factory.registerExternal(CorDappCustomSerializer(customSerializer, factory = factory))
+            factory.registerExternal(customSerializer, factory)
         }
-
-        context.properties[ContextPropertyKeys.SERIALIZERS]?.apply {
-            uncheckedCast<Any, List<CustomSerializer<out Any>>>(this).forEach {
-                factory.register(it)
-            }
-        }
-
     }
 
     private fun registerCustomWhitelists(factory: SerializerFactory) {
@@ -192,7 +193,6 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(LocalDateTimeSerializer(), true, factory = this)
         register(LocalTimeSerializer(), true, factory = this)
         register(ZonedDateTimeSerializer(), true, factory = this)
-//        register(ZoneIdSerializer())
         register(ZoneIdSerializer(), true, true, factory = this)
         register(OffsetTimeSerializer(), true, factory = this)
         register(OffsetDateTimeSerializer(), true, factory = this)

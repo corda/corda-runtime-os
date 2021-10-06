@@ -14,13 +14,13 @@ import kotlin.reflect.jvm.jvmErasure
  * Index into the types list of the parent type of the serializer object, should be the
  * type that this object proxies for
  */
-const val CORDAPP_TYPE = 0
+private const val CORDAPP_TYPE = 0
 
 /**
  * Index into the types list of the parent type of the serializer object, should be the
  * type of the proxy object that we're using to represent the object we're proxying for
  */
-const val PROXY_TYPE = 1
+private const val PROXY_TYPE = 1
 
 /**
  * Wrapper class for user provided serializers
@@ -49,20 +49,9 @@ class CorDappCustomSerializer @JvmOverloads constructor(
     factory: SerializerFactory
 ) : AMQPSerializer<Any>, SerializerFor {
 
-    private val types = serializer::class.supertypes.filter { it.jvmErasure == SerializationCustomSerializer::class }
-            .flatMap { it.arguments }
-            .map { it.type!!.javaType }
-
-    init {
-        if (types.size != 2) {
-            throw AMQPNotSerializableException(
-                    CorDappCustomSerializer::class.java,
-                    "Unable to determine serializer parent types")
-        }
-    }
-
-    override val type = types[CORDAPP_TYPE]
-    val proxyType = types[PROXY_TYPE]
+    private val types = serializer.serializerTypes()
+    override val type = types.targetType
+    private val proxyType = types.proxyType
     override val typeDescriptor: Symbol = typeDescriptorFor(type)
     val descriptor: Descriptor = Descriptor(typeDescriptor)
     private val proxySerializer: ObjectSerializer by lazy {
@@ -113,3 +102,18 @@ class CorDappCustomSerializer @JvmOverloads constructor(
     override fun toString(): String = "${this::class.java}(${serializer::class.java})"
 }
 
+data class CustomSerializerTypes(val targetType: Type, val proxyType: Type)
+
+fun SerializationCustomSerializer<*, *>.serializerTypes(): CustomSerializerTypes {
+    val types = this::class.supertypes.filter { it.jvmErasure == SerializationCustomSerializer::class }
+        .flatMap { it.arguments }
+        .map { it.type!!.javaType }
+
+    if (types.size != 2) {
+        throw AMQPNotSerializableException(
+            CorDappCustomSerializer::class.java,
+            "Unable to determine serializer parent types")
+    }
+
+    return CustomSerializerTypes(types[CORDAPP_TYPE], types[PROXY_TYPE])
+}
