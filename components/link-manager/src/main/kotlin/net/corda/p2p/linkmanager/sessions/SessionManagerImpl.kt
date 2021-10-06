@@ -65,7 +65,7 @@ open class SessionManagerImpl(
         publisherFactory,
         networkMap,
     )
-    ): SessionManager {
+    ): SessionManager, Lifecycle {
 
     companion object {
         fun getSessionKeyFromMessage(message: AuthenticatedMessage): SessionKey {
@@ -174,7 +174,7 @@ open class SessionManagerImpl(
 
     override fun dataMessageSent(messageAndKey: AuthenticatedMessageAndKey, session: Session) {
         startStopLock.read {
-            heartbeatManager.messageSent(
+            heartbeatManager.dataMessageSent(
                 SessionKey(
                     messageAndKey.message.header.source.toHoldingIdentity(),
                     messageAndKey.message.header.destination.toHoldingIdentity()
@@ -530,7 +530,7 @@ open class SessionManagerImpl(
             }
         }
 
-        fun messageSent(key: SessionKey, session: Session) {
+        fun dataMessageSent(key: SessionKey, session: Session) {
             startStopLock.read {
                 if (!running) {
                     throw IllegalStateException("A message was sent before the HeartbeatManager was started.")
