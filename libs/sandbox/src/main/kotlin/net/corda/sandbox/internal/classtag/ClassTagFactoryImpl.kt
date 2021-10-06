@@ -38,13 +38,13 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
                 "CPK sandbox. A valid class tag cannot be constructed.")
 
         return if (isStaticClassTag) {
-            StaticTagImplV1(isPublicClass = false, bundleSymbolicName, sandbox.cpk.cpkHash)
+            StaticTagImplV1(isPublicClass = false, bundleSymbolicName, sandbox.cpk.metadata.hash)
         } else {
             EvolvableTagImplV1(
                 isPublicClass = false,
                 bundleSymbolicName,
                 sandbox.cordappBundle.symbolicName,
-                sandbox.cpk.id.signerSummaryHash
+                sandbox.cpk.metadata.id.signerSummaryHash
             )
         }.serialise()
     }

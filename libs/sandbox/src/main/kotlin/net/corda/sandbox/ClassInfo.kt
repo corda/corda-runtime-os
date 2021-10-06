@@ -30,6 +30,6 @@ data class CpkClassInfo(
     val cordappBundleName: String,
     val cordappBundleVersion: Version,
     val cpkFileHash: SecureHash,
-    val cpkSignerSummaryHash: SecureHash,
+    val cpkSignerSummaryHash: SecureHash?,
     val cpkDependencies: Set<SecureHash>
 ) : ClassInfo()

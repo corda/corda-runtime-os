@@ -38,5 +38,5 @@ abstract class EvolvableTag(
     isPublicClass: Boolean,
     classBundleName: String,
     val cordappBundleName: String,
-    val cpkSignerSummaryHash: SecureHash
+    val cpkSignerSummaryHash: SecureHash?
 ) : ClassTag(version, isPublicClass, classBundleName)
