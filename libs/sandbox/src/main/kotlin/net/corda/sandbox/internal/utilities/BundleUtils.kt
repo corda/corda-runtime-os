@@ -14,9 +14,7 @@ import java.security.PrivilegedExceptionAction
 
 /** Handles bundle operations for the `SandboxCreationService` and the `SandboxContextService`. */
 @Component(service = [BundleUtils::class])
-internal class BundleUtils @Activate constructor(
-    private val bundleContext: BundleContext
-) {
+internal class BundleUtils @Activate constructor(private val bundleContext: BundleContext) {
     /**
      * Installs the contents of the [uri] as a bundle, using the [location] provided.
      *

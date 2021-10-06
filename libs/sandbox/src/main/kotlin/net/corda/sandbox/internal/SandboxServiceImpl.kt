@@ -26,7 +26,6 @@ import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.runtime.ServiceComponentRuntime
 import java.net.URI
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
