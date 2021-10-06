@@ -18,6 +18,14 @@
       "name": "bytes",
       "type": "bytes",
       "doc": "The data to sign"
+    },
+    {
+      "name": "context",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.WireKeyValuePair"
+      },
+      "doc": "The optional key/value operation specific context"
     }
   ]
 }

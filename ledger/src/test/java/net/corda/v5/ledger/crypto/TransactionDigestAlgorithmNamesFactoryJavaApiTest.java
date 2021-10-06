@@ -35,7 +35,7 @@ public class TransactionDigestAlgorithmNamesFactoryJavaApiTest {
 
     @Test
     public void getMerkleTree() {
-        when(digestService.hash(any(), eq(digestAlgorithmName))).thenReturn(secureHash);
+        when(digestService.hash(any(byte[].class), eq(digestAlgorithmName))).thenReturn(secureHash);
         when(digestService.digestLength(SHA2_256)).thenReturn(1);
         MerkleTree result = transactionDigestAlgorithmNames.getMerkleTree(secureHashes, digestService);
 

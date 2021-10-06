@@ -1,5 +1,7 @@
 package net.corda.v5.cipher.suite
 
+import java.io.InputStream
+
 /**
  * Interface for injecting custom digest implementation bypassing JCA.
  */
@@ -20,4 +22,11 @@ interface DigestAlgorithm {
      * @param bytes The [ByteArray] to hash.
      */
     fun digest(bytes: ByteArray): ByteArray
+
+    /**
+     * Computes the digest of the [InputStream] bytes.
+     *
+     * @param inputStream The [InputStream] to hash.
+     */
+    fun digest(inputStream : InputStream): ByteArray
 }

@@ -13,6 +13,14 @@
         }
       ],
       "doc": "If provided then the key will be associated with that id"
+    },
+    {
+      "name": "context",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.WireKeyValuePair"
+      },
+      "doc": "The optional key/value operation specific context"
     }
   ]
 }

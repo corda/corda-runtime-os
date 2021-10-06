@@ -2,6 +2,7 @@ package net.corda.packaging.tests.legacy
 
 import net.corda.v5.cipher.suite.DigestAlgorithm
 import net.corda.v5.cipher.suite.DigestAlgorithmFactory
+import java.io.InputStream
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.Collections
@@ -23,6 +24,15 @@ sealed class DigestAlgorithmFactoryImpl : DigestAlgorithmFactory {
             DigestAlgorithm {
             override val digestLength = messageDigest.digestLength
             override fun digest(bytes: ByteArray): ByteArray = messageDigest.digest(bytes)
+            override fun digest(inputStream: InputStream): ByteArray {
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while(true) {
+                    val read = inputStream.read(buffer)
+                    if(read <= 0) break
+                    messageDigest.update(buffer, 0, read)
+                }
+                return  messageDigest.digest()
+            }
         }
     }
 

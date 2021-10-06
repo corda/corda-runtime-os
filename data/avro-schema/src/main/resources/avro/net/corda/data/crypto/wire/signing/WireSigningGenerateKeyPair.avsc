@@ -8,6 +8,14 @@
       "name": "alias",
       "type": "string",
       "doc": "Alias to be associated with the key pair"
+    },
+    {
+      "name": "context",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.WireKeyValuePair"
+      },
+      "doc": "The optional key/value operation specific context"
     }
   ]
 }
