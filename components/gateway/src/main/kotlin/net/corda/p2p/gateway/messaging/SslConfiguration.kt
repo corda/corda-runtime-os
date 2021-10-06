@@ -1,5 +1,7 @@
 package net.corda.p2p.gateway.messaging
 
+import com.typesafe.config.Config
+import net.corda.v5.base.util.base64ToByteArray
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 
@@ -72,4 +74,15 @@ data class SslConfiguration(
         result = 31 * result + revocationCheck.hashCode()
         return result
     }
+}
+
+internal fun Config.toSslConfiguration(): SslConfiguration {
+    val revocationCheckMode = this.getEnum(RevocationConfigMode::class.java, "revocationCheck.mode")
+    return SslConfiguration(
+        rawKeyStore = this.getString("keyStore").base64ToByteArray(),
+        keyStorePassword = this.getString("keyStorePassword"),
+        rawTrustStore = this.getString("trustStore").base64ToByteArray(),
+        trustStorePassword = this.getString("trustStorePassword"),
+        revocationCheck = RevocationConfig(revocationCheckMode)
+    )
 }

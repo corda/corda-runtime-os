@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging
 
+import com.typesafe.config.Config
 import java.time.Duration
 
 data class GatewayConfiguration(
@@ -48,3 +49,27 @@ data class ConnectionConfiguration(
 
     val retryDelay: Duration = Duration.ofSeconds(5)
 )
+
+internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
+    val connectionConfig = if (this.hasPath("connectionConfig")) {
+        this.getConfig("connectionConfig").toConnectionConfig()
+    } else {
+        ConnectionConfiguration()
+    }
+    return GatewayConfiguration(
+        hostAddress = this.getString("hostAddress"),
+        hostPort = this.getInt("hostPort"),
+        sslConfig = this.getConfig("sslConfig").toSslConfiguration(),
+        connectionConfig = connectionConfig,
+        traceLogging = this.getBoolean("traceLogging")
+    )
+}
+internal fun Config.toConnectionConfig(): ConnectionConfiguration {
+    return ConnectionConfiguration(
+        maxClientConnections = this.getLong("maxClientConnections"),
+        acquireTimeout = this.getDuration("acquireTimeout"),
+        connectionIdleTimeout = this.getDuration("connectionIdleTimeout"),
+        responseTimeout = this.getDuration("responseTimeout"),
+        retryDelay = this.getDuration("retryDelay"),
+    )
+}

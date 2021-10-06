@@ -4,19 +4,14 @@ import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.p2p.gateway.messaging.ConnectionConfiguration
-import net.corda.p2p.gateway.messaging.GatewayConfiguration
-import net.corda.p2p.gateway.messaging.RevocationConfig
-import net.corda.p2p.gateway.messaging.RevocationConfigMode
-import net.corda.p2p.gateway.messaging.SslConfiguration
-import net.corda.v5.base.util.base64ToByteArray
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-abstract class ConfigurationAwareTile(
+abstract class ConfigurationAwareTile<C>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
+    private val configFactory: (Config)->C
 ) :
     LeafTile(coordinatorFactory),
     ConfigurationHandler {
@@ -26,7 +21,7 @@ abstract class ConfigurationAwareTile(
         private val logger = contextLogger()
     }
 
-    private var configurationHolder = AtomicReference<GatewayConfiguration>()
+    private var configurationHolder = AtomicReference<C>()
 
     private val canReceiveConfigurations = AtomicBoolean(false)
     private val registration = configurationReaderService.registerForUpdates(this)
@@ -46,8 +41,8 @@ abstract class ConfigurationAwareTile(
     }
 
     private fun applyNewConfiguration(newConfiguration: Config) {
-        val configuration = toGatewayConfig(newConfiguration)
-        logger.info("Got for Gateway configuration ${configuration.hostAddress}:${configuration.hostPort}")
+        val configuration = configFactory(newConfiguration)
+        logger.info("Got configuration")
         val oldConfiguration = configurationHolder.getAndSet(configuration)
         if (oldConfiguration == configuration) {
             logger.info("Configuration had not changed")
@@ -65,42 +60,7 @@ abstract class ConfigurationAwareTile(
         }
     }
 
-    private fun toSslConfig(config: Config): SslConfiguration {
-        val revocationCheckMode = config.getEnum(RevocationConfigMode::class.java, "revocationCheck.mode")
-        return SslConfiguration(
-            rawKeyStore = config.getString("keyStore").base64ToByteArray(),
-            keyStorePassword = config.getString("keyStorePassword"),
-            rawTrustStore = config.getString("trustStore").base64ToByteArray(),
-            trustStorePassword = config.getString("trustStorePassword"),
-            revocationCheck = RevocationConfig(revocationCheckMode)
-        )
-    }
-    private fun toConnectionConfig(config: Config): ConnectionConfiguration {
-        return ConnectionConfiguration(
-            maxClientConnections = config.getLong("maxClientConnections"),
-            acquireTimeout = config.getDuration("acquireTimeout"),
-            connectionIdleTimeout = config.getDuration("connectionIdleTimeout"),
-            responseTimeout = config.getDuration("responseTimeout"),
-            retryDelay = config.getDuration("retryDelay"),
-        )
-    }
-
-    private fun toGatewayConfig(config: Config): GatewayConfiguration {
-        val connectionConfig = if (config.hasPath("connectionConfig")) {
-            toConnectionConfig(config.getConfig("connectionConfig"))
-        } else {
-            ConnectionConfiguration()
-        }
-        return GatewayConfiguration(
-            hostAddress = config.getString("hostAddress"),
-            hostPort = config.getInt("hostPort"),
-            sslConfig = toSslConfig(config.getConfig("sslConfig")),
-            connectionConfig = connectionConfig,
-            traceLogging = config.getBoolean("traceLogging")
-        )
-    }
-
-    abstract fun applyNewConfiguration(newConfiguration: GatewayConfiguration, oldConfiguration: GatewayConfiguration?)
+    abstract fun applyNewConfiguration(newConfiguration: C, oldConfiguration: C?)
 
     override fun createResources() {
         if (configurationHolder.get() != null) {

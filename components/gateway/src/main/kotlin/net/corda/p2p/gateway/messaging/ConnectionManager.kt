@@ -27,7 +27,11 @@ class ConnectionManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     private val listener: HttpEventListener,
-) : ConfigurationAwareTile(lifecycleCoordinatorFactory, configurationReaderService) {
+) : ConfigurationAwareTile<GatewayConfiguration>(
+    lifecycleCoordinatorFactory,
+    configurationReaderService,
+    { it.toGatewayConfiguration() }
+) {
 
     companion object {
         private const val NUM_CLIENT_WRITE_THREADS = 2
@@ -48,10 +52,10 @@ class ConnectionManager(
      * @param destinationInfo the [DestinationInfo] object containing the destination's URI, SNI, and legal name
      */
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
-        if(sslConfiguration == null) {
+        if (sslConfiguration == null) {
             lock.withLock {
-                if(sslConfiguration == null) {
-                    if(!waitForConfiguration.await(10, TimeUnit.MINUTES)) {
+                if (sslConfiguration == null) {
+                    if (!waitForConfiguration.await(10, TimeUnit.MINUTES)) {
                         throw IllegalStateException("Waiting too long for configuration")
                     }
                 }

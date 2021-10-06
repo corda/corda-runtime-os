@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.p2p.gateway.domino.ConfigurationAwareTile
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.v5.base.util.contextLogger
 import java.net.SocketAddress
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -16,7 +17,11 @@ class ReconfigurableHttpServer(
     configurationReaderService: ConfigurationReadService,
     private val listener: HttpEventListener,
 ) :
-    ConfigurationAwareTile(lifecycleCoordinatorFactory, configurationReaderService) {
+    ConfigurationAwareTile<GatewayConfiguration>(
+        lifecycleCoordinatorFactory,
+        configurationReaderService,
+        { it.toGatewayConfiguration() }
+    ) {
 
     @Volatile
     private var httpServer: HttpServer? = null
