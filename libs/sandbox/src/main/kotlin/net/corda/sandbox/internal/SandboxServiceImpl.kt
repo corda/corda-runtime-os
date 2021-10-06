@@ -39,9 +39,11 @@ internal class SandboxServiceImpl @Activate constructor(
     @Reference
     private val installService: InstallService,
     @Reference
+    private val serviceComponentRuntime: ServiceComponentRuntime,
+    @Reference
     private val bundleUtils: BundleUtils
 ) : SandboxServiceInternal, SingletonSerializeAsToken {
-    private val serviceComponentRuntimeBundleId = bundleUtils.getServiceComponentRuntimeBundle()?.bundleId
+    private val serviceComponentRuntimeBundleId = bundleUtils.getBundle(serviceComponentRuntime::class.java)?.bundleId
         ?: throw SandboxException(
             "The sandbox service cannot run without the Service Component Runtime bundle installed."
         )
