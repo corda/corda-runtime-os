@@ -2,11 +2,9 @@ package net.corda.sandbox.internal.hooks.bundle
 
 import net.corda.sandbox.internal.SandboxServiceInternal
 import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.createMockBundleContext
-import net.corda.sandbox.internal.utilities.BundleUtils
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
@@ -29,7 +27,7 @@ class IsolatingFindBundleHookTests {
             whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(true)
         }
 
-        val isolatingFindBundleHook = IsolatingFindBundleHook(sandboxService, mock())
+        val isolatingFindBundleHook = IsolatingFindBundleHook(sandboxService)
         isolatingFindBundleHook.find(bundleOneContext, candidates)
         assertEquals(1, candidates.size)
     }
@@ -40,18 +38,8 @@ class IsolatingFindBundleHookTests {
             whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(false)
         }
 
-        val isolatingFindBundleHook = IsolatingFindBundleHook(sandboxService, mock())
+        val isolatingFindBundleHook = IsolatingFindBundleHook(sandboxService)
         isolatingFindBundleHook.find(bundleOneContext, candidates)
         assertEquals(0, candidates.size)
-    }
-
-    @Test
-    fun `bundle is not filtered out if looking bundle is sandbox bundle`() {
-        val mockBundleUtils = mock<BundleUtils>().apply {
-            whenever(getBundle(any())).thenReturn(bundleOne)
-        }
-        val isolatingFindBundleHook = IsolatingFindBundleHook(mock(), mockBundleUtils)
-        isolatingFindBundleHook.find(bundleOneContext, candidates)
-        assertEquals(1, candidates.size)
     }
 }

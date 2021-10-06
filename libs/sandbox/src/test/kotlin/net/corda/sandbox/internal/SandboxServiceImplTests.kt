@@ -26,6 +26,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
+import org.osgi.service.component.runtime.ServiceComponentRuntime
 import java.net.URI
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -146,22 +147,31 @@ class SandboxServiceImplTests {
     }
 
     /** Creates a mock [BundleUtils] that tracks which bundles have been started and uninstalled so far. */
-    private fun createMockBundleUtils(cpksAndBundles: Collection<CpkAndBundles>) = mock<BundleUtils>().apply {
-        cpksAndBundles.forEach { cpkAndBundles ->
-            whenever(installAsBundle(anyString(), eq(cpkAndBundles.cpk.mainJar.toUri())))
-                .thenReturn(cpkAndBundles.cordappBundle)
-            whenever(installAsBundle(anyString(), eq(cpkAndBundles.cpk.libraries.single().toUri())))
-                .thenReturn(cpkAndBundles.libraryBundle)
-
-            whenever(getBundle(cpkAndBundles.cordappClass)).thenReturn(cpkAndBundles.cordappBundle)
-            whenever(getBundle(cpkAndBundles.libraryClass)).thenReturn(cpkAndBundles.libraryBundle)
+    private fun createMockBundleUtils(cpksAndBundles: Collection<CpkAndBundles>): BundleUtils {
+        val serviceComponentRuntimeBundle = mock<Bundle>().apply {
+            // TODO: Choose better long value.
+            whenever(bundleId).thenReturn(999L)
         }
 
-        whenever(allBundles).thenReturn(listOf(frameworkBundle, scrBundle))
+        return mock<BundleUtils>().apply {
+            whenever(getBundle(ServiceComponentRuntime::class.java)).thenReturn(serviceComponentRuntimeBundle)
 
-        cpksAndBundles.flatMap(CpkAndBundles::bundles).forEach { bundle ->
-            whenever(startBundle(bundle)).then { startedBundles.add(bundle) }
-            whenever(bundle.uninstall()).then { uninstalledBundles.add(bundle) }
+            cpksAndBundles.forEach { cpkAndBundles ->
+                whenever(installAsBundle(anyString(), eq(cpkAndBundles.cpk.mainJar.toUri())))
+                    .thenReturn(cpkAndBundles.cordappBundle)
+                whenever(installAsBundle(anyString(), eq(cpkAndBundles.cpk.libraries.single().toUri())))
+                    .thenReturn(cpkAndBundles.libraryBundle)
+
+                whenever(getBundle(cpkAndBundles.cordappClass)).thenReturn(cpkAndBundles.cordappBundle)
+                whenever(getBundle(cpkAndBundles.libraryClass)).thenReturn(cpkAndBundles.libraryBundle)
+            }
+
+            whenever(allBundles).thenReturn(listOf(frameworkBundle, scrBundle))
+
+            cpksAndBundles.flatMap(CpkAndBundles::bundles).forEach { bundle ->
+                whenever(startBundle(bundle)).then { startedBundles.add(bundle) }
+                whenever(bundle.uninstall()).then { uninstalledBundles.add(bundle) }
+            }
         }
     }
 

@@ -22,9 +22,11 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
+import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.runtime.ServiceComponentRuntime
 import java.net.URI
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -39,9 +41,10 @@ internal class SandboxServiceImpl @Activate constructor(
     @Reference
     private val bundleUtils: BundleUtils
 ) : SandboxServiceInternal, SingletonSerializeAsToken {
-    // These two framework bundles require full visibility.
-    private val felixFrameworkBundle by lazy { getBundle(FELIX_FRAMEWORK_BUNDLE) }
-    private val felixScrBundle by lazy { getBundle(FELIX_SCR_BUNDLE) }
+    private val serviceComponentRuntimeBundleId = bundleUtils.getServiceComponentRuntimeBundle()?.bundleId
+        ?: throw SandboxException(
+            "The sandbox service cannot run without the Service Component Runtime bundle installed."
+        )
 
     // These sandboxes are not persisted in any way; they are recreated on node startup.
     private val sandboxes = ConcurrentHashMap<UUID, SandboxInternal>()
@@ -104,7 +107,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
         return when {
             // These two framework bundles require full visibility.
-            lookingBundle in listOf(felixFrameworkBundle, felixScrBundle) -> true
+            lookingBundle.bundleId in listOf(SYSTEM_BUNDLE_ID, serviceComponentRuntimeBundleId) -> true
             // Do both bundles belong to the same sandbox, or is neither bundle in a sandbox?
             lookedAtSandbox === lookingSandbox -> true
             // Does only one of the bundles belong to a sandbox?
@@ -154,26 +157,6 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     /**
-     * Returns the installed bundle with the [symbolicName].
-     *
-     * Throws [SandboxException] if there is not exactly one match.
-     */
-    private fun getBundle(symbolicName: String): Bundle {
-        val matchingBundles = bundleUtils.allBundles.filter { bundle ->
-            bundle.symbolicName == symbolicName
-        }
-
-        return when (matchingBundles.size) {
-            0 -> throw SandboxException("Bundle $symbolicName, required by the sandbox service, is not installed.")
-            1 -> matchingBundles.single()
-            else -> throw SandboxException(
-                "Multiple $symbolicName bundles were installed. We cannot identify the bundle required by the " +
-                        "sandbox service."
-            )
-        }
-    }
-
-    /**
      * Retrieves the CPKs from the [installService] based on their [cpkFileHashes], and verifies the CPKs.
      *
      * Creates a [SandboxGroup], containing a [Sandbox] for each of the CPKs. On the first run, also initialises a
@@ -182,10 +165,6 @@ internal class SandboxServiceImpl @Activate constructor(
      * Grants each sandbox visibility of the public sandboxes and of the other sandboxes in the group.
      */
     private fun createSandboxes(cpkFileHashes: Iterable<SecureHash>, startBundles: Boolean): SandboxGroup {
-        // We force the lazy initialisation of these variables before any sandboxes are created.
-        felixFrameworkBundle
-        felixScrBundle
-
         val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
             installService.getCpk(cpkFileHash)
                 ?: throw SandboxException("No CPK is installed for CPK file hash $cpkFileHash.")
