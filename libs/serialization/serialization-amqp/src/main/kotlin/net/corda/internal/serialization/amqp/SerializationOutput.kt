@@ -91,8 +91,6 @@ open class SerializationOutput constructor(
             }
         }
 
-        println(data.format())
-
         return SerializedBytes(byteArrayOutput {
             var stream: OutputStream = it
             try {
