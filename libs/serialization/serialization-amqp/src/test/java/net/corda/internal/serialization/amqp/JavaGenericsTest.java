@@ -177,7 +177,7 @@ public class JavaGenericsTest {
         ConcreteClass concreteClass = new ConcreteClass("How to make concrete, $99/class");
         GenericClassWithMap<ConcreteClass, BigInteger> genericMap = new GenericClassWithMap<>(Collections.singletonMap(concreteClass, BigInteger.ONE));
         SerializerFactory factory = AMQPTestUtilsKt.testDefaultFactoryWithWhitelist();
-        factory.register(BigIntegerSerializer.INSTANCE, false, false, factory= factory);
+        factory.register(BigIntegerSerializer.INSTANCE, false, false, factory);
         SerializationOutput ser = new SerializationOutput(factory);
         SerializedBytes<?> bytes = ser.serialize(genericMap, TestSerializationContext.testSerializationContext);
         DeserializationInput des = new DeserializationInput(factory);
