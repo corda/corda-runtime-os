@@ -93,8 +93,8 @@ open class SessionManagerImpl(
     private val heartbeatManager: HeartbeatManager = HeartbeatManager(
         publisherFactory,
         networkMap,
-        Duration.ofSeconds(config.heartbeatMessagePeriodSecs),
-        Duration.ofSeconds(config.sessionTimeoutSecs),
+        Duration.ofMillis(config.heartbeatMessagePeriodMilliSecs),
+        Duration.ofMillis(config.sessionTimeoutMilliSecs),
         ::destroyOutboundSession
     )
 

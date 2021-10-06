@@ -82,8 +82,8 @@ class SessionManagerTest {
             MAX_MESSAGE_SIZE,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             longPeriodSec,
-            1,
-            10
+            40,
+            200
         )
         val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
         val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
@@ -745,7 +745,7 @@ class SessionManagerTest {
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         sessionManager.processSessionMessage(LinkInMessage(responderHello))
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionAlreadyPending)
-        Thread.sleep(2 * configWithHeartbeat.sessionTimeoutSecs * 1000)
+        Thread.sleep(2 * configWithHeartbeat.sessionTimeoutMilliSecs)
         assertTrue(sessionManager.processOutboundMessage(message) is NewSessionNeeded)
 
         sessionManager.stop()
@@ -776,7 +776,7 @@ class SessionManagerTest {
         sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
-        Thread.sleep(2 * configWithHeartbeat.sessionTimeoutSecs * 1000)
+        Thread.sleep(2 * configWithHeartbeat.sessionTimeoutMilliSecs)
 
         assertTrue(sessionManager.processOutboundMessage(message) is NewSessionNeeded)
 
@@ -811,7 +811,7 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(message, authenticatedSession)
-        Thread.sleep(2 * configWithHeartbeat.sessionTimeoutSecs * 1000)
+        Thread.sleep(2 * configWithHeartbeat.sessionTimeoutMilliSecs)
 
         assertTrue(sessionManager.processOutboundMessage(message) is NewSessionNeeded)
 
@@ -820,7 +820,7 @@ class SessionManagerTest {
 
     @Test
     fun `when a data message is sent, heartbeats are sent, if these are acknowledged the session does not time out`() {
-        val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeoutSecs / configWithHeartbeat.heartbeatMessagePeriodSecs - 1
+        val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeoutMilliSecs / configWithHeartbeat.heartbeatMessagePeriodMilliSecs - 1
         val publishLatch = CountDownLatch(heartbeatsBeforeTimeout.toInt() - 1)
 
         fun callback() {
@@ -855,7 +855,7 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(message, authenticatedSession)
-        assertTrue(publishLatch.await(2 * configWithHeartbeat.sessionTimeoutSecs, TimeUnit.SECONDS))
+        assertTrue(publishLatch.await(2 * configWithHeartbeat.sessionTimeoutMilliSecs, TimeUnit.SECONDS))
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
@@ -864,7 +864,7 @@ class SessionManagerTest {
 
     @Test
     fun `when sending a heartbeat, if an exception is thrown, the heartbeat is resent`() {
-        val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeoutSecs / configWithHeartbeat.heartbeatMessagePeriodSecs - 1
+        val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeoutMilliSecs / configWithHeartbeat.heartbeatMessagePeriodMilliSecs - 1
         val publishLatch = CountDownLatch(heartbeatsBeforeTimeout.toInt())
         val throwingPublisher = CallbackPublisher({ publishLatch.countDown() }, true)
         whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(throwingPublisher)
@@ -883,7 +883,7 @@ class SessionManagerTest {
 
         sessionManager.dataMessageSent(message, authenticatedSession)
 
-        assertTrue(publishLatch.await(2 * configWithHeartbeat.sessionTimeoutSecs, TimeUnit.SECONDS))
+        assertTrue(publishLatch.await(2 * configWithHeartbeat.sessionTimeoutMilliSecs, TimeUnit.SECONDS))
         loggingInterceptor.assertErrorContains("An exception was thrown when sending a heartbeat message.")
         sessionManager.stop()
     }
