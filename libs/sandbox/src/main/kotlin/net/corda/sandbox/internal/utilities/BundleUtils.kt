@@ -53,8 +53,8 @@ internal class BundleUtils @Activate constructor(private val bundleContext: Bund
     /**
      * Returns the bundle from which [ServiceComponentRuntime] is loaded, or null if there is no such bundle.
      *
-     * This exists to simplify mocking - we can provide one mock for recovering the `ServiceComponentRuntime` during
-     * `SandboxServiceImpl` initialisation, and another mock for general retrieval of bundles based on classes.
+     * This exists to simplify mocking - we can provide one mock for recovering the `ServiceComponentRuntime` bundle
+     * during `SandboxServiceImpl` initialisation, and another mock for general retrieval of bundles based on classes.
      */
     fun getServiceRuntimeComponentBundle(): Bundle? = FrameworkUtil.getBundle(ServiceComponentRuntime::class.java)
 
