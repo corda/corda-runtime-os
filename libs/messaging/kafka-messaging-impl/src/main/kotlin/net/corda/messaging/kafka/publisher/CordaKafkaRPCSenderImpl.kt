@@ -29,7 +29,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
-import java.lang.NullPointerException
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.*
@@ -161,12 +160,8 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         consumerRecords.forEach {
             val correlationKey = it.record.key()
             val future = futureMap[correlationKey]
-            val responseStatus: ResponseStatus
-            try {
-                responseStatus = it.record.value().responseStatus
-            } catch (ex: NullPointerException){
-                throw CordaMessageAPIFatalException("Response status came back NULL. This should never happen")
-            }
+            val responseStatus = it.record.value().responseStatus
+                ?: throw CordaMessageAPIFatalException("Response status came back NULL. This should never happen")
 
             if (future != null) {
                 when (responseStatus) {
