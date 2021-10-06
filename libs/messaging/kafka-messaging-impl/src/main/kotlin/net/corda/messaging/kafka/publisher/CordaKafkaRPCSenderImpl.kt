@@ -66,7 +66,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
     private val responseTopic = config.getString(RESPONSE_TOPIC)
-    private var partitionListener = RPCConsumerRebalanceListener("$topicPrefix$responseTopic", "RPC Response listener")
+    private var partitionListener = RPCConsumerRebalanceListener<TRESP>("$topicPrefix$responseTopic", "RPC Response listener")
 
     private val errorMsg = "Failed to read records from group $groupName, topic $topic"
 
@@ -199,15 +199,17 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         if (partitionListener.partitions.size == 0) {
             future.completeExceptionally(CordaRPCAPISenderException("No partitions. Couldn't send"))
         } else {
+            val partition = partitionListener.partitions[0].partition()
             val request = RPCRequest(
                 uuid,
                 Instant.now().toEpochMilli(),
                 "$topicPrefix$responseTopic",
-                partitionListener.partitions[0].partition(),
+                partition,
                 ByteBuffer.wrap(reqBytes)
             )
 
             val record = Record(topic, uuid, request)
+            partitionListener.futuresInPartitionMap[partition]?.add(future)
             futureMap[uuid] = future
             try {
                 publisher.publish(listOf(record))
