@@ -38,7 +38,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.Companion.getSessionKeyFromMessage
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
-import net.corda.p2p.linkmanager.utilities.MockSessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
@@ -60,7 +59,13 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
@@ -267,7 +272,7 @@ class LinkManagerTest {
         Mockito.`when`(mockNetworkMap.getMemberInfo(any())).thenReturn(FIRST_DEST_MEMBER_INFO)
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
 
-        val sessionManager = MockSessionManager()
+        val sessionManager = Mockito.`mock`(SessionManager::class.java)
 
         val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory)
 
@@ -285,24 +290,19 @@ class LinkManagerTest {
         assertThat(publisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
             .hasSize(3).containsExactlyInAnyOrder(payload3, payload4, payload5)
 
+        val messageCaptor = argumentCaptor<AuthenticatedMessageAndKey>()
+        verify(sessionManager, times(3)).dataMessageSent(messageCaptor.capture(), eq(sessionPair.initiatorSession))
+        assertThat(messageCaptor.allValues).containsExactlyInAnyOrder(message3, message4, message5)
+
         publisher.list = mutableListOf()
         // Session is ready for messages 1, 2
         queue.sessionNegotiatedCallback(sessionManager, key1, sessionPair.initiatorSession, mockNetworkMap)
         assertThat(publisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
             .hasSize(2).containsExactlyInAnyOrder(payload1, payload2)
 
-        assertEquals(messageIds.size, sessionManager.addedMessages.size)
-        for (i in 0 until 2) {
-            assertTrue(sessionManager.addedMessages.keys.contains(messageIds[i]))
-            assertEquals(FIRST_SOURCE.toHoldingIdentity(), sessionManager.addedMessages[messageIds[i]]!!.key.ourId)
-            assertEquals(FIRST_DEST.toHoldingIdentity(), sessionManager.addedMessages[messageIds[i]]!!.key.responderId)
-        }
-
-        for (i in 2 until 4) {
-            assertTrue(sessionManager.addedMessages.keys.contains(messageIds[i]))
-            assertEquals(SECOND_SOURCE.toHoldingIdentity(), sessionManager.addedMessages[messageIds[i]]!!.key.ourId)
-            assertEquals(SECOND_DEST.toHoldingIdentity(), sessionManager.addedMessages[messageIds[i]]!!.key.responderId)
-        }
+        val secondMessageCaptor = argumentCaptor<AuthenticatedMessageAndKey>()
+        verify(sessionManager, times(5)).dataMessageSent(secondMessageCaptor.capture(), eq(sessionPair.initiatorSession))
+        assertThat(secondMessageCaptor.allValues).containsExactlyInAnyOrder(message1, message2, message3, message4, message5)
     }
 
     @Test
@@ -804,7 +804,6 @@ class LinkManagerTest {
             netMap
         )
         val message = LinkInMessage(linkOutMessage?.payload)
-        val heartbeatManager = MockSessionManager()
 
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any()))
@@ -818,7 +817,7 @@ class LinkManagerTest {
         val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, message, 0, 0)))
         assertEquals(records.size, 0)
 
-        assertEquals(0, heartbeatManager.ackedMessages.size)
+        verify(mockSessionManager, never()).messageAcknowledged(any())
         loggingInterceptor.assertErrorContains("Could not deserialize message for session $SESSION_ID.")
         loggingInterceptor.assertErrorContains("The message was discarded.")
     }

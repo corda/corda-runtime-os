@@ -452,7 +452,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 while (queuedMessages.isNotEmpty()) {
                     val message = queuedMessages.poll()
                     records.addAll(recordsForSessionEstablished(sessionManager, networkMap, session, message))
-                    sessionManager.dataMessageSent(message, session)
                 }
                 publisher.publish(records)
             }
