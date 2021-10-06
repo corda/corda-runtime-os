@@ -38,6 +38,8 @@ class SubClass<T : Any>(private val clazz: Class<*>, private val superClassSeria
         output.writeTypeNotations(typeNotation)
     }
 
+    val descriptor: Descriptor = Descriptor(typeDescriptor)
+
     override fun writeObject(
         obj: Any,
         data: Data,
@@ -46,7 +48,9 @@ class SubClass<T : Any>(private val clazz: Class<*>, private val superClassSeria
         context: SerializationContext,
         debugIndent: Int
     ) {
-        superClassSerializer.writeObject(obj, data, type, output, context)
+        data.withDescribed(descriptor) {
+            superClassSerializer.writeObject(obj, data, type, output, context)
+        }
     }
 
     override fun readObject(
