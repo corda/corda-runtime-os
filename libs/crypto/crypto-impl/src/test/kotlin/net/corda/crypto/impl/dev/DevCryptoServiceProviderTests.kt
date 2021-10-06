@@ -41,8 +41,8 @@ class DevCryptoServiceProviderTests {
             val testData = UUID.randomUUID().toString().toByteArray()
             val badVerifyData = UUID.randomUUID().toString().toByteArray()
             val alias = newAlias()
-            val publicKey = cryptoService.generateKeyPair(alias, signatureScheme)
-            val signature = cryptoService.sign(alias, signatureScheme, testData)
+            val publicKey = cryptoService.generateKeyPair(alias, signatureScheme, emptyMap())
+            val signature = cryptoService.sign(alias, signatureScheme, testData, emptyMap())
             assertNotNull(publicKey)
             assertTrue(signatureVerifier.isValid(publicKey, signature, testData))
             assertFalse(signatureVerifier.isValid(publicKey, signature, badVerifyData))
@@ -57,7 +57,7 @@ class DevCryptoServiceProviderTests {
         cryptoService.supportedWrappingSchemes().forEach { signatureScheme ->
             val testData = UUID.randomUUID().toString().toByteArray()
             val badVerifyData = UUID.randomUUID().toString().toByteArray()
-            val wrappedKeyPair = cryptoService.generateWrappedKeyPair(masterKeyAlias, signatureScheme)
+            val wrappedKeyPair = cryptoService.generateWrappedKeyPair(masterKeyAlias, signatureScheme, emptyMap())
             assertNotNull(wrappedKeyPair)
             assertNotNull(wrappedKeyPair.publicKey)
             assertNotNull(wrappedKeyPair.keyMaterial)
@@ -68,8 +68,8 @@ class DevCryptoServiceProviderTests {
                     signatureScheme = signatureScheme,
                     encodingVersion = wrappedKeyPair.encodingVersion
                 ),
-                signatureScheme.signatureSpec,
-                testData
+                testData,
+                emptyMap()
             )
             assertNotNull(signature)
             assertTrue(signature.isNotEmpty())
@@ -100,7 +100,7 @@ class DevCryptoServiceProviderTests {
 
     private fun DevCryptoServiceProvider.createCryptoService(category: String): CryptoService = getInstance(
         CryptoServiceContext(
-            sandboxId = memberId,
+            memberId = memberId,
             category = category,
             cipherSuiteFactory = mockFactory.cipherSuiteFactory,
             config = DevCryptoServiceConfiguration()

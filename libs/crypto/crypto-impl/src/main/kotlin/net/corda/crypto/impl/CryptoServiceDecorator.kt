@@ -6,7 +6,6 @@ import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.WrappedKeyPair
 import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
 import java.security.PublicKey
@@ -122,9 +121,15 @@ class CryptoServiceDecorator(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun generateKeyPair(alias: String, signatureScheme: SignatureScheme): PublicKey {
+    override fun generateKeyPair(
+        alias: String,
+        signatureScheme: SignatureScheme,
+        context: Map<String, String>
+    ): PublicKey {
         try {
-            return executeWithTimeOut { cryptoService.generateKeyPair(alias, signatureScheme) }
+            return executeWithTimeOut {
+                cryptoService.generateKeyPair(alias, signatureScheme, context)
+            }
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Throwable) {
@@ -133,9 +138,15 @@ class CryptoServiceDecorator(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun generateWrappedKeyPair(masterKeyAlias: String, wrappedSignatureScheme: SignatureScheme): WrappedKeyPair {
+    override fun generateWrappedKeyPair(
+        masterKeyAlias: String,
+        wrappedSignatureScheme: SignatureScheme,
+        context: Map<String, String>
+    ): WrappedKeyPair {
         try {
-            return executeWithTimeOut { cryptoService.generateWrappedKeyPair(masterKeyAlias, wrappedSignatureScheme) }
+            return executeWithTimeOut {
+                cryptoService.generateWrappedKeyPair(masterKeyAlias, wrappedSignatureScheme, context)
+            }
         } catch (e: IllegalArgumentException) {
             throw e
         } catch (e: CryptoServiceException) {
@@ -146,9 +157,16 @@ class CryptoServiceDecorator(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun sign(alias: String, signatureScheme: SignatureScheme, data: ByteArray): ByteArray {
+    override fun sign(
+        alias: String,
+        signatureScheme: SignatureScheme,
+        data: ByteArray,
+        context: Map<String, String>
+    ): ByteArray {
         try {
-            return executeWithTimeOut { cryptoService.sign(alias, signatureScheme, data) }
+            return executeWithTimeOut {
+                cryptoService.sign(alias, signatureScheme, data, context)
+            }
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Throwable) {
@@ -157,20 +175,11 @@ class CryptoServiceDecorator(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun sign(alias: String, signatureScheme: SignatureScheme, signatureSpec: SignatureSpec, data: ByteArray): ByteArray {
+    override fun sign(wrappedKey: WrappedPrivateKey, data: ByteArray, context: Map<String, String>): ByteArray {
         try {
-            return executeWithTimeOut { cryptoService.sign(alias, signatureScheme, signatureSpec, data) }
-        } catch (e: CryptoServiceException) {
-            throw e
-        } catch (e: Throwable) {
-            throw CryptoServiceException("CryptoService operation failed", e)
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    override fun sign(wrappedKey: WrappedPrivateKey, signatureSpec: SignatureSpec, data: ByteArray): ByteArray {
-        try {
-            return executeWithTimeOut { cryptoService.sign(wrappedKey, signatureSpec, data) }
+            return executeWithTimeOut {
+                cryptoService.sign(wrappedKey, data, context)
+            }
         } catch (e: IllegalArgumentException) {
             throw e
         } catch (e: CryptoServiceException) {

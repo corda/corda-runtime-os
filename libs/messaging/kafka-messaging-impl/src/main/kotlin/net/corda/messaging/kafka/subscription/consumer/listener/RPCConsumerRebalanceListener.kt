@@ -18,6 +18,7 @@ class RPCConsumerRebalanceListener(
     }
 
     override fun onPartitionsRevoked(partitions: MutableCollection<TopicPartition>) {
+        //todos: complete futures that were expected on a revoked partition exceptionally
         this.partitions.removeAll(partitions)
         val partitionIds = partitions.map{it.partition()}.joinToString(",")
         log.info("Consumer group name $groupName for topic $topic partition revoked: $partitionIds.")

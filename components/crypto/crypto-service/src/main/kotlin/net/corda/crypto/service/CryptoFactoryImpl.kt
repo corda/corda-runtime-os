@@ -175,7 +175,7 @@ class CryptoFactoryImpl @Activate constructor(
             try {
                 val context = CryptoServiceContext(
                     category = category,
-                    sandboxId = memberId,
+                    memberId = memberId,
                     cipherSuiteFactory = cipherSuiteFactory,
                     config = objectMapper.convertValue(config.serviceConfig, provider.configType)
                 )
