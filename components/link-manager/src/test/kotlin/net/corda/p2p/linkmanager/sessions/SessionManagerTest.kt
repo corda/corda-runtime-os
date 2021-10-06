@@ -724,6 +724,66 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `when responder hello is received, the session is pending, if no response is received, the session times out`() {
+        val sessionManager = SessionManagerImpl(
+            configWithHeartbeat,
+            networkMap,
+            cryptoService,
+            pendingSessionMessageQueues,
+            publisherFactory,
+            protocolFactory,
+            sessionReplayer
+        )
+        sessionManager.start()
+
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+
+        val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
+        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(initiatorHandshakeMsg)
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+        sessionManager.processSessionMessage(LinkInMessage(responderHello))
+        assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionAlreadyPending)
+        Thread.sleep(2 * configWithHeartbeat.sessionTimeoutSecs * 1000)
+        assertTrue(sessionManager.processOutboundMessage(message) is NewSessionNeeded)
+
+        sessionManager.stop()
+    }
+
+    @Test
+    fun `when responder handshake is received, the session is established, if no message is sent, the session times out`() {
+        val sessionManager = SessionManagerImpl(
+            configWithHeartbeat,
+            networkMap,
+            cryptoService,
+            pendingSessionMessageQueues,
+            publisherFactory,
+            protocolFactory,
+            sessionReplayer
+        )
+        sessionManager.start()
+
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+
+        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        val session = mock<Session>()
+        whenever(protocolInitiator.getSession()).thenReturn(session)
+        sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
+
+        assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
+        Thread.sleep(2 * configWithHeartbeat.sessionTimeoutSecs * 1000)
+
+        assertTrue(sessionManager.processOutboundMessage(message) is NewSessionNeeded)
+
+        sessionManager.stop()
+    }
+
+    @Test
     fun `when a data message is sent, heartbeats are sent, if these are not acknowledged the session times out`() {
         val publisher = CallbackPublisher()
         whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(publisher)

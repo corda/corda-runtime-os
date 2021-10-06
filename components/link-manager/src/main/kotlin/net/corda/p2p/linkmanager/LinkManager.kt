@@ -331,7 +331,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return messages
         }
 
-        private fun processLinkManagerPayload(sessionKey: SessionKey, session: Session, sessionId: String, message: DataMessage): MutableList<Record<*, *>> {
+        private fun processLinkManagerPayload(
+            sessionKey: SessionKey,
+            session: Session,
+            sessionId: String,
+            message: DataMessage
+        ): MutableList<Record<*, *>> {
             val messages = mutableListOf<Record<*, *>>()
             extractPayload(session, sessionId, message, DataMessagePayload::fromByteBuffer)?.let {
                 when (val innerMessage = it.message) {

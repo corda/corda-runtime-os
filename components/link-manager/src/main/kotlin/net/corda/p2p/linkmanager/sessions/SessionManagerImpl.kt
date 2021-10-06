@@ -38,7 +38,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerH
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
 import net.corda.p2p.schema.Schema
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -441,7 +440,10 @@ open class SessionManagerImpl(
             return null
         }
 
-        activeInboundSessions[message.header.sessionId] = Pair(SessionKey(ourMemberInfo.holdingIdentity, peer.holdingIdentity), session.getSession())
+        activeInboundSessions[message.header.sessionId] = Pair(
+            SessionKey(ourMemberInfo.holdingIdentity, peer.holdingIdentity),
+            session.getSession()
+        )
         /**
          * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.

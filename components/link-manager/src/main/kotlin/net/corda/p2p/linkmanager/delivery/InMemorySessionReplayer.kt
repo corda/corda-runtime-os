@@ -100,10 +100,10 @@ class InMemorySessionReplayer(
         }
 
         val message = MessageConverter.createLinkOutMessage(messageReplay.message, memberInfo, networkType)
+        publisher.publish(listOf(Record(Schema.LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
         messageReplay.sentSessionMessageCallback(
             SessionManager.SessionKey(messageReplay.source, messageReplay.dest),
             messageReplay.sessionId
         )
-        publisher.publish(listOf(Record(Schema.LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
     }
 }
