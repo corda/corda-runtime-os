@@ -1,14 +1,11 @@
 package net.corda.messaging.kafka.subscription.consumer.listener
 
-import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.kafka.utils.FutureTracker
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 
 class RPCConsumerRebalanceListener<TRESP>(
     private val topic: String,

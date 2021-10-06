@@ -159,25 +159,27 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCResponse>>) {
         consumerRecords.forEach {
             val correlationKey = it.record.key()
             val partition = it.record.partition()
             val future = futureTracker.getFuture(correlationKey, partition)
-            val responseStatus = it.record.value().responseStatus!!
+            val responseStatus = it.record.value().responseStatus
+                ?: throw CordaMessageAPIFatalException("Response status came back NULL. This should never happen")
 
             if (future != null) {
                 when (responseStatus) {
                     ResponseStatus.OK -> {
                         val responseBytes = it.record.value().payload
-                        val response = deserializer.deserialize("$responseTopic", responseBytes.array())
+                        val response = deserializer.deserialize(responseTopic, responseBytes.array())
                         log.info("Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}")
 
                         future.complete(response)
                     }
                     ResponseStatus.FAILED -> {
                         val responseBytes = it.record.value().payload
-                        val response = errorDeserializer.deserialize("$responseTopic", responseBytes.array())
+                        val response = errorDeserializer.deserialize(responseTopic, responseBytes.array())
                         future.completeExceptionally(CordaRPCAPIResponderException(response))
                     }
                     ResponseStatus.CANCELLED -> {
@@ -188,8 +190,8 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
             } else {
                 log.info(
                     "Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}. " +
-                    "There is no future assigned for $correlationKey meaning that this request was orphaned during " +
-                    "a repartition event. The response status for it was $responseStatus"
+                    "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
+                    "a repartition event or the client dropped their future. The response status for it was $responseStatus"
                 )
             }
         }

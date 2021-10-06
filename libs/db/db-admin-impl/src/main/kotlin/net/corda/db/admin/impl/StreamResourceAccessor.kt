@@ -94,8 +94,8 @@ class StreamResourceAccessor(
         log.info("Creating composite master changelog file $masterChangeLogFileName with: ${dbChange.masterChangeLogFiles}")
         // dynamically create the master file by combining the specified.
         ByteArrayOutputStream().use {
-            val xmlWriter = XMLOutputFactory.newInstance().createXMLStreamWriter(it)
-            xmlWriter.writeStartDocument("utf-8", "1.0")
+            val xmlWriter = XMLOutputFactory.newInstance().createXMLStreamWriter(it,"UTF-8")
+            xmlWriter.writeStartDocument("UTF-8", "1.0")
             xmlWriter.writeStartElement(LiquibaseXmlConstants.DB_CHANGE_LOG_ROOT_ELEMENT)
             xmlWriter.writeDefaultNamespace(LiquibaseXmlConstants.DB_CHANGE_LOG_NS)
             xmlWriter.writeNamespace("xsi", W3C_XML_SCHEMA_INSTANCE_NS_URI)

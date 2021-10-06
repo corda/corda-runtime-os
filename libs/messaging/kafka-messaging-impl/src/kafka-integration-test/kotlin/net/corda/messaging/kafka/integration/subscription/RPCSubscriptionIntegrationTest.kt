@@ -19,8 +19,6 @@ import net.corda.messaging.kafka.integration.processors.TestRPCResponderProcesso
 import net.corda.messaging.kafka.integration.processors.TestRPCUnresponsiveResponderProcessor
 import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeAll
