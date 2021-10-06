@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp.testutils
 
 import net.corda.internal.serialization.AllWhitelist
-import net.corda.internal.serialization.AlwaysEmptyWhitelist
 import net.corda.internal.serialization.TestMutableWhiteList
 import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.BytesAndSchemas

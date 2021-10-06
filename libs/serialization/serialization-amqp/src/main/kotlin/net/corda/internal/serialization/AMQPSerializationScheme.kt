@@ -93,8 +93,10 @@ abstract class AbstractAMQPSerializationScheme private constructor(
         cipherSchemeMetadata
     )
 
-    private val _internalCustomSerializerFactories: MutableSet<(factory: SerializerFactory) -> InternalCustomSerializerRegistrationData> = mutableSetOf()
-    private val internalCustomSerializerFactories: Set<(factory: SerializerFactory) -> InternalCustomSerializerRegistrationData> = _internalCustomSerializerFactories
+    private val _internalCustomSerializerFactories: MutableSet<(factory: SerializerFactory) -> InternalCustomSerializerRegistrationData> =
+        mutableSetOf()
+    private val internalCustomSerializerFactories: Set<(factory: SerializerFactory) -> InternalCustomSerializerRegistrationData> =
+        _internalCustomSerializerFactories
 
     init {
         internalCustomSerializerFactories.forEach {
