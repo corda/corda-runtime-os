@@ -26,8 +26,6 @@ internal class IsolatingCollisionBundleHook @Activate constructor(
 
     // Note that `target` is not the bundle being installed, but the bundle whose context triggered the installation.
     override fun filterCollisions(operationType: Int, target: Bundle, collisionCandidates: MutableCollection<Bundle>) {
-        if (!sandboxService.isStarted) return
-
         // We filter out any collisions that are installed into sandboxes.
         val candidatesToRemove = collisionCandidates.filter { bundle -> sandboxService.getSandbox(bundle) != null }
         collisionCandidates.removeAll(candidatesToRemove)

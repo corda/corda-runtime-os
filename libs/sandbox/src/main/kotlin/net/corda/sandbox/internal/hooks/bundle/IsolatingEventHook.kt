@@ -19,8 +19,6 @@ internal class IsolatingEventHook @Activate constructor(
         private val sandboxService: SandboxServiceInternal) : EventHook {
 
     override fun event(event: BundleEvent, contexts: MutableCollection<BundleContext>) {
-        if (!sandboxService.isStarted) return
-
         contexts.removeIf { context ->
             !sandboxService.hasVisibility(context.bundle, event.bundle)
         }

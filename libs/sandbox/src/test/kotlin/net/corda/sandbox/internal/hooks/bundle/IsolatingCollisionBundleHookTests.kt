@@ -25,7 +25,6 @@ class IsolatingCollisionBundleHookTests {
         val sandbox = mock<SandboxInternal>()
         val sandboxService = mock<SandboxServiceInternal>().apply {
             whenever(getSandbox(bundle)).thenReturn(sandbox)
-            whenever(isStarted).thenReturn(true)
         }
 
         val isolatingCollisionBundleHook = IsolatingCollisionBundleHook(sandboxService)
@@ -35,9 +34,7 @@ class IsolatingCollisionBundleHookTests {
 
     @Test
     fun `non-sandboxed candidate represents a collision`() {
-        val sandboxService = mock<SandboxServiceInternal>().apply {
-            whenever(isStarted).thenReturn(true)
-        }
+        val sandboxService = mock<SandboxServiceInternal>()
 
         val isolatingCollisionBundleHook = IsolatingCollisionBundleHook(sandboxService)
         isolatingCollisionBundleHook.filterCollisions(0, target, candidates)

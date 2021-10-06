@@ -7,9 +7,6 @@ import org.osgi.framework.Bundle
 
 /** Extends [SandboxCreationService] and [SandboxContextService] with internal methods. */
 internal interface SandboxServiceInternal : SandboxCreationService, SandboxContextService {
-    /** Indicates whether we have started creating sandboxes, and thus whether to apply our OSGi hooks. */
-    val isStarted: Boolean
-
     /** Returns the [SandboxInternal] containing the given [bundle], or null if no match. */
     fun getSandbox(bundle: Bundle): SandboxInternal?
 

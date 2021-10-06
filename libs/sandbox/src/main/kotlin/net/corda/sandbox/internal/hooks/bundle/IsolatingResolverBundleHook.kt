@@ -29,8 +29,6 @@ internal class IsolatingResolverBundleHook(private val sandboxService: SandboxSe
     // multiple instances of the same bundle present in the OSGi framework, but we allow multiple singletons, provided
     // they do not have visibility of one another.
     override fun filterSingletonCollisions(singleton: BundleCapability, collisionCandidates: MutableCollection<BundleCapability>) {
-        if (!sandboxService.isStarted) return
-
         collisionCandidates.removeIf { candidate ->
             !sandboxService.hasVisibility(singleton.revision.bundle, candidate.revision.bundle)
                     && !sandboxService.hasVisibility(candidate.revision.bundle, singleton.revision.bundle)
@@ -38,8 +36,6 @@ internal class IsolatingResolverBundleHook(private val sandboxService: SandboxSe
     }
 
     override fun filterMatches(requirement: BundleRequirement, candidates: MutableCollection<BundleCapability>) {
-        if (!sandboxService.isStarted) return
-
         val candidatesFoundInInitiatingSandbox = mutableListOf<BundleCapability>()
 
         val candidatesToRemove = candidates.filter { candidate ->

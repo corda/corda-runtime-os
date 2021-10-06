@@ -39,8 +39,6 @@ internal class SandboxServiceImpl @Activate constructor(
     @Reference
     private val bundleUtils: BundleUtils
 ) : SandboxServiceInternal, SingletonSerializeAsToken {
-    override var isStarted = false
-
     // These two framework bundles require full visibility.
     private val felixFrameworkBundle by lazy { getBundle(FELIX_FRAMEWORK_BUNDLE) }
     private val felixScrBundle by lazy { getBundle(FELIX_SCR_BUNDLE) }
@@ -187,9 +185,6 @@ internal class SandboxServiceImpl @Activate constructor(
         // We force the lazy initialisation of these variables before any sandboxes are created.
         felixFrameworkBundle
         felixScrBundle
-
-        // We indicate that the sandbox service has started, and thus that our OSGi hooks should be applied.
-        isStarted = true
 
         val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
             installService.getCpk(cpkFileHash)
