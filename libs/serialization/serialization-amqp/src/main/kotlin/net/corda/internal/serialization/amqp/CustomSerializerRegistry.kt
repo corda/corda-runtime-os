@@ -173,7 +173,6 @@ class CachingCustomSerializerRegistry(
                     customSerializer as? AMQPSerializer<Any>
                 }
                 // Make a subclass serializer for the subclass and return that...
-//                customSerializer is CustomSerializer<*> -> SubClass(clazz, customSerializer)
                 customSerializer is CorDappCustomSerializer -> SubClass(clazz, customSerializer)
                 else -> null
             }

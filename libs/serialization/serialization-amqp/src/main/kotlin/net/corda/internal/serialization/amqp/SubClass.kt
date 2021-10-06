@@ -12,13 +12,8 @@ import java.lang.reflect.Type
  * class custom serializer is responsible for the "on the wire" format but we want to create a reference to the
  * subclass in the schema, so that we can distinguish between subclasses.
  */
-// TODO: should this be a custom serializer at all, or should it just be a plain AMQPSerializer?
 class SubClass<T : Any>(private val clazz: Class<*>, private val superClassSerializer: CorDappCustomSerializer) :
-    CustomSerializer<T>() {
-    // TODO: should this be empty or contain the schema of the super?
-    override val schemaForDocumentation = Schema(emptyList())
-
-    override fun isSerializerFor(clazz: Class<*>): Boolean = clazz == this.clazz
+    AMQPSerializer<T> {
 
     override val type: Type get() = clazz
 
@@ -43,11 +38,13 @@ class SubClass<T : Any>(private val clazz: Class<*>, private val superClassSeria
         output.writeTypeNotations(typeNotation)
     }
 
-    override val descriptor: Descriptor = Descriptor(typeDescriptor)
-
-    override fun writeDescribedObject(
-        obj: T, data: Data, type: Type, output: SerializationOutput,
-        context: SerializationContext
+    override fun writeObject(
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
     ) {
         superClassSerializer.writeObject(obj, data, type, output, context)
     }
