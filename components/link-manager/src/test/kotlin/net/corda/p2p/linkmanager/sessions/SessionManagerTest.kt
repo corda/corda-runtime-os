@@ -70,18 +70,18 @@ class SessionManagerTest {
         val PROTOCOL_MODES = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
 
-        private const val longPeriodSec = 10000L
+        private const val longPeriodMilliSec = 10000000L
         private val configNoHeartbeat = LinkManagerConfig(
             MAX_MESSAGE_SIZE,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            longPeriodSec,
-            longPeriodSec,
-            longPeriodSec
+            longPeriodMilliSec,
+            longPeriodMilliSec,
+            longPeriodMilliSec
         )
         private val configWithHeartbeat = LinkManagerConfig(
             MAX_MESSAGE_SIZE,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            longPeriodSec,
+            longPeriodMilliSec,
             40,
             200
         )
@@ -855,7 +855,7 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(message, authenticatedSession)
-        assertTrue(publishLatch.await(2 * configWithHeartbeat.sessionTimeoutMilliSecs, TimeUnit.SECONDS))
+        assertTrue(publishLatch.await(2 * configWithHeartbeat.sessionTimeoutMilliSecs, TimeUnit.MILLISECONDS))
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
@@ -864,8 +864,7 @@ class SessionManagerTest {
 
     @Test
     fun `when sending a heartbeat, if an exception is thrown, the heartbeat is resent`() {
-        val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeoutMilliSecs / configWithHeartbeat.heartbeatMessagePeriodMilliSecs - 1
-        val publishLatch = CountDownLatch(heartbeatsBeforeTimeout.toInt())
+        val publishLatch = CountDownLatch(2)
         val throwingPublisher = CallbackPublisher({ publishLatch.countDown() }, true)
         whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(throwingPublisher)
         val sessionManager = SessionManagerImpl(
@@ -883,7 +882,7 @@ class SessionManagerTest {
 
         sessionManager.dataMessageSent(message, authenticatedSession)
 
-        assertTrue(publishLatch.await(2 * configWithHeartbeat.sessionTimeoutMilliSecs, TimeUnit.SECONDS))
+        assertTrue(publishLatch.await(10 * configWithHeartbeat.heartbeatMessagePeriodMilliSecs, TimeUnit.MILLISECONDS))
         loggingInterceptor.assertErrorContains("An exception was thrown when sending a heartbeat message.")
         sessionManager.stop()
     }
