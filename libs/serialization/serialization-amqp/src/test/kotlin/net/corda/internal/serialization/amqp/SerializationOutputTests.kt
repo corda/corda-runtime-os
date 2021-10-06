@@ -661,18 +661,6 @@ class SerializationOutputTests {
     }
 
     @Test
-    fun `test currencies serialize`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.CurrencySerializer)
-
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.CurrencySerializer)
-
-        val obj = Currency.getInstance("USD")
-        serdes(obj, factory, factory2)
-    }
-
-    @Test
     fun `test big decimals serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         factory.register(net.corda.internal.serialization.amqp.custom.BigDecimalSerializer)
