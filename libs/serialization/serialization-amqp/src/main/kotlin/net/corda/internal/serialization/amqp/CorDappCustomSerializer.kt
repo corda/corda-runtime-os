@@ -65,15 +65,8 @@ class CorDappCustomSerializer @JvmOverloads constructor(
     val proxyType = types[PROXY_TYPE]
     override val typeDescriptor: Symbol = typeDescriptorFor(type)
     val descriptor: Descriptor = Descriptor(typeDescriptor)
-    private val proxySerializer: AMQPSerializer<Any> by lazy {
-
-//        val s = factory.get(proxyType)
-//        println(s)
-//        return@lazy s
-//        return@lazy if (s is AMQPPrimitiveSerializer)
-//            s
-//        else
-            ObjectSerializer.make(factory.getTypeInformation(proxyType), factory)
+    private val proxySerializer: ObjectSerializer by lazy {
+        ObjectSerializer.make(factory.getTypeInformation(proxyType), factory)
     }
 
     override fun writeClassInfo(output: SerializationOutput) {}
@@ -85,19 +78,10 @@ class CorDappCustomSerializer @JvmOverloads constructor(
                 SerializationCustomSerializer<Any?, Any?>>(serializer).toProxy(obj)
             ?: throw NotSerializableException("proxy object is null")
 
-//            output.writeObject(proxy, data, proxyType, context)
-
         if (revealSubclassesInSchema) {
-            val amqpSerializer = proxySerializer
-            if (amqpSerializer is ObjectSerializer) {
-                data.withList {
-                    amqpSerializer.propertySerializers.forEach { (_, serializer) ->
-                        serializer.writeProperty(proxy, this, output, context, 0)
-                    }
-                }
-            } else {
-                data.withDescribed(descriptor) {
-                    output.writeObject(proxy, data, proxyType, context)
+            data.withList {
+                proxySerializer.propertySerializers.forEach { (_, serializer) ->
+                    serializer.writeProperty(proxy, this, output, context, 0)
                 }
             }
         } else {
