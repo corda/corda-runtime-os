@@ -36,9 +36,11 @@ interface SandboxCreationService {
     fun createSandboxGroupWithoutStarting(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
 
     /**
-     * Uninstalls all the sandbox group's bundles. Removes the sandbox group from the service's cache.
+     * Attempts to uninstall each of the sandbox group's bundles in turn, and removes the sandbox group from the
+     * service's cache.
      *
-     * Throws [SandboxException] if one of the bundles cannot be uninstalled.
+     * Throws [SandboxException] if any of the bundles could not be uninstalled. The exception message will detail
+     * which bundles failed to uninstall, and for what reason.
      */
     fun unloadSandboxGroup(sandboxGroup: SandboxGroup)
 }

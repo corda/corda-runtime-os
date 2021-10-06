@@ -67,10 +67,17 @@ internal class SandboxServiceImpl @Activate constructor(
         createSandboxes(cpkFileHashes, startBundles = false)
 
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
-        sandboxGroup.sandboxes.forEach { sandbox ->
+        val failedToUninstallBundles = sandboxGroup.sandboxes.flatMap { sandbox ->
             sandboxes.remove(sandbox.id)
             sandboxGroups.remove(sandbox.id)
             (sandbox as SandboxInternal).unload()
+        }
+
+        if (failedToUninstallBundles.isNotEmpty()) {
+            throw SandboxException(
+                "The following bundles could not be uninstalled when unloading the sandbox group: " +
+                        "$failedToUninstallBundles"
+            )
         }
     }
 

@@ -1,6 +1,7 @@
 package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.internal.mockBundle
 import net.corda.sandbox.internal.utilities.BundleUtils
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -151,13 +152,32 @@ class SandboxImplTests {
     }
 
     @Test
-    fun `throws if sandbox bundle cannot be uninstalled`() {
-        val cantBeUninstalledBundle = mock(Bundle::class.java).apply {
-            whenever(uninstall()).then { throw IllegalStateException("") }
-        }
-        val sandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(cantBeUninstalledBundle), setOf())
+    fun `throws if any sandbox bundles cannot be uninstalled`() {
+        val errorOne = IllegalStateException("abc")
+        val errorTwo = IllegalArgumentException("xyz")
 
-        val e = assertThrows<SandboxException> { sandbox.unload() }
-        assertTrue(e.message!!.contains("Bundle could not be uninstalled: "))
+        val cantBeUninstalledCordappBundle = mockBundle().apply {
+            whenever(uninstall()).then { throw errorOne }
+        }
+        val cantBeUninstalledLibraryBundle = mockBundle().apply {
+            whenever(uninstall()).then { throw errorTwo }
+        }
+
+        val sandbox = SandboxImpl(
+            mockBundleUtils,
+            randomUUID(),
+            setOf(cantBeUninstalledCordappBundle, cantBeUninstalledLibraryBundle),
+            setOf()
+        )
+
+        val uninstallFailureMessages = sandbox.unload()
+        assertTrue(
+            uninstallFailureMessages.containsAll(
+                setOf(
+                    "Bundle ${cantBeUninstalledCordappBundle.symbolicName} could not be uninstalled, due to: $errorOne",
+                    "Bundle ${cantBeUninstalledLibraryBundle.symbolicName} could not be uninstalled, due to: $errorTwo"
+                )
+            )
+        )
     }
 }

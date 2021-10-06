@@ -655,23 +655,41 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `throws if sandbox bundle cannot be uninstalled`() {
-        val cantBeUninstalledBundle = mockBundle().apply {
-            whenever(uninstall()).then { throw IllegalStateException("") }
+    fun `throws if any sandbox bundles cannot be uninstalled`() {
+        val errorOne = IllegalStateException("abc")
+        val errorTwo = IllegalArgumentException("xyz")
+
+        val cantBeUninstalledCordappBundle = mockBundle().apply {
+            whenever(uninstall()).then { throw errorOne }
         }
-        val libraryBundle = mockBundle()
+        val cantBeUninstalledLibraryBundle = mockBundle().apply {
+            whenever(uninstall()).then { throw errorTwo }
+        }
 
         val mockBundleUtils = mock<BundleUtils>().apply {
-            whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(cantBeUninstalledBundle)
-            whenever(installAsBundle(anyString(), eq(cpkOne.libraries.single().toUri()))).thenReturn(libraryBundle)
+            whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(cantBeUninstalledCordappBundle)
+            whenever(installAsBundle(anyString(), eq(cpkOne.libraries.single().toUri()))).thenReturn(cantBeUninstalledLibraryBundle)
             whenever(allBundles).thenReturn(listOf(frameworkBundle, scrBundle))
         }
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
 
         val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne.cpkHash))
-
         val e = assertThrows<SandboxException> { sandboxService.unloadSandboxGroup(sandboxGroup) }
-        assertTrue(e.message!!.contains("Bundle could not be uninstalled: "))
+        assertTrue(
+            e.message!!.contains(
+                "The following bundles could not be uninstalled when unloading the sandbox group:"
+            )
+        )
+        assertTrue(
+            e.message!!.contains(
+                "Bundle ${cantBeUninstalledCordappBundle.symbolicName} could not be uninstalled, due to: $errorOne"
+            )
+        )
+        assertTrue(
+            e.message!!.contains(
+                "Bundle ${cantBeUninstalledLibraryBundle.symbolicName} could not be uninstalled, due to: $errorTwo"
+            )
+        )
     }
 }
 
