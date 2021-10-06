@@ -4,7 +4,6 @@ import net.corda.sandbox.internal.SandboxServiceInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
-import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.hooks.bundle.FindHook
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
