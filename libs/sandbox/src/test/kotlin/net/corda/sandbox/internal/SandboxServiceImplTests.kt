@@ -674,21 +674,13 @@ class SandboxServiceImplTests {
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
 
         val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne.cpkHash))
-        val e = assertThrows<SandboxException> { sandboxService.unloadSandboxGroup(sandboxGroup) }
-        assertTrue(
-            e.message!!.contains(
-                "The following bundles could not be uninstalled when unloading the sandbox group:"
-            )
-        )
-        assertTrue(
-            e.message!!.contains(
-                "Bundle ${cantBeUninstalledCordappBundle.symbolicName} could not be uninstalled, due to: $errorOne"
-            )
-        )
-        assertTrue(
-            e.message!!.contains(
+        val uninstallFailureMessages = sandboxService.unloadSandboxGroup(sandboxGroup)
+        assertEquals(
+            setOf(
+                "Bundle ${cantBeUninstalledCordappBundle.symbolicName} could not be uninstalled, due to: $errorOne",
                 "Bundle ${cantBeUninstalledLibraryBundle.symbolicName} could not be uninstalled, due to: $errorTwo"
-            )
+            ),
+            uninstallFailureMessages.toSet()
         )
     }
 }

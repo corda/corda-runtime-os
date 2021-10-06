@@ -171,13 +171,12 @@ class SandboxImplTests {
         )
 
         val uninstallFailureMessages = sandbox.unload()
-        assertTrue(
-            uninstallFailureMessages.containsAll(
-                setOf(
-                    "Bundle ${cantBeUninstalledCordappBundle.symbolicName} could not be uninstalled, due to: $errorOne",
-                    "Bundle ${cantBeUninstalledLibraryBundle.symbolicName} could not be uninstalled, due to: $errorTwo"
-                )
-            )
+        assertEquals(
+            setOf(
+                "Bundle ${cantBeUninstalledCordappBundle.symbolicName} could not be uninstalled, due to: $errorOne",
+                "Bundle ${cantBeUninstalledLibraryBundle.symbolicName} could not be uninstalled, due to: $errorTwo"
+            ),
+            uninstallFailureMessages.toSet()
         )
     }
 }
