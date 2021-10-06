@@ -3,22 +3,5 @@
   "name": "HeartbeatMessage",
   "namespace": "net.corda.p2p",
   "doc": "",
-  "fields": [
-    {
-      "name": "destination",
-      "type": "net.corda.p2p.app.HoldingIdentity"
-    },
-    {
-      "name": "source",
-      "type": "net.corda.p2p.app.HoldingIdentity"
-    },
-    {
-      "name": "messageId",
-      "type": "string"
-    },
-    {
-      "name": "sequenceNumber",
-      "type": "long"
-    }
-  ]
+  "fields": []
 }

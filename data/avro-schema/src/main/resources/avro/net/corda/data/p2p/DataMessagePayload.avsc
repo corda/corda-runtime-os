@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "LinkManagerPayload",
+  "name": "DataMessagePayload",
   "namespace": "net.corda.p2p",
   "fields": [
     {
