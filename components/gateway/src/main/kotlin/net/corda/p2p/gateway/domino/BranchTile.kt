@@ -38,9 +38,18 @@ abstract class BranchTile(coordinatorFactory: LifecycleCoordinatorFactory) : Dom
     }
 
     override fun onChildStarted() {
+        children.filter {
+            it.state != State.StoppedDueToError
+        }.forEach {
+            it.start()
+        }
         if (children.all { it.isRunning }) {
             updateState(State.Started)
         }
+    }
+
+    override fun onChildStopped() {
+        stop()
     }
 
     override fun stopTile() {
@@ -64,5 +73,8 @@ abstract class BranchTile(coordinatorFactory: LifecycleCoordinatorFactory) : Dom
                 logger.warn("Could not close $it", e)
             }
         }
+    }
+    override fun toString(): String {
+        return "$name: $state: $children"
     }
 }

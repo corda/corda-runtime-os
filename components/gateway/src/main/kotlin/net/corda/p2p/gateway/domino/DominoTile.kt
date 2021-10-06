@@ -139,4 +139,8 @@ abstract class DominoTile(
             logger.debug("Could not close coordinator", e)
         }
     }
+
+    override fun toString(): String {
+        return "$name: $state"
+    }
 }

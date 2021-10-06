@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference
 abstract class ConfigurationAwareTile<C>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
-    private val configFactory: (Config)->C
+    private val configFactory: (Config) -> C
 ) :
     LeafTile(coordinatorFactory),
     ConfigurationHandler {
@@ -21,9 +21,9 @@ abstract class ConfigurationAwareTile<C>(
         private val logger = contextLogger()
     }
 
-    private var configurationHolder = AtomicReference<C>()
-
+    private val configurationHolder = AtomicReference<C>()
     private val canReceiveConfigurations = AtomicBoolean(false)
+
     private val registration = configurationReaderService.registerForUpdates(this)
 
     override fun close() {
@@ -41,22 +41,23 @@ abstract class ConfigurationAwareTile<C>(
     }
 
     private fun applyNewConfiguration(newConfiguration: Config) {
-        val configuration = configFactory(newConfiguration)
-        logger.info("Got configuration")
-        val oldConfiguration = configurationHolder.getAndSet(configuration)
-        if (oldConfiguration == configuration) {
-            logger.info("Configuration had not changed")
-            return
-        } else if (canReceiveConfigurations.get()) {
-            logger.info("Reconfiguring gateway $name")
-            @Suppress("TooGenericExceptionCaught")
-            try {
+        @Suppress("TooGenericExceptionCaught")
+        try {
+            val configuration = configFactory(newConfiguration)
+            logger.info("Got configuration $name")
+            val oldConfiguration = configurationHolder.getAndSet(configuration)
+            if (oldConfiguration == configuration) {
+                logger.info("Configuration had not changed $name")
+                return
+            } else if ((state == State.StoppedDueToError) || (canReceiveConfigurations.get())) {
+                logger.info("Reconfiguring gateway $name")
                 applyNewConfiguration(configuration, oldConfiguration)
+                canReceiveConfigurations.set(true)
                 updateState(State.Started)
                 logger.info("Gateway reconfigured $name")
-            } catch (e: Throwable) {
-                gotError(e)
             }
+        } catch (e: Throwable) {
+            gotError(e)
         }
     }
 
@@ -72,6 +73,7 @@ abstract class ConfigurationAwareTile<C>(
                 gotError(e)
             }
         }
+
         canReceiveConfigurations.set(true)
         executeBeforeStop {
             canReceiveConfigurations.set(false)

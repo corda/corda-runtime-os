@@ -129,6 +129,21 @@ open class TestBase {
                 )
             }
         }
+        fun publishBadConfig() {
+            val publishConfig = ConfigFactory.empty()
+                .withValue("hello", ConfigValueFactory.fromAnyRef("world"))
+            CordaPublisherFactory(configurationTopicService).createPublisher(PublisherConfig((topicName))).use { publisher ->
+                val configurationPublisher = ConfigWriterImpl(topicName, publisher)
+                configurationPublisher.updateConfiguration(
+                    CordaConfigurationKey(
+                        "myKey",
+                        CordaConfigurationVersion("p2p", 0, 1),
+                        CordaConfigurationVersion("gateway", 0, 1)
+                    ),
+                    publishConfig
+                )
+            }
+        }
     }
 
     protected fun createConfigurationServiceFor(configuration: GatewayConfiguration): ConfigurationReadService {

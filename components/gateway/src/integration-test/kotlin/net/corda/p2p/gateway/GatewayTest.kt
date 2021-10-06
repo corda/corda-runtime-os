@@ -19,6 +19,7 @@ import net.corda.p2p.SessionPartitions
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
+import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
@@ -39,7 +40,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
+import java.net.ConnectException
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URI
@@ -485,4 +488,64 @@ class GatewayTest : TestBase() {
         payload = ByteBuffer.wrap(content.toByteArray())
         authTag = ByteBuffer.wrap(ByteArray(0))
     }.build()
+
+    @Test
+    @Timeout(120)
+    fun `Gateway can recover from bad configuration`() {
+        val configPublisher = ConfigPublisher()
+        val host = "www.alice.net"
+        Gateway(
+            configPublisher.readerService,
+            alice.subscriptionFactory,
+            alice.publisherFactory,
+            lifecycleCoordinatorFactory,
+        ).use { gateway ->
+            configPublisher.publishConfig(
+                GatewayConfiguration(
+                    host,
+                    10001,
+                    aliceSslConfig
+                )
+            )
+            gateway.startAndWaitForStarted()
+            assertThat(gateway.state).isEqualTo(DominoTile.State.Started)
+
+            // -20 is invalid port, serer should fail
+            configPublisher.publishConfig(
+                GatewayConfiguration(
+                    host,
+                    -20,
+                    aliceSslConfig
+                )
+            )
+            eventually(duration = 20.seconds) {
+                assertThat(gateway.state).isNotEqualTo(DominoTile.State.Started)
+            }
+            assertThrows<ConnectException> {
+                Socket(host, 10001).close()
+            }
+
+            configPublisher.publishConfig(
+                GatewayConfiguration(
+                    host,
+                    10002,
+                    aliceSslConfig
+                )
+            )
+            eventually(duration = 20.seconds) {
+                assertThat(gateway.state).isEqualTo(DominoTile.State.Started)
+            }
+            assertDoesNotThrow {
+                Socket(host, 10002).close()
+            }
+
+            configPublisher.publishBadConfig()
+            eventually(duration = 20.seconds) {
+                assertThat(gateway.state).isNotEqualTo(DominoTile.State.Started)
+            }
+            assertThrows<ConnectException> {
+                Socket(host, 10002).close()
+            }
+        }
+    }
 }
