@@ -17,7 +17,7 @@ import java.util.UUID.randomUUID
 
 class CpkSandboxImplTests {
     private fun generateSandboxId() = randomUUID()
-    private val mockBundleUtils = BundleUtils(mock(), mock(BundleContext::class.java))
+    private val mockBundleUtils = BundleUtils(mock(BundleContext::class.java))
 
     @Test
     fun `can load class from CorDapp bundles in CPK sandbox`() {

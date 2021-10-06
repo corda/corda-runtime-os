@@ -6,6 +6,7 @@ import org.osgi.framework.BundleException
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.runtime.ServiceComponentRuntime
 import java.net.URI
 import java.security.AccessController.doPrivileged
 import java.security.PrivilegedActionException
@@ -50,6 +51,14 @@ internal class BundleUtils @Activate constructor(
 
     /** Returns the bundle from which [klass] is loaded, or null if there is no such bundle. */
     fun getBundle(klass: Class<*>): Bundle? = FrameworkUtil.getBundle(klass)
+
+    /**
+     * Returns the bundle from which [ServiceComponentRuntime] is loaded, or null if there is no such bundle.
+     *
+     * This exists to simplify mocking - we can provide one mock for recovering the `ServiceComponentRuntime` during
+     * `SandboxServiceImpl` initialisation, and another mock for general retrieval of bundles based on classes.
+     */
+    fun getServiceRuntimeComponentBundle(): Bundle? = FrameworkUtil.getBundle(ServiceComponentRuntime::class.java)
 
     /** Returns the list of all installed bundles. */
     val allBundles get() = bundleContext.bundles.toList()
