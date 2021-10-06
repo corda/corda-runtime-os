@@ -1,7 +1,6 @@
 package net.corda.crypto.client
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoLibrarySandboxClientsFactoryProvider
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.dev.DevCryptoServiceProvider
 import net.corda.crypto.component.lifecycle.AbstractCryptoCoordinator
