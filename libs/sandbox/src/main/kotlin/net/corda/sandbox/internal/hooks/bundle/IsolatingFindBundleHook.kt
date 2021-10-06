@@ -24,7 +24,7 @@ internal class IsolatingFindBundleHook @Activate constructor(
 
     override fun find(context: BundleContext, bundles: MutableCollection<Bundle>) {
         // The `sandbox` module has the ability to retrieve all bundles.
-        if (context.bundle == bundleUtils.getBundle(this::class.java)) return
+        if (context.bundle == bundleUtils.getBundle(SandboxServiceInternal::class.java)) return
 
         bundles.removeIf { bundle ->
             !sandboxService.hasVisibility(context.bundle, bundle)
