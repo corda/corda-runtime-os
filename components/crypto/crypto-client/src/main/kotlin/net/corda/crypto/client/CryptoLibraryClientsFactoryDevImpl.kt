@@ -56,7 +56,7 @@ class CryptoLibraryClientsFactoryDevImpl(
         cryptoServices.getOrPut("$memberId:$category") {
             devCryptoServiceProvider.getInstance(
                 CryptoServiceContext(
-                    sandboxId = memberId,
+                    memberId = memberId,
                     category = category,
                     cipherSuiteFactory = cipherSuiteFactory,
                     config = DevCryptoServiceConfiguration()

@@ -15,7 +15,6 @@ import net.corda.v5.cipher.suite.schemes.RSA_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SM2_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SPHINCS256_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
@@ -39,6 +38,8 @@ open class DefaultCryptoService(
 
     private val supportedSchemes: Array<SignatureScheme>
 
+    private val supportedSchemeCodes: Set<String>
+
     init {
         val schemes = mutableListOf<SignatureScheme>()
         schemes.addIfSupported(RSA_CODE_NAME)
@@ -49,6 +50,7 @@ open class DefaultCryptoService(
         schemes.addIfSupported(SM2_CODE_NAME)
         schemes.addIfSupported(GOST3410_GOST3411_CODE_NAME)
         supportedSchemes = schemes.toTypedArray()
+        supportedSchemeCodes = supportedSchemes.map { it.codeName }.toSet()
     }
 
     override fun requiresWrappingKey(): Boolean = true
@@ -84,7 +86,9 @@ open class DefaultCryptoService(
         try {
             if (cache.find(masterKeyAlias) != null) {
                 when (failIfExists) {
-                    true -> throw CryptoServiceBadRequestException("There is an existing key with the alias: $masterKeyAlias")
+                    true -> throw CryptoServiceBadRequestException(
+                        "There is an existing key with the alias: $masterKeyAlias"
+                    )
                     false -> {
                         logger.info(
                             "Wrapping key for alias '$masterKeyAlias' already exists, " +
@@ -103,13 +107,20 @@ open class DefaultCryptoService(
         }
     }
 
-    override fun generateKeyPair(alias: String, signatureScheme: SignatureScheme): PublicKey {
+    override fun generateKeyPair(
+        alias: String,
+        signatureScheme: SignatureScheme,
+        context: Map<String, String>
+    ): PublicKey {
         logger.debug("generateKeyPair(alias={}, signatureScheme={})", alias, signatureScheme)
         if (!isSupported(signatureScheme)) {
             throw CryptoServiceBadRequestException("Unsupported signature scheme: ${signatureScheme.codeName}")
         }
         return try {
-            val keyPairGenerator = KeyPairGenerator.getInstance(signatureScheme.algorithmName, provider(signatureScheme))
+            val keyPairGenerator = KeyPairGenerator.getInstance(
+                signatureScheme.algorithmName,
+                provider(signatureScheme)
+            )
             if (signatureScheme.algSpec != null) {
                 keyPairGenerator.initialize(signatureScheme.algSpec, schemeMetadata.secureRandom)
             } else if (signatureScheme.keySize != null) {
@@ -121,19 +132,33 @@ open class DefaultCryptoService(
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Throwable) {
-            throw CryptoServiceException("Cannot generate key for alias $alias and signature scheme ${signatureScheme.codeName}", e)
+            throw CryptoServiceException(
+                "Cannot generate key for alias $alias and signature scheme ${signatureScheme.codeName}",
+                e
+            )
         }
     }
 
-    override fun generateWrappedKeyPair(masterKeyAlias: String, wrappedSignatureScheme: SignatureScheme): WrappedKeyPair {
-        logger.debug("generateWrappedKeyPair(masterKeyAlias={}, wrappedSignatureScheme={})", masterKeyAlias, wrappedSignatureScheme)
+    override fun generateWrappedKeyPair(
+        masterKeyAlias: String,
+        wrappedSignatureScheme: SignatureScheme,
+        context: Map<String, String>
+    ): WrappedKeyPair {
+        logger.debug(
+            "generateWrappedKeyPair(masterKeyAlias={}, wrappedSignatureScheme={})",
+            masterKeyAlias,
+            wrappedSignatureScheme
+        )
         if (!isSupported(wrappedSignatureScheme)) {
             throw CryptoServiceBadRequestException("Unsupported signature scheme: ${wrappedSignatureScheme.codeName}")
         }
         return try {
             val wrappingKey = cache.find(masterKeyAlias)?.wrappingKey
                 ?: throw CryptoServiceBadRequestException("The $masterKeyAlias is not created yet.")
-            val keyPairGenerator = KeyPairGenerator.getInstance(wrappedSignatureScheme.algorithmName, provider(wrappedSignatureScheme))
+            val keyPairGenerator = KeyPairGenerator.getInstance(
+                wrappedSignatureScheme.algorithmName,
+                provider(wrappedSignatureScheme)
+            )
             if (wrappedSignatureScheme.algSpec != null) {
                 keyPairGenerator.initialize(wrappedSignatureScheme.algSpec, schemeMetadata.secureRandom)
             } else if (wrappedSignatureScheme.keySize != null) {
@@ -149,19 +174,26 @@ open class DefaultCryptoService(
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Throwable) {
-            throw CryptoServiceException("Cannot generate wrapped key pair with scheme: ${wrappedSignatureScheme.codeName}", e)
+            throw CryptoServiceException(
+                "Cannot generate wrapped key pair with scheme: ${wrappedSignatureScheme.codeName}",
+                e
+            )
         }
     }
 
-    override fun sign(alias: String, signatureScheme: SignatureScheme, data: ByteArray): ByteArray =
-        sign(alias, signatureScheme, signatureScheme.signatureSpec, data)
-
-    override fun sign(alias: String, signatureScheme: SignatureScheme, signatureSpec: SignatureSpec, data: ByteArray): ByteArray {
-        logger.debug("sign(alias={}, signatureScheme={}, spec={})", alias, signatureScheme, signatureSpec)
+    override fun sign(
+        alias: String,
+        signatureScheme: SignatureScheme,
+        data: ByteArray,
+        context: Map<String, String>
+    ): ByteArray {
+        logger.debug("sign(alias={}, signatureScheme={})", alias, signatureScheme)
         return try {
             val privateKey = cache.find(alias)?.privateKey
-                ?: throw CryptoServiceBadRequestException("Unable to sign: There is no private key under the alias: $alias")
-            sign(signatureScheme, signatureSpec, privateKey, data)
+                ?: throw CryptoServiceBadRequestException(
+                    "Unable to sign: There is no private key under the alias: $alias"
+                )
+            sign(signatureScheme, privateKey, data)
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Throwable) {
@@ -169,18 +201,21 @@ open class DefaultCryptoService(
         }
     }
 
-    override fun sign(wrappedKey: WrappedPrivateKey, signatureSpec: SignatureSpec, data: ByteArray): ByteArray {
+    override fun sign(
+        wrappedKey: WrappedPrivateKey,
+        data: ByteArray,
+        context: Map<String, String>
+    ): ByteArray {
         logger.debug(
-            "sign(wrappedKey.masterKeyAlias={}, wrappedKey.signatureScheme={}, signatureSpec={})",
+            "sign(wrappedKey.masterKeyAlias={}, wrappedKey.signatureScheme={})",
             wrappedKey.masterKeyAlias,
-            wrappedKey.signatureScheme,
-            signatureSpec
+            wrappedKey.signatureScheme
         )
         return try {
             val wrappingKey = cache.find(wrappedKey.masterKeyAlias)?.wrappingKey
                 ?: throw CryptoServiceBadRequestException("The ${wrappedKey.masterKeyAlias} is not created yet.")
             val privateKey = wrappingKey.unwrap(wrappedKey.keyMaterial)
-            sign(wrappedKey.signatureScheme, signatureSpec, privateKey, data)
+            sign(wrappedKey.signatureScheme, privateKey, data)
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Throwable) {
@@ -188,20 +223,21 @@ open class DefaultCryptoService(
         }
     }
 
-    private fun sign(signatureScheme: SignatureScheme, signatureSpec: SignatureSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {
+    private fun sign(signatureScheme: SignatureScheme, privateKey: PrivateKey, data: ByteArray): ByteArray {
         if (!isSupported(signatureScheme)) {
             throw CryptoServiceBadRequestException("Unsupported signature scheme: ${signatureScheme.codeName}")
         }
         if (data.isEmpty()) {
             throw CryptoServiceBadRequestException("Signing of an empty array is not permitted.")
         }
+        val signatureSpec = signatureScheme.signatureSpec
         val signatureBytes = if (signatureSpec.precalculateHash && signatureScheme.algorithmName == "RSA") {
             val cipher = Cipher.getInstance(signatureSpec.signatureName, provider(signatureScheme))
             cipher.init(Cipher.ENCRYPT_MODE, privateKey)
             val signingData = signatureSpec.getSigningData(hashingService, data)
             cipher.doFinal(signingData)
         } else {
-            signatureInstances.withSignature(signatureScheme, signatureSpec) { signature ->
+            signatureInstances.withSignature(signatureScheme) { signature ->
                 signature.initSign(privateKey, schemeMetadata.secureRandom)
                 val signingData = signatureSpec.getSigningData(hashingService, data)
                 signature.update(signingData)
@@ -211,7 +247,7 @@ open class DefaultCryptoService(
         return signatureBytes
     }
 
-    private fun isSupported(scheme: SignatureScheme): Boolean = scheme in supportedSchemes
+    private fun isSupported(scheme: SignatureScheme): Boolean = scheme.codeName in supportedSchemeCodes
 
     private fun provider(scheme: SignatureScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
 

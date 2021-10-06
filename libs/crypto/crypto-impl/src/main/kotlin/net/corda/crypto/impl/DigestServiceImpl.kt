@@ -6,6 +6,7 @@ import net.corda.v5.cipher.suite.DigestAlgorithmFactory
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
+import java.io.InputStream
 import java.util.concurrent.ConcurrentHashMap
 
 class DigestServiceImpl(
@@ -24,11 +25,18 @@ class DigestServiceImpl(
         return SecureHash(digestAlgorithmName.name, hashBytes)
     }
 
-    override fun digestLength(digestAlgorithmName: DigestAlgorithmName): Int = lengths.getOrPut(digestAlgorithmName.name) {
-        return digestFor(digestAlgorithmName).digestLength
+    override fun hash(inputStream: InputStream, digestAlgorithmName: DigestAlgorithmName): SecureHash {
+        val hashBytes = digestFor(digestAlgorithmName).digest(inputStream)
+        return SecureHash(digestAlgorithmName.name, hashBytes)
     }
 
-    private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm = factories.getOrPut(digestAlgorithmName.name) {
-        SpiDigestAlgorithmFactory(schemeMetadata, digestAlgorithmName.name)
-    }.getInstance()
+    override fun digestLength(digestAlgorithmName: DigestAlgorithmName): Int =
+        lengths.getOrPut(digestAlgorithmName.name) {
+            return digestFor(digestAlgorithmName).digestLength
+        }
+
+    private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm =
+        factories.getOrPut(digestAlgorithmName.name) {
+            SpiDigestAlgorithmFactory(schemeMetadata, digestAlgorithmName.name)
+        }.getInstance()
 }
