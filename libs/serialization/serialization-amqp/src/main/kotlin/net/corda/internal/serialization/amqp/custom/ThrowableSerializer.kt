@@ -3,7 +3,6 @@ package net.corda.internal.serialization.amqp.custom
 import net.corda.internal.serialization.amqp.CommonPropertyNames
 import net.corda.internal.serialization.amqp.LocalSerializerFactory
 import net.corda.internal.serialization.amqp.PropertyReader
-import net.corda.internal.serialization.amqp.Proxy
 import net.corda.internal.serialization.model.LocalConstructorInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.osgi.TypeResolver
