@@ -23,7 +23,7 @@ import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaCo
 import net.corda.messaging.kafka.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.messaging.kafka.utils.WeakValueHashMap
+import net.corda.messaging.kafka.utils.FutureTracker
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -56,7 +56,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private val futureMap: WeakValueHashMap<String, CompletableFuture<TRESP>> = WeakValueHashMap()
+    private val futureTracker = FutureTracker<TRESP>()
 
     override val isRunning: Boolean
         get() = !stopped
@@ -66,7 +66,11 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
     private val responseTopic = config.getString(RESPONSE_TOPIC)
-    private var partitionListener = RPCConsumerRebalanceListener<TRESP>("$topicPrefix$responseTopic", "RPC Response listener")
+    private var partitionListener = RPCConsumerRebalanceListener(
+        "$topicPrefix$responseTopic",
+        "RPC Response listener",
+        futureTracker
+    )
 
     private val errorMsg = "Failed to read records from group $groupName, topic $topic"
 
@@ -158,7 +162,8 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCResponse>>) {
         consumerRecords.forEach {
             val correlationKey = it.record.key()
-            val future = futureMap[correlationKey]
+            val partition = it.record.partition()
+            val future = futureTracker.getFuture(correlationKey, partition)
             val responseStatus = it.record.value().responseStatus!!
 
             if (future != null) {
@@ -179,7 +184,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                         future.cancel(true)
                     }
                 }
-                futureMap.remove(correlationKey)
+                futureTracker.removeFuture(correlationKey, partition)
             } else {
                 log.info(
                     "Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}. " +
@@ -192,25 +197,25 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
 
     @Suppress("TooGenericExceptionCaught")
     override fun sendRequest(req: TREQ): CompletableFuture<TRESP> {
-        val uuid = UUID.randomUUID().toString()
+        val correlationId = UUID.randomUUID().toString()
         val reqBytes = serializer.serialize(topic, req)
         val future = CompletableFuture<TRESP>()
+        val partitions = partitionListener.getPartitions()
 
-        if (partitionListener.partitions.size == 0) {
+        if (partitions.size == 0) {
             future.completeExceptionally(CordaRPCAPISenderException("No partitions. Couldn't send"))
         } else {
-            val partition = partitionListener.partitions[0].partition()
+            val partition = partitions[0].partition()
             val request = RPCRequest(
-                uuid,
+                correlationId,
                 Instant.now().toEpochMilli(),
                 "$topicPrefix$responseTopic",
                 partition,
                 ByteBuffer.wrap(reqBytes)
             )
 
-            val record = Record(topic, uuid, request)
-            partitionListener.futuresInPartitionMap[partition]?.add(future)
-            futureMap[uuid] = future
+            val record = Record(topic, correlationId, request)
+            futureTracker.addFuture(correlationId, future, partition)
             try {
                 publisher.publish(listOf(record))
             } catch (ex: Exception) {
