@@ -42,16 +42,4 @@ class MockSessionManager: SessionManager {
     override fun messageAcknowledged(sessionKey: SessionManager.SessionKey) {
         ackedMessages.add(sessionKey)
     }
-
-
-    override val isRunning: Boolean
-        get() = TODO("Not yet implemented")
-
-    override fun start() {
-        TODO("Not yet implemented")
-    }
-
-    override fun stop() {
-        TODO("Not yet implemented")
-    }
 }

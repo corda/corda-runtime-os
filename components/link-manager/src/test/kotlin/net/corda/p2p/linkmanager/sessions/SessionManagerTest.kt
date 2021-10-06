@@ -182,11 +182,11 @@ class SessionManagerTest {
 
         @Suppress("TooGenericExceptionThrown")
         override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
+            callback?.let{ it() }
             if (throwFirst) {
                 throwFirst = false
-                throw RuntimeException("Ohh No something went wrong.")
+                return listOf(CompletableFuture.failedFuture(RuntimeException("Ohh No something went wrong.")))
             }
-            callback?.let{ it() }
             return listOf(CompletableFuture.completedFuture(Unit))
         }
 
@@ -805,8 +805,7 @@ class SessionManagerTest {
     @Test
     fun `when sending a heartbeat, if an exception is thrown, the heartbeat is resent`() {
         val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeoutSecs / configWithHeartbeat.heartbeatMessagePeriodSecs - 1
-        //First time we throw an exception so nothing gets published.
-        val publishLatch = CountDownLatch(heartbeatsBeforeTimeout.toInt() - 1)
+        val publishLatch = CountDownLatch(heartbeatsBeforeTimeout.toInt())
         val throwingPublisher = CallbackPublisher({ publishLatch.countDown() }, true)
         whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(throwingPublisher)
         val sessionManager = SessionManagerImpl(

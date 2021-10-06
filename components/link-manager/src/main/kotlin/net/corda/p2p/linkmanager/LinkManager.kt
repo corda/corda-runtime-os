@@ -407,6 +407,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             session: Session,
             networkMap: LinkManagerNetworkMap,
         )
+        fun destroyQueue(key: SessionKey)
     }
 
     class PendingSessionMessageQueuesImpl(
@@ -455,6 +456,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 }
                 publisher.publish(records)
             }
+        }
+
+        override fun destroyQueue(key: SessionKey) {
+            queuedMessagesPendingSession.remove(key)
         }
 
         override val isRunning: Boolean

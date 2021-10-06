@@ -195,6 +195,7 @@ open class SessionManagerImpl(
             activeOutboundSessions.remove(sessionKey)
             pendingOutboundSessions.remove(sessionId)
             pendingOutboundSessionKeys.remove(sessionKey)
+            pendingOutboundSessionMessageQueues.destroyQueue(sessionKey)
         }
     }
 
@@ -582,17 +583,11 @@ open class SessionManagerImpl(
             if (timeSinceLastAck >= sessionTimeout.toMillis()) return
             if (timeSinceLastSend >= heartbeatPeriod.toMillis()) {
                 logger.trace("Sending heartbeat message between ${sessionKey.ourId} (our Identity) and ${sessionKey.responderId}.")
-                @Suppress("TooGenericExceptionCaught")
-                try {
-                    sendHeartbeatMessage(
-                        sessionKey.ourId.toHoldingIdentity(),
-                        sessionKey.responderId.toHoldingIdentity(),
-                        session,
-                    )
-                } catch (exception: Exception) {
-                    logger.error("An exception was thrown when sending a heartbeat message. The task will be retried again in" +
-                            " ${sessionTimeout.toMillis()} ms.\nException:", exception)
-                }
+                sendHeartbeatMessage(
+                    sessionKey.ourId.toHoldingIdentity(),
+                    sessionKey.responderId.toHoldingIdentity(),
+                    session,
+                )
                 executorService.schedule({ sendHeartbeat(sessionKey, session) }, heartbeatPeriod.toMillis(), TimeUnit.MILLISECONDS)
             } else {
                 executorService.schedule(
@@ -623,7 +618,9 @@ open class SessionManagerImpl(
                     )
                 )
             )
-            future.single().getOrThrow()
+            future.single().exceptionally {
+                error -> logger.error("An exception was thrown when sending a heartbeat message.\nException:", error)
+            }
         }
 
         private fun timeStamp(): Long {
