@@ -659,19 +659,7 @@ class SerializationOutputTests {
     fun `test custom object`() {
         serdes(FooContract)
     }
-
-    @Test
-    fun `test big decimals serialize`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.BigDecimalSerializer)
-
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.BigDecimalSerializer)
-
-        val obj = BigDecimal("100000000000000000000000000000.00")
-        serdes(obj, factory, factory2)
-    }
-
+    
     @Test
     fun `test instants serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
