@@ -39,13 +39,14 @@ class FutureTrackerTest {
     @Test
     fun `test FutureTracker partition removal `() {
         tracker.addPartitions(listOf(TopicPartition("", 0)))
+        tracker.addPartitions(listOf(TopicPartition("", 1)))
         tracker.addFuture("test", future, 0)
         tracker.addFuture("test", future, 1)
 
         Assertions.assertEquals(future, tracker.getFuture("test", 0))
         Assertions.assertEquals(future, tracker.getFuture("test", 1))
 
-        tracker.removePartitions(listOf(TopicPartition(null, 1)))
+        tracker.removePartitions(listOf(TopicPartition("", 1)))
 
         Assertions.assertEquals(future, tracker.getFuture("test", 0))
         Assertions.assertNull(tracker.getFuture("test", 1))
