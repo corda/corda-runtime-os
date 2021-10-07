@@ -811,18 +811,6 @@ class SerializationOutputTests {
     }
     
     @Test
-    fun `test BitSet serialize`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.BitSetSerializer(factory))
-
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.BitSetSerializer(factory2))
-
-        val obj = BitSet.valueOf(ByteArray(16) { it.toByte() }).get(0, 123)
-        serdes(obj, factory, factory2)
-    }
-
-    @Test
     fun `test EnumMap serialize`() {
         val obj = EnumMap<Month, Int>(Month::class.java)
         obj[Month.APRIL] = Month.APRIL.value
