@@ -659,7 +659,7 @@ class SerializationOutputTests {
     fun `test custom object`() {
         serdes(FooContract)
     }
-    
+
     @Test
     fun `test month serialize`() {
         val obj = Month.APRIL
@@ -766,20 +766,7 @@ class SerializationOutputTests {
     }
 
     data class BigIntegers(val a: BigInteger, val b: BigInteger)
-
-    @Test
-    fun `test BigInteger custom serializer`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.BigIntegerSerializer)
-
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.BigIntegerSerializer)
-
-        val obj = BigIntegers(BigInteger.TEN, BigInteger.TEN)
-        val objCopy = serdes(obj, factory, factory2)
-        assertEquals(objCopy.a, objCopy.b)
-    }
-
+    
     class ByteArrays(val a: ByteArray, val b: ByteArray)
 
     @Test
