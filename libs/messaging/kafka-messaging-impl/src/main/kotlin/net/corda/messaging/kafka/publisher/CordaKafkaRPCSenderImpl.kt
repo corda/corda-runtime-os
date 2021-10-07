@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.publisher
 
 import com.typesafe.config.Config
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
@@ -44,8 +45,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private val publisher: Publisher,
     private val consumerBuilder: CordaKafkaConsumerBuilderImpl<String, RPCResponse>,
     private val serializer: CordaAvroSerializer<TREQ>,
-    private val deserializer: CordaAvroDeserializer<TRESP>,
-    private val errorDeserializer: CordaAvroDeserializer<String>
+    private val deserializer: CordaAvroDeserializer<TRESP>
 ) : RPCSender<TREQ, TRESP>, RPCSubscription<TREQ, TRESP> {
 
     private companion object {
@@ -174,8 +174,12 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                     }
                     ResponseStatus.FAILED -> {
                         val responseBytes = it.record.value().payload
-                        val response = errorDeserializer.deserialize(responseTopic, responseBytes.array())
-                        future.completeExceptionally(CordaRPCAPIResponderException(response))
+                        val response = ExceptionEnvelope.fromByteBuffer(responseBytes)
+                        future.completeExceptionally(
+                            CordaRPCAPIResponderException(
+                                "Cause:${response.errorType}. Message: ${response.errorMessage}"
+                            )
+                        )
                     }
                     ResponseStatus.CANCELLED -> {
                         future.cancel(true)
@@ -185,8 +189,8 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
             } else {
                 log.info(
                     "Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}. " +
-                    "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
-                    "a repartition event or the client dropped their future. The response status for it was $responseStatus"
+                            "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
+                            "a repartition event or the client dropped their future. The response status for it was $responseStatus"
                 )
             }
         }

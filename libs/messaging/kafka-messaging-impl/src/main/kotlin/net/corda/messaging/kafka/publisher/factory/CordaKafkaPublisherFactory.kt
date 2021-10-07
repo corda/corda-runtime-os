@@ -3,6 +3,7 @@ package net.corda.messaging.kafka.publisher.factory
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCResponse
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
@@ -77,15 +78,13 @@ class CordaKafkaPublisherFactory @Activate constructor(
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCResponse>(avroSchemaRegistry)
         val serializer = CordaAvroSerializer<TREQ>(avroSchemaRegistry)
         val deserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.responseType)
-        val errorDeserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, String::class.java)
 
         return CordaKafkaRPCSenderImpl(
             publisherConfig,
             publisher,
             consumerBuilder,
             serializer,
-            deserializer,
-            errorDeserializer
+            deserializer
         )
     }
 }
