@@ -25,9 +25,11 @@ dependencies {
 }
 
 tasks.named('jar', Jar) {
-    bnd '''\
+    bundle {
+        bnd '''\
 Import-Package:\
     net.i2p.crypto.eddsa.math;resolution:=optional,\
     *
 '''
+    }
 }

@@ -25,6 +25,9 @@ pluginManagement {
 
         maven {
             url "$artifactoryContextUrl/engineering-tools-maven"
+            authentication {
+                basic(BasicAuthentication)
+            }
             credentials {
                 username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
                 password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')

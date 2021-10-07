@@ -139,9 +139,11 @@ tasks.named('processResources', ProcessResources) {
 tasks.named('jar', Jar) {
     archiveBaseName = "corda-" + project.name
 
-    bnd """
+    bundle {
+        bnd '''\
 Bundle-Name: \${project.description}
 Bundle-SymbolicName: \${project.group}.\${project.name}
 Fragment-Host: avro
-"""
+'''
+    }
 }

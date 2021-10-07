@@ -19,9 +19,9 @@ dependencies {
         exclude group: 'org.osgi'
     }
 
+    api project(":application")
     implementation project(":crypto")
     implementation project(":serialization")
-    implementation project(":application")
     implementation project(":persistence")
 
     testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"

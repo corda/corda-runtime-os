@@ -4,9 +4,10 @@ plugins {
 }
 
 dependencies {
+    cordaProvided platform(project(':corda-api'))
     cordaProvided project(':application')
     cordaProvided project(':ledger')
-    cordaProvided "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
+    cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 }
 
 tasks.named('jar', Jar) {
