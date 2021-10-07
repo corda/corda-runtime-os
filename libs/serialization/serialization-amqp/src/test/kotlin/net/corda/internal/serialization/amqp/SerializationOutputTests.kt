@@ -661,18 +661,6 @@ class SerializationOutputTests {
     }
     
     @Test
-    fun `test period serialize`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.PeriodSerializer(factory))
-
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.PeriodSerializer(factory2))
-
-        val obj = Period.of(99, 98, 97)
-        serdes(obj, factory, factory2)
-    }
-
-    @Test
     fun `test month serialize`() {
         val obj = Month.APRIL
         serdes(obj)
