@@ -30,8 +30,8 @@ class LocalTypeModelTests {
         override fun register(
             customSerializer: SerializationCustomSerializer<*, *>,
             withInheritance: Boolean,
-            revealSubclassesInSchema: Boolean,
-            factory: SerializerFactory
+            factory: SerializerFactory,
+            revealSubclassesInSchema: Boolean
         ) {}
         override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {}
         override fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? = null

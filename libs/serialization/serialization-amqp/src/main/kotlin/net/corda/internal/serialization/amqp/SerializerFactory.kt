@@ -34,10 +34,10 @@ class ComposedSerializerFactory(
         override fun register(
                 customSerializer: SerializationCustomSerializer<*, *>,
                 withInheritance: Boolean,
-                revealSubclassesInSchema: Boolean,
-                factory: SerializerFactory
+                factory: SerializerFactory,
+                revealSubclassesInSchema: Boolean
         ) {
-                customSerializerRegistry.register(customSerializer, withInheritance, revealSubclassesInSchema, factory)
+                customSerializerRegistry.register(customSerializer, withInheritance, factory, revealSubclassesInSchema)
                 addToWhitelist(listOf(customSerializer.serializerTypes().proxyType.asClass()))
         }
 
