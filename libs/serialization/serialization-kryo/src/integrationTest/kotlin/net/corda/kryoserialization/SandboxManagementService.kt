@@ -13,11 +13,6 @@ import java.security.MessageDigest
 
 class SandboxManagementService {
     companion object {
-
-//        private val baseDirectory = Paths.get(
-//            URI.create(System.getProperty("base.directory") ?: fail("base.directory property not found"))
-//        ).toAbsolutePath()
-
         private fun loadResource(resourceName: String): URI {
             return (this::class.java.classLoader.getResource(resourceName)
                 ?: fail("Failed to load $resourceName")).toURI()

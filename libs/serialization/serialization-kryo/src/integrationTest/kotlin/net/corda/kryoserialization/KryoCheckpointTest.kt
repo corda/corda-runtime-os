@@ -88,7 +88,19 @@ class KryoCheckpointTest {
         // Serialize with serializerSandbox1
         val bytes = serializerSandbox1.serialize(cash)
 
-        // Deserialize with serializerSandbox2
+        // Try (and fail) to serialize with serializerSandbox2
+        Executors.newSingleThreadExecutor().submit {
+            val builder2 =
+                checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group2)
+            val serializerSandbox2 = builder2
+                .addSerializer(TestClass::class.java, TestClass.Serializer())
+                .build()
+            assertThatExceptionOfType(SandboxException::class.java).isThrownBy {
+                serializerSandbox2.serialize(cash)
+            }
+        }.get()
+
+        // Try (and fail) to deserialize with serializerSandbox2
         Executors.newSingleThreadExecutor().submit {
             val builder2 =
                 checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group2)
