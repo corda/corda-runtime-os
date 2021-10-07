@@ -5,7 +5,7 @@ import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 
-internal object AutoCloseableSerialisationDetector : Serializer<AutoCloseable>() {
+internal object AutoCloseableSerializer : Serializer<AutoCloseable>() {
     override fun write(kryo: Kryo, output: Output, closeable: AutoCloseable) {
         val message = "${closeable.javaClass.name}, which is a closeable resource, has been detected during flow " +
                 "checkpointing. Restoring such resources across node restarts is not supported. Make sure code " +

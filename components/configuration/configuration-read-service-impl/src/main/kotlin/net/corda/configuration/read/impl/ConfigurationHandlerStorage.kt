@@ -4,12 +4,15 @@ import net.corda.configuration.read.ConfigurationHandler
 import net.corda.libs.configuration.read.ConfigReader
 import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * Contains a set of handlers for a given subscription ([ConfigReader]).
+ *
+ * Note, that while thread-safe this locks all calls to the object.
+ */
 class ConfigurationHandlerStorage {
 
-    private val handlers: MutableMap<CallbackHandle, Unit> = ConcurrentHashMap()
+    private val handlers = ConcurrentHashMap.newKeySet<CallbackHandle>()
 
-    // YIFT: Temporary hack - see https://r3-cev.atlassian.net/browse/CORE-2782
-    @Volatile
     private var subscription: ConfigReader? = null
 
     private class CallbackHandle(
@@ -37,32 +40,38 @@ class ConfigurationHandlerStorage {
     }
 
     private fun remove(handle: CallbackHandle) {
-        handlers.remove(handle)
+        synchronized(this) {
+            handlers.remove(handle)
+        }
     }
 
     fun add(callback: ConfigurationHandler) : AutoCloseable {
-        val handle = CallbackHandle(callback, this)
-        handlers[handle] = Unit
-        // YIFT: Temporary hack - see https://r3-cev.atlassian.net/browse/CORE-2782
-        // we must add the handler before looking at the subscription
-        val sub = subscription
-        if (sub != null) {
-            handle.subscribe(sub)
+        synchronized(this) {
+            val sub = subscription
+            val handle = CallbackHandle(callback, this)
+            handlers.add(handle)
+            if (sub != null) {
+                handle.subscribe(sub)
+            }
+            return handle
         }
-        return handle
     }
 
     fun addSubscription(subscription: ConfigReader) {
-        this.subscription = subscription
-        handlers.keys.forEach {
-            it.subscribe(subscription)
+        synchronized(this) {
+            this.subscription = subscription
+            handlers.forEach {
+                it.subscribe(subscription)
+            }
         }
     }
 
     fun removeSubscription() {
-        this.subscription = null
-        handlers.keys.forEach {
-            it.unregister()
+        synchronized(this) {
+            this.subscription = null
+            handlers.forEach {
+                it.unregister()
+            }
         }
     }
 }

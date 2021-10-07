@@ -15,7 +15,7 @@ import java.util.*
  * We've added our own custom serializer in order to ensure that only the key/value are recorded.
  * The rest of the list isn't required at this scope.
 */
-internal object LinkedListItrSerializer : Serializer<ListIterator<Any>>() {
+internal object LinkedListItrSerializer : Serializer<ListIterator<*>>() {
     // Create a dummy list so that we can get the ListItr from it
     // The element type of the list doesn't matter.  The iterator is all we want
     private val DUMMY_LIST = LinkedList<Long>(listOf(1))
@@ -25,12 +25,12 @@ internal object LinkedListItrSerializer : Serializer<ListIterator<Any>>() {
         isAccessible = true
     }
 
-    override fun write(kryo: Kryo, output: Output, obj: ListIterator<Any>) {
+    override fun write(kryo: Kryo, output: Output, obj: ListIterator<*>) {
         kryo.writeClassAndObject(output, outerListField.get(obj))
         output.writeInt(obj.nextIndex())
     }
 
-    override fun read(kryo: Kryo, input: Input, type: Class<ListIterator<Any>>): ListIterator<Any> {
+    override fun read(kryo: Kryo, input: Input, type: Class<ListIterator<*>>): ListIterator<*> {
         val list = kryo.readClassAndObject(input) as LinkedList<*>
         val index = input.readInt()
         return list.listIterator(index)

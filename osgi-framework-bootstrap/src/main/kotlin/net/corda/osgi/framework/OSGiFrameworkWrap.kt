@@ -3,7 +3,6 @@ package net.corda.osgi.framework
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.osgi.framework.OSGiFrameworkWrap.Companion.getFrameworkFrom
-import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants
@@ -13,8 +12,10 @@ import org.osgi.framework.ServiceReference
 import org.osgi.framework.launch.Framework
 import org.osgi.framework.launch.FrameworkFactory
 import org.osgi.framework.wiring.FrameworkWiring
+import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.Path
+import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -50,7 +51,7 @@ class OSGiFrameworkWrap(
 
     companion object {
 
-        private val logger = contextLogger()
+        private val logger = LoggerFactory.getLogger(OSGiFrameworkWrap::class.java)
 
         /**
          * Map the bundle state number to a description of the state.
@@ -76,6 +77,11 @@ class OSGiFrameworkWrap(
          * @see [install]
          */
         private const val JAR_EXTENSION = ".jar"
+
+        private const val FRAMEWORK_PROPERTIES_RESOURCE = "framework.properties"
+
+        private fun Properties.toStringMap() : Map<String, String> =
+            this.asSequence().associateTo(HashMap()) { it.key.toString() to it.value.toString() }
 
         /**
          * Return a new configured [Framework] loaded from the classpath and having [frameworkFactoryFQN] as
@@ -120,11 +126,26 @@ class OSGiFrameworkWrap(
                 Constants.FRAMEWORK_STORAGE to frameworkStorageDir.toString(),
                 Constants.FRAMEWORK_STORAGE_CLEAN to Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT,
                 Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA to systemPackagesExtra
-            )
+            ) + loadOSGiProperties(FRAMEWORK_PROPERTIES_RESOURCE).toStringMap() + System.getProperties().toStringMap()
             if (logger.isDebugEnabled) {
                 configurationMap.forEach { (key, value) -> logger.debug("OSGi property $key = $value.") }
             }
             return frameworkFactory.newFramework(configurationMap)
+        }
+
+        /**
+         * @param resource in the classpath containing a properties file.
+         * @return a [Properties] object.
+         * @throws IOException
+         */
+        private fun loadOSGiProperties(resource: String): Properties {
+            return OSGiFrameworkMain::class.java.classLoader.getResource(resource)?.let { resourceUrl ->
+                resourceUrl.openStream().buffered().use { input ->
+                    val properties = Properties()
+                    properties.load(input)
+                    properties
+                }
+            } ?: Properties()
         }
 
         /**
