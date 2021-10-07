@@ -1,0 +1,28 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Kafka CPI Write API Impl'
+
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "net.corda:corda-base"
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-packaging"
+
+    implementation project(":libs:cpi-store:cpi-read")
+    implementation project(":libs:cpi-store:cpi-read-impl-kafka")
+    implementation project(":libs:cpi-store:cpi-write")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:lifecycle:lifecycle")
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}
