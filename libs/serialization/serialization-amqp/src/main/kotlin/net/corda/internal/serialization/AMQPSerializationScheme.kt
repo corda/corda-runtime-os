@@ -73,11 +73,11 @@ fun SerializerFactory.addToWhitelist(types: Collection<Class<*>>) {
 }
 
 abstract class AbstractAMQPSerializationScheme private constructor(
-    private val cordappCustomSerializers: Set<SerializationCustomSerializer<*, *>>,
-    private val cordappSerializationWhitelists: Set<SerializationWhitelist>,
-    maybeNotConcurrentSerializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory>,
-    cipherSchemeMetadata: CipherSchemeMetadata,
-    val sff: SerializerFactoryFactory = createSerializerFactoryFactory()
+        private val cordappCustomSerializers: Set<SerializationCustomSerializer<*, *>>,
+        private val cordappSerializationWhitelists: Set<SerializationWhitelist>,
+        maybeNotConcurrentSerializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory>,
+        cipherSchemeMetadata: CipherSchemeMetadata,
+        val sff: SerializerFactoryFactory = createSerializerFactoryFactory()
 ) : SerializationScheme {
     constructor(cipherSchemeMetadata: CipherSchemeMetadata) : this(
         emptySet<SerializationCustomSerializer<*, *>>(),
