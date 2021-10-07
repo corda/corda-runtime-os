@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp.custom
 
 import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.serializeDeserializeAssert
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.time.ZoneId
@@ -20,10 +19,4 @@ class ZoneIdTest {
     fun everyZoneId(zoneId: ZoneId) {
         serializeDeserializeAssert(zoneId)
     }
-
-    @Test
-    fun a() {
-        serializeDeserializeAssert(ZoneId.systemDefault())
-    }
-
 }
