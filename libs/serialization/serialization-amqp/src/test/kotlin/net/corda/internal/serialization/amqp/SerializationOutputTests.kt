@@ -704,8 +704,6 @@ class SerializationOutputTests {
         assertSame(parentCopy.left, parentCopy.right)
     }
 
-    data class TestNode(val content: String, val children: MutableCollection<TestNode> = ArrayList())
-
     data class Bob(val byteArrays: List<ByteArray>)
 
     @Test
@@ -765,8 +763,6 @@ class SerializationOutputTests {
         assertEquals(objCopy.a, objCopy.b)
     }
 
-    data class BigIntegers(val a: BigInteger, val b: BigInteger)
-    
     class ByteArrays(val a: ByteArray, val b: ByteArray)
 
     @Test
@@ -809,7 +805,7 @@ class SerializationOutputTests {
         assertEquals(obj3.available(), obj2.available())
         assertEquals(obj3.read(), obj2.read())
     }
-    
+
     @Test
     fun `test EnumMap serialize`() {
         val obj = EnumMap<Month, Int>(Month::class.java)
