@@ -661,18 +661,6 @@ class SerializationOutputTests {
     }
     
     @Test
-    fun `test zoned date time serialize`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.ZonedDateTimeSerializer(factory))
-
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.ZonedDateTimeSerializer(factory2))
-
-        val obj = ZonedDateTime.now()
-        serdes(obj, factory, factory2)
-    }
-
-    @Test
     fun `test offset time serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         factory.register(net.corda.internal.serialization.amqp.custom.OffsetTimeSerializer(factory))
