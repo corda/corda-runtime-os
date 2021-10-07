@@ -11,7 +11,7 @@ import de.javakaffee.kryoserializers.ArraysAsListSerializer
 import de.javakaffee.kryoserializers.BitSetSerializer
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
 import net.corda.kryoserialization.resolver.CordaClassResolver
-import net.corda.kryoserialization.serializers.AutoCloseableSerialisationDetector
+import net.corda.kryoserialization.serializers.AutoCloseableSerializer
 import net.corda.kryoserialization.serializers.CertPathSerializer
 import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.CordaClosureSerializer
@@ -28,8 +28,6 @@ import net.corda.utilities.LazyMappedList
 import org.objenesis.instantiator.ObjectInstantiator
 import org.objenesis.strategy.InstantiatorStrategy
 import org.objenesis.strategy.StdInstantiatorStrategy
-import org.osgi.framework.FrameworkUtil
-import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Modifier.isPublic
@@ -49,9 +47,6 @@ class DefaultKryoCustomizer {
             classSerializer: ClassSerializer,
             ): Kryo {
             return kryo.apply {
-
-                classLoader = FrameworkUtil.getBundle(this::class.java)?.adapt(BundleWiring::class.java)?.classLoader
-                    ?: this::class.java.classLoader
 
                 classResolver.setKryo(this)
 
@@ -104,7 +99,7 @@ class DefaultKryoCustomizer {
                 register(LoggerFactory.getLogger("ROOT")::class.java, LOGGER_ID)
                 register(LoggerFactory.getLogger(this::class.java)::class.java, LOGGER_ID)
 
-                addDefaultSerializer(AutoCloseable::class.java, AutoCloseableSerialisationDetector)
+                addDefaultSerializer(AutoCloseable::class.java, AutoCloseableSerializer)
 
                 //Add external serializers
                 for ((clazz, serializer) in serializers.toSortedMap(compareBy { it.name })) {
