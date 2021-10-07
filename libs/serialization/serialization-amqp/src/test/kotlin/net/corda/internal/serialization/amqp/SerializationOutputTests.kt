@@ -782,20 +782,7 @@ class SerializationOutputTests {
         val objCopy = serdes(obj, factory, factory2, false, false)
         assertNotSame(objCopy.a, objCopy.b)
     }
-
-    @Test
-    fun `test StringBuffer serialize`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.StringBufferSerializer)
-
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.StringBufferSerializer)
-
-        val obj = StringBuffer("Bob")
-        val obj2 = serdes(obj, factory, factory2, false, false)
-        assertEquals(obj.toString(), obj2.toString())
-    }
-
+    
     @Test
     fun `test kotlin Unit serialize`() {
         val obj = Unit
