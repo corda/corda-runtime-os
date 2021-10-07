@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "ExceptionEnvelope",
+  "namespace": "net.corda.data",
+  "doc": "Exception envelope for transmitting exceptions",
+  "fields": [
+    {
+      "name": "errorType",
+      "type": "string",
+      "doc": "Error type in string format"
+    },
+    {
+      "name": "errorMessage",
+      "type": "string",
+      "doc": "The error message"
+    }
+  ]
+}
