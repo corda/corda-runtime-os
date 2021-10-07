@@ -204,7 +204,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         val future = CompletableFuture<TRESP>()
         val partitions = partitionListener.getPartitions()
 
-        if (partitions.size == 0) {
+        if (partitions.isEmpty()) {
             future.completeExceptionally(CordaRPCAPISenderException("No partitions. Couldn't send"))
         } else {
             val partition = partitions[0].partition()

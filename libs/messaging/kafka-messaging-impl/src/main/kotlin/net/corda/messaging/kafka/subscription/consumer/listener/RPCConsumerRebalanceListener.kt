@@ -13,7 +13,7 @@ class RPCConsumerRebalanceListener<TRESP>(
     private val tracker: FutureTracker<TRESP>
 ) : ConsumerRebalanceListener {
 
-    private var partitions = mutableListOf<TopicPartition>()
+    private val partitions = mutableListOf<TopicPartition>()
 
     companion object {
         private val log: Logger = contextLogger()
@@ -27,12 +27,13 @@ class RPCConsumerRebalanceListener<TRESP>(
     }
 
     override fun onPartitionsAssigned(partitions: MutableCollection<TopicPartition>) {
+        tracker.addPartitions(partitions.toList())
         this.partitions.addAll(partitions)
         val partitionIds = partitions.map { it.partition() }.joinToString(",")
         log.info("Consumer group name $groupName for topic $topic partition assigned: $partitionIds.")
     }
 
-    fun getPartitions(): MutableList<TopicPartition> {
+    fun getPartitions(): List<TopicPartition> {
         return Collections.unmodifiableList(partitions)
     }
 }

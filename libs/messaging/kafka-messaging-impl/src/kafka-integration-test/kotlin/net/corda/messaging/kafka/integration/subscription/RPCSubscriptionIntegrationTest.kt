@@ -30,6 +30,7 @@ import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CancellationException
+import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class)
 class RPCSubscriptionIntegrationTest {
@@ -181,18 +182,21 @@ class RPCSubscriptionIntegrationTest {
         rpcSender.start()
         rpcSub.start()
         var attempts = 5
-        while (attempts > 0) {
+        var messageSent = false
+        var future = CompletableFuture<String>()
+        while (!messageSent && attempts > 0) {
             attempts--
             try {
-                val future = rpcSender.sendRequest("REQUEST")
+                future = rpcSender.sendRequest("REQUEST")
+                messageSent = true
                 rpcSender.close()
-                eventually(10.seconds, 1.seconds) {
-                    assertThrows<CordaRPCAPISenderException> {
-                        future.getOrThrow()
-                    }
-                }
             } catch (ex: CordaRPCAPISenderException) {
                 Thread.sleep(2000)
+            }
+        }
+        eventually(10.seconds, 1.seconds) {
+            assertThrows<CordaRPCAPISenderException> {
+                future.getOrThrow()
             }
         }
         rpcSub.stop()
