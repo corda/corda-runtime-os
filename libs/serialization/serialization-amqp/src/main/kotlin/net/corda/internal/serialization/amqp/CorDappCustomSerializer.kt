@@ -54,7 +54,7 @@ class CorDappCustomSerializer @JvmOverloads constructor(
     private val proxyType = types.proxyType
     override val typeDescriptor: Symbol = typeDescriptorFor(type)
     val descriptor: Descriptor = Descriptor(typeDescriptor)
-    private val proxySerializer: ObjectSerializer by lazy {
+    private val objectSerializer: ObjectSerializer by lazy {
         ObjectSerializer.make(factory.getTypeInformation(proxyType), factory)
     }
 
@@ -69,7 +69,7 @@ class CorDappCustomSerializer @JvmOverloads constructor(
 
         if (revealSubclassesInSchema) {
             data.withList {
-                proxySerializer.propertySerializers.forEach { (_, serializer) ->
+                objectSerializer.propertySerializers.forEach { (_, serializer) ->
                     serializer.writeProperty(proxy, this, output, context, 0)
                 }
             }
@@ -84,7 +84,7 @@ class CorDappCustomSerializer @JvmOverloads constructor(
                             input: DeserializationInput, context: SerializationContext
     ): Any {
         val proxy = if (revealSubclassesInSchema)
-            proxySerializer.readObject(obj, serializationSchemas, metadata, input, context)
+            objectSerializer.readObject(obj, serializationSchemas, metadata, input, context)
         else {
             input.readObject(obj, serializationSchemas, metadata, proxyType, context)
         }
@@ -102,9 +102,9 @@ class CorDappCustomSerializer @JvmOverloads constructor(
     override fun toString(): String = "${this::class.java}(${serializer::class.java})"
 }
 
-data class CustomSerializerTypes(val targetType: Type, val proxyType: Type)
+internal data class CustomSerializerTypes(val targetType: Type, val proxyType: Type)
 
-fun SerializationCustomSerializer<*, *>.serializerTypes(): CustomSerializerTypes {
+internal fun SerializationCustomSerializer<*, *>.serializerTypes(): CustomSerializerTypes {
     val types = this::class.supertypes.filter { it.jvmErasure == SerializationCustomSerializer::class }
         .flatMap { it.arguments }
         .map { it.type!!.javaType }
