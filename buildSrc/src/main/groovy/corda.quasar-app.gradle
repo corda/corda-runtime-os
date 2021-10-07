@@ -1,0 +1,54 @@
+plugins {
+    id 'net.corda.plugins.quasar-utils'
+    id 'corda.common-app'
+}
+
+quasar {
+    version = quasarVersion
+    suspendableAnnotation = 'net.corda.v5.base.annotations.Suspendable'
+    instrumentTests = false
+    instrumentJavaExec = false
+    excludePackages = [
+            'co.paralleluniverse**',
+            'com.esotericsoftware.**',
+            'jdk**',
+            'junit**',
+            'kotlin**',
+            'net.rubygrapefruit.**',
+            'org.gradle.**',
+            'org.apache.**',
+            'org.jacoco.**',
+            'org.junit**',
+            'org.slf4j**',
+            'worker.org.gradle.**',
+            'org.assertj**',
+            'org.hamcrest**',
+            'org.mockito**',
+            'org.opentest4j**',
+            'org.eclipse**'
+    ]
+}
+
+configurations {
+    runtimeClasspath {
+        exclude group: 'com.esotericsoftware', module: 'reflectasm'
+    }
+}
+
+dependencies {
+    implementation "com.esotericsoftware:kryo:$kryoVersion"
+    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
+    systemPackages files(configurations.quasarAgent)
+    systemPackages "com.esotericsoftware:reflectasm:$reflectAsmVersion"
+}
+
+osgiRun {
+    frameworkProperties = [
+            "org.osgi.framework.bootdelegation" :
+                    "co.paralleluniverse.fibers.suspend," +
+                            "com.esotericsoftware.reflectasm," +
+                            "org.jolokia.jvmagent,org.jolokia.util",
+            "org.osgi.framework.bundle.parent" : "app"
+    ]
+    agent("co.paralleluniverse.fibers.instrument.JavaAgent", project.quasar.options.map { it.substring(1) }.get())
+}

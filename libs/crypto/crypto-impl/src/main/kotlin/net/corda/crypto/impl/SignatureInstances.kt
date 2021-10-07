@@ -2,7 +2,6 @@ package net.corda.crypto.impl
 
 import net.corda.utilities.LazyPool
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.crypto.SignatureSpec
 import java.security.Provider
 import java.security.Signature
 import java.util.concurrent.ConcurrentHashMap
@@ -16,8 +15,11 @@ class SignatureInstances(
 ) {
     private val signatureFactory: SignatureFactory = CachingSignatureFactory()
 
-    fun <A> withSignature(signatureScheme: SignatureScheme, signatureSpec: SignatureSpec, func: (signature: Signature) -> A): A {
-        val signature = getSignatureInstance(signatureSpec.signatureName, providers[signatureScheme.providerName])
+    fun <A> withSignature(signatureScheme: SignatureScheme, func: (signature: Signature) -> A): A {
+        val signature = getSignatureInstance(
+            signatureScheme.signatureSpec.signatureName,
+            providers[signatureScheme.providerName]
+        )
         try {
             return func(signature)
         } finally {
@@ -25,7 +27,9 @@ class SignatureInstances(
         }
     }
 
-    private fun getSignatureInstance(algorithm: String, provider: Provider?) = signatureFactory.borrow(algorithm, provider)
+    private fun getSignatureInstance(algorithm: String, provider: Provider?) =
+        signatureFactory.borrow(algorithm, provider)
+
     private fun releaseSignatureInstance(sig: Signature) = signatureFactory.release(sig)
 
     // The provider itself is a very bad key class as hashCode() is expensive and contended.

@@ -11,9 +11,6 @@ buildscript {
     ext {
         // Remember where our Java executable lives (until Bnd supports Gradle toolchains).
         javaExecutable = file("${System.getProperty('java.home')}/bin/java")
-
-        // Create another Quasar property in this repository's chosen format.
-        quasarVersion = quasar_version
     }
 }
 
@@ -258,6 +255,13 @@ subprojects {
 
     version rootProject.version
     group 'net.corda'
+
+    idea{
+        module {
+            downloadJavadoc = true
+            downloadSources = true
+        }
+    }
 
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")

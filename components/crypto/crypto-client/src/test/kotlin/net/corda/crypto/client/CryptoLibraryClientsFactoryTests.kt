@@ -10,15 +10,13 @@ import net.corda.data.crypto.wire.signing.WireSigningRequest
 import net.corda.data.crypto.wire.signing.WireSigningResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.test.util.createTestCase
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.UUID
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -88,27 +86,17 @@ class CryptoLibraryClientsFactoryTests {
         factory = provider.create(
             "testComponent"
         )
-        val latch = CountDownLatch(1)
-        val threads = mutableListOf<Thread>()
-        for (i in 1..100) {
-            val thread = thread(start = true) {
-                latch.await(20, TimeUnit.SECONDS)
-                if(i % 3 == 2) {
-                    provider.handleConfigEvent(config)
-                    factory = provider.create(
-                        "testComponent"
-                    )
-                }
-                assertTrue(provider.isRunning)
-                assertNotNull(factory.getFreshKeySigningService())
-                assertNotNull(factory.getSigningService(CryptoCategories.LEDGER))
+        (1..100).createTestCase { i ->
+            if(i % 3 == 2) {
+                provider.handleConfigEvent(config)
+                factory = provider.create(
+                    "testComponent"
+                )
             }
-            threads.add(thread)
-        }
-        latch.countDown()
-        threads.forEach {
-            it.join(5_000)
-        }
+            assertTrue(provider.isRunning)
+            assertNotNull(factory.getFreshKeySigningService())
+            assertNotNull(factory.getSigningService(CryptoCategories.LEDGER))
+        }.runAndValidate()
         provider.stop()
         assertFalse(provider.isRunning)
     }
@@ -134,26 +122,16 @@ class CryptoLibraryClientsFactoryTests {
         factory = provider.create(
             "testComponent"
         )
-        val latch = CountDownLatch(1)
-        val threads = mutableListOf<Thread>()
-        for (i in 1..100) {
-            val thread = thread(start = true) {
-                latch.await(20, TimeUnit.SECONDS)
-                if(i % 3 == 2) {
-                    provider.handleConfigEvent(config)
-                    factory = provider.create(
-                        "testComponent"
-                    )
-                }
-                assertNotNull(factory.getFreshKeySigningService())
-                assertNotNull(factory.getSigningService(CryptoCategories.LEDGER))
+        (1..100).createTestCase { i ->
+            if(i % 3 == 2) {
+                provider.handleConfigEvent(config)
+                factory = provider.create(
+                    "testComponent"
+                )
             }
-            threads.add(thread)
-        }
-        latch.countDown()
-        threads.forEach {
-            it.join(5_000)
-        }
+            assertNotNull(factory.getFreshKeySigningService())
+            assertNotNull(factory.getSigningService(CryptoCategories.LEDGER))
+        }.runAndValidate()
         provider.stop()
     }
 }

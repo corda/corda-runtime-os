@@ -45,7 +45,7 @@ class DevCryptoServiceProvider @Activate constructor(
         logger.info(
             "Creating instance of the {} for member {} and category {}",
             DevCryptoService::class.java.name,
-            context.sandboxId,
+            context.memberId,
             context.category
         )
         val cipherSuiteFactory = context.cipherSuiteFactory
@@ -57,18 +57,18 @@ class DevCryptoServiceProvider @Activate constructor(
                     isRecoverable = false
                 )
         val cryptoServiceCache = DefaultCryptoKeyCacheImpl(
-            memberId = context.sandboxId,
+            memberId = context.memberId,
             passphrase = passphrase,
             salt = salt,
             schemeMetadata = schemeMetadata,
-            persistence = devKeysPersistence.getOrPut(context.sandboxId) {
+            persistence = devKeysPersistence.getOrPut(context.memberId) {
                 persistentCacheFactory.createDefaultCryptoPersistentCache(CryptoCacheConfig.default)
             }
         )
         val signingKeyCache = SigningKeyCacheImpl(
-            memberId = context.sandboxId,
+            memberId = context.memberId,
             keyEncoder = schemeMetadata,
-            persistence = signingPersistence.getOrPut(context.sandboxId) {
+            persistence = signingPersistence.getOrPut(context.memberId) {
                 persistentCacheFactory.createSigningPersistentCache(CryptoCacheConfig.default)
             }
         )

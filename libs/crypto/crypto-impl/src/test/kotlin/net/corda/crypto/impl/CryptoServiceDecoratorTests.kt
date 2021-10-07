@@ -5,7 +5,6 @@ import net.corda.v5.cipher.suite.WrappedKeyPair
 import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.cipher.suite.schemes.RSA_SHA256_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
 import org.junit.jupiter.api.BeforeEach
@@ -317,10 +316,11 @@ class CryptoServiceDecoratorTests {
             providerName = "Sun"
         )
         val expected = mock<PublicKey>()
+        val context = emptyMap<String, String>()
         whenever(
-            cryptoService.generateKeyPair(alias, signatureScheme)
+            cryptoService.generateKeyPair(alias, signatureScheme, context)
         ).thenReturn(expected)
-        assertSame(expected, circuitBreaker.generateKeyPair(alias, signatureScheme))
+        assertSame(expected, circuitBreaker.generateKeyPair(alias, signatureScheme, context))
     }
 
     @Test
@@ -332,11 +332,12 @@ class CryptoServiceDecoratorTests {
             providerName = "Sun"
         )
         val expected = CryptoServiceException("")
+        val context = emptyMap<String, String>()
         whenever(
-            cryptoService.generateKeyPair(alias, signatureScheme)
+            cryptoService.generateKeyPair(alias, signatureScheme, context)
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.generateKeyPair(alias, signatureScheme)
+            circuitBreaker.generateKeyPair(alias, signatureScheme, context)
         }
         assertSame(expected, actual)
     }
@@ -350,11 +351,12 @@ class CryptoServiceDecoratorTests {
             providerName = "Sun"
         )
         val expected = RuntimeException()
+        val context = emptyMap<String, String>()
         whenever(
-            cryptoService.generateKeyPair(alias, signatureScheme)
+            cryptoService.generateKeyPair(alias, signatureScheme, context)
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.generateKeyPair(alias, signatureScheme)
+            circuitBreaker.generateKeyPair(alias, signatureScheme, context)
         }
         assertSame(expected, actual.cause)
     }
@@ -372,10 +374,11 @@ class CryptoServiceDecoratorTests {
             UUID.randomUUID().toString().toByteArray(),
             1
         )
+        val context = emptyMap<String, String>()
         whenever(
-            cryptoService.generateWrappedKeyPair(alias, signatureScheme)
+            cryptoService.generateWrappedKeyPair(alias, signatureScheme, context)
         ).thenReturn(expected)
-        assertSame(expected, circuitBreaker.generateWrappedKeyPair(alias, signatureScheme))
+        assertSame(expected, circuitBreaker.generateWrappedKeyPair(alias, signatureScheme, context))
     }
 
     @Test
@@ -387,11 +390,12 @@ class CryptoServiceDecoratorTests {
             providerName = "Sun"
         )
         val expected = CryptoServiceException("")
+        val context = emptyMap<String, String>()
         whenever(
-            cryptoService.generateWrappedKeyPair(alias, signatureScheme)
+            cryptoService.generateWrappedKeyPair(alias, signatureScheme, context)
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.generateWrappedKeyPair(alias, signatureScheme)
+            circuitBreaker.generateWrappedKeyPair(alias, signatureScheme, context)
         }
         assertSame(expected, actual)
     }
@@ -405,11 +409,12 @@ class CryptoServiceDecoratorTests {
             providerName = "Sun"
         )
         val expected = IllegalArgumentException()
+        val context = emptyMap<String, String>()
         whenever(
-            cryptoService.generateWrappedKeyPair(alias, signatureScheme)
+            cryptoService.generateWrappedKeyPair(alias, signatureScheme, context)
         ).thenThrow(expected)
         val actual = assertThrows<IllegalArgumentException> {
-            circuitBreaker.generateWrappedKeyPair(alias, signatureScheme)
+            circuitBreaker.generateWrappedKeyPair(alias, signatureScheme, context)
         }
         assertSame(expected, actual)
     }
@@ -423,11 +428,12 @@ class CryptoServiceDecoratorTests {
             providerName = "Sun"
         )
         val expected = RuntimeException()
+        val context = emptyMap<String, String>()
         whenever(
-            cryptoService.generateWrappedKeyPair(alias, signatureScheme)
+            cryptoService.generateWrappedKeyPair(alias, signatureScheme, context)
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.generateWrappedKeyPair(alias, signatureScheme)
+            circuitBreaker.generateWrappedKeyPair(alias, signatureScheme, context)
         }
         assertSame(expected, actual.cause)
     }
@@ -442,10 +448,11 @@ class CryptoServiceDecoratorTests {
         )
         val data = UUID.randomUUID().toString().toByteArray()
         val expected = UUID.randomUUID().toString().toByteArray()
+        val context = emptyMap<String, String>()
         whenever(
-            cryptoService.sign(alias, signatureScheme, data)
+            cryptoService.sign(alias, signatureScheme, data, context)
         ).thenReturn(expected)
-        assertSame(expected, circuitBreaker.sign(alias, signatureScheme, data))
+        assertSame(expected, circuitBreaker.sign(alias, signatureScheme, data, context))
     }
 
     @Test
@@ -458,11 +465,12 @@ class CryptoServiceDecoratorTests {
         )
         val data = UUID.randomUUID().toString().toByteArray()
         val expected = CryptoServiceException("")
+        val context = emptyMap<String, String>()
         whenever(
-            cryptoService.sign(alias, signatureScheme, data)
+            cryptoService.sign(alias, signatureScheme, data, context)
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.sign(alias, signatureScheme, data)
+            circuitBreaker.sign(alias, signatureScheme, data, context)
         }
         assertSame(expected, actual)
     }
@@ -477,93 +485,14 @@ class CryptoServiceDecoratorTests {
         )
         val data = UUID.randomUUID().toString().toByteArray()
         val expected = RuntimeException()
+        val context = emptyMap<String, String>()
         whenever(
-            cryptoService.sign(alias, signatureScheme, data)
+            cryptoService.sign(alias, signatureScheme, data, context)
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.sign(alias, signatureScheme, data)
+            circuitBreaker.sign(alias, signatureScheme, data, context)
         }
         assertSame(expected, actual.cause)
-    }
-
-    @Test
-    @Timeout(5)
-    fun `Should execute sign overload with signature spec`() {
-        val circuitBreaker = createCircuitBreaker()
-        val alias = UUID.randomUUID().toString()
-        val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
-            providerName = "Sun"
-        )
-        val signatureSpec = SignatureSpec("SHA256withRSA")
-        val data = UUID.randomUUID().toString().toByteArray()
-        val expected = UUID.randomUUID().toString().toByteArray()
-        whenever(
-            cryptoService.sign(alias, signatureScheme, signatureSpec, data)
-        ).thenReturn(expected)
-        assertSame(expected, circuitBreaker.sign(alias, signatureScheme, signatureSpec, data))
-    }
-
-    @Test
-    @Timeout(5)
-    @Suppress("MaxLineLength")
-    fun `Should throw same CryptoServiceException from wrapped service when executing sign overload with signature spec`() {
-        val circuitBreaker = createCircuitBreaker()
-        val alias = UUID.randomUUID().toString()
-        val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
-            providerName = "Sun"
-        )
-        val signatureSpec = SignatureSpec("SHA256withRSA")
-        val data = UUID.randomUUID().toString().toByteArray()
-        val expected = CryptoServiceException("")
-        whenever(
-            cryptoService.sign(alias, signatureScheme, signatureSpec, data)
-        ).thenThrow(expected)
-        val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.sign(alias, signatureScheme, signatureSpec, data)
-        }
-        assertSame(expected, actual)
-    }
-
-    @Test
-    @Timeout(5)
-    @Suppress("MaxLineLength")
-    fun `Should throw exception wrapped in CryptoServiceException when executing sign overload with signature spec`() {
-        val circuitBreaker = createCircuitBreaker()
-        val alias = UUID.randomUUID().toString()
-        val signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
-            providerName = "Sun"
-        )
-        val signatureSpec = SignatureSpec("SHA256withRSA")
-        val data = UUID.randomUUID().toString().toByteArray()
-        val expected = RuntimeException()
-        whenever(
-            cryptoService.sign(alias, signatureScheme, signatureSpec, data)
-        ).thenThrow(expected)
-        val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.sign(alias, signatureScheme, signatureSpec, data)
-        }
-        assertSame(expected, actual.cause)
-    }
-
-    @Test
-    @Timeout(5)
-    fun `Should execute sign overload with wrapped key`() {
-        val circuitBreaker = createCircuitBreaker()
-        val wrappedKey = WrappedPrivateKey(
-            keyMaterial = UUID.randomUUID().toString().toByteArray(),
-            masterKeyAlias = UUID.randomUUID().toString(),
-            signatureScheme = RSA_SHA256_TEMPLATE.makeScheme(
-                providerName = "Sun"
-            ),
-            encodingVersion = 1
-        )
-        val signatureSpec = SignatureSpec("SHA256withRSA")
-        val data = UUID.randomUUID().toString().toByteArray()
-        val expected = UUID.randomUUID().toString().toByteArray()
-        whenever(
-            cryptoService.sign(wrappedKey, signatureSpec, data)
-        ).thenReturn(expected)
-        assertSame(expected, circuitBreaker.sign(wrappedKey, signatureSpec, data))
     }
 
     @Test
@@ -579,14 +508,14 @@ class CryptoServiceDecoratorTests {
             ),
             encodingVersion = 1
         )
-        val signatureSpec = SignatureSpec("SHA256withRSA")
         val data = UUID.randomUUID().toString().toByteArray()
         val expected = CryptoServiceException("")
+        val context = emptyMap<String, String>()
         whenever(
-            cryptoService.sign(wrappedKey, signatureSpec, data)
+            cryptoService.sign(wrappedKey, data, context)
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.sign(wrappedKey, signatureSpec, data)
+            circuitBreaker.sign(wrappedKey, data, context)
         }
         assertSame(expected, actual)
     }
@@ -604,14 +533,14 @@ class CryptoServiceDecoratorTests {
             ),
             encodingVersion = 1
         )
-        val signatureSpec = SignatureSpec("SHA256withRSA")
         val data = UUID.randomUUID().toString().toByteArray()
         val expected = IllegalArgumentException()
+        val context = emptyMap<String, String>()
         whenever(
-            cryptoService.sign(wrappedKey, signatureSpec, data)
+            cryptoService.sign(wrappedKey, data, context)
         ).thenThrow(expected)
         val actual = assertThrows<IllegalArgumentException> {
-            circuitBreaker.sign(wrappedKey, signatureSpec, data)
+            circuitBreaker.sign(wrappedKey, data, context)
         }
         assertSame(expected, actual)
     }
@@ -629,14 +558,14 @@ class CryptoServiceDecoratorTests {
             ),
             encodingVersion = 1
         )
-        val signatureSpec = SignatureSpec("SHA256withRSA")
         val data = UUID.randomUUID().toString().toByteArray()
         val expected = RuntimeException()
+        val context = emptyMap<String, String>()
         whenever(
-            cryptoService.sign(wrappedKey, signatureSpec, data)
+            cryptoService.sign(wrappedKey, data, context)
         ).thenThrow(expected)
         val actual = assertThrows<CryptoServiceException> {
-            circuitBreaker.sign(wrappedKey, signatureSpec, data)
+            circuitBreaker.sign(wrappedKey, data, context)
         }
         assertSame(expected, actual.cause)
     }
