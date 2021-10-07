@@ -605,7 +605,7 @@ class SandboxServiceImplTests {
     @Test
     fun `sandbox group can be unloaded`() {
         val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash, cpkTwo.cpkHash))
-        sandboxService.unloadSandboxGroup(sandboxGroup)
+        assertTrue(sandboxService.unloadSandboxGroup(sandboxGroup).isEmpty())
 
         val bundles = cpkAndBundlesOne.bundles + cpkAndBundlesTwo.bundles
 
@@ -617,7 +617,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `throws if any sandbox bundles cannot be uninstalled`() {
+    fun `reports which sandbox bundles cannot be uninstalled`() {
         val errorOne = IllegalStateException("abc")
         val errorTwo = IllegalArgumentException("xyz")
 

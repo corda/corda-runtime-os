@@ -146,13 +146,13 @@ class SandboxImplTests {
     @Test
     fun `sandbox can be unloaded`() {
         val sandbox = createSandboxImpl()
-        sandbox.unload()
+        assertTrue(sandbox.unload().isEmpty())
 
         assertEquals(setOf(publicBundle, privateBundle), uninstalledBundles)
     }
 
     @Test
-    fun `throws if any sandbox bundles cannot be uninstalled`() {
+    fun `reports which sandbox bundles cannot be uninstalled`() {
         val errorOne = IllegalStateException("abc")
         val errorTwo = IllegalArgumentException("xyz")
 
