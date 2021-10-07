@@ -14,7 +14,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
 import java.util.concurrent.CompletableFuture
 
-@Suppress("ExplicitGarbageCollectionCall")
+@Suppress("ExplicitGarbageCollectionCall", "TooGenericExceptionCaught")
 class FutureTrackerTest {
 
     private lateinit var tracker: FutureTracker<String>
