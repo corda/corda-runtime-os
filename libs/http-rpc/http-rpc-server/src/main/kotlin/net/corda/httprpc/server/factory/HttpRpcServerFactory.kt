@@ -12,7 +12,6 @@ interface HttpRpcServerFactory {
         rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
         rpcSecurityManager: RPCSecurityManager,
         httpRpcSettings: HttpRpcSettings,
-        devMode: Boolean,
-        cordappClassLoader: ClassLoader
+        devMode: Boolean
     ): HttpRpcServer
 }

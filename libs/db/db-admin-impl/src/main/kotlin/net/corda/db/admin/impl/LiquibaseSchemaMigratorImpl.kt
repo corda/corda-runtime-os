@@ -9,18 +9,18 @@ import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.v5.base.util.contextLogger
+import org.osgi.service.component.annotations.Component
 import java.io.Writer
 import java.sql.Connection
 import java.util.UUID
 
+@Component(service = [LiquibaseSchemaMigrator::class])
 class LiquibaseSchemaMigratorImpl(
     private val liquibaseFactory: (
         changeLogFile: String,
         resourceAccessor: ResourceAccessor,
         database: Database
-    ) -> Liquibase = { changeLogFile, resourceAccessor, database ->
-        Liquibase(changeLogFile, resourceAccessor, database)
-    },
+    ) -> Liquibase = ::Liquibase,
     private val databaseFactory: (connection: Connection) -> Database =
         { connection ->
             DatabaseFactory
@@ -37,11 +37,11 @@ class LiquibaseSchemaMigratorImpl(
     }
 
     /**
-     * Create update [sql] for [datasource] based on [changeLog]
+     * Create update [sql] for [datasource] based on [dbChange]
      * does not update the DB
      *
      * @param datasource
-     * @param changeLog
+     * @param dbChange
      * @param sql output
      */
     override fun createUpdateSql(datasource: Connection, dbChange: DbChange, sql: Writer) {

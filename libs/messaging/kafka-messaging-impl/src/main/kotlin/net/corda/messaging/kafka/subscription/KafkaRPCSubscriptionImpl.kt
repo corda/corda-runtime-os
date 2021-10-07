@@ -152,14 +152,13 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
             future.whenComplete { response, error ->
                 val record: Record<String, RPCResponse>?
                 when {
-                    //TODOs: convert error string to actual error object
                     //the order of these is important due to how the futures api is
                     future.isCancelled -> {
                         record = buildRecord(
                             rpcRequest.replyTopic,
                             rpcRequest.correlationKey,
                             ResponseStatus.CANCELLED,
-                            error.message.toString().encodeToByteArray()
+                            ("Cause:${error.cause.toString()}. Message: ${error.message}").encodeToByteArray()
                         )
                     }
                     future.isCompletedExceptionally -> {
@@ -167,7 +166,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                             rpcRequest.replyTopic,
                             rpcRequest.correlationKey,
                             ResponseStatus.FAILED,
-                            error.message.toString().encodeToByteArray()
+                            ("Cause:${error.cause.toString()}. Message: ${error.message}").encodeToByteArray()
                         )
                     }
                     else -> {

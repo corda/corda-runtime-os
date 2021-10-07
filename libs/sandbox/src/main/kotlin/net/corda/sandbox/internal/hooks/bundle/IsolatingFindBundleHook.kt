@@ -15,8 +15,9 @@ import org.osgi.service.component.annotations.Reference
  */
 @Component
 internal class IsolatingFindBundleHook @Activate constructor(
-        @Reference
-        private val sandboxService: SandboxServiceInternal) : FindHook {
+    @Reference
+    private val sandboxService: SandboxServiceInternal
+) : FindHook {
 
     override fun find(context: BundleContext, bundles: MutableCollection<Bundle>) {
         bundles.removeIf { bundle ->
