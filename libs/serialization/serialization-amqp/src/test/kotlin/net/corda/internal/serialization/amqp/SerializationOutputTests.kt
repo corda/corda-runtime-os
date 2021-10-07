@@ -661,18 +661,6 @@ class SerializationOutputTests {
     }
     
     @Test
-    fun `test local date serialize`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.LocalDateSerializer(factory))
-
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.LocalDateSerializer(factory2))
-
-        val obj = LocalDate.now()
-        serdes(obj, factory, factory2)
-    }
-
-    @Test
     fun `test local time serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         factory.register(net.corda.internal.serialization.amqp.custom.LocalTimeSerializer(factory))
