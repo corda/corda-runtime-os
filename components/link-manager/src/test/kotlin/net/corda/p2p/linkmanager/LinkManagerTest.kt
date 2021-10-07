@@ -274,6 +274,7 @@ class LinkManagerTest {
         val sessionManager = Mockito.`mock`(SessionManager::class.java)
 
         val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory)
+        queue.start()
 
         queue.queueMessage(message1, key1)
         queue.queueMessage(message2, key1)
@@ -282,16 +283,13 @@ class LinkManagerTest {
         queue.queueMessage(message4, key2)
         queue.queueMessage(message5, key2)
 
-        queue.start()
         // Session is ready for messages 3, 4, 5
         val sessionPair = createSessionPair()
         queue.sessionNegotiatedCallback(sessionManager, key2, sessionPair.initiatorSession, mockNetworkMap)
         assertThat(publisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
             .hasSize(3).containsExactlyInAnyOrder(payload3, payload4, payload5)
 
-        val messageCaptor = argumentCaptor<AuthenticatedMessageAndKey>()
-        verify(sessionManager, times(3)).dataMessageSent(messageCaptor.capture(), eq(sessionPair.initiatorSession))
-        assertThat(messageCaptor.allValues).containsExactlyInAnyOrder(message3, message4, message5)
+        verify(sessionManager, times(3)).dataMessageSent(sessionPair.initiatorSession)
 
         publisher.list = mutableListOf()
         // Session is ready for messages 1, 2
@@ -299,9 +297,7 @@ class LinkManagerTest {
         assertThat(publisher.list.map{ extractPayload(sessionPair.responderSession, it.value as LinkOutMessage) })
             .hasSize(2).containsExactlyInAnyOrder(payload1, payload2)
 
-        val secondMessageCaptor = argumentCaptor<AuthenticatedMessageAndKey>()
-        verify(sessionManager, times(5)).dataMessageSent(secondMessageCaptor.capture(), eq(sessionPair.initiatorSession))
-        assertThat(secondMessageCaptor.allValues).containsExactlyInAnyOrder(message1, message2, message3, message4, message5)
+        verify(sessionManager, times(5)).dataMessageSent(sessionPair.initiatorSession)
     }
 
     @Test

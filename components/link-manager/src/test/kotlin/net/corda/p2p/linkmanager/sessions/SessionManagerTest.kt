@@ -802,6 +802,7 @@ class SessionManagerTest {
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
 
         val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+        whenever(authenticatedSession.sessionId).thenReturn(sessionState.sessionId)
 
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
@@ -810,7 +811,7 @@ class SessionManagerTest {
         sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
-        sessionManager.dataMessageSent(message, authenticatedSession)
+        sessionManager.dataMessageSent(authenticatedSession)
         Thread.sleep(2 * configWithHeartbeat.sessionTimeoutMilliSecs)
 
         assertTrue(sessionManager.processOutboundMessage(message) is NewSessionNeeded)
@@ -823,8 +824,11 @@ class SessionManagerTest {
         val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeoutMilliSecs / configWithHeartbeat.heartbeatMessagePeriodMilliSecs - 1
         val publishLatch = CountDownLatch(heartbeatsBeforeTimeout.toInt() - 1)
 
+        var sessionId: String? = null
+
         fun callback() {
-            sessionManager.messageAcknowledged(SessionManager.SessionKey(OUR_PARTY, PEER_PARTY))
+            sessionId ?: fail("SessionId must be set before callback is called.")
+            sessionManager.messageAcknowledged(sessionId!!)
             publishLatch.countDown()
         }
 
@@ -846,6 +850,8 @@ class SessionManagerTest {
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
 
         val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+        sessionId = sessionState.sessionId
+        whenever(authenticatedSession.sessionId).thenReturn(sessionState.sessionId)
 
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
@@ -854,7 +860,7 @@ class SessionManagerTest {
         sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
-        sessionManager.dataMessageSent(message, authenticatedSession)
+        sessionManager.dataMessageSent(authenticatedSession)
         assertTrue(publishLatch.await(2 * configWithHeartbeat.sessionTimeoutMilliSecs, TimeUnit.MILLISECONDS))
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
@@ -878,12 +884,13 @@ class SessionManagerTest {
         )
         sessionManager.start()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
-        sessionManager.processOutboundMessage(message)
+        val sessionState = sessionManager.processOutboundMessage(message)
+        whenever(authenticatedSession.sessionId).thenReturn((sessionState as NewSessionNeeded).sessionId)
 
-        sessionManager.dataMessageSent(message, authenticatedSession)
+        sessionManager.dataMessageSent(authenticatedSession)
 
         assertTrue(publishLatch.await(10 * configWithHeartbeat.heartbeatMessagePeriodMilliSecs, TimeUnit.MILLISECONDS))
-        loggingInterceptor.assertErrorContains("An exception was thrown when sending a heartbeat message.")
+        loggingInterceptor.assertSingleWarningContains("An exception was thrown when sending a heartbeat message.")
         sessionManager.stop()
     }
 }

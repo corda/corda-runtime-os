@@ -11,8 +11,8 @@ interface SessionManager {
     fun getSessionById(uuid: String): SessionDirection
     fun processSessionMessage(message: LinkInMessage): LinkOutMessage?
     fun inboundSessionEstablished(sessionId: String)
-    fun dataMessageSent(messageAndKey: AuthenticatedMessageAndKey, session: Session)
-    fun messageAcknowledged(sessionKey: SessionKey)
+    fun dataMessageSent(session: Session)
+    fun messageAcknowledged(sessionId: String)
 
     //On the Outbound side there is a single unique session per SessionKey.
     data class SessionKey(

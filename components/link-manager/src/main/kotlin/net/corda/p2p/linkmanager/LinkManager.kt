@@ -315,10 +315,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     extractPayload(sessionDirection.session, sessionId, message, MessageAck::fromByteBuffer)?.let {
                         when (val ack = it.ack) {
                             is AuthenticatedMessageAck -> {
-                                sessionManager.messageAcknowledged(sessionDirection.key)
+                                sessionManager.messageAcknowledged(sessionId)
                                 messages.add(makeMarkerForAckMessage(ack))
                             }
-                            is HeartbeatMessageAck -> sessionManager.messageAcknowledged(sessionDirection.key)
+                            is HeartbeatMessageAck -> sessionManager.messageAcknowledged(sessionId)
                             else -> logger.warn("Received an inbound message with unexpected type for SessionId = $sessionId.")
                         }
                     }
@@ -481,7 +481,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         override fun stop() {
             startStopLock.write {
                 if (running) {
-                    publisher.close()
                     running = false
                 }
             }
@@ -497,7 +496,7 @@ fun recordsForSessionEstablished(
 ): List<Record<String, *>> {
     val records = mutableListOf<Record<String, *>>()
     val key = LinkManager.generateKey()
-    sessionManager.dataMessageSent(messageAndKey, session)
+    sessionManager.dataMessageSent(session)
     linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, networkMap)?. let {
         records.add(Record(Schema.LINK_OUT_TOPIC, key, it))
     }
