@@ -33,7 +33,6 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.membership.identity.MemberX500Name.Companion.parse
 import org.eclipse.jetty.http.HttpStatus
 import org.eclipse.jetty.http2.HTTP2Cipher
 import org.eclipse.jetty.server.HttpConfiguration
@@ -154,7 +153,7 @@ internal class HttpRpcServerInternal(
                     InvocationContext.Rpc(
                         Actor.service(
                             this::javaClass.toString(),
-                            CordaX500Name(parse(CORDA_X500_NAME))
+                            CordaX500Name.parse(CORDA_X500_NAME)
                         )
                     ), it
                 )

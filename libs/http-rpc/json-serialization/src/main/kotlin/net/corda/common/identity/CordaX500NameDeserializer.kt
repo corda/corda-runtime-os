@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.base.util.trace
-import net.corda.v5.membership.identity.MemberX500Name.Companion.parse
 import org.slf4j.LoggerFactory
 
 object CordaX500NameDeserializer : JsonDeserializer<CordaX500Name>() {
@@ -14,7 +13,7 @@ object CordaX500NameDeserializer : JsonDeserializer<CordaX500Name>() {
     override fun deserialize(parser: JsonParser, context: DeserializationContext): CordaX500Name {
         log.trace { "Deserialize." }
         return try {
-            CordaX500Name(parse(parser.text))
+            CordaX500Name.parse(parser.text)
         } catch (e: IllegalArgumentException) {
             "Invalid Corda X.500 name ${parser.text}: ${e.message}".let {
                 log.error(it)

@@ -15,7 +15,6 @@ import net.corda.httprpc.server.impl.apigen.processing.streams.DurableReturnResu
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.base.stream.Cursor
-import net.corda.v5.membership.identity.MemberX500Name.Companion.parse
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -75,7 +74,7 @@ class SchemaModelProviderTest {
     @Test
     fun `build with CordaX500Name succeeds`() {
         val provider = DefaultSchemaModelProvider(SchemaModelContextHolder())
-        val data = CordaX500Name(parse("O=Bank A, L=New York, C=US, OU=Org Unit, CN=Service Name"))
+        val data = CordaX500Name.parse("O=Bank A, L=New York, C=US, OU=Org Unit, CN=Service Name")
         val mockParam = endpointParameter(data::class.javaObjectType)
 
         val result = provider.toSchemaModel(mockParam)
