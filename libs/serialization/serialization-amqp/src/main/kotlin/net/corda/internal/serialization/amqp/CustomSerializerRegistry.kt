@@ -167,9 +167,11 @@ class CachingCustomSerializerRegistry(
                     @Suppress("UNCHECKED_CAST")
                     customSerializer as? AMQPSerializer<Any>
                 }
-                // Make a subclass serializer for the subclass and return that...
-                customSerializer is CorDappCustomSerializer -> SubClass(clazz, customSerializer)
-                else -> null
+                else -> {
+                    // Make a subclass serializer for the subclass and return that...
+                    if (customSerializer is CorDappCustomSerializer) SubClass(clazz, customSerializer)
+                    else null
+                }
             }
         }
 
