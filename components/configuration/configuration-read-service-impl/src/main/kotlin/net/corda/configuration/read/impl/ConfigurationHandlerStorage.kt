@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class ConfigurationHandlerStorage {
 
-    private val handlers: MutableMap<CallbackHandle, Unit> = ConcurrentHashMap()
+    private val handlers = ConcurrentHashMap.newKeySet<CallbackHandle>()
 
     private var subscription: ConfigReader? = null
 
@@ -49,7 +49,7 @@ class ConfigurationHandlerStorage {
         synchronized(this) {
             val sub = subscription
             val handle = CallbackHandle(callback, this)
-            handlers[handle] = Unit
+            handlers.add(handle)
             if (sub != null) {
                 handle.subscribe(sub)
             }
@@ -60,7 +60,7 @@ class ConfigurationHandlerStorage {
     fun addSubscription(subscription: ConfigReader) {
         synchronized(this) {
             this.subscription = subscription
-            handlers.keys.forEach {
+            handlers.forEach {
                 it.subscribe(subscription)
             }
         }
@@ -69,7 +69,7 @@ class ConfigurationHandlerStorage {
     fun removeSubscription() {
         synchronized(this) {
             this.subscription = null
-            handlers.keys.forEach {
+            handlers.forEach {
                 it.unregister()
             }
         }
