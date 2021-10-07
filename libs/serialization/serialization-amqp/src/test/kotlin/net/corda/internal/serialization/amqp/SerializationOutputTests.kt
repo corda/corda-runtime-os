@@ -782,7 +782,7 @@ class SerializationOutputTests {
         val objCopy = serdes(obj, factory, factory2, false, false)
         assertNotSame(objCopy.a, objCopy.b)
     }
-    
+
     @Test
     fun `test kotlin Unit serialize`() {
         val obj = Unit
@@ -809,19 +809,7 @@ class SerializationOutputTests {
         assertEquals(obj3.available(), obj2.available())
         assertEquals(obj3.read(), obj2.read())
     }
-
-    @Test
-    fun `test EnumSet serialize`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.EnumSetSerializer(factory))
-
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.EnumSetSerializer(factory2))
-
-        val obj = EnumSet.of(Month.APRIL, Month.AUGUST)
-        serdes(obj, factory, factory2)
-    }
-
+    
     @Test
     fun `test BitSet serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
