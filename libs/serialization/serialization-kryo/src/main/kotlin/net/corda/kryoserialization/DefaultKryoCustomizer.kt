@@ -48,10 +48,6 @@ class DefaultKryoCustomizer {
             ): Kryo {
             return kryo.apply {
 
-//                classLoader = null
-//                FrameworkUtil.getBundle(this::class.java)?.adapt(BundleWiring::class.java)?.classLoader
-//                    ?: this::class.java.classLoader
-
                 classResolver.setKryo(this)
 
                 // The ClassResolver can only be set in the Kryo constructor and Quasar doesn't
