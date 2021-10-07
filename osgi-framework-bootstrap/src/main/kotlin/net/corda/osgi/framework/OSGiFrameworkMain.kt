@@ -1,7 +1,8 @@
 package net.corda.osgi.framework
 
-import net.corda.v5.base.util.contextLogger
 import org.slf4j.bridge.SLF4JBridgeHandler
+import net.corda.osgi.framework.OSGiFrameworkMain.Companion.main
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 
 /**
@@ -103,7 +104,7 @@ class OSGiFrameworkMain {
             SLF4JBridgeHandler.removeHandlersForRootLogger()
             SLF4JBridgeHandler.install()
 
-            val logger = contextLogger()
+            val logger = LoggerFactory.getLogger(OSGiFrameworkMain::class.java)
             try {
                 val frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX)
                 frameworkStorageDir.toFile().deleteOnExit()
