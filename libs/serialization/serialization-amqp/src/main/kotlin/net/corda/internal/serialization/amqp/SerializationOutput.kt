@@ -90,7 +90,6 @@ open class SerializationOutput constructor(
                 writeMetadata(metadata, this)
             }
         }
-
         return SerializedBytes(byteArrayOutput {
             var stream: OutputStream = it
             try {
