@@ -12,7 +12,7 @@ import java.lang.reflect.Type
  * class custom serializer is responsible for the "on the wire" format but we want to create a reference to the
  * subclass in the schema, so that we can distinguish between subclasses.
  */
-class SubClass<T : Any>(private val clazz: Class<*>, private val superClassSerializer: CorDappCustomSerializer) :
+internal class SubClass<T : Any>(private val clazz: Class<*>, private val superClassSerializer: CorDappCustomSerializer) :
     AMQPSerializer<T> {
 
     override val type: Type get() = clazz

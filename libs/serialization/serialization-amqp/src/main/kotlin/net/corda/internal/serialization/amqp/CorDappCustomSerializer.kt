@@ -42,11 +42,11 @@ private const val PROXY_TYPE = 1
  * @param withInheritance should the serializer work for this type and all inheriting classes? Allows serializers for
  * interfaces and abstract classes. Always set to false for CorDapp defined serializers
  */
-class CorDappCustomSerializer @JvmOverloads constructor(
+internal class CorDappCustomSerializer constructor(
         private val serializer: SerializationCustomSerializer<*, *>,
-        private val withInheritance: Boolean = false,
-        override val revealSubclassesInSchema: Boolean = false,
-        factory: SerializerFactory
+        factory: SerializerFactory,
+        private val withInheritance: Boolean,
+        override val revealSubclassesInSchema: Boolean
 ) : AMQPSerializer<Any>, SerializerFor {
 
     private val types = serializer.serializerTypes()

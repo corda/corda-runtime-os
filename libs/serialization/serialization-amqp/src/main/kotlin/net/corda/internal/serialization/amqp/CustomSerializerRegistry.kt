@@ -107,13 +107,18 @@ class CachingCustomSerializerRegistry(
         factory: SerializerFactory,
         revealSubclassesInSchema: Boolean
     ) {
-        val serializer = CorDappCustomSerializer(customSerializer, withInheritance, revealSubclassesInSchema, factory = factory)
+        val serializer = CorDappCustomSerializer(
+            customSerializer,
+            factory,
+            withInheritance,
+            revealSubclassesInSchema
+        )
         logger.trace { "action=\"Registering custom serializer\", class=\"${serializer.type}\"" }
         storeCustomSerializer(serializer)
     }
 
     override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {
-        val serializer = CorDappCustomSerializer(customSerializer, false, factory = factory)
+        val serializer = CorDappCustomSerializer(customSerializer, factory, false, false)
         logger.trace { "action=\"Registering external serializer\", class=\"${serializer.type}\"" }
         storeCustomSerializer(serializer)
     }
