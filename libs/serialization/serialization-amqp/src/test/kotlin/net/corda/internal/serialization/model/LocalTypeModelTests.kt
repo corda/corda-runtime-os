@@ -29,8 +29,8 @@ class LocalTypeModelTests {
         override val customSerializerNames: List<String> = emptyList()
         override fun register(
             customSerializer: SerializationCustomSerializer<*, *>,
-            withInheritance: Boolean,
             factory: SerializerFactory,
+            withInheritance: Boolean,
             revealSubclassesInSchema: Boolean
         ) {}
         override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {}

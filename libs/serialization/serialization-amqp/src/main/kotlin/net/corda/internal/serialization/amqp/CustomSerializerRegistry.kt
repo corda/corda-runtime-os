@@ -42,8 +42,8 @@ interface CustomSerializerRegistry {
      */
     fun register(
         customSerializer: SerializationCustomSerializer<*, *>,
-        withInheritance: Boolean,
         factory: SerializerFactory,
+        withInheritance: Boolean,
         revealSubclassesInSchema: Boolean = false
     )
     fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory)
@@ -103,8 +103,8 @@ class CachingCustomSerializerRegistry(
      */
     override fun register(
         customSerializer: SerializationCustomSerializer<*, *>,
-        withInheritance: Boolean,
         factory: SerializerFactory,
+        withInheritance: Boolean,
         revealSubclassesInSchema: Boolean
     ) {
         val serializer = CorDappCustomSerializer(
